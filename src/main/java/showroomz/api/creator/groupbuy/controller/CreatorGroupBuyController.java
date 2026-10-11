@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -98,6 +99,8 @@ public class CreatorGroupBuyController implements CreatorGroupBuyControllerDocs 
         return ResponseEntity.ok(commandService.requestSuspension(getCurrentUserEmail(), groupBuyId, request));
     }
 
+    // [기획 제외] 계약 이행 확인 폐기(2026-10-06) — 항상 409. 기획 복귀 전까지 Swagger 에서 숨긴다.
+    @Hidden
     @Override
     @PostMapping("/{groupBuyId}/fulfillment-check")
     public ResponseEntity<CreatorGroupBuyDetailResponse> checkFulfillment(

@@ -274,7 +274,9 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.content[0].statusLabel").value("신규(준비 대기)"))
                     .andExpect(jsonPath("$.content[0].statusTone").value("WARNING"))
                     .andExpect(jsonPath("$.content[0].orderedAt").value(notNullValue()))
-                    .andExpect(jsonPath("$.content[0].shipDueAt").value(notNullValue()))
+                    // 공구 진행 중 — 발송기한은 마감 뒤에 확정된다 · N 은 주문 시점 값
+                    .andExpect(jsonPath("$.content[0].shipDueAt").value(nullValue()))
+                    .andExpect(jsonPath("$.content[0].shipDueBusinessDays").value(SHIPPING_LEAD_DAYS))
                     .andExpect(jsonPath("$.content[0].paidAmount").value(CREAM_PRICE + SERUM_PRICE + DELIVERY_FEE))
                     .andExpect(jsonPath("$.content[0].settlementLabel").value(nullValue()))
                     .andExpect(jsonPath("$.content[0].cancelRequest").value(nullValue()))
@@ -361,7 +363,8 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.amounts.totalAmount").value(CREAM_PRICE + SERUM_PRICE + DELIVERY_FEE))
                     .andExpect(jsonPath("$.amounts.cancelRequestedAmount").value(nullValue()))
                     .andExpect(jsonPath("$.amounts.cancelledAmount").value(0))
-                    .andExpect(jsonPath("$.timeline.shipDueAt").value(notNullValue()))
+                    .andExpect(jsonPath("$.timeline.shipDueAt").value(nullValue()))
+                    .andExpect(jsonPath("$.timeline.shipDueBusinessDays").value(SHIPPING_LEAD_DAYS))
                     .andExpect(jsonPath("$.timeline.prepareStartedAt").value(nullValue()))
                     .andExpect(jsonPath("$.cancelRequest").value(nullValue()))
                     .andExpect(jsonPath("$.history.length()").value(1))
@@ -517,13 +520,15 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("[Q-04] 출고 소요일이 비어 있는 마켓 — 발송기한 null · 경과 없음 · 임박순 정렬에서 마지막 · 상세도 200")
+        @DisplayName("[Q-04] 발송기한이 아직 없는 주문(공구 진행 중) — 경과 없음 · 임박순 정렬에서 마지막 · 상세도 200 · 설정이 빈 마켓은 N=3")
         void nullShippingLeadDays() throws Exception {
             jdbc.update("UPDATE market SET shipping_lead_days = NULL WHERE market_id = ?", brand.marketId());
             OrderDeliveryGroup noDue = paidGroup();
+            assertThat(noDue.getShipDueBusinessDays()).isEqualTo(3);
             jdbc.update("UPDATE market SET shipping_lead_days = ? WHERE market_id = ?", SHIPPING_LEAD_DAYS,
                     brand.marketId());
             OrderDeliveryGroup withDue = paidGroup();
+            backdateShipDueAt(withDue, LocalDateTime.now().plusDays(2));
             assertThat(noDue.getShipDueAt()).isNull();
 
             expectOrder(sellerGet(SELLER_ORDERS + "?tab=NEW&sort=SHIP_DUE_ASC"), withDue, noDue);
@@ -537,17 +542,20 @@ class SellerOrderQueryIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("[Q-05] 발송기한은 결제 시점 스냅샷 — 마켓 출고 소요일을 바꿔도 기존 하위주문은 그대로 · 새 결제만 새 값")
+        @DisplayName("[Q-05] 발송기한 N 은 주문 시점 스냅샷 — 마켓 설정을 바꿔도 기존 하위주문은 그대로 · 공구가 끝나면 각자 마감 + 자기 N영업일")
         void shipDueAtIsSnapshot() throws Exception {
             OrderDeliveryGroup before = paidGroup();
             jdbc.update("UPDATE market SET shipping_lead_days = ? WHERE market_id = ?", 5, brand.marketId());
             OrderDeliveryGroup after = paidGroup();
+            assertThat(reload(before).getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
+            assertThat(after.getShipDueBusinessDays()).isEqualTo(5);
 
-            assertThat(reload(before).getShipDueAt())
-                    .isEqualTo(before.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
-            assertThat(after.getShipDueAt()).isEqualTo(after.getOrder().getPaidAt().plusDays(5));
+            // 2026-08-21(금) 23:00 마감 — + 2영업일 = 08-25(화)의 끝 · + 5영업일 = 08-28(금)의 끝.
+            closeGroupBuy(LocalDateTime.of(2026, 8, 21, 23, 0));
+            assertThat(reload(before).getShipDueAt()).isEqualTo(LocalDateTime.of(2026, 8, 25, 23, 59, 59));
+            assertThat(reload(after).getShipDueAt()).isEqualTo(LocalDateTime.of(2026, 8, 28, 23, 59, 59));
             orderDetail(before.getId())
-                    .andExpect(jsonPath("$.timeline.shipDueAt").value(jsonTime(before.getShipDueAt())));
+                    .andExpect(jsonPath("$.timeline.shipDueAt").value(jsonTime(reload(before).getShipDueAt())));
         }
 
         @Test

@@ -16,6 +16,7 @@ import showroomz.api.seller.order.dto.ShipmentParseResponse;
 import showroomz.api.seller.order.dto.ShipmentRegisterRequest;
 import showroomz.api.seller.order.dto.ShipmentUpdateRequest;
 import showroomz.api.seller.order.service.SellerOrderAccessGuard.SellerScope;
+import showroomz.domain.order.service.OrderCancelRequestService;
 import showroomz.domain.order.entity.MarketPurchaseOrderTemplate;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
@@ -80,6 +81,7 @@ public class SellerOrderCommandService {
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderProductRepository orderProductRepository;
     private final OrderCancelRequestRepository cancelRequestRepository;
+    private final OrderCancelRequestService cancelRequestService;
     private final MarketPurchaseOrderTemplateRepository templateRepository;
     private final PurchaseOrderDownloadLogRepository downloadLogRepository;
     private final OrderFulfillmentService fulfillmentService;
@@ -96,10 +98,13 @@ public class SellerOrderCommandService {
         LocalDateTime now = LocalDateTime.now();
         List<BatchActionResponse.Skipped> skipped = new ArrayList<>();
         int succeeded = 0;
-        for (Long id : new LinkedHashSet<>(request.deliveryGroupIds())) {
+        LinkedHashSet<Long> ids = new LinkedHashSet<>(request.deliveryGroupIds());
+        // 준비 시작 사유를 구분해 남긴다 — 개별 / 일괄 / 발주서 다운로드(어드민 06a 이력 · 1009 기획 수정본).
+        String reason = ids.size() > 1 ? "일괄 준비 시작" : "개별 준비 시작";
+        for (Long id : ids) {
             if (deliveryGroupRepository.startPreparation(id, scope.market().getId(), scope.sellerId(), now) == 1) {
                 fulfillmentService.appendHistory(id, FulfillmentEventType.PREPARE_STARTED, FulfillmentActorType.SELLER,
-                        scope.sellerId(), null, now);
+                        scope.sellerId(), reason, now);
                 succeeded++;
             } else {
                 skipped.add(skipReason(id, scope));
@@ -271,6 +276,12 @@ public class SellerOrderCommandService {
                         duplicateMessage(duplicate, scope)));
                 continue;
             }
+            // 추적 연동 업체만 — 출고 · 회수 · 재발송이 같은 목록을 쓴다(거래 관리 결정 5).
+            if (!row.carrier().isSelectable()) {
+                skipped.add(new BatchActionResponse.Skipped(row.deliveryGroupId(), "CARRIER_INVALID",
+                        "추적 연동 택배사만 선택할 수 있습니다."));
+                continue;
+            }
             // ③ 형식 — 연동 업체가 최신 규칙으로 판정한다. 자릿수인지 체크디지트인지 구분하지 않는다(§34-5).
             ValidationResult validation = tracker.validateInvoice(row.carrier(), trackingNumber);
             if (validation == ValidationResult.INVALID) {
@@ -335,6 +346,9 @@ public class SellerOrderCommandService {
         OrderDeliveryGroup group = accessGuard.loadOwned(deliveryGroupId, scope);
         LocalDateTime now = LocalDateTime.now();
         String trackingNumber = normalize(request.trackingNumber());
+        if (!request.carrier().isSelectable()) {
+            throw new BusinessException(ErrorCode.INVOICE_FORMAT_INVALID, "추적 연동 택배사만 선택할 수 있습니다.");
+        }
         if (trackingNumber.isEmpty()
                 || tracker.validateInvoice(request.carrier(), trackingNumber) == ValidationResult.INVALID) {
             throw new BusinessException(ErrorCode.INVOICE_FORMAT_INVALID);
@@ -399,50 +413,26 @@ public class SellerOrderCommandService {
         return new BatchActionResponse(succeeded, skipped);
     }
 
-    /** 승인(E6) — 요청 항목만 취소 · 남은 항목 발송 · 환불은 운영자 큐 · 단건만(일괄 없음 · §34-8). */
+    /**
+     * 승인(E6) — 요청 항목만 취소 · 남은 항목 발송 · 환불은 PG 즉시 자동 · 단건만(일괄 없음 · §34-8). 응답 기한(1영업일)이 지나면
+     * 시스템이 같은 메서드로 자동 승인한다({@code OrderCancelRequestService}).
+     */
     @Transactional
     public SellerOrderDetailResponse approveCancelRequest(String sellerEmail, Long cancelRequestId) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        LocalDateTime now = LocalDateTime.now();
-        OrderCancelRequest request = loadOwnedRequest(cancelRequestId, scope);
-        Long groupId = request.getDeliveryGroup().getId();
-
-        if (cancelRequestRepository.approve(cancelRequestId, scope.sellerId(), now) != 1) {
-            throw decisionFailure(cancelRequestId);
-        }
-        List<OrderProduct> targets = request.getItems().stream()
-                .map(item -> item.getOrderProduct())
-                .toList();
-        List<OrderProduct> cancelled = fulfillmentService.cancelItemsWithRestock(targets,
-                OrderCancelType.REQUEST_APPROVED, now);
-        int refundAmount = cancelled.stream().mapToInt(item -> item.getPrice() * item.getQuantity()).sum();
-        // 전 항목 승인일 때만 취소 탭 — 남은 항목이 없으면 그룹도 내리고 배송비까지 전액이다(§34-8).
-        if (orderProductRepository.countActiveByGroup(groupId) == 0
-                && deliveryGroupRepository.cancelByRequestApproval(groupId, now) == 1) {
-            refundAmount += request.getDeliveryGroup().getDeliveryFee();
-        }
-        fulfillmentService.enqueueRefund(request.getDeliveryGroup(), RefundTaskSource.CANCEL_REQUEST_APPROVED,
-                cancelRequestId, refundAmount);
-        fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_APPROVED,
-                FulfillmentActorType.SELLER, scope.sellerId(),
-                "요청 " + cancelled.size() + "건 취소 · 환불 예정 " + refundAmount + "원", now);
+        loadOwnedRequest(cancelRequestId, scope);
+        Long groupId = cancelRequestService.approve(cancelRequestId, scope.sellerId(), false, LocalDateTime.now());
         return queryService.getOrder(sellerEmail, groupId);
     }
 
-    /** 거부(E7) — 사유 필수 · 소비자에게 그대로 전달 · 전 항목 배송 진행. 그룹 상태는 바뀐 적이 없어 복귀가 자동이다. */
+    /** 거부(E7) — 사유(드롭다운) 필수 · 소비자에게 그대로 전달 · 전 항목 배송 진행. 그룹 상태는 바뀐 적이 없어 복귀가 자동이다. */
     @Transactional
     public SellerOrderDetailResponse rejectCancelRequest(String sellerEmail, Long cancelRequestId,
                                                          CancelRequestRejectRequest request) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        LocalDateTime now = LocalDateTime.now();
-        OrderCancelRequest cancelRequest = loadOwnedRequest(cancelRequestId, scope);
-        Long groupId = cancelRequest.getDeliveryGroup().getId();
-
-        if (cancelRequestRepository.reject(cancelRequestId, scope.sellerId(), request.reason(), now) != 1) {
-            throw decisionFailure(cancelRequestId);
-        }
-        fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_REJECTED,
-                FulfillmentActorType.SELLER, scope.sellerId(), request.reason(), now);
+        loadOwnedRequest(cancelRequestId, scope);
+        Long groupId = cancelRequestService.reject(cancelRequestId, scope.sellerId(), request.resolvedReasonCode(),
+                request.resolvedDetail(), LocalDateTime.now());
         return queryService.getOrder(sellerEmail, groupId);
     }
 
@@ -469,15 +459,6 @@ public class SellerOrderCommandService {
             throw new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND);
         }
         return request;
-    }
-
-    /** 승인·거부 0행 — 요청이 이미 결정됐으면 409 ALREADY_DECIDED, 아직 PENDING 이면 그룹이 작업 큐를 벗어난 것이다. */
-    private BusinessException decisionFailure(Long cancelRequestId) {
-        boolean stillPending = cancelRequestRepository.findStatus(cancelRequestId)
-                .map(status -> status == CancelRequestStatus.PENDING)
-                .orElse(false);
-        return new BusinessException(stillPending ? ErrorCode.ORDER_STATE_CHANGED
-                : ErrorCode.CANCEL_REQUEST_ALREADY_DECIDED);
     }
 
     /** 전역 송장 중복(§34-5 ③) — 종결 전 상태에서 같은 (택배사, 번호)를 쓰는 다른 하위주문. */
@@ -619,9 +600,9 @@ public class SellerOrderCommandService {
         }
         // 택배사 칸이 비면 carrier: null 로 통과시킨다 — 「채우기」 뒤 목록 셀(택배사 일괄 적용)에서 고르고 확정한다.
         // 미선택 차단은 확정 단계(FE ② · POST /shipments 의 @NotNull)의 몫이다.
-        if (!raw.carrierText().isEmpty() && carrier == null) {
+        if (!raw.carrierText().isEmpty() && (carrier == null || !carrier.isSelectable())) {
             return error(raw, null, trackingNumber, "CARRIER_INVALID",
-                    "지원하지 않는 택배사입니다. 목록의 11종으로 입력해 주세요.");
+                    "지원하지 않는 택배사입니다. 목록의 택배사로 입력해 주세요.");
         }
         // 신규는 업로드에서 제외한다(rev.7) — 소비자 단순 취소권이 살아 있고, 배송중 → 준비중 복귀 경로가 없다.
         switch (group.getFulfillmentStatus()) {

@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageImpl;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.common.attachment.dto.AttachmentDownloadResponse;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
+import showroomz.api.common.thread.service.ThreadAdjustmentViews;
 import showroomz.api.creator.thread.dto.ThreadListItem;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
@@ -29,6 +30,7 @@ import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.AttachmentType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentThreadGuard;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -71,6 +73,10 @@ class CreatorThreadServiceTest {
     private ContractRepository contractRepository;
     @Mock
     private GroupBuyRepository groupBuyRepository;
+    @Mock
+    private ThreadAdjustmentViews adjustmentViews;
+    @Mock
+    private SettlementAdjustmentThreadGuard adjustmentThreadGuard;
 
     @InjectMocks
     private CreatorThreadService creatorThreadService;

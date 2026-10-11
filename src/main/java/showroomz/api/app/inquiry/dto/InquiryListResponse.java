@@ -32,6 +32,9 @@ public class InquiryListResponse {
     @Schema(description = "참조 주문 ID (선택 — 없으면 null)")
     private Long orderId;
 
+    @Schema(description = "반려 이의 대상 클레임 ID — 「이의 제기」로 쓴 문의만, 아니면 null")
+    private Long claimId;
+
     @Schema(description = "연결된 주문 요약 — 목록의 주문 카드(주문번호·상품명·썸네일)용. 주문을 연결하지 않았으면 null")
     private InquiryOrderSummary order;
 
@@ -58,6 +61,7 @@ public class InquiryListResponse {
                 // 원본을 그대로 실으면 직렬화 시점에 세션이 닫혀 응답 쓰기가 실패한다.
                 .imageUrls(List.copyOf(inquiry.getImageUrls()))
                 .orderId(inquiry.getOrderId())
+                .claimId(inquiry.getClaimId())
                 .order(order)
                 .status(inquiry.getStatus())
                 .answerContent(inquiry.getAnswerContent())

@@ -110,7 +110,8 @@ public class PaymentConfirmService {
             case PAID -> handlePaid(payment, portone, now);
             case CANCELLED -> transitions.completeCancel(paymentId, null, portone.rawJson(), now);
             case FAILED -> transitions.markFailed(paymentId, portone.failCode(), portone.failMessage(), now);
-            case PARTIAL_CANCELLED -> alerts.warning("부분 취소는 범위 밖 - paymentId: " + paymentId);
+            // 부분 취소는 환불 큐 집행이 만든 정상 상태다(1009 기획 수정본 2-3) — 결제 상태는 PAID 그대로 둔다.
+            case PARTIAL_CANCELLED -> log.info("부분 취소된 결제 - paymentId: {}", paymentId);
             case VIRTUAL_ACCOUNT_ISSUED -> alerts.warning("가상계좌 채널을 연 적이 없는데 발급됨 - paymentId: " + paymentId);
             default -> log.debug("결제 진행 중 - paymentId: {}, status: {}", paymentId, portone.status());
         }

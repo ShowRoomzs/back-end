@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SHOWROOMZ 웹 디자인 시스템 v1.2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  /* ---- Neutral ramp (cool, refined) ---- */
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+
+  /* ---- Accent (indigo — 유일한 주 액션색) ---- */
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+
+  /* ---- Status (원칙 기반: 조치필요=경고/위험, 정상흐름=정보/성공, 종료=중립) ---- */
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+
+  /* ---- Typography scale (Compact 전역) ---- */
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+
+  /* ---- Spacing (4px 그리드) ---- */
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+
+  /* ---- Radius ---- */
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+
+  /* ---- Brand (로고 전용 — UI 액센트와 별개 체계) ---- */
+  --brand-50:#FEF4F6; --brand-100:#FDE1E8; --brand-200:#FBC0CE; --brand-300:#F899AF;
+  --brand-400:#F56E8E; --brand-500:#F2456E; --brand-600:#CF3D61; --brand-700:#A93353;
+  --brand-800:#822A44; --brand-900:#5B2136;
+
+  /* ---- Logo (서피스별 적용색) ---- */
+  --logo-color:var(--brand-500);   /* 소비자 앱 · IR · 마케팅 */
+  --logo-dark:var(--n-900);        /* 웹 3서피스 · 계약서 — 기본값 */
+  --logo-white:#FFFFFF;            /* 어두운 배경 */
+}
+*{box-sizing:border-box;}
+body{
+  font-family:'Pretendard',-apple-system,sans-serif;
+  background:var(--n-50); color:var(--n-900);
+  margin:0; padding:40px; font-size:var(--fs-body); line-height:1.6;
+}
+h1{font-size:24px;font-weight:600;margin:0 0 4px;}
+.sub{color:var(--n-500);font-size:var(--fs-caption);margin:0 0 40px;}
+section{margin-bottom:48px;}
+h2{font-size:var(--fs-h2);font-weight:600;margin:0 0 4px;padding-bottom:8px;border-bottom:1px solid var(--n-200);}
+.note{font-size:var(--fs-caption);color:var(--n-500);margin:0 0 16px;}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
+/* ---- swatch ---- */
+.swatch{width:96px;}
+.swatch .box{height:56px;border-radius:var(--r-md);border:1px solid var(--n-200);margin-bottom:6px;}
+.swatch .label{font-size:var(--fs-micro);color:var(--n-600);font-weight:500;}
+.swatch .hex{font-size:10px;color:var(--n-400);font-family:monospace;}
+
+/* ---- buttons ---- */
+button{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;transition:background .12s;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-primary:hover{background:var(--accent-600);}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:hover{background:var(--n-100);}
+.btn-ghost{background:transparent;color:var(--n-600);border:none;}
+.btn-ghost:hover{background:var(--n-100);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn-danger:hover{background:#8F2828;}
+button:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+
+/* ---- badges ---- */
+.badge{display:inline-flex;align-items:center;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);}
+.badge-info{background:var(--info-bg);color:var(--info-text);}
+.badge-success{background:var(--success-bg);color:var(--success-text);}
+.badge-warning{background:var(--warning-bg);color:var(--warning-text);}
+.badge-danger{background:var(--danger-bg);color:var(--danger-text);}
+.badge-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ---- form ---- */
+input[type=text],select{
+  font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;
+}
+input[type=text]:focus,select:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  padding-right:32px;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  cursor:pointer;
+}
+label{display:block;font-size:var(--fs-caption);color:var(--n-600);margin-bottom:4px;font-weight:500;}
+.field{width:220px;}
+
+/* ---- table (compact) ---- */
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;padding:6px 12px;}
+tbody td{padding:6px 12px;font-size:var(--fs-caption);border-top:1px solid var(--n-200);}
+tbody tr:hover{background:var(--n-50);}
+
+/* ---- card ---- */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-4);}
+.metric-label{font-size:var(--fs-caption);color:var(--n-600);margin-bottom:2px;}
+.metric-value{font-size:17px;font-weight:600;}
+
+/* ---- GNB sidebar ---- */
+.gnb{width:180px;background:var(--n-100);border-radius:var(--r-md);padding:var(--sp-3) var(--sp-2);}
+.gnb-item{font-size:var(--fs-caption);color:var(--n-600);padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-sub{font-size:var(--fs-micro);color:var(--n-500);padding:5px 10px 5px 22px;}
+
+/* ---- tabs ---- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--n-200);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:8px 4px;margin-right:16px;cursor:pointer;border-bottom:2px solid transparent;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+
+/* ---- 필터 영역 (다중선택, 상시 노출 패널) ---- */
+.filter-panel{position:relative;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:20px 100px 20px 16px;display:flex;flex-direction:column;gap:16px;}
+.fp-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.fp-glabel{font-size:var(--fs-micro);color:var(--n-400);font-weight:600;flex-shrink:0;width:58px;}
+.fp-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--fs-caption);color:var(--n-600);}
+.fp-box{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.fp-box svg{width:9px;height:9px;display:none;}
+.fp-item.on .fp-box{background:var(--accent-500);border-color:var(--accent-500);}
+.fp-item.on .fp-box svg{display:block;}
+.fp-item.on{color:var(--n-900);font-weight:500;}
+.fp-n{font-size:var(--fs-micro);color:var(--n-400);}
+.fp-reset{position:absolute;top:17px;right:14px;display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 10px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  color:var(--n-500);font-size:var(--fs-micro);font-weight:500;cursor:pointer;}
+.fp-reset:hover{background:var(--n-100);color:var(--n-700);border-color:var(--n-400);}
+.fp-reset svg{width:11px;height:11px;}
+
+/* ---- pagination ---- */
+.page-item{width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;}
+
+/* ---- brand logo ---- */
+.logo-stage{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:24px;display:flex;align-items:center;justify-content:center;min-height:88px;}
+.logo-stage.dark{background:var(--n-900);border-color:var(--n-900);}
+.lockup{display:inline-flex;align-items:center;gap:14px;}
+.tier{border-collapse:collapse;width:100%;font-size:var(--fs-caption);margin-top:12px;}
+.tier th,.tier td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--n-200);}
+.tier th{background:var(--n-100);color:var(--n-600);font-weight:600;font-size:var(--fs-micro);}
+.tier td code{font-family:monospace;font-size:var(--fs-micro);background:var(--n-100);
+  padding:1px 5px;border-radius:4px;}
+.gnb-brand{display:flex;align-items:center;padding:12px 12px 15px;
+  border-bottom:1px solid var(--n-200);margin-bottom:6px;}
+
+/* ---- modal ---- */
+.modal-overlay{background:rgba(26,27,31,0.45);border-radius:var(--r-md);padding:40px;display:flex;justify-content:center;}
+.modal{background:#fff;border-radius:12px;padding:20px;width:320px;box-shadow:var(--shadow-popover);}
+.modal h3{font-size:var(--fs-h3);font-weight:600;margin:0 0 8px;}
+.modal p{font-size:var(--fs-caption);color:var(--n-600);margin:0 0 20px;}
+</style>
+</head>
+<body>
+
+<h1>SHOWROOMZ 웹 디자인 시스템 <span style="color:var(--n-400);font-weight:400;">_v1.2</span></h1>
+<p class="sub">방향 A(인디고, 쿨 뉴트럴) 확정 · 전역 Compact · 다크모드 미지원 · 파트너센터·쇼룸 스튜디오·어드민 3서피스 공통<br>브랜드 로고 계층 포함 — 로고 로즈 레드 #F2456E / UI 액센트 인디고 #3B5BDB (별개 체계)<br>[v1.2] 서체(Pretendard) 명문화 · 필터 영역(다중선택) 컴포넌트 신설</p>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-s" d="M389 1000Q334 1000 274 992.5Q214 985 160.5 970.0Q107 955 64 934Q27 916 12 886.5Q-3 857 1 824.0Q5 791 24.5 765.5Q44 740 75.5 731.0Q107 722 147 740Q199 765 265 778.5Q331 792 389 792Q480 792 516 768.0Q552 744 552 708Q552 677 527 657.5Q502 638 437 624L276 590Q144 563 79.5 494.0Q15 425 15 316Q15 245 44.5 186.5Q74 128 128 86.5Q182 45 257 22.5Q332 0 425 0Q496 0 569.5 16.0Q643 32 697 63Q729 80 742.5 109.0Q756 138 753.5 168.5Q751 199 732 222.5Q713 246 682.5 253.5Q652 261 609 243Q569 226 519 217.0Q469 208 422 208Q371 208 335 219.5Q299 231 280.5 253.0Q262 275 262 304Q262 333 286 353.0Q310 373 375 387L535 421Q668 450 734 516.0Q800 582 800 688Q800 759 771 817.0Q742 875 688.5 915.5Q635 956 559.5 978.0Q484 1000 389 1000Z"/><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<section>
+<h2>브랜드 로고</h2>
+<p class="note">로고 색과 UI 액센트 색은 <b>별개 체계</b>다. 웹 3서피스의 로고는 단색 다크를 쓰고, 액션은 인디고를 쓴다.</p>
+
+<div class="row" style="gap:12px;margin-bottom:12px;">
+  <div class="logo-stage" style="flex:1;min-width:280px;"><span class="lockup" style="gap:11px"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="32.4" height="40" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-dark)" stroke="var(--logo-dark)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg><svg viewBox="0 0 1863.4 200" width="242.2" height="26" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg></span></div>
+  <div class="logo-stage dark" style="flex:1;min-width:280px;"><span class="lockup" style="gap:11px"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="32.4" height="40" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-white)" stroke="var(--logo-white)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg><svg viewBox="0 0 1863.4 200" width="242.2" height="26" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-white)"/></svg></span></div>
+</div>
+<div class="row" style="gap:12px;">
+  <div class="logo-stage" style="flex:1;min-width:180px;"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="35.6" height="44" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-color)" stroke="var(--logo-color)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg></div>
+  <div class="logo-stage" style="flex:1;min-width:180px;"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="35.6" height="44" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-dark)" stroke="var(--logo-dark)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg></div>
+  <div class="logo-stage dark" style="flex:1;min-width:180px;"><svg viewBox="-25.3 -25.3 850.7 1050.6" width="35.6" height="44" role="img" aria-label="SHOWROOMZ"><use href="#sz-s" fill="var(--logo-white)" stroke="var(--logo-white)" stroke-width="50.6" stroke-linejoin="round" paint-order="stroke"/></svg></div>
+</div>
+
+<table class="tier">
+  <tr><th style="width:150px">계층</th><th style="width:130px">색</th><th>적용</th></tr>
+  <tr><td>브랜드 로고</td><td><code>#F2456E</code></td><td>로고 · 앱 아이콘 · 소비자 앱</td></tr>
+  <tr><td>브랜드 문서</td><td><code>#1E2A6E</code></td><td>IR 덱 · PPT (본 문서 범위 밖)</td></tr>
+  <tr><td>제품 UI (웹)</td><td><code>#3B5BDB</code></td><td>파트너센터 · 쇼룸 스튜디오 · 어드민</td></tr>
+</table>
+
+<table class="tier">
+  <tr><th style="width:150px">서피스</th><th style="width:130px">로고</th><th style="width:130px">토큰</th><th>액션 컬러</th></tr>
+  <tr><td>파트너센터</td><td>단색 다크</td><td><code>--logo-dark</code></td><td><code>--accent-500</code></td></tr>
+  <tr><td>쇼룸 스튜디오</td><td>단색 다크</td><td><code>--logo-dark</code></td><td><code>--accent-500</code></td></tr>
+  <tr><td>어드민</td><td>단색 다크</td><td><code>--logo-dark</code></td><td><code>--accent-500</code></td></tr>
+  <tr><td>계약서 · 세금계산서</td><td>단색 다크</td><td><code>--logo-dark</code></td><td>—</td></tr>
+</table>
+
+<p class="note" style="margin-top:12px;">사이드바 GNB는 <b>워드마크 단독 14px</b>를 쓴다 — 폭이 좁아 조합형은 여백이 남지 않고, 심볼은 워드마크와 같은 정보를 반복한다. 심볼 단독은 워드마크를 넣을 수 없을 때만 쓴다(파비콘 16px · 앱 아이콘 · 축소 사이드바 20px). 최소 사용 크기 조합형 20px.
+로고 주위 여백은 심볼 높이의 1/2 이상. 상세 규정은 <b>SHOWROOMZ 로고 가이드 v2.0</b> 참조.</p>
+</section>
+
+<section>
+<h2>색 토큰 — 뉴트럴</h2>
+<p class="note">웹 전체 배경·텍스트·보더 기준. 순회색이 아닌 미세 쿨톤.</p>
+<div class="row">
+  <div class="swatch"><div class="box" style="background:var(--n-50)"></div><div class="label">n-50</div><div class="hex">#FAFAFB</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-100)"></div><div class="label">n-100</div><div class="hex">#F1F2F4</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-200)"></div><div class="label">n-200</div><div class="hex">#E4E5E9</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-300)"></div><div class="label">n-300</div><div class="hex">#C7C9D1</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-400)"></div><div class="label">n-400</div><div class="hex">#A8ACB4</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-500)"></div><div class="label">n-500</div><div class="hex">#7B7F89</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-600)"></div><div class="label">n-600</div><div class="hex">#5B5F68</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-700)"></div><div class="label">n-700</div><div class="hex">#3A3D45</div></div>
+  <div class="swatch"><div class="box" style="background:var(--n-900)"></div><div class="label">n-900</div><div class="hex">#1A1B1F</div></div>
+</div>
+</section>
+
+<section>
+<h2>색 토큰 — 액센트 &amp; 상태 (4원칙 적용)</h2>
+<p class="note">① 조치 필요=경고/위험, 정상 흐름=정보/성공 · ② 취소·종료=중립 회색 · ③ 동일 의미는 전 도메인 동일 색 · ④ 기획 태그와 UI 상태색은 별개 체계</p>
+<p class="note" style="margin-top:-8px;">웹 3서피스는 로고가 단색 다크라 화면에 브랜드 레드가 등장하지 않는다. 따라서 <code style="font-family:monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;">--danger</code>와 색이 충돌하지 않으며, 별도 딥레드 토큰이 필요 없다. 소비자 앱은 주 액션이 브랜드 레드라 이 조건이 성립하지 않는다 — 앱 디자인 시스템에서 별도 확정한다.</p>
+<div class="row" style="margin-bottom:16px;">
+  <div class="swatch"><div class="box" style="background:var(--accent-500)"></div><div class="label">accent</div><div class="hex">#3B5BDB</div></div>
+</div>
+<div class="row">
+  <span class="badge badge-info">진행중 / 모집중</span>
+  <span class="badge badge-success">완료 / 활성</span>
+  <span class="badge badge-warning">정산대기 / 승인대기</span>
+  <span class="badge badge-danger">반려 / 거절 / 분쟁</span>
+  <span class="badge badge-neutral">취소 / 종료 / 해지</span>
+</div>
+</section>
+
+<section>
+<h2>타이포그래피 — 서체</h2>
+<p class="note">웹 3서피스(파트너센터·쇼룸 스튜디오·어드민) 공통 서체. 로고 워드마크(Fredoka)와는 별개 체계 — 로고는 브랜드 자산, 본문 서체는 제품 UI 전용.</p>
+<table class="tier">
+  <tr><th style="width:120px">항목</th><th>내용</th></tr>
+  <tr><td>서체</td><td>Pretendard — 무료 오픈소스(OFL 라이선스), 상업적 이용 무료</td></tr>
+  <tr><td>font-family</td><td><code>'Pretendard', -apple-system, sans-serif</code></td></tr>
+  <tr><td>폴백 스택</td><td>Pretendard 로딩 실패 시 <code>-apple-system</code>(맥 SF) → 시스템 기본 sans-serif 순으로 대체. 레이아웃은 깨지지 않고 서체만 달라짐</td></tr>
+  <tr><td>로딩 방식</td><td>목업(HTML 시안)은 CDN(jsdelivr) 링크 방식 — 간편하지만 외부 의존. <b>프로덕션 핸드오프 시 <code>npm install pretendard</code>로 self-host 권장</b>(로딩 안정성·속도, 라이선스 비용 없음)</td></tr>
+  <tr><td>두께(weight)</td><td>현재 400(Regular) · 500(Medium) · 600(SemiBold) 3단만 사용 — 타이포 스케일과 매칭</td></tr>
+</table>
+
+<h2 style="margin-top:32px;">타이포 스케일</h2>
+<div style="font-size:var(--fs-h1);font-weight:600;">H1 · 20px/600 — 페이지 타이틀</div>
+<div style="font-size:var(--fs-h2);font-weight:600;margin-top:6px;">H2 · 16px/600 — 섹션 타이틀</div>
+<div style="font-size:var(--fs-h3);font-weight:600;margin-top:6px;">H3 · 13px/600 — 카드·모달 타이틀</div>
+<div style="font-size:var(--fs-body);margin-top:6px;">Body · 13px/400 — 본문·테이블 셀</div>
+<div style="font-size:var(--fs-caption);color:var(--n-600);margin-top:6px;">Caption · 12px/400 — 보조 텍스트</div>
+<div style="font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;">Micro · 11px/500 — 배지·테이블 헤더</div>
+</section>
+
+<section>
+<h2>버튼</h2>
+<div class="row">
+  <button class="btn-primary">공구 등록</button>
+  <button class="btn-secondary">내보내기</button>
+  <button class="btn-ghost">취소</button>
+  <button class="btn-danger">계정 정지</button>
+  <button disabled>비활성</button>
+</div>
+</section>
+
+<section>
+<h2>폼 요소</h2>
+<div class="row">
+  <div class="field"><label>브랜드명</label><input type="text" placeholder="브랜드명 입력" style="width:100%"></div>
+  <div class="field"><label>상태</label><select style="width:100%"><option>전체</option><option>진행중</option><option>완료</option></select></div>
+</div>
+</section>
+
+<section>
+<h2>테이블 (Compact)</h2>
+<table>
+<thead><tr><td style="width:40%">공구명</td><td>브랜드</td><td>상태</td><td>등록일</td></tr></thead>
+<tbody>
+<tr><td>글로우 세럼 공구</td><td>라피스</td><td><span class="badge badge-success">완료</span></td><td>2026.07.02</td></tr>
+<tr><td>쿠션 리뉴얼 공구</td><td>뮤엘</td><td><span class="badge badge-warning">정산대기</span></td><td>2026.07.10</td></tr>
+<tr><td>립밤 신제품 공구</td><td>클레어</td><td><span class="badge badge-info">모집중</span></td><td>2026.07.15</td></tr>
+<tr><td>틴트 리뉴얼 공구</td><td>노트</td><td><span class="badge badge-danger">반려</span></td><td>2026.07.16</td></tr>
+<tr><td>선크림 여름 공구</td><td>클레어</td><td><span class="badge badge-neutral">종료</span></td><td>2026.06.20</td></tr>
+</tbody>
+</table>
+<div class="row" style="margin-top:10px;justify-content:flex-end;">
+  <div class="page-item">‹</div><div class="page-item active">1</div><div class="page-item">2</div><div class="page-item">3</div><div class="page-item">›</div>
+</div>
+</section>
+
+<section>
+<h2>사이드바 GNB (아코디언)</h2>
+<div class="gnb">
+    <div class="gnb-brand"><svg viewBox="0 0 1863.4 200" width="130.4" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg></div>
+  <div class="gnb-item active">공구 관리</div>
+  <div class="gnb-item">상품 관리</div>
+  <div class="gnb-sub">└ 상품 등록</div>
+  <div class="gnb-sub">└ 배송 정책</div>
+  <div class="gnb-item">정산 관리</div>
+  <div class="gnb-item">회원 관리</div>
+</div>
+</section>
+
+<section>
+<h2>탭</h2>
+<div class="tabs">
+  <div class="tab active">전체</div>
+  <div class="tab">진행중</div>
+  <div class="tab">완료</div>
+  <div class="tab">반려</div>
+</div>
+</section>
+
+<section>
+<h2>필터 영역 <span style="color:var(--n-400);font-weight:400;font-size:var(--fs-caption);">(다중선택 · v1.2 신설)</span></h2>
+<p class="note">탭과 구분 — <b>탭은 배타적 단일선택</b>(카테고리가 서로 겹치지 않을 때), <b>필터 영역은 비배타적 다중선택</b>(카테고리가 겹치거나 별개 축일 때)에 쓴다. 목록 툴바에 얹지 않고 <b>별도 패널로 분리</b>해 항상 펼쳐진 상태로 둔다 — 클릭 1번으로 즉시 필터링(펼치는 동작 없음).</p>
+<div class="filter-panel" id="fpDemoPanel">
+  <button class="fp-reset" type="button" id="fpDemoReset"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+  <div class="fp-row">
+    <span class="fp-glabel">진열 상태</span>
+    <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진열<span class="fp-n">119</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>미진열<span class="fp-n">7</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재검토 대기<span class="fp-n">2</span></span>
+  </div>
+  <div class="fp-row">
+    <span class="fp-glabel">공구 상태</span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비중<span class="fp-n">5</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비완료<span class="fp-n">4</span></span>
+    <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진행중<span class="fp-n">14</span></span>
+    <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>연결 없음<span class="fp-n">105</span></span>
+  </div>
+</div>
+<table class="tier" style="margin-top:16px;">
+  <tr><th style="width:160px">규칙</th><th>내용</th></tr>
+  <tr><td>그룹 구분</td><td>그룹마다 <b>별도 줄(row)</b>로 분리 — 축이 다른 카테고리군을 세로로 쌓아 나열(예: 진열 상태 줄 · 공구 상태 줄). 그룹 내 항목은 서로 독립 — 완전히 같은 상태가 아니면 상위/하위로 합치지 않고 <b>플랫하게 나열</b>(위계 표현이 필요하면 항목명 자체에 표기)</td></tr>
+  <tr><td>다중선택</td><td>그룹 내·그룹 간 모두 동시 선택 가능(AND 조건). 선택 시 체크박스가 인디고로 채워짐</td></tr>
+  <tr><td>초기화</td><td>패널 우상단에 <b>보더 있는 버튼</b>(아이콘+"초기화")로 배치 — 텍스트 링크보다 클릭 대상이 명확. 항상 같은 위치에 고정(행이 늘어도 패널 최상단 우측)</td></tr>
+  <tr><td>사용 기준</td><td>필터를 자주 바꿔가며 쓰는 목록 화면(운영자가 하루에도 여러 번 상태를 걸러보는 화면)에 적합. 필터를 가끔만 쓰는 화면은 트리거+팝오버 방식 등 다른 패턴을 검토</td></tr>
+</table>
+</section>
+
+<section>
+<h2>메트릭 카드</h2>
+<div class="row">
+  <div class="card" style="width:160px;"><div class="metric-label">이번달 거래액</div><div class="metric-value">₩12.4M</div></div>
+  <div class="card" style="width:160px;"><div class="metric-label">활성 인플루언서</div><div class="metric-value">18</div></div>
+  <div class="card" style="width:160px;"><div class="metric-label">정산 대기</div><div class="metric-value">3건</div></div>
+</div>
+</section>
+
+<section>
+<h2>모달</h2>
+<div class="modal-overlay">
+  <div class="modal">
+    <h3>공구를 종료하시겠어요?</h3>
+    <p>종료 후에는 되돌릴 수 없습니다. 진행중인 주문이 있는지 먼저 확인하세요.</p>
+    <div class="row" style="justify-content:flex-end;">
+      <button class="btn-ghost">취소</button>
+      <button class="btn-danger">공구 종료</button>
+    </div>
+  </div>
+</div>
+</section>
+
+<section>
+<h2>부록 A. 변경 이력</h2>
+<table class="tier">
+  <tr><th style="width:90px">버전</th><th style="width:100px">일자</th><th>내용</th></tr>
+  <tr><td>v1.2</td><td>2026.08</td><td>「타이포그래피 — 서체」섹션 신설(Pretendard 명문화, 폴백 스택·로딩 방식·두께 팔레트 정리, 프로덕션은 self-host 권장). 「필터 영역(다중선택)」컴포넌트 신설 — 탭(배타적 단일선택)과 구분되는 비배타적 다중선택 패턴, wf-admin-04-상품관리 필터 설계 과정에서 확정</td></tr>
+  <tr><td>v1.1</td><td>2026.07</td><td>브랜드 로고 계층 반영 — <code>--brand-50~900</code> 및 <code>--logo-*</code> 토큰 추가,
+  「브랜드 로고」 섹션 신설, 사이드바 GNB 샘플에 워드마크 단독 로고 배치(14px), 상태색 섹션에 브랜드 레드 비충돌 근거 명시</td></tr>
+  <tr><td>v1.0</td><td>2026.07</td><td>방향 A(인디고 · 쿨 뉴트럴) 확정. 전역 Compact · 다크모드 미지원.
+  뉴트럴 9단 · 액센트 · 상태색 4원칙 · 타이포 · 컴포넌트 정의</td></tr>
+</table>
+</section>
+
+<script>
+document.getElementById('fpDemoPanel').addEventListener('click', function(e){
+  var item = e.target.closest('.fp-item');
+  if(item) item.classList.toggle('on');
+});
+document.getElementById('fpDemoReset').addEventListener('click', function(){
+  document.querySelectorAll('#fpDemoPanel .fp-item').forEach(function(i){ i.classList.remove('on'); });
+});
+</script>
+
+</body>
+</html>

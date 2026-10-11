@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-partner-01 · 파트너센터 진입 전 (가입 3단계 + 온보딩) · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+
+  /* 상태머신 배너 */
+  .flowbar { margin:12px 40px 8px; padding:10px 14px; background:#fff; border:1px solid #ccc; border-radius:8px; display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:12px; }
+  .flowbar b { font-weight:700; }
+  .chip { border:1px solid #999; border-radius:14px; padding:3px 10px; color:#333; background:#f7f7f7; }
+  .chip.reject { border-style:dashed; color:#777; }
+  .flowbar .sep { color:#999; }
+
+  /* 세로 스택 캔버스 */
+  .stack { padding:16px 40px 60px; }
+  .step-block { margin-bottom:8px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:20px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  /* 1440×1024 데스크톱 프레임 */
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+
+  /* 화면(흰 페이지) — 중앙 480 폼 */
+  .page { min-height:992px; background:#fff; padding:56px 20px 72px; display:flex; flex-direction:column; align-items:center; position:relative; }
+  .col { width:480px; }
+
+  /* 1024 뷰포트 접힘선 */
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#fff; padding:0 8px; font-size:10px; color:#c4553f; }
+
+  /* 스텝퍼 */
+  .stepper { display:flex; width:100%; margin-bottom:44px; }
+  .st { flex:1; display:flex; flex-direction:column; align-items:center; gap:8px; position:relative; }
+  .st:not(:last-child)::after { content:''; position:absolute; top:16px; left:calc(50% + 18px); right:calc(-50% + 18px); height:1.5px; background:#ccc; }
+  .st.done:not(:last-child)::after { background:#888; }
+  .st-c { width:32px; height:32px; border-radius:50%; border:1.5px solid #ccc; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#aaa; background:#fff; z-index:1; }
+  .st.done .st-c { border-color:#888; background:#888; color:#fff; }
+  .st.active .st-c { border-color:#333; background:#333; color:#fff; }
+  .st-l { font-size:12px; color:#aaa; }
+  .st.active .st-l { color:#222; font-weight:700; }
+  .st.done .st-l { color:#666; font-weight:500; }
+
+  /* 로그인 로고 */
+  .logo { text-align:center; margin-bottom:24px; }
+  .logo .m { font-size:16px; font-weight:800; letter-spacing:.5px; }
+  .logo .s { font-size:11px; color:#777; margin-top:2px; }
+
+  /* 섹션·필드 */
+  .sec { margin-bottom:28px; }
+  .sec-t { font-size:16px; font-weight:700; color:#222; margin-bottom:14px; }
+  .field { margin-bottom:10px; }
+  .flabel { font-size:12px; color:#555; margin-bottom:5px; }
+  .inp { width:100%; height:44px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 14px; font-size:13px; color:#a3a3a3; }
+  .inp.sel { justify-content:space-between; }
+  .inp.sel::after { content:"▾"; color:#999; }
+  .inp .eye { margin-left:auto; color:#bbb; }
+  .inp-icon { position:relative; }
+  .inp-icon .inp { padding-right:44px; }
+  .inp-icon .ic { position:absolute; right:14px; top:50%; transform:translateY(-50%); color:#aaa; font-size:15px; }
+
+  /* 통신판매업신고번호 분할 */
+  .split { display:flex; align-items:center; gap:6px; }
+  .split .pfx,.split .sfx { font-size:13px; color:#666; }
+  .split .sep2 { color:#aaa; }
+  .split .sp { height:42px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; justify-content:center; font-size:12px; color:#a3a3a3; }
+  .split .w1 { width:84px; } .split .w2 { width:84px; } .split .w3 { flex:1; }
+
+  /* 파일 업로드 */
+  .upload { margin-bottom:20px; }
+  .up-btn { display:inline-flex; align-items:center; gap:8px; border:1px solid #888; border-radius:6px; background:#f2f2f2; padding:11px 18px; font-size:13px; color:#444; }
+  .up-hint { font-size:11.5px; color:#999; margin-top:6px; }
+  .up-note { font-size:11.5px; color:#7a7a7a; margin-top:4px; }
+
+  /* 약관 카드 */
+  .terms { border:1px solid #ccc; border-radius:8px; overflow:hidden; margin-bottom:28px; }
+  .terms-t { font-size:15px; font-weight:700; padding:18px 18px 16px; border-bottom:1px solid #e2e2e2; }
+  .t-all { display:flex; align-items:center; gap:12px; padding:15px 18px; border-bottom:1px solid #e2e2e2; background:#fafafa; }
+  .t-row { display:flex; align-items:center; justify-content:space-between; padding:15px 18px; border-bottom:1px solid #eee; }
+  .t-row:last-child { border-bottom:none; }
+  .t-left { display:flex; align-items:center; gap:12px; }
+  .cbox { width:20px; height:20px; border:1.5px solid #bbb; border-radius:4px; flex-shrink:0; }
+  .cbox.on { background:#666; border-color:#666; position:relative; }
+  .cbox.on::after { content:"✓"; color:#fff; font-size:12px; position:absolute; left:3px; top:-1px; }
+  .t-lbl { font-size:14px; color:#333; }
+  .t-lbl.all { color:#666; }
+  .t-view { font-size:12px; color:#999; }
+
+  /* 완료 */
+  .cpl { text-align:center; padding-top:12px; }
+  .cpl-ic { width:72px; height:72px; border-radius:50%; border:2px solid #999; color:#666; font-size:30px; display:flex; align-items:center; justify-content:center; margin:0 auto 22px; }
+  .cpl-t { font-size:20px; font-weight:700; margin-bottom:12px; }
+  .cpl-d { font-size:13px; color:#777; line-height:1.7; margin-bottom:26px; }
+  .info-box { border:1px solid #ddd; border-radius:8px; background:#fafafa; padding:8px 18px; text-align:left; margin-bottom:20px; }
+  .info-r { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid #eaeaea; font-size:13px; }
+  .info-r:last-child { border-bottom:none; }
+  .info-l { color:#777; } .info-v { font-weight:600; color:#333; }
+  .notice { display:flex; gap:10px; border:1px solid #ddd; border-radius:8px; padding:14px 16px; text-align:left; font-size:12.5px; color:#666; line-height:1.6; margin-bottom:22px; background:#fff; }
+  .notice .ni { width:18px; height:18px; border-radius:50%; border:1px solid #999; color:#666; font-size:11px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+
+  /* 버튼 */
+  .btn { height:48px; border-radius:6px; background:#333; color:#fff; font-size:14px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+  .btn-line { height:48px; border-radius:6px; background:#fff; border:1px solid #999; color:#555; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  .btn-row { display:flex; gap:12px; margin-top:8px; }
+  .btn-row .btn-line { flex:1; } .btn-row .btn { flex:2; }
+  .btn-full { width:100%; }
+  .links { text-align:center; margin-top:16px; font-size:12px; color:#999; }
+  .links span { margin:0 6px; }
+
+  /* 상태 뱃지 */
+  .state-pill { display:inline-block; font-size:11px; border:1px solid #999; border-radius:14px; padding:3px 12px; color:#444; background:#f2f2f2; }
+
+  /* 주석 */
+  .note { margin-top:16px; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; }
+  .note.term { border-color:#6f6f6f; }
+  .note.legal { border:2px dashed #333; background:#f3f3f3; color:#222; }
+  .note.legal b { color:#000; }
+  .note .tag { display:inline-block; font-weight:700; margin-right:4px; }
+
+  .divider { height:1px; background:#e8e8e8; margin:24px 0; }
+
+  /* 아래 화살표 */
+  .down { text-align:center; padding:10px 0 2px; }
+  .down .a { font-size:24px; color:#888; }
+  .down .l { font-size:11px; color:#777; margin-top:-2px; }
+
+  .terminal { text-align:center; margin-top:10px; }
+  .terminal .box { display:inline-block; border:1px dashed #888; border-radius:8px; padding:14px 22px; font-size:12px; color:#555; background:#fff; line-height:1.6; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>④ 파트너센터 · 진입 전 — 가입 3단계 + 온보딩 <span>wf-partner-01 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 근거: 실제 목업(market-signup step1 이미지·step2·step3·complete) + ③ draft33 §1-1 · ④ draft17 진입 전 IA</div>
+  <div class="spec">프레임 = 1440×1024 뷰포트 · 폼은 실제 목업대로 중앙 480px 컬럼 · 세로 배치(아래로 동선) · 붉은 점선 = 1024 접힘선</div>
+</div>
+
+<div class="flowbar">
+  <b>입점 상태머신</b>
+  <span class="chip">심사대기</span><span class="sep">→</span>
+  <span class="chip">정보입력대기</span><span class="sep">→</span>
+  <span class="chip">활성</span><span class="sep">/</span>
+  <span class="chip reject">반려 (사유 필수·재제출)</span>
+</div>
+
+<div class="stack">
+
+<!-- ============ F0. 로그인 ============ -->
+<div class="step-block">
+  <div class="ftitle">0. 로그인 <span>— 진입점(이메일+비밀번호)</span><span class="pill">draft33 기반 · 목업 없음(신규)</span></div>
+  <div class="frame">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/login</span></div>
+    <div class="page" style="justify-content:center;min-height:520px">
+      <div class="col">
+        <div class="logo"><div class="m">SHOWROOMZ</div><div class="s">브랜드 파트너센터</div></div>
+        <div class="field"><div class="flabel">이메일</div><div class="inp">brand@example.com</div></div>
+        <div class="field"><div class="flabel">비밀번호</div><div class="inp">••••••••<span class="eye">👁</span></div></div>
+        <div class="btn btn-full" style="margin-top:12px">로그인</div>
+        <div class="links"><span>회원가입</span>·<span>비밀번호 찾기</span></div>
+        <div class="note"><b>상태별 분기</b> · <b>심사대기</b>→"심사 중" 문구(진입 불가) · <b>반려</b>→모달(사유)+가입 폼 수정 재제출<b>(별도 페이지 없음)</b> · <b>정보입력대기</b>→온보딩(F5)으로 강제 이동</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[회원가입]</div></div>
+
+<!-- ============ F1. 가입 Step1 — 기본 정보 ============ -->
+<div class="step-block">
+  <div class="ftitle">1. 가입 Step 1 — 기본 정보 <span>(계정 · 브랜드 담당자 · 브랜드 정보)</span><span class="pill">근거: 첨부 이미지</span></div>
+  <div class="frame">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/signup</span></div>
+    <div class="page">
+      <div class="col">
+        <div class="stepper">
+          <div class="st active"><div class="st-c">1</div><div class="st-l">기본 정보</div></div>
+          <div class="st"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div>
+          <div class="st"><div class="st-c">3</div><div class="st-l">완료</div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t">계정 정보</div>
+          <div class="field"><div class="inp">이메일</div></div>
+          <div class="field"><div class="inp">비밀번호 (8~16자 영문·숫자·특수문자 조합)<span class="eye">👁</span></div></div>
+          <div class="field"><div class="inp">비밀번호 재입력<span class="eye">👁</span></div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t">브랜드 담당자 정보</div>
+          <div class="field"><div class="inp">판매 담당자 이름</div></div>
+          <div class="field"><div class="inp">판매 담당자 연락처 (문자 수신 가능한 핸드폰 번호)</div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t">브랜드 정보</div>
+          <div class="field"><div class="inp">브랜드명 (공백·특수문자·한/영 혼용 사용불가)</div></div>
+          <div class="field"><div class="inp">고객센터 전화번호 (존재하지 않는 번호 입력 시 서비스 이용 제한)</div></div>
+        </div>
+
+        <div class="btn-row"><div class="btn-line">이전</div><div class="btn">다음</div></div>
+
+        <div class="note term"><span class="tag">[용어 치환]</span> 원본 목업 "셀러 정보"→<b>브랜드 담당자 정보</b>, "마켓명"→<b>브랜드명</b>, "마켓 정보"→<b>브랜드 정보</b> (§4 확정 용어)</div>
+        <div class="note legal"><span class="tag">[③ draft33 도메인 갭]</span> <b>브랜드명·고객센터 전화번호</b>는 목업엔 있으나 draft33 §1-1 브랜드 계정 속성에 <b>미기재</b> → 김화창 ERD 공유 전 §1-1 보강 필요</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">다음</div></div>
+
+<!-- ============ F2. 가입 Step2 — 사업자 정보 (long) ============ -->
+<div class="step-block">
+  <div class="ftitle">2. 가입 Step 2 — 사업자 정보 <span>(유형 · 사업자정보 · 파일3종 · 통신판매업신고번호 · 정산계좌)</span><span class="pill">근거: market-signup-step2.html</span></div>
+  <div class="frame">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/signup</span></div>
+    <div class="page">
+      <div class="foldline"></div>
+      <div class="col">
+        <div class="stepper">
+          <div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div>
+          <div class="st active"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div>
+          <div class="st"><div class="st-c">3</div><div class="st-l">완료</div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t">사업자 유형</div>
+          <div class="field"><div class="inp sel">사업자 구분 (일반과세자 / 간이과세자 / 면세사업자 / 법인 사업자)</div></div>
+        </div>
+
+        <div class="sec">
+          <div class="sec-t">사업자 정보</div>
+          <div class="field"><div class="flabel">대표자명</div><div class="inp">대표자명 (공동대표는 쉼표로 나열)</div></div>
+          <div class="field"><div class="flabel">대표자 연락처</div><div class="inp">대표자 연락처 (문자 수신 가능한 핸드폰 번호)</div></div>
+          <div class="field"><div class="flabel">사업자등록증 상호명</div><div class="inp">사업자등록증 상호명</div></div>
+          <div class="field"><div class="flabel">사업자등록번호</div><div class="inp">사업자등록번호 ('-' 포함 입력)</div></div>
+          <div class="field"><div class="flabel">업태</div><div class="inp">업태 (사업자등록증 대표 업태 한 가지)</div></div>
+          <div class="field"><div class="flabel">사업장 주소</div><div class="inp-icon"><div class="inp">사업장 주소 (사업자등록증 기재 주소)</div><span class="ic">🔍</span></div></div>
+          <div class="field"><div class="flabel">상세주소</div><div class="inp">상세주소</div></div>
+          <div class="field"><div class="flabel">이메일</div><div class="inp">이메일 (tax 확인용 메일 주소)</div></div>
+        </div>
+
+        <div class="upload"><div class="up-btn">📎 사업자등록증 사본 파일 선택</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div>
+        <div class="upload"><div class="up-btn">📎 통신판매업신고증 사본 파일 선택</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div><div class="up-note">※ 간이과세자는 통신판매신고 면제 대상 → 업로드 필수 아님</div></div>
+
+        <div class="divider"></div>
+
+        <div class="sec">
+          <div class="sec-t">통신판매업신고번호</div>
+          <div class="split">
+            <span class="pfx">제</span>
+            <div class="sp w1">년도</div><span class="sep2">-</span>
+            <div class="sp w2">지역</div><span class="sep2">-</span>
+            <div class="sp w3">번호</div>
+            <span class="sfx">호</span>
+          </div>
+          <div class="up-note">※ 간이과세자는 기재 필수 아님</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="sec">
+          <div class="sec-t">정산 정보</div>
+          <div class="field"><div class="flabel">은행명</div><div class="inp sel">은행 선택</div></div>
+          <div class="field"><div class="flabel">예금주명</div><div class="inp">예금주명 (법인은 법인 명의 계좌만)</div></div>
+          <div class="field"><div class="flabel">계좌번호</div><div class="inp">계좌번호 ('-' 포함 입력)</div></div>
+        </div>
+        <div class="upload"><div class="up-btn">📎 통장 사본 파일 선택</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div>
+
+        <div class="btn-row"><div class="btn-line">이전</div><div class="btn">다음</div></div>
+
+        <div class="note legal"><span class="tag">[입점 심사 요건]</span> 통신판매업신고번호·신고증 = 운영자 심사 항목 · <b>사업자 정보</b>는 <b>소비자 노출용 신원정보</b>로 상품 상세(C7 판매자 정보)에 자동 표시(전자상거래법)</div>
+        <div class="note"><span class="tag">[정산 계좌]</span> 민감 정보 · 가입 시 기입 · <b>셀프 변경 없음</b>(운영자 수동·감사 기록) — draft17 "정산계좌=별도 3단계"와 달리 실제 목업은 <b>Step2 정산 정보에 포함</b></div>
+        <div class="note legal"><span class="tag">[③ draft33 도메인 갭]</span> <b>업태 · 사업자 유형(과세 구분) · 파일 3종(사업자등록증·통신판매업신고증·통장사본) · tax 확인용 이메일</b> → draft33 §1-1 미기재, ERD 전 보강 필요</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">다음</div></div>
+
+<!-- ============ F3. 가입 Step3 — 약관 동의 ============ -->
+<div class="step-block">
+  <div class="ftitle">3. 가입 Step 3 — 완료(약관 동의) <span>(스텝 라벨은 "완료"이나 내용은 약관 동의)</span><span class="pill">근거: market-signup-step3.html</span></div>
+  <div class="frame">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/signup</span></div>
+    <div class="page" style="min-height:620px">
+      <div class="col">
+        <div class="stepper">
+          <div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div>
+          <div class="st done"><div class="st-c">✓</div><div class="st-l">사업자 정보</div></div>
+          <div class="st active"><div class="st-c">3</div><div class="st-l">완료</div></div>
+        </div>
+
+        <div class="terms">
+          <div class="terms-t">약관 동의</div>
+          <div class="t-all"><div class="cbox"></div><span class="t-lbl all">이용 약관에 모두 동의합니다.</span></div>
+          <div class="t-row"><div class="t-left"><div class="cbox"></div><span class="t-lbl">개인정보처리방침 (필수)</span></div><span class="t-view">보기 ›</span></div>
+          <div class="t-row"><div class="t-left"><div class="cbox"></div><span class="t-lbl">서비스 이용 약관 (필수)</span></div><span class="t-view">보기 ›</span></div>
+          <div class="t-row"><div class="t-left"><div class="cbox"></div><span class="t-lbl">서비스 운영정책 (필수)</span></div><span class="t-view">보기 ›</span></div>
+        </div>
+
+        <div class="btn-row"><div class="btn-line">이전</div><div class="btn">신청하기</div></div>
+
+        <div class="note legal"><span class="tag">[재검토]</span> <b>개인정보처리방침</b>은 소비자 쪽에서 "동의 체크 항목이 아니라 <b>고지(보기) 문서</b>"로 확정 → 브랜드 가입도 동일하게 '동의 3필수'에서 분리할지 검토 필요(약관후속 패치리스트 연동)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">신청하기</div></div>
+
+<!-- ============ F4. 가입 완료 ============ -->
+<div class="step-block">
+  <div class="ftitle">4. 가입 완료 <span>— 입점 신청 접수(검토 중)</span><span class="pill">근거: market-signup-complete.html</span></div>
+  <div class="frame">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/signup/complete</span></div>
+    <div class="page" style="min-height:640px">
+      <div class="col">
+        <div class="cpl">
+          <div class="cpl-ic">🎉</div>
+          <div class="cpl-t">입점 신청이 완료되었습니다!</div>
+          <div class="cpl-d">신청서가 정상적으로 접수되었습니다.<br>검토 후 <b>영업일 기준 3~5일 이내</b>에<br>등록하신 이메일로 결과를 안내해 드립니다.</div>
+          <div class="info-box">
+            <div class="info-r"><span class="info-l">브랜드명</span><span class="info-v">○○ 브랜드</span></div>
+            <div class="info-r"><span class="info-l">신청 일시</span><span class="info-v">2026.00.00 00:00</span></div>
+            <div class="info-r"><span class="info-l">결과 안내</span><span class="info-v">가입 시 등록한 이메일</span></div>
+            <div class="info-r"><span class="info-l">처리 예정</span><span class="info-v">영업일 기준 3~5일 이내</span></div>
+          </div>
+          <div class="notice"><span class="ni">i</span><span>심사 결과는 <b>이메일</b>로 안내 · 승인 완료 후 <b>파트너센터</b>에서 상품 등록 및 운영을 시작할 수 있습니다.</span></div>
+          <div class="btn btn-full">홈으로 이동</div>
+          <div style="margin-top:16px"><span class="state-pill">상태 · 심사대기(검토 중)</span></div>
+        </div>
+        <div class="note term"><span class="tag">[용어 치환]</span> 원본 "마켓명"→<b>브랜드명</b>, "마켓 어드민 페이지"→<b>파트너센터</b></div>
+        <div class="note"><span class="tag">[통지]</span> 승인/반려 = 이메일·문자(알림 #13, 인앱 예외) · 승인 후 <b>재로그인 시 정보입력대기</b>로 온보딩 강제</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">운영자 승인 · 재로그인 (정보입력대기)</div></div>
+
+<!-- ============ F5. 온보딩 ============ -->
+<div class="step-block">
+  <div class="ftitle">5. 온보딩 — 필수 정보 입력 <span>(활성 게이트 · 반품 수취 주소 + 배송·반품 정책)</span><span class="pill">draft33 §1 · 배송정책은 wf-partner-08 F2에서 이동(2026.07)</span></div>
+  <div class="frame">
+    <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">partner.showroomz.com/onboarding</span></div>
+    <div class="page" style="min-height:1100px">
+      <div class="foldline"></div>
+      <div class="col">
+        <div class="cpl" style="padding-top:0;margin-bottom:8px">
+          <div class="cpl-t" style="font-size:18px">서비스 시작 전, 필수 정보를 입력해주세요</div>
+          <div class="cpl-d">입력을 완료해야 파트너센터를 이용할 수 있어요.</div>
+          <div style="margin-bottom:20px"><span class="state-pill">상태 · 정보입력대기</span></div>
+        </div>
+        <div class="sec">
+          <div class="sec-t">반품 수취 주소 <span style="font-size:12px;font-weight:400;color:#888">(활성 필수)</span></div>
+          <div class="field"><div class="flabel">수취인 / 연락처</div><div class="inp">담당자명 · 000-0000-0000</div></div>
+          <div class="field"><div class="flabel">주소</div><div class="inp-icon"><div class="inp">우편번호 검색</div><span class="ic">🔍</span></div></div>
+          <div class="field"><div class="flabel">상세 주소</div><div class="inp">상세 주소 입력</div></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="sec">
+          <div class="sec-t">배송·반품 정책 <span style="font-size:12px;font-weight:400;color:#888">(활성 필수 · 전 상품 공통 적용)</span></div>
+          <div class="field"><div class="flabel">기본 배송비 <span style="color:#c4553f">*</span></div><div class="inp">원 / 하위주문 단위 (예: 3,000)</div></div>
+          <div class="field"><div class="flabel">무료배송 기준금액</div><div class="inp">원 이상 무료 (선택)</div></div>
+          <div class="field"><div class="flabel">도서산간 추가비</div><div class="inp">제주 / 그 외 지역 추가비 (선택, 미입력 시 0원)</div></div>
+          <div class="field"><div class="flabel">배송 방법</div><div class="inp sel">택배</div></div>
+          <div class="field"><div class="flabel">출고 소요일</div><div class="inp">영업일 기준 (예: 3일 이내)</div></div>
+          <div class="field"><div class="flabel">반품비(회수비)</div><div class="inp">원 · 반품(환불) 시 회수 편도</div></div>
+          <div class="field"><div class="flabel">교환비(회수비+배송비)</div><div class="inp">원 · 교환 시 회수+재배송 왕복</div></div>
+        </div>
+
+        <div class="btn btn-full">입력 완료 · 시작하기</div>
+        <div class="note"><span class="tag">[활성 게이트]</span> 첫 로그인 시 강제 · 미완료 시 다른 페이지 접근 불가 · 완료 시 <b>활성 전환</b> · 반품 수취 주소 = 주문 <b>반품 회수지</b>로 참조(③ §1-1·§10-4)</div>
+        <div class="note legal"><span class="tag">[2026.07 이동]</span> <b>배송·반품 정책을 온보딩 필수 항목으로 이동</b> — 종전엔 기본정보관리(wf-partner-08 F2)에서 언제든 설정 가능해 <b>미설정 상태로 상품 등록·공구 개설이 가능했던 갭</b>을 막기 위함. 등록 후에도 <b>기본정보관리에서 값 수정은 계속 가능</b>(wf-partner-08 F2 유지, 저장 시 진행중 공구는 스냅샷 유지·신규 결제부터 반영)</div>
+        <div class="note legal"><span class="tag">[확장 가능]</span> 필수 정보 목록은 거래 필수 항목만 최소로 — 법무/세무 검토 후 추가 가능(예: 세금계산서 발행 정보)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">활성</div></div>
+
+<div class="terminal"><div class="box"><b>파트너센터 홈 (1. 홈 대시보드)</b><br><span style="color:#999">→ wf-partner-02</span></div></div>
+
+</div>
+</body>
+</html>

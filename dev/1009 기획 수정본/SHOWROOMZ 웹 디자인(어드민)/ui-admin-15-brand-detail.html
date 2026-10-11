@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-15-brand-detail — 어드민 회원 관리 · 브랜드 상세 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+
+/* ══════════════════════════════════════════════════════════════════
+   SHOWROOMZ 웹 디자인시스템 v1.2 — 어드민
+   이 <style> 블록 전체가 소스오브트루스다.
+   신규 ui-admin-*.html 은 이 블록을 통째로 복사한 뒤 화면 전용 CSS만 덧붙인다.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── ① 토큰 ───────────────────────────────────────────────────── */
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+
+/* ── ② 문서 골격 (시안 파일 공통) ─────────────────────────────── */
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;line-height:1.8;}
+.doc-head .rule{margin-top:12px;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ── ③ 어드민 셸 · 사이드바 ───────────────────────────────────── */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ── ④ 어드민 셸 · 탑바 / 본문 ────────────────────────────────── */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;display:flex;align-items:center;gap:10px;}
+.t-link{font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:var(--n-100);
+  border:1px solid var(--n-200);border-radius:var(--r-pill);padding:2px 10px;cursor:pointer;
+  white-space:nowrap;line-height:1.7;}
+.t-link:hover{background:var(--accent-50);color:var(--accent-600);border-color:var(--accent-100);}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ── ⑤ 필터 · 폼 컨트롤 ───────────────────────────────────────── */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:180px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 26px 0 10px;cursor:pointer;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;}
+.sel-sm:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+
+/* ── ⑥ 테이블 ─────────────────────────────────────────────────── */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+table{width:100%;border-collapse:collapse;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.tcard table{table-layout:fixed;}
+.tnum{font-variant-numeric:tabular-nums;letter-spacing:-.1px;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-c{text-align:center;}
+.t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+
+/* ── ⑦ 배지 ───────────────────────────────────────────────────── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ── ⑧ 페이지네이션 · 빈 상태 ─────────────────────────────────── */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ── ⑨ 상세 · 카드 ────────────────────────────────────────────── */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.rsn{margin:0;font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상세 필드 행 — 라벨 140px · 행 패딩 9px (어드민 공통 규격) */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* ── ⑩ 변경 대조 표 ───────────────────────────────────────────── */
+table.diff{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+table.diff thead td{width:auto;} table.diff thead td:first-child{width:180px;}
+table.diff tbody td{white-space:normal;cursor:default;padding:11px 16px;}
+table.diff tbody tr{cursor:default;} table.diff tbody tr:hover{background:transparent;}
+table.diff tbody tr.chg{background:var(--accent-50);}
+table.diff tbody tr.chg:hover{background:var(--accent-50);}
+.dk{color:var(--n-500);font-size:var(--fs-micro);}
+.dv{color:var(--n-900);}
+.dold{color:var(--n-500);text-decoration:line-through;text-decoration-color:var(--n-400);}
+.dnew{color:var(--accent-600);font-weight:600;}
+.dsame{color:var(--n-400);font-size:var(--fs-micro);}
+.dlock{color:var(--n-500);font-size:var(--fs-micro);font-weight:500;}
+
+/* ── ⑪ 인라인 안내 박스 ───────────────────────────────────────── */
+.chk-note{display:flex;gap:9px;background:var(--warning-bg);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-700);line-height:1.65;margin-bottom:var(--sp-4);}
+.chk-note.danger{background:var(--danger-bg);}
+.chk-note .ci{width:16px;height:16px;border-radius:50%;background:var(--warning-text);color:#fff;font-size:10px;
+  display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.chk-note.danger .ci{background:var(--danger-text);}
+
+/* ── ⑫ 첨부 ───────────────────────────────────────────────────── */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑬ 우측 액션 카드 · 이력 ──────────────────────────────────── */
+.detail > div:last-child{position:sticky;top:0;align-self:start;}
+.side-card{}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.act-in{border-top:1px solid var(--n-100);margin:var(--sp-2) 0 0;padding-top:var(--sp-2);}
+.act-in .st-meta{padding-top:0;}
+.act-in .st-hint{margin-top:6px;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.st-rsn{padding:9px 0 0;border-top:1px solid var(--n-100);margin-top:var(--sp-2);}
+.st-rsn .rk{font-size:var(--fs-micro);color:var(--n-500);display:block;margin-bottom:3px;}
+.st-rsn .rv{font-size:var(--fs-caption);color:var(--n-900);line-height:1.6;}
+.st-rsn + .st-rsn{margin-top:9px;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.hdot.h-neutral{background:var(--n-400);}
+.hmore{font-size:var(--fs-micro);color:var(--accent-600);padding:8px 0 2px;border-top:1px solid var(--n-100);margin-top:4px;cursor:pointer;}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── ⑭ 모달 ───────────────────────────────────────────────────── */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:32px;appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:88px;resize:vertical;line-height:1.6;height:auto;padding-top:7px;}
+.mta.is-error{border-color:var(--danger-text);}
+.merr{font-size:var(--fs-micro);color:var(--danger-text);margin:6px 0 0;}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mwarn.info{background:var(--info-bg);color:var(--info-text);}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ── ⑮ 미리보기 라이트박스 ────────────────────────────────────── */
+.modal.pv{width:1080px;}
+.pv-body{display:grid;grid-template-columns:1fr 340px;height:620px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:440px;height:310px;background:#fff;border-radius:2px;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-zoom{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{display:flex;gap:9px;padding:11px 0;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.pv-row:last-of-type{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:3px;}
+.pv-old{font-size:var(--fs-micro);color:var(--n-500);text-decoration:line-through;
+  text-decoration-color:var(--n-400);margin-bottom:1px;}
+.pv-new{font-size:var(--fs-body);font-weight:600;color:var(--accent-600);line-height:1.45;}
+.pv-new.plain{color:var(--n-900);}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+.pv-note.warn{background:var(--danger-bg);color:var(--danger-text);}
+
+/* ── ⑯ 토스트 ─────────────────────────────────────────────────── */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+
+/* ══ 화면 전용 (ui-admin-06) ══ */
+/* 어드민 공통 규격 정합: 테이블 본문 셀 14px 16px · 행높이 50px */
+tbody td{padding:14px 16px;height:50px;}
+
+.tb-inq thead td:nth-child(1),.tb-inq tbody td:nth-child(1){width:8%;padding-left:20px;}
+.tb-inq thead td:nth-child(3),.tb-inq tbody td:nth-child(3){width:10%;}
+.tb-inq thead td:nth-child(4),.tb-inq tbody td:nth-child(4){width:14%;}
+.tb-inq thead td:nth-child(5),.tb-inq tbody td:nth-child(5){width:14%;}
+.tb-inq thead td:nth-child(6),.tb-inq tbody td:nth-child(6){width:10%;}
+.tb-inq thead td:nth-child(7),.tb-inq tbody td:nth-child(7){width:11%;padding-right:20px;}
+
+.tb-qna thead td:nth-child(1),.tb-qna tbody td:nth-child(1){width:10%;padding-left:20px;}
+.tb-qna thead td:nth-child(2),.tb-qna tbody td:nth-child(2){width:32%;}
+.tb-qna thead td:nth-child(3),.tb-qna tbody td:nth-child(3){width:18%;}
+.tb-qna thead td:nth-child(4),.tb-qna tbody td:nth-child(4){width:12%;}
+.tb-qna thead td:nth-child(5),.tb-qna tbody td:nth-child(5){width:10%;}
+.tb-qna thead td:nth-child(6),.tb-qna tbody td:nth-child(6){width:10%;}
+.tb-qna thead td:nth-child(7),.tb-qna tbody td:nth-child(7){width:12%;padding-right:20px;}
+.tb-qna tbody td{vertical-align:top;}
+
+.tb-faq thead td:nth-child(1),.tb-faq tbody td:nth-child(1){width:40px;padding-left:16px;padding-right:0;}
+.tb-faq thead td:nth-child(2),.tb-faq tbody td:nth-child(2){width:13%;}
+.tb-faq thead td:nth-child(3),.tb-faq tbody td:nth-child(3){white-space:normal;}
+.tb-faq thead td:nth-child(4),.tb-faq tbody td:nth-child(4){width:10%;}
+.tb-faq thead td:nth-child(5),.tb-faq tbody td:nth-child(5){width:10%;}
+.tb-faq thead td:nth-child(6),.tb-faq tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-faq tbody td{vertical-align:top;}
+
+.tb-not thead td:nth-child(1),.tb-not tbody td:nth-child(1){width:56px;padding-left:20px;}
+.tb-not thead td:nth-child(2),.tb-not tbody td:nth-child(2){white-space:normal;}
+.tb-not thead td:nth-child(3),.tb-not tbody td:nth-child(3){width:10%;}
+.tb-not thead td:nth-child(4),.tb-not tbody td:nth-child(4){width:10%;}
+.tb-not thead td:nth-child(5),.tb-not tbody td:nth-child(5){width:9%;}
+.tb-not thead td:nth-child(6),.tb-not tbody td:nth-child(6){width:13%;padding-right:20px;}
+.tb-not tbody td{vertical-align:top;}
+
+.qa-q{font-size:var(--fs-body);font-weight:500;color:var(--n-900);line-height:1.5;}
+.qa-a{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;line-height:1.6;max-width:660px;}
+.drag{color:var(--n-300);text-align:center;cursor:grab;font-size:13px;}
+
+.racts{display:flex;gap:6px;}
+.rbtn{display:inline-flex;align-items:center;justify-content:center;height:26px;padding:0 10px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;font-size:var(--fs-micro);
+  font-weight:500;color:var(--n-700);cursor:pointer;font-family:inherit;white-space:nowrap;}
+.rbtn:hover{background:var(--n-100);border-color:var(--n-400);}
+.rbtn.del{color:var(--danger-text);border-color:#E9C9C9;}
+.rbtn.del:hover{background:var(--danger-bg);}
+
+.thread{display:flex;flex-direction:column;gap:10px;}
+.tmsg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);line-height:1.75;color:var(--n-700);}
+.tmsg.me{background:var(--accent-50);border-color:var(--accent-100);}
+.tmsg .who{font-size:var(--fs-micro);font-weight:600;color:var(--n-700);margin-bottom:5px;
+  display:flex;align-items:center;gap:6px;}
+.tmsg .who .wt{font-weight:400;color:var(--n-500);}
+.ta-label{font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;display:block;}
+
+.term{display:flex;align-items:center;justify-content:space-between;gap:16px;background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px var(--sp-4);margin-bottom:10px;cursor:pointer;}
+.term:hover{border-color:var(--n-300);}
+.term.on{border-color:var(--accent-500);background:var(--accent-50);}
+.term .tn{font-size:var(--fs-h3);font-weight:600;}
+.term .tv{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.cbrow{display:flex;gap:9px;align-items:flex-start;padding:9px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);color:var(--n-700);}
+.cbrow:last-child{border-bottom:none;}
+.cbx{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;margin-top:2px;}
+.cbx.on{background:var(--accent-500);border-color:var(--accent-500);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;}
+.rdo{width:15px;height:15px;border-radius:50%;border:1.5px solid var(--n-300);background:#fff;
+  flex-shrink:0;display:inline-block;}
+.rdo.on{border-color:var(--accent-500);border-width:5px;}
+.optrow{display:flex;gap:20px;align-items:center;margin-top:var(--sp-4);font-size:var(--fs-caption);color:var(--n-700);}
+.optrow label{display:flex;align-items:center;gap:7px;cursor:pointer;}
+.w-full{width:100%;}
+.tb-inq tbody td:nth-child(2),.tb-qna tbody td:nth-child(2),.tb-qna tbody td:nth-child(3){overflow:hidden;}
+.tb-inq .t-main,.tb-qna .qa-q{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.tatt{display:flex;gap:8px;margin-top:10px;}
+.tthumb{width:72px;height:72px;border-radius:var(--r-sm);border:1px solid var(--n-200);
+  background:var(--n-100);color:var(--n-400);font-size:var(--fs-micro);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.tthumb:hover{border-color:var(--accent-500);color:var(--accent-600);}
+.tatt-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+
+
+/* ── ⑰ 화면 전용 · 브랜드 상세 ─────────────────────────────────── */
+.rail{position:sticky;top:0;display:flex;flex-direction:column;}
+.kpi4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--n-200);
+  border-radius:var(--r-sm);overflow:hidden;}
+.kpi4 > div{background:#fff;padding:14px 16px;}
+.kpi4-k{font-size:var(--fs-micro);color:var(--n-600);}
+.kpi4-v{font-size:var(--fs-h2);font-weight:600;margin-top:4px;letter-spacing:-.01em;}
+.kpi4-s{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.kpi4-v.warn{color:var(--warning-text);}
+.elink{display:inline-flex;align-items:center;gap:4px;color:var(--accent-600);cursor:pointer;}
+.elink:hover{text-decoration:underline;}
+.tb-inf thead td:nth-child(1),.tb-inf tbody td:nth-child(1){padding-left:var(--sp-4);white-space:normal;}
+.tb-inf thead td:nth-child(2),.tb-inf tbody td:nth-child(2){width:120px;text-align:center;}
+.tb-inf thead td:nth-child(3),.tb-inf tbody td:nth-child(3){width:120px;text-align:center;}
+.tb-inf thead td:nth-child(4),.tb-inf tbody td:nth-child(4){width:110px;text-align:center;padding-right:var(--sp-4);}
+.tb-inf tbody td{vertical-align:middle;}
+.card-b.two{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;}
+.card-b.two .frow{padding:7px 0;align-items:flex-start;}
+.card-b.two .fv{white-space:normal;word-break:keep-all;overflow-wrap:anywhere;line-height:1.5;}
+.card-b.two > .frow:nth-child(1),.card-b.two > .frow:nth-child(2){padding-top:0;}
+.card-b.two > .prof + .frow,.card-b.two > .prof + .frow + .frow{padding-top:0;}
+.card-b.two > .frow:nth-last-child(2):nth-child(odd){border-bottom:none;}
+.card-b.two > .prof ~ .frow:nth-last-child(2):nth-child(even){border-bottom:none;}
+.gone{color:var(--n-500);}
+.card-h .btn{height:26px;padding:0 10px;font-size:var(--fs-micro);margin-left:12px;}
+.card-h .ch-n{margin-left:auto;}
+.memo-help{font-size:var(--fs-micro);color:var(--n-600);background:var(--n-50);border-radius:var(--r-sm);
+  padding:7px 9px;line-height:1.6;margin-bottom:8px;}
+.memo{font-family:inherit;font-size:var(--fs-caption);width:100%;min-height:56px;resize:vertical;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);padding:8px 10px;color:var(--n-900);background:#fff;}
+.memo:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.memo-f{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+.memo-c{font-size:var(--fs-micro);color:var(--n-500);}
+.memo-l{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:var(--sp-1);}
+.memo-i{padding:10px 0;border-bottom:1px solid var(--n-100);}
+.memo-i:last-child{border-bottom:none;padding-bottom:0;}
+.memo-h{display:flex;align-items:baseline;gap:6px;font-size:var(--fs-micro);color:var(--n-500);}
+.memo-w{font-weight:600;color:var(--n-700);}
+.memo-t{font-size:var(--fs-caption);line-height:1.7;color:var(--n-900);margin-top:3px;}
+.memo-a{display:flex;gap:8px;margin-top:5px;}
+.memo-b{font-size:var(--fs-micro);color:var(--n-600);cursor:pointer;}
+.memo-b:hover{color:var(--n-900);text-decoration:underline;}
+.memo-lock{font-size:var(--fs-micro);color:var(--n-400);margin-top:5px;}
+.btn-danger-o{background:#fff;color:var(--danger-text);border:1px solid var(--n-300);}
+.btn-danger-o:hover{background:var(--danger-bg);border-color:var(--n-400);}
+.wait{background:var(--warning-bg);border-radius:var(--r-sm);padding:10px 12px;font-size:var(--fs-micro);
+  color:var(--warning-text);line-height:1.7;margin-bottom:var(--sp-3);}
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 3. 회원 관리 — 브랜드 상세 <span style="font-weight:400;color:var(--n-600);font-size:var(--fs-caption)">ui-admin-15-brand-detail · rev.1</span></h1>
+  <p class="meta">브랜드(판매자) 회원 상세 · 근거: <code>SHOWROOMZ_웹_디자인시스템_v1_2.html</code> · 목록은 <code>ui-admin-14-brands.html</code> · 소비자 상세는 <code>ui-admin-13-consumer-detail.html</code> · 셸·카드·필드행·모달·배지는 <code>ui-admin-05-change-requests.html</code> rev.6 재사용</p>
+  <div class="rule">
+    <b>[좌우 분업]</b> 좌측은 <b>사실 조회</b>(기본·사업자·정산·배송반품·운영현황·연결 인플루언서 6카드), 우측은 <b>판단과 조치</b>이며 <b>sticky 레일</b>이라 좌측을 길게 내려도 조치 버튼이 따라온다 — 브랜드 상세는 좌측 카드가 7개라 스크롤이 길고, 배송 정책을 보다가 정지를 누르는 동선이 실제로 생긴다.<br>
+    <b class="new">[스냅샷 2단 구성]</b> 좌측 7카드는 1440×1024 한 화면에 들어오지 않는다(단일 열 실측 약 2,000px). 그래서 <b>모든 회원 상태를 상단·하단 2장</b>으로 낸다 — <b>상단</b>: 기본·사업자·정산·배송반품(필드가 많은 카드는 <b>2열 필드 그리드</b>) / <b>하단</b>: 운영 현황·연결 인플루언서·관리자 메모(처리 이력은 레일). 내용을 생략해 억지로 한 장에 담지 않는다 — 배송·반품 9필드, <code>연결 종료</code> 행, <b>탈퇴 신청 접수·정지</b> 이력 행이 모두 스펙 항목이므로 어느 하나도 빠지면 핸드오프가 성립하지 않는다. <b>sticky 레일은 두 장 모두에 동일하게</b> 들어간다. 레일은 <b>상태 + 계정 상태 관리</b> 2카드이며, 탈퇴 상태(A4·A4-b)는 조치가 없어 <b>상태 카드 1개</b>만 남는다.<br>
+    <b class="new">[레일 처리 이력은 최신 3건 + 전체 N건 보기]</b> 320px 레일에 이력을 전부 쌓으면 카드가 1,000px을 넘어 <b>화면 밖으로 잘린다</b>(A2-b 실측 1,040px). 레일 이력은 <b>조치 직전에 최근에 무슨 일이 있었나</b>를 보는 자리라 최신 몇 건이면 충분하고, 나머지는 <b>전체 N건 보기</b>로 펼친다 — 심사 카드가 붙는 A2-b는 <b>최신 2건</b>으로 더 줄였다(승인 근거인 이력이 잘리는 것이 가장 나쁘다).<br>
+    <b class="new">[처리 이력은 레일 · 메모는 좌측]</b> 처리 이력을 <b>레일 맨 아래</b>로 돌렸다 — 이력은 <b>지금 내리는 조치의 근거</b>다(“지난달에 이미 정지 한 번 했나”를 정지 버튼 옆에서 확인해야 한다). 레일에서 상태 → 조치 → <b>과거에 무엇을 했는지</b>가 위에서 아래로 한 줄기로 읽힌다. 반면 <b>관리자 메모는 좌측 맨 아래</b>에 남긴다 — 300자 본문을 쓰고 읽는 카드라 320px 레일에서 다섯 줄로 접히면 읽히지 않는다. 즉 <b>짧고 조치에 붙는 것은 레일 · 길게 읽는 것은 좌측</b>이며, 둘 다 <b>하단 스냅샷</b>에서 확인한다(레일은 sticky라 이력도 상단에서 함께 따라온다).<br>
+    <b class="new">[탈퇴 승인 · 소비자와 다른 점]</b> 브랜드 탈퇴는 <b>셀프서비스가 아니다</b> — 미배송 주문·진행중 공구·미정산액이 남으면 해지가 성립하지 않는다. 다만 그 조건은 <b>브랜드 화면에서 신청 시점에 이미 강제</b>되므로 — 셋 다 0이어야 신청 버튼이 열린다 — 어드민에 <b>조건 검증 체크리스트를 두지 않는다</b>. 늘 ✓만 뜨는 블록은 판단을 돕지 못하고 자리만 차지한다. 어드민이 하는 일은 <b>사유와 경과를 보고 승인 또는 반려</b>하는 것이고, 반려 사유 선택지는 조건 4항목과 같은 축으로 남긴다(신청 이후에 상황이 바뀐 건을 되돌릴 수 있어야 하므로).<br>
+    <b class="new">[상태와 제재를 한 카드로]</b> <b>계정 상태 관리 카드를 없애고</b> 정지·정지 해제 버튼을 <b>현재 상태 카드 맨 아래</b>(구분선 아래)로 넣었다 — 상태와 그 상태를 바꾸는 버튼이 떨어져 있으면 운영자가 두 카드를 왕복해야 하고, 활성일 때 제재 카드는 <b>버튼 하나만 든 빈 카드</b>였다. 정지 상태에서는 사유·처리자·일시와 해제 버튼이 배지 바로 아래 같은 카드에 모인다. 남은 축은 <b>현재 상태</b>(활성·정지·탈퇴 + 제재 버튼)와 <b>탈퇴 신청 심사</b>(승인 대기 건) 둘이다 — <b>신청은 상태가 아니라 처리해야 할 건</b>이다. 승인 전까지 브랜드는 실제로 활성이고(공구가 돌고 주문이 들어온다) 승인된 순간에만 회원 상태가 탈퇴로 내려가므로, 대기를 회원 상태 배지에 올리면 <b>영업 중인 브랜드를 이미 나간 것처럼</b> 보이게 한다. 심사 카드는 <b>신청이 접수된 A2에만</b> 그려지고, <b>정지는 회원 상태에 그대로</b> 올린다(목록의 상태 열과 어긋나면 안 된다). 심사 중에도 정지는 실행될 수 있다 — 현재 상태 카드의 <b>정지 버튼이 계속 살아 있는</b> 이유다.<br>
+    <b>[상태 색 매핑]</b> 활성=<b>성공</b> / <b>심사 카드의</b> 탈퇴 승인 대기=<b>경고</b>(운영자 조치 필요 · 원칙 ①) / 정지=<b>위험</b> / 탈퇴=<b>중립</b>(원칙 ② 해지). <b>정지 버튼은 흰 배경 + 중립 테두리 + 위험색 글자</b>이며 꽉 찬 위험색은 모달의 최종 실행 버튼에만 쓴다(소비자 상세와 동일).<br>
+    <b>[정지의 범위]</b> 상품 등록·공구 개설·정산 신청은 막고 <b>진행 중 공구와 미배송 주문은 유지</b>한다 — 브랜드 제재로 소비자 피해를 만들지 않기 위함이다. 정산은 <b>보류</b>이며 소명은 <b>1:1 문의로만</b> 받는다(소비자 상세와 같은 원칙).<br>
+    <b>[미정산액 강조]</b> 4-KPI 중 미정산액만 0원이 아니면 <b>경고색</b>으로 올린다 — 탈퇴 승인·정지 판단에서 유일하게 “돈이 걸린” 수치다.<br>
+    <b>[계좌번호 마스킹]</b> 정산 정보의 계좌번호는 가운데를 가리고 전체 값은 <b>정산 관리에서만</b> 조회한다 — 회원 관리 화면의 목적은 신원 확인이고 송금은 다른 화면의 일이다. 소비자 상세처럼 이 화면에 해제 버튼을 두지 않았다.<br>
+    <b>[배송·반품 정책은 조회 전용]</b> 브랜드가 입력한 값이며 운영자가 고치지 않는다 — 정책은 소비자 고지 대상이라 운영자가 임의로 바꾸면 고지 이력과 어긋난다.<br>
+    <b class="new">[메모 규칙 충돌 → 누적 기입 채택]</b> 지시서에는 “500자 · 저장 버튼”으로 적혀 있으나, 직전 확정된 메모 규칙(<b>조치하지 않은 판단의 기록 · 누적 기입 · 항목당 300자 · 작성자 본인 24시간 내 수정·삭제</b>)을 <b>F4·F5에도 동일 적용</b>하기로 한 결정이 있어 그쪽을 따랐다. 덮어쓰기 500자로 돌릴지 확인이 필요하다. 고지 문구는 브랜드 맥락에 맞춰 <b>정산·분쟁 시 증빙 인용</b> 가능성으로 바꿨다.<br>
+    <b>[금칙어]</b> 마켓·판매자 → <b>브랜드</b>. 예외는 “브랜드(판매자) 약관” 등 법정·계약 표기뿐이다.<br>
+    <b class="new">[확인 필요]</b> ⓐ <b>탈퇴 승인 SLA</b>(현재 “경과 6일”만 표기) ⓑ 승인 후 남은 반품의 <b>운영자 대행 처리 화면</b> 소관 ⓒ 연결 인플루언서 <b>연결 종료</b> 행을 목록에 남길 기간 ⓓ 택배사 연동 해제 시 배송 정책 카드 표기 ⓔ 사업자 정보 변경 이력을 이 화면에서 볼지(현재는 변경 요청 화면 소관).<br>
+    <b>[⚠ 법률 자문 대기]</b> 탈퇴 승인 시 <b>보존·파기 범위</b>는 소비자와 동일하게 쟁점 G 종속이다 — 시안에는 주문·정산 기록 보존 / 사업자·정산 정보 파기로 그렸다.<br>
+    <b>[규격 정합]</b> 상세 필드 행 <b>9px · 라벨 140px</b>, 테이블 본문 셀 <b>14px 16px · 행높이 50px</b>. 설계 근거는 이 박스와 <code>.state-spec</code>에만 둔다.
+  </div>
+</div>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1</span><span class="state-label">활성 브랜드 · 상단</span><span class="state-spec">기본 진입 — 좌측 상단 4카드(기본·사업자·정산·배송반품)와 우측 sticky 레일 <b>현재 상태 1카드</b>(맨 아래에 정지 버튼) — <b>탈퇴 신청 심사 카드는 신청이 접수된 A2에만</b> 나타난다 · 필드가 많은 카드는 <b>2열 필드 그리드</b>로 접어 한 화면에 담았다 — 값이 열 폭을 넘으면 <b>잘리지 않고 두 줄로 흐른다</b>(주소처럼 긴 값 대비 · 라벨은 상단 정렬) · 액션은 <b>정지 단독</b>이며 탈퇴 관련 버튼은 없다(신청이 없으면 심사할 것도 없다) · 사이트 링크는 외부 이동이라 ↗ 아이콘을 붙인다 · 하단 카드(운영 현황·연결 인플루언서·관리자 메모)와 레일의 <b>처리 이력</b>은 A1-b에서 본다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 글로우랩</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">글로우랩</div><div class="page-d tnum">BRD-1042</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1042</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>글로우랩</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv">이서연</div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="tnum">010-2284-5510</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="tnum">partner@glowlab.co.kr</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="elink">glowlab.co.kr <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.07.28</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.08.01</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv">법인사업자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">주식회사 글로우랩</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">이서연</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">214-88-40125</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="tnum">2026-서울강남-01847</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 강남구 테헤란로 152, 8층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌번호는 마스킹 · 전체 값은 정산 관리에서 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">신한은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">글로우랩(주)</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">110-****-3841</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">브랜드가 입력 · 운영자 조회 전용</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.07.28</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.08.01</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.14 08:12</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A1-b</span><span class="state-label">활성 브랜드 · 스크롤 하단</span><span class="state-spec">A1을 아래로 스크롤한 상태 — 좌측은 <b>운영 현황 · 연결 인플루언서 · 관리자 메모</b>, 레일은 <b>처리 이력</b>까지 3카드가 된다 · 운영 현황 4-KPI에서 <b>미정산액만 경고색</b>으로 올려 정기 정산 전 잔액을 눈에 띄게 한다 · 연결 인플루언서는 <b>연결중 먼저, 연결 종료 아래</b>로 오고 행 클릭 시 인플루언서 상세로 간다 · <b>sticky 레일은 그대로 따라온다</b> — 스크롤해도 <b>상태(+제재) · 처리 이력</b>이 오른쪽에 남는 것이 레일을 둔 이유다(조치와 그 근거가 같은 열에 있다)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 글로우랩</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">글로우랩</div><div class="page-d tnum">BRD-1042 <span class="t-sub">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">운영 현황</div><div class="card-b"><div class="kpi4"><div><div class="kpi4-k">연결 인플루언서</div><div class="kpi4-v tnum">14명</div></div><div><div class="kpi4-k">진행중 공구</div><div class="kpi4-v tnum">6건</div></div><div><div class="kpi4-k">누적 정산액</div><div class="kpi4-v tnum">48,210,000원</div></div><div><div class="kpi4-k">미정산액</div><div class="kpi4-v tnum warn">3,180,000원</div></div></div></div></div><div class="card"><div class="card-h">연결 인플루언서<span class="ch-n">전체 14명 · 최근 연결 4명 표시 · 행 클릭 → 인플루언서 상세</span></div><table class="tb-inf"><thead><tr><td>쇼룸명</td><td>연결일</td><td>진행중 공구</td><td>연결 상태</td></tr></thead><tbody><tr><td class="t-main">하린의 뷰티랩</td><td class="t-sub tnum">2026.08.02</td><td class="tnum">3건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">소연 쇼룸</td><td class="t-sub tnum">2026.08.05</td><td class="tnum">2건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">다은의 화장대</td><td class="t-sub tnum">2026.08.07</td><td class="tnum">1건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">민재 셀렉트</td><td class="t-sub tnum">2026.06.20</td><td class="tnum t-sub">0건</td><td><span class="badge b-neutral">연결 종료</span></td></tr></tbody></table></div><div class="card"><div class="card-h">관리자 메모<span class="ch-n">최신 1건 · 전체 2건 · 브랜드 비노출</span><button class="btn btn-secondary">메모 기입</button></div><div class="card-b"><div class="memo-l"><div class="memo-i"><div class="memo-h"><span class="memo-w">김운영</span><span class="tnum">2026.08.14 10:05</span></div><div class="memo-t">미정산액 318만 원. 8월 15일 정기 정산에 포함 예정이라 별도 조치 없습니다.</div><div class="memo-a"><span class="memo-b">수정</span><span class="memo-b">삭제</span></div></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.07.28</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.08.01</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.14 08:12</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순 · 전체 3건 · 처리자·시각·사유</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">관리자 메모 기입</div><div class="hmeta">2026.08.14 10:05 · 김운영</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">입점 승인</div><div class="hmeta">2026.08.01 11:30 · 김운영</div></div></div><div class="hitem"><div class="hdot h-info"></div><div><div class="htxt">가입 신청</div><div class="hmeta">2026.07.28 16:04 · 브랜드 본인</div></div></div><div class="hmore">전체 3건 보기</div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A2</span><span class="state-label">탈퇴 승인 대기 · 상단</span><span class="state-spec"><b>현재 상태는 활성 그대로</b>고, 탈퇴 심사는 바로 아래 <b>탈퇴 신청 심사</b> 카드에서 따로 관리한다 — 회원 상태(활성·정지·탈퇴)와 <b>신청 심사</b>는 다른 축이며, 승인 전까지 이 브랜드는 <b>실제로 활성</b>이다(공구가 돌고 주문이 들어온다). 심사 카드에는 <b>신청일 · 경과 · 신청자 · 탈퇴 사유 · 승인/반려</b>가 모이고 <b>승인된 순간에만</b> 회원 상태가 탈퇴로 내려간다 · <b>조건 검증 체크리스트는 두지 않는다</b> — 미배송·진행중 공구·미정산액이 모두 0이어야 브랜드가 신청 자체를 할 수 있으므로, 접수된 건은 조건을 이미 통과한 건이다(운영자에게 늘 ✓만 보이는 블록은 정보가 아니다) · 운영자는 사유와 경과를 보고 <b>승인 또는 반려</b>만 판단한다 · 레일은 <b>현재 상태(+정지 버튼) → 탈퇴 신청 심사 → 처리 이력</b> 3카드이며, 심사 중에도 <b>정지</b>는 실행될 수 있다(제재는 또 다른 축)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 무드코스메틱</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">무드코스메틱<span class="badge b-warning" style="vertical-align:middle">탈퇴 승인 대기</span></div><div class="page-d tnum">BRD-1017</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1017</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>무드코스메틱</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv">박지훈</div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="tnum">010-4471-2093</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="tnum">cs@moodcosmetic.kr</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="elink">moodcosmetic.kr <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.01.12</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.01.19</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv">법인사업자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">무드코스메틱 주식회사</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">박지훈</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">128-86-31094</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="tnum">2026-서울마포-00913</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 마포구 양화로 45, 미디어타워 6층 604호 (합정동)</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌번호는 마스킹 · 전체 값은 정산 관리에서 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">하나은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">무드코스메틱(주)</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">287-****-1120</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">브랜드가 입력 · 운영자 조회 전용</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.12</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.01.18</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.08 17:50</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.08.08 17:44</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">6일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 자사몰 운영에 집중하기 위해 입점을 종료합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A2-b</span><span class="state-label">탈퇴 승인 대기 · 스크롤 하단</span><span class="state-spec">승인 판단의 근거 —  미정산액 <b>0원</b>·진행중 공구 <b>0건</b>이 KPI로 확인되고, 연결 인플루언서가 <b>0명</b>이라 카드는 빈 문구로 남는다(연결이 남아 있으면 해지 후 쇼룸에 빈 브랜드가 걸린다) · <b>레일의 처리 이력</b> 맨 위에 <b>탈퇴 신청 접수</b>가 경고색으로 남는다 — 심사 카드의 승인·반려 버튼 아래라 조치 전에 읽힌다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 무드코스메틱</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">무드코스메틱<span class="badge b-warning" style="vertical-align:middle">탈퇴 승인 대기</span></div><div class="page-d tnum">BRD-1017 <span class="t-sub">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">운영 현황</div><div class="card-b"><div class="kpi4"><div><div class="kpi4-k">연결 인플루언서</div><div class="kpi4-v tnum">0명</div></div><div><div class="kpi4-k">진행중 공구</div><div class="kpi4-v tnum">0건</div></div><div><div class="kpi4-k">누적 정산액</div><div class="kpi4-v tnum">12,640,000원</div></div><div><div class="kpi4-k">미정산액</div><div class="kpi4-v tnum">0원</div></div></div></div></div><div class="card"><div class="card-h">연결 인플루언서<span class="ch-n">연결 없음</span></div><div class="card-b"><div class="t-sub" style="padding:6px 0">연결된 인플루언서가 없습니다.</div></div></div><div class="card"><div class="card-h">관리자 메모<span class="ch-n">최신 1건 · 전체 2건 · 브랜드 비노출</span><button class="btn btn-secondary">메모 기입</button></div><div class="card-b"><div class="memo-l"><div class="memo-i"><div class="memo-h"><span class="memo-w">김운영</span><span class="tnum">2026.08.14 09:40</span></div><div class="memo-t">반품 1건 수취 확인만 남았습니다. 확인되면 승인 처리 예정.</div><div class="memo-a"><span class="memo-b">수정</span><span class="memo-b">삭제</span></div></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.12</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.01.18</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.08 17:50</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.08.08 17:44</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">6일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 자사몰 운영에 집중하기 위해 입점을 종료합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순 · 전체 4건 · 처리자·시각·사유</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">탈퇴 신청 접수</div><div class="hmeta">2026.08.08 17:44 · 브랜드 본인 (사유: 자사몰 집중)</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">관리자 메모 기입</div><div class="hmeta">2026.08.09 10:12 · 김운영</div></div></div><div class="hmore">전체 4건 보기</div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A4</span><span class="state-label">탈퇴 브랜드 · 상단 (파기 표시)</span><span class="state-spec">승인이 끝난 상태 — 레이아웃은 유지하고 <b>파기된 값만 <code>— 파기됨</code></b>으로 교체한다(§5-8) · 파기: <b>사업자 정보 6필드 · 정산 정보 3필드 · 담당자 연락처·이메일·사이트</b> / 보존: <b>브랜드명 · 회원번호 · 가입일 · 입점 승인일</b>(주문·정산 기록이 참조하므로) · <b>배송·반품 정책은 값을 남긴다</b> — 남은 반품의 비용 부담 기준이라 파기하면 분쟁을 못 푼다 · 우측 현재 상태 카드에서 <b>정지 버튼 자체가 사라진다</b>(해지된 계정은 제재 대상이 아니다) — 처리 이력은 하단(A4-b)에서 레일 두 번째 카드로 따라온다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 무드코스메틱</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">무드코스메틱<span class="badge b-neutral" style="vertical-align:middle">탈퇴</span></div><div class="page-d tnum">BRD-1017</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1017</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>무드코스메틱</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.01.12</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.01.19</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보<span class="ch-n">탈퇴로 파기됨</span></div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">상호</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">대표자명</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv"><span class="gone">— 파기됨</span></div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">탈퇴로 파기됨 · 정산 기록은 거래 관리에 보존</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">예금주</div><div class="fv"><span class="gone">— 파기됨</span></div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="gone">— 파기됨</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">파기 대상 아님 · 남은 반품의 비용 기준</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-neutral">탈퇴</span></div><div class="st-meta"><div class="mrow"><span class="mk">탈퇴 확정</span><span class="mv tnum">2026.08.14 16:20</span></div><div class="mrow"><span class="mk">승인자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.08.08 17:44</span></div><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.12</span></div></div><div class="wait"><b>탈퇴 사유</b> — 자사몰 운영에 집중하기 위해 입점을 종료합니다.</div><p class="st-hint">탈퇴 계정은 <b>조치 액션이 없습니다</b>. 주문·정산 기록은 법정 보존 기간까지 유지되고 사업자·정산 정보는 파기됐습니다. <b>재입점은 신규 가입</b>으로만 가능합니다.</p></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A4-b</span><span class="state-label">탈퇴 브랜드 · 스크롤 하단</span><span class="state-spec">운영 현황 4-KPI는 <b>탈퇴 시점으로 동결</b>된다 — 연결·공구·미정산은 0이 되지만 <b>누적 정산액은 남긴다</b>(거래 기록이 실재하므로 0으로 만들면 거짓이다) · 연결 인플루언서 목록은 비고, <b>레일의 처리 이력</b>은 <b>전부 보존</b>하며 맨 위에 <b>탈퇴 승인</b> 행이 위험색이 아니라 <b>중립</b>으로 쌓인다(원칙 ② 해지) · 이력은 <b>파기 대상이 아니다</b> — 언제 누가 승인했는지가 분쟁의 근거다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 무드코스메틱</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">무드코스메틱<span class="badge b-neutral" style="vertical-align:middle">탈퇴</span></div><div class="page-d tnum">BRD-1017 <span class="t-sub">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">운영 현황<span class="ch-n">탈퇴 시점으로 동결</span></div><div class="card-b"><div class="kpi4"><div><div class="kpi4-k">연결 인플루언서</div><div class="kpi4-v tnum">0명</div></div><div><div class="kpi4-k">진행중 공구</div><div class="kpi4-v tnum">0건</div></div><div><div class="kpi4-k">누적 정산액</div><div class="kpi4-v tnum">12,640,000원</div></div><div><div class="kpi4-k">미정산액</div><div class="kpi4-v tnum">0원</div></div></div></div></div><div class="card"><div class="card-h">연결 인플루언서<span class="ch-n">탈퇴 시 전건 연결 종료</span></div><div class="card-b"><div class="t-sub" style="padding:6px 0">연결된 인플루언서가 없습니다. 탈퇴 승인 시 남은 연결은 모두 종료됩니다.</div></div></div><div class="card"><div class="card-h">관리자 메모<span class="ch-n">최신 1건 · 전체 2건 · 조회 전용</span></div><div class="card-b"><div class="memo-l" style="margin-top:0;border-top:none;padding-top:0"><div class="memo-i"><div class="memo-h"><span class="memo-w">김운영</span><span class="tnum">2026.08.14 16:20</span></div><div class="memo-t">반품 수취 확인 완료. 미정산액 0원 확인 후 승인했습니다.</div><div class="memo-lock">탈퇴 계정 · 조회 전용</div></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-neutral">탈퇴</span></div><div class="st-meta"><div class="mrow"><span class="mk">탈퇴 확정</span><span class="mv tnum">2026.08.14 16:20</span></div><div class="mrow"><span class="mk">승인자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.08.08 17:44</span></div><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.12</span></div></div><div class="wait"><b>탈퇴 사유</b> — 자사몰 운영에 집중하기 위해 입점을 종료합니다.</div><p class="st-hint">탈퇴 계정은 <b>조치 액션이 없습니다</b>. 주문·정산 기록은 법정 보존 기간까지 유지되고 사업자·정산 정보는 파기됐습니다. <b>재입점은 신규 가입</b>으로만 가능합니다.</p></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순 · 전체 5건 · 파기 대상 아님</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">탈퇴 승인 · 계정 해지</div><div class="hmeta">2026.08.14 16:20 · 김운영</div></div></div><div class="hitem"><div class="hdot h-warning"></div><div><div class="htxt">탈퇴 신청 접수</div><div class="hmeta">2026.08.08 17:44 · 브랜드 본인 (사유: 자사몰 집중)</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">관리자 메모 기입</div><div class="hmeta">2026.08.09 10:12 · 김운영</div></div></div><div class="hmore">전체 5건 보기</div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A3</span><span class="state-label">정지 브랜드 · 상단</span><span class="state-spec">현재 상태 배지가 <b>정지</b>로 바뀌고 <b>같은 카드 안에</b> 사유·처리자·일시와 <b>상세 사유 전문</b>이 붙는다 — 사유 코드만으로는 재검토가 안 되고 이력 줄에 넣으면 잘린다(소비자 상세와 동일) · 액션은 <b>정지 해제</b> 단독(복구라 인디고)이며 배지와 같은 카드 안이다 · 좌측 카드는 전부 조회 가능하다(정산 정보를 다시 확인해야 해제 판단이 선다)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 벨라코스</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">벨라코스<span class="badge b-danger" style="vertical-align:middle">정지</span></div><div class="page-d tnum">BRD-1029</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1029</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>벨라코스</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv">한지우</div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="tnum">010-7719-6634</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="tnum">help@bellacos.co.kr</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="elink">bellacos.co.kr <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.02.09</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.02.15</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv">법인사업자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">벨라코스 주식회사</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">한지우</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">305-81-77210</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="tnum">2026-서울성동-01120</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 성동구 아차산로 88, 3층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌번호는 마스킹 · 전체 값은 정산 관리에서 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">국민은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">벨라코스(주)</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">604-****-9902</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">브랜드가 입력 · 운영자 조회 전용</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-danger">정지</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.09</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.07.30 11:22</span></div></div><div class="act-in"><div class="st-meta"><div class="mrow"><span class="mk">정지 사유</span><span class="mv">정산 정보 불일치</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">정지 일시</span><span class="mv tnum">2026.07.30 15:40</span></div></div><p class="st-hint">예금주명과 사업자등록증 상호가 일치하지 않아 정산을 보류하고 계정을 정지했습니다.</p><div class="st-acts"><button class="btn btn-primary w-full">정지 해제</button></div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">A3-b</span><span class="state-label">정지 브랜드 · 스크롤 하단</span><span class="state-spec">정지 상태의 하단 —  미정산액 <b>142만 원</b>이 경고색으로 남아 있어 <b>정산 보류 중</b>임을 KPI에서 바로 읽는다 · 연결 인플루언서는 유지되지만 진행중 공구는 <b>0건</b>이다 · <b>레일의 처리 이력</b> 맨 위에 <b>정지 · 정산 정보 불일치</b>가 위험색으로 남아 <b>정지 해제 버튼 바로 아래</b>에서 읽힌다 — 이력을 레일로 옮긴 이유가 이 장면이다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 벨라코스</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">벨라코스<span class="badge b-danger" style="vertical-align:middle">정지</span></div><div class="page-d tnum">BRD-1029 <span class="t-sub">· 스크롤 하단</span></div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">운영 현황</div><div class="card-b"><div class="kpi4"><div><div class="kpi4-k">연결 인플루언서</div><div class="kpi4-v tnum">3명</div></div><div><div class="kpi4-k">진행중 공구</div><div class="kpi4-v tnum">0건</div></div><div><div class="kpi4-k">누적 정산액</div><div class="kpi4-v tnum">23,880,000원</div></div><div><div class="kpi4-k">미정산액</div><div class="kpi4-v tnum warn">1,420,000원</div></div></div></div></div><div class="card"><div class="card-h">연결 인플루언서<span class="ch-n">3명 · 행 클릭 → 인플루언서 상세</span></div><table class="tb-inf"><thead><tr><td>쇼룸명</td><td>연결일</td><td>진행중 공구</td><td>연결 상태</td></tr></thead><tbody><tr><td class="t-main">지우 코스메틱</td><td class="t-sub tnum">2026.03.01</td><td class="tnum t-sub">0건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">서준 셀렉트</td><td class="t-sub tnum">2026.04.11</td><td class="tnum t-sub">0건</td><td><span class="badge b-success">연결중</span></td></tr><tr><td class="t-main">예린 뷰티</td><td class="t-sub tnum">2026.05.02</td><td class="tnum t-sub">0건</td><td><span class="badge b-neutral">연결 종료</span></td></tr></tbody></table></div><div class="card"><div class="card-h">관리자 메모<span class="ch-n">최신 1건 · 전체 2건 · 브랜드 비노출</span><button class="btn btn-secondary">메모 기입</button></div><div class="card-b"><div class="memo-l"><div class="memo-i"><div class="memo-h"><span class="memo-w">김운영</span><span class="tnum">2026.08.14 09:15</span></div><div class="memo-t">수정된 통장 사본 수령. 상호 일치 확인되면 해제 예정.</div><div class="memo-a"><span class="memo-b">수정</span><span class="memo-b">삭제</span></div></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-danger">정지</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.09</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.07.30 11:22</span></div></div><div class="act-in"><div class="st-meta"><div class="mrow"><span class="mk">정지 사유</span><span class="mv">정산 정보 불일치</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">정지 일시</span><span class="mv tnum">2026.07.30 15:40</span></div></div><p class="st-hint">예금주명과 사업자등록증 상호가 일치하지 않아 정산을 보류하고 계정을 정지했습니다.</p><div class="st-acts"><button class="btn btn-primary w-full">정지 해제</button></div></div></div></div><div class="card side-card"><div class="card-h">처리 이력<span class="ch-n">최신순 · 전체 4건 · 처리자·시각·사유</span></div><div class="card-b"><div class="hist"><div class="hitem"><div class="hdot h-danger"></div><div><div class="htxt">정지 · 정산 정보 불일치</div><div class="hmeta">2026.07.30 15:40 · 김운영</div></div></div><div class="hitem"><div class="hdot h-neutral"></div><div><div class="htxt">관리자 메모 기입</div><div class="hmeta">2026.07.30 15:42 · 김운영</div></div></div><div class="hitem"><div class="hdot h-success"></div><div><div class="htxt">입점 승인</div><div class="hmeta">2026.02.15 10:20 · 김운영</div></div></div><div class="hmore">전체 4건 보기</div></div></div></div></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M1</span><span class="state-label">브랜드 정지 모달</span><span class="state-spec">현재 상태 카드 맨 아래의 <b>정지</b>에서 진입 · <b>정지 사유가 필수</b>(선택 전 버튼 비활성)이며 상세 사유는 “기타(직접 입력)”일 때만 필수 · 사유 6종은 브랜드 전용 축이다(정산 정보 불일치 · 사업자 정보 허위 · 상품 정보 허위·과장 · 배송 지연 반복 · 소비자 응대 불이행 · 기타) · 경고문에 <b>차단 범위 / 진행 공구·미배송 유지 / 정산 보류 / 소명 경로</b>를 모두 적는다 — 무엇이 멈추고 무엇이 계속되는지가 브랜드 정지의 핵심이다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 벨라코스</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">벨라코스<span class="badge b-danger" style="vertical-align:middle">정지</span></div><div class="page-d tnum">BRD-1029</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1029</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>벨라코스</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv">한지우</div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="tnum">010-7719-6634</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="tnum">help@bellacos.co.kr</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="elink">bellacos.co.kr <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.02.09</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.02.15</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv">법인사업자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">벨라코스 주식회사</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">한지우</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">305-81-77210</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="tnum">2026-서울성동-01120</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 성동구 아차산로 88, 3층</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌번호는 마스킹 · 전체 값은 정산 관리에서 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">국민은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">벨라코스(주)</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">604-****-9902</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">브랜드가 입력 · 운영자 조회 전용</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-danger">정지</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.02.09</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.02.15</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.07.30 11:22</span></div></div><div class="act-in"><div class="st-meta"><div class="mrow"><span class="mk">정지 사유</span><span class="mv">정산 정보 불일치</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div><div class="mrow"><span class="mk">정지 일시</span><span class="mv tnum">2026.07.30 15:40</span></div></div><p class="st-hint">예금주명과 사업자등록증 상호가 일치하지 않아 정산을 보류하고 계정을 정지했습니다.</p><div class="st-acts"><button class="btn btn-primary w-full">정지 해제</button></div></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">브랜드 정지<span class="modal-x">✕</span></div><div class="modal-b"><label class="mlabel" style="margin-top:0">정지 사유<span class="req">*</span></label><select class="msel"><option>정산 정보 불일치</option><option>사업자 정보 허위 기재</option><option>상품 정보 허위·과장</option><option>배송 지연 반복</option><option>소비자 응대 불이행</option><option>기타(직접 입력)</option></select><label class="mlabel">상세 사유<span class="opt">선택</span></label><textarea class="mta" style="min-height:64px">예금주명과 사업자등록증 상호가 일치하지 않습니다. 통장 사본을 다시 제출해 주세요.</textarea><p class="mhint">“기타(직접 입력)”를 선택한 경우에만 상세 사유가 필수입니다.</p><div class="mwarn"><span>!</span><span>정지하면 브랜드는 <b>상품 등록·공구 개설·정산 신청이 차단</b>되고 사유가 알림으로 발송됩니다. <b>진행 중인 공구와 미배송 주문은 그대로 유지</b>되며(소비자 피해를 만들지 않기 위해), <b>정산은 보류</b>됩니다. 소명은 <b>1:1 문의로만</b> 받으므로 문의 작성은 계속 허용됩니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger">정지</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M2</span><span class="state-label">탈퇴 승인 확인 모달</span><span class="state-spec">현재 상태의 <b>승인</b>에서 진입 · 조건 검증 결과를 <b>모달 안에 다시 요약</b>하고 주의 항목은 <b>경고색으로 강조</b>한다 — 목록에서 본 것을 잊고 승인하는 것을 막는다 · <b>되돌릴 수 없음</b>을 명시하고 남은 반품의 <b>대행 처리 책임</b>이 운영자에게 넘어온다는 사실을 적는다 · 사유 입력은 받지 않는다(승인은 조건 충족의 확인이며 판단 근거는 검증 결과다)</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 무드코스메틱</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">무드코스메틱<span class="badge b-warning" style="vertical-align:middle">탈퇴 승인 대기</span></div><div class="page-d tnum">BRD-1017</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1017</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>무드코스메틱</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv">박지훈</div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="tnum">010-4471-2093</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="tnum">cs@moodcosmetic.kr</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="elink">moodcosmetic.kr <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.01.12</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.01.19</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv">법인사업자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">무드코스메틱 주식회사</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">박지훈</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">128-86-31094</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="tnum">2026-서울마포-00913</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 마포구 양화로 45, 미디어타워 6층 604호 (합정동)</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌번호는 마스킹 · 전체 값은 정산 관리에서 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">하나은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">무드코스메틱(주)</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">287-****-1120</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">브랜드가 입력 · 운영자 조회 전용</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.12</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.01.18</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.08 17:50</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.08.08 17:44</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">6일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 자사몰 운영에 집중하기 위해 입점을 종료합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">탈퇴 승인<span class="modal-x">✕</span></div><div class="modal-b"><b>무드코스메틱</b>의 탈퇴를 승인합니다.<div style="background:var(--n-50);border-radius:var(--r-sm);padding:10px 12px;margin-top:10px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.8">신청 <span class="tnum">2026.08.08 17:44</span> · 경과 <b class="tnum">6일</b><br>미배송 0건 · 진행중 공구 0건 · 미정산액 0원</div><div class="mwarn"><span>!</span><span>승인하면 브랜드 계정은 <b>즉시 해지</b>되어 다시 로그인할 수 없고 <b>되돌릴 수 없습니다</b>. 주문·정산 기록은 법정 보존 기간까지 유지되고 사업자·정산 정보는 파기됩니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger">승인</button></div></div></div></div></section>
+
+<section class="state">
+<div class="state-bar"><span class="state-id">M3</span><span class="state-label">탈퇴 반려 모달</span><span class="state-spec">현재 상태의 <b>반려</b>에서 진입 · 반려 사유는 <b>필수</b>이며 선택지가 <b>조건 검증 4항목과 같은 축</b>이다 — 무엇이 걸려 반려됐는지 브랜드가 바로 알아야 재신청이 성립한다 · 안내는 <b>정보 톤</b>이고 실행 버튼은 <b>인디고</b>다(계정을 활성으로 되돌리는 조치라 파괴적이지 않다) · <b>재신청 가능</b>을 명시하고 신청·반려 이력은 보존한다</span></div>
+<div class="stage"><div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">9</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="2"><div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">3</span></div><div class="gnb-sub"><span>변경 요청</span><span class="scnt">2</span></div></div>
+<div class="gnb-item open" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="3"><div class="gnb-sub active"><span>브랜드</span><span class="scnt">8</span></div><div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div><div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div></div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span></div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">2</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8"><div class="gnb-sub"><span>1:1 문의</span><span class="scnt">2</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>FAQ 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>공지 관리</span><span class="scnt"></span></div>
+<div class="gnb-sub"><span>약관·정책 관리</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="gcnt">3</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9"><div class="gnb-sub"><span>공구 게시물</span><span class="scnt"></span></div><div class="gnb-sub"><span>일반 게시물</span><span class="scnt">3</span></div><div class="gnb-sub"><span>소통 스레드</span><span class="scnt"></span></div></div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10"><div class="gnb-sub"><span>운영자 계정</span><span class="scnt"></span></div><div class="gnb-sub"><span>수수료·정책</span><span class="scnt"></span></div></div>
+</div>
+</div><div class="top"><div class="crumb">회원 관리<span class="c-sub">/ 브랜드 / 무드코스메틱</span></div><div class="op"><span>김운영 운영자</span><span class="op-av">김</span></div></div><div class="main"><div class="page-h"><div><div class="page-t">무드코스메틱<span class="badge b-warning" style="vertical-align:middle">탈퇴 승인 대기</span></div><div class="page-d tnum">BRD-1017</div></div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">‹ 이전</span><span class="nav-btn">다음 ›</span></div></div><div class="detail"><div><div class="card"><div class="card-h">기본 정보<span class="ch-n tnum">BRD-1017</span></div><div class="card-b two"><div class="frow"><div class="fk">브랜드명</div><div class="fv"><b>무드코스메틱</b></div></div><div class="frow"><div class="fk">담당자명</div><div class="fv">박지훈</div></div><div class="frow"><div class="fk">담당자 연락처</div><div class="fv"><span class="tnum">010-4471-2093</span></div></div><div class="frow"><div class="fk">이메일</div><div class="fv"><span class="tnum">cs@moodcosmetic.kr</span></div></div><div class="frow"><div class="fk">사이트</div><div class="fv"><span class="elink">moodcosmetic.kr <svg viewBox="0 0 12 12" fill="none" width="10" height="10"><path d="M4 2.5h5.5V8M9.5 2.5L3 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div><div class="frow"><div class="fk">가입일</div><div class="fv"><span class="tnum">2026.01.12</span></div></div><div class="frow"><div class="fk">입점 승인일</div><div class="fv"><span class="tnum">2026.01.19</span></div></div></div></div><div class="card"><div class="card-h">사업자 정보</div><div class="card-b two"><div class="frow"><div class="fk">사업자 구분</div><div class="fv">법인사업자</div></div><div class="frow"><div class="fk">상호</div><div class="fv">무드코스메틱 주식회사</div></div><div class="frow"><div class="fk">대표자명</div><div class="fv">박지훈</div></div><div class="frow"><div class="fk">사업자등록번호</div><div class="fv"><span class="tnum">128-86-31094</span></div></div><div class="frow"><div class="fk">통신판매업 신고번호</div><div class="fv"><span class="tnum">2026-서울마포-00913</span></div></div><div class="frow"><div class="fk">사업장 주소</div><div class="fv">서울특별시 마포구 양화로 45, 미디어타워 6층 604호 (합정동)</div></div></div></div><div class="card"><div class="card-h">정산 정보<span class="ch-n">계좌번호는 마스킹 · 전체 값은 정산 관리에서 조회</span></div><div class="card-b two"><div class="frow"><div class="fk">은행</div><div class="fv">하나은행</div></div><div class="frow"><div class="fk">예금주</div><div class="fv">무드코스메틱(주)</div></div><div class="frow"><div class="fk">계좌번호</div><div class="fv"><span class="tnum">287-****-1120</span></div></div></div></div><div class="card"><div class="card-h">배송·반품 정책<span class="ch-n">브랜드가 입력 · 운영자 조회 전용</span></div><div class="card-b two"><div class="frow"><div class="fk">기본 배송비</div><div class="fv"><span class="tnum">3,000원</span></div></div><div class="frow"><div class="fk">무료배송 기준</div><div class="fv"><span class="tnum">50,000원</span> 이상</div></div><div class="frow"><div class="fk">도서산간 추가비</div><div class="fv"><span class="tnum">3,000원</span> <span class="t-sub">(제주 포함)</span></div></div><div class="frow"><div class="fk">배송 방법</div><div class="fv">택배</div></div><div class="frow"><div class="fk">출고 소요일</div><div class="fv">결제 후 <span class="tnum">2</span>영업일 이내</div></div><div class="frow"><div class="fk">반품비</div><div class="fv"><span class="tnum">5,000원</span> <span class="t-sub">(왕복)</span></div></div><div class="frow"><div class="fk">교환비</div><div class="fv"><span class="tnum">6,000원</span></div></div><div class="frow"><div class="fk">반품 수취 주소</div><div class="fv">경기도 고양시 덕양구 백양로 21, 물류센터 3동</div></div><div class="frow"><div class="fk">택배사 연동</div><div class="fv"><span class="badge b-success">연동</span> <span class="t-sub">CJ대한통운</span></div></div></div></div></div><div class="rail"><div class="card side-card"><div class="card-h">현재 상태</div><div class="st-now"><div class="st-line"><span class="st-lbl">회원</span><span class="badge b-success">활성</span></div><div class="st-meta"><div class="mrow"><span class="mk">가입일</span><span class="mv tnum">2026.01.12</span></div><div class="mrow"><span class="mk">입점 승인</span><span class="mv tnum">2026.01.18</span></div><div class="mrow"><span class="mk">최근 접속</span><span class="mv tnum">2026.08.08 17:50</span></div></div><div class="act-in"><div class="st-acts"><button class="btn btn-danger-o w-full">정지</button></div></div></div></div><div class="card side-card"><div class="card-h">탈퇴 신청 심사<span class="ch-n">회원 상태와 별개 · 승인 시 해지</span></div><div class="st-now"><div class="st-line"><span class="st-lbl">심사</span><span class="badge b-warning">탈퇴 승인 대기</span></div><div class="st-meta"><div class="mrow"><span class="mk">신청일</span><span class="mv tnum">2026.08.08 17:44</span></div><div class="mrow"><span class="mk">경과</span><span class="mv tnum">6일</span></div></div><div class="wait"><b>탈퇴 사유</b> — 자사몰 운영에 집중하기 위해 입점을 종료합니다.</div><div class="st-acts"><button class="btn btn-primary w-full">승인</button><button class="btn btn-danger-o w-full">반려</button></div></div></div></div></div></div><div class="overlay"><div class="modal"><div class="modal-h">탈퇴 반려<span class="modal-x">✕</span></div><div class="modal-b"><b>무드코스메틱</b>의 탈퇴 신청을 반려합니다.<label class="mlabel">반려 사유<span class="req">*</span></label><select class="msel"><option>반품·교환 처리 미완료</option><option>미배송 주문 잔존</option><option>진행중 공구 잔존</option><option>미정산액 잔존</option><option>기타(직접 입력)</option></select><label class="mlabel">브랜드에 전달할 안내<span class="opt">선택</span></label><textarea class="mta" style="min-height:64px">반품 1건의 수취가 확인되지 않았습니다. 처리 완료 후 다시 신청해 주세요.</textarea><div class="mwarn info"><span>i</span><span>반려하면 계정은 <b>활성으로 되돌아가고</b> 사유가 알림으로 발송됩니다 — 브랜드는 조건을 정리한 뒤 <b>다시 신청</b>할 수 있습니다. 신청·반려 이력은 그대로 보존됩니다.</span></div></div><div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">반려</button></div></div></div></div></section>
+
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <symbol id="sz-wm" viewBox="0 0 1863.4 200"><text x="0" y="160" font-family="Fredoka, sans-serif" font-size="180" font-weight="700" letter-spacing="0">SHOWROOMZ</text></symbol>
+  </defs>
+</svg>
+
+</body>
+</html>

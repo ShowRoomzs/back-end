@@ -46,7 +46,7 @@ class UserOrderItemAssemblerTest {
     private static final Long GROUP_ID = 1L;
     private static final Context EMPTY = Context.of(List.of(), Set.of(), Set.of());
 
-    /** 운영 설정 — 켜진 액션은 CANCEL 하나다. */
+    /** 운영 설정 — {@link UserOrderItemAssembler#ENABLED_ACTIONS}. */
     private final UserOrderItemAssembler assembler = new UserOrderItemAssembler(new OrderProperties(), estimator());
     /** 노출 규칙표(1-6) 전체를 보는 조립기. */
     private final UserOrderItemAssembler allActions =
@@ -116,7 +116,7 @@ class UserOrderItemAssemblerTest {
     // ------------------------------------------------------------------ 보조 문구(1-2)
 
     @Test
-    @DisplayName("보조 문구 — 발송 예정 · 반송 · 확정은 그 상태의 날짜 하나(MM.dd), 날짜가 없으면 null")
+    @DisplayName("보조 문구 — 발송 예정 · 반송 · 확정은 그 상태의 날짜 하나(MM.dd). 발송기한이 아직 없으면(공구 진행 중) 약정 문구")
     void statusSubByStatus() {
         OrderDeliveryGroup paid = group(FulfillmentStatus.NEW);
         ReflectionTestUtils.setField(paid, "shipDueAt", LocalDateTime.of(2026, 9, 15, 10, 0));
@@ -124,7 +124,9 @@ class UserOrderItemAssemblerTest {
         ReflectionTestUtils.setField(confirmed, "confirmedAt", LocalDateTime.of(2026, 9, 23, 0, 5));
 
         assertThat(sub(paid, View.LIST)).isEqualTo("09.15 발송 예정");
-        assertThat(sub(group(FulfillmentStatus.PREPARING), View.LIST)).isNull();
+        // 공구 진행 중 — 기한은 마감 뒤에 확정되므로 「마감 후 N영업일」 약정을 보여 준다(1009 기획 수정본 1-3).
+        assertThat(sub(group(FulfillmentStatus.PREPARING), View.LIST))
+                .isEqualTo("공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)");
         assertThat(sub(group(FulfillmentStatus.RETURNING), View.LIST)).isEqualTo("반송 처리 중");
         assertThat(sub(confirmed, View.LIST)).isEqualTo("09.23 확정");
         assertThat(sub(group(FulfillmentStatus.CONFIRMED), View.LIST)).isNull();
@@ -251,20 +253,21 @@ class UserOrderItemAssemblerTest {
     // ------------------------------------------------------------------ 액션(1-6)
 
     @Test
-    @DisplayName("운영 설정은 API 가 있는 액션만 내린다 — 취소 요청(CANCEL_REQUEST)만 아직 꺼져 있고, CANCEL 은 주문 단위로 취소 가능할 때만")
+    @DisplayName("운영 설정은 API 가 있는 액션만 내린다 — CANCEL 은 주문 단위로 취소 가능할 때만, 그 밖의 결제완료·상품준비중은 취소 요청(1009 기획 수정본 3-1)")
     void onlyActionsWithApiAreEnabled() {
         OrderProduct paid = item(1L, group(FulfillmentStatus.NEW), OrderProductStatus.PAID);
         Context cancellable = Context.of(List.of(), Set.of(), Set.of(ORDER_ID));
 
         assertThat(types(assembler.toRow(paid, cancellable, View.LIST))).containsExactly(UserOrderAction.CANCEL);
         assertThat(assembler.toRow(paid, cancellable, View.LIST).getActions().get(0).getLabel()).isEqualTo("주문 취소");
-        // 준비 시작된 그룹이 섞인 주문 — 「결제완료」로 보이되 버튼이 없다.
-        assertThat(assembler.toRow(paid, EMPTY, View.LIST).getActions()).isEmpty();
+        // 준비 시작된 그룹이 섞인 주문 — 「결제완료」로 보이고 전액 취소 대신 취소 요청으로 접수한다.
+        assertThat(types(assembler.toRow(paid, EMPTY, View.LIST))).containsExactly(UserOrderAction.CANCEL_REQUEST);
 
-        for (FulfillmentStatus status : List.of(FulfillmentStatus.PREPARING, FulfillmentStatus.RETURNING)) {
-            OrderProduct item = item(2L, group(status), OrderProductStatus.PAID);
-            assertThat(assembler.toRow(item, cancellable, View.DETAIL).getActions()).as(status.name()).isEmpty();
-        }
+        OrderProduct preparing = item(2L, group(FulfillmentStatus.PREPARING), OrderProductStatus.PAID);
+        assertThat(types(assembler.toRow(preparing, cancellable, View.DETAIL)))
+                .containsExactly(UserOrderAction.CANCEL_REQUEST);
+        OrderProduct returning = item(2L, group(FulfillmentStatus.RETURNING), OrderProductStatus.PAID);
+        assertThat(assembler.toRow(returning, cancellable, View.DETAIL).getActions()).isEmpty();
         // 배송 조회는 송장이 생긴 뒤부터다 — 반품·교환은 배송완료에서만 열리고 구매확정에서 닫힌다.
         for (FulfillmentStatus status : List.of(FulfillmentStatus.SHIPPING, FulfillmentStatus.CONFIRMED)) {
             OrderProduct item = item(2L, group(status), OrderProductStatus.PAID);
@@ -356,16 +359,20 @@ class UserOrderItemAssemblerTest {
     }
 
     @Test
-    @DisplayName("CANCEL_BY_REQUEST 는 취소 요청 액션이 켜져 있을 때만 — API 가 없는 동안 「요청으로 접수」는 거짓이다")
+    @DisplayName("CANCEL_BY_REQUEST 는 취소 요청 액션이 켜져 있을 때만 — 운영 설정에서 켜졌다(1009 기획 수정본 3-1)")
     void cancelByRequestNoticeFollowsAction() {
         OrderProduct preparing = item(1L, group(FulfillmentStatus.PREPARING), OrderProductStatus.PAID);
 
-        assertThat(assembler.notices(List.of(assembler.toRow(preparing, EMPTY, View.DETAIL)))).isEmpty();
-        assertThat(allActions.notices(List.of(allActions.toRow(preparing, EMPTY, View.DETAIL))))
-                .singleElement().satisfies(notice -> {
-                    assertThat(notice.getType()).isEqualTo(UserOrderDto.NoticeType.CANCEL_BY_REQUEST);
-                    assertThat(notice.getTone()).isEqualTo(UserOrderTone.MUTED);
-                });
+        for (UserOrderItemAssembler target : List.of(assembler, allActions)) {
+            assertThat(target.notices(List.of(target.toRow(preparing, EMPTY, View.DETAIL))))
+                    .singleElement().satisfies(notice -> {
+                        assertThat(notice.getType()).isEqualTo(UserOrderDto.NoticeType.CANCEL_BY_REQUEST);
+                        assertThat(notice.getTone()).isEqualTo(UserOrderTone.MUTED);
+                    });
+        }
+        UserOrderItemAssembler withoutRequest = new UserOrderItemAssembler(new OrderProperties(), estimator(),
+                EnumSet.of(UserOrderAction.CANCEL));
+        assertThat(withoutRequest.notices(List.of(withoutRequest.toRow(preparing, EMPTY, View.DETAIL)))).isEmpty();
     }
 
     // ------------------------------------------------------------------ 보조

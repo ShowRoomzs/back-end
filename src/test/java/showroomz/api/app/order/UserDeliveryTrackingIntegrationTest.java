@@ -40,9 +40,12 @@ class UserDeliveryTrackingIntegrationTest extends SellerOrderTestSupport {
     @Autowired private DeliveryTrackingEventRepository trackingEventRepository;
 
     @Test
-    @DisplayName("송장이 없으면 NOT_SHIPPED — 바는 전부 빈 칸이고 발송 기한을 내린다(#22)")
+    @DisplayName("송장이 없으면 NOT_SHIPPED — 바는 전부 빈 칸이고 발송 기한을 내린다 · 공구 진행 중이면 기한 대신 「마감 후 N영업일」(#22)")
     void notShipped() throws Exception {
         OrderDeliveryGroup group = preparingGroup();
+        tracking(group).andExpect(jsonPath("$.shipDueAt").value(nullValue()))
+                .andExpect(jsonPath("$.headline.sub").value("공구 마감 후 2영업일 이내 발송 (주말·공휴일 제외)"));
+        closeGroupBuy(LocalDateTime.now().minusDays(1));
 
         tracking(group).andExpect(status().isOk())
                 .andExpect(jsonPath("$.state").value("NOT_SHIPPED"))

@@ -245,7 +245,7 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
     // ------------------------------------------------------------------ 종결
 
     @Test
-    @DisplayName("기간 종료 — 앱은 마감 게시물로 3일 보여주고(새 좋아요 잠김·해제 허용) 양측 이행 확인 뒤 72시간이 되면 내린다")
+    @DisplayName("기간 종료 — 앱은 마감 게시물로 3일 보여주고(새 좋아요 잠김·해제 허용) 72시간이 되면 내린다")
     void periodEndThenRetention() throws Exception {
         Opened opened = openThroughApis();
         long id = opened.groupBuyId();
@@ -256,7 +256,8 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
         LocalDateTime endedAt = endByPeriod(id);
 
         brandView(id).andExpect(jsonPath("$.groupBuy.status").value("ENDED"))
-                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(true));
+                // 계약 이행 확인은 2026-10-06 폐기됐다 — 버튼이 없다(1009 기획 수정본 6절).
+                .andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
         studioView(id).andExpect(jsonPath("$.post.status").value("CLOSED"));
         assertThat(productStatus(cream)).isEqualTo(ProductGroupBuyStatus.NOT_CONNECTED);
 
@@ -280,10 +281,10 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
         mockMvc.perform(delete(SHOWROOMS + "posts/" + postId + "/wishlist").header(HttpHeaders.AUTHORIZATION, consumer))
                 .andExpect(status().isNoContent());
 
-        brand(id, "fulfillment-check", Map.of("result", "FULFILLED")).andExpect(status().isOk());
-        studioSend(post(STUDIO + "/" + id + "/fulfillment-check"), Map.of("result", "FULFILLED")).andExpect(status().isOk());
-        brandView(id).andExpect(jsonPath("$.permissions.canCheckFulfillment").value(false));
-        // 이행 확인은 게시물 노출과 무관하다.
+        // 폐기된 이행 확인 API 는 409 로 닫혀 있다 — 게시물 노출과 무관하다.
+        brand(id, "fulfillment-check", Map.of("result", "FULFILLED")).andExpect(status().isConflict());
+        studioSend(post(STUDIO + "/" + id + "/fulfillment-check"), Map.of("result", "FULFILLED"))
+                .andExpect(status().isConflict());
         consumerPost(postId).andExpect(status().isOk());
 
         assertThat(lifecycleService.retirePost(id, endedAt.plusHours(72).minusSeconds(1))).isZero();

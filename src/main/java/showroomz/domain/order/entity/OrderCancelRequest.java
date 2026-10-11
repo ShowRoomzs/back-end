@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.order.type.CancelRejectReason;
 import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.CancelRequestStatus;
 import showroomz.domain.order.type.FulfillmentStatus;
@@ -71,9 +72,25 @@ public class OrderCancelRequest {
     @Column(name = "decided_by")
     private Long decidedBy;
 
-    /** 거부 시 필수 — 소비자에게 그대로 전달(약관 제18조①). */
+    /** 거부 상세 — 소비자에게 그대로 전달(약관 제18조①). 사유가 ETC 면 필수. */
     @Column(name = "reject_reason", length = 500)
     private String rejectReason;
+
+    /** 거부 사유(드롭다운) — 1009 기획 수정본 3-3. 그 전 거부 행은 null(상세만 있다). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reject_reason_code", length = 30)
+    private CancelRejectReason rejectReasonCode;
+
+    /**
+     * 응답 기한 = 요청 + 1영업일의 끝(1009 기획 수정본 3-2 · 거래 관리 결정 8 · 15). 지나면 자동 승인되고 PG 가 즉시 환불한다.
+     * 요청 시점 스냅샷 — 공휴일 설정이 바뀌어도 움직이지 않는다.
+     */
+    @Column(name = "respond_due_at", nullable = false)
+    private LocalDateTime respondDueAt;
+
+    /** 응답 기한 경과로 시스템이 승인했다 — 결정자(decided_by)는 null. */
+    @Column(name = "auto_approved", nullable = false)
+    private boolean autoApproved;
 
     @OneToMany(mappedBy = "cancelRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderCancelRequestItem> items = new ArrayList<>();
@@ -81,7 +98,8 @@ public class OrderCancelRequest {
     @Builder
     public OrderCancelRequest(OrderDeliveryGroup deliveryGroup, Order order, Long requestedBy,
                               CancelRequestReason reasonCode, String reasonDetail,
-                              FulfillmentStatus statusAtRequest, LocalDateTime requestedAt) {
+                              FulfillmentStatus statusAtRequest, LocalDateTime requestedAt,
+                              LocalDateTime respondDueAt) {
         this.deliveryGroup = deliveryGroup;
         this.order = order;
         this.requestedBy = requestedBy;
@@ -90,6 +108,9 @@ public class OrderCancelRequest {
         this.status = CancelRequestStatus.PENDING;
         this.statusAtRequest = statusAtRequest;
         this.requestedAt = requestedAt;
+        // 지정하지 않으면 요청 + 1일 — 운영 경로는 항상 영업일 기한을 넣는다(시드 · 테스트 방어).
+        this.respondDueAt = respondDueAt != null ? respondDueAt
+                : (requestedAt != null ? requestedAt.plusDays(1) : null);
     }
 
     public void addItem(OrderCancelRequestItem item) {

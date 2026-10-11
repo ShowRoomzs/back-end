@@ -296,7 +296,10 @@ class SellerClaimReshipIntegrationTest extends SellerOrderTestSupport {
                 snapshot(deliveredAt, deliveredAt, scan(deliveredAt, "강남", "배송완료", 6)), deliveredAt);
 
         assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REJECTED");
-        assertThat(reload(group).getConfirmRestartAt()).isNull();
+        // 반려로 정지가 풀렸다 — 정지한 시간만큼만 기산점이 밀리고(1009 기획 수정본 4절) 반송 도착은 타이머를 새로 세우지 않는다.
+        OrderDeliveryGroup timer = reload(group);
+        assertThat(timer.getConfirmPausedAt()).isNull();
+        assertThat(timer.getConfirmRestartAt()).isBetween(timer.getDeliveredAt(), timer.getDeliveredAt().plusMinutes(5));
         userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.items[0].phase").value("REJECTED_DONE"));
     }
 
@@ -325,7 +328,7 @@ class SellerClaimReshipIntegrationTest extends SellerOrderTestSupport {
                 ClaimReshipColumn.RECIPIENT.getHeader(), ClaimReshipColumn.OPTION.getHeader(), "택배사", "송장번호");
         assertThat(sheet).hasSize(3);
         assertThat(sheet.subList(1, 3)).extracting(row -> row.get(0) + "|" + row.get(1))
-                .containsExactlyInAnyOrder("교환 재발송|CLM-" + exchange, "거절 반송|CLM-" + rejected);
+                .containsExactlyInAnyOrder("교환 재발송|CLM-" + exchange, "반려 반송|CLM-" + rejected);
         assertThat(sheet.get(1).get(2)).isEqualTo("김수민");
         assertThat(jdbc.queryForMap("SELECT * FROM purchase_order_download_log WHERE kind = 'CLAIM_RESHIP'"))
                 .containsEntry("delivery_group_count", 2);
@@ -497,8 +500,10 @@ class SellerClaimReshipIntegrationTest extends SellerOrderTestSupport {
         return claimId;
     }
 
+    /** 반려 6항목(1009 기획 수정본 5-b) — 법적 근거 · 소비자 메시지가 필수다. */
     private static Map<String, Object> rejectBody() {
         return Map.of("reasonCode", "USED", "detail", "용기 입구에 사용 흔적이 있습니다.",
+                "legalBasis", "ART17_2_2", "consumerMessage", "용기 입구에 사용 흔적이 있습니다.",
                 "evidenceImageUrls", List.of("https://img.test/e1.jpg"));
     }
 

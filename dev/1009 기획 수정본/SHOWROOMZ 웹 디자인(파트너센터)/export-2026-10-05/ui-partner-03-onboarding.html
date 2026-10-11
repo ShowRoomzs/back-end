@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-03-onboarding — 파트너센터 온보딩 (디자인 시안 rev.1)</title>
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --logo-dark:#1A1B1F;
+  /* Auth 전용 — [확정] 주 액션 검정: 로그인·회원가입 공통 예외. 본 화면도 가입 흐름의 연장이므로 동일 적용 */
+  --auth-action:#1A1B1F; --auth-action-hover:#3A3D45;
+  --auth-control-h:40px; --signup-card-w:480px;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  margin:0; padding:32px; background:var(--n-200); color:var(--n-900); font-size:var(--fs-body); line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .warn{color:var(--danger-text);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule table{border-collapse:collapse;margin:8px 0;width:100%;}
+.rule th,.rule td{border:1px solid var(--n-200);padding:5px 8px;text-align:left;font-size:var(--fs-micro);vertical-align:top;}
+.rule th{background:var(--n-50);font-weight:600;color:var(--n-900);white-space:nowrap;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-md);overflow:hidden;overflow-y:auto;}
+.stage-inner{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:0;}
+.auth-card{width:var(--signup-card-w);background:transparent;padding:56px 0;}
+.auth-head{text-align:center;margin-bottom:var(--sp-4);}
+.wordmark{display:block;margin:0 auto;}
+.auth-sub{font-size:var(--fs-caption);color:var(--n-500);margin-top:8px;}
+.intro{text-align:center;margin-bottom:var(--sp-6);}
+.intro-t{font-size:var(--fs-h2);font-weight:600;margin-bottom:6px;}
+.intro-d{font-size:var(--fs-caption);color:var(--n-600);}
+.sec{margin-bottom:var(--sp-5);}
+.sec-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:2px;
+  padding-bottom:8px;border-bottom:1px solid var(--n-200);display:flex;align-items:baseline;justify-content:space-between;}
+.sec-tag{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);}
+.field{margin-bottom:var(--sp-4);}
+.lb{display:block;font-size:var(--fs-caption);color:var(--n-600);font-weight:500;margin-bottom:6px;}
+.lb .opt{color:var(--n-400);font-weight:400;}
+.lb .req{color:var(--danger-text);margin-left:2px;}
+.inp-wrap{position:relative;display:flex;align-items:center;}
+.inp{width:100%;height:var(--auth-control-h);border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;padding:0 12px;font-family:inherit;font-size:var(--fs-body);color:var(--n-900);outline:none;
+  transition:border-color .12s, box-shadow .12s;}
+.inp::placeholder{color:var(--n-400);}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;}
+.inp:hover:not(:disabled){border-color:var(--n-400);}
+.inp:focus:not(:disabled){border-color:var(--n-900);box-shadow:0 0 0 3px var(--n-200);}
+.inp-wrap.is-error .inp{border-color:var(--danger-text);}
+.inp-wrap.is-error .inp:focus{border-color:var(--danger-text);box-shadow:0 0 0 3px var(--danger-bg);}
+.inp-suffix{position:absolute;right:12px;font-size:var(--fs-caption);color:var(--n-500);pointer-events:none;}
+.inp-suffix ~ .inp, .has-suffix .inp{padding-right:34px;}
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;}
+.err-msg{font-size:var(--fs-caption);color:var(--danger-text);margin:6px 0 0;}
+.help{font-size:var(--fs-micro);color:var(--n-500);margin:6px 0 0;}
+.inp-search{display:flex;gap:8px;} .inp-search .inp{flex:1;}
+.inp-search.is-error .inp{border-color:var(--danger-text);}
+.btn-search{height:var(--auth-control-h);padding:0 16px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;color:var(--n-700);font-size:var(--fs-caption);font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-search:hover{background:var(--n-100);}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.divider{height:1px;background:var(--n-200);margin:var(--sp-5) 0;}
+.notice{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);color:var(--n-700);text-align:left;margin-bottom:var(--sp-5);line-height:1.6;}
+.ni{width:16px;height:16px;border-radius:50%;background:var(--info-text);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:var(--auth-control-h);
+  border-radius:var(--r-sm);font-family:inherit;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s;}
+.btn-primary{width:100%;background:var(--auth-action);color:#fff;border:1px solid var(--auth-action);}
+.btn-primary:hover:not(:disabled){background:var(--auth-action-hover);border-color:var(--auth-action-hover);}
+.btn-primary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>파트너센터 온보딩 <span style="color:var(--n-400);font-weight:400;">ui-partner-03-onboarding · rev.1</span></h1>
+  <p class="meta">근거: wf-partner-01-가입온보딩 F5 · 승인 후 재로그인 시 강제 진입 · 소스오브트루스: SHOWROOMZ_웹_디자인시스템_v1.1</p>
+  <div class="rule">
+    <b>이 화면의 위치</b> — 어드민 승인 완료 후 <b>브랜드 담당자가 파트너센터에 재로그인하면 강제 진입</b>하는 활성화 게이트다. 완료 전까지 다른 화면 접근 불가.<br>
+    <b>결정 사항</b>
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>화면 폭</td><td>로그인·가입과 동일한 <code>480px</code> 카드 유지</td><td>필드 수는 많지만 세로 스크롤로 흡수 — 가입 흐름과 시각적 일관성 우선</td></tr>
+      <tr><td>필수/선택 표기</td><td>필수 항목 <b>전체에 <code>*</code> 명시</b> (수취인 이름·연락처·주소·상세주소·기본 배송비·발송 기한·반품비·교환비) · 선택 2개(무료배송 기준금액·도서산간 추가비)만 <code>(선택)</code> 표기</td><td>[신규제안 반영] 섹션 단위 "활성 필수" 문구만으로는 필드별 필수 여부가 불명확 — 개별 표기로 명확화</td></tr>
+      <tr><td>배송 방법 필드</td><td><b>삭제</b> (와이어의 "택배" 고정 셀렉트 제거)</td><td>[신규제안 반영] 현재 택배 단일 옵션이라 입력받을 의미가 없음 — 확장 필요 시 별도 재검토</td></tr>
+      <tr><td>반품비·교환비 기본값</td><td>반품비 <b>3,000원</b>, 교환비 <b>6,000원</b>으로 사전 입력, 필수 유지</td><td>[신규제안 반영] 업계 평균값을 기본 제시 — 담당자가 그대로 두거나 수정 가능</td></tr>
+      <tr><td>숫자 입력 필드</td><td>기본 배송비·무료배송 기준금액·도서산간 추가비·발송 기한·반품비·교환비 <b>6개 필드를 숫자 전용(<code>type=number</code>)</b>으로 전환, 단위(원/일) 접미 표기</td><td>[신규제안 반영] 금액·일수 필드에 문자 입력을 원천 차단</td></tr>
+      <tr><td>수취인 이름 문자 제한</td><td>한글·영문·공백만 허용, <b>이모지·특수문자는 입력 즉시 필터링</b>(자릿수 제한 없음)</td><td>[신규제안 반영] 반품 송장에 실제로 인쇄되는 이름</td></tr>
+      <tr><td>수취인 연락처 형식</td><td><code>010/011/016/017/018/019</code> + 10~11자리 <b>모두 허용</b>(하이픈 포함), 형식 오류 시 "올바른 휴대폰 번호 형식으로 입력해 주세요. (예: 010-1234-5678)". 플레이스홀더는 특정 예시 대신 <code>'-' 포함 10~11자리 숫자</code> 자릿수 안내로 표기</td><td>[신규제안 반영] <code>ui-partner-02-signup.html</code>의 담당자·대표자 연락처(010 11자리 고정)와 <b>의도적으로 다른 규칙</b> — 그쪽은 내부 관리자용 비공개 연락처, 이쪽은 반품 택배기사 등 <b>외부에 노출되는 연락처</b>라 구 통신사 번호까지 폭넓게 수용. 특정 예시 하나만 보여주면 다른 형식은 안 되는 것으로 오해할 수 있어 signup의 고객센터 전화번호 플레이스홀더 컨벤션과 통일</td></tr>
+      <tr><td>주 액션 버튼</td><td>검정(<code>--auth-action</code>)</td><td>가입 흐름의 연장 화면 — §9 로그인·가입 예외 규칙 동일 적용</td></tr>
+      <tr><td>상태 배지</td><td><b>미노출로 확정</b> (기존 <code>정보입력대기</code> pill 제거)</td><td>화면 자체가 게이트이므로 상태를 별도 텍스트로 알릴 필요 없음 — 진입한 것 자체가 상태 정보</td></tr>
+      <tr><td>숫자 입력 스피너</td><td>브라우저 기본 증감 화살표 <b>제거</b>, <code>min="0"</code> + <code>-/+/e</code> 키 입력·붙여넣기 <b>스크립트로 원천 차단</b></td><td>[신규제안 반영] <code>min</code> 속성만으로는 "-3000" 타이핑 자체는 막지 못해 keydown 차단 추가</td></tr>
+      <tr><td>주 액션 버튼 문구</td><td>"입력 완료 · 시작하기" → <b>"시작하기"</b></td><td>[신규제안 반영] 간결화</td></tr>
+      <tr><td>주 액션 버튼 활성화 조건</td><td>필수 8개 전체 입력 완료 전까지 <b>비활성</b> (state A·B 모두 비활성으로 표시)</td><td>[신규제안 반영] 실시간 검증으로 전환 — 미완료 상태에서 제출 자체가 불가하도록 변경</td></tr>
+      <tr><td>활성화 상태 시안</td><td><b>state C 신설</b> — 필수 8개 전부 입력된 예시 값으로 버튼 활성 상태 시각화</td><td>[신규제안 반영] 비활성 상태만 있으면 활성 시 UI를 확인할 수 없어 별도 상태 추가</td></tr>
+      <tr><td>"활성 필수" 뱃지</td><td>섹션 제목 옆 노출 <b>제거</b> (실제 화면에 노출되던 내부 표기였음)</td><td>[버그 수정] 페이지 전체가 이미 필수 게이트라 중복 — 기획 문서에만 남기고 화면에서는 삭제</td></tr>
+      <tr><td>배송·반품 정책 안내 문구</td><td><code>[2026.07 이동]</code> 태그를 화면에서 제거하고 정보색(<code>.notice</code>) 박스로 교체</td><td>[버그 수정] <code>.tag</code> 클래스가 정의되지 않아 대괄호 텍스트가 스타일 없이 그대로 노출되던 문제</td></tr>
+    </table>
+    <b class="warn">확인 필요</b> — <code>[확장 가능]</code> 태그: 세무·법무 검토 후 세금계산서 발행 정보 등 필드가 추가될 수 있음(§5-10 별건, 도메인모델 §1-1과 무관).
+  </div>
+</div>
+
+<!-- ============ A. 초기 (빈 폼) ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A</span><span class="state-label">초기 (반품비·교환비 기본값 포함 · 버튼 비활성)</span>
+  <span class="state-spec">반품비 3,000원·교환비 6,000원은 기본값 자동 입력, 나머지 필수 필드 미입력 상태 · 실시간 검증 — 필수 전체 충족 전까지 "시작하기" 버튼 비활성</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+<div class="auth-head">
+  <svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+  <div class="auth-sub">브랜드 파트너센터</div>
+</div>
+<div class="intro">
+  <div class="intro-t">서비스 시작 전, 필수 정보를 입력해 주세요</div>
+  <div class="intro-d">입력을 완료해야 파트너센터를 이용할 수 있어요.</div>
+</div>
+
+<div class="sec"><div class="sec-t">반품 수취 주소</div></div>
+<div class="row-2">
+  <div class="field"><label class="lb" for="a-name">수취인 이름<span class="req">*</span></label><div class="inp-wrap"><input class="inp name-only" id="a-name" type="text" placeholder="담당자 이름"></div></div>
+  <div class="field"><label class="lb" for="a-tel">수취인 연락처<span class="req">*</span></label><div class="inp-wrap"><input class="inp tel-only" id="a-tel" type="tel" placeholder="'-' 포함 10~11자리 숫자"></div></div>
+</div>
+<div class="field"><label class="lb" for="a-addr">주소<span class="req">*</span></label><div class="inp-search"><input class="inp" id="a-addr" type="text" placeholder="우편번호 검색" readonly><button type="button" class="btn-search">🔍 검색</button></div></div>
+<div class="field"><label class="lb" for="a-addr2">상세 주소<span class="req">*</span></label><div class="inp-wrap"><input class="inp" id="a-addr2" type="text" placeholder="상세 주소 입력"></div></div>
+
+<div class="divider"></div>
+
+<div class="sec"><div class="sec-t">배송·반품 정책</div></div>
+<div class="field"><label class="lb" for="a-fee">기본 배송비<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="a-fee" type="number" min="0" inputmode="numeric" placeholder="3000"><span class="inp-suffix">원</span></div></div>
+<div class="field"><label class="lb" for="a-free">무료배송 기준금액 <span class="opt">(선택)</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="a-free" type="number" min="0" inputmode="numeric" placeholder="0"><span class="inp-suffix">원</span></div></div>
+<div class="field"><label class="lb" for="a-island">도서산간 추가비 <span class="opt">(선택)</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="a-island" type="number" min="0" inputmode="numeric" placeholder="0"><span class="inp-suffix">원</span></div>
+  <p class="help">미입력 시 0원으로 적용됩니다.</p></div>
+<div class="field"><label class="lb" for="a-lead">발송 기한<span class="req">*</span></label><div style="display:flex;align-items:center;gap:8px"><span style="font-size:var(--fs-caption);color:var(--n-600);flex-shrink:0">공구 마감 후</span><div class="inp-wrap has-suffix" style="flex:1"><input class="inp no-neg" id="a-lead" type="number" min="1" max="7" inputmode="numeric" value="3"><span class="inp-suffix">영업일</span></div><span style="font-size:var(--fs-caption);color:var(--n-600);flex-shrink:0">이내</span></div>
+  <p class="help">공구 마감 후 기준 · 최대 7영업일 · 소비자 상품 상세에 「공구 마감 후 N영업일 이내 발송」으로 자동 표시됩니다 · 영업일 = 주말·공휴일 제외. 연휴가 끼면 기한이 그만큼 늦어집니다</p></div>
+<div class="row-2">
+  <div class="field"><label class="lb" for="a-return">반품비(회수비)<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="a-return" type="number" min="0" inputmode="numeric" value="3000"><span class="inp-suffix">원</span></div></div>
+  <div class="field"><label class="lb" for="a-exchange">교환비<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="a-exchange" type="number" min="0" inputmode="numeric" value="6000"><span class="inp-suffix">원</span></div></div>
+</div>
+
+<div class="notice"><span class="ni">i</span><span>배송·반품 정책은 여기서 최초 설정한 뒤에도 <b>기본정보관리</b>에서 계속 수정할 수 있어요. 수정하면 진행 중인 공동구매는 기존 값이 그대로 유지되고, 새 값은 다음 결제부터 적용됩니다.</span></div>
+
+<button type="button" class="btn btn-primary" disabled>시작하기</button>
+  </div></div></div>
+</section>
+
+<!-- ============ B. 유효성 에러 ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B</span><span class="state-label">유효성 에러</span>
+  <span class="state-spec">필드 4개 미입력/형식오류(수취인 연락처=형식 오류, 주소·기본 배송비·발송 기한=미입력) · 반품비·교환비는 기본값이 있어 대상 아님 · 필수 미충족이므로 "시작하기" 버튼도 계속 비활성</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+<div class="auth-head">
+  <svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+  <div class="auth-sub">브랜드 파트너센터</div>
+</div>
+<div class="intro">
+  <div class="intro-t">서비스 시작 전, 필수 정보를 입력해 주세요</div>
+  <div class="intro-d">입력을 완료해야 파트너센터를 이용할 수 있어요.</div>
+</div>
+
+<div class="sec"><div class="sec-t">반품 수취 주소</div></div>
+<div class="row-2">
+  <div class="field"><label class="lb" for="b-name">수취인 이름<span class="req">*</span></label><div class="inp-wrap"><input class="inp name-only" id="b-name" type="text" value="김담당" placeholder=""></div></div>
+  <div class="field"><label class="lb" for="b-tel">수취인 연락처<span class="req">*</span></label><div class="inp-wrap is-error"><input class="inp tel-only" id="b-tel" type="tel" value="010-12" placeholder="" aria-invalid="true" aria-describedby="b-tel-err"></div><p class="err-msg" id="b-tel-err" role="alert">올바른 휴대폰 번호 형식으로 입력해 주세요. (예: 010-1234-5678)</p></div>
+</div>
+<div class="field"><label class="lb" for="b-addr">주소<span class="req">*</span></label><div class="inp-search is-error"><input class="inp" id="b-addr" type="text" placeholder="우편번호 검색" readonly><button type="button" class="btn-search">🔍 검색</button></div>
+  <p class="err-msg" role="alert">주소를 검색해 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="b-addr2">상세 주소<span class="req">*</span></label><div class="inp-wrap"><input class="inp" id="b-addr2" type="text" value="" placeholder="상세 주소 입력" disabled></div>
+  <p class="help">주소 검색 완료 후 입력할 수 있습니다.</p></div>
+
+<div class="divider"></div>
+
+<div class="sec"><div class="sec-t">배송·반품 정책</div></div>
+<div class="field"><label class="lb" for="b-fee">기본 배송비<span class="req">*</span></label><div class="inp-wrap has-suffix is-error"><input class="inp no-neg" id="b-fee" type="number" min="0" inputmode="numeric" value="" placeholder="" aria-invalid="true" aria-describedby="b-fee-err"><span class="inp-suffix">원</span></div><p class="err-msg" id="b-fee-err" role="alert">기본 배송비를 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="b-free">무료배송 기준금액 <span class="opt">(선택)</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="b-free" type="number" min="0" inputmode="numeric" placeholder="0"><span class="inp-suffix">원</span></div></div>
+<div class="field"><label class="lb" for="b-island">도서산간 추가비 <span class="opt">(선택)</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="b-island" type="number" min="0" inputmode="numeric" placeholder="0"><span class="inp-suffix">원</span></div>
+  <p class="help">미입력 시 0원으로 적용됩니다.</p></div>
+<div class="field"><label class="lb" for="b-lead">발송 기한<span class="req">*</span></label><div style="display:flex;align-items:center;gap:8px"><span style="font-size:var(--fs-caption);color:var(--n-600);flex-shrink:0">공구 마감 후</span><div class="inp-wrap has-suffix is-error" style="flex:1"><input class="inp no-neg" id="b-lead" type="number" min="0" inputmode="numeric" value="" placeholder="" aria-invalid="true" aria-describedby="b-lead-err"><span class="inp-suffix">영업일</span></div><span style="font-size:var(--fs-caption);color:var(--n-600);flex-shrink:0">이내</span></div><p class="err-msg" id="b-lead-err" role="alert">발송 기한을 입력해 주세요.</p></div>
+<div class="row-2">
+  <div class="field"><label class="lb" for="b-return">반품비(회수비)<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="b-return" type="number" min="0" inputmode="numeric" value="3000"><span class="inp-suffix">원</span></div></div>
+  <div class="field"><label class="lb" for="b-exchange">교환비<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="b-exchange" type="number" min="0" inputmode="numeric" value="6000"><span class="inp-suffix">원</span></div></div>
+</div>
+
+<div class="notice"><span class="ni">i</span><span>배송·반품 정책은 여기서 최초 설정한 뒤에도 <b>기본정보관리</b>에서 계속 수정할 수 있어요. 수정하면 진행 중인 공동구매는 기존 값이 그대로 유지되고, 새 값은 다음 결제부터 적용됩니다.</span></div>
+
+<button type="button" class="btn btn-primary" disabled>시작하기</button>
+  </div></div></div>
+</section>
+
+<!-- ============ C. 활성화 (필수 전체 입력 완료) ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">C</span><span class="state-label">활성화 (필수 전체 입력 완료)</span>
+  <span class="state-spec">필수 8개 항목이 모두 유효값으로 채워진 상태 · "시작하기" 버튼 활성화(클릭 가능, hover 시 진한 톤)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+<div class="auth-head">
+  <svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg>
+  <div class="auth-sub">브랜드 파트너센터</div>
+</div>
+<div class="intro">
+  <div class="intro-t">서비스 시작 전, 필수 정보를 입력해 주세요</div>
+  <div class="intro-d">입력을 완료해야 파트너센터를 이용할 수 있어요.</div>
+</div>
+
+<div class="sec"><div class="sec-t">반품 수취 주소</div></div>
+<div class="row-2">
+  <div class="field"><label class="lb" for="c-name">수취인 이름<span class="req">*</span></label><div class="inp-wrap"><input class="inp name-only" id="c-name" type="text" value="김담당"></div></div>
+  <div class="field"><label class="lb" for="c-tel">수취인 연락처<span class="req">*</span></label><div class="inp-wrap"><input class="inp tel-only" id="c-tel" type="tel" value="010-1234-5678"></div></div>
+</div>
+<div class="field"><label class="lb" for="c-addr">주소<span class="req">*</span></label><div class="inp-search"><input class="inp" id="c-addr" type="text" value="서울특별시 강남구 테헤란로 123" readonly><button type="button" class="btn-search">🔍 검색</button></div></div>
+<div class="field"><label class="lb" for="c-addr2">상세 주소<span class="req">*</span></label><div class="inp-wrap"><input class="inp" id="c-addr2" type="text" value="4층 401호"></div></div>
+
+<div class="divider"></div>
+
+<div class="sec"><div class="sec-t">배송·반품 정책</div></div>
+<div class="field"><label class="lb" for="c-fee">기본 배송비<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="c-fee" type="number" min="0" inputmode="numeric" value="3000"><span class="inp-suffix">원</span></div></div>
+<div class="field"><label class="lb" for="c-free">무료배송 기준금액 <span class="opt">(선택)</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="c-free" type="number" min="0" inputmode="numeric" value="50000"><span class="inp-suffix">원</span></div></div>
+<div class="field"><label class="lb" for="c-island">도서산간 추가비 <span class="opt">(선택)</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="c-island" type="number" min="0" inputmode="numeric" value="5000"><span class="inp-suffix">원</span></div>
+  <p class="help">미입력 시 0원으로 적용됩니다.</p></div>
+<div class="field"><label class="lb" for="c-lead">발송 기한<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="c-lead" type="number" min="0" inputmode="numeric" value="3"><span class="inp-suffix">일</span></div>
+  <p class="help">영업일 기준</p></div>
+<div class="row-2">
+  <div class="field"><label class="lb" for="c-return">반품비(회수비)<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="c-return" type="number" min="0" inputmode="numeric" value="3000"><span class="inp-suffix">원</span></div></div>
+  <div class="field"><label class="lb" for="c-exchange">교환비<span class="req">*</span></label><div class="inp-wrap has-suffix"><input class="inp no-neg" id="c-exchange" type="number" min="0" inputmode="numeric" value="6000"><span class="inp-suffix">원</span></div></div>
+</div>
+
+<div class="notice"><span class="ni">i</span><span>배송·반품 정책은 여기서 최초 설정한 뒤에도 <b>기본정보관리</b>에서 계속 수정할 수 있어요. 수정하면 진행 중인 공동구매는 기존 값이 그대로 유지되고, 새 값은 다음 결제부터 적용됩니다.</span></div>
+
+<button type="button" class="btn btn-primary">시작하기</button>
+  </div></div></div>
+</section>
+
+<script>
+document.querySelectorAll('.no-neg').forEach(function (el) {
+  el.addEventListener('keydown', function (e) {
+    if (['-', '+', 'e', 'E'].indexOf(e.key) > -1) e.preventDefault();
+  });
+  el.addEventListener('paste', function (e) {
+    var text = (e.clipboardData || window.clipboardData).getData('text');
+    if (/[^0-9]/.test(text)) e.preventDefault();
+  });
+});
+document.querySelectorAll('.name-only').forEach(function (el) {
+  el.addEventListener('input', function () {
+    this.value = this.value.replace(/[^가-힣a-zA-Z\s]/g, '');
+  });
+});
+document.querySelectorAll('.tel-only').forEach(function (el) {
+  el.addEventListener('input', function () {
+    this.value = this.value.replace(/[^0-9-]/g, '');
+  });
+});
+</script>
+
+</body>
+</html>

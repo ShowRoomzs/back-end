@@ -46,7 +46,7 @@ public class OrderFulfillmentHistory {
     private Long actorId;
 
     /** 송장 수정 「{구} → {신}」 · 직권 취소 사유 등. */
-    @Column(name = "detail", length = 500)
+    @Column(name = "detail", length = 1000)
     private String detail;
 
     @Column(name = "occurred_at", nullable = false)

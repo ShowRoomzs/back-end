@@ -117,13 +117,29 @@ public class AdminGroupBuyPermissionPolicy {
                 : status == GroupBuyStatus.IN_PROGRESS);
     }
 
-    /** 이슈 — 종료 · 정산완료 · 중단 ∧ 열린 이슈 없음. 중단은 긴급 건의 사후 이의 창구다(6-5). */
+    /**
+     * 항상 false — 운영자 이슈 직접 개설 폐기(§42-4 · 44 정산조정 이슈스레드 설계서 7절). 이슈는 정산 조정 요청으로만 열린다.
+     * 판정식은 기획 복귀에 대비해 {@link #wouldOpenIssue}로 남긴다.
+     */
     public boolean canOpenIssue(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — 종료 · 정산완료 · 중단 ∧ 열린 이슈 없음. 중단은 긴급 건의 사후 이의 창구였다(6-5). */
+    boolean wouldOpenIssue(GroupBuyFacts facts) {
         return facts.groupBuy().getStatus().isTerminal() && facts.openIssue() == null;
     }
 
-    /** 정산 확인 — ENDED ∧ 차단 사유 없음 ∧ 정산 포트 단계 WAITING. 포트가 비면 false다(8-2 착수 게이트). */
+    /**
+     * 항상 false — 운영자 정산 확인 폐기(§41-1 #6 · 44 어드민 정산관리 설계서 8-1). 정산 확정은 시스템(자동 · 합의 · 만료)만 한다.
+     * 판정식은 기획 복귀에 대비해 {@link #wouldConfirmSettlement}로 남긴다.
+     */
     public boolean canConfirmSettlement(GroupBuyFacts facts) {
+        return false;
+    }
+
+    /** [기획 제외] 폐기 전 판정식 — ENDED ∧ 차단 사유 없음 ∧ 정산 포트 단계 WAITING. */
+    boolean wouldConfirmSettlement(GroupBuyFacts facts) {
         return facts.groupBuy().getStatus() == GroupBuyStatus.ENDED
                 && settlementBlockers(facts).isEmpty()
                 && settlementGateway.readStage(facts.groupBuy().getId())
@@ -146,12 +162,8 @@ public class AdminGroupBuyPermissionPolicy {
         } else if (closure.get().unclosedCount() > 0) {
             blockers.add(SettlementBlocker.UNCLOSED_ORDERS);
         }
-        if (facts.fulfillmentChecks().size() < 2) {
-            blockers.add(SettlementBlocker.FULFILLMENT_PENDING);
-        }
-        if (GroupBuyCommandService.isSettlementOnHold(groupBuy, facts.fulfillmentChecks())) {
-            blockers.add(SettlementBlocker.FULFILLMENT_DISPUTE);
-        }
+        // 이행 확인(FULFILLMENT_PENDING · FULFILLMENT_DISPUTE)은 2026-10-06 폐기됐다 — 정산 게이트는 주문 종결 하나다.
+        // enum 값은 FE 호환을 위해 남긴다.
         return blockers;
     }
 }

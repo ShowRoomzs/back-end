@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -294,7 +295,7 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("종료 — 정산 차단 사유를 서버가 판정한다 · 종결은 실값(주문 0건 = 미종결 0)이라 이행 확인만 남는다")
+    @DisplayName("종료 — 정산 차단 사유를 서버가 판정한다 · 종결은 실값(주문 0건 = 미종결 0) · 이행 확인은 폐기돼 차단 사유가 없다")
     void settlementBlockers() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
 
@@ -302,17 +303,16 @@ class AdminGroupBuyQueryIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.afterEnd.settlement.stage").value("WAITING"))
                 .andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("DERIVED"))
                 // 판매 포트가 하위주문 이행 상태로 종결을 실값 판정한다(34 설계서 5-3) — CLOSURE_UNKNOWN 구간이 닫혔다.
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("FULFILLMENT_PENDING"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(1))
+                // 계약 이행 확인은 2026-10-06 폐기됐다 — 정산 게이트는 주문 종결 하나다(1009 기획 수정본 6절).
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(0))
                 .andExpect(jsonPath("$.afterEnd.settlement.preview.rewardAmount").doesNotExist())
                 .andExpect(jsonPath("$.afterEnd.settlement.watch.reached").value(false))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.targets.brandToCreator.duties[0]").value("SHOWROOM_POST"))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.targets.creatorToBrand.duties[0]").value("ORDER_DELIVERY"))
-                .andExpect(jsonPath("$.afterEnd.fulfillment.autoConfirmOnTimeout").value(false))
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
                 .andExpect(jsonPath("$.afterEnd.orderClosure.unclosedCount").value(0))
                 .andExpect(jsonPath("$.sales").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false))
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(true));
+                // 이슈 직접 개설은 폐기(44 정산조정 이슈스레드 설계서 7절) — 항상 false.
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
     }
 
     @Test

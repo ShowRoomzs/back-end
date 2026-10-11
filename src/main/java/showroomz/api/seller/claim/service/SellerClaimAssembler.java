@@ -4,9 +4,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.api.seller.claim.dto.SellerClaimListItem;
 import showroomz.domain.order.entity.OrderClaim;
+import showroomz.domain.order.entity.OrderClaimCharge;
 import showroomz.domain.order.entity.OrderClaimCollection;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.service.ClaimStoragePolicy;
+import showroomz.domain.order.type.ClaimOpenedBy;
+import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
@@ -44,9 +47,11 @@ public class SellerClaimAssembler {
      * @param groupItems     그 하위주문의 항목 전부 — 행 확장
      * @param consumerPhotos 소비자 첨부 장수
      * @param sellerPhotos   브랜드 증빙 장수
+     * @param charges        그 요청(박스)의 소비자 추가 결제 전부 — 「재발송비」 열
      */
     public SellerClaimListItem toListItem(OrderClaim claim, List<OrderClaim> boxClaims, List<OrderProduct> groupItems,
-                                          int consumerPhotos, int sellerPhotos, LocalDateTime now) {
+                                          int consumerPhotos, int sellerPhotos, List<OrderClaimCharge> charges,
+                                          LocalDateTime now) {
         OrderProduct product = claim.getOrderProduct();
         OrderClaimCollection collection = claim.getCollection();
         ClaimStatus status = claim.getStatus();
@@ -73,6 +78,8 @@ public class SellerClaimAssembler {
                 claim.getReasonCode(),
                 claim.getReasonCode().getLabel(),
                 consumerPhotos,
+                claim.getOpenedBy() == ClaimOpenedBy.OPERATOR,
+                claim.getOpenReason(),
                 status,
                 status.getLabel(),
                 ClaimTab.stageOf(status),
@@ -94,10 +101,11 @@ public class SellerClaimAssembler {
                 claim.getReceivedAt(),
                 claim.getInspectDueAt(),
                 !reshipStage ? null : rejected ? "REJECT_RETURN" : "EXCHANGE",
-                !reshipStage ? null : rejected ? "거절 반송" : "교환 재발송",
+                !reshipStage ? null : rejected ? "반려 반송" : "교환 재발송",
                 claim.getReshipCarrier(),
                 claim.getReshipCarrier() == null ? null : claim.getReshipCarrier().getLabel(),
                 claim.getReshipTrackingNumber(),
+                reshipFee(claim, charges),
                 claim.getRejectReasonCode() == null ? null : claim.getRejectReasonCode().getLabel(),
                 sellerPhotos,
                 claim.getRejectedAt(),
@@ -134,6 +142,25 @@ public class SellerClaimAssembler {
             return "브랜드 부담 사유 — 배송비 차감 없음";
         }
         return collection.getReturnDeduction() > 0 ? "상품 금액 − 최초 배송비" : "상품 금액(배송비 차감 없음)";
+    }
+
+    /**
+     * 재발송비(결정 14) — 반려 건은 반려 재발송 배송비({@code REJECT_RESHIP}), 반려되지 않은 교환은 요청 때 낸 선결제분
+     * ({@code EXCHANGE_RESHIP}). 같은 종류가 여럿이면 마지막 청구가 지금 값이다. 청구가 없으면 null.
+     */
+    static SellerClaimListItem.ReshipFee reshipFee(OrderClaim claim, List<OrderClaimCharge> charges) {
+        ClaimChargeType wanted = claim.getRejectedAt() != null ? ClaimChargeType.REJECT_RESHIP
+                : claim.getType() == ClaimType.EXCHANGE ? ClaimChargeType.EXCHANGE_RESHIP : null;
+        if (wanted == null) {
+            return null;
+        }
+        return charges.stream()
+                .filter(charge -> charge.getType() == wanted)
+                .reduce((first, second) -> second)
+                .map(charge -> new SellerClaimListItem.ReshipFee(
+                        charge.getAmount() == null ? 0 : charge.getAmount(),
+                        charge.getStatus(), charge.getStatus().getLabel(), charge.getDueAt()))
+                .orElse(null);
     }
 
     private static SellerClaimListItem.Outcome outcome(OrderClaim claim) {

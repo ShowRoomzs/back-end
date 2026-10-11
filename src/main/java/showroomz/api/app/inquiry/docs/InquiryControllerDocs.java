@@ -110,7 +110,7 @@ public interface InquiryControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "사용자를 찾을 수 없음 - Status: 404 Not Found",
+                    description = "사용자를 찾을 수 없음 · 이의 대상 클레임 없음(`CLAIM_NOT_FOUND`) - Status: 404 Not Found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -124,10 +124,29 @@ public interface InquiryControllerDocs {
                                     )
                             }
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "반려 이의(`claimId`) — 반려 보류 중이 아님(`CLAIM_STATE_CHANGED`) · 답변 전인 이의가 이미 있음"
+                            + "(`CLAIM_DISPUTE_ALREADY_EXISTS` — 기존 문의를 수정한다) - Status: 409 Conflict",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이의 중복",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CLAIM_DISPUTE_ALREADY_EXISTS\",\n" +
+                                                    "  \"message\": \"이미 접수된 이의가 있습니다. 답변 전에는 기존 문의를 수정해 주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "1:1 문의 등록 요청 바디",
+            description = "1:1 문의 등록 요청 바디 — 반려 안내(C10-5)의 「이의 제기」면 `claimId` 를 함께 보낸다(유형 CANCEL_EXCHANGE_RETURN · "
+                    + "`orderId` 는 비워도 클레임의 주문으로 채운다). 본인 · 반려 보류 중 클레임만 받고, 아니면 400 · 404 · 409",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -152,6 +171,17 @@ public interface InquiryControllerDocs {
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"orderId\": 123456\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "반려 이의 제기",
+                                    value = "{\n" +
+                                            "  \"type\": \"CANCEL_EXCHANGE_RETURN\",\n" +
+                                            "  \"content\": \"받았을 때부터 오염이 있었습니다. 사용 흔적이 아닙니다.\",\n" +
+                                            "  \"imageUrls\": [\n" +
+                                            "    \"https://example.com/inquiries/img1.jpg\"\n" +
+                                            "  ],\n" +
+                                            "  \"claimId\": 3008\n" +
                                             "}"
                             )
                     }

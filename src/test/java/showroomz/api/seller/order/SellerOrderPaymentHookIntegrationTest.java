@@ -60,7 +60,8 @@ class SellerOrderPaymentHookIntegrationTest extends SellerOrderTestSupport {
         OrderDeliveryGroup group = onlyGroupOf(created.orderId());
         assertThat(group.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
         assertThat(group.getSubOrderNumber()).isEqualTo(group.getOrder().getOrderNumber() + "-01");
-        assertThat(group.getShipDueAt()).isEqualTo(group.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
+        assertThat(group.getShipDueAt()).isNull();
+        assertThat(group.getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
         assertThat(historyCount(group, FulfillmentEventType.PAID)).isEqualTo(1);
         sellerGet(SELLER_ORDERS + "?tab=NEW")
                 .andExpect(jsonPath("$.content[*].deliveryGroupId", contains(group.getId().intValue())));

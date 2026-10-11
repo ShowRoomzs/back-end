@@ -86,8 +86,8 @@ class ClaimEnablementIntegrationTest extends ClaimTestSupport {
         detail(returning.getOrder().getId()).andExpect(jsonPath("$.items[0].actions", empty()));
 
         OrderDeliveryGroup returned = deliveredGroup(creamVariant, 1);
+        // 검수 통과 = PG 즉시 자동 환불 — 집행 단계 없이 종결된다(1009 기획 수정본 2절).
         passed(returnClaim(returned));
-        claimService.completeRefund(refundTaskIds(returned).get(0), CREAM_PRICE, 1L, LocalDateTime.now());
         detail(returned.getOrder().getId())
                 .andExpect(jsonPath("$.items[0].status").value("RETURNED"))
                 .andExpect(jsonPath("$.items[0].actions[*].type", contains("CLAIM_DETAIL")));

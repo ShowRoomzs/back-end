@@ -1,5 +1,6 @@
 package showroomz.domain.order.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -49,12 +50,12 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     java.util.Optional<OrderClaim> findOwned(@Param("id") Long id, @Param("marketId") Long marketId);
 
     /** 요약 — [상태, 유형, 건수]. 탭 카운트 · KPI · 유형 카운트를 한 번에 푼다. */
-    @Query("SELECT c.status, c.type, COUNT(c) FROM OrderClaim c WHERE c.marketId = :marketId "
+    @Query("SELECT c.status, c.type, COUNT(c) FROM OrderClaim c WHERE (:marketId IS NULL OR c.marketId = :marketId) "
             + "GROUP BY c.status, c.type")
     List<Object[]> countByStatusAndType(@Param("marketId") Long marketId);
 
     /** 기한 초과 — 회수 대기 방치(기한 ①) + 검수 기한 경과(기한 ②). */
-    @Query("SELECT COUNT(c) FROM OrderClaim c WHERE c.marketId = :marketId AND ("
+    @Query("SELECT COUNT(c) FROM OrderClaim c WHERE (:marketId IS NULL OR c.marketId = :marketId) AND ("
             + "(c.status = showroomz.domain.order.type.ClaimStatus.REQUESTED AND c.collectDueAt < :now) OR "
             + "(c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now))")
     long countOverdue(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
@@ -68,6 +69,12 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "AND c.status NOT IN (" + COMPLETED + ", showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING) "
             + "GROUP BY c.deliveryGroup.id")
     List<Object[]> countOpenByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
+
+    /** 어드민 주문 상세 — 하위주문들의 진행 중 클레임(종결 · 결제 대기 제외). 06b 상세 링크용(37 설계서 8절 #5). */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g WHERE g.id IN :deliveryGroupIds "
+            + "AND c.status NOT IN (" + COMPLETED + ", showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING) "
+            + "ORDER BY c.id ASC")
+    List<OrderClaim> findOpenByDeliveryGroupIds(@Param("deliveryGroupIds") Collection<Long> deliveryGroupIds);
 
     /** 진행 중 — 종결 전 전부(거절 보류·거절 반송 포함). */
     @Query("SELECT COUNT(c) > 0 FROM OrderClaim c WHERE c.deliveryGroup.id = :deliveryGroupId "
@@ -163,6 +170,52 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "WHERE c.id = :id AND c.userId = :userId AND c.status = showroomz.domain.order.type.ClaimStatus.REQUESTED")
     int withdraw(@Param("id") Long id, @Param("userId") Long userId, @Param("now") LocalDateTime now);
 
+    /**
+     * 반려 이의 인용(어드민 06b B2) — 아직 반송 전(반려 보류 · 재발송 대기)인 반려 반품을 환불로 닫는다. 재발송은 없다. 귀책은
+     * 브랜드로 돌린다({@code faultChangedToSeller} — 「귀책」 열 · 정산 집계가 본다). 환불액은 운영자 사유 환불 집행으로 나가고
+     * 여기서는 예정액을 적는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", "
+            + "c.result = showroomz.domain.order.type.ClaimResult.REFUNDED, c.refundedAmount = :amount, "
+            + "c.faultChangedToSeller = true, c.completedAt = :now, c.stageEnteredAt = :now "
+            + "WHERE c.id = :id AND c.type = showroomz.domain.order.type.ClaimType.RETURN AND c.rejectedAt IS NOT NULL "
+            + "AND c.status IN (showroomz.domain.order.type.ClaimStatus.REJECT_HOLD, "
+            + "showroomz.domain.order.type.ClaimStatus.RESHIP_READY)")
+    int closeRejectedByDispute(@Param("id") Long id, @Param("amount") int amount, @Param("now") LocalDateTime now);
+
+    /**
+     * 검수 무응답 운영자 환불(어드민 06b · 41 보고 4번) — 입고 · 검수 대기인 건을 환불로 닫는다. 귀책은 바꾸지 않는다(브랜드가 판정하지
+     * 않았을 뿐이다). 환불액은 운영자 사유 환불 집행으로 나가고 여기서는 예정액을 적는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", "
+            + "c.result = showroomz.domain.order.type.ClaimResult.REFUNDED, c.refundedAmount = :amount, "
+            + "c.completedAt = :now, c.stageEnteredAt = :now "
+            + "WHERE c.id = :id AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED")
+    int closeUnansweredByOperator(@Param("id") Long id, @Param("amount") int amount, @Param("now") LocalDateTime now);
+
+    /** 어드민 예외 관리 — 검수 기한이 지난 입고 건(06d 처리 지연). */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
+            + "c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now "
+            + "ORDER BY c.inspectDueAt ASC")
+    List<OrderClaim> findInspectOverdue(@Param("now") LocalDateTime now, Pageable limit);
+
+    /**
+     * 어드민 예외 관리 — 재발송 대기 중인 건(06d 재발송 지연). N영업일은 달력일로 최소 N일이므로 {@code before}(지금 − N일)로 먼저
+     * 거르고, 영업일 판정은 서비스가 한다(40 설계서 5절 #3).
+     */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
+            + "c.status = showroomz.domain.order.type.ClaimStatus.RESHIP_READY AND c.stageEnteredAt < :before "
+            + "ORDER BY c.stageEnteredAt ASC")
+    List<OrderClaim> findReshipReadyBefore(@Param("before") LocalDateTime before, Pageable limit);
+
+    /** 어드민 예외 관리 — 회수 송장을 넣었는데 24시간 동안 한 번도 조회되지 않은 건(06d 배송 예외). */
+    @Query("SELECT c FROM OrderClaim c JOIN FETCH c.collection k JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
+            + "c.status = showroomz.domain.order.type.ClaimStatus.COLLECTING AND k.invoiceRegisteredAt < :before "
+            + "AND k.lastTrackingAt IS NULL ORDER BY k.invoiceRegisteredAt ASC")
+    List<OrderClaim> findCollectionUnscanned(@Param("before") LocalDateTime before, Pageable limit);
+
     /** 운영자 직권 종결 — 미발송 방치 등. 검수 전(REQUESTED · COLLECTING)만. 결과는 거절이 아니라 요청 취소다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", c.result = " + CANCELLED + ", "
@@ -195,12 +248,44 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderClaim c SET c.status = showroomz.domain.order.type.ClaimStatus.REJECT_HOLD, "
             + "c.stageEnteredAt = :now, c.inspectedAt = :now, c.inspectedBy = :sellerId, "
-            + "c.rejectReasonCode = :reasonCode, c.rejectDetail = :detail, c.rejectedAt = :now "
+            + "c.rejectReasonCode = :reasonCode, c.rejectDetail = :detail, c.rejectedAt = :now, "
+            + "c.rejectLegalBasis = :legalBasis, c.rejectConsumerMessage = :consumerMessage, "
+            + "c.faultChangedToSeller = :faultToSeller "
             + "WHERE c.id = :id AND c.marketId = :marketId "
             + "AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED")
     int rejectInspection(@Param("id") Long id, @Param("marketId") Long marketId,
                          @Param("reasonCode") ClaimRejectReason reasonCode, @Param("detail") String detail,
+                         @Param("legalBasis") showroomz.domain.order.type.ClaimRejectLegalBasis legalBasis,
+                         @Param("consumerMessage") String consumerMessage,
+                         @Param("faultToSeller") boolean faultToSeller,
                          @Param("sellerId") Long sellerId, @Param("now") LocalDateTime now);
+
+    /** 검수 기한 경과 자동 알림 대상 — 입고 확인 뒤 검수 기한이 지났고 오늘 아직 알리지 않음(1009 기획 수정본 8-4). */
+    @Query("SELECT c.id FROM OrderClaim c WHERE c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED "
+            + "AND c.inspectDueAt IS NOT NULL AND c.inspectDueAt < :now "
+            + "AND (c.lastInspectNoticeAt IS NULL OR c.lastInspectNoticeAt < :todayStart) ORDER BY c.id ASC")
+    List<Long> findInspectOverdueToNotify(@Param("now") LocalDateTime now,
+                                          @Param("todayStart") LocalDateTime todayStart,
+                                          org.springframework.data.domain.Pageable pageable);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.inspectNoticeCount = c.inspectNoticeCount + 1, c.lastInspectNoticeAt = :now "
+            + "WHERE c.id = :id AND (c.lastInspectNoticeAt IS NULL OR c.lastInspectNoticeAt < :todayStart)")
+    int recordInspectNotice(@Param("id") Long id, @Param("now") LocalDateTime now,
+                            @Param("todayStart") LocalDateTime todayStart);
+
+    /** 일부 반려 — 원래 행을 통과 수량으로 줄인다(검수 직전 상태에서만). 반려 수량은 갈라진 새 행이 든다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.quantity = :quantity WHERE c.id = :id AND c.marketId = :marketId "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.quantity > :quantity")
+    int shrinkForPartialReject(@Param("id") Long id, @Param("marketId") Long marketId,
+                               @Param("quantity") int quantity);
+
+    /** 귀책 변경(브랜드 귀책 인정) — 같은 요청의 클레임 사본 부담 주체를 맞춘다(목록 필터 · 어드민 「귀책」 열). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.feeBearer = showroomz.domain.order.type.ClaimFeeBearer.SELLER "
+            + "WHERE c.collection.id = :collectionId")
+    int acceptSellerFault(@Param("collectionId") Long collectionId);
 
     /** #9 RESHIP_READY → RESHIPPING — 재발송 송장 등록. 등록해도 완료가 아니다 — 결과는 도착 때 확정된다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -296,4 +381,14 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "AND c.noticeCount = :expectedCount")
     int recordNotice(@Param("id") Long id, @Param("expectedCount") int expectedCount,
                      @Param("now") LocalDateTime now);
+
+    /**
+     * 반려 이의 미처리 건수(어드민 06b 요약 「반려 이의 N건」) — 반려 보류 중이고 걸린 이의 문의가 아직 답변 전인 클레임.
+     * 운영자가 인용하면 반려 보류를 벗어나고, 기각하면 문의 답변이 등록돼 빠진다.
+     */
+    @Query("SELECT COUNT(c) FROM OrderClaim c, showroomz.domain.inquiry.entity.OneToOneInquiry i "
+            + "WHERE i.id = c.disputeInquiryId AND c.status = showroomz.domain.order.type.ClaimStatus.REJECT_HOLD "
+            + "AND i.status = showroomz.domain.inquiry.type.InquiryStatus.WAITING "
+            + "AND (:marketId IS NULL OR c.marketId = :marketId)")
+    long countOpenDisputes(@Param("marketId") Long marketId);
 }

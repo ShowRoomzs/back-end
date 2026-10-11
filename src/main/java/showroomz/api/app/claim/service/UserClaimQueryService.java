@@ -9,6 +9,7 @@ import showroomz.api.app.claim.dto.UserClaimDto.CourierPayment;
 import showroomz.api.app.claim.dto.UserClaimDto.ReshipFeeState;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.api.app.order.service.OrderAddressMasker;
+import showroomz.api.app.order.service.PaymentMethodCatalog;
 import showroomz.domain.address.entity.DeliveryAddress;
 import showroomz.domain.address.repository.DeliveryAddressRepository;
 import showroomz.domain.market.entity.Market;
@@ -92,6 +93,7 @@ public class UserClaimQueryService {
     private final ClaimFeePolicy feePolicy;
     private final ClaimStoragePolicy storagePolicy;
     private final OrderProperties orderProperties;
+    private final PaymentMethodCatalog paymentMethodCatalog;
 
     // ------------------------------------------------------------------ 폼(3-1)
 
@@ -132,18 +134,18 @@ public class UserClaimQueryService {
                 .brandName(group.getMarketName())
                 .items(items)
                 .reasons(Arrays.stream(ClaimReason.values())
-                        .filter(ClaimReason::isConsumerSelectable)
+                        .filter(reason -> reason.isSelectableFor(type))
                         .map(reason -> UserClaimDto.FormReason.builder()
                                 .code(reason)
                                 .label(reason.getLabel())
                                 .hint(hintOf(reason, type))
                                 .feeBearer(reason.getFeeBearer())
                                 .detailRequired(reason.isDetailRequired())
-                                .photoAllowed(reason.getFeeBearer() == ClaimFeeBearer.SELLER)
+                                // 상세 입력란이 열리는 사유(브랜드 귀책 · 기타)에서만 사진 블록이 함께 열린다.
+                                .photoAllowed(reason.isDetailRequired())
                                 .build())
                         .toList())
-                .carriers(Arrays.stream(DeliveryCarrier.values())
-                        .filter(DeliveryCarrier::isConsumerSelectable)
+                .carriers(DeliveryCarrier.selectable().stream()
                         .map(carrier -> new UserClaimDto.FormCarrier(carrier, carrier.getLabel()))
                         .toList())
                 .returnTo(new UserClaimDto.ReturnTo(market.getShippingRecipientName(), market.getShippingContact(),
@@ -154,6 +156,8 @@ public class UserClaimQueryService {
                         order.getDeliveryMemo()))
                 .fees(new UserClaimDto.Fees(consumerFee(type, ClaimFeeBearer.CONSUMER, group), 0))
                 .courierPayment(new UserClaimDto.CourierPayments(CourierPayment.PREPAID, CourierPayment.COLLECT))
+                // 고객 귀책 교환은 요청할 때 재발송비를 결제한다 — 주문서와 같은 목록(반품은 결제가 없다).
+                .paymentMethods(type != ClaimType.EXCHANGE ? null : paymentMethodCatalog.available())
                 .refundMethodLabel(refundMethodLabel(entry.getOrder()))
                 .invoiceDueDays(config.getInvoiceDueDays())
                 .detailMaxLength(config.getDetailMaxLength())
@@ -221,6 +225,7 @@ public class UserClaimQueryService {
             case CHANGE_OF_MIND -> type == ClaimType.EXCHANGE ? "다른 옵션이 더 마음에 들어요" : "상품이 필요 없어짐";
             case ORDER_MISTAKE -> type == ClaimType.EXCHANGE ? "옵션 잘못 선택" : "옵션 · 수량 잘못 선택";
             case WRONG_OR_LATE_DELIVERY -> "다른 상품이 왔어요";
+            case OTHER -> "직접 입력";
             default -> null;
         };
     }
@@ -298,7 +303,29 @@ public class UserClaimQueryService {
                         : null)
                 .exchangePayment(collection.getType() == ClaimType.EXCHANGE ? exchangePayment(charges) : null)
                 .reshipFee(reshipFee(collection, shown, rejectCharge, today))
+                .purchaseConfirm(purchaseConfirm(focused.getDeliveryGroup(), collection.getType(), shown))
                 .build();
+    }
+
+    /**
+     * 신청 정보의 「구매확정」 줄(1009 기획 수정본 4-2 · C10-5) — 진행 중이면 「반품(교환) 처리 중 · 구매확정 일시 정지」, 교환이 끝났으면
+     * 「교환 완료일부터 7일 새로 시작」. 반품이 환불로 끝났거나 판정이 다 끝난 반려면 null.
+     */
+    private UserClaimDto.PurchaseConfirm purchaseConfirm(OrderDeliveryGroup group, ClaimType type,
+                                                         List<OrderClaim> shown) {
+        int days = orderProperties.getPurchaseConfirmDays();
+        boolean open = shown.stream().anyMatch(OrderClaim::blocksPurchaseConfirm);
+        String typeLabel = type == ClaimType.EXCHANGE ? "교환" : "반품";
+        if (open) {
+            return new UserClaimDto.PurchaseConfirm(true, typeLabel + " 처리 중 · 구매확정 일시 정지",
+                    group.confirmRemainingDays(days, LocalDateTime.now()));
+        }
+        boolean exchanged = shown.stream().anyMatch(claim -> claim.getResult() == ClaimResult.EXCHANGED);
+        if (exchanged) {
+            return new UserClaimDto.PurchaseConfirm(false, "교환 완료일부터 " + days + "일 새로 시작",
+                    group.confirmRemainingDays(days, LocalDateTime.now()));
+        }
+        return null;
     }
 
     private UserClaimDto.DetailItem item(OrderClaim claim, Long focusedId, OrderClaimCharge rejectCharge,
@@ -323,8 +350,12 @@ public class UserClaimQueryService {
                 .rejection(claim.getRejectedAt() == null ? null : UserClaimDto.Rejection.builder()
                         .reasonLabel(claim.getRejectReasonCode() == null ? null
                                 : claim.getRejectReasonCode().getLabel())
-                        .legalNote(LEGAL_NOTE)
-                        .sellerMessage(claim.getRejectDetail())
+                        // 법적 근거 · 메시지는 브랜드가 반려 폼에서 고른 값 그대로(1009 기획 수정본 5-b) — 그 전 행은 잠정 문구 · 상세.
+                        .legalNote(claim.getRejectLegalBasis() != null ? claim.getRejectLegalBasis().getLabel() : LEGAL_NOTE)
+                        .sellerMessage(claim.getRejectConsumerMessage() != null ? claim.getRejectConsumerMessage()
+                                : claim.getRejectDetail())
+                        .rejectedQuantity(claim.getQuantity())
+                        .faultChangedToSeller(claim.isFaultChangedToSeller())
                         .evidenceImageUrls(evidences.getOrDefault(claim.getId(), List.of()))
                         .rejectedAt(claim.getRejectedAt())
                         .build())

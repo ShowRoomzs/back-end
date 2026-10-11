@@ -388,6 +388,12 @@ public enum ErrorCode {
     CANCEL_REQUEST_ALREADY_DECIDED(HttpStatus.CONFLICT, "CANCEL_REQUEST_ALREADY_DECIDED", "이미 처리된 취소 요청입니다."),
     CANCEL_REQUEST_PENDING_EXISTS(HttpStatus.CONFLICT, "CANCEL_REQUEST_PENDING_EXISTS", "검토 중인 취소 요청이 있습니다. 요청을 먼저 처리해 주세요."),
     CANCEL_REQUEST_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CANCEL_REQUEST_REJECT_REASON_REQUIRED", "소비자에게 전달할 거부 사유를 입력해 주세요."),
+    // 어드민 거래 관리(1009 기획 수정본 8절)
+    ORDER_ACT_ON_BEHALF_NOT_ALLOWED(HttpStatus.CONFLICT, "ORDER_ACT_ON_BEHALF_NOT_ALLOWED", "대행 조건(발송 기한 경과 · 자동 알림 무응답)을 충족하지 않았습니다."),
+    REFUND_AMOUNT_EXCEEDED(HttpStatus.CONFLICT, "REFUND_AMOUNT_EXCEEDED", "환불액이 취소 가능 잔액보다 큽니다."),
+    REFUND_TASK_NOT_FOUND(HttpStatus.NOT_FOUND, "REFUND_TASK_NOT_FOUND", "환불 건을 찾을 수 없습니다."),
+    REFUND_TASK_NOT_EXECUTABLE(HttpStatus.CONFLICT, "REFUND_TASK_NOT_EXECUTABLE", "집행할 수 없는 환불 건입니다. 새로고침 후 다시 확인해 주세요."),
+    REFUND_TASK_NOT_VOIDABLE(HttpStatus.CONFLICT, "REFUND_TASK_NOT_VOIDABLE", "철회할 수 없는 환불 건입니다. 집행 전 운영자 사유 환불만 철회할 수 있습니다."),
     SELLER_CANCEL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "SELLER_CANCEL_REASON_REQUIRED", "기타 사유를 선택하면 설명을 입력해야 합니다."),
     PURCHASE_ORDER_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_COLUMNS_REQUIRED", "발주서 컬럼을 1개 이상 선택해 주세요."),
     PURCHASE_ORDER_EMPTY(HttpStatus.BAD_REQUEST, "PURCHASE_ORDER_EMPTY", "발주서로 내려받을 주문이 없습니다."),
@@ -407,7 +413,7 @@ public enum ErrorCode {
     CLAIM_INVOICE_NOT_EDITABLE(HttpStatus.CONFLICT, "CLAIM_INVOICE_NOT_EDITABLE", "이미 조회되는 송장이거나 수정 기한이 지나 송장을 수정할 수 없습니다."),
     CLAIM_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "CLAIM_WITHDRAW_NOT_ALLOWED", "이미 회수가 시작되어 요청을 철회할 수 없습니다."),
     CLAIM_AMOUNT_CHANGED(HttpStatus.CONFLICT, "CLAIM_AMOUNT_CHANGED", "배송비 금액이 달라졌습니다. 화면을 다시 불러와 확인해 주세요."),
-    CLAIM_REJECT_INCOMPLETE(HttpStatus.BAD_REQUEST, "CLAIM_REJECT_INCOMPLETE", "거절 사유 · 상세 설명 · 증빙 사진을 모두 입력해 주세요."),
+    CLAIM_REJECT_INCOMPLETE(HttpStatus.BAD_REQUEST, "CLAIM_REJECT_INCOMPLETE", "반려 사유 · 상세 설명 · 법적 근거 · 소비자 메시지 · 증빙 사진을 모두 입력해 주세요."),
     CLAIM_PAYMENT_NOT_REQUIRED(HttpStatus.CONFLICT, "CLAIM_PAYMENT_NOT_REQUIRED", "결제가 필요한 상태가 아닙니다."),
     CLAIM_EXCHANGE_OPTION_INVALID(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_OPTION_INVALID", "교환할 수 없는 옵션입니다."),
     CLAIM_EXCHANGE_SAME_OPTION(HttpStatus.BAD_REQUEST, "CLAIM_EXCHANGE_SAME_OPTION", "같은 옵션은 불량 · 오배송일 때만 교환돼요."),
@@ -416,7 +422,39 @@ public enum ErrorCode {
     CLAIM_STORAGE_NOT_EXPIRED(HttpStatus.CONFLICT, "CLAIM_STORAGE_NOT_EXPIRED", "보관 기한이 지나지 않아 폐기 처리할 수 없습니다."),
     CLAIM_EXPORT_EMPTY(HttpStatus.BAD_REQUEST, "CLAIM_EXPORT_EMPTY", "내려받을 재발송 대기 건이 없습니다."),
     CLAIM_EXPORT_COLUMNS_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "컬럼을 1개 이상 선택해 주세요."),
-    CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다.");
+    CLAIM_UPLOAD_HEADER_MISSING(HttpStatus.BAD_REQUEST, "CLAIM_UPLOAD_HEADER_MISSING", "파일에 접수번호 · 택배사 · 송장번호 열이 있어야 합니다."),
+    CLAIM_DISPUTE_ALREADY_EXISTS(HttpStatus.CONFLICT, "CLAIM_DISPUTE_ALREADY_EXISTS", "이미 접수된 이의가 있습니다. 답변 전에는 기존 문의를 수정해 주세요."),
+
+    // 정산 관리(44 어드민 정산관리 설계서 9-2 — 44 시리즈 공통 표)
+    SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_NOT_FOUND", "존재하지 않는 정산입니다."),
+    SETTLEMENT_STATE_CHANGED(HttpStatus.CONFLICT, "SETTLEMENT_STATE_CHANGED", "정산 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    /** 생성 검산(2-6) 실패 — 내부 오류다. 생성을 롤백하고 다음 회차가 다시 시도한다. */
+    SETTLEMENT_GENERATION_INCONSISTENT(HttpStatus.INTERNAL_SERVER_ERROR, "SETTLEMENT_GENERATION_INCONSISTENT", "정산 금액 검산이 맞지 않습니다."),
+    SETTLEMENT_STATEMENT_NOT_READY(HttpStatus.CONFLICT, "SETTLEMENT_STATEMENT_NOT_READY", "정산이 확정된 뒤에 명세를 내려받을 수 있습니다."),
+    SETTLEMENT_PAYOUT_RETRY_EXCEEDED(HttpStatus.CONFLICT, "SETTLEMENT_PAYOUT_RETRY_EXCEEDED", "재분배 횟수를 넘었습니다. 수동 이체 절차로 처리해 주세요."),
+    SETTLEMENT_ACCOUNT_MISSING(HttpStatus.BAD_REQUEST, "SETTLEMENT_ACCOUNT_MISSING", "수취자의 등록 계좌가 없습니다."),
+
+    // 정산 증빙(44 어드민 정산관리 설계서 5절 · 9-2)
+    SETTLEMENT_TAX_DOCUMENT_STATE_CHANGED(HttpStatus.CONFLICT, "SETTLEMENT_TAX_DOCUMENT_STATE_CHANGED", "증빙 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    SETTLEMENT_TAX_INVOICE_NUMBER_INVALID(HttpStatus.BAD_REQUEST, "SETTLEMENT_TAX_INVOICE_NUMBER_INVALID", "승인번호 24자리를 확인해 주세요 — 숫자와 하이픈(-)만 입력할 수 있어요."),
+    SETTLEMENT_TAX_INVOICE_NOT_REQUIRED(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_REQUIRED", "사업자 정산만 세금계산서를 제출합니다."),
+    SETTLEMENT_TAX_INVOICE_NOT_OPEN(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_OPEN", "지금은 세금계산서를 제출할 수 없습니다."),
+    SETTLEMENT_TAX_INVOICE_NOT_ISSUED(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_ISSUED", "세금계산서가 아직 발행되지 않았습니다."),
+    SETTLEMENT_RECEIPT_NOT_READY(HttpStatus.CONFLICT, "SETTLEMENT_RECEIPT_NOT_READY", "원천징수영수증이 아직 준비되지 않았습니다."),
+
+    // 정산 조정 협의(44 정산조정 이슈스레드 설계서 8-1)
+    SETTLEMENT_ADJUSTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_ADJUSTMENT_NOT_FOUND", "정산 조정 협의를 찾을 수 없습니다."),
+    SETTLEMENT_ADJUSTMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "SETTLEMENT_ADJUSTMENT_ACCESS_DENIED", "이 정산의 당사자가 아닙니다."),
+    SETTLEMENT_ADJUSTMENT_WINDOW_CLOSED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_WINDOW_CLOSED", "정산 확인 기간에만 조정을 요청할 수 있습니다."),
+    SETTLEMENT_ADJUSTMENT_ALREADY_EXISTS(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_ALREADY_EXISTS", "이 정산에는 이미 조정 협의가 있습니다."),
+    SETTLEMENT_ADJUSTMENT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "SETTLEMENT_ADJUSTMENT_REASON_REQUIRED", "조정 사유를 입력해 주세요."),
+    SETTLEMENT_ADJUSTMENT_AMOUNT_OUT_OF_RANGE(HttpStatus.BAD_REQUEST, "SETTLEMENT_ADJUSTMENT_AMOUNT_OUT_OF_RANGE", "리워드 금액이 조정 가능한 범위를 벗어났습니다."),
+    SETTLEMENT_ADJUSTMENT_AMOUNT_UNCHANGED(HttpStatus.BAD_REQUEST, "SETTLEMENT_ADJUSTMENT_AMOUNT_UNCHANGED", "제안 금액이 현재 요청 금액과 같습니다. 동의로 응답해 주세요."),
+    SETTLEMENT_ADJUSTMENT_NOT_YOUR_TURN(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_NOT_YOUR_TURN", "상대의 응답을 기다리는 중입니다."),
+    SETTLEMENT_ADJUSTMENT_DEADLINE_PASSED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_DEADLINE_PASSED", "합의 기한이 지났습니다."),
+    SETTLEMENT_ADJUSTMENT_STATE_CHANGED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_STATE_CHANGED", "협의 상태가 바뀌었습니다. 화면을 새로 고쳐 주세요."),
+    SETTLEMENT_ADJUSTMENT_CLOSED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_CLOSED", "종결된 이슈 스레드입니다. 메시지를 보낼 수 없습니다."),
+    THREAD_OPERATOR_READ_ONLY(HttpStatus.FORBIDDEN, "THREAD_OPERATOR_READ_ONLY", "운영팀은 이슈 스레드를 열람만 합니다.");
 
     private final HttpStatus status;
     private final String code;

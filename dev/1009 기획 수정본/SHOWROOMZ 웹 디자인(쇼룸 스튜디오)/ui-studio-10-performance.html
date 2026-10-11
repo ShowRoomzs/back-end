@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-10-performance — 쇼룸 스튜디오 성과 관리 rev.1</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule .wait{color:var(--danger-text);font-weight:600;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바 ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);padding:0 12px;height:32px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);white-space:nowrap;cursor:pointer;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:#fff;color:var(--danger-text);border:1px solid #E9C9C9;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn-danger:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-lg{height:38px;padding:0 20px;font-size:var(--fs-body);}
+
+/* ══ 입력 ══ */
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder,.ta::placeholder{color:var(--n-400);}
+.inp.is-error{border-color:var(--danger-text);}
+.ta{height:auto;min-height:76px;resize:vertical;line-height:1.65;padding-top:9px;width:100%;}
+.sel{appearance:none;-webkit-appearance:none;padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.55;}
+.hint b{color:var(--n-700);}
+
+/* 세그먼트 · 칩 */
+.seg{display:inline-flex;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;background:#fff;}
+.seg .sg{padding:0 15px;height:34px;display:flex;align-items:center;font-size:var(--fs-caption);
+  color:var(--n-600);cursor:pointer;border-right:1px solid var(--n-200);}
+.seg .sg:last-child{border-right:none;}
+.seg .sg.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.seg.dis .sg{background:var(--n-100);color:var(--n-400);cursor:not-allowed;}
+.chips{display:inline-flex;gap:6px;}
+.chip{border:1px solid var(--n-300);border-radius:16px;padding:5px 13px;font-size:var(--fs-caption);
+  color:var(--n-600);background:#fff;cursor:pointer;}
+.chip.on{background:var(--accent-50);border-color:var(--accent-500);color:var(--accent-600);font-weight:500;}
+.numinp{width:62px;text-align:center;padding-left:6px;padding-right:6px;}
+.unit{font-size:var(--fs-caption);color:var(--n-600);}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+
+/* ══ 상태 탭 ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:22px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab:hover:not(.active){color:var(--n-700);}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+
+/* ══ 툴바 ══ */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-4);flex-wrap:wrap;}
+.toolbar .spacer{flex:1;}
+.tl-lbl{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+
+/* ══ 목록 ══ */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tcard.fol tbody tr:last-child td{border-bottom:1px solid var(--n-200);}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:11px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);letter-spacing:.2px;}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);vertical-align:middle;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-nm{color:var(--accent-600);}
+.t-c{text-align:center;}
+.tnum{font-variant-numeric:tabular-nums;}
+.t-sub2{display:block;font-size:10px;color:var(--n-500);margin-top:3px;}
+.t-nm{font-weight:500;color:var(--n-900);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);display:block;margin-top:2px;}
+.t-dim{color:var(--n-400);}
+.t-date{color:var(--n-500);white-space:nowrap;}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+.empty .btn{margin-top:var(--sp-4);}
+
+/* ══ 카드 ══ */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+
+/* 폼 행 — 라벨 140px */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);padding-top:8px;}
+.frow.ro .fk{padding-top:0;}
+.fk .req{color:var(--danger-text);margin-left:2px;}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.fline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* 계약 상품 항목 */
+.items{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.it-h{display:flex;gap:56px;padding:8px 28px 8px 12px;background:var(--n-50);border-bottom:1px solid var(--n-200);
+  font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+.it-r{display:flex;gap:56px;padding:10px 28px 10px 12px;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.it-r:last-child{border-bottom:none;}
+.c-prod{width:300px;flex-shrink:0;min-width:0;} .c-price{width:96px;flex-shrink:0;} .c-rw{width:62px;flex-shrink:0;}
+.c-del{width:26px;flex-shrink:0;text-align:center;color:var(--n-400);cursor:pointer;padding-top:8px;}
+.c-del:hover{color:var(--danger-text);}
+.c-prod .inp,.c-prod .sel,.c-price .inp,.c-rw .inp,.c-qty .inp{width:100%;}
+.it-r .pmeta{font-size:var(--fs-micro);color:var(--n-500);margin-top:4px;}
+.addrow{border:1px dashed var(--n-300);border-radius:var(--r-sm);text-align:center;padding:9px;
+  font-size:var(--fs-caption);color:var(--n-600);margin-top:8px;cursor:pointer;background:#fff;}
+.addrow:hover{border-color:var(--accent-500);color:var(--accent-600);background:var(--accent-50);}
+
+/* 조항 박스(읽기 전용 표준 조항) */
+.terms{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 14px;}
+.trow{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-caption);}
+.trow:last-child{border-bottom:none;}
+.tk{width:118px;flex-shrink:0;color:var(--n-500);}
+.tv{color:var(--n-700);line-height:1.6;flex:1;}
+.tv b{color:var(--n-900);}
+.wtag{display:inline-block;border:1px dashed var(--n-400);border-radius:4px;padding:0 5px;
+  font-size:10px;color:var(--n-500);margin-left:4px;white-space:nowrap;}
+
+/* 진행 단계 */
+.steps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.stp{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:6px 10px;font-size:var(--fs-micro);
+  color:var(--n-400);background:#fff;line-height:1.35;}
+.stp .who{display:block;font-size:10px;color:var(--n-400);margin-top:1px;}
+.stp.done{background:var(--n-100);color:var(--n-600);border-color:var(--n-200);}
+.stp.done .who{color:var(--n-500);}
+.stp.cur{border-color:var(--accent-500);color:var(--accent-600);font-weight:600;background:var(--accent-50);}
+.stp.cur .who{color:var(--accent-600);}
+.stp.stop{border-color:#E9C9C9;color:var(--danger-text);font-weight:600;background:var(--danger-bg);}
+.stp.stop .who{color:var(--danger-text);}
+.stp.halt{border-color:var(--n-300);color:var(--n-600);font-weight:600;background:var(--n-100);}
+.stp.halt .who{color:var(--n-500);}
+.stp-ar{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 서명 박스 */
+.signs{display:flex;gap:12px;}
+.sbox{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px;background:var(--n-50);}
+.sbox.mine{background:var(--accent-50);border-color:var(--accent-100);}
+.s-who{font-size:var(--fs-micro);color:var(--n-500);}
+.s-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin:4px 0 10px;}
+.s-done{font-size:var(--fs-micro);color:var(--success-text);font-weight:500;}
+.s-wait{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice.neutral{background:var(--n-100);color:var(--n-600);}
+.notice.consent{background:var(--n-50);border:1px solid var(--n-200);color:var(--n-700);}
+.notice.consent b{color:var(--n-900);}
+.notice b{font-weight:600;}
+
+/* 우측 카드 */
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-acts{display:flex;flex-direction:column;gap:8px;margin-top:var(--sp-4);}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 폼 하단 액션바 */
+.formbar{display:flex;justify-content:flex-end;gap:8px;padding:var(--sp-4) 0 0;}
+
+
+/* 접미사 붙은 입력(%· 원) */
+.iw{position:relative;display:inline-flex;align-items:center;}
+.iw .inp{padding-right:26px;width:100%;}
+.iw .sfx-u{position:absolute;right:9px;font-size:var(--fs-caption);color:var(--n-500);pointer-events:none;}
+.iw.w-full{display:flex;}
+
+/* 공구 기간 트리거(달력 모달 호출) */
+.dtrig{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-body);color:var(--n-900);
+  cursor:pointer;min-width:340px;}
+.dtrig:hover{border-color:var(--accent-500);}
+.dtrig.ph{color:var(--n-400);}
+.dtrig.dis{background:var(--n-100);border-color:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.dtrig.dis:hover{border-color:var(--n-200);}
+.dtrig{min-width:260px;}
+.dtrig .cal{width:14px;height:14px;color:var(--n-500);flex-shrink:0;}
+.dtrig .dur{margin-left:auto;font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 달력 */
+.modal.cal{width:392px;}
+.cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.cal-mh{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.cal-nav{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);
+  color:var(--n-600);cursor:pointer;font-size:15px;line-height:1;border:1px solid var(--n-200);background:#fff;}
+.cal-nav:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-300);}
+.cal-nav.dis{color:var(--n-300);border-color:var(--n-100);cursor:not-allowed;}
+.cal-nav.dis:hover{background:#fff;color:var(--n-300);border-color:var(--n-100);}
+.cal-note{font-size:var(--fs-micro);color:var(--n-500);line-height:1.6;margin:8px 0 12px;}
+.cal-note b{color:var(--n-700);font-weight:600;}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;}
+.cal-wd{font-size:10px;color:var(--n-400);text-align:center;padding:0 0 8px;font-weight:600;letter-spacing:.4px;}
+.cal-d{height:38px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);
+  color:var(--n-700);cursor:pointer;border-radius:var(--r-sm);font-variant-numeric:tabular-nums;
+  position:relative;transition:background .1s;}
+.cal-d:hover:not(.off):not(.on):not(.mid):not(.blank){background:var(--n-100);}
+.cal-d.off{color:var(--n-300);cursor:not-allowed;}
+.cal-d.blank{cursor:default;}
+.cal-d.mid{background:var(--accent-50);border-radius:0;color:var(--accent-600);}
+.cal-d.on{background:var(--accent-500);color:#fff;font-weight:600;}
+.cal-d.on.s{border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-d.on.e{border-radius:0 var(--r-sm) var(--r-sm) 0;}
+/* 줄바꿈 지점의 구간 끝은 둥글게 — 행 끝에서 잘린 것처럼 보이지 않게 */
+.cal-g .cal-d.mid:nth-child(7n+1){border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-g .cal-d.mid:nth-child(7n){border-radius:0 var(--r-sm) var(--r-sm) 0;}
+.cal-g .cal-d.on.s:nth-child(7n){border-radius:var(--r-sm);}
+.cal-g .cal-d.on.e:nth-child(7n+1){border-radius:var(--r-sm);}
+.cal-d.today::after{content:"";position:absolute;bottom:5px;left:50%;margin-left:-2px;
+  width:4px;height:4px;border-radius:50%;background:var(--n-400);}
+.cal-d.on.today::after{background:rgba(255,255,255,.9);}
+.cal-time{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--n-100);}
+.cal-tl{font-size:var(--fs-caption);color:var(--n-600);font-weight:500;}
+.tsel{display:flex;align-items:center;gap:5px;}
+.tsel .sel{width:70px;padding-right:24px;height:34px;}
+.tsep{font-size:var(--fs-caption);color:var(--n-500);}
+.cal-anchor{display:flex;align-items:center;gap:8px;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;font-size:var(--fs-caption);color:var(--n-900);margin-bottom:14px;}
+.cal-anchor .ak{color:var(--n-500);}
+.cal-anchor .flink{margin-left:auto;}
+.cal-sum{margin-right:auto;align-self:center;font-size:var(--fs-caption);color:var(--n-700);
+  font-variant-numeric:tabular-nums;}
+.cal-sum .d{color:var(--accent-600);font-weight:600;}
+/* 체크박스(고지 확인) */
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:inherit;cursor:pointer;font-weight:500;}
+.cbox{width:15px;height:15px;border:1.5px solid var(--n-400);border-radius:4px;background:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.cbox svg{width:10px;height:10px;}
+.chk.on .cbox{background:var(--accent-500);border-color:var(--accent-500);}
+.chk .req{color:var(--danger-text);}
+
+/* 잠긴 세그먼트 값 */
+.seg .sg.locked{color:var(--n-400);background:var(--n-100);cursor:not-allowed;}
+
+/* 상품 항목 컬럼(정가·예상 리워드 추가) */
+.c-list{width:78px;flex-shrink:0;}
+.c-est{width:82px;flex-shrink:0;}
+.c-qty{width:80px;flex-shrink:0;}
+.ro-cell{font-size:var(--fs-caption);color:var(--n-600);padding-top:9px;font-variant-numeric:tabular-nums;}
+.c-del.dis{color:var(--n-300);cursor:not-allowed;}
+.c-del.dis:hover{color:var(--n-300);}
+
+
+/* 비고 글자수 */
+.ta-count{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:6px;}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:480px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.msum{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 12px;margin-bottom:var(--sp-4);}
+.msum .trow{padding:8px 0;} .msum .tk{width:96px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:34px;appearance:none;-webkit-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:76px;resize:vertical;line-height:1.6;height:auto;padding-top:8px;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+.mwarn{display:flex;gap:8px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:11px 13px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.7;margin-top:var(--sp-4);}
+.mwarn b{color:var(--n-900);font-weight:600;}
+
+.doc-toc{max-width:1440px;margin:0 auto 24px;background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);padding:14px 16px;}
+.toc-h{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:10px;}
+.toc-h span{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);margin-left:6px;}
+.toc-g{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 14px;}
+.toc-i{display:flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:var(--n-600);
+  text-decoration:none;padding:4px 6px;border-radius:var(--r-sm);}
+.toc-i:hover{background:var(--accent-50);color:var(--accent-600);}
+.toc-i .ti{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:17px;
+  background:var(--n-100);color:var(--n-700);border-radius:4px;font-size:10px;font-weight:600;flex-shrink:0;}
+.toc-i:hover .ti{background:var(--accent-500);color:#fff;}
+a{color:var(--accent-600);}
+a:hover{color:var(--accent-500);}
+
+/* ── 준비 조건 체크리스트 ── */
+.ck{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.ck-i{display:flex;align-items:center;gap:10px;padding:12px 13px;font-size:var(--fs-caption);
+  color:var(--n-900);border-bottom:1px solid var(--n-100);}
+.ck-i:last-child{border-bottom:none;}
+.ck-i .cm{width:18px;height:18px;border-radius:50%;background:var(--success-bg);color:var(--success-text);
+  display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700;}
+.ck-i .cl{flex:1;}
+.ck-i .cw{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.ck-i .cs{font-size:var(--fs-micro);color:var(--n-500);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.ck-i.wait{background:#FDFAF4;}
+.ck-i.wait .cm{background:var(--warning-bg);color:var(--warning-text);}
+.ck-i.wait .cl{font-weight:600;}
+.ck-i.todo .cm{background:var(--n-100);color:var(--n-400);}
+.ck-i.todo{color:var(--n-500);}
+
+/* ── 실적 KPI ── */
+.kpi{display:flex;gap:12px;}
+.kpi.g4{display:grid;grid-template-columns:repeat(4,1fr);}
+.kpi .k{flex:1;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;}
+.kpi .kl{font-size:var(--fs-micro);color:var(--n-600);}
+.kpi .kn{font-size:19px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;
+  margin-top:6px;letter-spacing:-.02em;line-height:1.2;}
+.kpi .ks{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;font-variant-numeric:tabular-nums;}
+
+/* ── 진행 마대 ── */
+.pbar{height:5px;border-radius:3px;background:var(--n-200);overflow:hidden;}
+.pbar i{display:block;height:100%;border-radius:3px;background:var(--accent-500);}
+.pbar.done i{background:var(--success-text);}
+
+/* ── 게시물 열람 ── */
+.post{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px 16px;}
+.post .pb{min-width:0;}
+.post .pitems{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.post .pchip{font-size:var(--fs-micro);color:var(--n-700);background:var(--n-100);
+  border-radius:var(--r-sm);padding:4px 9px;}
+.post .ptt{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:3px;}
+.post .pd2{font-size:var(--fs-micro);color:var(--n-600);line-height:1.65;}
+.post .pm2{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;font-variant-numeric:tabular-nums;}
+
+
+/* ══ 스튜디오 추가 ══ */
+.duty{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.duty-r{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--n-100);
+  font-size:var(--fs-caption);}
+.duty-r:last-child{border-bottom:none;}
+.duty-r.wait{background:#FDFAF4;}
+.duty-r .dl{flex:1;}
+.duty-r .dw{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.duty-r .ds{font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;font-variant-numeric:tabular-nums;}
+.duty-h{display:flex;justify-content:space-between;align-items:center;font-size:var(--fs-micro);
+  color:var(--n-600);margin-bottom:8px;}
+.duty-h b{color:var(--n-900);}
+.duty-r.off .dl{color:var(--n-600);}
+.duty-r.ro{background:#fff;}
+.duty-r.ro .dl{color:var(--n-600);}
+.duty-r.ro .dw{color:var(--n-400);}
+/* (미사용) */
+.jrow{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;}
+.jrow:last-of-type{margin-bottom:0;}
+.jrow .jt{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.jrow .jd{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.jpick{display:flex;gap:7px;margin-top:9px;}
+.jopt{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:32px;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:#fff;cursor:pointer;}
+.jopt.on{border-color:var(--accent-500);background:var(--accent-50);color:var(--accent-600);}
+.jopt.on.bad{border-color:var(--danger-text);background:var(--danger-bg);color:var(--danger-text);}
+.t-note{font-size:var(--fs-micro);color:var(--warning-text);font-weight:500;line-height:1.5;}
+.t-note.t-dim{color:var(--n-300);font-weight:400;}
+/* 공구 게시물 작성 모달 */
+.modal.wide{width:560px;}
+.gp-fix{border:1px solid var(--n-200);background:var(--n-50);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.7;}
+.gp-fix b{color:var(--n-900);}
+.gp-items{display:flex;flex-direction:column;gap:7px;margin-top:9px;}
+.gp-it{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:8px 10px;font-size:var(--fs-micro);color:var(--n-900);}
+.gp-it .gi-n{flex:1;}
+.gp-it .gi-p{font-variant-numeric:tabular-nums;color:var(--n-700);}
+.gp-it .gi-lock{font-size:10px;color:var(--n-400);}
+.mcount{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:5px;font-variant-numeric:tabular-nums;}
+.mta.tall{min-height:132px;}
+.gp-auto{display:flex;gap:8px;align-items:flex-start;border:1px dashed var(--n-300);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:var(--fs-micro);color:var(--n-600);line-height:1.7;margin-top:var(--sp-4);}
+.gp-auto b{color:var(--n-900);}
+.gp-auto .tag{display:inline-block;background:var(--n-100);border-radius:4px;padding:1px 6px;color:var(--n-700);}
+/* 원본(ui-partner-09)에 없던 변종 보강 — 성공 배너 · 상태 메타 경고값 */
+.notice.success{background:var(--success-bg);color:var(--success-text);}
+.notice.success b{color:var(--success-text);}
+.mv.warn{color:var(--warning-text);font-weight:600;}
+.stage.tall{min-height:1024px;height:auto;}
+
+/* ══ 성과 관리 rev.1 ══ */
+.kpi6{grid-template-columns:repeat(3,1fr);}
+.grp{display:flex;align-items:baseline;gap:9px;margin:var(--sp-5) 0 var(--sp-3);}
+.grp .gt2{font-size:13px;font-weight:600;color:var(--n-900);}
+.grp .gd{font-size:var(--fs-micro);color:var(--n-500);}
+.est{display:inline-block;font-size:10px;font-weight:500;color:var(--n-600);background:var(--n-100);
+  border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:1px;white-space:nowrap;}
+.dimv{color:var(--n-500)!important;}
+.fnl{display:flex;flex-direction:column;gap:0;}
+.fnl-r{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--n-100);}
+.fnl-r:last-child{border-bottom:none;}
+.fnl-r .fl{width:104px;font-size:var(--fs-caption);color:var(--n-700);}
+.fnl-r .fb{flex:1;height:18px;background:var(--n-100);border-radius:3px;overflow:hidden;}
+.fnl-r .fb i{display:block;height:100%;background:var(--accent-500);border-radius:3px;}
+.fnl-r.g .fb i{background:var(--success-text);}
+.fnl-r .fv{width:96px;text-align:right;font-size:var(--fs-caption);font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--n-900);}
+.fnl-r .fp{width:74px;text-align:right;font-size:var(--fs-micro);color:var(--n-500);
+  font-variant-numeric:tabular-nums;}
+.fnl-f{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:10px;
+  font-size:var(--fs-caption);color:var(--n-700);display:flex;justify-content:space-between;}
+.fnl-f b{font-variant-numeric:tabular-nums;}
+.brk{display:flex;flex-direction:column;gap:var(--sp-3);}
+.brk-g{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.brk-h{display:flex;align-items:center;justify-content:space-between;background:var(--n-50);
+  padding:8px 12px;font-size:var(--fs-caption);font-weight:500;color:var(--n-900);
+  border-bottom:1px solid var(--n-200);}
+.brk-h .bn{font-variant-numeric:tabular-nums;color:var(--n-700);font-weight:400;}
+.brk-l{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;
+  font-size:var(--fs-micro);color:var(--n-700);border-bottom:1px solid var(--n-100);}
+.brk-l:last-child{border-bottom:none;}
+.brk-l .bv{font-variant-numeric:tabular-nums;color:var(--n-900);}
+.brk-g.alt{background:var(--n-50);}
+.dist{display:flex;flex-direction:column;gap:7px;}
+.dist-r{display:flex;align-items:center;gap:10px;}
+.dist-r .dl2{width:58px;font-size:var(--fs-micro);color:var(--n-600);}
+.dist-r .db{flex:1;height:14px;background:var(--n-100);border-radius:3px;overflow:hidden;display:flex;}
+.dist-r .db i{display:block;height:100%;background:var(--accent-500);border-radius:3px;}
+.dist-r .db i.gf{background:#D9455F;} .dist-r .db i.gm{background:#3B5BDB;}
+.dist-r .db i.gf{border-radius:3px 0 0 3px;} .dist-r .db i.gm{border-radius:0 3px 3px 0;}
+.dist-r .db i.gf:only-child,.dist-r .db i.gm:only-child{border-radius:3px;}
+.dist-r .dvx{width:112px;flex-shrink:0;text-align:right;font-size:10px;color:var(--n-500);
+  font-variant-numeric:tabular-nums;}
+.lgd{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:400;color:var(--n-600);}
+.lgd i{width:9px;height:9px;border-radius:2px;}
+.dist-r .dv{width:44px;text-align:right;font-size:var(--fs-micro);font-weight:500;
+  font-variant-numeric:tabular-nums;color:var(--n-900);}
+.sum{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:var(--sp-3);}
+.sumrow{display:flex;justify-content:space-between;font-size:var(--fs-caption);padding:5px 0;}
+.sumrow .sk{color:var(--n-600);} .sumrow .sv{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.sumrow.tot{border-top:1px solid var(--n-200);margin-top:6px;padding-top:10px;font-weight:600;}
+.sumrow.tot .sk,.sumrow.tot .sv{color:var(--n-900);}
+.ctr-bar{display:flex;align-items:center;gap:var(--sp-4);background:var(--n-50);
+  border:1px solid var(--n-200);border-radius:var(--r-sm);padding:11px 14px;margin-bottom:var(--sp-4);}
+.ctr-bar .ci{font-size:var(--fs-caption);color:var(--n-700);}
+.ctr-bar .ci b{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.ctr-bar .cx{font-size:10px;color:var(--n-500);display:block;}
+.ctr-bar .sp{width:1px;height:26px;background:var(--n-200);}
+.tip{font-size:var(--fs-micro);color:var(--n-500);line-height:1.7;margin-top:var(--sp-3);}
+.hl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mc{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.pair2{display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-4);margin-bottom:var(--sp-4);align-items:stretch;}
+.pair2 .card{margin-bottom:0;display:flex;flex-direction:column;}
+.pair2 .card-b{flex:1;}
+.pie-wrap{display:flex;align-items:center;gap:var(--sp-5);height:100%;}
+.pie{width:148px;height:148px;border-radius:50%;flex-shrink:0;position:relative;}
+.pie::after{content:'';position:absolute;inset:37px;background:#fff;border-radius:50%;}
+.pie-c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;z-index:1;}
+.pie-c .pn{font-size:19px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;line-height:1.2;}
+.pie-c .pl{font-size:10px;color:var(--n-500);margin-top:2px;}
+.lg{display:flex;flex-direction:column;gap:11px;flex:1;min-width:0;}
+.lg-r{display:flex;align-items:center;gap:9px;font-size:var(--fs-micro);}
+.lg-r i{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.lg-r .ln{flex:1;color:var(--n-700);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.lg-r .lv{color:var(--n-900);font-weight:500;font-variant-numeric:tabular-nums;}
+.lg-r .lp{width:34px;text-align:right;color:var(--n-500);font-variant-numeric:tabular-nums;}
+.fnl2{display:flex;flex-direction:column;gap:12px;}
+.fseg{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:13px 15px;}
+.fseg-h{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:12px;}
+.fseg-h b{color:var(--n-900);font-weight:500;}
+.frow2{display:flex;align-items:center;gap:12px;margin-bottom:9px;}
+.frow2:last-child{margin-bottom:0;}
+.frow2 .fn2{width:100px;flex-shrink:0;font-size:var(--fs-caption);color:var(--n-700);}
+.frow2 .fbar2{flex:1;height:22px;background:var(--n-100);border-radius:3px;overflow:hidden;min-width:0;}
+.frow2 .fbar2 i{display:block;height:100%;background:var(--accent-500);border-radius:3px;}
+.frow2.lt .fbar2 i{background:#CED5F9;}
+.frow2 .fval{width:82px;flex-shrink:0;text-align:right;font-size:var(--fs-caption);font-weight:600;
+  color:var(--n-900);font-variant-numeric:tabular-nums;}
+.frow2 .fpct{width:66px;flex-shrink:0;text-align:right;font-size:var(--fs-micro);color:var(--n-500);
+  font-variant-numeric:tabular-nums;}
+.fnote{font-size:var(--fs-micro);color:var(--n-600);margin-top:11px;padding-top:10px;
+  border-top:1px solid var(--n-100);line-height:1.7;}
+.hb{display:flex;flex-direction:column;gap:15px;}
+.hb-r .hbl{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+  font-size:var(--fs-micro);margin-bottom:7px;}
+.hb-r .hbl .n{color:var(--n-700);}
+.hb-r .hbl .v{color:var(--n-900);font-weight:600;font-variant-numeric:tabular-nums;font-size:var(--fs-caption);}
+.hb-r .hbl .v small{font-size:11px;font-weight:400;color:var(--n-500);margin-left:3px;}
+.hb-r .hbb{height:11px;border-radius:3px;background:var(--n-100);overflow:hidden;}
+.hb-r .hbb i{display:block;height:100%;border-radius:3px;background:var(--accent-500);}
+.hb-r.t2 .hbb i{background:#6C84E5;}
+.hb-r.t3 .hbb i{background:#9DACEF;}
+.hb-f{display:flex;gap:16px;border-top:1px solid var(--n-200);margin-top:var(--sp-4);padding-top:11px;
+  font-size:var(--fs-micro);color:var(--n-600);}
+.hb-f b{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.mc .c{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;}
+.mc .mck{font-size:var(--fs-micro);color:var(--n-600);}
+.mc .cv{font-size:22px;font-weight:600;color:var(--n-900);margin-top:6px;
+  font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.2;}
+.mc .cv small{font-size:13px;font-weight:400;}
+.mc .cc{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;font-variant-numeric:tabular-nums;}
+.hl .h{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:11px 13px;}
+.hl .hk{font-size:var(--fs-micro);color:var(--n-600);}
+.hl .hv{font-size:14px;font-weight:600;color:var(--n-900);margin-top:5px;line-height:1.4;}
+.hl .hc{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;font-variant-numeric:tabular-nums;}
+tbody tr.dimrow td{color:var(--n-400);}
+tbody tr.dimrow .t-nm{color:var(--n-900);}
+
+
+/* ══ 성과 관리 전용 ══ */
+.filt{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.filt-r{display:flex;align-items:center;gap:12px;padding:11px var(--sp-4);border-bottom:1px solid var(--n-100);}
+.filt-r:last-child{border-bottom:none;}
+.filt-r .fl2{width:34px;flex-shrink:0;font-size:var(--fs-micro);color:var(--n-600);}
+.chks{display:flex;gap:16px;}
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-900);cursor:pointer;}
+.chk i{width:15px;height:15px;border-radius:3px;background:var(--accent-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.chk i svg{width:10px;height:10px;color:#fff;}
+.chk .cn2{color:var(--n-500);font-variant-numeric:tabular-nums;}
+.btn.sm{height:30px;padding:0 15px;font-size:var(--fs-caption);}
+.srch{position:relative;display:inline-flex;align-items:center;}
+.srch input{width:300px;height:30px;padding:0 11px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);font-family:inherit;font-size:var(--fs-caption);color:var(--n-900);}
+.srch input::placeholder{color:var(--n-400);}
+.period{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-700);cursor:pointer;}
+.dd{position:absolute;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-sm);
+  box-shadow:var(--shadow-popover);padding:4px;min-width:132px;z-index:20;}
+.dd .o{font-size:var(--fs-caption);color:var(--n-700);padding:7px 10px;border-radius:4px;display:flex;
+  align-items:center;justify-content:space-between;gap:10px;cursor:pointer;}
+.dd .o:hover{background:var(--n-100);}
+.dd .o.on{background:var(--accent-50);color:var(--accent-600);font-weight:500;}
+.kpi .k.hi{border-color:var(--accent-100);background:var(--accent-50);}
+.kpi .k.hi .kn{color:var(--accent-600);}
+.kpi .k.hi .kl{color:var(--accent-600);}
+.chart{display:flex;align-items:flex-end;gap:4px;height:132px;padding:0 2px;border-bottom:1px solid var(--n-200);}
+.chart .b{flex:1;background:var(--accent-100);border-radius:3px 3px 0 0;min-height:2px;}
+.chart .b.pk{background:var(--accent-500);}
+.chart .b.dim{background:var(--n-200);}
+.xax{display:flex;justify-content:space-between;font-size:10px;color:var(--n-400);margin-top:6px;
+  font-variant-numeric:tabular-nums;}
+.lgnd{display:flex;gap:14px;font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;}
+.lgnd i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px;vertical-align:-1px;}
+.rk{display:inline-flex;align-items:center;justify-content:center;width:19px;height:19px;border-radius:50%;
+  background:var(--n-100);color:var(--n-600);font-size:10px;font-weight:600;}
+.rk.t1{background:var(--accent-500);color:#fff;}
+.mini{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mini.m4{grid-template-columns:repeat(4,1fr);}
+.mini .m{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:11px 13px;}
+.mini .ml{font-size:var(--fs-micro);color:var(--n-600);}
+.mini .mn{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--n-900);
+  margin-top:6px;letter-spacing:-.02em;line-height:1.2;}
+.mini .ms{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;}
+.wait{font-size:10px;color:var(--n-500);background:var(--n-100);border-radius:4px;padding:1px 6px;
+  font-weight:500;white-space:nowrap;}
+.linkq{font-size:var(--fs-micro);color:var(--accent-600);font-weight:500;cursor:pointer;}
+.emptybox{border:1px dashed var(--n-300);border-radius:var(--r-sm);padding:34px 20px;text-align:center;}
+.emptybox .et{font-size:var(--fs-caption);font-weight:500;color:var(--n-700);}
+.emptybox .ed{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+.paysum{background:var(--accent-50);border:1px solid var(--accent-100);border-radius:var(--r-sm);padding:14px 16px;}
+.paysum .pk{font-size:var(--fs-micro);color:var(--n-600);}
+.paysum .amt{font-size:22px;font-weight:600;color:var(--accent-600);font-variant-numeric:tabular-nums;line-height:1.3;margin-top:2px;}
+.paysum .psub{font-size:var(--fs-micro);color:var(--n-600);margin-top:4px;line-height:1.6;}
+.paysum .psub b{color:var(--n-900);}
+.reqbox{border:1px solid var(--accent-100);background:var(--accent-50);border-radius:var(--r-sm);padding:14px 16px;}
+.reqbox .rq-t{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:8px;}
+.reqbox .rq-g{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:var(--fs-micro);color:var(--n-600);}
+.reqbox .rq-g b{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.reqbox .rq-acts{display:flex;gap:8px;margin-top:14px;}
+.reqbox .rq-note{font-size:var(--fs-micro);color:var(--n-600);margin-top:10px;line-height:1.7;}
+.reqbox .rq-note b{color:var(--n-900);}
+.due{color:var(--warning-text);font-weight:600;}
+</style>
+</head>
+
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-10-performance <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 성과 관리(GNB #6) rev.1</span></h1>
+  <p class="meta">1440×1024 · 전역 Compact · 액센트 인디고 #3B5BDB 단일 · 셸 출처 ui-studio-04-connections · 컴포넌트 원본 ui-partner-10c-orders-shipping · 토큰 원본 SHOWROOMZ_web_designsystem_v1_3 · 상태 4종(목록 2 · 상세 2)</p>
+  <div class="rule">
+    <b class="new">[2026.10.07 · 리워드 지급 구조 반영]</b> 리워드 카드의 「내 리워드 합계」를 <b>세전 · 계약 기준</b>으로 명시하고, 아래에 <b>판매 리워드 실지급</b> 줄을 사업자 구분별로 붙였다 — 비사업자 「원천징수는 SHOWROOMZ가 신고」(603,600 − 3.3% = 583,682) / 사업자 「부가세 포함 금액」(603,600 + 부가세 60,360 = 663,960). 이 시안의 계정은 비사업자라 비사업자 문구만 보인다. 고정 지급비의 <b>「지급 완료」 표기는 전부 걷어냈다</b> — 모델 B에서 플랫폼은 지급 여부를 모르므로 <b>「브랜드 직접 지급 · 계약 금액」</b>으로만 적는다. 실지급 줄에 고정 지급비를 넣지 않는 이유도 같다.<br>
+    <b class="new">[rev.1 — 화면 성격 교체 · 이전 시안 폐기]</b> rev.0의 <b>전체 기간 대시보드</b>(추이 · 상품 순위 · 공구 비교)를 폐기하고 <b>종료 공구 목록 + 공구별 상세 2단</b>으로 다시 만들었다. 인플루언서의 질문은 "이번 달 얼마 팔렸나"가 아니라 <b>"이 공구로 내가 얼마 벌었나 · 이 브랜드와 또 할 것인가"</b>이고, 그 답은 <b>공구 단위로 확정된 뒤에야</b> 나온다. 그래서 <b>진행중 공구는 이 화면에 없다</b> — 확정 전 숫자를 성과라고 부르면 나중에 줄어들 때 신뢰가 깨진다.<br>
+    <b>[상태는 집계 중 · 정산 완료 2종 — 확정]</b> 「정산 대기」를 두지 않는다. 인플루언서 관점에서 <b>돈이 들어오기 전은 전부 「집계 중」</b>이고, 그 안의 사유(주문 종결 대기 · 정산 확인 중 · 조정 협의 · 지급 예정)는 <b>목록에 적지 않는다</b> — 인플루언서가 할 조치가 없고, 필요하면 <b>상세에서</b> 확인한다. 상태를 셋으로 쪼개면 인플루언서가 할 수 있는 조치는 어차피 없는데 이름만 늘어난다. <b>정산 조정 협의 중인 건도 여기서는 「집계 중」</b>이며 보조문에 "정산 조정 협의 중"만 붙는다(2026.10 이행 확인 폐기 반영) — 색은 <b>중립</b>이다(원칙② · 이 화면은 경고 · 위험색을 쓰지 않는다).<br>
+    <b>[삭제 2 — 브랜드판에서 걷어낸 것]</b> ①<b>원가 · 수익 섹션 전체</b>(브랜드 기밀) ②<b>배송 운영 품질 섹션 전체</b>(발송기한 준수율 등은 <b>브랜드의 자기 성적</b>이고, 인플루언서에게 보여주면 브랜드를 평가하라는 화면이 된다). 상품별 표에도 <b>원가 · 마진 열을 넣지 않았다</b>.<br>
+    <b class="new">[상품 하이라이트 3장 · 표 아래]</b> 상품별 성과 표 <b>아래</b>에 <b>가장 많이 본 · 전환율이 높은 · 반품률이 높은</b> 상품 3장을 뒀다. 위가 아니라 아래인 이유는 <b>표가 정본</b>이고 카드는 <b>표에서 읽어낸 요약</b>이기 때문이다 — 요약을 먼저 보여주면 표를 안 읽고 카드만 믿게 된다. 세 장 모두 <b>근거 수치와 분모</b>를 함께 적어(조회 4,280회 중 251건 · 5.9%) 어떻게 나온 값인지 표와 대조할 수 있게 했고, <b>"주력 상품" 같은 평가어는 쓰지 않는다</b>. 반품률 카드도 <b>사실만</b> 적고 원인 · 책임을 판정하지 않는다.<br>
+    <b>[게시물은 공구당 1건]</b> 공구 게시물은 <b>공구마다 하나</b>이므로 표 행도 하나다 — 게시물별 비교가 성립하지 않아 <b>정렬 · 순위 컨트롤을 두지 않았다</b>.<br>
+    <b class="new">[상태 · 검색은 필터 영역으로 · 디자인시스템 v1.2 컴포넌트]</b> 상태 드롭다운과 검색을 <b>표 위 필터 패널</b>로 올렸다(디자인시스템의 <b>필터 영역(다중선택)</b> 컴포넌트 · 파트너센터와 동일 마크업). 상태를 <b>체크박스 다중선택</b>으로 바꾼 이유는 드롭다운이 <b>한 번에 하나만</b> 고르게 하기 때문이다 — 실제로는 "집계 중 + 정산 완료 둘 다" 또는 "정산 완료만" 같은 조합으로 본다. 각 항목에 <b>건수를 붙여</b> 체크를 풀기 전에 결과 규모를 알 수 있게 했다.<br>
+    &nbsp;&nbsp;· 검색은 <b>[검색] 버튼을 눌러 실행</b>한다(입력할 때마다 즉시 필터링하지 않는다) — 조건이 두 축(상태 · 검색어)이라 <b>조합을 다 정한 뒤 한 번에</b> 적용하는 것이 맞고, <b>[초기화]</b>가 두 축을 함께 되돌린다.<br>
+    &nbsp;&nbsp;· <b>정렬은 필터가 아니라 보기 옵션</b>이라 표 헤더 쪽에 남겼다 — 필터는 <b>목록의 내용</b>을, 정렬은 <b>순서</b>를 바꾼다.<br>
+    <b class="new">[목록 KPI를 8장으로 · 누적 + 평균]</b> 목록 KPI를 <b>누적 · 평균 · 구성</b> 세 성격으로 짜고 8장을 4×2로 놓았다. 누적만 있으면 <b>공구를 많이 한 사람이 잘한 것처럼</b>만 보인다 — <b>평균 리워드 · 평균 구매전환율 · 평균 재구매율 · 평균 팔로워 비율</b>이 <b>공구 1건당 성적</b>을 말해 회차가 늘어도 기준이 흔들리지 않는다. 각 평균의 <b>모집단은 정산 완료 4건</b>이며(집계 중은 수치가 없어 평균을 왜곡한다) 캡션에 "공구 1건당"을 적어 총량과 구별한다.<br>
+    &nbsp;&nbsp;· <b>쇼룸 팔로워 총량 카드는 삭제</b>했다 — 팔로워 총량은 <b>공구 성과가 아니라 쇼룸 지표</b>이고 정본은 <b>쇼룸 관리 › 쇼룸 현황</b>이다. 성과 관리에 남는 팔로워 지표는 <b>공구별 증감 · 팔로워 비중</b>처럼 <b>공구에 귀속되는 값</b>뿐이다. 빈 상태(L2)에서도 같은 8장을 <b>「—」로 두어</b> 레이아웃이 바뀌지 않게 했다.<br>
+    &nbsp;&nbsp;· <b>성비는 큰 쪽을 앞</b>에 둔다(여 83 : 남 17) — 비율 표기에서 앞자리가 큰 값이 아니면 매번 어느 쪽이 큰지 다시 읽어야 한다.<br>
+    <b>[브랜드 드롭다운 → 검색 입력]</b> 브랜드 선택 드롭다운을 <b>검색 필드로 바꿨다</b>. 인플루언서가 찾는 대상은 <b>브랜드일 때도 공구일 때도</b> 있는데(같은 브랜드와 여러 공구를 하면 브랜드로 좁혀도 여전히 목록에서 눈으로 찾아야 한다), 드롭다운은 <b>브랜드 한 축만</b> 좁힌다. 게다가 브랜드 목록은 <b>연결이 늘수록 길어지는 가변 목록</b>이라 드롭다운에 담기 나쁘다. 검색 하나로 <b>공구명 · 브랜드명 두 축</b>을 함께 받는다 — 상태 필터와 정렬은 <b>값이 고정된 축</b>이라 드롭다운으로 남긴다.<br>
+    <b class="new">[「내 공구 추이」 삭제]</b> 목록 상단의 회차별 비교(전환율 · 리워드)를 <b>뺐다</b>. 같은 정보가 <b>바로 아래 표에 회차별로 이미 있고</b>(종료일 최신순), 추이를 요약해 보여주는 순간 "오르고 있다 · 떨어지고 있다"는 <b>해석이 발생</b>한다 — 이 화면은 관찰 사실만 서술한다. 회차 비교가 필요하면 표를 <b>리워드 높은 순 · 구매전환율 높은 순</b>으로 정렬해 읽는다.<br>
+    <b>[신설 1]</b> <b>「팔로워」 섹션</b>(팔로워 · 비팔로워 비교표).<br>
+    <b class="new">[팔로워 · 비팔로워 비교는 팔로워 그룹 한 곳에서]</b> 방문과 게시물 조회를 팔로워 · 비팔로워로 나누는 일을 <b>유입 경로나 게시물 패널이 아니라 팔로워 그룹</b>에 몰았다. 세 패널이 답하는 질문이 다르기 때문이다 — 유입 경로는 <b>어디서 왔나</b>, 게시물은 <b>무엇을 보고 눌렀나</b>, 팔로워는 <b>누가 왔나</b>. 같은 분할을 두 패널에 흩으면 <b>합이 안 맞는 순간 어느 쪽이 맞는지 알 수 없다</b>. 표로 만든 것도 이유가 있다: 두 집단을 <b>같은 열에서 나란히</b> 봐야 차이(팔로워 8.3% vs 비팔로워 4.7%)가 읽히고, 누적 막대로 그리면 <b>합만 보이고 비교가 안 된다</b>.<br>
+    &nbsp;&nbsp;· 기존 「팔로워 구매전환율」 카드는 <b>표의 한 칸으로 흡수</b>했다 — 같은 수치를 카드와 표가 각각 주장하지 않게 한다. 빈 카드 자리는 <b>방문 중 팔로워 비중</b>으로 채워 표의 첫 열을 요약한다.<br>
+    &nbsp;&nbsp;· 합계 행은 두지 않는다 — 방문 · 게시물 조회 · 주문의 총량은 <b>위 패널에 이미 있고</b>, 이 표의 일은 <b>두 집단의 대비</b>다. 합계를 넣으면 같은 총량이 화면에 두 번 나온다.<br>
+    <b>[팔로워는 두 화면에 둔다 · 역할 분리]</b> 쇼룸 관리(#8) › 쇼룸 현황과 <b>같은 지표를 양쪽에 두되 단위를 다르게</b> 한다 — 쇼룸 관리는 <b>기간 전체 추이 · 팔로워 구성(연령 · 성별 · 접속)의 정본</b>, 성과 관리는 <b>이 공구 기간의 스냅샷</b>(종료 시점 총량 · 기간 증감 · 팔로워 구매전환율)이다. 총량 숫자의 <b>정본은 쇼룸 관리</b>이며, 성과 관리 팔로워 섹션 하단에서 그쪽으로 보낸다.<br>
+    <b>[「전환율」은 두 이름으로 확정]</b> ①<b>팔로우 전환율</b> = 방문자 → 팔로우 (쇼룸 관리 소관) ②<b>구매전환율</b> = 쇼룸 방문 → 구매확정 (성과 관리 소관). rev.0에서 쓰던 "상품 조회 → 주문" 정의는 <b>폐기</b>한다. 「팔로워 구매전환율」은 ②의 <b>분모만 팔로워로 바꾼 변종</b>이라 이름을 파생시키고 캡션에 분모를 명시했다 — 세 번째 개념이 아니다.<br>
+    <b class="new">[유입 경로는 방문만 · 주문 열 삭제]</b> 경로별 <b>주문 · 주문 전환율 열을 뺐다</b>. 주문을 경로에 배분하려면 <b>방문 세션과 주문을 잇는 귀속 규칙</b>(마지막 클릭인지 첫 클릭인지, 유효 기간은 며칠인지)이 필요한데 그게 정해지기 전에 숫자를 그리면 <b>정의를 UI가 먼저 확정해버린다</b>. 유입 경로는 <b>방문이 어디서 왔나</b>만 답하고, 주문으로 이어진 비율은 <b>퍼널이 전체 기준으로</b> 답한다 — 질문을 두 패널에 나눠 맡겼다. 표 대신 <b>지표 카드 4장</b>으로 바꾼 것도 같은 이유다: 열이 하나뿐인 표는 표일 이유가 없다.<br>
+    <b>[유입 경로 4종 · 쇼룸 안의 도착 지점으로 정의]</b> 경로를 <b>쇼룸 내부 탐색 · 프로필 쇼룸 링크 · 공구 게시물 링크 · 상품 상세 직접 링크</b>로 나눴다. 앞서 쓰던 "스토리 링크 · 릴스 링크"는 <b>외부 채널 구분</b>이라 두 가지 문제가 있었다 — ①<b>인스타그램 지표 금지</b> 원칙에 걸리고 ②플랫폼이 <b>외부 유입원을 신뢰성 있게 구분할 수 없다</b>(스토리 링크와 릴스 링크는 같은 링크로 들어오면 구분되지 않는다). 지금 4종은 모두 <b>쇼룸 안에서 관측되는 도착 지점</b>이라 집계가 실제로 가능하다. 네 장의 <b>방문 합이 쇼룸 방문 총량</b>과 맞아 잔여 · 기타 항목이 필요 없다.<br>
+    <b class="new">[유입은 방문 → 게시물 → 퍼널 순 · 수정]</b> 「공구 게시물」을 <b>유입 경로 아래</b>로 내렸다. 앞서 "내 콘텐츠 성적표라 먼저"로 뒀지만, 읽는 순서가 <b>어디서 왔나(경로) → 무엇을 보고 눌렀나(게시물) → 얼마가 남았나(퍼널)</b>여야 인과가 맞다. 게시물을 맨 위에 두면 방문 총량을 모르는 상태에서 조회수를 보게 된다.<br>
+    &nbsp;&nbsp;· <b class="new">유입 경로는 도넛, 게시물은 가로 막대로 나란히</b> 뒀다. 두 패널이 답하는 질문의 <b>형태가 다르기 때문</b>이다 — 유입 경로는 <b>하나의 총량을 나눠 갖는 구성비</b>(합이 100%)라 원이 맞고, 게시물은 <b>조회 → 상세 이동 → 주문으로 좁아지는 흐름</b>이라 같은 축에 놓인 막대가 맞다. 숫자만 카드로 늘어놓으면 이 차이가 안 보인다.<br>
+    &nbsp;&nbsp;· <b class="new">성별 차트를 없애고 연령대 하나로 합쳤다</b> — 성별 막대(100% 기준)와 연령대 막대(최대 구간 기준)를 <b>나란히 두면 축이 둘</b>이 되어, 「20대 여성」 조각이 「여성 전체」 막대보다 길어 보이는 왜곡이 생겼다. 부분이 전체보다 길게 그려지는 그림은 어떤 주석으로도 방어되지 않는다. 그래서 <b>차트는 하나, 축도 하나</b>로 두고 성별 총량은 <b>상단 범례(여성 84% · 남성 16%)</b>가 대신 말한다.<br>
+    &nbsp;&nbsp;· 색은 <b>여성 #D9455F · 남성 #3B5BDB</b> 두 색이다. 성별은 <b>순서가 없는 2범주</b>라 색상을 가르는 것이 맞고, 연령대는 <b>순서가 있는 구간</b>이라 색이 아니라 <b>막대 길이</b>가 순서를 말한다. 여성 색은 위험색(#B23434)과 <b>일부러 다른 값</b>이다 — 같은 붉은색이면 상태 배지의 위험색과 겹쳐 <b>에러로 오독</b>된다(원칙③ · 이 화면에는 상태색 자체가 없다).<br>
+    &nbsp;&nbsp;· 막대는 <b>가장 큰 구간(20대 44%)이 트랙을 꽉 채우도록</b> 스케일했다 — 100% 기준으로 그리면 모든 막대가 절반도 못 차 구간 차이가 눌린다. 실제 비율은 <b>오른쪽 두 숫자</b>(연령대 합계 · 여 · 남 분해)가 말하고, 조각 합은 막대 길이와 같다 — 다섯 막대의 여성 조각 합 84% · 남성 조각 합 16%가 범례와 맞는다.<br>
+    &nbsp;&nbsp;· 도넛 4조각은 <b>인디고 한 색의 명도 4단</b>이다(#3B5BDB → #CED5F9) — 경로는 <b>서로 대립하는 범주가 아니라 같은 방문의 출처</b>라서 색상을 바꿔 쓰면 상태색으로 오독된다(액센트 단일 규칙). 막대 3단도 같은 4단 팔레트를 쓴다.<br>
+    &nbsp;&nbsp;· 도넛 가운데에 <b>쇼룸 방문 총량</b>을 넣어 조각의 분모를 명시했고, 막대는 <b>최대값(게시물 조회) 기준</b>으로 스케일해 좁아지는 폭이 그대로 보이게 했다.<br>
+    <b class="new">[퍼널을 두 구간으로 쪼갠 이유]</b> 5단을 <b>한 축에 그리면 읽을 수 없다</b> — 방문 5,010에서 주문 313으로 <b>한 번에 94%가 빠지기 때문</b>에, 방문 기준으로 그리면 주문 이후 4단(313 · 305 · 304 · 291)이 모두 <b>같은 굵이 6% 막대</b>가 되어 구별이 안 된다. 그래서 <b>구간 1 = 방문 → 주문</b>(기준: 방문), <b>구간 2 = 주문 → 구매확정</b>(기준: 주문)으로 나눠 <b>각 구간에 맞는 기준</b>을 줬다. 각 구간 헤더에 <b>막대의 기준이 무엇인지</b> 적어 두 축을 섞어 읽지 않게 했다 — 기준을 안 밝히면 두 번째 구간의 긴 막대를 방문 대비로 오독한다.<br>
+    &nbsp;&nbsp;· 구간 1의 손실은 숫자로만 말한다("방문 4,697명은 주문하지 않았습니다") — <b>이탈을 붉게 칠하지 않는다</b>. 공구에서 방문 대비 주문 6%는 정상이고, 위험색으로 칠하면 <b>정상 수치를 사고로 읽게</b> 만든다(원칙①). <b>중간 단계(발송 · 배송완료)는 걷어냈다</b> — 97.4% · 99.7%처럼 <b>거의 100%인 단계는 막대로 그려도 차이가 안 보이고</b>, 인플루언서가 볼 이유도 없다(배송 처리 주체는 브랜드다). 남은 두 단(주문 · 구매확정)은 <b>연한 인디고 → 진한 인디고</b>로 두어 도착 단계가 어디인지만 표시한다. 구간 1도 같은 규칙이다(방문 연함 → 주문 진함).<br>
+    &nbsp;&nbsp;· 게시물 카드의 <b>좋아요 · 댓글 · 공유는 쇼룸 내부 지표</b>다 — 인스타그램 도달 · 저장 같은 외부 지표는 이 화면에 없다.<br>
+    <b class="new">[「취소 · 반품」 그룹 삭제]</b> 사유별 분해(단순변심 · 불량 · 오배송 · 반송)를 <b>이 화면에서 뺐다</b>. 이유는 셋이다 — ①인플루언서가 <b>취소 · 반품에 대해 할 수 있는 조치가 없다</b>(처리 주체는 브랜드다). ②사유별 분해는 <b>읽는 순간 원인을 따지게</b> 되는데, 이 화면은 책임 판정 도구가 아니고 판정 문구를 못 넣으니 정보만 남고 결론이 없다. ③반품 총량은 <b>이미 세 곳에서 말하고 있다</b> — 퍼널의 구매확정 단계, 퍼널 주석의 검산식(313 = 291+8+13+1), 상품별 표의 반품 열. 같은 사실을 네 번째로 적을 이유가 없다. <b>취소 · 반품 건별 내역이 필요하면 공구 관리(#4)</b>로 보낸다.<br>
+    &nbsp;&nbsp;· <b class="new">「판매」 그룹에서도 반품을 뺐다</b>(상품별 표의 반품 열 · 반품률 하이라이트 카드). 분모가 다른 반품률을 두 곳에서 말하던 문제가 사라지고, 반품 총량은 <b>퍼널 주석의 검산식 한 곳</b>에서만 말한다 — <b>하나의 사실은 한 곳에서</b>. 빈 자리는 <b>리워드가 큰 상품</b>으로 바꿨다.<br>
+    &nbsp;&nbsp;· <b class="new">상품별 리워드율 · 리워드 두 열을 넣었다</b> — <b>리워드율은 계약이 아니라 상품마다 다르다</b>(이 공구: 50ml 12% · 리필 7%). 그래서 공구 단위의 단일 율이라는 개념 자체를 쓰지 않고, <b>율도 행마다 표시</b>한다. 계약 조건 바의 판매 리워드는 <b>상품별 리워드율 합산</b>이라고만 말한다 — 가중평균 %를 계산해 보여주면 <b>존재하지 않는 단일 율</b>을 주장하게 된다 — 인플루언서의 질문은 "무엇이 팔렸나"가 아니라 <b>"무엇이 나를 벌게 했나"</b>다. 확정 금액만 있으면 매번 10%를 머리로 곱해야 한다. 대신 <b>고정 지급비는 상품에 배분하지 않는다</b>: 공구 단위로 계약된 금액이라 상품별로 쪼개면 <b>근거 없는 숫자</b>가 된다. 그래서 상품별 리워드 합계는 <b>판매 리워드분과만 일치</b>하고(548,000원), 그 사실을 표 아래에 적어 「내 리워드 합계」와의 차이를 설명한다.<br>
+    <b>[집계 중의 값 처리]</b> 상단 KPI 6장에서 <b>확정 수량을 빼고 팔로워 증감</b>을 넣었다 — 수량은 상품별 표에서 상품과 함께 봐야 뜻이 있고, 요약 자리에는 <b>공구가 내 쇼룸을 얼마나 키웠나</b>가 더 맞다(집계 중에도 <b>확정값</b>이라 「예정」이 붙지 않는 장점도 있다). 확정값(방문 · 유입 · 게시물 · 주문 · 팔로워)에는 표기를 붙이지 않고, 줄어들 수 있는 값에만 <b>「예정」 회색 태그 + 회색 톤</b>을 준다. <b>판매 리워드는 숫자 대신 「정산 후 확정」</b>으로 두되, <b>이미 지급된 고정 지급비는 금액 그대로</b> 보여준다 — 받은 돈을 미확정으로 표시하면 거짓이다.<br>
+    <b class="new">[빈 상태 — KPI는 남기고 값만 「—」]</b> L2에서 <b>지표 예고 카드(유입 · 판매 · 리워드)는 뺐지만 KPI 바는 남겼다</b>. 예고 카드는 <b>아직 없는 것을 미리 설명</b>하는 읽을 이유 없는 정보지만, KPI 바는 <b>자리 자체가 정보</b>다 — 카드가 없다가 생기면 <b>레이아웃이 바뀌어 다른 화면처럼</b> 보이고, 무엇이 채워질 자리인지도 알 수 없다.<br>
+    &nbsp;&nbsp;· 값은 <b>「—」이고 0원 · 0%가 아니다</b>. 0은 <b>측정해서 0</b>이라는 뜻이라 "공구를 했는데 한 개도 안 팔렸다"로 읽힌다. 여기 상태는 <b>아직 측정할 것이 없음</b>이다. 다만 <b>완료 공구는 「0건」</b>이 맞다 — 그건 실제로 센 값이다.<br>
+    
+    <b>[조회 전용]</b> 발신 액션은 <b>[이 브랜드와 재협업 제안](연결·소통 이동)</b> 하나뿐이다. 정정 요청 · 내려받기 · 기간 저장은 만들지 않았다.<br>
+    <span class="wait">[확인 필요]</span> ① 첨부된 컴포넌트 원본이 <b>ui-partner-10c-orders-shipping</b>(주문 · 배송)이라 <b>표 · 카드 · 합계행 마크업은 그 파일에서 가져왔지만</b> 성과 전용 섹션(퍼널 · 분해 트리 · 분포 바)은 <b>파트너판 성과 화면을 못 보고 새로 그렸다</b> — <code>ui-partner-12-performance.html</code>과 대조해 마크업을 맞출 필요가 있다. ② 「이 브랜드와 재협업 제안」이 <b>인플루언서 발신 액션</b>인데, 스튜디오는 수신 측이라는 원칙과 어떻게 정리할지(연결·소통의 스레드 메시지로 처리하면 원칙과 충돌하지 않는다는 판단으로 넣었다). ③ <b>「구매 소비자 중 팔로워」의 방향</b> — 이 비율이 높으면 <b>팔로워가 사준 것</b>, 낮으면 <b>새 소비자를 데려온 것</b>이라 어느 쪽도 좋다 · 나쁘다로 읽히지 않도록 캡션에 분모만 적고 해석을 붙이지 않았다. 이 판단이 맞는지 확인 필요.
+  </div>
+</div>
+
+<section class="state" id="L1">
+  <div class="state-bar"><span class="state-id">L1</span><span class="state-label">목록 · 기본</span>
+  <span class="state-spec">종료 공구 전용 — <b>진행중 공구는 나오지 않는다</b> · KPI 8장은 <b>정산 완료 4건 기준</b>(집계 중 건은 수치가 없으니 합산 · 평균 대상이 아니다) — <b>누적 2 · 평균 5 · 구성 1</b>로, 누적은 총량, 평균은 <b>공구 1건당 감각</b>, 성비는 <b>구성</b>을 답한다 · <b>쇼룸 팔로워 총량은 뺐다</b>(공구 성과가 아니라 쇼룸 지표 — 쇼룸 관리 소관) · 「내 공구 추이」는 <b>관찰 사실만</b> 적는다(평가 · 해석 문구 없음) · 상태는 <b>집계 중 · 정산 완료 2종</b></span></div>
+  <div class="stage tall">
+  <div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">성과 관리</div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div><div class="page-t">성과 관리</div><div class="page-d">종료된 공구의 확정 성과 · 2026.05.01 ~ 2026.08.31</div></div><div class="period">최근 6개월 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="width:13px;height:13px;color:var(--n-500)"><polyline points="6 9 12 15 18 9"></polyline></svg></div></div>
+      <div class="kpi g4" style="margin-bottom:var(--sp-4)">
+        <div class="k hi"><div class="kl">누적 리워드</div><div class="kn">2,536,600<span style="font-size:12px;font-weight:400"> 원</span></div><div class="ks">완료 공구 4건 합산</div></div>
+        <div class="k"><div class="kl">평균 리워드</div><div class="kn">634,150<span style="font-size:12px;font-weight:400"> 원</span></div><div class="ks">공구 1건당</div></div>
+        <div class="k"><div class="kl">완료 공구</div><div class="kn">4<span style="font-size:12px;font-weight:400"> 건</span></div><div class="ks">집계가 끝난 공구</div></div>
+        <div class="k"><div class="kl">평균 구매전환율</div><div class="kn">5.4%</div><div class="ks">쇼룸 방문 대비 구매확정</div></div>
+        <div class="k"><div class="kl">평균 재구매율</div><div class="kn">28.6%</div><div class="ks">구매 소비자 중 재구매</div></div>
+        <div class="k"><div class="kl">평균 구매 소비자 중 팔로워</div><div class="kn">45.2%</div><div class="ks">구매한 소비자 중 팔로워</div></div>
+        <div class="k"><div class="kl">평균 공구 게시물 조회수</div><div class="kn">4,180<span style="font-size:12px;font-weight:400"> 회</span></div><div class="ks">공구 1건당</div></div>
+        <div class="k"><div class="kl">성비 (여 : 남)</div><div class="kn">83<span style="font-size:12px;font-weight:400">:</span>17</div><div class="ks">구매 소비자 기준</div></div>
+      </div>
+      <div class="filt">
+        <div class="filt-r">
+          <span class="fl2">상태</span>
+          <div class="chks">
+            <span class="chk"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></i>집계 중 <span class="cn2">2</span></span>
+            <span class="chk"><i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></i>정산 완료 <span class="cn2">4</span></span>
+          </div>
+        </div>
+        <div class="filt-r">
+          <span class="fl2">검색</span>
+          <span class="srch"><input placeholder="공구명 · 브랜드명 검색"></span>
+          <span style="display:flex;gap:7px"><button class="btn btn-primary sm">검색</button><button class="btn btn-secondary sm">초기화</button></span>
+        </div>
+      </div>
+      <div class="tcard">
+        <div class="tbar">
+          <div class="tbar-l">총 <b>6</b>건 · 정산 완료 4 · 집계 중 2</div>
+          <div class="tbar-r">
+            <select class="sel-sm"><option>종료일 최신순</option><option>리워드 높은 순</option><option>구매전환율 높은 순</option></select>
+          </div>
+        </div>
+        <table>
+          <colgroup><col><col style="width:112px"><col style="width:136px"><col style="width:126px"><col style="width:96px"><col style="width:100px"><col style="width:118px"><col style="width:98px"></colgroup>
+          <thead><tr><td>공구</td><td>브랜드</td><td class="t-c">기간</td><td class="t-c">확정 거래액</td><td class="t-c">판매 수량</td><td class="t-c">구매전환율</td><td class="t-c">내 리워드</td><td class="t-c">상태</td></tr></thead>
+          <tbody>
+            <tr class="dimrow"><td><span class="t-nm">하이드라 앰플 공구</span></td><td>퓨어네이처</td><td class="t-c t-date tnum">08.20 ~ 08.26</td><td class="t-c">—</td><td class="t-c">—</td><td class="t-c">—</td><td class="t-c">—</td><td class="t-c"><span class="badge b-neutral">집계 중</span></td></tr>
+            <tr class="dimrow"><td><span class="t-nm">리프팅 크림 공구</span></td><td>글로우코스</td><td class="t-c t-date tnum">08.10 ~ 08.16</td><td class="t-c">—</td><td class="t-c">—</td><td class="t-c">—</td><td class="t-c">—</td><td class="t-c"><span class="badge b-neutral">집계 중</span></td></tr>
+            <tr><td><span class="t-nm">데일리 선크림 공구</span></td><td>데일리랩</td><td class="t-c t-date tnum">08.01 ~ 08.07</td><td class="t-c tnum">5,480,000원</td><td class="t-c tnum">274개</td><td class="t-c tnum">5.8%</td><td class="t-c tnum">1,003,600원</td><td class="t-c"><span class="badge b-success">정산 완료</span></td></tr>
+            <tr><td><span class="t-nm">글로우 세럼 공구</span></td><td>글로우코스</td><td class="t-c t-date tnum">07.05 ~ 07.11</td><td class="t-c tnum">4,120,000원</td><td class="t-c tnum">206개</td><td class="t-c tnum">5.6%</td><td class="t-c tnum">618,000원</td><td class="t-c"><span class="badge b-success">정산 완료</span></td></tr>
+            <tr><td><span class="t-nm">수분 앰플 공구</span></td><td>데일리랩</td><td class="t-c t-date tnum">06.10 ~ 06.16</td><td class="t-c tnum">3,620,000원</td><td class="t-c tnum">181개</td><td class="t-c tnum">5.2%</td><td class="t-c tnum">543,000원</td><td class="t-c"><span class="badge b-success">정산 완료</span></td></tr>
+            <tr><td><span class="t-nm">클렌징 밤 공구</span></td><td>글로우코스</td><td class="t-c t-date tnum">05.14 ~ 05.20</td><td class="t-c tnum">2,480,000원</td><td class="t-c tnum">155개</td><td class="t-c tnum">4.9%</td><td class="t-c tnum">372,000원</td><td class="t-c"><span class="badge b-success">정산 완료</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tip">집계 중인 공구는 <b>모든 주문 처리가 끝나면 열람할 수 있습니다</b>. 진행 중인 공구는 <b>공구 관리</b>에서 확인합니다.</div>
+    </div>
+  </div>
+</section>
+
+<section class="state" id="L2">
+  <div class="state-bar"><span class="state-id">L2</span><span class="state-label">목록 · 빈 상태</span>
+  <span class="state-spec">KPI 바는 <b>자리를 지키고 값만 「—」</b>로 둔다 — 카드가 아예 없으면 데이터가 생겼을 때 <b>레이아웃이 바뀌어</b> 다른 화면처럼 보인다 · <b>0원 · 0%를 쓰지 않는다</b>(측정된 0이 아니라 <b>아직 없음</b>이다) · 표 · 추이는 두지 않고 <b>갈 곳</b>을 준다</span></div>
+  <div class="stage tall">
+  <div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">성과 관리</div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h"><div><div class="page-t">성과 관리</div><div class="page-d">아직 종료된 공구가 없습니다</div></div></div>
+      <div class="kpi g4" style="margin-bottom:var(--sp-4)">
+        <div class="k"><div class="kl">누적 리워드</div><div class="kn dimv">—</div><div class="ks">완료 공구 0건</div></div>
+        <div class="k"><div class="kl">평균 리워드</div><div class="kn dimv">—</div><div class="ks">공구 1건당</div></div>
+        <div class="k"><div class="kl">완료 공구</div><div class="kn">0<span style="font-size:12px;font-weight:400"> 건</span></div><div class="ks">집계가 끝난 공구</div></div>
+        <div class="k"><div class="kl">평균 구매전환율</div><div class="kn dimv">—</div><div class="ks">쇼룸 방문 대비 구매확정</div></div>
+        <div class="k"><div class="kl">평균 재구매율</div><div class="kn dimv">—</div><div class="ks">구매 소비자 중 재구매</div></div>
+        <div class="k"><div class="kl">평균 구매 소비자 중 팔로워</div><div class="kn dimv">—</div><div class="ks">구매한 소비자 중 팔로워</div></div>
+        <div class="k"><div class="kl">평균 공구 게시물 조회수</div><div class="kn dimv">—</div><div class="ks">공구 1건당</div></div>
+        <div class="k"><div class="kl">성비 (여 : 남)</div><div class="kn dimv">—</div><div class="ks">구매 소비자 기준</div></div>
+      </div>
+      <div class="card"><div class="card-b">
+        <div class="empty">
+          <div class="empty-t">공구 종료 후 성과가 집계됩니다</div>
+          <div class="empty-d">진행 중인 공구는 <b>공구 관리</b>에서 확인할 수 있습니다.</div>
+          <button class="btn btn-secondary">공구 관리로 이동</button>
+        </div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section class="state" id="D1">
+  <div class="state-bar"><span class="state-id">D1</span><span class="state-label">상세 · 정산 완료(확정 성과)</span>
+  <span class="state-spec"><b>확정 성과 정본</b> — 모든 수치가 확정값이라 「예정」 표기가 없다 · 배치는 <b>유입(내 게시물 먼저) → 판매 → 소비자 → 팔로워 → 취소·반품 → 리워드</b> · <b>원가 · 마진 · 배송 운영 품질 열 없음</b> · 검산 313 = 291+8+13+1 · 220+54 = 274 · 528,000+75,600 = 603,600 · 603,600+400,000 = 1,003,600</span></div>
+  <div class="stage tall">
+  <div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">성과 관리 › 데일리 선크림 공구</div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h">
+        <div><div class="page-t">데일리 선크림 공구</div><div class="page-d">데일리랩 · 2026.08.01 ~ 08.07 <span class="badge b-success" style="margin-left:6px">정산 완료</span></div></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-ghost">목록으로</button><button class="btn btn-secondary">이 브랜드와 재협업 제안</button></div>
+      </div>
+      <div class="ctr-bar">
+        <div class="ci">판매 리워드 <b>603,600원</b><span class="cx">상품별 리워드율 합산</span></div><div class="sp"></div>
+        <div class="ci">고정 지급비 <b>400,000원</b><span class="cx">브랜드 직접 지급</span></div><div class="sp"></div>
+        <div class="ci">총 리워드 <b>1,003,600원</b><span class="cx">판매 리워드 + 고정 지급비</span></div>
+        <button class="btn btn-ghost" style="margin-left:auto;text-decoration:underline;text-underline-offset:3px">계약서 보기</button>
+      </div>
+      <div class="kpi kpi6" style="margin-bottom:var(--sp-4)">
+        <div class="k hi"><div class="kl">내 리워드</div><div class="kn">1,003,600<span style="font-size:12px;font-weight:400"> 원</span></div><div class="ks">리워드 + 고정 지급비</div></div>
+        <div class="k"><div class="kl">확정 거래액</div><div class="kn">5,480,000<span style="font-size:12px;font-weight:400"> 원</span></div><div class="ks">구매확정 291건 기준</div></div>
+        <div class="k"><div class="kl">구매전환율</div><div class="kn">5.8%</div><div class="ks">쇼룸 방문 5,010명 대비 구매확정</div></div>
+        <div class="k"><div class="kl">재구매율</div><div class="kn">30.5%</div><div class="ks">구매 소비자 269명 중 82명</div></div>
+        <div class="k"><div class="kl">팔로워 증감</div><div class="kn">+312<span style="font-size:12px;font-weight:400"> 명</span></div><div class="ks">공구 기간 중 · 종료 시점 4,350명</div></div>
+        <div class="k"><div class="kl">성비 (여 : 남)</div><div class="kn">84<span style="font-size:12px;font-weight:400">:</span>16</div><div class="ks">구매 소비자 269명 기준</div></div>
+      </div>
+
+      <div class="grp"><span class="gt2">유입</span><span class="gd">방문이 어디서 왔고 무엇을 보고 눌렀나</span></div>
+      <div class="pair2">
+        <div class="card">
+          <div class="card-h">유입 경로<span class="ch-n">4종 합계 = 쇼룸 방문</span></div>
+          <div class="card-b">
+            <div class="pie-wrap">
+              <div class="pie" style="background:conic-gradient(var(--accent-500) 0% 29%,#6C84E5 29% 54%,#9DACEF 54% 91%,#CED5F9 91% 100%)"><div class="pie-c"><div class="pn">5,010</div><div class="pl">쇼룸 방문</div></div></div>
+              <div class="lg">
+                <div class="lg-r"><i style="background:var(--accent-500)"></i><span class="ln">쇼룸 내부 탐색</span><span class="lv">1,480</span><span class="lp">29%</span></div>
+                <div class="lg-r"><i style="background:#6C84E5"></i><span class="ln">프로필 쇼룸 링크</span><span class="lv">1,260</span><span class="lp">25%</span></div>
+                <div class="lg-r"><i style="background:#9DACEF"></i><span class="ln">공구 게시물 링크</span><span class="lv">1,840</span><span class="lp">37%</span></div>
+                <div class="lg-r"><i style="background:#CED5F9"></i><span class="ln">상품 상세 직접 링크</span><span class="lv">430</span><span class="lp">9%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">공구 게시물<span class="ch-n">쇼룸 내부 지표 · 게시물 1건</span></div>
+          <div class="card-b">
+            <div class="hb">
+              <div class="hb-r"><div class="hbl"><span class="n">게시물 조회</span><span class="v">4,580회<small>고유 3,860명</small></span></div><div class="hbb"><i style="width:100%"></i></div></div>
+              <div class="hb-r t2"><div class="hbl"><span class="n">상품 상세 이동</span><span class="v">2,560회<small>조회 대비 55.9%</small></span></div><div class="hbb"><i style="width:55.9%"></i></div></div>
+              <div class="hb-r t3"><div class="hbl"><span class="n">게시물 → 주문</span><span class="v">273건<small>상세 대비 10.7%</small></span></div><div class="hbb"><i style="width:6%"></i></div></div>
+            </div>
+            <div class="hb-f"><span>좋아요 <b>284</b></span><span>공유 <b>62</b>회</span><span style="margin-left:auto;color:var(--n-500)">주문은 게시물 경유분</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">전환 퍼널<span class="ch-n">두 구간으로 나눠 봅니다 · 각 구간의 기준이 다릅니다</span></div>
+        <div class="card-b">
+          <div class="fnl2">
+            <div class="fseg">
+              <div class="fseg-h">구간 1 · <b>방문에서 주문까지</b> — 막대 기준 = 쇼룸 방문 5,010명</div>
+              <div class="frow2 lt"><span class="fn2">쇼룸 방문</span><span class="fbar2"><i style="width:100%"></i></span><span class="fval">5,010명</span><span class="fpct">100%</span></div>
+              <div class="frow2"><span class="fn2">주문(결제완료)</span><span class="fbar2"><i style="width:6.2%"></i></span><span class="fval">313건</span><span class="fpct">6.2%</span></div>
+              <div class="fnote">방문 <b>4,697명</b>은 주문하지 않았습니다.</div>
+            </div>
+            <div class="fseg">
+              <div class="fseg-h">구간 2 · <b>주문에서 구매확정까지</b> — 막대 기준 = 주문 313건</div>
+              <div class="frow2 lt"><span class="fn2">주문</span><span class="fbar2"><i style="width:100%"></i></span><span class="fval">313건</span><span class="fpct">100%</span></div>
+              <div class="frow2"><span class="fn2">구매확정</span><span class="fbar2"><i style="width:93%"></i></span><span class="fval">291건</span><span class="fpct">93.0%</span></div>
+              <div class="fnote">막대와 비율 모두 <b>주문 대비</b>입니다. 주문 313건 = 구매확정 291 + 취소 8 + 반품 13 + 배송 예외 1 · 건별 내역은 <b>공구 관리</b>에서 봅니다.</div>
+            </div>
+          </div>
+          <div class="fnl-f"><span>방문 대비 최종 구매전환율</span><b>5.8%</b></div>
+        </div>
+      </div>
+      <div class="grp"><span class="gt2">판매</span><span class="gd">무엇이 얼마나 팔렸나</span></div>
+      <div class="card">
+        <div class="card-h">상품별 성과</div>
+        <div class="tcard" style="border:none;border-radius:0">
+          <table>
+            <colgroup><col><col style="width:96px"><col style="width:80px"><col style="width:96px"><col style="width:126px"><col style="width:86px"><col style="width:120px"></colgroup>
+            <thead><tr><td>상품</td><td class="t-c">상세 조회</td><td class="t-c">주문</td><td class="t-c">확정 수량</td><td class="t-c">확정 금액</td><td class="t-c">리워드율</td><td class="t-c">리워드</td></tr></thead>
+            <tbody>
+              <tr><td><span class="t-nm">데일리 선크림 50ml</span></td><td class="t-c tnum">4,280</td><td class="t-c tnum">251</td><td class="t-c tnum">220개</td><td class="t-c tnum">4,400,000원</td><td class="t-c tnum">12%</td><td class="t-c tnum">528,000원</td></tr>
+              <tr><td><span class="t-nm">데일리 선크림 리필</span></td><td class="t-c tnum">1,640</td><td class="t-c tnum">62</td><td class="t-c tnum">54개</td><td class="t-c tnum">1,080,000원</td><td class="t-c tnum">7%</td><td class="t-c tnum">75,600원</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-b" style="border-top:1px solid var(--n-200)">
+          <div class="tip" style="margin-top:0;margin-bottom:var(--sp-4)"><b>리워드율은 상품마다 다릅니다</b> — 계약에서 상품별로 정한 율이며 여기 표시된 값이 그대로 적용됩니다. 두 상품 합계 <b>603,600원</b>이 판매 리워드와 같습니다 — <b>고정 지급비는 상품에 배분되지 않습니다</b>(공구 단위로 지급).</div>
+          <div class="hl">
+            <div class="h"><div class="hk">가장 많이 본 상품</div><div class="hv">데일리 선크림 50ml</div><div class="hc">상세 조회 4,280회 · 전체의 72%</div></div>
+            <div class="h"><div class="hk">전환율이 높은 상품</div><div class="hv">데일리 선크림 50ml</div><div class="hc">조회 4,280회 중 251건 · 5.9%</div></div>
+            <div class="h"><div class="hk">리워드가 큰 상품</div><div class="hv">데일리 선크림 50ml</div><div class="hc">528,000원 · 판매 리워드의 87%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp"><span class="gt2">소비자</span><span class="gd">누가 샀나</span></div>
+      <div class="card">
+        <div class="card-h">소비자 분석<span class="ch-n">구매확정 291건 · 구매 소비자 269명 기준</span></div>
+        <div class="card-b">
+          <div class="mini m4">
+            <div class="m"><div class="ml">구매 소비자</div><div class="mn">269명</div><div class="ms">구매확정 291건 · 같은 소비자의 재구매 제외</div></div>
+            <div class="m"><div class="ml">신규 소비자</div><div class="mn">187명</div><div class="ms">내 공구 첫 구매 · 구매 소비자의 69.5%</div></div>
+            <div class="m"><div class="ml">재구매 소비자</div><div class="mn">82명</div><div class="ms">이전 내 공구에서도 구매</div></div>
+            <div class="m"><div class="ml">구매 소비자 중 팔로워</div><div class="mn">47.6%</div><div class="ms">구매 소비자 269명 중 128명이 내 쇼룸 팔로워</div></div>
+          </div>
+          <div style="margin-top:var(--sp-4)">
+            <div class="sec-t" style="display:flex;align-items:center;gap:13px;margin-bottom:12px">연령대 · 성별
+              <span class="lgd"><i style="background:#D9455F"></i>여성 84%</span>
+              <span class="lgd"><i style="background:#3B5BDB"></i>남성 16%</span>
+              <span style="margin-left:auto;font-weight:400;color:var(--n-500);font-size:var(--fs-micro)">막대는 최대 구간(20대) 기준</span>
+            </div>
+            <div class="dist">
+              <div class="dist-r"><span class="dl2">10대</span><span class="db"><i class="gf" style="width:13.6%"></i><i class="gm" style="width:2.3%"></i></span><span class="dv">7%</span><span class="dvx">여 6 / 남 1</span></div>
+              <div class="dist-r"><span class="dl2">20대</span><span class="db"><i class="gf" style="width:84.1%"></i><i class="gm" style="width:15.9%"></i></span><span class="dv">44%</span><span class="dvx">여 37 / 남 7</span></div>
+              <div class="dist-r"><span class="dl2">30대</span><span class="db"><i class="gf" style="width:59.1%"></i><i class="gm" style="width:11.4%"></i></span><span class="dv">31%</span><span class="dvx">여 26 / 남 5</span></div>
+              <div class="dist-r"><span class="dl2">40대</span><span class="db"><i class="gf" style="width:26.1%"></i><i class="gm" style="width:5.7%"></i></span><span class="dv">14%</span><span class="dvx">여 11.5 / 남 2.5</span></div>
+              <div class="dist-r"><span class="dl2">50대+</span><span class="db"><i class="gf" style="width:8%"></i><i class="gm" style="width:1.1%"></i></span><span class="dv">4%</span><span class="dvx">여 3.5 / 남 0.5</span></div>
+            </div>
+          </div>
+          <div class="tip">막대 안 두 색은 여성 · 남성이고, 오른쪽 숫자는 <b>전체 소비자 대비 비율</b>입니다(연령대 합계 → 여 · 남 분해). 구간 인원이 5명 미만이면 «기타»로 합산해 표시합니다.</div>
+        </div>
+      </div>
+
+      <div class="grp"><span class="gt2">팔로워</span><span class="gd">내 쇼룸이 얼마나 커졌나</span></div>
+      <div class="card">
+        <div class="card-h">팔로워<span class="ch-n">쇼룸 팔로워 · 팔로워와 비팔로워 비교</span></div>
+        <div class="tcard fol" style="border:none;border-radius:0">
+          <table>
+            <colgroup><col><col style="width:120px"><col style="width:120px"><col style="width:104px"><col style="width:124px"></colgroup>
+            <thead><tr><td>구분</td><td class="t-c">쇼룸 방문</td><td class="t-c">게시물 조회</td><td class="t-c">주문</td><td class="t-c">구매전환율</td></tr></thead>
+            <tbody>
+              <tr><td><span class="t-nm">팔로워</span></td><td class="t-c tnum">1,540</td><td class="t-c tnum">1,390</td><td class="t-c tnum">138</td><td class="t-c tnum">8.3%</td></tr>
+              <tr><td><span class="t-nm">비팔로워</span></td><td class="t-c tnum">3,470</td><td class="t-c tnum">3,190</td><td class="t-c tnum">175</td><td class="t-c tnum">4.7%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-b">
+          <div class="mini">
+            <div class="m"><div class="ml">쇼룸 팔로워</div><div class="mn">4,350명</div><div class="ms">공구 종료 시점</div></div>
+            <div class="m"><div class="ml">공구 기간 증감</div><div class="mn">+312명</div><div class="ms">2026.08.01 ~ 08.07 사이</div></div>
+            <div class="m"><div class="ml">방문 중 팔로워 비중</div><div class="mn">31%</div><div class="ms">방문 5,010명 중 1,540명</div></div>
+          </div>
+          <div class="tip">구매전환율은 <b>구간별 방문 대비 구매확정</b>입니다(팔로워 128건 · 비팔로워 163건 · 합계 291건). 팔로워 수는 소비자 앱에서 이 쇼룸을 팔로우한 소비자 기준이며, 기간 전체 추이와 팔로워 구성은 <span class="linkq">쇼룸 관리 › 쇼룸 현황</span>에서 봅니다.</div>
+        </div>
+      </div>
+
+      <div class="grp"><span class="gt2">리워드</span><span class="gd">내가 얼마 받나</span></div>
+      <div class="card">
+        <div class="card-h">리워드<span class="ch-n">판매 리워드 + 고정 지급비</span></div>
+        <div class="card-b">
+          <div class="sum" style="border-top:none;margin-top:0;padding-top:0">
+            <div class="sumrow"><span class="sk">확정 거래액</span><span class="sv">5,480,000원</span></div>
+            <div class="sumrow"><span class="sk">판매 리워드</span><span class="sv">603,600원</span></div>
+            <div class="sumrow"><span class="sk">고정 지급비 <span style="color:var(--n-500);font-size:var(--fs-micro)">브랜드 직접 지급 · 계약 금액</span></span><span class="sv">400,000원</span></div>
+            <div class="sumrow tot"><span class="sk">내 리워드 합계 <span style="color:var(--n-500);font-size:var(--fs-micro);font-weight:400">세전 · 계약 기준</span></span><span class="sv">1,003,600원</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:var(--sp-4)">
+            <span class="badge b-success">정산 완료</span>
+            <button class="btn btn-secondary" style="margin-left:auto">정산 상세 보기</button>
+          </div>
+          <div class="sum" style="margin-top:var(--sp-3)"><div class="sumrow"><span class="sk">판매 리워드 실지급 <span style="color:var(--n-500);font-size:var(--fs-micro)">비사업자 · 3.3% 원천징수는 SHOWROOMZ가 신고</span></span><span class="sv">583,682원</span></div></div>
+<div class="tip">리워드는 <b>SHOWROOMZ가 지급</b>합니다 · 고정 지급비는 <b>브랜드가 직접 지급</b>하는 계약 금액이라 플랫폼이 지급 여부를 알지 못하며 실지급에 포함되지 않습니다 · 지급 명세는 <b>정산 관리</b>에서 확인합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="state" id="D2">
+  <div class="state-bar"><span class="state-id">D2</span><span class="state-label">상세 · 집계 중(예정 표시)</span>
+  <span class="state-spec">공구는 끝났지만 반품 · 회수가 남아 있는 상태다 — 확정되지 않은 값은 <b>「예정」으로 표시</b>하고, <b>값이 줄어들 수 있다는 사실</b>을 명시한다 · 확정값(방문 · 유입 · 게시물 · 주문 · 팔로워)에는 예정 표기를 붙이지 않는다 · 판매 리워드는 값 대신 <b>「정산 후 확정」</b>, 이미 지급된 <b>고정 지급비만 금액 표시</b> · 안내는 <b>중립 톤</b>(경고 · 정보색 금지) · 검산 358 = 331+7+19+1</span></div>
+  <div class="stage tall">
+  <div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item active"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">성과 관리 › 하이드라 앰플 공구</div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+    <div class="main">
+      <div class="page-h">
+        <div><div class="page-t">하이드라 앰플 공구</div><div class="page-d">퓨어네이처 · 2026.08.20 ~ 08.26 <span class="badge b-neutral" style="margin-left:6px">집계 중</span></div></div>
+        <div style="display:flex;gap:8px"><button class="btn btn-ghost">목록으로</button><button class="btn btn-secondary">이 브랜드와 재협업 제안</button></div>
+      </div>
+      <div class="notice neutral" style="margin-bottom:var(--sp-4)"><div><b>미처리 반품 3건이 남아 있습니다.</b> 아래 «예정» 표시 값은 처리 결과에 따라 줄어들 수 있습니다.</div></div>
+      <div class="ctr-bar">
+        <div class="ci">판매 리워드 <b>정산 후 확정</b><span class="cx">상품별 리워드율 합산 · 예정 677,400원</span></div><div class="sp"></div>
+        <div class="ci">고정 지급비 <b>300,000원</b><span class="cx">브랜드 직접 지급</span></div><div class="sp"></div>
+        <div class="ci">총 리워드 <b>정산 후 확정</b><span class="cx">판매 리워드는 정산 후 확정</span></div>
+        <button class="btn btn-ghost" style="margin-left:auto;text-decoration:underline;text-underline-offset:3px">계약서 보기</button>
+      </div>
+      <div class="kpi kpi6" style="margin-bottom:var(--sp-4)">
+        <div class="k"><div class="kl">내 리워드</div><div class="kn dimv"><span class="dimv" style="font-size:16px">정산 후 확정</span></div><div class="ks">리워드 + 고정 지급비</div></div>
+        <div class="k"><div class="kl">확정 거래액</div><div class="kn dimv">6,120,000<span style="font-size:12px;font-weight:400"> 원</span><span class="est">예정</span></div><div class="ks">구매확정 331건 기준</div></div>
+        <div class="k"><div class="kl">구매전환율</div><div class="kn dimv">5.3%<span class="est">예정</span></div><div class="ks">쇼룸 방문 6,240명 대비 구매확정</div></div>
+        <div class="k"><div class="kl">재구매율</div><div class="kn dimv">27.3%<span class="est">예정</span></div><div class="ks">구매 소비자 308명 중 84명</div></div>
+        <div class="k"><div class="kl">팔로워 증감</div><div class="kn">+286<span style="font-size:12px;font-weight:400"> 명</span></div><div class="ks">공구 기간 중 · 종료 시점 4,790명</div></div>
+        <div class="k"><div class="kl">성비 (여 : 남)</div><div class="kn dimv">84<span style="font-size:12px;font-weight:400">:</span>16<span class="est">예정</span></div><div class="ks">구매 소비자 308명 기준</div></div>
+      </div>
+
+      <div class="grp"><span class="gt2">유입</span><span class="gd">방문이 어디서 왔고 무엇을 보고 눌렀나</span></div>
+      <div class="pair2">
+        <div class="card">
+          <div class="card-h">유입 경로<span class="ch-n">4종 합계 = 쇼룸 방문</span></div>
+          <div class="card-b">
+            <div class="pie-wrap">
+              <div class="pie" style="background:conic-gradient(var(--accent-500) 0% 29%,#6C84E5 29% 54%,#9DACEF 54% 92%,#CED5F9 92% 100%)"><div class="pie-c"><div class="pn">6,240</div><div class="pl">쇼룸 방문</div></div></div>
+              <div class="lg">
+                <div class="lg-r"><i style="background:var(--accent-500)"></i><span class="ln">쇼룸 내부 탐색</span><span class="lv">1,820</span><span class="lp">29%</span></div>
+                <div class="lg-r"><i style="background:#6C84E5"></i><span class="ln">프로필 쇼룸 링크</span><span class="lv">1,560</span><span class="lp">25%</span></div>
+                <div class="lg-r"><i style="background:#9DACEF"></i><span class="ln">공구 게시물 링크</span><span class="lv">2,340</span><span class="lp">38%</span></div>
+                <div class="lg-r"><i style="background:#CED5F9"></i><span class="ln">상품 상세 직접 링크</span><span class="lv">520</span><span class="lp">8%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">공구 게시물<span class="ch-n">쇼룸 내부 지표 · 게시물 1건</span></div>
+          <div class="card-b">
+            <div class="hb">
+              <div class="hb-r"><div class="hbl"><span class="n">게시물 조회</span><span class="v">5,660회<small>고유 4,720명</small></span></div><div class="hbb"><i style="width:100%"></i></div></div>
+              <div class="hb-r t2"><div class="hbl"><span class="n">상품 상세 이동</span><span class="v">3,090회<small>조회 대비 54.6%</small></span></div><div class="hbb"><i style="width:54.6%"></i></div></div>
+              <div class="hb-r t3"><div class="hbl"><span class="n">게시물 → 주문</span><span class="v">319건<small>상세 대비 10.3%</small></span></div><div class="hbb"><i style="width:5.6%"></i></div></div>
+            </div>
+            <div class="hb-f"><span>좋아요 <b>341</b></span><span>공유 <b>78</b>회</span><span style="margin-left:auto;color:var(--n-500)">주문은 게시물 경유분</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-h">전환 퍼널<span class="ch-n">두 구간으로 나눠 봅니다 · 각 구간의 기준이 다릅니다</span></div>
+        <div class="card-b">
+          <div class="fnl2">
+            <div class="fseg">
+              <div class="fseg-h">구간 1 · <b>방문에서 주문까지</b> — 막대 기준 = 쇼룸 방문 6,240명</div>
+              <div class="frow2 lt"><span class="fn2">쇼룸 방문</span><span class="fbar2"><i style="width:100%"></i></span><span class="fval">6,240명</span><span class="fpct">100%</span></div>
+              <div class="frow2"><span class="fn2">주문(결제완료)</span><span class="fbar2"><i style="width:5.7%"></i></span><span class="fval">358건</span><span class="fpct">5.7%</span></div>
+              <div class="fnote">방문 <b>5,882명</b>은 주문하지 않았습니다.</div>
+            </div>
+            <div class="fseg">
+              <div class="fseg-h">구간 2 · <b>주문에서 구매확정까지</b> — 막대 기준 = 주문 358건</div>
+              <div class="frow2 lt"><span class="fn2">주문</span><span class="fbar2"><i style="width:100%"></i></span><span class="fval">358건</span><span class="fpct">100%</span></div>
+              <div class="frow2"><span class="fn2">구매확정<span class="est">예정</span></span><span class="fbar2"><i style="width:92.5%"></i></span><span class="fval dimv">331건</span><span class="fpct">92.5%</span></div>
+              <div class="fnote">막대와 비율 모두 <b>주문 대비</b>입니다. 주문 358건 = 구매확정 331 + 취소 7 + 반품 19 + 배송 예외 1 · 건별 내역은 <b>공구 관리</b>에서 봅니다.</div>
+            </div>
+          </div>
+          <div class="fnl-f"><span>방문 대비 최종 구매전환율(예정)</span><b>5.3%</b></div>
+        </div>
+      </div>
+      <div class="grp"><span class="gt2">판매</span><span class="gd">무엇이 얼마나 팔렸나</span></div>
+      <div class="card">
+        <div class="card-h">상품별 성과<span class="est">예정</span></div>
+        <div class="tcard" style="border:none;border-radius:0">
+          <table>
+            <colgroup><col><col style="width:96px"><col style="width:80px"><col style="width:96px"><col style="width:126px"><col style="width:86px"><col style="width:120px"></colgroup>
+            <thead><tr><td>상품</td><td class="t-c">상세 조회</td><td class="t-c">주문</td><td class="t-c">확정 수량</td><td class="t-c">확정 금액</td><td class="t-c">리워드율</td><td class="t-c">리워드</td></tr></thead>
+            <tbody>
+              <tr><td><span class="t-nm">하이드라 앰플 30ml</span></td><td class="t-c tnum">5,010</td><td class="t-c tnum">288</td><td class="t-c tnum dimv">249개</td><td class="t-c tnum dimv">4,980,000원</td><td class="t-c tnum">12%</td><td class="t-c tnum dimv">597,600원</td></tr>
+              <tr><td><span class="t-nm">하이드라 앰플 미니 10ml</span></td><td class="t-c tnum">1,880</td><td class="t-c tnum">70</td><td class="t-c tnum dimv">57개</td><td class="t-c tnum dimv">1,140,000원</td><td class="t-c tnum">7%</td><td class="t-c tnum dimv">79,800원</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-b" style="border-top:1px solid var(--n-200)">
+          <div class="tip" style="margin-top:0;margin-bottom:var(--sp-4)"><b>리워드율은 상품마다 다릅니다</b> — 계약에서 상품별로 정한 율이며 여기 표시된 값이 그대로 적용됩니다. 두 상품 합계 <b>677,400원</b>이 판매 리워드 예정액입니다 — <b>고정 지급비는 상품에 배분되지 않습니다</b>(공구 단위로 지급).</div>
+          <div class="hl">
+            <div class="h"><div class="hk">가장 많이 본 상품<span class="est">예정</span></div><div class="hv">하이드라 앰플 30ml</div><div class="hc">상세 조회 5,010회 · 전체의 73%</div></div>
+            <div class="h"><div class="hk">전환율이 높은 상품<span class="est">예정</span></div><div class="hv">하이드라 앰플 30ml</div><div class="hc">조회 5,010회 중 288건 · 5.7%</div></div>
+            <div class="h"><div class="hk">리워드가 큰 상품<span class="est">예정</span></div><div class="hv">하이드라 앰플 30ml</div><div class="hc">597,600원 · 판매 리워드의 88%</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp"><span class="gt2">소비자</span><span class="gd">누가 샀나</span></div>
+      <div class="card">
+        <div class="card-h">소비자 분석<span class="ch-n">구매확정 331건 · 구매 소비자 308명 기준</span><span class="est">예정</span></div>
+        <div class="card-b">
+          <div class="mini m4">
+            <div class="m"><div class="ml">구매 소비자</div><div class="mn dimv">308명</div><div class="ms">구매확정 331건 · 같은 소비자의 재구매 제외</div></div>
+            <div class="m"><div class="ml">신규 소비자</div><div class="mn dimv">224명</div><div class="ms">내 공구 첫 구매 · 구매 소비자의 72.7%</div></div>
+            <div class="m"><div class="ml">재구매 소비자</div><div class="mn dimv">84명</div><div class="ms">이전 내 공구에서도 구매</div></div>
+            <div class="m"><div class="ml">구매 소비자 중 팔로워</div><div class="mn dimv">44.8%</div><div class="ms">구매 소비자 308명 중 138명이 내 쇼룸 팔로워</div></div>
+          </div>
+          <div style="margin-top:var(--sp-4)">
+            <div class="sec-t" style="display:flex;align-items:center;gap:13px;margin-bottom:12px">연령대 · 성별
+              <span class="lgd"><i style="background:#D9455F"></i>여성 84%</span>
+              <span class="lgd"><i style="background:#3B5BDB"></i>남성 16%</span>
+              <span style="margin-left:auto;font-weight:400;color:var(--n-500);font-size:var(--fs-micro)">막대는 최대 구간(20대) 기준</span>
+            </div>
+            <div class="dist">
+              <div class="dist-r"><span class="dl2">10대</span><span class="db"><i class="gf" style="width:13.6%"></i><i class="gm" style="width:2.3%"></i></span><span class="dv dimv">7%</span><span class="dvx">여 6 / 남 1</span></div>
+              <div class="dist-r"><span class="dl2">20대</span><span class="db"><i class="gf" style="width:84.1%"></i><i class="gm" style="width:15.9%"></i></span><span class="dv dimv">44%</span><span class="dvx">여 37 / 남 7</span></div>
+              <div class="dist-r"><span class="dl2">30대</span><span class="db"><i class="gf" style="width:59.1%"></i><i class="gm" style="width:11.4%"></i></span><span class="dv dimv">31%</span><span class="dvx">여 26 / 남 5</span></div>
+              <div class="dist-r"><span class="dl2">40대</span><span class="db"><i class="gf" style="width:26.1%"></i><i class="gm" style="width:5.7%"></i></span><span class="dv dimv">14%</span><span class="dvx">여 11.5 / 남 2.5</span></div>
+              <div class="dist-r"><span class="dl2">50대+</span><span class="db"><i class="gf" style="width:8%"></i><i class="gm" style="width:1.1%"></i></span><span class="dv dimv">4%</span><span class="dvx">여 3.5 / 남 0.5</span></div>
+            </div>
+          </div>
+          <div class="tip">막대 안 두 색은 여성 · 남성이고, 오른쪽 숫자는 <b>전체 소비자 대비 비율</b>입니다(연령대 합계 → 여 · 남 분해). 구간 인원이 5명 미만이면 «기타»로 합산해 표시합니다.</div>
+        </div>
+      </div>
+
+      <div class="grp"><span class="gt2">팔로워</span><span class="gd">내 쇼룸이 얼마나 커졌나</span></div>
+      <div class="card">
+        <div class="card-h">팔로워<span class="ch-n">쇼룸 팔로워 · 팔로워와 비팔로워 비교</span></div>
+        <div class="tcard fol" style="border:none;border-radius:0">
+          <table>
+            <colgroup><col><col style="width:120px"><col style="width:120px"><col style="width:104px"><col style="width:124px"></colgroup>
+            <thead><tr><td>구분</td><td class="t-c">쇼룸 방문</td><td class="t-c">게시물 조회</td><td class="t-c">주문</td><td class="t-c">구매전환율 (예정)</td></tr></thead>
+            <tbody>
+              <tr><td><span class="t-nm">팔로워</span></td><td class="t-c tnum">1,810</td><td class="t-c tnum">1,640</td><td class="t-c tnum">152</td><td class="t-c tnum dimv">7.6%</td></tr>
+              <tr><td><span class="t-nm">비팔로워</span></td><td class="t-c tnum">4,430</td><td class="t-c tnum">4,020</td><td class="t-c tnum">206</td><td class="t-c tnum dimv">4.4%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-b">
+          <div class="mini">
+            <div class="m"><div class="ml">쇼룸 팔로워</div><div class="mn">4,790명</div><div class="ms">공구 종료 시점</div></div>
+            <div class="m"><div class="ml">공구 기간 증감</div><div class="mn">+286명</div><div class="ms">2026.08.20 ~ 08.26 사이</div></div>
+            <div class="m"><div class="ml">방문 중 팔로워 비중</div><div class="mn">29%</div><div class="ms">방문 6,240명 중 1,810명</div></div>
+          </div>
+          <div class="tip">구매전환율은 <b>구간별 방문 대비 구매확정</b>입니다(팔로워 138건 · 비팔로워 193건 · 합계 331건). 팔로워 수는 소비자 앱에서 이 쇼룸을 팔로우한 소비자 기준이며, 기간 전체 추이와 팔로워 구성은 <span class="linkq">쇼룸 관리 › 쇼룸 현황</span>에서 봅니다.</div>
+        </div>
+      </div>
+
+      <div class="grp"><span class="gt2">리워드</span><span class="gd">내가 얼마 받나</span></div>
+      <div class="card">
+        <div class="card-h">리워드<span class="ch-n">판매 리워드 + 고정 지급비</span></div>
+        <div class="card-b">
+          <div class="sum" style="border-top:none;margin-top:0;padding-top:0">
+            <div class="sumrow"><span class="sk">확정 거래액 <span class="est">예정</span></span><span class="sv">6,120,000원</span></div>
+            <div class="sumrow"><span class="sk">판매 리워드</span><span class="sv">정산 후 확정</span></div>
+            <div class="sumrow"><span class="sk">고정 지급비 <span style="color:var(--n-500);font-size:var(--fs-micro)">브랜드 직접 지급 · 계약 금액</span></span><span class="sv">300,000원</span></div>
+            <div class="sumrow tot"><span class="sk">내 리워드 합계 <span style="color:var(--n-500);font-size:var(--fs-micro);font-weight:400">세전 · 계약 기준</span></span><span class="sv">정산 후 확정</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:var(--sp-4)">
+            <span class="badge b-neutral">집계 중</span>
+            <button class="btn btn-secondary" style="margin-left:auto">정산 상세 보기</button>
+          </div>
+          <div class="sum" style="margin-top:var(--sp-3)"><div class="sumrow"><span class="sk">판매 리워드 실지급 <span style="color:var(--n-500);font-size:var(--fs-micro)">비사업자 · 3.3% 원천징수는 SHOWROOMZ가 신고</span></span><span class="sv" style="color:var(--n-500)">정산 후 확정</span></div></div>
+<div class="tip">리워드는 <b>SHOWROOMZ가 지급</b>합니다 · 고정 지급비는 <b>브랜드가 직접 지급</b>하는 계약 금액이라 플랫폼이 지급 여부를 알지 못하며 실지급에 포함되지 않습니다 · 지급 명세는 <b>정산 관리</b>에서 확인합니다.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

@@ -6,17 +6,23 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
+import showroomz.domain.order.type.OperatorRefundReason;
+import showroomz.domain.order.type.RefundPaymentKind;
+import showroomz.domain.order.type.RefundTaskOrigin;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
 
 import java.time.LocalDateTime;
 
 /**
- * 환불 집행 큐(34 설계서 1-9) — <b>환불은 브랜드가 절대 실행하지 않는다</b>(§34-8). 브랜드 액션·배치는
- * 큐 행만 쌓고, 집행(포트원 부분 취소 호출)은 어드민 거래 관리가 한다.
+ * 환불 큐(34 설계서 1-9 · 1009 기획 수정본 2절) — <b>환불은 브랜드가 절대 실행하지 않는다</b>(§34-8). 브랜드 액션·배치는
+ * 큐 행만 쌓는다.
  *
- * <p>{@code refundAmount}는 예정액이지 확정액이 아니다 — 반송 왕복 배송비 차감(§34-13 #12)은 약관 근거 대기라
- * 전액으로 적재하고 집행 단계에서 조정한다.
+ * <p>큐를 비우는 주체 — {@link RefundTaskOrigin#PG_AUTO}(취소 승인 · 직권 취소 · 반품 검수 통과 · 반송 완료)는 커밋 직후
+ * {@code RefundExecutor}가 포트원 <b>부분 취소</b>로 바로 집행한다. {@link RefundTaskOrigin#OPERATOR}(운영자 사유 환불)만
+ * 어드민 환불 관리에서 재확인 뒤 집행한다. 전이는 {@code RefundTransitions}의 짧은 트랜잭션이 한다.
+ *
+ * <p>{@code refundAmount}는 예정액이다 — 반송 왕복 배송비 차감(§34-13 #12)은 약관 근거 대기라 전액으로 적재한다.
  */
 @Entity
 @Getter
@@ -41,7 +47,7 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Column(name = "source", nullable = false, length = 30)
     private RefundTaskSource source;
 
-    /** 근거 행 id — 취소 요청 등. */
+    /** 근거 행 id — 취소 요청 · 클레임 요청(collection) 등. */
     @Column(name = "source_id")
     private Long sourceId;
 
@@ -52,32 +58,160 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Column(name = "status", nullable = false, length = 16)
     private RefundTaskStatus status;
 
-    /** 집행 결과({@code payment_cancel} 행) — 어드민이 채운다. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "origin", nullable = false, length = 16)
+    private RefundTaskOrigin origin;
+
+    /** 취소할 결제 — 적재 시점의 주문 결제({@code orders.paid_payment_id}). 결제가 없는 주문(시드)은 null 이고 자동 집행하지 않는다. */
+    @Column(name = "payment_id", length = 64)
+    private String paymentId;
+
+    /** 원래 결제 / 추가 결제(교환 · 반려 재발송비) — 어드민 06c 결제 열(V177). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_kind", nullable = false, length = 12)
+    private RefundPaymentKind paymentKind;
+
+    /** 원래 결제의 부분 취소인가 — 적재 시 {@code 환불액 < 결제액}. 결제 전액 취소의 기록 행은 거짓(V177). */
+    @Column(name = "partial_cancel", nullable = false)
+    private boolean partialCancel;
+
+    /** 운영자 사유 환불의 사유 — PG 자동은 null. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "reason_code", length = 30)
+    private OperatorRefundReason reasonCode;
+
+    @Column(name = "reason_detail", length = 500)
+    private String reasonDetail;
+
+    /** 운영자 사유 환불을 편입한 운영자 — PG 자동은 null. */
+    @Column(name = "requested_by")
+    private Long requestedBy;
+
+    /** 집행 시도 횟수 — 자동 재시도 상한 판정. */
+    @Column(name = "attempt", nullable = false)
+    private int attempt;
+
+    /** 마지막 실패 사유(PG 거절 문구 등) — 어드민 「실패」 탭. */
+    @Column(name = "last_error", length = 500)
+    private String lastError;
+
+    /** PG 응답 코드 — 재시도 다이얼로그(상세)에만. 게이트웨이가 코드를 주지 않으면 null(V177). */
+    @Column(name = "last_error_code", length = 50)
+    private String lastErrorCode;
+
+    /** 집행 결과({@code payment_cancel} 행). */
     @Column(name = "payment_cancel_id")
     private Long paymentCancelId;
 
     @Column(name = "executed_at")
     private LocalDateTime executedAt;
 
+    /** 집행한 운영자 — PG 자동 집행은 null. */
     @Column(name = "executed_by")
     private Long executedBy;
 
     @Builder
     public OrderRefundTask(OrderDeliveryGroup deliveryGroup, Order order, RefundTaskSource source, Long sourceId,
-                           Integer refundAmount) {
+                           Integer refundAmount, RefundTaskOrigin origin, String paymentId,
+                           RefundPaymentKind paymentKind, boolean partialCancel,
+                           OperatorRefundReason reasonCode, String reasonDetail, Long requestedBy) {
         this.deliveryGroup = deliveryGroup;
         this.order = order;
         this.source = source;
         this.sourceId = sourceId;
         this.refundAmount = refundAmount;
         this.status = RefundTaskStatus.PENDING;
+        this.origin = origin != null ? origin : RefundTaskOrigin.PG_AUTO;
+        this.paymentId = paymentId;
+        this.paymentKind = paymentKind != null ? paymentKind : RefundPaymentKind.ORIGINAL;
+        this.partialCancel = partialCancel;
+        this.reasonCode = reasonCode;
+        this.reasonDetail = reasonDetail;
+        this.requestedBy = requestedBy;
+        this.attempt = 0;
+    }
+
+    /**
+     * <b>기록 전용</b> 행 — 큐를 거치지 않은 PG 환불(결제완료 소비자 취소 · 재발송비 결제 취소)을 취소가 확인된 그 자리에서 완료로
+     * 적는다(39 설계서 0-4). 집행기는 대기 · 실패만 집으므로 돈이 두 번 나갈 길이 없다. 적재 이벤트도 내지 않는다.
+     */
+    public static OrderRefundTask recorded(OrderDeliveryGroup deliveryGroup, Order order, RefundTaskSource source,
+                                           Long sourceId, int amount, String paymentId, RefundPaymentKind paymentKind,
+                                           Long paymentCancelId, LocalDateTime now) {
+        OrderRefundTask task = OrderRefundTask.builder()
+                .deliveryGroup(deliveryGroup)
+                .order(order)
+                .source(source)
+                .sourceId(sourceId)
+                .refundAmount(amount)
+                .origin(RefundTaskOrigin.PG_AUTO)
+                .paymentId(paymentId)
+                .paymentKind(paymentKind)
+                .partialCancel(false)
+                .build();
+        task.status = RefundTaskStatus.DONE;
+        task.attempt = 1;
+        task.paymentCancelId = paymentCancelId;
+        task.executedAt = now;
+        return task;
+    }
+
+    /** 환불번호 {@code RFD-918} — 저장하지 않고 id 를 포맷한다(39 설계서 1-4). 이력 detail 의 접두로 큐 행과 이력을 잇는다. */
+    public String refundNo() {
+        return id == null ? null : "RFD-" + id;
     }
 
     public boolean isPending() {
         return status == RefundTaskStatus.PENDING;
     }
 
-    /** 집행 완료 — PG 취소({@code payment_cancel})를 붙이는 것은 어드민 거래 관리의 몫이다. */
+    /** 집행을 시작할 수 있는 상태 — 대기 · 실패(재시도). */
+    public boolean isExecutable() {
+        return status == RefundTaskStatus.PENDING || status == RefundTaskStatus.FAILED;
+    }
+
+    /** 집행 시작 — 결제 행을 잠근 트랜잭션 안에서만. */
+    public void startExecution() {
+        this.status = RefundTaskStatus.EXECUTING;
+        this.attempt++;
+    }
+
+    /** PG 취소 확인 — 집행 완료. */
+    public void markDone(Long paymentCancelId, Long executedBy, LocalDateTime now) {
+        this.status = RefundTaskStatus.DONE;
+        this.paymentCancelId = paymentCancelId;
+        this.executedBy = executedBy;
+        this.executedAt = now;
+        this.lastError = null;
+        this.lastErrorCode = null;
+    }
+
+    public void markFailed(String error) {
+        markFailed(error, null);
+    }
+
+    /** 실패 — 운영자 문장과 PG 응답 코드(있으면). */
+    public void markFailed(String error, String errorCode) {
+        this.status = RefundTaskStatus.FAILED;
+        this.lastError = error != null && error.length() > 500 ? error.substring(0, 500) : error;
+        this.lastErrorCode = errorCode != null && errorCode.length() > 50 ? errorCode.substring(0, 50) : errorCode;
+    }
+
+    /** 편입 철회(어드민 06c) — 집행 전 운영자 사유 환불만. 어느 탭에도 보이지 않고 상세 · 주문 상세에서만 남는다. */
+    public void markVoid() {
+        this.status = RefundTaskStatus.VOID;
+    }
+
+    /**
+     * 철회할 수 있는가 — 대기 ∧ 운영자 사유 ∧ 클레임을 닫는 사유가 아님(반려 이의 인용 · 검수 무응답은 편입 때 클레임을 환불로
+     * 종결해 되돌릴 수 없다 — {@link OperatorRefundReason#isClaimBound()}).
+     */
+    public boolean isVoidable() {
+        return status == RefundTaskStatus.PENDING && origin == RefundTaskOrigin.OPERATOR
+                && (reasonCode == null || !reasonCode.isClaimBound());
+    }
+
+    /** PG 를 부르지 않고 집행 완료로 기록 — 결제 밖에서 환불된 건(운영자 수동 기록). */
     public void markExecuted(int executedAmount, Long executedBy, LocalDateTime now) {
         this.refundAmount = executedAmount;
         this.status = RefundTaskStatus.DONE;

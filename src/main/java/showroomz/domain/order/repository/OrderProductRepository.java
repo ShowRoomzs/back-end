@@ -137,11 +137,12 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
             + "WHERE op.id = :orderProductId AND op.returnedQuantity + :quantity <= op.quantity")
     int addReturnedQuantity(@Param("orderProductId") Long orderProductId, @Param("quantity") int quantity);
 
-    /** 전량 반품된 항목을 RETURNED 로 — 구매확정 배치가 PURCHASE_CONFIRMED 로 올리지 않게 한다. */
+    /** 전량 반품된 항목을 RETURNED 로 — 구매확정 배치가 PURCHASE_CONFIRMED 로 올리지 않게 한다. 운영자 개설 하자 반품은 구매확정 항목에서 온다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderProduct op SET op.status = showroomz.domain.order.type.OrderProductStatus.RETURNED "
             + "WHERE op.id = :orderProductId AND op.returnedQuantity >= op.quantity "
-            + "AND op.status = showroomz.domain.order.type.OrderProductStatus.PAID")
+            + "AND op.status IN (showroomz.domain.order.type.OrderProductStatus.PAID, "
+            + "    showroomz.domain.order.type.OrderProductStatus.PURCHASE_CONFIRMED)")
     int markReturnedIfFull(@Param("orderProductId") Long orderProductId);
 
     // ------------------------------------------------------------------ 판매 관리 포트(7-2)
@@ -179,4 +180,20 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     @Query("SELECT COUNT(i) FROM OneToOneInquiry i WHERE i.createdAt >= :since "
             + "AND i.orderId IN (SELECT DISTINCT op.order.id FROM OrderProduct op WHERE op.groupBuy.id = :groupBuyId)")
     long countOneToOneInquiriesSince(@Param("groupBuyId") Long groupBuyId, @Param("since") LocalDateTime since);
+
+    /**
+     * 정산 원천(44 어드민 설계서 2-2) — 공구 하위주문(결제된 주문)의 항목 전부와 하위주문의 종결 사실. 분류 · 집계는 정산 모듈이 한다.
+     * 하위주문 이행 상태는 호출자가 고른다(종결 = 구매확정 · 취소 · 반송 완료).
+     */
+    @Query("SELECT new showroomz.domain.order.repository.SettlementSourceRow("
+            + "op.id, o.id, o.orderNumber, u.id, u.name, u.nickname, g.id, g.subOrderNumber, p.productId, "
+            + "op.productName, op.optionName, op.quantity, op.returnedQuantity, op.price, op.status, op.cancelType, "
+            + "g.fulfillmentStatus, g.cancelType, g.deliveryFee, g.confirmedAt, g.cancelledAt, g.returnCompletedAt) "
+            + "FROM OrderProduct op JOIN op.order o JOIN o.user u JOIN op.deliveryGroup g "
+            + "JOIN op.variant v JOIN v.product p "
+            + "WHERE g.groupBuy.id = :groupBuyId AND o.paidAt IS NOT NULL AND g.fulfillmentStatus IN :groupStatuses "
+            + "ORDER BY op.id ASC")
+    List<SettlementSourceRow> findSettlementSourceByGroupBuy(
+            @Param("groupBuyId") Long groupBuyId,
+            @Param("groupStatuses") Collection<showroomz.domain.order.type.FulfillmentStatus> groupStatuses);
 }

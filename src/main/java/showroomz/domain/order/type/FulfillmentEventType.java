@@ -16,7 +16,7 @@ public enum FulfillmentEventType {
     PICKUP_UNCONFIRMED("집화 확인 필요 감지"),
     TRACKING_STALLED("추적 정지 감지"),
     RETURN_DETECTED("반송 감지"),
-    RETURN_COMPLETED("반송 완료 입고 · 운영자 큐 편입"),
+    RETURN_COMPLETED("반송 완료 입고 · PG 자동 환불"),
     DELIVERED("배송완료"),
     PURCHASE_CONFIRMED("구매확정 · D+7 자동"),
     CANCEL_REQUESTED("취소 요청"),
@@ -24,8 +24,20 @@ public enum FulfillmentEventType {
     CANCEL_REQUEST_REJECTED("취소 요청 거부"),
     CANCELLED_BY_CONSUMER("소비자 취소 · 준비 시작 전"),
     CANCELLED_BY_SELLER("브랜드 직권 취소"),
-    /** 어드민 거래 관리가 append 한다 — 이 모듈 범위 밖. */
-    REFUND_EXECUTED("환불 완료");
+    /** 환불 큐 집행 완료 — PG 자동이면 actor SYSTEM, 운영자 집행이면 ADMIN(1009 기획 수정본 2-4). */
+    REFUND_EXECUTED("환불 완료"),
+    /** PG 가 환불을 거절했다 — 어드민 환불 관리 「실패」 탭이 재시도한다. */
+    REFUND_FAILED("환불 실패 · 운영자 확인"),
+    /** 운영자 사유 환불 편입(어드민 06a B5 · 06b B2) — 집행은 환불 관리에서 따로. */
+    REFUND_ENQUEUED_BY_OPERATOR("운영자 사유 환불 편입"),
+    /** 소비자 수령일 이의 — 운영자가 배송완료일을 정정한다(어드민 06a B3). 구매확정 예정도 다시 센다. */
+    DELIVERED_AT_CORRECTED("배송완료일 정정"),
+    /** 운영자 사유 환불 편입 철회(어드민 06c · 41 보고 2번) — 집행 전 운영자 사유 환불만. */
+    REFUND_VOIDED("운영자 사유 환불 편입 철회"),
+    /** PG 콘솔 등 밖에서 돌려준 환불의 수동 완료 기록(어드민 06c · 41 보고 2번) — PG 를 부르지 않는다. */
+    REFUND_RECORDED_MANUALLY("환불 수동 완료 기록"),
+    /** 추적 정지 N일 뒤 운영자 분실 판정(어드민 06a · 41 보고 3번) — 하위주문 취소 · PG 자동 환불. */
+    LOST_RESOLVED("배송 분실 처리 · PG 자동 환불");
 
     private final String label;
 }

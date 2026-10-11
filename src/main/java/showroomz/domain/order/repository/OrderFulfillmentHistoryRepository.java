@@ -13,4 +13,11 @@ public interface OrderFulfillmentHistoryRepository extends JpaRepository<OrderFu
     @Query("SELECT h FROM OrderFulfillmentHistory h WHERE h.deliveryGroup.id = :deliveryGroupId "
             + "ORDER BY h.occurredAt DESC, h.id DESC")
     List<OrderFulfillmentHistory> findByDeliveryGroupId(@Param("deliveryGroupId") Long deliveryGroupId);
+
+    /** 그 사건을 그 주체가 남긴 하위주문 — 어드민 환불 경로 라벨(「운영자 대행 직권 취소」)의 일괄 판정. */
+    @Query("SELECT DISTINCT h.deliveryGroup.id FROM OrderFulfillmentHistory h WHERE h.deliveryGroup.id IN :groupIds "
+            + "AND h.eventType = :eventType AND h.actorType = :actorType")
+    List<Long> findGroupIdsWithEvent(@Param("groupIds") java.util.Collection<Long> groupIds,
+                                     @Param("eventType") showroomz.domain.order.type.FulfillmentEventType eventType,
+                                     @Param("actorType") showroomz.domain.order.type.FulfillmentActorType actorType);
 }

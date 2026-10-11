@@ -69,4 +69,15 @@ public interface OrderClaimCollectionRepository extends JpaRepository<OrderClaim
             + "    AND c.status = showroomz.domain.order.type.ClaimStatus.REQUESTED) "
             + "ORDER BY k.invoiceDueAt ASC, k.id ASC")
     List<Long> findIdsWithExpiredInvoice(@Param("now") LocalDateTime now, Pageable pageable);
+
+    /**
+     * 공구의 반품 · 교환 배송비 — [비용 부담, 유형, 건수, 반품 배송비 차감 합](파트너 정산 설계서 1-1). 판정이 끝난 요청만(검수 전에 사라진
+     * 요청 — 전부 요청 취소 — 은 뺀다). 정산 생성 조건이 「미종결 0」이라 판정 대기 행은 생길 수 없다.
+     */
+    @Query("SELECT k.feeBearer, k.type, COUNT(k), COALESCE(SUM(k.returnDeduction), 0) FROM OrderClaimCollection k "
+            + "WHERE k.deliveryGroup.groupBuy.id = :groupBuyId AND k.finalizedAt IS NOT NULL "
+            + "AND EXISTS (SELECT c.id FROM OrderClaim c WHERE c.collection = k "
+            + "    AND (c.result IS NULL OR c.result <> showroomz.domain.order.type.ClaimResult.CANCELLED)) "
+            + "GROUP BY k.feeBearer, k.type")
+    List<Object[]> sumFeesByGroupBuy(@Param("groupBuyId") Long groupBuyId);
 }

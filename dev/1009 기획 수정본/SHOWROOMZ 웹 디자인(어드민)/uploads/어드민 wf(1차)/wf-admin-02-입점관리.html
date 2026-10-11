@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-02 · 입점 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.hot .cnt { background:#a33; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  /* 목록 화면 */
+  .tabs { display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid #e2e2e2; }
+  .tab { padding:10px 18px; font-size:13px; color:#888; border-bottom:2px solid transparent; cursor:default; }
+  .tab.on { color:#222; font-weight:700; border-bottom-color:#222; }
+  .tab .cnt { margin-left:6px; font-size:11px; color:#999; }
+
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:220px; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; }
+  table.list tr:last-child td { border-bottom:none; }
+  table.list tr.row-link td:first-child { text-decoration:underline; color:#333; font-weight:600; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.wait { background:#96771f; color:#fff; border-color:#96771f; }
+  .badge.appr { background:#3a3a3a; color:#fff; border-color:#3a3a3a; }
+  .badge.rej { background:#eee; color:#888; }
+  .badge.sla { background:#a33; color:#fff; border-color:#a33; }
+  .type-badge { border:1px solid #ccc; border-radius:4px; padding:1px 7px; font-size:10.5px; color:#666; }
+
+  .pager { display:flex; justify-content:center; gap:6px; margin-top:16px; font-size:12px; color:#888; }
+  .pager span { width:24px; height:24px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; border-radius:4px; }
+  .pager span.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 상세 화면 */
+  .detail-grid { display:flex; gap:18px; align-items:flex-start; }
+  .det-l { flex:1; min-width:0; } .det-r { width:340px; flex-shrink:0; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:150px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+  .file-thumb { display:flex; align-items:center; gap:8px; border:1px solid #ddd; border-radius:6px; padding:8px 12px; background:#fafafa; font-size:12px; color:#555; margin-bottom:6px; }
+  .file-thumb .fi { width:26px; height:26px; background:#e6e6e6; border-radius:4px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999; }
+
+  .status-box { text-align:center; padding:20px 0 8px; }
+  .status-box .lb { font-size:11px; color:#999; margin-bottom:8px; }
+  .act-row { display:flex; gap:8px; padding:0 18px 18px; }
+  .abtn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #333; }
+  .abtn.appr { background:#333; color:#fff; }
+  .abtn.rej { background:#fff; color:#a33; border-color:#a33; }
+
+  .hist { padding:14px 18px; }
+  .hitem { display:flex; gap:10px; padding:9px 0; border-bottom:1px solid #f2f2f2; font-size:12px; }
+  .hitem:last-child { border-bottom:none; }
+  .hitem .hd { color:#333; } .hitem .ht { color:#aaa; font-size:10.5px; margin-top:2px; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:460px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:10px 0 8px; }
+  .modal-b .ta { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#888; min-height:70px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+  .note.legal .tag { color:#8a5a00; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 2. 입점 관리 <span>wf-admin-02 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 브랜드·인플루언서 입점 신청 목록·상세 · <b>승인·반려(사유 필수)</b> · 결과 통지는 인앱 알림이 아닌 <b>이메일/문자</b>(활성 전 단계라 인앱 수신 불가)</div>
+  <div class="spec">프레임 1440×1024 · 집행 액션(승인/반려) = 확인 다이얼로그 + 사유 입력 → 감사 기록 연동</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 목록 — 브랜드 ============ -->
+<div class="ftitle">1. 입점 신청 목록 — 브랜드 <span>— 사업자 구분 중심 컬럼</span><span class="pill">GNB #2 · F1</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/onboarding/applications/brand</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item hot on"><span class="n">2</span> 입점 관리 <span class="gnb-right"><span class="cnt">7</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">브랜드 <span class="cnt">4</span></div>
+      <div class="gnb-sub">인플루언서 <span class="cnt">3</span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">입점 관리 <span class="sub2">/ 브랜드</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <div class="fchip on">심사 대기</div>
+          <div class="fchip">승인</div>
+          <div class="fchip">반려</div>
+          <div class="search-box">브랜드명 검색</div>
+        </div>
+        <table class="list">
+          <thead><tr><th>브랜드명</th><th style="width:150px">담당자/연락처</th><th style="width:110px">사업자 구분</th><th style="width:100px">신청일</th><th style="width:90px">경과</th><th style="width:110px">상태</th><th style="width:60px"></th></tr></thead>
+          <tbody>
+            <tr class="row-link"><td>○○코스메틱</td><td>박담당 · 010-****-1234</td><td>법인사업자</td><td>2026.07.10</td><td>3일 12h</td><td><span class="badge sla">SLA 초과</span></td><td>보기 ›</td></tr>
+            <tr class="row-link"><td>글로우랩</td><td>최담당 · 010-****-2222</td><td>개인사업자</td><td>2026.07.13</td><td>14h</td><td><span class="badge wait">심사 대기</span></td><td>보기 ›</td></tr>
+            <tr class="row-link"><td>코스메_하늘</td><td>강담당 · 010-****-4444</td><td>법인사업자</td><td>2026.07.09</td><td>—</td><td><span class="badge appr">승인</span></td><td>보기 ›</td></tr>
+            <tr class="row-link"><td>수분케어랩</td><td>윤담당 · 010-****-5555</td><td>개인사업자</td><td>2026.07.08</td><td>—</td><td><span class="badge rej">반려</span></td><td>보기 ›</td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> 목록 정렬 기본 = 경과시간 내림차순(SLA 초과 최상단) · 반려 건은 <b>즉시 재제출</b> 가능 → 재제출 시 동일 신청 건에 이력만 누적, 신규 행 생성 안 함</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 목록 — 인플루언서 ============ -->
+<div class="ftitle">2. 입점 신청 목록 — 인플루언서 <span>— 채널·팔로워 중심 컬럼</span><span class="pill">GNB #2 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/onboarding/applications/influencer</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item hot on"><span class="n">2</span> 입점 관리 <span class="gnb-right"><span class="cnt">7</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">브랜드 <span class="cnt">4</span></div>
+      <div class="gnb-sub on">인플루언서 <span class="cnt">3</span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">입점 관리 <span class="sub2">/ 인플루언서</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <div class="fchip on">심사 대기</div>
+          <div class="fchip">승인</div>
+          <div class="fchip">반려</div>
+          <div class="search-box">활동명·계정 아이디 검색</div>
+        </div>
+        <table class="list">
+          <thead><tr><th style="width:130px">활동명</th><th style="width:150px">계정 아이디</th><th style="width:150px">실명/연락처</th><th style="width:100px">팔로워 수</th><th style="width:100px">신청일</th><th style="width:90px">경과</th><th style="width:110px">상태</th><th style="width:60px"></th></tr></thead>
+          <tbody>
+            <tr class="row-link"><td>뷰티_소연</td><td>@beauty_soyeon</td><td>이소연 · 010-****-5678</td><td>42,300명</td><td>2026.07.13</td><td>18h</td><td><span class="badge wait">심사 대기</span></td><td>보기 ›</td></tr>
+            <tr class="row-link"><td>글로우_지민</td><td>@glow_jimin</td><td>정지민 · 010-****-3333</td><td>18,900명</td><td>2026.07.14</td><td>6h</td><td><span class="badge wait">심사 대기</span></td><td>보기 ›</td></tr>
+            <tr class="row-link"><td>코스메_민지</td><td>@cosme_minji</td><td>박민지 · 010-****-6666</td><td>65,100명</td><td>2026.07.07</td><td>—</td><td><span class="badge appr">승인</span></td><td>보기 ›</td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>‹</span><span class="on">1</span><span>›</span></div>
+        <div class="note rule"><span class="tag">[규칙]</span> 목록 정렬 기본 = 경과시간 내림차순(SLA 초과 최상단) · 반려 건은 <b>즉시 재제출</b> 가능 → 재제출 시 동일 신청 건에 이력만 누적, 신규 행 생성 안 함</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 상세 — 브랜드 ============ -->
+<div class="ftitle">3. 입점 신청 상세 — 브랜드 <span>— 사업자 정보·첨부서류·승인/반려</span><span class="pill">GNB #2 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/onboarding/applications/BRD-1042</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item hot on"><span class="n">2</span> 입점 관리 <span class="gnb-right"><span class="cnt">7</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">브랜드 <span class="cnt">4</span></div>
+      <div class="gnb-sub">인플루언서 <span class="cnt">3</span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">입점 관리 <span class="sub2">/ ○○코스메틱</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">기본 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">브랜드명</div><div class="form-val">○○코스메틱</div></div>
+                <div class="form-row"><div class="form-label">고객센터 전화</div><div class="form-val">1544-0000</div></div>
+                <div class="form-row"><div class="form-label">판매 담당자</div><div class="form-val">박담당 (010-****-1234)</div></div>
+                <div class="form-row"><div class="form-label">계정 이메일</div><div class="form-val">brand-oo@showroomz-mail.com</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">사업자 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">사업자 구분</div><div class="form-val">법인사업자</div></div>
+                <div class="form-row"><div class="form-label">사업자등록증 상호명</div><div class="form-val">주식회사 오오코스메틱</div></div>
+                <div class="form-row"><div class="form-label">사업자등록번호</div><div class="form-val">000-00-00000</div></div>
+                <div class="form-row"><div class="form-label">업태·종목</div><div class="form-val">도소매 · 화장품</div></div>
+                <div class="form-row"><div class="form-label">대표자명</div><div class="form-val">김대표</div></div>
+                <div class="form-row"><div class="form-label">대표자 연락처</div><div class="form-val">010-1234-5678</div></div>
+                <div class="form-row"><div class="form-label">통신판매업 신고번호</div><div class="form-val">2026-서울강남-0000</div></div>
+                <div class="form-row"><div class="form-label">사업장 주소</div><div class="form-val">서울시 강남구 테헤란로 000</div></div>
+                <div class="form-row"><div class="form-label">상세주소</div><div class="form-val">오오빌딩 5층</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">정산 정보</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">은행명</div><div class="form-val">국민은행</div></div>
+                <div class="form-row"><div class="form-label">예금주명</div><div class="form-val">주식회사 오오코스메틱</div></div>
+                <div class="form-row"><div class="form-label">계좌번호</div><div class="form-val">000-12-345600</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">심사 첨부 서류 (3종)</div>
+              <div class="card-b">
+                <div class="file-thumb"><div class="fi">PDF</div>사업자등록증 사본.pdf</div>
+                <div class="file-thumb"><div class="fi">PDF</div>통신판매업신고증 사본.pdf</div>
+                <div class="file-thumb"><div class="fi">PDF</div>통장 사본.pdf</div>
+              </div>
+              <div class="note inbody" style="margin:0 18px 14px"><span class="tag">[2026.07 보강]</span> 대표자명·대표자 연락처·사업장 주소·상세주소·은행명·예금주명·계좌번호 = 가입 신청 시 수집되나 <b>기존 화면에 미노출</b>이었음 → 추가. 계좌번호는 <b>운영자 심사 목적상 전체 노출</b>(통장 사본과 대조 확인 필요 · 일반 브랜드용 기본정보 관리 화면(wf-partner-08)에선 계속 마스킹)</div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="status-box">
+                <div class="lb">현재 상태</div>
+                <div class="badge sla" style="font-size:13px;padding:5px 16px">SLA 초과 · 심사 대기</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">✓ 승인</div>
+                <div class="abtn rej">✕ 반려</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div><div class="hd">신청 접수</div><div class="ht">2026.07.10 14:22</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule"><span class="tag">[규칙]</span> 승인 시 브랜드 계정 활성화 → <b>이메일/문자로 통지</b> → 로그인 후 온보딩(반품 수취 주소 등) 강제 → 활성. 반려 시 사유 이메일/문자 통지 → 로그인 시 모달(사유)+가입 폼 수정 모드로 즉시 재제출 가능</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 상세 — 인플루언서 ============ -->
+<div class="ftitle">4. 입점 신청 상세 — 인플루언서 <span>— 본인인증·활동채널·약관 동의</span><span class="pill">GNB #2 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/onboarding/applications/INF-2201</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item hot on"><span class="n">2</span> 입점 관리 <span class="gnb-right"><span class="cnt">7</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">브랜드 <span class="cnt">4</span></div>
+      <div class="gnb-sub on">인플루언서 <span class="cnt">3</span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">입점 관리 <span class="sub2">/ 뷰티_소연</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="detail-grid">
+          <div class="det-l">
+            <div class="card">
+              <div class="card-h">본인 인증</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">실명</div><div class="form-val">이소연 (인증 완료)</div></div>
+                <div class="form-row"><div class="form-label">생년월일</div><div class="form-val">1998.03.12</div></div>
+                <div class="form-row"><div class="form-label">연락처</div><div class="form-val">010-****-5678</div></div>
+                <div class="form-row"><div class="form-label">인증 수단</div><div class="form-val">휴대폰 본인인증(PASS)</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">활동 채널 <span style="font-weight:400;color:#999;font-size:11px">— 계약 이행 검증 식별 키</span></div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">플랫폼</div><div class="form-val">Instagram (고정)</div></div>
+                <div class="form-row"><div class="form-label">채널 주소</div><div class="form-val">instagram.com/beauty_soyeon</div></div>
+                <div class="form-row"><div class="form-label">계정 아이디</div><div class="form-val">@beauty_soyeon</div></div>
+                <div class="form-row"><div class="form-label">팔로워 수</div><div class="form-val">42,300명</div></div>
+                <div class="form-row"><div class="form-label">업무용 이메일</div><div class="form-val">soyeon.biz@gmail.com</div></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">약관 동의</div>
+              <div class="card-b">
+                <div class="form-row"><div class="form-label">개인정보처리방침</div><div class="form-val">동의 (2026.07.13 18:04)</div></div>
+                <div class="form-row"><div class="form-label">서비스이용약관</div><div class="form-val">동의 (2026.07.13 18:04)</div></div>
+                <div class="form-row"><div class="form-label">서비스운영정책</div><div class="form-val">동의 (2026.07.13 18:04)</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="det-r">
+            <div class="card">
+              <div class="status-box">
+                <div class="lb">현재 상태</div>
+                <div class="badge wait" style="font-size:13px;padding:5px 16px">심사 대기 (18시간 경과)</div>
+              </div>
+              <div class="act-row">
+                <div class="abtn appr">✓ 승인</div>
+                <div class="abtn rej">✕ 반려</div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-h">처리 이력</div>
+              <div class="hist">
+                <div class="hitem"><div><div class="hd">신청 접수</div><div class="ht">2026.07.13 18:04</div></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="note rule"><span class="tag">[규칙]</span> 인플루언서 승인 시 계정 활성화 → 로그인 후 온보딩(쇼룸명·사업자 여부·정산계좌) 강제 — <b>쇼룸명은 신청서가 아닌 온보딩에서 입력</b>(심사 통과 전 선점 방지)</div>
+        <div class="note legal"><span class="tag">[법률 대기]</span> 쟁점 F — 인플루언서가 사업자등록 없이 활동 시 통신판매업자로 오인될 리스크. 심사 단계에서 별도 안내 문구 필요 여부는 변호사 검토 후 반영</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F4. 반려 모달 (공용) ============ -->
+<div class="ftitle">5. 반려 처리 모달 <span>— 브랜드·인플루언서 공용, 사유 필수</span><span class="pill">GNB #2 · F5</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/onboarding/applications/BRD-1042</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item hot on"><span class="n">2</span> 입점 관리 <span class="gnb-right"><span class="cnt">7</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">브랜드 <span class="cnt">4</span></div>
+      <div class="gnb-sub">인플루언서 <span class="cnt">3</span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">입점 관리 <span class="sub2">/ ○○코스메틱</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l">
+            <div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">브랜드명</div><div class="form-val">○○코스메틱</div></div></div></div>
+          </div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">입점 신청 반려</div>
+            <div class="modal-b">
+              <b>○○코스메틱</b>의 입점 신청을 반려하시겠습니까?<br>반려 사유는 신청자에게 이메일/문자로 전달되며, 신청자는 로그인 시 사유 확인 후 <b>즉시 재제출</b>할 수 있습니다.
+              <select class="sel"><option>반려 사유 선택 (필수)</option><option>사업자등록번호 불일치</option><option>통신판매업 신고 미완료</option><option>첨부 서류 불량·누락</option><option>기타(직접 입력)</option></select>
+              <textarea class="ta" placeholder="상세 사유 입력 (신청자에게 그대로 노출됨)"></textarea>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn do">반려 처리</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F6. 승인 확인 모달 (공용) ============ -->
+<div class="ftitle">6. 승인 확인 모달 <span>— 브랜드·인플루언서 공용, 사유 입력 없음</span><span class="pill">GNB #2 · F6</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/onboarding/applications/BRD-1042</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item hot on"><span class="n">2</span> 입점 관리 <span class="gnb-right"><span class="cnt">7</span><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">브랜드 <span class="cnt">4</span></div>
+      <div class="gnb-sub">인플루언서 <span class="cnt">3</span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">입점 관리 <span class="sub2">/ ○○코스메틱</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="detail-grid" style="opacity:.4">
+          <div class="det-l">
+            <div class="card"><div class="card-h">기본 정보</div><div class="card-b"><div class="form-row"><div class="form-label">브랜드명</div><div class="form-val">○○코스메틱</div></div></div></div>
+          </div>
+          <div class="det-r"></div>
+        </div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">입점 신청 승인</div>
+            <div class="modal-b">
+              <b>○○코스메틱</b>의 입점 신청을 승인하시겠습니까?<br>승인 시 계정이 즉시 활성화되고, 신청자에게 <b>이메일/문자</b>로 통지됩니다. 로그인 후 온보딩(반품 수취 주소 등) 입력이 강제됩니다.
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">승인하기</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> 승인/반려 = 확인 다이얼로그(승인, 사유 입력 없음)·사유 입력 모달(반려) 공통 → 처리 즉시 <b>감사 기록</b> 생성(처리자·시각·사유) + 처리 이력 카드에 누적 표시 · 결과 통지는 인앱 알림이 아닌 <b>이메일/문자</b>(② draft36 알림 #13 예외 반영)</div>
+
+</div>
+</body>
+</html>

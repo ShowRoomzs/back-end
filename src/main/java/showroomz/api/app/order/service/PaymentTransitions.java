@@ -9,6 +9,8 @@ import showroomz.domain.cart.repository.CartRepository;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.repository.OrderRefundTaskRepository;
+import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.domain.order.repository.OrderRepository;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -48,6 +50,7 @@ public class PaymentTransitions {
     private final ApplicationEventPublisher eventPublisher;
     private final OrderProperties orderProperties;
     private final PaymentAlerts alerts;
+    private final OrderRefundTaskRepository refundTaskRepository;
 
     public enum PaidOutcome { PAID_NOW, ALREADY_MINE, NOT_MINE_ORDER_CLOSED, NOT_MINE_OTHER_PAYMENT }
 
@@ -136,6 +139,13 @@ public class PaymentTransitions {
         if (payment == null) {
             return CancelCompletion.NOOP;
         }
+        // 부분 환불(환불 큐 집행)이 있었던 결제 — 포트원 CANCELLED 는 부분 취소 누적이 결제액에 닿은 것이다. 주문 전체 취소로
+        // 수렴시키면 이미 각 경로가 닫은 항목의 재고가 한 번 더 돌아간다. 환불 큐 쪽이 결제를 닫는다(1009 기획 수정본 2-3).
+        if (payment.getStatus() == PaymentStatus.PAID && (payment.getCancelledAmount() > 0
+                || refundTaskRepository.existsByPaymentIdAndStatus(paymentId, RefundTaskStatus.EXECUTING))) {
+            paymentRepository.closeIfFullyRefunded(paymentId);
+            return CancelCompletion.NOOP;
+        }
         EnumSet<PaymentStatus> from = EnumSet.of(PaymentStatus.PAID, PaymentStatus.CANCEL_REQUESTED);
         boolean mismatch = payment.getMismatchReason() != null;
         int n = mismatch
@@ -160,6 +170,13 @@ public class PaymentTransitions {
             stockReleaser.release(orderId, now);
             // 하위주문에도 취소의 사실을 남긴다(34 설계서 5-2) — 그룹 CANCELLED(CONSUMER) + 항목 취소 메타 + 이력.
             fulfillmentService.applyConsumerCancel(orderId, now);
+            if (!mismatch) {
+                // 어드민 환불 관리 완료 탭 — 큐를 거치지 않은 전액 취소도 「모든 환불」에 보이게 기록 행을 남긴다(39 설계서 0-4).
+                Long paymentCancelId = paymentCancelRepository
+                        .findByPayment_PaymentIdAndStatus(paymentId, PaymentCancelStatus.SUCCEEDED).stream()
+                        .map(PaymentCancel::getId).reduce((a, b) -> b).orElse(null);
+                fulfillmentService.recordConsumerCancelRefunds(orderId, paymentId, paymentCancelId, payment.getAmount(), now);
+            }
         }
         if (mismatch) {
             alerts.error("결제 자동 취소 - paymentId: " + paymentId + ", 사유: " + payment.getMismatchReason());

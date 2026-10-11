@@ -88,6 +88,9 @@ public class UserClaimDto {
         private ReshipTo reshipTo;
         private Fees fees;
         private CourierPayments courierPayment;
+        @Schema(description = "지금 열려 있는 결제수단 — 고객 귀책 교환의 재발송비 결제(`payment`)에 고른다. 주문서(C9)와 같은 목록. "
+                + "교환 폼만 · 반품 폼은 null", nullable = true)
+        private OrderDto.PaymentMethods paymentMethods;
         @Schema(description = "환불 수단 문구", example = "신한카드 결제 취소", nullable = true)
         private String refundMethodLabel;
         @Schema(description = "회수 송장 등록 기한(일) — 「7일 안에 입력하지 않으면 요청이 취소돼요」", example = "7")
@@ -354,6 +357,8 @@ public class UserClaimDto {
         private ExchangePayment exchangePayment;
         @Schema(description = "상품 다시 받기 — 반려된 항목이 있을 때만", nullable = true)
         private ReshipFee reshipFee;
+        @Schema(description = "신청 정보의 「구매확정」 줄 — 진행 중 · 교환 완료일 때만", nullable = true)
+        private PurchaseConfirm purchaseConfirm;
     }
 
     @Getter
@@ -427,10 +432,15 @@ public class UserClaimDto {
     public static class Rejection {
         @Schema(example = "개봉·사용 흔적")
         private String reasonLabel;
-        @Schema(description = "법적 근거 한 줄 — 문구는 법무 확정 대기(잠정)")
+        @Schema(description = "법적 근거 — 브랜드가 고른 전자상거래법 제17조② 각 호",
+                example = "전자상거래법 제17조②2호 · 사용·소비로 가치 현저히 감소")
         private String legalNote;
-        @Schema(description = "브랜드가 적은 설명 — 그대로 전달한다")
+        @Schema(description = "브랜드가 소비자에게 보낸 메시지 — 그대로 전달한다")
         private String sellerMessage;
+        @Schema(description = "반려 수량 — 일부 반려면 신청 수량보다 작다(나머지는 검수 통과)", example = "1")
+        private Integer rejectedQuantity;
+        @Schema(description = "브랜드 귀책으로 인정됐다 — 배송비 차감이 돌아오고 반려 재발송비를 브랜드가 낸다", example = "false")
+        private boolean faultChangedToSeller;
         private List<String> evidenceImageUrls;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime rejectedAt;
@@ -611,5 +621,18 @@ public class UserClaimDto {
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime storageDueAt;
         private StoragePhase phase;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "신청 정보의 「구매확정」 줄 — 진행 중이면 일시 정지, 교환 완료면 7일 새로 시작")
+    public static class PurchaseConfirm {
+        @Schema(description = "정지 중", example = "true")
+        private boolean paused;
+        @Schema(example = "반품 처리 중 · 구매확정 일시 정지")
+        private String label;
+        @Schema(description = "구매확정까지 남은 일수(정지 중이면 멈춘 값)", example = "4", nullable = true)
+        private Long remainingDays;
     }
 }

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C16 고객센터 · C12 1:1 문의</span></div>
+<p class="dv-tsub">FAQ(운영자 게시 정적 콘텐츠) + 하단 고정 [1:1 문의하기]. 카테고리 칩과 아코디언은 실제로 동작합니다 — 칩을 눌러 필터하고 질문을 탭해 답변을 펼쳐 보세요.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C16 고객센터</div>
+<div class="dv-sw">
+<span class="dv-swl">검색</span>
+<sc-for list="{{ swSearch }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C16 고객센터" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">고객센터</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:18px 14px 6px">
+<div style="display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">궁금한 내용을 검색해 보세요</span>
+</div>
+</div>
+
+<div class="noscroll" style="display:flex;gap:7px;padding:14px 14px 4px;overflow-x:auto">
+<sc-for list="{{ chips }}" as="c" hint-placeholder-count="5">
+<div onClick="{{ c.pick }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55">
+<span style="display:flex;align-items:center;justify-content:center;height:34px;padding:0 13px;border-radius:8px;box-sizing:border-box;white-space:nowrap;background:{{ c.bg }};color:{{ c.color }};border:{{ c.border }};font:{{ c.font }}">{{ c.label }}</span>
+</div>
+</sc-for>
+</div>
+
+<div style="padding:14px 0 0">
+<sc-if value="{{ noResult }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:56px 40px 60px">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.6-4.6"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center;text-wrap:pretty">'{{ query }}'에 대한 결과가 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#8E8E8E;text-align:center;text-wrap:pretty">다른 검색어로 찾아보거나<br>아래에서 바로 문의할 수 있어요</div>
+
+</div>
+</sc-if>
+<sc-for list="{{ faqs }}" as="f" hint-placeholder-count="5">
+<div>
+<div onClick="{{ f.toggle }}" style="display:flex;align-items:flex-start;gap:10px;padding:15px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="flex:none;font:700 14.5px/1.45 Pretendard,sans-serif;color:#F2456E">Q</span>
+<span style="flex:1;min-width:0">
+<span style="display:block;font:600 11px/1 Pretendard,sans-serif;color:#737373">{{ f.cat }}</span>
+<span style="display:block;margin-top:6px;font:{{ f.qFont }};color:#0F0F0F;text-wrap:pretty">{{ f.q }}</span>
+</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:4px;transform:{{ f.chevron }}"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;align-items:flex-start;gap:10px;padding:0 14px 18px;background:#F7F7F8">
+<span style="flex:none;font:700 14.5px/1.6 Pretendard,sans-serif;color:#737373;padding-top:14px">A</span>
+<span style="flex:1;min-width:0;font:400 13.5px/1.7 Pretendard,sans-serif;color:#3C3C3C;padding-top:14px;text-wrap:pretty">{{ f.a }}</span>
+</div>
+</sc-if>
+<div style="height:.5px;background:#F0F0F0;margin:0 14px"></div>
+</div>
+</sc-for>
+</div>
+
+
+
+
+<div style="padding:6px 14px 0;display:grid;gap:5px;font:400 13px/1.7 Pretendard,sans-serif;color:#3C3C3C">
+
+
+</div>
+
+
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;gap:7px;font:600 15.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">
+
+1:1 문의하기
+</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>구성</b> — 검색 → 카테고리 칩 → FAQ 아코디언 → 운영 시간, 하단에 [1:1 문의하기] 고정. FAQ가 늘어나도 <b>검색이 먼저</b> 걸리게 두었고, 칩은 가로 스크롤(전체·주문결제·배송·반품교환·계정)입니다. 답변 영역은 그룹 밴드와 같은 #F7F7F8로 낮춰 질문 목록과 구분했습니다.<br><br><b>유형 표기</b> — 질문 위에 카테고리를 11/600 회색 한 줄로 올렸습니다. 배지 대신 라벨로 둔 이유는, 목록의 모든 행에 배지가 붙으면 배지가 <b>강조 기능을 잃고</b> 질문 텍스트와 시선을 다투기 때문입니다. [전체] 필터에서 특히 유용합니다.<br><br><b>Q·A 표기</b> — 질문의 Q만 로즈로 두고 답변 A는 회색입니다(로즈는 세는 색이므로 목록 전체가 로즈로 뒤덮이지 않게). 펼친 질문은 굵기가 올라가 <b>지금 보고 있는 항목</b>이 드러납니다.<br><br><b>비로그인</b> — FAQ·운영 시간은 <b>로그인 없이 모두 열람</b>합니다(고객센터를 막으면 문의가 외부 채널로 새어 나갑니다). 하단 [1:1 문의하기]만 로그인이 필요하고, <b>비활성으로 두지 않고 탭하면 C0 로그인으로 보낸 뒤 문의 작성으로 복귀</b>시킵니다 — 마이 탭의 주문 내역·배송지와 같은 규칙입니다.<br><br><b>1:1 문의 배치</b> — 와이어프레임대로 하단 고정입니다. FAQ를 다 읽지 않아도 언제든 문의할 수 있어야 하지만, <b>FAQ가 먼저 보이는 위치</b>에 두어 자체 해결률을 높이는 순서입니다.<br><br><b>검색 결과 없음</b> — 검색어를 문구에 넣어 오타를 확인하게 하고, 그 자리에 <b>[1:1 문의하기]를 함께</b> 둡니다(우측 Tweaks의 searchState). FAQ에서 답을 못 찾은 순간이 문의 전환이 가장 높은 지점이라, 하단 고정 버튼까지 다시 내려가게 만들지 않습니다.<br><br><b>남은 결정</b> — ① FAQ 카테고리 확정(어드민 faq-manage와 동기) ② 검색을 클라이언트 필터로 할지 서버 검색으로 할지 ③ 문의 답변 알림 방식(푸시·앱 내 배지).</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;searchState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;기본&quot;,&quot;결과 없음&quot;],&quot;default&quot;:&quot;기본&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;검색&quot;}}">
+class Component extends DCLogic {
+  state = { cat: '전체', open: { f0: true } };
+
+  renderVals(){
+    const CATS = ['전체', '배송', '취소/교환/반품', '주문·결제', '서비스', '계정'];
+    const chips = CATS.map(label => {
+      const on = this.state.cat === label;
+      return {
+        label,
+        bg: on ? '#0F0F0F' : '#fff',
+        color: on ? '#fff' : '#3C3C3C',
+        border: on ? '1px solid #0F0F0F' : '1px solid #E3E3E5',
+        font: (on ? '600' : '400') + ' 13px/1 Pretendard,sans-serif',
+        pick: () => this.setState({ cat: label })
+      };
+    });
+
+    const ALL = [
+      { cat:'취소/교환/반품', q:'반품은 어떻게 신청하나요?', a:'배송완료 후 7일 이내에 주문 내역에서 신청할 수 있어요. 승인되면 문 앞으로 회수 기사가 방문합니다. 상품 하자가 아닌 단순 변심은 왕복 배송비가 부과돼요.' },
+      { cat:'주문·결제', q:'공구가 끝났는데 살 수 있나요?', a:'종료된 공동구매는 추가 구매가 어려워요. 같은 쇼룸을 팔로우하면 다음 공구가 열릴 때 알림을 받을 수 있어요.' },
+      { cat:'배송', q:'배송비는 어떻게 계산되나요?', a:'공구마다 배송비가 다르고 상품 상세에 표기돼요. 제주·도서산간은 우편번호 기준으로 추가 배송비가 자동 계산됩니다.' },
+      { cat:'취소/교환/반품', q:'교환은 어떤 경우에 가능한가요?', a:'오배송·파손·불량인 경우 교환할 수 있어요. 화장품은 개봉 후 단순 변심 교환이 제한될 수 있습니다.' },
+      { cat:'서비스', q:'공구 알림은 어디서 켜고 끄나요?', a:'설정 > 알림 설정에서 팔로우 쇼룸의 새 게시물 알림을 켜고 끌 수 있어요. 주문·배송 등 거래 알림은 끌 수 없습니다.' },
+      { cat:'배송', q:'여러 공구를 함께 주문하면 배송은요?', a:'쇼룸과 브랜드가 다르면 따로 발송돼 도착일이 달라질 수 있어요. 주문 내역에서 묶음별 배송 상태를 확인할 수 있습니다.' },
+      { cat:'계정', q:'닉네임은 바꿀 수 있나요?', a:'설정 > 닉네임 변경에서 언제든 바꿀 수 있어요. 공개되는 문의에서는 일부만 표시됩니다.' }
+    ];
+
+    const cur = this.state.searchState ?? this.props.searchState ?? '기본';
+    const swSearch = ['기본', '결과 없음'].map(label => ({
+      label,
+      pick: () => this.setState({ searchState: label }),
+      bg: label === cur ? '#1a1a1a' : '#fff',
+      color: label === cur ? '#fff' : 'rgba(0,0,0,.62)',
+      border: label === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+      font: (label === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+    }));
+    const noResult = cur === '결과 없음';
+    const filtered = noResult ? [] : ALL.filter(f => this.state.cat === '전체' || f.cat === this.state.cat);
+    const O = this.state.open;
+    const faqs = filtered.map((f, i) => {
+      const key = 'f' + ALL.indexOf(f);
+      const open = !!O[key];
+      return {
+        q: f.q,
+        a: f.a,
+        cat: f.cat,
+        open,
+        qFont: (open ? '600' : '400') + ' 14.5px/1.45 Pretendard,sans-serif',
+        chevron: open ? 'rotate(180deg)' : 'none',
+        toggle: () => this.setState(s => ({ open: { ...s.open, [key]: !s.open[key] } }))
+      };
+    });
+
+    return { chips, faqs, noResult, swSearch, query: '앰플 재고' };
+  }
+}
+</script>
+</body>
+</html>

@@ -30,4 +30,9 @@ public class InquiryRegisterRequest {
 
     @Schema(description = "참조 주문 ID (선택 — 주문 없이도 문의할 수 있습니다)", example = "123456")
     private Long orderId;
+
+    @Schema(description = "반려 이의 대상 클레임 ID (선택) — 반려 안내(C10-5)의 「이의 제기」로 쓸 때만 보낸다. "
+            + "본인 클레임이고 반려 보류 중이어야 하며, 문의 유형은 CANCEL_EXCHANGE_RETURN 이어야 한다. "
+            + "orderId 를 비우면 클레임의 주문으로 채운다", example = "3008")
+    private Long claimId;
 }

@@ -6,7 +6,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.api.seller.basicinfo.SettlementAccountMasker;
+import showroomz.global.utils.SettlementAccountMasker;
 import showroomz.api.seller.changerequest.dto.ChangeRequestBannerResponse;
 import showroomz.api.seller.changerequest.dto.ChangeRequestCreateResponse;
 import showroomz.api.seller.changerequest.dto.ChangeRequestFieldOption;

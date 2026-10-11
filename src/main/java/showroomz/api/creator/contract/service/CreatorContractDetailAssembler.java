@@ -247,7 +247,34 @@ public class CreatorContractDetailAssembler {
                 // 자문 회신 전이라 null이다. 0으로 내리면 「수수료가 없다」는 뜻이 되어버린다.
                 null,
                 withholdingType,
-                withholdingType == null ? null : withholdingType.getLabel());
+                withholdingType == null ? null : withholdingType.getLabel(),
+                REWARD_PAYER,
+                netPreview(withholdingType),
+                FIXED_FEE_NOTE);
+    }
+
+    /** 리워드 지급자(2026-10-07 확정) — SHOWROOMZ 가 PG 분배로 지급한다. */
+    private static final String REWARD_PAYER = "SHOWROOMZ";
+    private static final String FIXED_FEE_NOTE = "고정 지급비는 브랜드가 직접 지급해요 · 정산에 포함되지 않아요";
+    private static final long PREVIEW_GROSS = 100_000;
+
+    /**
+     * 「정산 방식」 블록의 예상 실수령 미리보기(1009 기획 수정본 9절 · 스튜디오 08 rev.4) — 리워드 100,000원 예시로 계산식만 보여 준다.
+     * 이 계약의 실제 금액이 아니다(판매가 끝나야 정해진다). 비사업자 = 3.3% 원천징수(원 단위 절사) 후 입금, 사업자 = 공급가 + 부가세 10%.
+     */
+    private static CreatorContractDetailResponse.NetPreview netPreview(WithholdingType type) {
+        if (type == null) {
+            return null;
+        }
+        if (type == WithholdingType.TAX_INVOICE) {
+            long vat = PREVIEW_GROSS / 10;
+            return new CreatorContractDetailResponse.NetPreview(PREVIEW_GROSS, PREVIEW_GROSS + vat,
+                    String.format("%,d원 + 부가세 10%%(%,d원) = %,d원 · 세금계산서는 SHOWROOMZ 앞으로", PREVIEW_GROSS, vat,
+                            PREVIEW_GROSS + vat));
+        }
+        long tax = PREVIEW_GROSS * 33 / 1000;
+        return new CreatorContractDetailResponse.NetPreview(PREVIEW_GROSS, PREVIEW_GROSS - tax,
+                String.format("%,d원 − 원천징수 3.3%%(%,d원) = %,d원", PREVIEW_GROSS, tax, PREVIEW_GROSS - tax));
     }
 
     /**

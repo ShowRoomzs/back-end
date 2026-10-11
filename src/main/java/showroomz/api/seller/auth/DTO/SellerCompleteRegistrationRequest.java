@@ -1,6 +1,7 @@
 package showroomz.api.seller.auth.DTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -50,9 +51,10 @@ public class SellerCompleteRegistrationRequest {
     @Schema(description = "도서산간 추가비 (미입력 시 0원)", example = "3000")
     private Integer remoteAreaSurcharge;
 
-    @NotNull(message = "출고 소요일은 필수 입력값입니다.")
-    @Min(value = 1, message = "출고 소요일은 1 이상이어야 합니다.")
-    @Schema(description = "출고 소요일", example = "3")
+    @Min(value = 1, message = "발송 기한은 1~7영업일로 입력해 주세요.")
+    @Max(value = 7, message = "발송 기한은 1~7영업일로 입력해 주세요.")
+    @Schema(description = "발송 기한 — 공구 마감 후 N영업일(주말·공휴일 제외) · 1~7 · 생략 시 3. "
+            + "소비자 상품 상세에 「공구 마감 후 N영업일 이내 발송」으로 자동 표시된다", example = "3", nullable = true)
     private Integer shippingLeadDays;
 
     @Min(value = 0, message = "반품비는 0 이상이어야 합니다.")

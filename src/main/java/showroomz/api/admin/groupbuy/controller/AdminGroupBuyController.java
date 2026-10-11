@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.controller;
 
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -156,6 +157,9 @@ public class AdminGroupBuyController implements AdminGroupBuyControllerDocs {
         return ResponseEntity.ok(commandService.rejectRequest(groupBuyId, requestId, requireOperatorId(principal), request));
     }
 
+    // [기획 제외] 운영자 이슈 직접 개설 폐기(§42-4 · 44 정산조정 이슈스레드 설계서 7절) — 항상 409. 이슈는 정산 조정 요청으로만 열린다.
+    // 기획 복귀 전까지 Swagger 에서 숨긴다.
+    @Hidden
     @Override
     @PostMapping("/{groupBuyId}/issues")
     public ResponseEntity<AdminGroupBuyDto.IssueOpenResponse> openIssue(
@@ -164,6 +168,8 @@ public class AdminGroupBuyController implements AdminGroupBuyControllerDocs {
         return ResponseEntity.ok(commandService.openIssue(groupBuyId, requireOperatorId(principal), request));
     }
 
+    // [기획 제외] 운영자 정산 확인 폐기(§41-1 #6 · 44 어드민 정산관리 설계서 8-1) — 항상 409. 기획 복귀 전까지 Swagger 에서 숨긴다.
+    @Hidden
     @Override
     @PostMapping("/{groupBuyId}/settlement/confirm")
     public ResponseEntity<Void> confirmSettlement(

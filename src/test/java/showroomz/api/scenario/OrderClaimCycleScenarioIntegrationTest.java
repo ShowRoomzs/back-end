@@ -140,7 +140,7 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
     // ================================================================== CY-R
 
     @Test
-    @DisplayName("[CY-R1] 반품 한 바퀴(송장 나중에) — 요청 → 송장 등록 → 회수 이동 · 도착 → 입고 확인 → 통과(27,200) → 환불 대기도 보류 → 집행 → 반품 항목 없이 구매확정")
+    @DisplayName("[CY-R1] 반품 한 바퀴(송장 나중에) — 요청 → 송장 등록 → 회수 이동 · 도착 → 입고 확인 → 통과(27,200) = PG 즉시 환불 · 종결 → 반품 항목 없이 구매확정")
     void returnFullCycle() throws Exception {
         OrderDeliveryGroup group = shipAndDeliver(paidGroup(), LocalDateTime.now().minusHours(1));
         Long orderId = group.getOrder().getId();
@@ -148,8 +148,9 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
 
         // R1-1 폼 — 배송비를 내고 받은 주문이라 더 빼는 것이 없다
         userGet(USER_CLAIMS + "/form?orderProductId=" + orderProductId + "&type=RETURN")
-                .andExpect(jsonPath("$.reasons.length()").value(4))
-                .andExpect(jsonPath("$.carriers.length()").value(6))
+                // 반품 폼은 「기타」까지 5종 · 택배사는 추적 연동 목록 하나(1009 기획 수정본 5-a · 5-c)
+                .andExpect(jsonPath("$.reasons.length()").value(5))
+                .andExpect(jsonPath("$.carriers.length()").value(12))
                 .andExpect(jsonPath("$.returnTo.address").value(notNullValue()))
                 .andExpect(jsonPath("$.fees.consumerFault").value(0));
 
@@ -213,20 +214,12 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(jsonPath("$.events[0].source").value("BRAND"))
                 .andExpect(jsonPath("$.events[0].description").value("입고 · 검수 시작"));
 
-        // R1-8 통과 — 낸 배송비는 돌려주지 않는다
+        // R1-8 통과 — 낸 배송비는 돌려주지 않는다. 통과 = PG 즉시 자동 환불이라 응답 시점에 종결돼 있다(1009 기획 2절).
         sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk());
-        assertThat(claimStatus(claimId)).isEqualTo("REFUND_PENDING");
         assertThat(itemsOf(group).get(0).getReturnedQuantity()).isEqualTo(1);
-        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE, "PENDING"));
-        userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.refund.amount").value(CREAM_PRICE))
-                .andExpect(jsonPath("$.refund.confirmed").value(false));
         sellerSummary().andExpect(jsonPath("$.actionBar.incomingCheck").value(0));
 
-        // R1-9 환불 대기도 보류다
-        assertThat(fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now().plusDays(8))).isFalse();
-
-        // R1-10 집행
-        claimService.completeRefund(refundTaskId(group), CREAM_PRICE, 1L, LocalDateTime.now());
+        // R1-10 환불 완료
         assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
         assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE, "DONE"));
         userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.refund.confirmed").value(true));
@@ -263,8 +256,7 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         }
 
         int expected = CREAM_PRICE + SERUM_PRICE - DELIVERY_FEE;
-        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", expected, "PENDING"));
-        claimService.completeRefund(refundTaskId(group), expected, 1L, LocalDateTime.now());
+        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", expected, "DONE"));
 
         assertThat(claimIds.stream().mapToInt(id -> jdbc.queryForObject(
                 "SELECT refunded_amount FROM order_claim WHERE claim_id = ?", Integer.class, id)).sum())
@@ -290,10 +282,9 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
             receiveAndPass(claimId);
         }
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE + SERUM_PRICE, "PENDING"));
+                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE + SERUM_PRICE, "DONE"));
 
         // R3-2 집행 — 상품 금액 전액
-        claimService.completeRefund(refundTaskId(group), CREAM_PRICE + SERUM_PRICE, 1L, LocalDateTime.now());
         assertThat(itemsOf(group)).extracting(OrderProduct::getStatus).containsOnly(OrderProductStatus.RETURNED);
         assertThat(collection(claimIds.get(0))).containsEntry("refund_amount", CREAM_PRICE + SERUM_PRICE);
     }
@@ -435,8 +426,11 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         deliverReship(claimId, reshipInvoice);
 
         assertThat(claimRow(claimId)).containsEntry("result", "REJECTED");
-        assertThat(reloadGroup(group).getConfirmRestartAt()).isNull();
-        // 거절은 보류를 풀었고 반송 도착은 타이머를 다시 세우지 않는다 — 원래 배송완료 + 7일이다.
+        // 반려로 정지가 풀렸다 — 정지한 시간만큼만 기산점이 밀리고(1009 기획 수정본 4절) 반송 도착은 타이머를 새로 세우지 않는다.
+        OrderDeliveryGroup timer = reloadGroup(group);
+        assertThat(timer.getConfirmPausedAt()).isNull();
+        assertThat(timer.getConfirmRestartAt()).isBetween(timer.getDeliveredAt(), timer.getDeliveredAt().plusMinutes(5));
+        // 그래서 예정은 원래 배송완료 + 7일(+ 몇 초)이다.
         assertThat(fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now().plusDays(6).plusHours(1)))
                 .isTrue();
     }
@@ -459,14 +453,13 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
 
         receiveAndPass(approved);
         int expected = CREAM_PRICE - DELIVERY_FEE - DELIVERY_FEE;
-        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", expected, "PENDING"));
+        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", expected, "DONE"));
         assertThat(chargeStatus(rejected)).isEqualTo("DEDUCTED");
         assertThat(claimStatus(rejected)).isEqualTo("RESHIP_READY");
 
         String reshipInvoice = "300040005202";
         registerReship(rejected, reshipInvoice);
         deliverReship(rejected, reshipInvoice);
-        claimService.completeRefund(refundTaskId(group), expected, 1L, LocalDateTime.now());
 
         assertThat(claimRow(approved)).containsEntry("result", "REFUNDED");
         assertThat(claimRow(rejected)).containsEntry("result", "REJECTED");
@@ -488,7 +481,7 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         receiveAndReject(rejected);
 
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE - DELIVERY_FEE - DELIVERY_FEE, "PENDING"));
+                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE - DELIVERY_FEE - DELIVERY_FEE, "DONE"));
         assertThat(chargeStatus(rejected)).isEqualTo("DEDUCTED");
         assertThat(claimStatus(rejected)).isEqualTo("RESHIP_READY");
         String reshipInvoice = "300040005601";
@@ -678,8 +671,7 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         Long returnId = claimIds(userPost(USER_CLAIMS, returnBody).andExpect(status().isCreated())).get(0);
         receiveAndPass(returnId);
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE - DELIVERY_FEE, "PENDING"));
-        claimService.completeRefund(refundTaskId(group), CREAM_PRICE - DELIVERY_FEE, 1L, LocalDateTime.now());
+                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE - DELIVERY_FEE, "DONE"));
         appOrder(group.getOrder().getId()).andExpect(jsonPath("$.items[0].status").value("DELIVERED"))
                 .andExpect(jsonPath("$.items[0].returnedQuantity").value(1))
                 .andExpect(jsonPath("$.items[0].actions[*].type", hasItem("RETURN_REQUEST")));
@@ -773,7 +765,8 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         sellerPost(SELLER_CLAIMS + "/receive", Map.of("claimIds", List.of(claimId)))
                 .andExpect(jsonPath("$.succeeded").value(1));
         sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/reject", Map.of("reasonCode", "USED",
-                "detail", "사용 흔적이 있습니다.", "evidenceImageUrls", List.of("https://img.test/e1.jpg")))
+                "detail", "사용 흔적이 있습니다.", "legalBasis", "ART17_2_2", "consumerMessage", "사용 흔적이 있습니다.",
+                "evidenceImageUrls", List.of("https://img.test/e1.jpg")))
                 .andExpect(status().isOk());
     }
 

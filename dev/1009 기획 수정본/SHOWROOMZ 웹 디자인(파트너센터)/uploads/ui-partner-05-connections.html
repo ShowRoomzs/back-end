@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-05-connections — 파트너센터 연결·소통 rev.2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바(플랫 리스트) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-sm{height:28px;padding:0 10px;font-size:var(--fs-micro);}
+
+/* ══ 입력 ══ */
+.inp,.sel{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus,.sel:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 본문 레이아웃 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;overflow:hidden;
+  display:flex;flex-direction:column;}
+.page-h{display:flex;align-items:center;justify-content:space-between;padding:var(--pt-pad) var(--pt-pad) var(--sp-4);flex-shrink:0;}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+
+/* ══ 2패널 ══ */
+.cs-wrap{flex:1;display:flex;min-height:0;border-top:1px solid var(--n-200);}
+.cs-list{width:320px;flex-shrink:0;border-right:1px solid var(--n-200);background:#fff;display:flex;flex-direction:column;}
+.cs-lh{padding:14px;border-bottom:1px solid var(--n-100);flex-shrink:0;}
+.cs-lh input{width:100%;}
+.cs-items{flex:1;overflow-y:auto;}
+.cs-item{display:flex;gap:10px;padding:13px 14px;border-bottom:1px solid var(--n-100);cursor:pointer;}
+.cs-item:hover{background:var(--n-50);}
+.cs-item.active{background:var(--accent-50);box-shadow:inset 3px 0 0 var(--accent-500);}
+.cs-item.op{border-bottom:1px solid var(--n-200);}
+.cs-avatar{width:38px;height:38px;border-radius:50%;background:var(--n-200);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0;}
+.cs-avatar.op{background:var(--accent-500);color:#fff;font-size:11px;font-weight:700;}
+.cs-meta{flex:1;min-width:0;}
+.cs-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.cs-name{font-size:var(--fs-body);font-weight:600;color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cs-time{font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;}
+.cs-prev-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:3px;}
+.cs-prev{font-size:var(--fs-caption);color:var(--n-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.cs-unread{background:var(--accent-500);color:#fff;border-radius:9px;min-width:18px;height:18px;
+  font-size:var(--fs-micro);font-weight:600;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0;}
+.cs-lf{padding:12px 16px;border-top:1px solid var(--n-100);flex-shrink:0;height:64px;display:flex;align-items:center;}
+.cs-lf .btn{height:40px;}
+
+.cs-thread{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--n-50);}
+.th-head{height:64px;background:#fff;border-bottom:1px solid var(--n-200);display:flex;align-items:center;
+  padding:0 var(--sp-5);gap:12px;flex-shrink:0;}
+.th-head .cs-avatar{width:40px;height:40px;}
+.th-hmeta{flex:1;}
+.th-hname{font-size:var(--fs-h3);font-weight:600;}
+.th-hstat{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.th-notice{background:var(--n-100);color:var(--n-500);font-size:var(--fs-micro);text-align:center;
+  padding:8px 16px;flex-shrink:0;}
+.th-body{flex:1;padding:var(--sp-5);display:flex;flex-direction:column;align-items:flex-start;gap:16px;overflow-y:auto;}
+.daymark{align-self:center;text-align:center;font-size:var(--fs-micro);color:var(--n-400);}
+.msg{max-width:56%;}
+.msg .who{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:4px;}
+/* 말풍선 + 전송 시각을 한 줄에 나란히 배치 — them: 말풍선 오른쪽에 시각, me: 말풍선 왼쪽에 시각 */
+.msg-row{display:flex;align-items:flex-end;gap:6px;}
+.msg.me .msg-row{flex-direction:row-reverse;}
+.msg-body{min-width:0;}
+.bubble{display:inline-block;width:fit-content;max-width:100%;border-radius:12px;padding:10px 14px;
+  font-size:var(--fs-body);line-height:1.55;word-break:break-word;white-space:pre-wrap;}
+.msg.them .bubble{background:#fff;color:var(--n-900);border:1px solid var(--n-200);border-top-left-radius:2px;}
+.msg.me{align-self:flex-end;text-align:right;}
+.msg.me .bubble{background:var(--accent-500);color:#fff;border-top-right-radius:2px;text-align:left;}
+.msg .tstamp{font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;white-space:nowrap;}
+.sf-warn{width:16px;height:16px;border-radius:50%;background:var(--danger-text);color:#fff;font-size:10px;
+  font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
+.send-fail{display:flex;align-items:center;gap:7px;margin-top:4px;justify-content:flex-end;
+  font-size:var(--fs-micro);color:var(--danger-text);font-weight:500;}
+.send-fail .sf-btn{color:var(--n-600);text-decoration:underline;cursor:pointer;font-weight:500;}
+.send-fail .sf-btn:hover{color:var(--n-900);}
+.msg .media{width:150px;height:110px;border-radius:var(--r-sm);background:var(--n-200);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);margin-top:6px;position:relative;cursor:pointer;}
+.msg.me .media{margin-left:auto;}
+.msg.them .media{margin-right:auto;}
+.media-save{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+  background:rgba(26,27,31,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.media-save svg{width:13px;height:13px;}
+
+/* 다중 이미지 첨부 그리드 */
+.mgrid{display:grid;gap:3px;margin-top:6px;border-radius:var(--r-sm);overflow:hidden;}
+.mgrid > div{background:var(--n-200);color:var(--n-500);display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-micro);position:relative;}
+.mgrid.n2{grid-template-columns:1fr 1fr;width:220px;height:120px;}
+.mgrid.n3{grid-template-columns:1fr 1fr 1fr;width:270px;height:90px;}
+.mgrid.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:180px;height:180px;}
+.mgrid.n5,.mgrid.n6plus{grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;width:270px;height:180px;}
+.msg.me .mgrid{margin-left:auto;}
+.msg.them .mgrid{margin-right:auto;}
+.mgrid .more-overlay{position:absolute;inset:0;background:rgba(26,27,31,.55);color:#fff;font-weight:600;
+  font-size:var(--fs-h3);display:flex;align-items:center;justify-content:center;}
+
+/* 문서 첨부 (영상도 mp4 아이콘으로 동일한 file-chip UI 사용) */
+.file-chip{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:10px 12px;width:230px;margin-top:6px;cursor:pointer;}
+.file-chip:hover{background:var(--n-50);}
+.msg.me .file-chip{margin-left:auto;}
+.file-ic{width:38px;height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.file-ic.pdf{background:#D64545;} .file-ic.docx{background:#2E5AAC;} .file-ic.hwp{background:#3B5BDB;}
+.file-ic.xlsx{background:#1F7A54;} .file-ic.pptx{background:#D96B2B;} .file-ic.zip{background:var(--n-500);}
+.file-ic.default{background:var(--n-400);}
+.file-meta{flex:1;min-width:0;}
+.file-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-size{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.file-dl{color:var(--n-400);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:var(--r-sm);}
+.file-dl:hover{background:var(--n-100);color:var(--n-700);}
+.file-dl svg{width:17px;height:17px;}
+.file-dl.done{color:var(--success-text);}
+.file-dl.done:hover{background:var(--success-bg);}
+.file-dl.downloading{color:var(--accent-500);}
+.file-ic.mp4{background:#6B4FD1;}
+
+/* 일괄 다운로드 — 한 메시지에 첨부(사진·영상·파일) 2개 이상이면 첨부 영역 바로 아래 노출 */
+.bulk-dl{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;margin-top:6px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-600);
+  font-size:var(--fs-micro);font-weight:500;cursor:pointer;width:fit-content;}
+.bulk-dl:hover{background:var(--n-100);color:var(--n-900);}
+.bulk-dl svg{width:13px;height:13px;flex-shrink:0;}
+.msg.me .bulk-dl{margin-left:auto;}
+.msg.them .bulk-dl{margin-right:auto;}
+
+/* 이미지·영상 미리보기 창(라이트박스) */
+.lightbox{position:absolute;inset:0;background:rgba(10,11,13,.92);display:flex;align-items:center;justify-content:center;z-index:10;}
+.lightbox-top{position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 20px;color:#fff;}
+.lightbox-who{display:flex;align-items:center;gap:10px;font-size:var(--fs-caption);}
+.lightbox-who .cs-avatar{width:30px;height:30px;}
+.lightbox-actions{display:flex;align-items:center;gap:8px;}
+.lb-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.lb-btn:hover{background:rgba(255,255,255,.22);}
+.lb-btn svg{width:17px;height:17px;}
+.lightbox-body{width:520px;height:600px;background:var(--n-700);color:var(--n-400);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);border-radius:var(--r-sm);}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;
+  background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.lightbox-nav:hover{background:rgba(255,255,255,.22);}
+.lightbox-nav.prev{left:24px;} .lightbox-nav.next{right:24px;}
+.lightbox-nav svg{width:20px;height:20px;}
+.lightbox-counter{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;
+  font-size:var(--fs-micro);background:rgba(255,255,255,.12);padding:4px 12px;border-radius:var(--r-pill);}
+
+/* 영상 플레이어 */
+.vplayer-body{width:640px;height:400px;background:#000;border-radius:var(--r-sm);position:relative;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.vplayer-bigplay{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.92);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.vplayer-bigplay svg{width:24px;height:24px;color:var(--n-900);margin-left:3px;}
+.vplayer-controls{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));
+  padding:28px 16px 12px;display:flex;flex-direction:column;gap:8px;}
+.vplayer-bar{height:4px;background:rgba(255,255,255,.3);border-radius:2px;position:relative;}
+.vplayer-bar-fill{position:absolute;left:0;top:0;bottom:0;width:38%;background:var(--accent-500);border-radius:2px;}
+.vplayer-bar-fill::after{content:"";position:absolute;right:-5px;top:50%;transform:translateY(-50%);
+  width:11px;height:11px;border-radius:50%;background:#fff;}
+.vplayer-row{display:flex;align-items:center;gap:12px;color:#fff;}
+.vplayer-row svg{width:16px;height:16px;cursor:pointer;}
+.vplayer-time{font-size:var(--fs-micro);color:#fff;opacity:.85;}
+.vplayer-spacer{flex:1;}
+.spin svg{animation:sz-spin 0.8s linear infinite;transform-origin:12px 12px;}
+@keyframes sz-spin{to{transform:rotate(360deg);}}
+.file-size.downloading{color:var(--accent-600);font-weight:500;}
+.file-size.done{color:var(--success-text);font-weight:500;}
+
+/* 업로드 진행 중 */
+.file-uploading{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:10px 12px;width:230px;margin-top:6px;}
+.msg.me .file-uploading{margin-left:auto;}
+.fu-body{flex:1;min-width:0;}
+.fu-top{display:flex;justify-content:space-between;gap:8px;}
+.fu-pct{font-size:var(--fs-micro);color:var(--accent-600);font-weight:600;flex-shrink:0;}
+.fu-bar{height:4px;background:var(--n-200);border-radius:2px;margin-top:7px;overflow:hidden;}
+.fu-bar-fill{height:100%;background:var(--accent-500);border-radius:2px;}
+.fu-cancel{width:22px;height:22px;border-radius:50%;background:var(--n-100);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-size:13px;}
+
+/* 첨부 미리보기(혼합: 이미지/영상/문서) */
+.ap-file{position:relative;height:64px;padding:0 34px 0 6px;border-radius:var(--r-sm);background:#fff;
+  border:1px solid var(--n-200);display:flex;align-items:center;gap:8px;}
+.ap-file .file-ic{width:30px;height:30px;font-size:8px;}
+.ap-file .fn{font-size:var(--fs-micro);font-weight:600;color:var(--n-900);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ap-file .fs{font-size:9px;color:var(--n-500);}
+.size-warn{display:flex;align-items:center;gap:6px;color:var(--danger-text);font-size:var(--fs-micro);
+  font-weight:500;padding:0 0 8px;}
+
+/* 검색 결과 상태 */
+.res{border:1px solid var(--n-200);border-radius:var(--r-sm);margin-top:12px;max-height:280px;overflow-y:auto;}
+.res-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--n-100);}
+.res-item:last-child{border-bottom:none;}
+.res-empty{padding:36px 20px;text-align:center;}
+.res-empty .ic{font-size:26px;color:var(--n-300);margin-bottom:8px;}
+.res-empty .t{font-size:var(--fs-caption);font-weight:600;color:var(--n-600);margin-bottom:3px;}
+.res-empty .d{font-size:var(--fs-micro);color:var(--n-500);}
+.res-count{font-size:var(--fs-micro);color:var(--n-500);margin-top:8px;}
+
+/* 연결코드 확인 결과 */
+.code-result{margin-top:12px;border-radius:var(--r-sm);}
+.code-found{border:1px solid var(--success-text);background:var(--success-bg);border-radius:var(--r-sm);
+  padding:12px;display:flex;align-items:center;gap:10px;}
+.code-found .cf-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);}
+.code-found .cf-sub{font-size:var(--fs-micro);color:var(--n-600);margin-top:1px;}
+.code-notfound{display:flex;align-items:center;gap:6px;color:var(--danger-text);font-size:var(--fs-micro);
+  margin-top:8px;font-weight:500;}
+.th-input{border-top:1px solid var(--n-200);background:#fff;padding:12px 16px;flex-shrink:0;min-height:64px;
+  display:flex;flex-direction:column;justify-content:center;}
+.th-input-row{display:flex;align-items:center;gap:10px;}
+.th-attach{width:36px;height:36px;border:1px solid var(--n-300);border-radius:var(--r-sm);display:flex;
+  align-items:center;justify-content:center;color:var(--n-500);flex-shrink:0;cursor:pointer;}
+.th-attach:hover{background:var(--n-100);}
+.th-attach svg{width:17px;height:17px;}
+.th-field{flex:1;height:40px;border:1px solid var(--n-300);border-radius:20px;display:flex;align-items:center;
+  padding:0 16px;font-size:var(--fs-body);color:var(--n-400);}
+.th-send{width:40px;height:40px;border-radius:50%;flex-shrink:0;padding:0;}
+.th-send svg{width:18px;height:18px;display:block;}
+
+/* 첨부 미리보기 */
+.attach-preview{display:flex;gap:8px;padding:0 0 10px;flex-wrap:wrap;}
+.ap-item{position:relative;width:64px;height:64px;border-radius:var(--r-sm);background:var(--n-200);
+  display:flex;align-items:center;justify-content:center;color:var(--n-500);font-size:var(--fs-micro);flex-shrink:0;}
+.ap-x{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+  background:var(--n-900);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
+.ap-file .ap-x{top:6px;right:6px;}
+.ap-x svg{width:10px;height:10px;}
+
+/* 첨부 개수가 많을 때 — 줄바꿈 대신 가로 스크롤(한 줄 고정) */
+.attach-preview.scrollx{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding-top:8px;padding-bottom:12px;
+  scrollbar-width:thin;}
+.attach-preview.scrollx .ap-item,.attach-preview.scrollx .ap-file{flex-shrink:0;}
+.attach-preview.scrollx::-webkit-scrollbar{height:6px;}
+.attach-preview.scrollx::-webkit-scrollbar-track{background:var(--n-100);border-radius:3px;}
+.attach-preview.scrollx::-webkit-scrollbar-thumb{background:var(--n-300);border-radius:3px;}
+
+/* 빈 스레드 상태 */
+.th-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  color:var(--n-400);text-align:center;padding:40px;}
+.th-empty .ic{font-size:32px;}
+.th-empty .t{font-size:var(--fs-h3);font-weight:600;color:var(--n-600);}
+.th-empty .d{font-size:var(--fs-caption);color:var(--n-500);max-width:280px;line-height:1.6;}
+
+/* 전체 빈 상태(연결 없음) */
+.empty-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  color:var(--n-400);text-align:center;}
+.empty-page .ic{font-size:40px;}
+.empty-page .t{font-size:var(--fs-h2);font-weight:600;color:var(--n-700);}
+.empty-page .d{font-size:var(--fs-caption);color:var(--n-500);max-width:340px;line-height:1.7;}
+
+/* ══ 모달 ══ */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:460px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:16px 22px;border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:22px;}
+.modal-f{padding:14px 22px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.seg{display:flex;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;margin-bottom:16px;}
+.seg-item{flex:1;text-align:center;padding:9px;font-size:var(--fs-caption);color:var(--n-600);background:#fff;cursor:pointer;}
+.seg-item.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.flabel{font-size:var(--fs-caption);color:var(--n-600);margin-bottom:6px;font-weight:500;}
+.res{border:1px solid var(--n-200);border-radius:var(--r-sm);margin-top:12px;}
+.res-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--n-100);}
+.res-item:last-child{border-bottom:none;}
+.res-item .cs-avatar{width:34px;height:34px;}
+.res-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);}
+.res-sub{font-size:var(--fs-micro);color:var(--n-500);margin-top:1px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.6;}
+.code-box{display:flex;gap:8px;align-items:center;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>ui-partner-03-connections <span style="font-weight:400;color:var(--n-500)">— 파트너센터 연결·소통</span></h1>
+  <p class="meta">근거: wf-partner-03-연결소통계약(F1·F2) · SHOWROOMZ_거래플로우_상태정의서_v1.2 §2(연결)·§3(소통 스레드) · GNB #3(계약 관리는 #4, 별도 화면)</p>
+  <div class="rule">
+    <b>[도메인 규칙]</b> 스레드는 <b>브랜드+인플루언서 쌍 기준 유일</b> — 연결이 끊겼다 재생성돼도 같은 쌍이면 동일 스레드로 이어짐(대화 기록 보존). 연결 해제 시 스레드는 <b>휴면</b>(열람만 가능, 작성 불가) 상태가 되고 재연결 시 다시 열림.<br>
+    <b>[도메인 규칙]</b> <b>[계약 작성] 버튼은 진열 상태 "연결됨"일 때만 활성</b> — "연결요청"(수락 대기중) 상태에서는 비활성. 계약 관리(GNB #4)는 별도 화면이라 이 문서 범위 밖.<br>
+    <b>[도메인 규칙]</b> 같은 쌍의 동시 유효 연결은 <b>1개만</b> 허용 — 이미 연결됨/연결요청 상태인 인플루언서는 연결 요청 모달 검색 결과에서 "요청" 버튼 대신 현재 상태 배지로 표시.<br>
+    <b>[법적 고지 — 실제 UI]</b> 운영자는 분쟁 대응을 위해 스레드를 열람할 수 있으며, <b>이 사실은 화면에 상시 고지</b>되어야 한다(②거래플로우 §3) — 스레드 상단에 고정 안내 문구로 반영.<br>
+    <b>[제약]</b> 탐색·매칭 시스템 없음 — 상대는 쇼룸명 검색 또는 연결코드로만 지정(외부 합의 전제). 메시지 첨부는 1건당 최대 20개(이미지·영상).<br>
+    <b>[신규제안 · 도메인 범위 확인 필요]</b> ②거래플로우_상태정의서 §3은 "이미지·영상 첨부"까지만 허용한다고 명시되어 있음. 이번에 <b>문서 파일(PDF·DOCX·HWP·XLSX·PPTX·ZIP 등) 첨부</b>를 추가로 디자인했는데, 이는 문서상 정의 범위를 벗어나는 확장이라 실제 허용할지 김화창님·소 대표님 확인 필요. 실제 허용 확장자 전체 목록·차단 확장자(exe 등 실행파일)는 별도 확정 필요.<br>
+    <b>[구현 방식 — FE]</b> 파일 아이콘은 <b>화면마다 하드코딩하지 않고, 확장자 → {라벨, 색상} 매핑 테이블</b>로 자동 처리합니다. 파일명에서 확장자를 추출해 테이블에서 찾고, <b>테이블에 없는 확장자는 회색 기본 아이콘 + 확장자 텍스트 그대로</b>를 보여주는 기본값(default)으로 처리 — 새 확장자가 나와도 화면이 깨지지 않고, 디자이너가 매번 새 아이콘을 그릴 필요도 없습니다(A7 참고).<br>
+    <b>[정책 · 신규]</b> 메시지 1건 전송 시 첨부 <b>총 용량 500MB 제한</b>. 초과 시 전송 버튼 비활성화 + 오류 문구 노출(A9 참고). 개별 파일 개수 제한(최대 20개, 위 [제약] 참고)과는 별개의 축이라 <b>두 조건 다 확인</b>해야 함(개수 OK + 용량 초과인 경우도 전송 불가).<br>
+    <b>[중요 · 클릭 동작은 파일 종류마다 다릅니다]</b> 브라우저는 앱(카톡)과 달리 파일 시스템에 직접 접근할 수 없어 "이미 받은 파일이면 열어주기"가 불가능합니다. 그래서 종류별로 클릭 동작이 다르게 설계됩니다 — <b>사진·영상</b>: 클릭 시 화면 안에서 미리보기/재생만(다운로드 아님), 저장하려면 별도의 작은 다운로드 아이콘을 눌러야 함(A4·A5·A6 참고). <b>모든 문서 파일(PDF·DOCX·HWP·XLSX·PPTX·ZIP 등)</b>: 예외 없이 <b>클릭할 때마다 매번 새로 다운로드</b>됨(2026.08 확정 — 초기엔 PDF만 새 탭 미리보기로 열리는 예외를 뒀으나, 규칙을 단순화하기 위해 문서 파일은 전부 동일하게 다운로드로 통일). A6의 "다운로드 완료" 체크 표시는 <b>"다시 안 받아도 된다"는 뜻이 아니라 "과거에 최소 한 번 받은 적 있다"는 이력 표시</b>일 뿐입니다.<br>
+    <b>[신규 · 2026.08 추가]</b> 한 메시지에 <b>사진·영상·문서 첨부가 2개 이상</b>이면 첨부 영역 바로 아래 <b>[전체 다운로드]</b> 버튼을 노출한다(A4·A6 참고). 여러 개를 한 번에 받아야 하는 경우 하나씩 누르는 번거로움을 줄이기 위함 — 클릭 시 첨부된 모든 파일이 개별 다운로드된다(브라우저가 순차적으로 여러 파일 저장을 처리, 압축 없음). 사진 그리드는 화면에 보이는 장수가 아니라 <b>실제 첨부된 전체 개수</b> 기준으로 버튼 라벨이 표기된다("+N" 오버레이로 가려진 사진 포함).<br>
+    <b>[신규 · 2026.08 추가]</b> <b>영상 첨부도 문서 첨부와 동일한 file-chip UI로 다운로드를 제공</b>한다(A5 참고) — 기존에는 썸네일 위 작은 원형 아이콘으로만 저장이 가능해 다운로드 동작이 눈에 잘 띄지 않았음. 재생(썸네일 클릭)과 다운로드(file-chip의 다운로드 버튼)는 여전히 완전히 분리된 동작이다.<br>
+    <b>[다운로드 진행 UI는 별도로 만들지 않음]</b> 다운로드 진행 상태(퍼센트·진행바)는 <b>브라우저(크롬)가 자체 다운로드 트레이로 이미 보여주는 정보</b>라 채팅창 안에 따로 구현하지 않는다. 실시간 진행률을 채팅 UI에 표시하려면 단순 다운로드 링크가 아니라 별도 스트리밍 처리가 필요해 불필요하게 복잡해지고, 대부분 파일(수백 KB~수 MB)은 체감상 즉시 끝나 커스텀 UI를 볼 일도 거의 없음. 버튼은 <b>다운로드 아이콘 하나</b>면 충분 — 나머지는 브라우저에 맡긴다.<br>
+    <b>[BE 확인 필요 · 영상 재생은 다운로드 없이 스트리밍]</b> 영상 재생(▶)은 <code>&lt;video&gt;</code> 태그의 스트리밍 재생을 전제로 설계됨 — 전체 파일을 미리 받지 않고 재생에 필요한 만큼만 그때그때 불러온다(유튜브와 동일 원리). 단 이게 되려면 영상을 서빙하는 스토리지가 <b>HTTP Range Request(부분 요청)를 지원</b>해야 함 — S3·CloudFront 등 일반적인 스토리지는 기본 지원되나, 구현 시 꺼져있으면 "재생"이 사실상 "전체 다운로드 후 재생"이 되어버려 재생과 다운로드를 분리한 설계 의도(A5·A9)가 무너짐. 김화창님 확인 필요.<br>
+    <b>[신규 규칙]</b> 텍스트 없이 <b>파일(사진·영상·문서)만 전송</b>하는 경우, 말풍선이 없어 전송 시각을 표시할 자리가 없으므로 <b>첨부된 항목 중 가장 하단(마지막) 항목에 전송 시각을 표시</b>한다(A4·A5·A6·A8 참고).
+  </div>
+</div>
+
+<!-- ═════════ A1. 연결·소통 · 기본(연결됨 스레드) ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A1</span><span class="state-label">연결·소통 · 기본</span>
+  <span class="state-spec">좌: 운영자(최상단 고정) + 연결된 인플루언서만 노출(요청중은 목록에 없음, 색상칩 없이 안읽음 수만) · 연결 요청 버튼은 목록 하단 · 말풍선은 글 길이에 맞춤(2줄 예시 포함) · <b>전송 실패 시</b> 타임스탬프 자리에 빨간 느낌표 + 말풍선 아래 [재전송]/[취소] 노출</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">7월 정산 안내드립니다. 확인 부탁드려요.</div></div>
+          </div>
+        </div>
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">공구가 이 정도면 진행 가능할 것 같아요!</div><span class="cs-unread">2</span></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">글로우_지민</span><span class="cs-time">1시간</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인했습니다.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">안녕하세요! 이번 신제품 세럼 공구 제안 감사합니다 😊</div></div><div class="tstamp">14:02</div></div></div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">네! 세럼 30ml·50ml 두 옵션으로 진행하려 합니다. 참고 이미지 보내드려요.</div></div><div class="tstamp">14:05</div></div>
+          <div class="media">IMG 첨부<span class="media-save"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></span></div></div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">공구가 이 정도면 진행 가능할 것 같아요! 다음 주부터 콘텐츠 준비 시작해서 재고 넉넉하게 확보해두면 좋을 것 같습니다. 확인 부탁드려요 :)</div></div><div class="tstamp">14:12</div></div></div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">네 좋습니다! 그 조건으로 진행할게요</div></div><div class="sf-warn" title="전송 실패">!</div></div>
+          <div class="send-fail"><span>전송 실패</span><span class="sf-btn">재전송</span><span class="sf-btn">취소</span></div>
+        </div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A2. 연결·소통 · 빈 상태(인플루언서 연결 없음) ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A2</span><span class="state-label">연결·소통 · 빈 상태(인플루언서 연결 없음)</span>
+  <span class="state-spec">운영자는 인플루언서 연결이 하나도 없어도 항상 표시됨 · 연결 요청 버튼은 목록 하단</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op active">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">7월 정산 안내드립니다. 확인 부탁드려요.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar op">SZ</div>
+        <div class="th-hmeta"><div class="th-hname">SHOWROOMZ 운영팀</div><div class="th-hstat">공지·문의 채널</div></div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.08.03</div>
+        <div class="msg them"><div class="who">SHOWROOMZ 운영팀</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">안녕하세요, ○○ 브랜드님. 7월 정산 내역이 확정되어 안내드립니다. 정산 관리 메뉴에서 상세 내역을 확인해 주세요.</div></div><div class="tstamp">10:00</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A3. 연결·소통 · 파일 첨부 미리보기 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A3</span><span class="state-label">연결·소통 · 파일 첨부 미리보기<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">첨부 후 전송 전 상태 — 썸네일+제거(×) 가능, 텍스트와 함께 전송 · 이미지·영상만 허용(1건당 최대 20개, 확장자 화이트리스트는 확인 필요)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">7월 정산 안내드립니다. 확인 부탁드려요.</div></div>
+          </div>
+        </div>
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">공구가 이 정도면 진행 가능할 것 같아요!</div><span class="cs-unread">2</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">공구가 이 정도면 진행 가능할 것 같아요! 다음 주부터 콘텐츠 준비 시작해서 재고 넉넉하게 확보해두면 좋을 것 같습니다. 확인 부탁드려요 :)</div></div><div class="tstamp">14:12</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="attach-preview">
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+        </div>
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field" style="color:var(--n-900)">네 좋아요, 참고 이미지 2장 보내드려요!</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A4. 채팅 · 다중 이미지 첨부 표시 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A4</span><span class="state-label">채팅 · 다중 이미지 첨부 표시<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">2~4장은 전부 노출 · 5장 이상은 3×2(6칸) 그리드로 고정하고, 6장을 넘으면 마지막 칸에 "+N" 오버레이로 나머지 개수 표시(최대 20장 기준) · <b>2장 이상이면 그리드 하단에 [전체 다운로드] 버튼 노출</b>(장수는 실제 첨부 개수 기준, "+N" 숨겨진 나머지 포함)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">사진 20장 보내드려요!</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">촬영 소스 2장 보내드려요</div></div><div class="tstamp">15:01</div></div>
+          <div class="mgrid n2"><div>IMG</div><div>IMG</div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (2)</span></div></div>
+
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">3장이에요</div></div><div class="tstamp">15:02</div></div>
+          <div class="mgrid n3"><div>IMG</div><div>IMG</div><div>IMG</div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (3)</span></div></div>
+
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">각도별로 4장 찍었어요</div></div><div class="tstamp">15:03</div></div>
+          <div class="mgrid n4"><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (4)</span></div></div>
+
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">5장 추가할게요</div></div><div class="tstamp">15:04</div></div>
+          <div class="mgrid n5"><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (5)</span></div></div>
+
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">딱 6장 채웠어요</div></div><div class="tstamp">15:05</div></div>
+          <div class="mgrid n6plus"><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (6)</span></div></div>
+
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">사진 20장 보내드려요!</div></div><div class="tstamp">15:06</div></div>
+          <div class="mgrid n6plus"><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG</div><div>IMG<span class="more-overlay">+15</span></div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (20)</span></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A5. 채팅 · 영상 첨부 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A5</span><span class="state-label">채팅 · 영상 첨부<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">재생 썸네일 UI는 삭제 · 문서 첨부(A6)와 동일한 file-chip UI로 통일(mp4 아이콘, 재생시간·용량은 file-size에 표기) · 클릭 시 재생, 다운로드 버튼도 문서와 동일하게 동작 · 2개 이상 묶이면 그룹 아래 [전체 다운로드] 버튼 노출</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">영상을 보냈습니다</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">언박싱 영상 찍어봤어요, 확인해주세요!</div></div><div class="tstamp">15:20</div></div>
+          <div class="file-chip"><div class="file-ic mp4">MP4</div><div class="file-meta"><div class="file-name">언박싱영상.mp4</div><div class="file-size">0:42 · 24.6MB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div></div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">와 완전 좋아요! 이대로 진행할게요</div></div><div class="tstamp">15:22</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A6. 채팅 · 문서 첨부 [신규제안] ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A6</span><span class="state-label">채팅 · 문서 첨부<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">아이콘은 확장자→매핑 테이블 자동 처리(하드코딩 아님) · PDF/DOCX/HWP/XLSX/PPTX/ZIP + 매핑에 없는 확장자는 회색 기본값 · <b>한 메시지에 파일이 2개 이상이면 목록 하단에 [전체 다운로드] 버튼 노출</b></span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서초안.docx</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">협의 초안 파일로 정리해서 보내드려요</div></div><div class="tstamp">15:30</div></div>
+          <div class="file-chip"><div class="file-ic docx">DOC</div><div class="file-meta"><div class="file-name">계약서초안.docx</div><div class="file-size">245KB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div></div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인했습니다! 저도 참고 자료 첨부드려요</div></div><div class="tstamp">15:33</div></div>
+          <div class="file-chip"><div class="file-ic pdf">PDF</div><div class="file-meta"><div class="file-name">인플루언서_포트폴리오.pdf</div><div class="file-size">1.8MB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div>
+          <div class="file-chip" style="margin-top:8px"><div class="file-ic hwp">HWP</div><div class="file-meta"><div class="file-name">공구제안서.hwp</div><div class="file-size">88KB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (2)</span></div></div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">정산 내역이랑 제안서, 참고자료 묶음도 같이 보내드려요</div></div><div class="tstamp">15:40</div></div>
+          <div class="file-chip"><div class="file-ic xlsx">XLS</div><div class="file-meta"><div class="file-name">8월_정산내역.xlsx</div><div class="file-size">62KB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div>
+          <div class="file-chip" style="margin-top:8px"><div class="file-ic pptx">PPT</div><div class="file-meta"><div class="file-name">브랜드소개서.pptx</div><div class="file-size">4.2MB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div>
+          <div class="file-chip" style="margin-top:8px"><div class="file-ic zip">ZIP</div><div class="file-meta"><div class="file-name">참고이미지_모음.zip</div><div class="file-size">18.4MB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div>
+          <div class="file-chip" style="margin-top:8px"><div class="file-ic default">AI</div><div class="file-meta"><div class="file-name">로고원본.ai</div><div class="file-size">3.1MB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (4)</span></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A7. 채팅 · 파일 전송 중(업로드 진행률) ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A7</span><span class="state-label">채팅 · 파일 전송 중<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">업로드 진행률 바 + 퍼센트 + 취소(×) · 완료되면 A6의 일반 file-chip으로 교체</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">파일을 전송 중입니다…</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">정산 자료 보내드릴게요</div></div><div class="tstamp">전송 중…</div></div>
+          <div class="file-uploading">
+            <div class="file-ic xlsx" style="width:32px;height:32px;font-size:8px">XLS</div>
+            <div class="fu-body">
+              <div class="fu-top"><span class="file-name">8월_정산내역.xlsx</span><span class="fu-pct">62%</span></div>
+              <div class="fu-bar"><div class="fu-bar-fill" style="width:62%"></div></div>
+            </div>
+            <div class="fu-cancel">×</div>
+          </div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A8. 채팅 · 혼합 첨부 미리보기(사진+영상+문서) ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A8</span><span class="state-label">채팅 · 혼합 첨부 미리보기<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">사진은 썸네일, 영상·문서는 동일한 파일칩(mp4/pdf 등 확장자 아이콘 + 파일명 + 용량)으로 표시 · 전부 제거(×) 가능 · 전송 시 종류별로 각자의 표시 방식(A4/A5/A6)으로 렌더링</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">공구가 이 정도면 진행 가능할 것 같아요!</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">공구가 이 정도면 진행 가능할 것 같아요!</div></div><div class="tstamp">14:12</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="attach-preview">
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-file"><div class="file-ic mp4" style="width:26px;height:26px;font-size:7px">MP4</div><div><div class="fn">언박싱영상.mp4</div><div class="fs">24.6MB</div></div><span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-file"><div class="file-ic pdf" style="width:26px;height:26px;font-size:7px">PDF</div><div><div class="fn">제안서.pdf</div><div class="fs">1.2MB</div></div><span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+        </div>
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field" style="color:var(--n-900)">참고 자료 같이 보내드려요!</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A9. 채팅 · 첨부 용량 500MB 초과 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A9</span><span class="state-label">채팅 · 첨부 용량 500MB 초과<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">1건 전송 기준 첨부 총 용량 500MB 제한 · 초과 시 오류 문구 + 전송 버튼 비활성화 · 개수 제한(최대 20개)과 별개 조건 · 영상도 문서와 동일한 파일칩(mp4 아이콘)으로 표시</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">공구가 이 정도면 진행 가능할 것 같아요!</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">공구가 이 정도면 진행 가능할 것 같아요!</div></div><div class="tstamp">14:12</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="attach-preview">
+          <div class="ap-file"><div class="file-ic mp4" style="width:26px;height:26px;font-size:7px">MP4</div><div><div class="fn">언박싱영상_1.mp4</div><div class="fs">218MB</div></div><span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-file"><div class="file-ic mp4" style="width:26px;height:26px;font-size:7px">MP4</div><div><div class="fn">언박싱영상_2.mp4</div><div class="fs">196MB</div></div><span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-file"><div class="file-ic mp4" style="width:26px;height:26px;font-size:7px">MP4</div><div><div class="fn">언박싱영상_3.mp4</div><div class="fs">198MB</div></div><span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+        </div>
+        <div class="size-warn"><span>⚠</span><span>최대 500MB를 초과했습니다. 일부 파일을 제거하거나 나눠서 보내주세요.</span></div>
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send" disabled style="background:var(--n-200);color:var(--n-400)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A10. 이미지 미리보기 창(라이트박스) ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A10</span><span class="state-label">이미지 미리보기 창<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">사진 클릭 시 전체화면 라이트박스 · 상단 보낸 사람+닫기+다운로드 · 여러 장이면 좌우 이동+장수 표시 · 다운로드는 여기서도 가능(클릭할 때마다 새로 받아짐)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="lightbox">
+  <div class="lightbox-top">
+    <div class="lightbox-who"><div class="cs-avatar">IMG</div><div>뷰티_소연 · 오늘 14:05</div></div>
+    <div class="lightbox-actions">
+      <div class="lb-btn" title="다운로드"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div>
+      <div class="lb-btn" title="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></div>
+    </div>
+  </div>
+  <div class="lightbox-nav prev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></div>
+  <div class="lightbox-body">원본 이미지 영역</div>
+  <div class="lightbox-nav next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></div>
+  <div class="lightbox-counter">2 / 5</div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A11. 채팅 · 첨부 개수 20개 초과 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A11</span><span class="state-label">채팅 · 첨부 개수 20개 초과<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">1건 전송 기준 첨부 최대 20개 제한 · 초과 시 오류 문구 + 전송 버튼 비활성화 · 용량 제한(A9)과 별개 조건 · 첨부가 많아 한 줄에 다 안 들어오면 미리보기 영역이 줄바꿈 대신 가로 스크롤됨</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="쇼룸명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item active">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">뷰티_소연</span><span class="cs-time">방금</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">공구가 이 정도면 진행 가능할 것 같아요!</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="cs-lf"><button class="btn btn-primary" style="width:100%">+ 연결 요청</button></div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">뷰티_소연</div><div class="th-hstat">연결됨 · 스레드 열림</div></div>
+        <button class="btn btn-primary">계약 작성</button>
+      </div>
+      <div class="th-notice">이 대화는 분쟁 발생 시 확인을 위해 운영자가 열람할 수 있습니다</div>
+      <div class="th-body">
+        <div class="daymark">2026.08.05</div>
+        <div class="msg them"><div class="who">뷰티_소연</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">공구가 이 정도면 진행 가능할 것 같아요!</div></div><div class="tstamp">14:12</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="attach-preview scrollx">
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+          <div class="ap-item">IMG<span class="ap-x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></span></div>
+        </div>
+        <div class="size-warn"><span>⚠</span><span>첨부는 최대 <b>20개</b>까지 가능합니다.</span></div>
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send" disabled style="background:var(--n-200);color:var(--n-400)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B1. 연결 요청 모달 · 쇼룸명 검색 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B1</span><span class="state-label">연결 요청 모달 · 쇼룸명 검색</span>
+  <span class="state-spec">이미 연결됨/요청중인 상대는 "요청" 버튼 대신 현재 상태 배지 표시</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">연결 요청<span class="modal-x">✕</span></div>
+    <div class="modal-b">
+      <div class="seg"><div class="seg-item on">쇼룸명 검색</div><div class="seg-item">연결코드 입력</div></div>
+      <div class="flabel">인플루언서 검색</div>
+      <input class="inp" placeholder="쇼룸명 입력" style="width:100%" value="코스메">
+      <div class="res">
+        <div class="res-item">
+          <div class="cs-avatar">IMG</div>
+          <div style="flex:1"><div class="res-name">코스메하늘</div><div class="res-sub">팔로워 1.2만</div></div>
+          <span class="badge b-info">요청중</span>
+        </div>
+        <div class="res-item">
+          <div class="cs-avatar">IMG</div>
+          <div style="flex:1"><div class="res-name">코스메_라온</div><div class="res-sub">팔로워 8천</div></div>
+          <button class="btn btn-secondary btn-sm">요청</button>
+        </div>
+      </div>
+      <div class="hint">탐색·추천 시스템은 제공하지 않습니다. 쇼룸명을 정확히 알고 있을 때 검색하거나, 인플루언서가 전달한 연결코드로 요청하세요. 같은 상대에게 이미 연결됨·요청중 상태면 중복 요청할 수 없습니다.</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">요청 보내기</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B2. 연결 요청 모달 · 연결코드 입력 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B2</span><span class="state-label">연결 요청 모달 · 연결코드 입력</span>
+  <span class="state-spec">연결코드 = 쇼룸별 고정(영구) · 인플루언서가 쇼룸 스튜디오에서 확인해 브랜드에 전달</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">연결 요청<span class="modal-x">✕</span></div>
+    <div class="modal-b">
+      <div class="seg"><div class="seg-item">쇼룸명 검색</div><div class="seg-item on">연결코드 입력</div></div>
+      <div class="flabel">연결코드</div>
+      <div class="code-box">
+        <input class="inp" placeholder="예: SRZ-4K92" style="flex:1">
+        <button class="btn btn-secondary">확인</button>
+      </div>
+      <div class="hint">연결코드는 인플루언서의 쇼룸 스튜디오 화면에 표시되는 고유 코드입니다. 인플루언서에게 요청해 전달받은 코드를 입력하세요. 코드는 쇼룸별로 고정되어 있으며, 인플루언서가 원하면 재발급할 수 있습니다.</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>요청 보내기</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B3. 연결 요청 모달 · 검색 결과 없음 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B3</span><span class="state-label">연결 요청 모달 · 검색 결과 없음<span class="state-id" style="background:var(--accent-500)">신규</span></span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">연결 요청<span class="modal-x">✕</span></div>
+    <div class="modal-b">
+      <div class="seg"><div class="seg-item on">쇼룸명 검색</div><div class="seg-item">연결코드 입력</div></div>
+      <div class="flabel">인플루언서 검색</div>
+      <input class="inp" placeholder="쇼룸명 입력" style="width:100%" value="존재하지않는쇼룸">
+      <div class="res">
+        <div class="res-empty">
+          <div class="ic">⌕</div>
+          <div class="t">검색 결과가 없습니다</div>
+          <div class="d">쇼룸명을 정확히 입력했는지 확인해 주세요.</div>
+        </div>
+      </div>
+      <div class="hint">탐색·추천 시스템은 제공하지 않습니다. 쇼룸명을 정확히 알고 있을 때 검색하거나, 인플루언서가 전달한 연결코드로 요청하세요.</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>요청 보내기</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B4. 연결 요청 모달 · 검색 결과 많음 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B4</span><span class="state-label">연결 요청 모달 · 검색 결과 많음<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">결과 영역 최대 높이 고정 + 스크롤 · 총 건수 표기</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">연결 요청<span class="modal-x">✕</span></div>
+    <div class="modal-b">
+      <div class="seg"><div class="seg-item on">쇼룸명 검색</div><div class="seg-item">연결코드 입력</div></div>
+      <div class="flabel">인플루언서 검색</div>
+      <input class="inp" placeholder="쇼룸명 입력" style="width:100%" value="뷰티">
+      <div class="res">
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티_소연</div><div class="res-sub">팔로워 1.2만</div></div><span class="badge b-success">연결됨</span></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티_라온</div><div class="res-sub">팔로워 8천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티풀리</div><div class="res-sub">팔로워 6.4천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티노트</div><div class="res-sub">팔로워 5.1천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티랩코리아</div><div class="res-sub">팔로워 4.7천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티스토리</div><div class="res-sub">팔로워 3.9천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티온니</div><div class="res-sub">팔로워 3.2천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+        <div class="res-item"><div class="cs-avatar">IMG</div><div style="flex:1"><div class="res-name">뷰티데일리</div><div class="res-sub">팔로워 2.8천</div></div><button class="btn btn-secondary btn-sm">요청</button></div>
+      </div>
+      <div class="res-count">"뷰티" 검색 결과 12건 — 스크롤해서 더 볼 수 있습니다</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>요청 보내기</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B5. 연결 요청 모달 · 연결코드 확인 · 존재함 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B5</span><span class="state-label">연결 요청 모달 · 연결코드 확인 · 존재함<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">일치하는 쇼룸 확인되면 정보 카드 노출 + [요청 보내기] 활성화</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">연결 요청<span class="modal-x">✕</span></div>
+    <div class="modal-b">
+      <div class="seg"><div class="seg-item">쇼룸명 검색</div><div class="seg-item on">연결코드 입력</div></div>
+      <div class="flabel">연결코드</div>
+      <div class="code-box">
+        <input class="inp" value="SRZ-4K92" style="flex:1">
+        <button class="btn btn-secondary">확인</button>
+      </div>
+      <div class="code-result">
+        <div class="code-found">
+          <div class="cs-avatar">IMG</div>
+          <div><div class="cf-name">코스메_라온</div><div class="cf-sub">팔로워 8천 · 일치하는 쇼룸을 찾았습니다</div></div>
+        </div>
+      </div>
+      <div class="hint">연결코드는 인플루언서의 쇼룸 스튜디오 화면에 표시되는 고유 코드입니다. 코드는 쇼룸별로 고정되어 있으며, 인플루언서가 원하면 재발급할 수 있습니다.</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary">요청 보내기</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B6. 연결 요청 모달 · 연결코드 확인 · 존재하지 않음 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B6</span><span class="state-label">연결 요청 모달 · 연결코드 확인 · 존재하지 않음<span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">일치하는 쇼룸이 없으면 오류 문구만 노출, [요청 보내기] 비활성 유지</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item active"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap"><div class="cs-list"></div><div class="cs-thread"></div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">연결 요청<span class="modal-x">✕</span></div>
+    <div class="modal-b">
+      <div class="seg"><div class="seg-item">쇼룸명 검색</div><div class="seg-item on">연결코드 입력</div></div>
+      <div class="flabel">연결코드</div>
+      <div class="code-box">
+        <input class="inp" value="SRZ-9999" style="flex:1;border-color:var(--danger-text)">
+        <button class="btn btn-secondary">확인</button>
+      </div>
+      <div class="code-notfound"><span>⚠</span><span>일치하는 연결코드가 없습니다. 코드를 다시 확인해 주세요.</span></div>
+      <div class="hint">연결코드는 인플루언서의 쇼룸 스튜디오 화면에 표시되는 고유 코드입니다. 코드는 쇼룸별로 고정되어 있으며, 인플루언서가 원하면 재발급할 수 있습니다.</div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>요청 보내기</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+</body>
+</html>

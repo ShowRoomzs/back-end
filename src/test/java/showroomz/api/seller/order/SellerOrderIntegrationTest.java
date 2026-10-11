@@ -39,8 +39,9 @@ class SellerOrderIntegrationTest extends SellerOrderTestSupport {
 
         assertThat(group.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.NEW);
         assertThat(group.getSubOrderNumber()).isEqualTo(group.getOrder().getOrderNumber() + "-01");
-        assertThat(group.getShipDueAt())
-                .isEqualTo(group.getOrder().getPaidAt().plusDays(SHIPPING_LEAD_DAYS));
+        // 공구 진행 중 결제 — 발송기한은 마감 전까지 없고 N(영업일)만 주문 시점 값으로 고정된다(1009 기획 수정본 1-2).
+        assertThat(group.getShipDueAt()).isNull();
+        assertThat(group.getShipDueBusinessDays()).isEqualTo(SHIPPING_LEAD_DAYS);
 
         sellerGet(SELLER_ORDERS + "?tab=NEW")
                 .andExpect(status().isOk())
@@ -149,7 +150,7 @@ class SellerOrderIntegrationTest extends SellerOrderTestSupport {
     // ------------------------------------------------------------------ 직권 취소 · 취소 요청(3-5)
 
     @Test
-    @DisplayName("직권 취소 — 전 항목 취소 · 재고 원복 · 환불 큐 적재 · 취소 당시 상태 기록")
+    @DisplayName("직권 취소 — 전 항목 취소 · 재고 원복 · 환불 큐 적재 → PG 즉시 자동 환불 · 취소 당시 상태 기록")
     void directCancel() throws Exception {
         OrderDeliveryGroup group = paidGroup();
         int stockBefore = stockOf(creamVariant);
@@ -167,7 +168,7 @@ class SellerOrderIntegrationTest extends SellerOrderTestSupport {
         assertThat(cancelled.getStatusAtCancel()).isEqualTo(FulfillmentStatus.NEW);
         assertThat(stockOf(creamVariant)).isEqualTo(stockBefore + 1);
         Integer refundTasks = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM order_refund_task WHERE delivery_group_id = ? AND status = 'PENDING'",
+                "SELECT COUNT(*) FROM order_refund_task WHERE delivery_group_id = ? AND status = 'DONE'",
                 Integer.class, group.getId());
         assertThat(refundTasks).isEqualTo(1);
     }

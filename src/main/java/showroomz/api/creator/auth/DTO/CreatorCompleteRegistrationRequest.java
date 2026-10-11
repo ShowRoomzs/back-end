@@ -25,7 +25,7 @@ public class CreatorCompleteRegistrationRequest {
 
     @NotNull(message = "사업자 여부는 필수 입력값입니다.")
     @Schema(
-            description = "사업자 여부 (기본값 INDIVIDUAL: 개인/비사업자, BUSINESS: 개인사업자/법인)",
+            description = "사업자 여부 (기본값 INDIVIDUAL: 개인/비사업자, BUSINESS: 개인사업자 — 법인은 받지 않는다)",
             example = "INDIVIDUAL",
             allowableValues = {"INDIVIDUAL", "BUSINESS"}
     )
@@ -40,6 +40,21 @@ public class CreatorCompleteRegistrationRequest {
 
     @Schema(description = "사업자등록증 URL (사업자 선택 시 필수)", example = "https://s3.../license.jpg")
     private String businessLicenseImageUrl;
+
+    /**
+     * 주민등록번호 — 비사업자(INDIVIDUAL) 필수 · 사업자는 무시한다. 리워드를 SHOWROOMZ 가 지급하고 3.3% 원천징수를
+     * 신고하는 데 쓴다. 암호화해 저장하고 어떤 응답에도 원문을 내리지 않는다.
+     */
+    @Schema(description = "주민등록번호 13자리 — 비사업자 필수 · 하이픈 허용(900101-1234567). 사업자는 보내지 않는다",
+            example = "9001011234567", nullable = true)
+    private String residentRegistrationNumber;
+
+    @Override
+    public String toString() {
+        // 요청 로깅에 고유식별정보가 남지 않게 한다.
+        return "CreatorCompleteRegistrationRequest(showroomName=" + showroomName + ", businessType=" + businessType
+                + ", residentRegistrationNumber=" + (residentRegistrationNumber == null ? null : "****") + ")";
+    }
 
     @NotBlank(message = "은행 코드는 필수 입력값입니다.")
     @Size(min = 3, max = 3, message = "은행 코드는 3자리여야 합니다.")

@@ -6,6 +6,6 @@ public enum StoragePhase {
     NOTICE_PENDING,
     /** 보관 중. */
     STORING,
-    /** 기한 경과 — 폐기할 수 있다(자동으로 폐기되지 않는다). */
+    /** 기한 경과 — 약관 반영 후 처리. 폐기 API 는 없다(§38-1 #5 · 도메인 진입점만 보존). */
     EXPIRED
 }

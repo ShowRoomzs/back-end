@@ -183,8 +183,8 @@ public class SellerGroupBuyQueryService {
         }
 
         long actionRequired = groupBuyRepository.countStockConfirmationPending(marketId)
-                + adminSuspensionRepository.countAppealable(marketId, LocalDateTime.now())
-                + groupBuyRepository.countFulfillmentCheckPending(marketId);
+                + adminSuspensionRepository.countAppealable(marketId, LocalDateTime.now());
+        // 이행 확인 대기는 세지 않는다 — 이행 확인 폐기(2026-10-06).
         return new GroupBuySummaryResponse(tabCounts, actionRequired);
     }
 

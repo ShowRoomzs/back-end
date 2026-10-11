@@ -10,6 +10,8 @@ import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
 import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
+import showroomz.api.common.thread.dto.ThreadAdjustmentBadge;
+import showroomz.api.common.thread.service.ThreadAdjustmentViews;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.thread.dto.MessageItem;
 import showroomz.api.seller.thread.dto.MessageListResponse;
@@ -33,6 +35,8 @@ import showroomz.domain.message.service.MessageCardReader;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentThreadGuard;
+import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -59,6 +63,8 @@ public class SellerThreadService {
     private final MessageAttachmentService messageAttachmentService;
     private final MessageCardReader messageCardReader;
     private final GroupBuyRepository groupBuyRepository;
+    private final ThreadAdjustmentViews adjustmentViews;
+    private final SettlementAdjustmentThreadGuard adjustmentThreadGuard;
 
     /**
      * §13-1 좌측 목록. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
@@ -75,8 +81,10 @@ public class SellerThreadService {
                 ParticipantType.SELLER, market.getId());
         Map<Long, String> groupBuyTitles = groupBuyRepository.findTitleMapByIds(
                 threads.getContent().stream().map(MessageThread::getSubjectId).filter(Objects::nonNull).distinct().toList());
+        Map<Long, ThreadAdjustmentBadge> adjustments = adjustmentViews.badges(threads.getContent(),
+                SettlementParty.SELLER);
 
-        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread, groupBuyTitles)));
+        return PageResponse.of(threads.map(thread -> toListItem(thread, unreadByThread, groupBuyTitles, adjustments)));
     }
 
     private static String normalizeKeyword(String keyword) {
@@ -108,9 +116,11 @@ public class SellerThreadService {
 
         Map<Long, List<AttachmentSummary>> attachmentsByMessage = loadAttachments(page);
         Map<Long, MessageCardReader.CardView> cards = loadCards(page);
+        Long respondableProposalId = cards.isEmpty() ? null
+                : adjustmentViews.respondableProposalId(thread, SettlementParty.SELLER);
         List<MessageItem> items = page.stream()
                 .map(m -> toMessageItem(m, market.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of()),
-                        cards.get(m.getId())))
+                        cards.get(m.getId()), respondableProposalId))
                 .toList();
         return new MessageListResponse(items, nextCursor, hasNext);
     }
@@ -122,6 +132,7 @@ public class SellerThreadService {
     public SendMessageOutcome sendMessage(String sellerEmail, Long threadId, SendMessageRequest request) {
         Market market = getMyMarket(sellerEmail);
         MessageThread thread = getMyThread(market, threadId);
+        adjustmentThreadGuard.requireWritable(thread);
 
         MessageThreadService.SendResult result = messageThreadService.sendMessage(
                 thread, ParticipantType.SELLER, market.getId(),
@@ -129,7 +140,7 @@ public class SellerThreadService {
 
         Map<Long, List<AttachmentSummary>> attachments = loadAttachments(List.of(result.message()));
         MessageItem item = toMessageItem(result.message(), market.getId(),
-                attachments.getOrDefault(result.message().getId(), List.of()), null);
+                attachments.getOrDefault(result.message().getId(), List.of()), null, null);
         return new SendMessageOutcome(item, result.created());
     }
 
@@ -145,6 +156,7 @@ public class SellerThreadService {
     public PresignResponse createPresignedUpload(String sellerEmail, Long threadId, PresignRequest request) {
         Market market = getMyMarket(sellerEmail);
         MessageThread thread = getMyThread(market, threadId);
+        adjustmentThreadGuard.requireWritable(thread);
         return messageAttachmentService.createPresignedUpload(thread, ParticipantType.SELLER, market.getId(), request);
     }
 
@@ -192,7 +204,7 @@ public class SellerThreadService {
 
     /** 공구 3자 스레드는 같은 상대의 두 번째 · 세 번째 줄이다 — 종류와 공구를 함께 내려 구분하게 한다(30-1 1-5). */
     private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread,
-                                      Map<Long, String> groupBuyTitles) {
+                                      Map<Long, String> groupBuyTitles, Map<Long, ThreadAdjustmentBadge> adjustments) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_MARKET;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getCreator().getShowroomName();
@@ -204,7 +216,8 @@ public class SellerThreadService {
                 isOperator ? null : connection.getCreator().getId(), connection.getId(),
                 thread.getLastMessagePreview(), thread.getLastMessageAt(), unread,
                 thread.getKind(), thread.getSubjectId(),
-                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()));
+                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()),
+                adjustments.get(thread.getId()));
     }
 
     /** 인플루언서 프로필 이미지는 CREATOR가 아니라 USERS에 있다(운영자 채널은 creator가 null). */
@@ -225,11 +238,11 @@ public class SellerThreadService {
      * 운영자 이름 · id · 자동 안내 표시는 이 응답에 싣지 않는다 — 상대에게 운영팀은 「SHOWROOMZ 운영팀」뿐이다(§36-4).
      */
     private MessageItem toMessageItem(Message message, Long myMarketId, List<AttachmentSummary> attachments,
-                                      MessageCardReader.CardView card) {
+                                      MessageCardReader.CardView card, Long respondableProposalId) {
         boolean mine = !message.isCard()
                 && message.getSenderType() == ParticipantType.SELLER && message.getSenderId().equals(myMarketId);
         return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments,
-                message.getCreatedAt(), message.getMessageType(), MessageCardResponse.from(card));
+                message.getCreatedAt(), message.getMessageType(), MessageCardResponse.from(card, respondableProposalId));
     }
 
     private MessageThread getMyThread(Market market, Long threadId) {

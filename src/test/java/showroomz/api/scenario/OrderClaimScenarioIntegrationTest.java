@@ -94,23 +94,16 @@ class OrderClaimScenarioIntegrationTest extends OrderFlowTestSupport {
         sellerSummary().andExpect(jsonPath("$.actionBar.incomingCheck").value(1))
                 .andExpect(jsonPath("$.actionBar.reshipExchange").value(0));
 
-        // F-04 입고 확인 → 검수 통과 — 환불 큐에 요청 1행.
+        // F-04 입고 확인 → 검수 통과 — 환불 큐에 요청 1행 → 커밋 직후 PG 즉시 자동 환불(1009 기획 수정본 2절).
         sellerPost(SELLER_CLAIMS + "/receive", Map.of("claimIds", List.of(claimId)))
                 .andExpect(jsonPath("$.succeeded").value(1));
         sellerSummary().andExpect(jsonPath("$.actionBar.incomingCheck").value(1));
         sellerPost(SELLER_CLAIMS + "/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk())
-                .andExpect(jsonPath("$.summary.status").value("REFUND_PENDING"));
+                .andExpect(jsonPath("$.summary.status").value("COMPLETED"));
         sellerSummary().andExpect(jsonPath("$.actionBar.incomingCheck").value(0));
-        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE, "PENDING"));
-        userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.refund.amount").value(CREAM_PRICE))
-                .andExpect(jsonPath("$.refund.confirmed").value(false));
-        // F-05 환불 대기도 진행 중이다 — 아직 구매확정되지 않는다.
-        assertThat(fulfillmentService.confirmIfDue(group.getId(), LocalDateTime.now())).isFalse();
-
-        // F-06 환불 집행(어드민 — 받는 API 전이라 도메인 진입점).
-        Long taskId = jdbc.queryForObject("SELECT refund_task_id FROM order_refund_task WHERE delivery_group_id = ?",
-                Long.class, group.getId());
-        claimService.completeRefund(taskId, CREAM_PRICE, 1L, LocalDateTime.now());
+        // F-05 · F-06 환불 완료 — 운영자 집행 단계가 없다.
+        assertThat(refundTasks(group)).containsExactly(new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE, "DONE"));
+        userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.refund.amount").value(CREAM_PRICE));
 
         assertThat(claimStatus(claimId)).isEqualTo("COMPLETED");
         assertThat(itemsOf(group).get(0).getStatus()).isEqualTo(OrderProductStatus.RETURNED);

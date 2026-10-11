@@ -1,0 +1,2203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-04-product-management — 파트너센터 상품 관리 rev.31</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.grp-chip{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;margin-left:6px;
+  font-size:var(--fs-micro);font-weight:600;background:var(--accent-50);color:var(--accent-600);vertical-align:middle;}
+.grp-chip.off{background:var(--n-100);color:var(--n-600);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바(플랫 리스트, 서브메뉴 없음) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);padding:0 12px;height:32px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);white-space:nowrap;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-danger{background:#fff;color:var(--danger-text);border:1px solid var(--danger-bg);}
+.btn-danger:disabled{color:var(--n-400);border-color:var(--n-200);background:var(--n-100);}
+.btn-danger-solid{background:var(--danger-text);color:#fff;}
+.btn-lg{height:36px;padding:0 18px;font-size:var(--fs-body);}
+
+/* ══ 검색 ══ */
+.search-row{display:flex;gap:8px;margin-bottom:14px;}
+.search-row .btn{height:36px;}
+.has-count{position:relative;}
+.char-count{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:var(--fs-micro);color:var(--n-400);pointer-events:none;}
+.has-count .inp{padding-right:52px;}
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder{color:var(--n-400);}
+.sel{appearance:none;-webkit-appearance:none;-moz-appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;cursor:pointer;}
+.ta{height:auto;min-height:100px;resize:vertical;line-height:1.6;padding-top:9px;width:100%;}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+
+/* ══ 목록 ══ */
+.list-legend{display:flex;gap:28px;flex-wrap:wrap;font-size:var(--fs-micro);color:var(--n-600);margin-bottom:12px;line-height:1.8;}
+.list-legend .badge{margin-right:3px;}
+
+/* 필터 영역(다중선택) — 어드민(ui-admin-04)과 동일 컴포넌트 */
+.filter-panel{position:relative;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:20px 16px;display:flex;flex-direction:column;gap:16px;margin-bottom:var(--sp-4);}
+.fp-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.search{display:flex;gap:6px;}
+.search .btn{height:36px;}
+.fp-glabel{font-size:var(--fs-micro);color:var(--n-400);font-weight:600;flex-shrink:0;width:58px;}
+.fp-item{display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:var(--fs-caption);color:var(--n-600);}
+.fp-box{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.fp-box svg{width:9px;height:9px;display:none;}
+.fp-item.on .fp-box{background:var(--accent-500);border-color:var(--accent-500);}
+.fp-item.on .fp-box svg{display:block;}
+.fp-item.on{color:var(--n-900);font-weight:500;}
+.fp-n{font-size:var(--fs-micro);color:var(--n-400);}
+.fp-reset{position:absolute;top:17px;right:14px;display:inline-flex;align-items:center;gap:5px;
+  height:26px;padding:0 10px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;
+  color:var(--n-500);font-size:var(--fs-micro);font-weight:500;cursor:pointer;}
+.fp-reset:hover{background:var(--n-100);color:var(--n-700);border-color:var(--n-400);}
+.fp-reset svg{width:11px;height:11px;}
+
+/* 목록 툴바(총 건수 · 정렬 · 페이지당 건수) */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);}
+.tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:11px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);letter-spacing:.2px;}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);vertical-align:middle;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-name{color:var(--accent-600);}
+.t-c{text-align:center;}
+.t-thumb{width:36px;height:36px;border-radius:6px;flex-shrink:0;}
+.t-name{font-weight:500;color:var(--n-900);display:block;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-code{color:var(--n-600);}
+.t-date{color:var(--n-500);font-size:var(--fs-caption);white-space:nowrap;}
+.actions{display:flex;gap:6px;justify-content:center;}
+.act-btn{height:28px;padding:0 14px;font-size:var(--fs-micro);font-weight:500;border:1px solid var(--n-300);
+  background:#fff;border-radius:var(--r-sm);color:var(--n-700);white-space:nowrap;
+  display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}
+.act-btn:hover,.act-btn:focus-visible{background:var(--n-100);border-color:var(--n-400);outline:none;}
+.act-btn.del{color:var(--danger-text);}
+.act-btn.del:hover,.act-btn.del:focus-visible{background:var(--danger-bg);border-color:var(--danger-text);}
+.act-btn.del.disabled:hover,.act-btn.del.disabled:focus-visible{background:var(--n-100);border-color:var(--n-200);}
+.act-btn.del.disabled{color:var(--n-400);border-color:var(--n-200);background:var(--n-100);}
+
+/* 페이지네이션 */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ══ 폼 카드 ══ */
+.form-layout{display:flex;gap:var(--sp-4);align-items:flex-start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);max-width:820px;flex:1;}
+.card-h{font-size:var(--fs-h2);font-weight:600;padding:16px var(--sp-5);border-bottom:1px solid var(--n-200);}
+.sec{padding:var(--sp-5);border-bottom:1px solid var(--n-100);}
+.sec:last-of-type{border-bottom:none;}
+.sec-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:var(--sp-4);}
+.sec-t .req{color:var(--danger-text);}
+.sec-note{font-size:var(--fs-micro);font-weight:500;color:var(--n-500);margin-left:8px;}
+.frow{display:flex;gap:var(--sp-3);align-items:flex-start;margin-bottom:var(--sp-3);}
+.frow:last-child{margin-bottom:0;}
+.flab{width:118px;flex-shrink:0;font-size:var(--fs-caption);color:var(--n-600);padding-top:9px;}
+.flab .req{color:var(--danger-text);margin-left:2px;}
+.flab .sub{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.fctrl{flex:1;min-width:0;}
+.fctrl .inp,.fctrl .sel{width:100%;}
+.fctrl .inp.sm{max-width:200px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;line-height:1.55;}
+.two-col{display:flex;gap:var(--sp-3);}
+.two-col .sel{max-width:150px;}
+.unit-row{display:flex;align-items:center;gap:8px;}
+.unit-row .u{font-size:var(--fs-caption);color:var(--n-600);white-space:nowrap;}
+.toggle{width:40px;height:22px;border-radius:12px;background:var(--n-300);position:relative;flex-shrink:0;}
+.toggle::after{content:"";width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:3px;left:3px;}
+.toggle.on{background:var(--accent-500);}
+.toggle.on::after{left:21px;}
+.toggle-row{display:flex;align-items:center;gap:10px;height:36px;}
+.toggle-row .tl{font-size:var(--fs-caption);color:var(--n-700);}
+
+/* 이미지 */
+.img-row{display:flex;gap:10px;flex-wrap:wrap;}
+.img-sub-lab{font-size:var(--fs-micro);color:var(--n-500);width:100%;margin:2px 0 6px;}
+.img-sub-lab .req{color:var(--danger-text);margin-left:2px;}
+.img-box{width:96px;height:96px;border:1px solid var(--n-300);border-radius:var(--r-md);
+  display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--n-500);
+  background:var(--n-100);position:relative;flex-shrink:0;cursor:zoom-in;transition:box-shadow .12s;}
+.img-box:hover{box-shadow:0 0 0 2px var(--accent-500);}
+.img-box .tag{position:absolute;top:4px;left:4px;font-size:9px;font-weight:600;color:#fff;background:var(--n-900);border-radius:4px;padding:1px 5px;}
+.img-box.add{border-style:dashed;color:var(--n-500);background:var(--n-50);cursor:pointer;flex-direction:column;gap:4px;}
+
+/* 옵션 SKU 표 */
+table.opt-tbl{width:100%;border-collapse:collapse;font-size:var(--fs-caption);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);overflow:hidden;table-layout:fixed;}
+.opt-tbl th{background:var(--n-100);padding:9px 12px;text-align:center;font-size:var(--fs-micro);
+  color:var(--n-600);font-weight:500;border-bottom:1px solid var(--n-200);}
+.opt-tbl th:first-child{text-align:left;}
+.opt-tbl td{padding:9px 12px;border-bottom:1px solid var(--n-100);color:var(--n-900);text-align:center;}
+.opt-tbl td:first-child{text-align:left;}
+.opt-tbl tr:last-child td{border-bottom:none;}
+.rep-tag{font-size:var(--fs-micro);color:var(--accent-600);font-weight:600;}
+
+/* 옵션 그룹 에디터(인터랙티브, 등록 폼 전용) */
+.btn-line-sm{display:inline-flex;align-items:center;font-size:var(--fs-caption);color:var(--accent-600);
+  cursor:pointer;margin-top:8px;font-weight:500;}
+.btn-line-sm:hover{text-decoration:underline;}
+.gen-bridge{font-size:var(--fs-micro);color:var(--n-500);margin:8px 0;display:flex;}
+.optgrp{border:1px solid var(--n-200);border-radius:var(--r-sm);margin-bottom:10px;overflow:hidden;}
+.optgrp-h{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--n-50);border-bottom:1px solid var(--n-200);}
+.optgrp-h .gk{font-size:var(--fs-micro);color:var(--n-500);white-space:nowrap;}
+.optgrp-h .gname{flex:1;height:30px;}
+.optgrp-x{font-size:var(--fs-micro);color:var(--n-500);cursor:pointer;white-space:nowrap;}
+.optgrp-x:hover{color:var(--danger-text);}
+.opt-rows{padding:8px 10px;}
+.opt-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.opt-row.dragging{opacity:.4;}
+.opt-row.drag-over{outline:2px dashed var(--accent-500);}
+.opt-row .drag{cursor:grab;color:var(--n-400);font-size:12px;}
+.opt-row .iteminp{flex:1;height:30px;}
+.opt-row .del{color:var(--n-400);cursor:pointer;font-size:14px;padding:0 4px;}
+.opt-row .del:hover{color:var(--danger-text);}
+.opt-addrow{font-size:var(--fs-micro);color:var(--accent-600);cursor:pointer;padding:2px 0;}
+.opt-addrow:hover{text-decoration:underline;}
+.rep-cell{text-align:center;}
+.rep-radio{cursor:pointer;}
+.badge-cell{white-space:nowrap;}
+
+/* 이미지 업로드(등록 폼 전용, 클릭 가능) */
+.img-cell{display:flex;flex-direction:column;gap:4px;}
+.err-cap{font-size:var(--fs-micro);color:var(--danger-text);min-height:14px;}
+.img-box.error{border-style:solid;border-color:var(--danger-text);background:var(--danger-bg);}
+.img-box .plus{font-size:16px;color:var(--n-400);line-height:1;}
+.desc-p{font-size:var(--fs-caption);color:var(--n-700);line-height:1.75;}
+
+/* 상품 설명 에디터(정적 목업) */
+.editor-wrap{border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;}
+.editor-wrap.disabled{background:var(--n-50);}
+.editor-toolbar{display:flex;gap:2px;padding:6px 8px;background:var(--n-50);border-bottom:1px solid var(--n-300);flex-wrap:wrap;}
+.editor-toolbar span{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:600;color:var(--n-600);border-radius:4px;white-space:nowrap;}
+.editor-wrap.disabled .editor-toolbar span{color:var(--n-400);}
+.editor-body{min-height:160px;padding:12px 14px;font-size:var(--fs-body);color:var(--n-900);line-height:1.65;background:#fff;}
+.editor-body.placeholder{color:var(--n-400);}
+.editor-wrap.disabled .editor-body{background:var(--n-50);color:var(--n-500);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.warn{background:var(--warning-bg);color:#6b4d16;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice b{font-weight:600;}
+
+.btn-row{display:flex;gap:10px;justify-content:flex-end;padding:var(--sp-5);align-items:center;}
+.save-hint{font-size:var(--fs-micro);color:var(--n-600);text-align:right;padding:0 var(--sp-5);margin-top:-6px;}
+.save-hint b{color:var(--n-900);}
+
+/* 미진열 사유 패널 */
+.reason-panel{width:300px;flex-shrink:0;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.reason-panel-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);color:var(--danger-text);display:flex;align-items:center;gap:6px;}
+.reason-panel-b{padding:var(--sp-4);}
+.reason-row{margin-bottom:var(--sp-3);}
+.reason-row:last-child{margin-bottom:0;}
+.reason-lbl{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:4px;}
+.reason-val{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.reason-detail-box{font-size:var(--fs-caption);color:var(--n-700);line-height:1.65;background:var(--n-50);
+  border-radius:var(--r-sm);padding:10px 12px;}
+.reason-meta{font-size:var(--fs-micro);color:var(--n-500);margin-top:8px;}
+.reason-panel.neutral .reason-panel-h{color:var(--n-700);}
+
+/* 우측 사이드 컬럼 — 상태 관리 · 처리 이력(읽기 전용, 버튼 없음) */
+.side-col{width:300px;flex-shrink:0;display:flex;flex-direction:column;gap:var(--sp-4);}
+.st-card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.st-card-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-4);border-bottom:1px solid var(--n-200);background:var(--n-50);}
+.st-card-h .n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-line+.st-line{padding-top:var(--sp-3);border-bottom:none;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--n-100);}
+.hitem:last-child{border-bottom:none;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.ok{background:var(--success-text);}
+.hdot.rj{background:var(--n-500);}
+.hdot.wn{background:var(--warning-text);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+.hist-sub{margin-top:6px;background:var(--n-50);border-radius:var(--r-sm);padding:8px 10px;font-size:var(--fs-micro);color:var(--n-600);line-height:1.6;}
+.hist-sub b{color:var(--n-700);font-weight:600;}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:420px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.modal-warn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-3);font-weight:500;}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>ui-partner-04-product-management <span style="font-weight:400;color:var(--n-500)">— 파트너센터 상품 관리 · 정적 재제작</span></h1>
+  <p class="meta">근거: wf-partner-02-상품관리 · 기존 ui-partner-04(rev.24, 인터랙티브 버전) 내용 참고 · 어드민(ui-admin-04) 방식으로 상태별 정적 화면 전환</p>
+  <div class="rule">
+    <b>[재제작 사유]</b> 기존 파일은 실제 동작하는 JS 프로토타입(등록·수정·삭제 로직 연결)이라 작은 수정 하나에도 전체 로직을 다시 이해해야 해서 수정 비용이 컸음. 어드민(ui-admin-04)과 동일하게 <b>상태별 정적 화면</b>으로 전환 — 각 상태는 독립된 스냅샷이며 서로 연결되지 않음(클릭해도 동작 안 함).<br>
+    <b>[단순화]</b> 상품 설명은 Quill 에디터 대신 <b>정적 미리보기 텍스트</b>로 표현(실제 리치텍스트 편집 로직은 프로덕션 구현 시 김태호 확인). 이미지 업로드·옵션 그룹 추가/삭제 등 인터랙션도 정적 스냅샷으로만 표현.<br>
+    <b>[신규 규칙 반영]</b> 진행중 공구에 연결된 상품이라도 <b>진열 상태가 "미진열"이면 잠금 해제</b>(B4) — 미진열은 소비자에게 노출되지 않아 계약·공구 내용과 어긋날 위험이 없다는 판단. 기존 규칙(진행중 연결 시 재고만 수정)은 진열 중인 상품에만 적용됨. <b>[확인필요]</b> 재검토대기·미진열(요청)도 동일하게 잠금 해제 대상인지 확인 필요 — 우선 미진열만 반영.<br>
+    <b>[유지]</b> 상품 삭제 차단 범위(공구 상태 준비중·준비완료·진행중·종료)는 이전 확정대로 유지 — 진열 상태와 무관하게 공구 상태만으로 판단.<br>
+    <b>[rev.26]</b> 입력 필드 포커스 색상 누락 수정(디자인시스템 v1.2 <code>border-color:accent-500 · box-shadow 0 0 0 3px accent-50</code> 반영 — 이전엔 focus 스타일 자체가 정의되지 않아 브라우저 기본값이 뜨고 있었음). 검색 입력·버튼 높이 36px로 통일(버튼만 32px 기본값이라 입력필드보다 작아 보였음). 상품명 100자 제한 + 우측 글자수 카운터 + 이모지 입력 불가 안내 + 특수문자 자제 플레이스홀더, 전 폼 상태에 적용. 정가 필드에 3자리 콤마·최대 9,999,999원 안내 통일. 카테고리 대→중→소 단계적 활성화(상위 미선택 시 하위 select 비활성화, 등록 폼 기준).<br>
+    <b>[rev.27]</b> B2·B3·B4·B5 수정 폼이 재제작 과정에서 기본정보·가격만 남고 나머지 섹션(카테고리·이미지 전체·옵션 그룹 토글·상품 설명·상품정보제공고시 11필드)이 누락돼 있던 것을 전부 복원 — B1(등록)과 동일한 완전한 섹션 구성으로 통일. 목록 · 검색 결과 없음(A2)에 테이블 헤더가 안 보이던 것 수정(헤더는 유지, 내용 영역만 빈 상태로 교체). 상품 설명을 정적 문단 대신 <b>에디터 목업</b>(툴바+본문 영역)으로 표현 — 실제 리치텍스트 동작은 프로덕션 구현 시 별도. B3(잠금) 카드 전체에 걸려있던 <code>opacity:.7</code> 제거 — 재고 입력필드·취소 버튼 등 잠기지 않은 요소까지 흐려 보이던 문제, 이제 실제로 잠긴 필드만 <code>disabled</code> 스타일로 흐려짐.<br>
+    <b>[rev.28]</b> 텍스트 범례(list-legend)를 <b>어드민(ui-admin-04)과 동일한 필터 영역(다중선택) 컴포넌트</b>로 교체 — 진열 상태 행(진열/미진열/재검토대기/미진열(요청)) · 공구 상태 행(준비중/준비완료/진행중/연결없음), 우상단 초기화 버튼, 하단 검색 필드+버튼. 목록 상단에 툴바 신설(총 건수+정렬순 좌측, 페이지당 건수 20/50/100건 우측). 정가 다음 열에 <b>재고</b> 열 추가(가운데 정렬, 0이면 회색 "품절" 배지). 등록일·수정일 2열을 <b>1열로 통합</b>해 최신 날짜 + (등록)/(수정) 표시. 목록 행에 마우스 오버 시 하이라이트(배경 인디고 틴트, 상품명 강조) 추가.<br>
+    <b>[rev.29]</b> 필터 영역 검색 행이 초기화 버튼과 다른 우측 지점에서 끝나던 문제(패널 전체 <code>padding-right:100px</code>)와 검색 입력·버튼 간격 문제(둘이 <code>.search</code>로 묶이지 않아 부모 <code>.fp-row</code>의 14px gap이 적용됨)가 재발해 있던 것을 재수정 — 이전 어드민 작업에서 확인했던 원인과 동일. <code>.tbar-l</code>에 걸려있던 <code>display:flex;gap:8px</code> 제거 — "총 N건" 텍스트가 "총"/숫자/"건" 사이마다 강제로 8px씩 벌어져 있던 근본 원인(플렉스가 텍스트 노드까지 개별 아이템으로 취급). 정렬순 드롭다운을 페이지당 건수 옆(우측)으로 이동. 커버 이미지 예시 색상을 연한 파스텔(#f4b3c5 등)에서 채도 높은 색으로 교체 — 흐려 보이던 원인은 CSS 문제가 아니라 색상 선택 자체였음. <b>B2·B3·B4·B5 수정 폼 우측에 상태 관리·처리 이력 카드 신설</b>(어드민과 동일한 구성이나 액션 버튼은 없는 조회 전용). B3(진행중 잠금)에는 과거 미진열 이력을, B4(미진열 잠금해제)에는 현재 미진열 사유를 우측 패널로 추가 — B5와 함께 미진열 관련 모든 수정 상태에 사유 패널이 노출되도록 통일.<br>
+    <b>[rev.30]</b> 검색 입력·버튼 높이 재정렬(<code>.search .btn</code> 36px 명시 — 버튼 기본값 32px과 입력필드 36px이 다시 어긋나 있었음). 수정·삭제 버튼에 hover/focus 상태 추가(이전엔 정적이라 마우스 올려도 아무 반응 없었음). 목록 하단 페이지네이션 신설. <b>옵션 영역을 인터랙티브 버전(업로드해주신 rev.23 파일 기준)으로 복원</b> — 등록 폼(B1)에 한해 옵션 그룹 추가/삭제, 항목 추가/삭제/드래그 재정렬, 대표 옵션 라디오, 재고·옵션가 콤마 입력, 이미지 업로드(클릭 시 파일 선택) 전부 실제 동작. 수정 폼(B2~B6)은 기존처럼 정적 스냅샷 유지 — 상태별 예시 화면이라는 문서 성격상 5곳 모두에 독립 상태를 두면 관리 비용이 커져, 실제 동작 데모는 등록 폼 하나로 집중. B5의 "사용기한" 필드에 걸려있던 빨간 테두리(<code>border-color:danger-text</code>) 제거 — 기술적 신호 대신 평범한 안내 문구로 대체. 목록 행 클릭(관리 버튼 제외) 시 수정 폼 데모 위치로 스크롤 이동하는 JS 추가. <b>B6 "수정 폼 · 재검토 대기" 상태 신설</b> — 브랜드 수정 직후 운영자 재검토 대기 배너, 필드는 계속 수정 가능, 미진열 사유 패널은 미노출(미진열 처리가 아니라 정보 수정이 트리거이므로).<br>
+    <b>[rev.31 · 규칙 명확화]</b> <b>미진열 = 미진열(요청)</b>: 둘 다 진열 상태값은 동일한 "미진열"이며 차이는 미진열 사유뿐(브랜드 요청이면 회색 배지 + 이후 수정해도 재검토 대기로 전환 안 됨, 나머지 3개 사유면 빨강 배지 + 수정 시 재검토 대기 전환). 그 외 소비자 비노출·삭제 차단 조건(공구 상태 기준)·수정 권한은 완전히 동일. <b>진행중 공구 잠금 해제 범위 명확화</b>: "진열 상태가 미진열이면"이 아니라 <b>"진열 상태가 '진열'이 아니면"</b>이 정확한 조건 — 미진열·미진열(요청)·재검토 대기 <b>3종 전부</b> 공구 진행중과 무관하게 잠금 해제 대상. B4 라벨·안내 문구를 이 기준으로 수정했고, B6(재검토 대기)의 공구 상태를 준비중→<b>진행중</b>으로 바꿔 재검토 대기도 동일하게 잠금 해제됨을 실제로 보여줌. B6 삭제 버튼 비활성 사유도 "재검토 대기라서"가 아니라 "공구 상태(진행중)라서"로 정정 — 삭제 차단은 진열 상태와 무관하게 공구 상태만으로 판단.<br>
+    <b>[rev.32 · 수정 폼 전면 재구성]</b> 수정 폼을 <b>진열 상태 × 공구 진행 여부 7경우 × 옵션 그룹 사용/미사용 2가지 = 14개 상태(B2~B15)</b>로 재구성. 기존 B2~B8(7개)을 대체한다. 경우 구분은 ①진열·공구 아님 ②진열·공구 진행중 ③미진열·공구 아님 ④미진열·공구 진행중 ⑤미진열(요청)·공구 아님 ⑥미진열(요청)·공구 진행중 ⑦재검토 대기(공구 상태 무관). 각 상태는 <code>.grp-chip</code>으로 옵션 그룹 사용 여부를 표기한다.<br>
+    <b>[rev.32 · 재고 입력 상시 활성]</b> 이전 버전은 B2·B4·B5·B6의 옵션 표에서 재고 수량이 <b>정적 텍스트</b>로만 표시돼 입력필드가 없었음(잠금 상태인 B3에만 입력필드 존재). <b>모든 상태에서 재고 수량은 입력필드로 노출되며 항상 활성</b>이다 — 잠금 여부와 무관. 잠금 상태(B4·B5)에서는 표 헤더를 "재고 수량(수정 가능)"으로 액센트 표기해 유일하게 열린 필드임을 드러낸다.<br>
+    <b>[rev.32 · 진열+진행중 잠금 범위 확정]</b> <b>"재고 수량만 수정 가능"</b>으로 확정(대표 확인 2026.08, 기능요구사항 §11-8과 동일). 옵션 그룹명·항목·옵션가·대표 옵션 라디오까지 전부 잠기고 재고 입력만 열린다 — 진행중 공구에서 SKU가 변경·삭제되면 이미 발생한 주문·정산 데이터가 깨지기 때문. <b>재논의 금지.</b> 옵션 그룹 추가/삭제·항목 추가/삭제·드래그는 <code>&lt;div&gt;</code> 기반 클릭 컨트롤이라 <code>disabled</code>가 먹지 않으므로 <code>pointer-events:none</code>으로 차단했다(§11-8 구현 유의사항과 동일).<br>
+    <b>[rev.32 · 옵션 그룹 미사용 UI]</b> 토글 OFF 시 그룹 에디터를 감추고 "구성 / 재고 수량 / 진열 여부" 3열 1행 표(<b>기본 조합(옵션 없음)</b>)만 노출한다. 대표 옵션·옵션가 열은 존재하지 않는다(기능요구사항 §11-6 근거). 토글 OFF 시각 상태가 없어 꺼진 토글도 켜진 것처럼 보이던 CSS 버그도 함께 수정.
+  </div>
+</div>
+
+<!-- ═════════ A1. 목록 · 기본 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A1</span><span class="state-label">목록 · 기본</span>
+  <span class="state-spec">검색 입력+버튼 · 진열 상태 4종·공구 상태 4종 배지 · 관리 열 수정/삭제 버튼 · 행 클릭(관리 버튼 제외) → 수정 폼으로 이동(데모)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 목록</div><div class="page-d">등록된 상품을 확인하고 관리합니다.</div></div><button class="btn btn-primary">+ 상품 등록</button></div>
+  <div class="filter-panel">
+    <button class="fp-reset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+    <div class="fp-row" style="padding-right:90px">
+      <span class="fp-glabel">진열 상태</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진열<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>미진열<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재검토 대기<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>미진열(요청)<span class="fp-n">1</span></span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-glabel">공구 상태</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비중<span class="fp-n">1</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비완료<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진행중<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>연결 없음<span class="fp-n">2</span></span>
+    </div>
+    <div class="fp-row" style="justify-content:flex-end">
+      <div class="search"><input class="inp" placeholder="상품명 · 브랜드상품코드 검색" style="width:280px"><button class="btn btn-secondary">검색</button></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>5</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>등록일순</option><option>수정일순</option><option>재고 적은순</option></select><select class="sel-sm"><option>20건</option><option>50건</option><option>100건</option></select></div>
+    </div>
+    <table>
+      <thead><tr><td style="width:56px"></td><td style="width:160px">상품명</td><td style="width:110px">브랜드상품코드</td><td style="width:90px">정가</td>
+        <td class="t-c" style="width:80px">재고</td><td class="t-c" style="width:100px">진열 상태</td><td class="t-c" style="width:90px">공구 상태</td>
+        <td class="t-c" style="width:150px">등록/수정일</td><td class="t-c" style="width:150px">관리</td></tr></thead>
+      <tbody>
+        <tr><td><div class="t-thumb" style="background:#F2456E"></div></td><td><span class="t-name" title="수분진정 세럼 30ml">수분진정 세럼 30ml</span></td><td class="t-code">SR-001</td><td>32,000원</td>
+          <td class="t-c">120</td><td class="t-c"><span class="badge b-success">진열</span></td><td class="t-c"><span class="badge b-info">진행중</span></td>
+          <td class="t-c t-date">2026.07.28 16:42 (수정)</td>
+          <td class="t-c"><div class="actions"><button class="act-btn">수정</button><button class="act-btn del disabled" title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다">삭제</button></div></td></tr>
+        <tr><td><div class="t-thumb" style="background:#3B5BDB"></div></td><td><span class="t-name" title="수분진정 크림 50ml">수분진정 크림 50ml</span></td><td class="t-code">SR-002</td><td>45,000원</td>
+          <td class="t-c">35</td><td class="t-c"><span class="badge b-success">진열</span></td><td class="t-c"><span class="badge b-info">준비중</span></td>
+          <td class="t-c t-date">2026.07.02 14:20 (등록)</td>
+          <td class="t-c"><div class="actions"><button class="act-btn">수정</button><button class="act-btn del disabled" title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다">삭제</button></div></td></tr>
+        <tr><td><div class="t-thumb" style="background:#8F6620"></div></td><td><span class="t-name" title="수분진정 토너 200ml">수분진정 토너 200ml</span></td><td class="t-code">SR-003</td><td>26,000원</td>
+          <td class="t-c"><span class="badge b-neutral nodot">품절</span></td><td class="t-c"><span class="badge b-danger">미진열</span></td><td class="t-c"><span class="badge b-neutral">연결 없음</span></td>
+          <td class="t-c t-date">2026.07.10 11:20 (수정)</td>
+          <td class="t-c"><div class="actions"><button class="act-btn">수정</button><button class="act-btn del">삭제</button></div></td></tr>
+        <tr><td><div class="t-thumb" style="background:#5B5F68"></div></td><td><span class="t-name" title="저자극 클렌징 오일 150ml">저자극 클렌징 오일 150ml</span></td><td class="t-code">SR-004</td><td>22,000원</td>
+          <td class="t-c">45</td><td class="t-c"><span class="badge b-neutral">미진열(요청)</span></td><td class="t-c"><span class="badge b-neutral">연결 없음</span></td>
+          <td class="t-c t-date">2026.07.09 10:05 (수정)</td>
+          <td class="t-c"><div class="actions"><button class="act-btn">수정</button><button class="act-btn del">삭제</button></div></td></tr>
+        <tr><td><div class="t-thumb" style="background:#B23434"></div></td><td><span class="t-name" title="브라이트닝 아이크림 12ml">브라이트닝 아이크림 12ml</span></td><td class="t-code">SR-005</td><td>38,000원</td>
+          <td class="t-c">58</td><td class="t-c"><span class="badge b-danger">미진열</span></td><td class="t-c"><span class="badge b-info">진행중</span></td>
+          <td class="t-c t-date">2026.07.30 13:15 (수정)</td>
+          <td class="t-c"><div class="actions"><button class="act-btn">수정</button><button class="act-btn del disabled" title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다">삭제</button></div></td></tr>
+      </tbody>
+    </table>
+    <div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">3</span><span class="page-item">›</span></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ A2. 목록 · 검색 결과 없음 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A2</span><span class="state-label">목록 · 검색 결과 없음</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리</div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 목록</div><div class="page-d">등록된 상품을 확인하고 관리합니다.</div></div><button class="btn btn-primary">+ 상품 등록</button></div>
+  <div class="filter-panel">
+    <button class="fp-reset" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>초기화</button>
+    <div class="fp-row" style="padding-right:90px">
+      <span class="fp-glabel">진열 상태</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진열<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>미진열<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>재검토 대기<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>미진열(요청)<span class="fp-n">1</span></span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-glabel">공구 상태</span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비중<span class="fp-n">1</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>준비완료<span class="fp-n">0</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>진행중<span class="fp-n">2</span></span>
+      <span class="fp-item"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>연결 없음<span class="fp-n">2</span></span>
+    </div>
+    <div class="fp-row" style="justify-content:flex-end">
+      <div class="search"><input class="inp" value="없는상품명" style="width:280px"><button class="btn btn-secondary">검색</button></div>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>0</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>등록일순</option><option>수정일순</option><option>재고 적은순</option></select><select class="sel-sm"><option>20건</option><option>50건</option><option>100건</option></select></div>
+    </div>
+    <table>
+      <thead><tr><td style="width:56px"></td><td style="width:160px">상품명</td><td style="width:110px">브랜드상품코드</td><td style="width:90px">정가</td>
+        <td class="t-c" style="width:80px">재고</td><td class="t-c" style="width:100px">진열 상태</td><td class="t-c" style="width:90px">공구 상태</td>
+        <td class="t-c" style="width:150px">등록/수정일</td><td class="t-c" style="width:150px">관리</td></tr></thead>
+    </table>
+    <div class="empty"><div class="empty-ic">⌕</div><div class="empty-t">검색 결과가 없습니다</div><div class="empty-d">다른 검색어로 찾아보세요.</div></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B1. 상품 등록 폼(신규) ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B1</span><span class="state-label">상품 등록 폼(신규)</span>
+  <span class="state-spec">삭제 버튼·미진열 사유 패널 없음(신규 상품이라 해당 없음)</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 등록</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 등록</div><div class="page-d">등록 즉시 진열됩니다. 진열/미진열 전환은 이후 운영자만 처리할 수 있습니다.</div></div></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" placeholder="상품명을 입력하세요 (특수문자 입력은 피해주세요)" maxlength="100"><span class="char-count">0/100</span></div><div class="hint">이모지는 입력할 수 없습니다.</div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" placeholder="브랜드 내부 관리 코드"><div class="hint">브랜드 자체 재고·ERP 매칭용 · 소비자에게 노출되지 않습니다</div></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>대분류 선택</option></select><select class="sel" disabled><option>중분류 선택</option></select><select class="sel" disabled><option>소분류 선택</option></select></div><div class="hint">대분류를 선택해야 중분류를, 중분류를 선택해야 소분류를 선택할 수 있습니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" placeholder="0" maxlength="9"><span class="u">원</span></div><div class="hint">옵션 조합(SKU)과 무관한 단일가입니다. 3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="hint" style="margin-top:0;margin-bottom:12px;">권장 크기 1000×1000px(1:1 비율) · 제한 개수 대표 1개 · 커버 4개 · 제한 용량 각 1MB 이하 · 허용 확장자 JPG, PNG</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row" id="img-row-main">
+        <div class="img-cell"><div class="img-box add" id="img-main"><span class="plus">+</span><span>대표</span>
+          <input type="file" class="img-file" accept=".jpg,.jpeg,.png" hidden></div><div class="err-cap" id="err-cap-main"></div></div>
+      </div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row" id="img-row-cover"></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션</div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on" id="opt-toggle"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow" id="opt-group-wrap"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div id="opt-groups"></div>
+        <div class="btn-line-sm" id="add-group">+ 옵션 그룹 추가</div>
+        <div class="gen-bridge" id="gen-bridge"></div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl" id="opt-table"></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body placeholder">상품 설명을 입력하세요</div>
+      </div>
+      <div class="hint">소비자 상품 상세 페이지 본문에 노출됩니다. 법적 고시 정보는 아래 별도 섹션에 입력합니다.</div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" placeholder="제품 상세 참고하여 입력"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" placeholder="제품 상세 참고하여 입력"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" placeholder="제품 상세 참고하여 입력"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" placeholder="제품 상세 참고하여 입력"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"><div class="hint">사업자 정보로 자동 입력됨 · 수정 가능</div></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" placeholder="제품 상세 참고하여 입력"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta" placeholder="제품 상세 참고하여 입력"></textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option><option>기능성 화장품(식품의약품안전처 심사필)</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta" placeholder="제품 상세 참고하여 입력"></textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" placeholder="제품 상세 참고하여 입력"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"><div class="hint">고객센터 전화번호로 자동 입력됨 · 수정 가능</div></div></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-secondary">취소</button><button class="btn btn-primary" disabled>저장</button></div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B2. 수정 폼 · 진열 · 공구 진행 아님 · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B2</span><span class="state-label">경우 1. 진열 · 공구 진행 아님 <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">잠금 없음 · 전체 항목 수정 가능 · 삭제 가능 · 재고 입력은 항상 활성</span></div>
+  <div class="stage" id="edit-demo-target">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>진열</b> · 공구 상태: <b>연결 없음</b></div></div></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="비타민C 브라이트닝 크림" maxlength="100"><span class="char-count">13/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SK-VC-CR"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>크림/로션</option></select><select class="sel"><option>미백 크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="42,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#F2456E"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#D6336C"></div><div class="img-box" style="background:#E8590C"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량"><span class="optgrp-x">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="50ml"><span class="del">×</span></div><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="100ml"><span class="del">×</span></div><div class="opt-addrow">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:110px">재고 수량</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>50ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="84"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr><tr><td>100ml</td><td class="rep-cell"><input type="radio" class="rep-radio"></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000"></td><td><input class="inp" style="height:30px;max-width:80px" value="12"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">비타민C 유도체가 칙칙한 피부 톤을 환하게 밝혀주는 브라이트닝 크림입니다. 아침·저녁 세안 후 적당량을 사용하세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="50ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 아스코빅애씨드 외 18종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-danger" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-success">진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-neutral">연결 없음</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">브랜드가 상품 정보 수정</div><div class="hmeta">2026.07.28 16:42</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.05.02 10:15</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B3. 수정 폼 · 진열 · 공구 진행 아님 · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B3</span><span class="state-label">경우 1. 진열 · 공구 진행 아님 <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">잠금 없음 · 전체 항목 수정 가능 · 삭제 가능 · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>진열</b> · 공구 상태: <b>연결 없음</b></div></div></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="비타민C 브라이트닝 크림" maxlength="100"><span class="char-count">13/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SK-VC-CR"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>크림/로션</option></select><select class="sel"><option>미백 크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="42,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#F2456E"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#D6336C"></div><div class="img-box" style="background:#E8590C"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="240"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">비타민C 유도체가 칙칙한 피부 톤을 환하게 밝혀주는 브라이트닝 크림입니다. 아침·저녁 세안 후 적당량을 사용하세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="50ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 아스코빅애씨드 외 18종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="btn-row"><button class="btn btn-danger" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-success">진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-neutral">연결 없음</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">브랜드가 상품 정보 수정</div><div class="hmeta">2026.07.28 16:42</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.05.02 10:15</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B4. 수정 폼 · 진열 · 공구 진행 중 · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B4</span><span class="state-label">경우 2. 진열 · 공구 진행 중 <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">재고 수량만 수정 가능 · 옵션 그룹·옵션가 포함 그 외 전 항목 잠금 · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>진열</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice warn" style="max-width:820px;margin-bottom:16px"><span>⚠</span><span><b>진행중 공구에 연결된 진열 상품입니다.</b> 정보 변경 시 진행 중인 공구·계약 내용과 어긋날 수 있어 <b>재고 수량을 제외한 모든 항목이 잠깁니다.</b> 옵션 그룹·항목·옵션가·대표 옵션도 변경할 수 없습니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="수분진정 세럼" maxlength="100" disabled><span class="char-count">7/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-001" disabled></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel" disabled><option>스킨케어</option></select><select class="sel" disabled><option>에센스/세럼</option></select><select class="sel" disabled><option>수분 세럼</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="32,000" maxlength="9" disabled><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#B23434;opacity:.6;cursor:not-allowed"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#862E2E;opacity:.6;cursor:not-allowed"></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row" style="opacity:.45;pointer-events:none"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량" disabled><span class="optgrp-x" style="opacity:.45;pointer-events:none">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag" style="opacity:.45;pointer-events:none">↕</span><input class="inp iteminp" style="height:30px" value="30ml" disabled><span class="del" style="opacity:.45;pointer-events:none">×</span></div><div class="opt-row"><span class="drag" style="opacity:.45;pointer-events:none">↕</span><input class="inp iteminp" style="height:30px" value="50ml" disabled><span class="del" style="opacity:.45;pointer-events:none">×</span></div><div class="opt-addrow" style="opacity:.45;pointer-events:none">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm" style="opacity:.45;pointer-events:none">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:132px;color:var(--accent-600);white-space:nowrap">재고 수량(수정 가능)</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>30ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked disabled></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="120"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr><tr><td>50ml</td><td class="rep-cell"><input type="radio" class="rep-radio" disabled></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000" disabled></td><td><input class="inp" style="height:30px;max-width:80px" value="46"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        <div class="hint">진행중 공구에 연결되어 <b>재고 수량만</b> 수정할 수 있습니다. 옵션 그룹·항목·옵션가·대표 옵션 변경은 공구 종료 후 가능합니다.</div>
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap disabled">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">저자극 진정 성분을 담은 수분진정 세럼입니다. 나이아신아마이드와 판테놀이 결을 정돈하고 속당김 없이 촉촉하게 마무리됩니다.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="30ml" disabled></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용" disabled></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월" disabled></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고" disabled></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)" disabled></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국" disabled></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta" disabled>정제수, 글리세린, 나이아신아마이드 외 22종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel" disabled><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta" disabled>상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상" disabled></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678" disabled></div></div>
+    </div>
+    <div class="save-hint">저장해도 <b>재고 수량만</b> 반영됩니다</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-success">진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">재고 수량 수정(120)</div><div class="hmeta">2026.07.28 16:42</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.20 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.06.12 10:05</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B5. 수정 폼 · 진열 · 공구 진행 중 · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B5</span><span class="state-label">경우 2. 진열 · 공구 진행 중 <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">재고 수량만 수정 가능 · 옵션 그룹·옵션가 포함 그 외 전 항목 잠금 · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>진열</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice warn" style="max-width:820px;margin-bottom:16px"><span>⚠</span><span><b>진행중 공구에 연결된 진열 상품입니다.</b> 정보 변경 시 진행 중인 공구·계약 내용과 어긋날 수 있어 <b>재고 수량을 제외한 모든 항목이 잠깁니다.</b> 옵션 그룹·항목·옵션가·대표 옵션도 변경할 수 없습니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="수분진정 세럼" maxlength="100" disabled><span class="char-count">7/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-001" disabled></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel" disabled><option>스킨케어</option></select><select class="sel" disabled><option>에센스/세럼</option></select><select class="sel" disabled><option>수분 세럼</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="32,000" maxlength="9" disabled><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#B23434;opacity:.6;cursor:not-allowed"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#862E2E;opacity:.6;cursor:not-allowed"></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row" style="opacity:.45;pointer-events:none"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:132px;color:var(--accent-600);white-space:nowrap">재고 수량(수정 가능)</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="120"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        <div class="hint">진행중 공구에 연결되어 <b>재고 수량만</b> 수정할 수 있습니다. 옵션 그룹·항목·옵션가·대표 옵션 변경은 공구 종료 후 가능합니다.</div>
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap disabled">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">저자극 진정 성분을 담은 수분진정 세럼입니다. 나이아신아마이드와 판테놀이 결을 정돈하고 속당김 없이 촉촉하게 마무리됩니다.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="30ml" disabled></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용" disabled></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월" disabled></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고" disabled></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)" disabled></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국" disabled></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta" disabled>정제수, 글리세린, 나이아신아마이드 외 22종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel" disabled><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta" disabled>상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상" disabled></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678" disabled></div></div>
+    </div>
+    <div class="save-hint">저장해도 <b>재고 수량만</b> 반영됩니다</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-success">진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">재고 수량 수정(120)</div><div class="hmeta">2026.07.28 16:42</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.20 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.06.12 10:05</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B6. 수정 폼 · 미진열 · 공구 진행 아님 · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B6</span><span class="state-label">경우 3. 미진열 · 공구 진행 아님 <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">전체 수정 가능 · 저장 시 재검토 요청으로 전환 · 삭제 가능 · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열</b> · 공구 상태: <b>연결 없음</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span><b>미진열 상태입니다.</b> 소비자에게 노출되지 않으므로 전체 항목을 수정할 수 있습니다. 저장하면 <b>재검토 요청</b> 상태로 전환되고, 운영자 검토 후 다시 진열됩니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="수분진정 토너" maxlength="100"><span class="char-count">7/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-003"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>토너/스킨</option></select><select class="sel"><option>수분 토너</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="26,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#8F6620"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#6B4C18"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량"><span class="optgrp-x">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="200ml"><span class="del">×</span></div><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="400ml"><span class="del">×</span></div><div class="opt-addrow">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:110px">재고 수량</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>200ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr><tr><td>400ml</td><td class="rep-cell"><input type="radio" class="rep-radio"></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000"></td><td><input class="inp" style="height:30px;max-width:80px" value="18"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">수분진정 토너로 각질 결을 부드럽게 정돈하고 다음 단계 흡수를 도와줍니다. 화장솜에 적셔 결을 따라 닦아내거나 손으로 가볍게 두드려 흡수시키세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="200ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 나이아신아마이드 외 15종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장하면 <b>재검토 요청</b> 상태로 전환됩니다 · 운영자 검토 후 다시 진열</div>
+    <div class="btn-row"><button class="btn btn-danger" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel">
+      <div class="reason-panel-h"><span>⚠</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">상품 정보 제공 고시 오류</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">전성분 표기에 사용기한 정보가 누락되어 있어 재작성이 필요합니다. 전성분·사용기한 항목을 확인 후 다시 저장해 주세요.</div></div>
+        <div class="reason-meta">2026.07.10 11:20 · 김운영 운영자</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-danger">미진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-neutral">연결 없음</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 상품 정보 제공 고시 오류</div><div class="hmeta">2026.07.10 11:20 · 김운영 운영자</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.05.20 09:10</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B7. 수정 폼 · 미진열 · 공구 진행 아님 · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B7</span><span class="state-label">경우 3. 미진열 · 공구 진행 아님 <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">전체 수정 가능 · 저장 시 재검토 요청으로 전환 · 삭제 가능 · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열</b> · 공구 상태: <b>연결 없음</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span><b>미진열 상태입니다.</b> 소비자에게 노출되지 않으므로 전체 항목을 수정할 수 있습니다. 저장하면 <b>재검토 요청</b> 상태로 전환되고, 운영자 검토 후 다시 진열됩니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="수분진정 토너" maxlength="100"><span class="char-count">7/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-003"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>토너/스킨</option></select><select class="sel"><option>수분 토너</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="26,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#8F6620"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#6B4C18"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">수분진정 토너로 각질 결을 부드럽게 정돈하고 다음 단계 흡수를 도와줍니다. 화장솜에 적셔 결을 따라 닦아내거나 손으로 가볍게 두드려 흡수시키세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="200ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 나이아신아마이드 외 15종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장하면 <b>재검토 요청</b> 상태로 전환됩니다 · 운영자 검토 후 다시 진열</div>
+    <div class="btn-row"><button class="btn btn-danger" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel">
+      <div class="reason-panel-h"><span>⚠</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">상품 정보 제공 고시 오류</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">전성분 표기에 사용기한 정보가 누락되어 있어 재작성이 필요합니다. 전성분·사용기한 항목을 확인 후 다시 저장해 주세요.</div></div>
+        <div class="reason-meta">2026.07.10 11:20 · 김운영 운영자</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-danger">미진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-neutral">연결 없음</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 상품 정보 제공 고시 오류</div><div class="hmeta">2026.07.10 11:20 · 김운영 운영자</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.05.20 09:10</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B8. 수정 폼 · 미진열 · 공구 진행 중 · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B8</span><span class="state-label">경우 4. 미진열 · 공구 진행 중 <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">공구 진행중이어도 잠금 해제(진열 아님) · 저장 시 재검토 요청 전환 · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span>진행중 공구에 연결되어 있지만 <b>진열 상태가 "진열"이 아니므로</b> 소비자에게 노출되지 않아 <b>전체 항목을 수정</b>할 수 있습니다. 저장하면 <b>재검토 요청</b> 상태로 전환됩니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="브라이트닝 아이크림" maxlength="100"><span class="char-count">10/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-005"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>아이케어</option></select><select class="sel"><option>아이크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="38,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#7048E8"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#5F3DC4"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량"><span class="optgrp-x">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="12ml"><span class="del">×</span></div><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="25ml"><span class="del">×</span></div><div class="opt-addrow">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:110px">재고 수량</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>12ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="58"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr><tr><td>25ml</td><td class="rep-cell"><input type="radio" class="rep-radio"></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000"></td><td><input class="inp" style="height:30px;max-width:80px" value="9"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">카페인과 펩타이드 복합 성분이 눈가 피부를 탄력 있게 가꿔주는 아이크림입니다. 아침·저녁 세안 후 눈가에 소량씩 두드려 흡수시켜 주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="12ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 카페인, 아세틸헥사펩타이드-8 외 20종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장하면 <b>재검토 요청</b> 상태로 전환됩니다 · 운영자 검토 후 다시 진열</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel">
+      <div class="reason-panel-h"><span>⚠</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">표시·광고 위반 의심</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">상품 설명에 과장 효능 표현이 있어 확인이 필요합니다. 표시·광고 문구를 검토 후 다시 저장해 주세요.</div></div>
+        <div class="reason-meta">2026.07.30 13:15 · 김운영 운영자</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-danger">미진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 표시·광고 위반 의심</div><div class="hmeta">2026.07.30 13:15 · 김운영 운영자</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.15 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.04.02 09:00</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B9. 수정 폼 · 미진열 · 공구 진행 중 · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B9</span><span class="state-label">경우 4. 미진열 · 공구 진행 중 <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">공구 진행중이어도 잠금 해제(진열 아님) · 저장 시 재검토 요청 전환 · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span>진행중 공구에 연결되어 있지만 <b>진열 상태가 "진열"이 아니므로</b> 소비자에게 노출되지 않아 <b>전체 항목을 수정</b>할 수 있습니다. 저장하면 <b>재검토 요청</b> 상태로 전환됩니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="브라이트닝 아이크림" maxlength="100"><span class="char-count">10/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-005"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>아이케어</option></select><select class="sel"><option>아이크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="38,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#7048E8"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#5F3DC4"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="58"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">카페인과 펩타이드 복합 성분이 눈가 피부를 탄력 있게 가꿔주는 아이크림입니다. 아침·저녁 세안 후 눈가에 소량씩 두드려 흡수시켜 주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="12ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 카페인, 아세틸헥사펩타이드-8 외 20종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장하면 <b>재검토 요청</b> 상태로 전환됩니다 · 운영자 검토 후 다시 진열</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel">
+      <div class="reason-panel-h"><span>⚠</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">표시·광고 위반 의심</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">상품 설명에 과장 효능 표현이 있어 확인이 필요합니다. 표시·광고 문구를 검토 후 다시 저장해 주세요.</div></div>
+        <div class="reason-meta">2026.07.30 13:15 · 김운영 운영자</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-danger">미진열</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 표시·광고 위반 의심</div><div class="hmeta">2026.07.30 13:15 · 김운영 운영자</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.15 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.04.02 09:00</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B10. 수정 폼 · 미진열(브랜드 요청) · 공구 진행 아님 · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B10</span><span class="state-label">경우 5. 미진열(브랜드 요청) · 공구 진행 아님 <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">전체 수정 가능 · 저장해도 재검토 전환 없음 · 진열 복귀는 소통 스레드 요청 → 운영자 검토 · 삭제 가능 · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열(요청)</b> · 공구 상태: <b>연결 없음</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span><b>브랜드 요청으로 미진열 처리된 상품입니다.</b> 전체 항목을 수정할 수 있으며, 저장해도 <b>재검토 요청으로 전환되지 않습니다.</b> 다시 진열하려면 <b>연결·소통 스레드에서 담당 운영자에게 진열 요청</b>을 보내주세요.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="시즌 한정 벚꽃 핸드크림" maxlength="100"><span class="char-count">13/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-011"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>바디케어</option></select><select class="sel"><option>핸드케어</option></select><select class="sel"><option>핸드크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="14,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#D6336C"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#C2255C"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량"><span class="optgrp-x">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="30ml"><span class="del">×</span></div><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="75ml"><span class="del">×</span></div><div class="opt-addrow">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:110px">재고 수량</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>30ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr><tr><td>75ml</td><td class="rep-cell"><input type="radio" class="rep-radio"></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000"></td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">벚꽃 향을 담은 시즌 한정 핸드크림입니다. 건조한 손에 소량씩 발라 마무리해 주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="30ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 시어버터 외 19종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장해도 <b>재검토로 전환되지 않습니다</b> · 다시 진열은 소통 스레드에서 요청</div>
+    <div class="btn-row"><button class="btn btn-danger" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel neutral">
+      <div class="reason-panel-h"><span>ℹ</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">브랜드 요청</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">시즌 종료로 브랜드가 직접 미진열을 요청했습니다. 재판매 시 연결·소통 스레드에서 진열 요청을 보내주세요.</div></div>
+        <div class="reason-meta">2026.07.22 10:05 · ○○ 브랜드 요청</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-neutral">미진열(요청)</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-neutral">연결 없음</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 브랜드 요청</div><div class="hmeta">2026.07.22 10:05 · ○○ 브랜드 요청</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.03.15 09:00</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B11. 수정 폼 · 미진열(브랜드 요청) · 공구 진행 아님 · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B11</span><span class="state-label">경우 5. 미진열(브랜드 요청) · 공구 진행 아님 <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">전체 수정 가능 · 저장해도 재검토 전환 없음 · 진열 복귀는 소통 스레드 요청 → 운영자 검토 · 삭제 가능 · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열(요청)</b> · 공구 상태: <b>연결 없음</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span><b>브랜드 요청으로 미진열 처리된 상품입니다.</b> 전체 항목을 수정할 수 있으며, 저장해도 <b>재검토 요청으로 전환되지 않습니다.</b> 다시 진열하려면 <b>연결·소통 스레드에서 담당 운영자에게 진열 요청</b>을 보내주세요.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="시즌 한정 벚꽃 핸드크림" maxlength="100"><span class="char-count">13/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-011"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>바디케어</option></select><select class="sel"><option>핸드케어</option></select><select class="sel"><option>핸드크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="14,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#D6336C"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#C2255C"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">벚꽃 향을 담은 시즌 한정 핸드크림입니다. 건조한 손에 소량씩 발라 마무리해 주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="30ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 시어버터 외 19종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장해도 <b>재검토로 전환되지 않습니다</b> · 다시 진열은 소통 스레드에서 요청</div>
+    <div class="btn-row"><button class="btn btn-danger" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel neutral">
+      <div class="reason-panel-h"><span>ℹ</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">브랜드 요청</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">시즌 종료로 브랜드가 직접 미진열을 요청했습니다. 재판매 시 연결·소통 스레드에서 진열 요청을 보내주세요.</div></div>
+        <div class="reason-meta">2026.07.22 10:05 · ○○ 브랜드 요청</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-neutral">미진열(요청)</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-neutral">연결 없음</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 브랜드 요청</div><div class="hmeta">2026.07.22 10:05 · ○○ 브랜드 요청</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.03.15 09:00</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B12. 수정 폼 · 미진열(브랜드 요청) · 공구 진행 중 · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B12</span><span class="state-label">경우 6. 미진열(브랜드 요청) · 공구 진행 중 <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">공구 진행중이어도 잠금 해제 · 재검토 전환 없음 · 진열 복귀는 소통 스레드 요청 · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열(요청)</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span>진행중 공구에 연결되어 있지만 <b>브랜드 요청으로 미진열 처리</b>되어 소비자에게 노출되지 않으므로 전체 항목을 수정할 수 있습니다. 저장해도 재검토로 전환되지 않으며, 다시 진열하려면 <b>연결·소통 스레드에서 진열 요청</b>을 보내주세요.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="데일리 선크림" maxlength="100"><span class="char-count">7/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-013"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>선케어</option></select><select class="sel"><option>선크림</option></select><select class="sel"><option>데일리 선크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="22,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#1098AD"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#0C8599"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량"><span class="optgrp-x">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="50ml"><span class="del">×</span></div><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="80ml"><span class="del">×</span></div><div class="opt-addrow">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:110px">재고 수량</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>50ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr><tr><td>80ml</td><td class="rep-cell"><input type="radio" class="rep-radio"></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000"></td><td><input class="inp" style="height:30px;max-width:80px" value="4"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">산뜻하게 발리는 데일리 선크림입니다. 외출 20분 전 얼굴과 목에 고르게 펴 발라주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="50ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 징크옥사이드 외 17종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장해도 <b>재검토로 전환되지 않습니다</b> · 다시 진열은 소통 스레드에서 요청</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel neutral">
+      <div class="reason-panel-h"><span>ℹ</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">브랜드 요청</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">재고 소진으로 브랜드가 직접 미진열을 요청했습니다. 재입고 후 연결·소통 스레드에서 진열 요청을 보내주세요.</div></div>
+        <div class="reason-meta">2026.07.26 15:40 · ○○ 브랜드 요청</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-neutral">미진열(요청)</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 브랜드 요청</div><div class="hmeta">2026.07.26 15:40 · ○○ 브랜드 요청</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.18 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.02.28 11:30</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B13. 수정 폼 · 미진열(브랜드 요청) · 공구 진행 중 · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B13</span><span class="state-label">경우 6. 미진열(브랜드 요청) · 공구 진행 중 <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">공구 진행중이어도 잠금 해제 · 재검토 전환 없음 · 진열 복귀는 소통 스레드 요청 · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>미진열(요청)</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice info" style="max-width:820px;margin-bottom:16px"><span>ℹ</span><span>진행중 공구에 연결되어 있지만 <b>브랜드 요청으로 미진열 처리</b>되어 소비자에게 노출되지 않으므로 전체 항목을 수정할 수 있습니다. 저장해도 재검토로 전환되지 않으며, 다시 진열하려면 <b>연결·소통 스레드에서 진열 요청</b>을 보내주세요.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="데일리 선크림" maxlength="100"><span class="char-count">7/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-013"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>선케어</option></select><select class="sel"><option>선크림</option></select><select class="sel"><option>데일리 선크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="22,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#1098AD"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#0C8599"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="0"></td><td class="badge-cell"><span class="badge b-neutral nodot">품절</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">산뜻하게 발리는 데일리 선크림입니다. 외출 20분 전 얼굴과 목에 고르게 펴 발라주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="50ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 징크옥사이드 외 17종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">저장해도 <b>재검토로 전환되지 않습니다</b> · 다시 진열은 소통 스레드에서 요청</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <aside class="reason-panel neutral">
+      <div class="reason-panel-h"><span>ℹ</span> 미진열 사유</div>
+      <div class="reason-panel-b">
+        <div class="reason-row"><div class="reason-lbl">사유</div><div class="reason-val">브랜드 요청</div></div>
+        <div class="reason-row"><div class="reason-lbl">상세 내용</div><div class="reason-detail-box">재고 소진으로 브랜드가 직접 미진열을 요청했습니다. 재입고 후 연결·소통 스레드에서 진열 요청을 보내주세요.</div></div>
+        <div class="reason-meta">2026.07.26 15:40 · ○○ 브랜드 요청</div>
+      </div>
+    </aside>
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-neutral">미진열(요청)</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot rj"></div><div><div class="htxt">미진열 처리 — 사유: 브랜드 요청</div><div class="hmeta">2026.07.26 15:40 · ○○ 브랜드 요청</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.18 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.02.28 11:30</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B14. 수정 폼 · 재검토 대기 (공구 상태 무관) · 옵션 그룹 사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B14</span><span class="state-label">경우 7. 재검토 대기 (공구 상태 무관) <span class="grp-chip">옵션 그룹 사용</span></span>
+  <span class="state-spec">전체 수정 가능(공구 상태 무관) · 미진열 사유 패널 없음(수정이 트리거) · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>재검토 대기</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice warn" style="max-width:820px;margin-bottom:16px"><span>⚠</span><span>상품 정보 수정 내용이 <b>운영자 재검토 대기</b> 중입니다. 검토가 끝날 때까지 소비자에게 노출되지 않으며, <b>검토 중에도 계속 수정</b>할 수 있습니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="리페어 나이트 크림" maxlength="100"><span class="char-count">10/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-007"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>크림/로션</option></select><select class="sel"><option>나이트 크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="46,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#0CA678"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#087F5B"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle on"></div><span class="tl">사용 중 (끄면 기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">옵션 그룹<span class="sub">(최대 3)</span></div><div class="fctrl">
+        <div class="optgrp">
+          <div class="optgrp-h"><span class="gk">그룹 1 · 그룹명</span><input class="inp gname" style="height:30px" value="용량"><span class="optgrp-x">그룹 삭제 ×</span></div>
+          <div class="opt-rows"><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="50ml"><span class="del">×</span></div><div class="opt-row"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" value="80ml"><span class="del">×</span></div><div class="opt-addrow">+ 항목 추가</div></div>
+        </div>
+        <div class="btn-line-sm">+ 옵션 그룹 추가</div>
+        <div class="hint">그룹당 항목 1~30개 · 그룹이 2개 이상이면 항목의 조합(곱)이 SKU로 자동 생성됩니다</div>
+      </div></div>
+      <div class="frow"><div class="flab">옵션 목록<span class="sub">(조합 SKU)</span></div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>용량</th><th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:110px">재고 수량</th><th style="width:90px">진열 여부</th></tr></thead>
+        <tbody><tr><td>50ml</td><td class="rep-cell"><input type="radio" class="rep-radio" checked></td><td class="rep-tag">정가 적용</td><td><input class="inp" style="height:30px;max-width:80px" value="31"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr><tr><td>80ml</td><td class="rep-cell"><input type="radio" class="rep-radio"></td><td><input class="inp" style="height:30px;max-width:90px" value="4,000"></td><td><input class="inp" style="height:30px;max-width:80px" value="7"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">재고·옵션가는 직접 입력(3자리마다 콤마 자동 표시) · 조합 추가/삭제는 위 그룹에서 관리 · 대표 옵션은 정가가 곧 가격이라 옵션가 입력 불가 · 재고 0이면 자동으로 품절 표시</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">밤사이 피부 장벽을 채워주는 리페어 나이트 크림입니다. 저녁 마지막 단계에 도톰하게 올려 흡수시켜 주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="50ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 세라마이드엔피 외 24종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">이미 재검토 대기 상태입니다 · 저장하면 검토 대상 내용이 갱신됩니다</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-warning">재검토 대기</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot wn"></div><div><div class="htxt">브랜드가 상품 정보 수정(재검토 대기로 전환)</div><div class="hmeta">2026.07.31 09:40</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.25 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.07.02 14:20</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ B15. 수정 폼 · 재검토 대기 (공구 상태 무관) · 옵션 그룹 미사용 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B15</span><span class="state-label">경우 7. 재검토 대기 (공구 상태 무관) <span class="grp-chip off">옵션 그룹 미사용</span></span>
+  <span class="state-spec">전체 수정 가능(공구 상태 무관) · 미진열 사유 패널 없음(수정이 트리거) · 삭제 불가(공구 상태 기준) · 재고 입력은 항상 활성</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">진열 상태: <b>재검토 대기</b> · 공구 상태: <b>진행중</b></div></div></div>
+  <div class="notice warn" style="max-width:820px;margin-bottom:16px"><span>⚠</span><span>상품 정보 수정 내용이 <b>운영자 재검토 대기</b> 중입니다. 검토가 끝날 때까지 소비자에게 노출되지 않으며, <b>검토 중에도 계속 수정</b>할 수 있습니다.</span></div>
+  <div class="form-layout">
+  <div class="card">
+    <div class="sec"><div class="sec-t">기본 정보</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 상품명</div><div class="fctrl"><div class="has-count"><input class="inp" value="리페어 나이트 크림" maxlength="100"><span class="char-count">10/100</span></div></div></div>
+      <div class="frow"><div class="flab">브랜드상품코드<span class="sub">(선택)</span></div><div class="fctrl"><input class="inp sm" value="SR-007"></div></div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 카테고리</div><div class="fctrl"><div class="two-col"><select class="sel"><option>스킨케어</option></select><select class="sel"><option>크림/로션</option></select><select class="sel"><option>나이트 크림</option></select></div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">가격</div>
+      <div class="frow"><div class="flab"><span class="req">*</span> 정가</div><div class="fctrl"><div class="unit-row"><input class="inp sm" value="46,000" maxlength="9"><span class="u">원</span></div><div class="hint">3자리마다 콤마(,) 자동 표시 · 숫자만 입력 · 최대 9,999,999원까지 입력 가능합니다.</div></div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 이미지</div>
+      <div class="img-sub-lab">대표 이미지<span class="req">*</span></div>
+      <div class="img-row"><div class="img-box" style="background:#0CA678"><span class="tag">대표</span></div></div>
+      <div class="img-sub-lab" style="margin-top:14px">커버 이미지<span style="color:var(--n-400)">(선택, 최대 4개)</span></div>
+      <div class="img-row"><div class="img-box" style="background:#087F5B"></div><div class="img-box add"><span>+</span><span>추가</span></div></div>
+    </div>
+    <div class="sec"><div class="sec-t">옵션<span class="sec-note">옵션 그룹 미사용</span></div>
+      <div class="frow"><div class="flab">옵션 그룹 사용</div><div class="fctrl"><div class="toggle-row"><div class="toggle"></div><span class="tl">미사용 (기본 조합 1개로 통일)</span></div></div></div>
+      <div class="frow"><div class="flab">재고 수량</div><div class="fctrl">
+        <table class="opt-tbl"><thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>
+        <tbody><tr><td style="color:var(--n-500)">기본 조합(옵션 없음)</td><td><input class="inp" style="height:30px;max-width:80px" value="31"></td><td class="badge-cell"><span class="badge b-success">진열</span></td></tr></tbody></table>
+        <div class="hint">대표 옵션·옵션가 개념 없이 재고 수량만 입력합니다 · 재고 0이면 자동으로 품절 표시 · 옵션 그룹을 켜면 조합별 옵션가·재고 입력으로 전환됩니다</div>
+        
+      </div></div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 설명</div>
+      <div class="editor-wrap">
+        <div class="editor-toolbar"><span>제목</span><span><b>B</b></span><span><i>I</i></span><span><u>U</u></span><span>목록</span><span>링크</span><span>이미지</span></div>
+        <div class="editor-body">밤사이 피부 장벽을 채워주는 리페어 나이트 크림입니다. 저녁 마지막 단계에 도톰하게 올려 흡수시켜 주세요.</div>
+      </div>
+    </div>
+    <div class="sec"><div class="sec-t"><span class="req">*</span> 상품 정보 제공 고시<span style="font-weight:400;color:var(--n-500);font-size:var(--fs-micro)"> (화장품)</span></div>
+      <div class="frow"><div class="flab">용량·중량</div><div class="fctrl"><input class="inp" value="50ml"></div></div>
+      <div class="frow"><div class="flab">제품 주요 사양</div><div class="fctrl"><input class="inp" value="피부타입: 전 피부용"></div></div>
+      <div class="frow"><div class="flab">사용기한·개봉 후 사용기간</div><div class="fctrl"><input class="inp" value="제조일로부터 24개월 · 개봉 후 12개월"></div></div>
+      <div class="frow"><div class="flab">사용방법</div><div class="fctrl"><input class="inp" value="제품 상세 참고"></div></div>
+      <div class="frow"><div class="flab">화장품제조업자·책임판매업자</div><div class="fctrl"><input class="inp" value="㈜○○코스메틱 (경기도 성남시 ○○구 ○○로 12)"></div></div>
+      <div class="frow"><div class="flab">제조국</div><div class="fctrl"><input class="inp" value="대한민국"></div></div>
+      <div class="frow"><div class="flab">전성분</div><div class="fctrl"><textarea class="ta">정제수, 세라마이드엔피 외 24종</textarea></div></div>
+      <div class="frow"><div class="flab">기능성 화장품 식약처 심사필 여부</div><div class="fctrl"><select class="sel"><option>해당사항 없음</option></select></div></div>
+      <div class="frow"><div class="flab">사용 시 주의사항</div><div class="fctrl"><textarea class="ta">상처 부위, 습진 및 피부염 부위에는 사용을 자제하세요.</textarea></div></div>
+      <div class="frow"><div class="flab">품질보증기준</div><div class="fctrl"><input class="inp" value="공정거래위원회 소비자분쟁해결기준에 따라 보상"></div></div>
+      <div class="frow"><div class="flab">소비자상담 전화번호</div><div class="fctrl"><input class="inp" value="02-1234-5678"></div></div>
+    </div>
+    <div class="save-hint">이미 재검토 대기 상태입니다 · 저장하면 검토 대상 내용이 갱신됩니다</div>
+    <div class="btn-row"><button class="btn btn-danger" disabled title="공구 준비~종료 구간에 연결된 상품은 삭제할 수 없습니다(진열 상태와 무관)" style="margin-right:auto">상품 삭제</button><button class="btn btn-secondary">취소</button><button class="btn btn-primary">저장</button></div>
+  </div>
+  <div class="side-col">
+    <div class="st-card"><div class="st-card-h">상태 관리</div>
+      <div class="st-now">
+        <div class="st-line"><span class="st-lbl">진열 상태</span><span class="badge b-warning">재검토 대기</span></div>
+        <div class="st-line"><span class="st-lbl">공구 상태</span><span class="badge b-info">진행중</span></div>
+      </div>
+    </div>
+    <div class="st-card"><div class="st-card-h">처리 이력<span class="n"> · 최신순</span></div>
+      <div class="hist">
+        <div class="hitem"><div class="hdot wn"></div><div><div class="htxt">브랜드가 상품 정보 수정(재검토 대기로 전환)</div><div class="hmeta">2026.07.31 09:40</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">공구 시작 — 진행중</div><div class="hmeta">2026.07.25 09:00</div></div></div>
+        <div class="hitem"><div class="hdot ok"></div><div><div class="htxt">상품 등록</div><div class="hmeta">2026.07.02 14:20</div></div></div>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<!-- ═════════ C1. 상품 삭제 확인 모달 ═════════ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">C1</span><span class="state-label">상품 삭제 확인 모달</span>
+  <span class="state-spec">삭제 가능한 상품(B2·B3 등 공구 미연결 상태 기준) 위 오버레이 · 되돌릴 수 없음 경고</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">파트너센터</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">상품 관리</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">연결·소통</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">계약 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">판매 관리</span><span class="gcnt">12</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">문의 관리</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">상품 관리<span class="c-sub">› 상품 수정</span></div><div class="brand-chip">○○ 브랜드<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">상품 수정</div><div class="page-d">현재 상태: <b>진열</b></div></div></div>
+  <div class="card"><div class="sec"><div class="sec-t">기본 정보</div>
+    <div class="frow"><div class="flab">상품명</div><div class="fctrl"><input class="inp" value="비타민C 브라이트닝 크림" disabled></div></div>
+  </div></div>
+</div>
+<div class="overlay">
+  <div class="modal">
+    <div class="modal-h">상품 삭제</div>
+    <div class="modal-b"><b>비타민C 브라이트닝 크림</b> 상품을 삭제합니다. 삭제한 상품은 목록·수정 화면 어디에서도 복구할 수 없습니다.
+      <div class="modal-warn"><span>⚠</span><span>이미 발생한 주문·정산 이력이 있는 상품이라도 삭제되면 상품 정보 자체는 사라집니다. 계속하시겠습니까?</span></div>
+    </div>
+    <div class="modal-f"><button class="btn btn-secondary">취소</button><button class="btn btn-danger-solid">삭제</button></div>
+  </div>
+</div>
+  </div>
+</section>
+
+<script>
+// ── 목록 행 클릭 → 수정 폼으로 이동(데모) ──
+document.querySelectorAll('#edit-demo-target').forEach(function(){});
+document.querySelectorAll('.tcard tbody tr').forEach(function (tr) {
+  tr.addEventListener('click', function (e) {
+    if (e.target.closest('.actions')) return;
+    var target = document.getElementById('edit-demo-target');
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+
+// ── 상품 이미지 업로드(등록 폼 전용, 클릭 가능) ──
+var coverImages = [];
+function renderCover() {
+  var row = document.getElementById('img-row-cover');
+  if (!row) return;
+  row.innerHTML = '';
+  coverImages.forEach(function (img, idx) {
+    var cell = document.createElement('div');
+    cell.className = 'img-cell';
+    cell.innerHTML = '<div class="img-box" style="background-image:url(' + img.url + ');background-size:cover;background-position:center;"><span class="del-cover" data-i="' + idx + '" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,.55);color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:10px;cursor:pointer;">×</span></div>';
+    row.appendChild(cell);
+  });
+  if (coverImages.length < 4) {
+    var addCell = document.createElement('div');
+    addCell.className = 'img-cell';
+    addCell.innerHTML = '<div class="img-box add" id="img-cover-add"><span class="plus">+</span><span>추가</span><input type="file" class="img-file" accept=".jpg,.jpeg,.png" hidden></div><div class="err-cap" id="err-cap-cover"></div>';
+    row.appendChild(addCell);
+    addCell.querySelector('.img-box').addEventListener('click', function () { this.querySelector('input').click(); });
+    addCell.querySelector('input').addEventListener('change', function () {
+      var file = this.files[0]; if (!file) return;
+      coverImages.push({ url: URL.createObjectURL(file) });
+      renderCover();
+    });
+  }
+  row.querySelectorAll('.del-cover').forEach(function (el) {
+    el.addEventListener('click', function (e) { e.stopPropagation(); coverImages.splice(+this.dataset.i, 1); renderCover(); });
+  });
+}
+var mainImgBox = document.getElementById('img-main');
+if (mainImgBox) {
+  mainImgBox.addEventListener('click', function () { this.querySelector('input').click(); });
+  mainImgBox.querySelector('input').addEventListener('change', function () {
+    var file = this.files[0]; if (!file) return;
+    mainImgBox.style.backgroundImage = 'url(' + URL.createObjectURL(file) + ')';
+    mainImgBox.style.backgroundSize = 'cover';
+    mainImgBox.style.backgroundPosition = 'center';
+    mainImgBox.querySelector('.plus').style.display = 'none';
+  });
+}
+renderCover();
+
+// ── 옵션 그룹 로직(등록 폼 전용, 이전 인터랙티브 버전과 동일 동작) ──
+if (document.getElementById('opt-groups')) {
+  var groups = [
+    { name: '용량', items: ['30ml', '50ml'] }
+  ];
+  var stockMap = {};
+  var priceMap = {};
+  var repKey = null;
+  var optionsEnabled = true;
+
+  function cartesian(arrs) {
+    return arrs.reduce(function (acc, arr) {
+      var res = [];
+      acc.forEach(function (a) { arr.forEach(function (b) { res.push(a.concat([b])); }); });
+      return res;
+    }, [[]]);
+  }
+  function formatComma(s) { return (s || '').replace(/\B(?=(\d{3})+(?!\d))/g, ','); }
+  function bindCommaInput(el, maxVal, onChange) {
+    el.dataset.prevFormatted = el.value || '';
+    el.addEventListener('input', function () {
+      var cursorFromEnd = this.value.length - this.selectionStart;
+      var digitsOnly = this.value.replace(/[^0-9]/g, '');
+      if (maxVal && digitsOnly !== '' && Number(digitsOnly) > maxVal) {
+        this.value = this.dataset.prevFormatted;
+        return;
+      }
+      var formatted = formatComma(digitsOnly);
+      this.value = formatted;
+      this.dataset.prevFormatted = formatted;
+      var newPos = Math.max(0, formatted.length - cursorFromEnd);
+      this.setSelectionRange(newPos, newPos);
+      if (onChange) onChange(digitsOnly);
+    });
+  }
+  var OPTION_PRICE_MAX = 9999999;
+
+  function updateBadgeCell(tr, stockVal) {
+    var sold = stockVal !== '' && Number(stockVal) === 0;
+    var cell = tr.querySelector('.badge-cell');
+    cell.innerHTML = sold ? '<span class="badge b-neutral nodot">품절</span>' : '<span class="badge b-success">진열</span>';
+  }
+
+  function renderTable() {
+    var tbl = document.getElementById('opt-table');
+    if (!optionsEnabled) {
+      var k0 = '__default__';
+      var s0 = stockMap[k0] !== undefined ? stockMap[k0] : '';
+      var sold0 = s0 !== '' && Number(s0) === 0;
+      tbl.innerHTML = '<thead><tr><th>구성</th><th style="width:110px">재고 수량</th><th style="width:100px">진열 여부</th></tr></thead>' +
+        '<tbody><tr data-key="' + k0 + '"><td style="color:var(--n-500);text-align:left;">기본 조합(옵션 없음)</td>' +
+        '<td><input class="inp stock-inp" style="height:30px" data-key="' + k0 + '" value="' + formatComma(s0) + '"></td>' +
+        '<td class="badge-cell">' + (sold0 ? '<span class="badge b-neutral nodot">품절</span>' : '<span class="badge b-success">진열</span>') + '</td></tr></tbody>';
+      tbl.querySelectorAll('.stock-inp').forEach(function (el) {
+        bindCommaInput(el, null, function (d) { stockMap[el.dataset.key] = d; updateBadgeCell(el.closest('tr'), d); });
+      });
+      return;
+    }
+    var itemLists = groups.map(function (g) { return g.items.filter(function (x) { return x !== ''; }); });
+    var combos = itemLists.every(function (l) { return l.length; }) ? cartesian(itemLists) : [];
+    var keys = combos.map(function (c) { return c.join('|'); });
+    if (!repKey || keys.indexOf(repKey) === -1) { repKey = keys[0] || null; }
+    var head = '<tr>' + groups.map(function (g) { return '<th>' + (g.name || '그룹') + '</th>'; }).join('') +
+      '<th style="width:56px">대표</th><th style="width:110px">옵션가</th><th style="width:100px">재고 수량</th><th style="width:90px">진열 여부</th></tr>';
+    var body = combos.map(function (combo) {
+      var key = combo.join('|');
+      var stock = stockMap[key] !== undefined ? stockMap[key] : '';
+      var sold = stock !== '' && Number(stock) === 0;
+      var isRep = key === repKey;
+      var price = isRep ? '' : (priceMap[key] !== undefined ? priceMap[key] : '');
+      return '<tr data-key="' + key + '">' + combo.map(function (v) { return '<td style="text-align:left;">' + v + '</td>'; }).join('') +
+        '<td class="rep-cell"><input type="radio" class="rep-radio" name="rep-opt" data-key="' + key + '"' + (isRep ? ' checked' : '') + '></td>' +
+        '<td>' + (isRep ? '<span class="rep-tag">정가 적용</span>' : '<input class="inp price-inp" style="height:30px" data-key="' + key + '" value="' + formatComma(price) + '" placeholder="0">') + '</td>' +
+        '<td><input class="inp stock-inp" style="height:30px" data-key="' + key + '" value="' + formatComma(stock) + '"></td>' +
+        '<td class="badge-cell">' + (sold ? '<span class="badge b-neutral nodot">품절</span>' : '<span class="badge b-success">진열</span>') + '</td></tr>';
+    }).join('');
+    tbl.innerHTML = '<thead>' + head + '</thead><tbody>' + (body || '<tr><td colspan="' + (groups.length + 4) + '" style="color:var(--n-400);text-align:center;padding:16px;">그룹의 항목을 모두 입력하면 조합이 생성됩니다</td></tr>') + '</tbody>';
+    tbl.querySelectorAll('.stock-inp').forEach(function (el) {
+      bindCommaInput(el, null, function (d) { stockMap[el.dataset.key] = d; updateBadgeCell(el.closest('tr'), d); });
+    });
+    tbl.querySelectorAll('.price-inp').forEach(function (el) {
+      bindCommaInput(el, OPTION_PRICE_MAX, function (d) { priceMap[el.dataset.key] = d; });
+    });
+    tbl.querySelectorAll('.rep-radio').forEach(function (el) {
+      el.addEventListener('change', function () { repKey = this.dataset.key; renderTable(); });
+    });
+  }
+
+  function renderGroups() {
+    var wrap = document.getElementById('opt-groups');
+    wrap.innerHTML = '';
+    groups.forEach(function (g, gi) {
+      var div = document.createElement('div');
+      div.className = 'optgrp';
+      var itemsHtml = g.items.map(function (it, ii) {
+        return '<div class="opt-row" draggable="true" data-g="' + gi + '" data-i="' + ii + '"><span class="drag">↕</span><input class="inp iteminp" style="height:30px" data-g="' + gi + '" data-i="' + ii + '" value="' + it + '"><span class="del" data-g="' + gi + '" data-i="' + ii + '">×</span></div>';
+      }).join('');
+      div.innerHTML = '<div class="optgrp-h"><span class="gk">그룹 ' + (gi + 1) + ' · 그룹명</span>' +
+        '<input class="inp gname" style="height:30px" data-g="' + gi + '" value="' + g.name + '">' +
+        '<span class="optgrp-x" data-g="' + gi + '">그룹 삭제 ×</span></div>' +
+        '<div class="opt-rows">' + itemsHtml + '<div class="opt-addrow" data-g="' + gi + '">+ 항목 추가</div></div>';
+      wrap.appendChild(div);
+    });
+    var bridge = document.getElementById('gen-bridge');
+    if (groups.length >= 2) {
+      var total = groups.reduce(function (a, g) { return a * g.items.length; }, 1);
+      bridge.innerHTML = '↓ ' + groups.map(function (g) { return g.items.length; }).join(' × ') + ' 조합이 옵션 목록 <b>' + total + '행</b>으로 자동 생성됩니다';
+    } else { bridge.innerHTML = '그룹이 2개 이상이면 조합이 자동 생성됩니다'; }
+    document.getElementById('add-group').style.display = groups.length >= 3 ? 'none' : 'inline-flex';
+
+    wrap.querySelectorAll('.gname').forEach(function (el) { el.addEventListener('input', function () { groups[+this.dataset.g].name = this.value; renderTable(); }); });
+    wrap.querySelectorAll('.iteminp').forEach(function (el) { el.addEventListener('input', function () { groups[+this.dataset.g].items[+this.dataset.i] = this.value; renderTable(); }); });
+    wrap.querySelectorAll('.del').forEach(function (el) {
+      el.addEventListener('click', function () { var g = groups[+this.dataset.g]; if (g.items.length > 1) { g.items.splice(+this.dataset.i, 1); renderGroups(); renderTable(); } });
+    });
+    wrap.querySelectorAll('.opt-addrow').forEach(function (el) {
+      el.addEventListener('click', function () { var g = groups[+this.dataset.g]; if (g.items.length < 30) { g.items.push(''); renderGroups(); renderTable(); } });
+    });
+    wrap.querySelectorAll('.optgrp-x').forEach(function (el) {
+      el.addEventListener('click', function () { if (groups.length > 1) { groups.splice(+this.dataset.g, 1); renderGroups(); renderTable(); } });
+    });
+    var dragSrc = null;
+    wrap.querySelectorAll('.opt-row').forEach(function (row) {
+      row.addEventListener('dragstart', function () { dragSrc = { g: +this.dataset.g, i: +this.dataset.i }; this.classList.add('dragging'); });
+      row.addEventListener('dragend', function () { this.classList.remove('dragging'); });
+      row.addEventListener('dragover', function (e) { e.preventDefault(); this.classList.add('drag-over'); });
+      row.addEventListener('dragleave', function () { this.classList.remove('drag-over'); });
+      row.addEventListener('drop', function (e) {
+        e.preventDefault(); this.classList.remove('drag-over');
+        if (!dragSrc) return;
+        var toG = +this.dataset.g, toI = +this.dataset.i;
+        if (dragSrc.g !== toG) return;
+        var arr = groups[toG].items;
+        var moved = arr.splice(dragSrc.i, 1)[0];
+        arr.splice(toI, 0, moved);
+        dragSrc = null; renderGroups(); renderTable();
+      });
+    });
+  }
+
+  document.getElementById('add-group').addEventListener('click', function () {
+    if (groups.length < 3) { groups.push({ name: '', items: [''] }); renderGroups(); renderTable(); }
+  });
+  var optToggle = document.getElementById('opt-toggle');
+  optToggle.addEventListener('click', function () {
+    optToggle.classList.toggle('on');
+    var on = optToggle.classList.contains('on');
+    optionsEnabled = on;
+    document.getElementById('opt-group-wrap').style.display = on ? 'flex' : 'none';
+    document.getElementById('gen-bridge').style.display = on ? 'flex' : 'none';
+    optToggle.parentElement.querySelector('.tl').textContent = on ? '사용 중 (끄면 기본 조합 1개로 통일)' : '미사용 (기본 조합 1개로 통일)';
+    renderTable();
+  });
+
+  renderGroups();
+  renderTable();
+}
+</script>
+</body>
+</html>

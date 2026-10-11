@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.api.app.order.dto.UserOrderDto.TrackingContext;
 import showroomz.api.app.order.dto.UserOrderDto.TrackingState;
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.order.entity.DeliveryTrackingEvent;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
@@ -100,7 +101,9 @@ public class UserDeliveryTrackingService {
         return switch (state) {
             case NOT_SHIPPED -> UserOrderDto.TrackingHeadline.builder()
                     .text("배송 준비 중이에요")
-                    .sub(group == null || group.getShipDueAt() == null ? null
+                    // 공구 진행 중이면 기한이 아직 없다 — 약정 문구(마감 후 N영업일)를 그대로 보여 준다.
+                    .sub(group == null ? null : group.getShipDueAt() == null
+                            ? ShipDuePolicy.noticeText(group.getShipDueBusinessDays())
                             : group.getShipDueAt().format(DAY) + "까지 발송 예정이에요")
                     .build();
             case IN_TRANSIT -> {

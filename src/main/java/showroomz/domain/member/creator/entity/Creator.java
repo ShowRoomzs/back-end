@@ -103,6 +103,17 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "BANKBOOK_IMAGE_URL", length = 1024)
     private String bankbookImageUrl;
 
+    /**
+     * 주민등록번호 암호문 — 비사업자만(1009 기획 수정본 7-a). 원천징수 신고에만 복호화한다. 응답에 내리지 않는다.
+     * 저장 형식은 {@code PersonalDataCipher} 참조.
+     */
+    @Column(name = "RESIDENT_REGISTRATION_NUMBER_ENC", length = 255)
+    private String residentRegistrationNumberEnc;
+
+    /** 표시용 마스킹 — {@code 900101-1******}. 화면은 원문 대신 이 값을 읽는다. */
+    @Column(name = "RESIDENT_REGISTRATION_NUMBER_MASKED", length = 14)
+    private String residentRegistrationNumberMasked;
+
     public void completeRegistration(
             String showroomName,
             CreatorBusinessType businessType,
@@ -119,6 +130,16 @@ public class Creator extends BaseTimeEntity {
         this.accountNumber = accountNumber;
         this.bankbookImageUrl = bankbookImageUrl;
         this.isNewMember = false;
+    }
+
+    /** 주민등록번호 등록 — 온보딩이 유일한 수집 지점이다. 사업자는 null 로 지운다. */
+    public void registerResidentNumber(String encrypted, String masked) {
+        this.residentRegistrationNumberEnc = encrypted;
+        this.residentRegistrationNumberMasked = masked;
+    }
+
+    public boolean isResidentNumberRegistered() {
+        return residentRegistrationNumberEnc != null;
     }
 
     /**

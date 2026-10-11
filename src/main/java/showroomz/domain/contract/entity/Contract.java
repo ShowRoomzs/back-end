@@ -391,6 +391,17 @@ public class Contract extends BaseTimeEntity {
     }
 
     /**
+     * 체결을 완성한 서명 — 양측 중 나중에 서명한 쪽. 서명 순서가 브랜드 → 인플루언서라 같은 시각이면 인플루언서로 본다.
+     * 서명 시각이 하나라도 비면 null.
+     */
+    public ContractActorType lastSigner() {
+        if (brandSignedAt == null || creatorSignedAt == null) {
+            return null;
+        }
+        return brandSignedAt.isAfter(creatorSignedAt) ? ContractActorType.SELLER : ContractActorType.CREATOR;
+    }
+
+    /**
      * 공구 생성 게이트({@code ContractRepository.assignGroupBuy})가 DB에 쓴 값을 엔티티에도 반영한다.
      * 게이트 자체는 조건부 UPDATE가 막는다 — 이 메서드는 같은 트랜잭션의 응답이 새 값을 읽게 할 뿐이다.
      */

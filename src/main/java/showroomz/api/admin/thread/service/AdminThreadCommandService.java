@@ -66,9 +66,16 @@ public class AdminThreadCommandService {
         return new SendOutcome(messageAssembler.assembleOne(thread, result.message()), result.created());
     }
 
-    /** 누가 열든 운영팀의 읽음 위치가 앞으로 간다(0-5). */
+    /**
+     * 누가 열든 운영팀의 읽음 위치가 앞으로 간다(0-5). 이슈 쌍의 1:1 스레드는 no-op 이다 — PAIR 스레드에 운영팀 참가자 행을
+     * 두지 않는다(44 이슈 스레드 설계서 4-5 · 13-14 §13-4 모니터링 열람 규칙).
+     */
     public void markRead(Long threadId) {
-        messageThreadService.markReadByOperatorTeam(access.requireOperatorChannel(threadId));
+        MessageThread thread = access.requireReadable(threadId);
+        if (AdminThreadAccess.isPairThread(thread)) {
+            return;
+        }
+        messageThreadService.markReadByOperatorTeam(thread);
     }
 
     public PresignResponse presign(Long threadId, Long operatorId, PresignRequest request) {
@@ -83,7 +90,8 @@ public class AdminThreadCommandService {
     }
 
     /**
-     * 다운로드 URL 일괄 발급(파트너센터 · 스튜디오와 같은 규칙) — 첨부가 속한 스레드가 운영팀 채널인지로 판정한다.
+     * 다운로드 URL 일괄 발급(파트너센터 · 스튜디오와 같은 규칙) — 첨부가 속한 스레드를 열람할 수 있는지로 판정한다
+     * (운영팀 채널 · 이슈 스레드 · 이슈 쌍의 1:1 스레드 — 근거 자료는 말풍선 첨부에 있다 §42-1).
      * 상대가 보낸 첨부도 받을 수 있어야 한다. 하나라도 안 되면 전체를 거절한다.
      */
     @Transactional(readOnly = true)
@@ -92,7 +100,7 @@ public class AdminThreadCommandService {
         targets.stream()
                 .map(attachment -> attachment.getThread().getId())
                 .distinct()
-                .forEach(access::requireOperatorChannel);
+                .forEach(access::requireReadable);
         return attachmentService.createDownloadUrls(targets, ParticipantType.ADMIN, operatorId);
     }
 

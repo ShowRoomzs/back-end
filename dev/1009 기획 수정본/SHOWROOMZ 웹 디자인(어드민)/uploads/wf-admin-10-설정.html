@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-admin-10 · 설정 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+  .ftitle .src { font-weight:400; font-size:10.5px; color:#96771f; background:#fdf6e8; border:1px solid #e0c778; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:11px 20px; font-size:12.5px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .gnb-right { margin-left:auto; display:flex; align-items:center; gap:5px; }
+  .gnb-right .cnt { margin-left:0; }
+  .chev { font-size:9px; color:#8f8f8f; }
+  .gnb-item.on .chev { color:#ddd; }
+  .gnb-sub { padding:9px 20px 9px 44px; font-size:12px; color:#999; display:flex; align-items:center; }
+  .gnb-sub .cnt { margin-left:auto; background:#5a5a5a; color:#fff; border-radius:9px; font-size:10px; min-width:17px; height:17px; display:inline-flex; align-items:center; justify-content:center; padding:0 5px; }
+  .gnb-sub.on .cnt { background:#555; }
+  .gnb-sub.on { background:#333; color:#fff; border-left:2px solid #888; padding-left:42px; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub2 { font-weight:400; color:#999; font-size:12px; margin-left:6px; }
+  .op-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .op-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+  .subtabs { display:flex; gap:6px; margin-bottom:16px; }
+  .subtab { padding:7px 16px; border:1px solid #ccc; border-radius:16px; font-size:12px; color:#666; background:#fff; }
+  .subtab.on { background:#333; color:#fff; border-color:#333; }
+
+  /* 소셜 로그인 카드 */
+  .provider-card { display:flex; align-items:center; gap:16px; background:#fff; border:1px solid #e2e2e2; border-radius:10px; padding:16px 20px; margin-bottom:12px; }
+  .provider-icon { width:44px; height:44px; border-radius:10px; background:#eee; border:1px solid #ddd; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999; flex-shrink:0; }
+  .provider-info { flex:1; }
+  .provider-name { font-size:13.5px; font-weight:700; color:#333; }
+  .provider-desc { font-size:11.5px; color:#999; margin-top:2px; }
+  .status-area { text-align:right; margin-right:14px; }
+  .status-badge { border:1px solid #999; border-radius:10px; padding:2px 10px; font-size:11px; color:#444; }
+  .status-badge.ok { color:#3a7d3a; border-color:#3a7d3a; }
+  .status-badge.err { color:#a33; border-color:#a33; }
+  .changed-at { font-size:10.5px; color:#aaa; margin-top:4px; display:block; }
+  .vdiv { width:1px; height:36px; background:#eee; }
+  .toggle { width:44px; height:24px; border-radius:12px; position:relative; flex-shrink:0; }
+  .toggle.on { background:#333; }
+  .toggle.off { background:#ccc; }
+  .toggle::after { content:''; position:absolute; top:3px; width:18px; height:18px; border-radius:50%; background:#fff; }
+  .toggle.on::after { left:23px; }
+  .toggle.off::after { left:3px; }
+  .toggle-label { font-size:11.5px; font-weight:700; color:#555; min-width:32px; }
+
+  /* 목록 */
+  .filter-row { display:flex; gap:8px; margin-bottom:14px; align-items:center; flex-wrap:wrap; }
+  .fchip { border:1px solid #ccc; border-radius:14px; padding:5px 14px; font-size:12px; color:#555; background:#fff; }
+  .fchip.on { background:#333; color:#fff; border-color:#333; }
+  .search-box { margin-left:auto; border:1px solid #ccc; border-radius:6px; padding:6px 12px; font-size:12px; color:#999; background:#fff; width:230px; }
+  .list-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; font-size:12px; color:#888; }
+  .list-toolbar b { color:#333; }
+  .add-btn { border:1px solid #333; background:#333; color:#fff; border-radius:6px; padding:7px 14px; font-size:12px; font-weight:700; }
+
+  table.list { width:100%; border-collapse:collapse; font-size:12.5px; background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; }
+  table.list th { text-align:left; padding:11px 14px; background:#f6f6f6; color:#666; font-size:11.5px; border-bottom:1px solid #eee; font-weight:700; }
+  table.list td { padding:12px 14px; border-bottom:1px solid #f2f2f2; color:#444; vertical-align:middle; }
+  table.list tr:last-child td { border-bottom:none; }
+  .badge { border:1px solid #999; border-radius:10px; padding:1px 9px; font-size:10.5px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.live { background:#3a3a3a; color:#fff; border-color:#3a3a3a; }
+  .badge.off { background:#eee; color:#888; }
+  .badge.top { background:#96771f; color:#fff; border-color:#96771f; }
+  .mini-btn { border:1px solid #ccc; border-radius:4px; padding:5px 10px; font-size:11px; color:#555; background:#fff; white-space:nowrap; }
+  .mini-btn.danger { color:#a33; border-color:#e0b3b3; }
+  .p-sub { font-size:10.5px; color:#aaa; margin-top:2px; }
+
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:10px; margin-bottom:16px; }
+  .card-h { padding:13px 18px; border-bottom:1px solid #eee; font-size:13.5px; font-weight:700; }
+  .card-b { padding:16px 18px; }
+  .form-row { display:flex; border-bottom:1px solid #f2f2f2; padding:10px 0; font-size:12.5px; }
+  .form-row:last-child { border-bottom:none; }
+  .form-label { width:130px; flex-shrink:0; color:#888; }
+  .form-val { color:#333; flex:1; }
+
+  /* 모달 */
+  .modal-overlay { position:absolute; inset:0; background:rgba(0,0,0,.35); display:flex; align-items:center; justify-content:center; z-index:20; }
+  .modal { width:440px; background:#fff; border-radius:10px; box-shadow:0 4px 20px rgba(0,0,0,.2); overflow:hidden; }
+  .modal-h { padding:18px 20px; font-size:15px; font-weight:800; border-bottom:1px solid #eee; }
+  .modal-b { padding:18px 20px; font-size:13px; color:#555; line-height:1.7; }
+  .modal-b .sel { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:6px 0 10px; }
+  .modal-b .inp { width:100%; border:1px solid #ccc; border-radius:6px; padding:9px 10px; font-size:12.5px; color:#666; margin:6px 0 10px; }
+  .modal-f { display:flex; gap:8px; padding:14px 20px; border-top:1px solid #eee; }
+  .modal-btn { flex:1; padding:11px 0; text-align:center; border-radius:6px; font-size:13px; font-weight:700; border:1px solid #ccc; background:#fff; color:#555; }
+  .modal-btn.do { background:#a33; color:#fff; border-color:#a33; }
+  .modal-btn.doa { background:#333; color:#fff; border-color:#333; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:6px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.rule .tag { color:#555; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>⑤ 어드민 · 10. 설정 <span>wf-admin-10 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · 소셜 로그인 설정(<b>기존 목업 베이스</b> — 간편_로그인_설정.html) · 운영자 계정 관리(신규 — ③ §16-1 "운영자 계정 = 내부 계정, 초기 2~3개")</div>
+  <div class="spec">프레임 1440×1024 · 운영자 계정은 별도 가입·심사 없음, 최고관리자가 직접 추가</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 소셜 로그인 설정 ============ -->
+<div class="ftitle">1. 소셜 로그인 설정 <span>— 프로바이더별 연동 상태·활성화 토글</span><span class="pill">GNB #10 · F1</span><span class="src">기존 목업 베이스 · 간편_로그인_설정.html</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settings/social-login</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item on"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-sub on">소셜 로그인 설정</div>
+      <div class="gnb-sub">운영자 계정 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">설정 <span class="sub2">/ 소셜 로그인 설정</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="provider-card">
+          <div class="provider-icon">카카오</div>
+          <div class="provider-info"><div class="provider-name">카카오 로그인</div><div class="provider-desc">카카오 계정으로 간편 로그인</div></div>
+          <div class="status-area"><span class="status-badge ok">● 연동 정상</span><span class="changed-at">마지막 변경 2026.01.05</span></div>
+          <div class="vdiv"></div>
+          <div class="toggle on"></div>
+          <div class="toggle-label">활성</div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon">네이버</div>
+          <div class="provider-info"><div class="provider-name">네이버 로그인</div><div class="provider-desc">네이버 계정으로 간편 로그인</div></div>
+          <div class="status-area"><span class="status-badge ok">● 연동 정상</span><span class="changed-at">마지막 변경 2026.01.05</span></div>
+          <div class="vdiv"></div>
+          <div class="toggle on"></div>
+          <div class="toggle-label">활성</div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon">구글</div>
+          <div class="provider-info"><div class="provider-name">구글 로그인</div><div class="provider-desc">Google 계정으로 간편 로그인</div></div>
+          <div class="status-area"><span class="status-badge err">● 연동 오류</span><span class="changed-at">마지막 변경 2026.03.12</span></div>
+          <div class="vdiv"></div>
+          <div class="toggle off"></div>
+          <div class="toggle-label" style="color:#999">비활성</div>
+        </div>
+        <div class="provider-card">
+          <div class="provider-icon">애플</div>
+          <div class="provider-info"><div class="provider-name">애플 로그인</div><div class="provider-desc">Apple ID로 간편 로그인</div></div>
+          <div class="status-area"><span class="status-badge err">● 연동 오류</span><span class="changed-at">— (미연동)</span></div>
+          <div class="vdiv"></div>
+          <div class="toggle off"></div>
+          <div class="toggle-label" style="color:#999">비활성</div>
+        </div>
+        <div class="note rule"><span class="tag">[규칙]</span> 비활성화 시 해당 프로바이더로 <b>신규 가입만 차단</b> — 기존 가입자의 로그인 자체를 막지는 않음(② draft36 §13, 확장 가능 항목은 별도 확정 필요). 연동 오류는 발급키·리다이렉트 URI 설정 이슈로 실제 원인은 김화창 확인 필요.</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F2. 운영자 계정 목록 ============ -->
+<div class="ftitle">2. 운영자 계정 관리 <span>— 내부 계정, 별도 가입·심사 없음</span><span class="pill">GNB #10 · F2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settings/operators</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item on"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">소셜 로그인 설정</div>
+      <div class="gnb-sub on">운영자 계정 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">설정 <span class="sub2">/ 운영자 계정 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content">
+        <div class="filter-row">
+          <span class="fchip on">전체 3</span>
+          <span class="fchip">활성 2</span>
+          <span class="fchip">비활성 1</span>
+          <div class="search-box">이름 · 이메일 검색</div>
+        </div>
+        <div class="list-toolbar"><span>총 <b>3</b>건</span><span class="add-btn">＋ 운영자 계정 추가</span></div>
+        <table class="list">
+          <thead><tr>
+            <th style="width:110px">이름</th>
+            <th>이메일(로그인 ID)</th>
+            <th style="width:110px">역할</th>
+            <th style="width:80px">상태</th>
+            <th style="width:130px">마지막 로그인</th>
+            <th style="width:100px">등록일</th>
+            <th style="width:90px">관리</th>
+          </tr></thead>
+          <tbody>
+            <tr><td>소 대표</td><td>founder@showroomz.co.kr</td><td><span class="badge top">최고관리자</span></td><td><span class="badge live">활성</span></td><td>2026.07.17 09:12</td><td>2026.01.01</td><td><span class="mini-btn">역할 변경</span></td></tr>
+            <tr><td>김운영</td><td>kim.op@showroomz.co.kr</td><td><span class="badge">운영자</span></td><td><span class="badge live">활성</span></td><td>2026.07.17 08:40</td><td>2026.02.15</td><td><span class="mini-btn">역할 변경</span> <span class="mini-btn danger">비활성화</span></td></tr>
+            <tr><td>이전운영</td><td>lee.former@showroomz.co.kr</td><td><span class="badge">운영자</span></td><td><span class="badge off">비활성</span><div class="p-sub">퇴사 처리 2026.05.20</div></td><td>2026.05.19 17:02</td><td>2026.03.01</td><td><span class="mini-btn">재활성화</span></td></tr>
+          </tbody>
+        </table>
+        <div class="note rule"><span class="tag">[규칙]</span> 운영자 계정은 <b>내부 계정</b> — 소비자·브랜드·인플루언서처럼 셀프 가입·입점 심사 절차 없음. <b>최고관리자만 계정 추가·역할 변경·비활성화 가능</b>. 역할은 최고관리자/운영자 2단계(세부 권한 분리는 확장 가능).</div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F3. 운영자 계정 추가 모달 ============ -->
+<div class="ftitle">3. 운영자 계정 추가 모달 <span>— 이름·이메일·역할 지정, 임시 비밀번호 발급</span><span class="pill">GNB #10 · F3</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settings/operators</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item on"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">소셜 로그인 설정</div>
+      <div class="gnb-sub on">운영자 계정 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">설정 <span class="sub2">/ 운영자 계정 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="card" style="opacity:.4"><div class="card-h">운영자 계정 목록</div><div class="card-b"><div class="form-row"><div class="form-label">이름</div><div class="form-val">소 대표</div></div></div></div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">운영자 계정 추가</div>
+            <div class="modal-b">
+              <div style="font-size:11.5px;color:#888">이름 <span style="color:#a33">*</span></div>
+              <input class="inp" placeholder="예: 박신입">
+              <div style="font-size:11.5px;color:#888">이메일(로그인 ID) <span style="color:#a33">*</span></div>
+              <input class="inp" placeholder="park.new@showroomz.co.kr">
+              <div style="font-size:11.5px;color:#888">역할 <span style="color:#a33">*</span></div>
+              <select class="sel"><option>운영자</option><option>최고관리자</option></select>
+              <div style="font-size:11px;color:#999;margin-top:4px">등록 즉시 임시 비밀번호가 이메일로 발송되며, 최초 로그인 시 변경을 요구합니다.</div>
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn doa">추가</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ F4. 운영자 계정 비활성화 확인 모달 ============ -->
+<div class="ftitle">4. 운영자 계정 비활성화 모달 <span>— 확인만, 데이터·이력은 보존</span><span class="pill">GNB #10 · F4</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">admin.showroomz.com/settings/operators</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">어드민</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 입점 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">3</span> 회원 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">4</span> 상품 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">6</span> 거래 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">8</span> CS·콘텐츠 관리 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item"><span class="n">9</span> 게시물·소통 모니터링 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-item on"><span class="n">10</span> 설정 <span class="gnb-right"><i class="chev">▾</i></span></div>
+      <div class="gnb-sub">소셜 로그인 설정</div>
+      <div class="gnb-sub on">운영자 계정 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">설정 <span class="sub2">/ 운영자 계정 관리</span></div><div class="op-chip">김운영 운영자 <span class="st">최고관리자</span></div></div>
+      <div class="content" style="position:relative;">
+        <div class="card" style="opacity:.4"><div class="card-h">운영자 계정 목록</div><div class="card-b"><div class="form-row"><div class="form-label">이름</div><div class="form-val">김운영</div></div></div></div>
+        <div class="modal-overlay">
+          <div class="modal">
+            <div class="modal-h">운영자 계정 비활성화</div>
+            <div class="modal-b">
+              <b>김운영</b> 계정을 비활성화하시겠습니까? 비활성화 즉시 어드민 로그인이 차단되며, <b>기존 처리 이력·감사 기록은 그대로 보존</b>됩니다(삭제 아님, 재활성화 가능).
+            </div>
+            <div class="modal-f">
+              <div class="modal-btn">취소</div>
+              <div class="modal-btn do">비활성화</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foldline"></div>
+    </div>
+  </div>
+</div>
+
+<div class="note rule" style="margin:20px 40px 0"><span class="tag">[규칙]</span> 운영자 계정 비활성화는 삭제가 아니라 <b>로그인 차단 + 재활성화 가능한 가역 상태</b> — 과거 감사 기록(처리자 표기)의 무결성을 위해 계정 자체를 지우지 않음.</div>
+
+</div>
+</body>
+</html>

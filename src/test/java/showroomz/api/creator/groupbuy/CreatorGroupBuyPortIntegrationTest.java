@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -141,14 +142,16 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("B8: 정산 모듈의 확정 리워드와 계약 고정 지급비만 공제 전 합계로 묶는다")
+    @DisplayName("B8: 정산 블록은 정산 관리의 확정 리워드 · 정산 id 만 — 고정 지급비 합산은 삭제(§41-1 #14 · 44 어드민 설계서 8-7)")
     void settlementAmountUsesConfirmedRewardOnly() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.SETTLED);
         when(settlementReader.readConfirmedReward(groupBuy.getId())).thenReturn(Optional.of(867_672L));
+        when(settlementReader.readSettlementId(groupBuy.getId())).thenReturn(Optional.of(41L));
 
-        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.settlement.fixedFeeAmount").value(300_000))
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.settlement.fixedFeeAmount").doesNotExist())
                 .andExpect(jsonPath("$.settlement.confirmedReward").value(867_672))
-                .andExpect(jsonPath("$.settlement.totalBeforeDeduction").value(1_167_672))
+                .andExpect(jsonPath("$.settlement.settlementId").value(41))
+                .andExpect(jsonPath("$.settlement.totalBeforeDeduction").doesNotExist())
                 .andExpect(jsonPath("$.settlement.netPaidAmount").doesNotExist())
                 .andExpect(jsonPath("$.payout").doesNotExist());
 
@@ -158,6 +161,7 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("C6→B12: 스레드 생성과 미이행 기록은 한 거래이고 양측 동의 뒤에만 정산 보류를 풀 수 있다")
     void unfulfilledCreatesThreadAndRequiresAgreementToReleaseHold() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
@@ -195,13 +199,9 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("판매 포트가 미종결 주문을 모르면 양측 이행 확인 뒤에도 정산 게이트는 열리지 않는다")
+    @DisplayName("판매 포트가 미종결 주문을 모르면 정산 게이트는 열리지 않는다 — 이행 확인은 게이트가 아니다(2026-10-06 폐기)")
     void unknownClosureCannotStartSettlement() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
-        studioAction(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
-        action(groupBuy.getId(), "fulfillment-check", Map.of("result", "FULFILLED"))
-                .andExpect(status().isOk());
 
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.empty());
         assertThat(groupBuyCommandService.isSettlementReady(groupBuy.getId())).isFalse();

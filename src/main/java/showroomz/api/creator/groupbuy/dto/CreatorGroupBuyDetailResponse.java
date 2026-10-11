@@ -107,7 +107,10 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(example = "12") Long contractId,
             @Schema(description = "계약번호", example = "CTR-20260728-012") String contractNumber,
             @Schema(description = "체결 시각", example = "2026-08-03T15:30:00") LocalDateTime concludedAt,
-            @Schema(description = "콘텐츠 게시 완료 기한", example = "2026-08-18", nullable = true) LocalDate contentDueDate) {
+            @Schema(description = "콘텐츠 게시 완료 기한", example = "2026-08-18", nullable = true) LocalDate contentDueDate,
+            @Schema(description = "체결 서명자 — 양측 중 나중에 서명한 쪽의 표시명(인플루언서는 쇼룸명, 브랜드는 브랜드명). "
+                    + "이력 맨 아래 「계약 체결완료 · concludedAt · 서명자」 줄은 FE 가 그린다. 서명 시각이 없으면 null",
+                    example = "뷰티_소연", nullable = true) String concludedSignerName) {
     }
 
     @Schema(description = "공구 상품 = 계약 상품 전부. 정가·최소 준비 물량은 싣지 않는다 — 브랜드 소관이다(B1)")
@@ -361,16 +364,19 @@ public record CreatorGroupBuyDetailResponse(
     }
 
     public record Settlement(
-            @Schema(description = "정산 완료 시각", example = "2026-09-05T15:00:00") LocalDateTime settledAt,
-            @Schema(description = "고정 지급비(원) — 계약 금액. 실제 수령 여부와 무관", example = "300000", nullable = true)
+            @Schema(description = "정산 완료 시각", example = "2026-09-05T15:00:00", nullable = true) LocalDateTime settledAt,
+            @Schema(description = "**폐기 — 항상 null.** 고정 지급비 합산은 §41-1 #14 로 삭제됐다(44 어드민 설계서 8-7)",
+                    nullable = true, deprecated = true)
             Integer fixedFeeAmount,
-            @Schema(description = "정산 모듈이 확정한 리워드(원) — 모듈 연동 전이면 null", nullable = true) Long confirmedReward,
-            @Schema(description = "공제 전 합계 = 고정 지급비 + 확정 리워드. 확정 리워드를 모르면 null", nullable = true)
-            Long totalBeforeDeduction
+            @Schema(description = "정산 관리가 확정한 리워드(원 · 합의 후 · 차감 전) — 지급 완료 전이면 null", nullable = true)
+            Long confirmedReward,
+            @Schema(description = "**폐기 — 항상 null.** 고정 지급비 합산 삭제(§41-1 #14)", nullable = true, deprecated = true)
+            Long totalBeforeDeduction,
+            @Schema(description = "정산 — 「정산 관리 ↗」 링크(스튜디오 12 상세)", nullable = true) Long settlementId
     ) {
     }
 
-    public record AfterEnd(@Schema(description = "계약 이행 확인") Fulfillment fulfillment) {
+    public record AfterEnd(@Schema(description = "**폐기(2026-10-06) — 항상 null.** 계약 이행 확인이 없어졌다. 종료 후 화면은 orderClosure 로 그린다", nullable = true, deprecated = true) Fulfillment fulfillment) {
     }
 
     public record Fulfillment(
@@ -423,7 +429,7 @@ public record CreatorGroupBuyDetailResponse(
             boolean canEditPost,
             @Schema(description = "[수락] · [거절](연장) — 연장 PENDING ∧ IN_PROGRESS ∧ 현재 시각 < 종료 시각") boolean canRespondExtension,
             @Schema(description = "[공구 중단 요청] — IN_PROGRESS ∧ 검토 중 요청 없음 ∧ 게시물 숨김 아님") boolean canRequestSuspension,
-            @Schema(description = "[이행 확인] — ENDED ∧ 내 확인 전(기한 경과 무관)") boolean canCheckFulfillment,
+            @Schema(description = "[이행 확인] — **폐기(2026-10-06) · 항상 false**", deprecated = true) boolean canCheckFulfillment,
             @Schema(description = "[스레드 열기] — 브랜드와의 PAIR 스레드가 있을 때") boolean canOpenPairThread
     ) {
     }

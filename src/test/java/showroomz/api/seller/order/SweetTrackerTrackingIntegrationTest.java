@@ -315,9 +315,13 @@ class SweetTrackerTrackingIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("쿠팡택배(스마트택배 미지원) — 조회하지 않는다 · 배송완료가 오지 않고 24시간 뒤 집화 확인 필요(오경보 · 설계서 7절 #3)")
+        @DisplayName("쿠팡택배로 이미 등록된 옛 송장 — 새로 고를 수는 없지만(1009 기획 수정본 4절) 남은 행은 조회하지 않는다 · 24시간 뒤 집화 확인 필요")
         void coupangIsNeverPolled() throws Exception {
-            OrderDeliveryGroup group = shipped(preparingGroup(), "COUPANG", "810000000037");
+            registerShipment(preparingGroup().getId(), "COUPANG", "810000000039").andExpect(status().isOk())
+                    .andExpect(jsonPath("$.succeeded").value(0))
+                    .andExpect(jsonPath("$.skipped[0].code").value("CARRIER_INVALID"));
+            OrderDeliveryGroup group = shipped(preparingGroup(), "CJ", "810000000037");
+            jdbc.update("UPDATE order_delivery_group SET carrier = 'COUPANG' WHERE delivery_group_id = ?", group.getId());
             backdateShippedAt(group, LocalDateTime.now().minusHours(25));
             server.expect(never(), anything());
 

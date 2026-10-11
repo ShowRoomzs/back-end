@@ -52,6 +52,20 @@ public class SellerBasicInfoController implements SellerBasicInfoControllerDocs 
     }
 
     @Override
+    @GetMapping("/delivery-policy")
+    public ResponseEntity<SellerBasicInfoDto.DeliveryPolicyResponse> getDeliveryPolicy() {
+        return ResponseEntity.ok(sellerBasicInfoService.getDeliveryPolicy(getCurrentSellerEmail()));
+    }
+
+    @Override
+    @PutMapping("/delivery-policy")
+    public ResponseEntity<Void> updateDeliveryPolicy(
+            @Valid @RequestBody SellerBasicInfoDto.UpdateDeliveryPolicyRequest request) {
+        sellerBasicInfoService.updateDeliveryPolicy(getCurrentSellerEmail(), request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Override
     @GetMapping("/account")
     public ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> getAccountInfo() {
         return ResponseEntity.ok(sellerBasicInfoService.getAccountInfo(getCurrentSellerEmail()));

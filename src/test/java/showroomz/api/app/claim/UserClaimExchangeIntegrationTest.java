@@ -445,8 +445,8 @@ class UserClaimExchangeIntegrationTest extends SellerOrderTestSupport {
     }
 
     private static Map<String, Object> rejectBody() {
-        return Map.of("reasonCode", "USED", "detail", "사용 흔적이 있습니다.",
-                "evidenceImageUrls", List.of("https://img.test/e1.jpg"));
+        return Map.of("reasonCode", "USED", "detail", "사용 흔적이 있습니다.", "legalBasis", "ART17_2_2",
+                "consumerMessage", "사용 흔적이 있습니다.", "evidenceImageUrls", List.of("https://img.test/e1.jpg"));
     }
 
     private ResultActions create(Map<String, Object> body) throws Exception {

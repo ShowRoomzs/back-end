@@ -14,13 +14,14 @@ public enum ImageType {
     SIGNUP_DOCUMENT, // 판매자 회원가입 증빙 서류
     CREATOR_DOCUMENT, // 크리에이터 추가 정보(사업자등록증·통장사본 등)
     CHANGE_REQUEST_DOCUMENT, // 브랜드 기본정보 변경 요청 증빙(§15-6)
-    SHOWROOM_PROFILE; // 쇼룸 프로필 이미지(§22-1) — 소비자 공개, 앱 계정 프로필(PROFILE)과 별개
+    SHOWROOM_PROFILE, // 쇼룸 프로필 이미지(§22-1) — 소비자 공개, 앱 계정 프로필(PROFILE)과 별개
+    CLAIM; // 반품·교환 사진 — 소비자 신청 사진(C10-3) · 브랜드 검수 반려 증빙(§35). 양쪽이 서로의 사진을 본다
 
     public static final Set<ImageType> USER_ALLOWED_TYPES =
-            EnumSet.of(PROFILE, REVIEW, INQUIRY);
+            EnumSet.of(PROFILE, REVIEW, INQUIRY, CLAIM);
 
     public static final Set<ImageType> SELLER_ALLOWED_TYPES =
-            EnumSet.of(MARKET, PRODUCT, CHANGE_REQUEST_DOCUMENT);
+            EnumSet.of(MARKET, PRODUCT, CHANGE_REQUEST_DOCUMENT, CLAIM);
 
     public static final Set<ImageType> CREATOR_ALLOWED_TYPES =
             EnumSet.of(POST, PRODUCT, MARKET, SHOWROOM_PROFILE);

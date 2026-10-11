@@ -82,6 +82,60 @@ public class OrderProperties {
     /** 발주서 1회 대상 하위주문 상한 — 넘으면 조용히 자르지 않고 400 으로 나눠 받게 한다. */
     private int purchaseOrderMaxGroups = 2000;
 
+    // ------------------------------------------------------------------ 환불 집행(1009 기획 수정본 2-4)
+
+    /** 환불 재시도 배치(10분) — 커밋 뒤 집행을 놓친 대기 건 · 실패 건 재시도 · 결과 미확인 건 정리. */
+    private boolean refundRetrySchedulerEnabled = true;
+
+    /** PG 자동 환불의 자동 시도 상한 — 넘으면 어드민 환불 관리 「실패」 탭에서 운영자가 재시도한다(시안 1회 재시도). */
+    private int refundAutoMaxAttempts = 2;
+
+    /** 결과 미확인으로 집행 중에 머문 건을 포트원 조회로 정리하기까지의 대기(분). */
+    private int refundStaleMinutes = 30;
+
+    // ------------------------------------------------------------------ 취소 요청(1009 기획 수정본 3절)
+
+    /** 취소 요청 응답 기한 — 요청 + N영업일. 지나면 자동 승인되고 PG 가 즉시 환불한다(거래 관리 결정 8 · 15). */
+    private int cancelRequestRespondBusinessDays = 1;
+
+    /** 취소 요청 자동 승인 배치(10분). */
+    private boolean cancelRequestAutoApproveSchedulerEnabled = true;
+
+    // ------------------------------------------------------------------ 처리 지연 자동 알림(1009 기획 수정본 8-4)
+
+    private boolean overdueNoticeSchedulerEnabled = true;
+
+    /** 자동 알림 N회 무응답이면 어드민 대행(송장 대행 · 직권 취소)이 열린다 — 근거 대기(시안 3회). */
+    private int actOnBehalfNoticeThreshold = 3;
+
+    // ------------------------------------------------------------------ 어드민 예외 관리(06d · 40 설계서 1-4)
+
+    private ExceptionMonitor exception = new ExceptionMonitor();
+
+    /** {@code order.exception.*} — 근거 대기 값이라 전부 설정값이다. 확정되면 yml 한 줄이다. */
+    @Getter
+    @Setter
+    public static class ExceptionMonitor {
+
+        /** 재발송 지연 — 검수 통과 · 재발송비 결제 + N영업일(§40-4 A-4 · 근거 대기). 자동 알림은 없다. */
+        private int reshipDueBusinessDays = 2;
+
+        /** 회수 송장 미조회 — 소비자 입력 송장도 집화 확인과 같은 N시간. */
+        private int collectionUnscannedHours = 24;
+
+        /** 사이드바 배지 범위 — ALL(처리 지연 + 배송 예외 · 시안 7) · DELAY(처리 지연만). §40-4 B-5 확정 대기. */
+        private String badgeScope = "ALL";
+
+        /** 원천 조회 상한(유형별) — 예외는 작은 집합이다. 닿으면 배치 장애 신호라 경고 로그를 남긴다(40 설계서 0-3). */
+        private int fetchLimit = 1000;
+
+        /**
+         * 추적 정지 종결(41 보고 3번 · 권고 3) — 마지막 추적(없으면 발송)으로부터 N일이 지나면 운영자가 분실 · 배송완료를 판정할 수
+         * 있다(조건 · 자동 처리 없음). §34-13 #4 의 +28일 폴백 값 · 법무 확정 대기.
+         */
+        private int stalledResolveDays = 28;
+    }
+
     // ------------------------------------------------------------------ 반품·교환(35 설계서 · 앱 클레임 설계서)
 
     private Claim claim = new Claim();

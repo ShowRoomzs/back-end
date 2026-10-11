@@ -1,0 +1,378 @@
+package showroomz.domain.settlement;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import showroomz.api.common.settlement.SettlementTestSupport;
+import showroomz.domain.groupbuy.entity.GroupBuyHistory;
+import showroomz.domain.groupbuy.type.GroupBuyEventType;
+import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.entity.SettlementItem;
+import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.type.PayoutStatus;
+import showroomz.domain.settlement.type.SettlementEventType;
+import showroomz.domain.settlement.type.SettlementItemStatus;
+import showroomz.domain.settlement.type.SettlementPayee;
+import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.config.properties.SettlementProperties;
+import showroomz.global.scheduler.SettlementGenerationScheduler;
+
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * 정산 생성(44 어드민 설계서 2절 · 구현 계획서 4-4) — ST-03 · ST-04 · ST-12(1/2). 배치는 꺼져 있고 생성 서비스를 직접 부른다.
+ */
+@DisplayName("정산 생성 — 주문 전부 종결 · 스냅샷 · 공구 포트")
+class SettlementGenerationIntegrationTest extends SettlementTestSupport {
+
+    /** 2026-10-02(금) 15:00 — 10.05 개천절 대체 · 10.09 한글날이 끼는 주. */
+    private static final LocalDateTime GENERATED_AT = LocalDateTime.of(2026, 10, 2, 15, 0);
+
+    @Autowired(required = false)
+    private SettlementGenerationScheduler scheduler;
+    @Autowired
+    private SettlementProperties settlementProperties;
+
+    @Test
+    @DisplayName("ST-03 미종결 1건이면 정산 없음 → 종결 뒤 생성 · 확인 마감 = 다음 영업일부터 3영업일째 23:59:59(공휴일 건너뜀)")
+    void generatesOnlyAfterAllOrdersClosed() {
+        fixHolidays();
+        OrderDeliveryGroup confirmed = confirmedGroup(creamVariant, 1);
+        OrderDeliveryGroup open = preparing(paidGroup());
+        endGroupBuy();
+
+        assertThat(generationService.generate(groupBuy.getId(), GENERATED_AT)).isEmpty();
+        assertThat(settlementRepository.findByGroupBuyId(groupBuy.getId())).isEmpty();
+
+        cancelledBySeller(open);
+        Settlement settlement = generate(GENERATED_AT);
+
+        assertThat(settlement.getStatus()).isEqualTo(SettlementStatus.REVIEWING);
+        assertThat(settlement.getSettlementNumber()).isEqualTo("STL-2610-001");
+        // 10.02(금) 생성 → 10.05 공휴일 · 10.06 · 10.07 · 10.08 → 10.08 23:59:59
+        assertThat(settlement.getReviewDueAt()).isEqualTo(LocalDateTime.of(2026, 10, 8, 23, 59, 59));
+        assertThat(settlement.getCreatedAt()).isEqualTo(GENERATED_AT);
+        assertThat(settlement.getGrossOrderAmount()).isEqualTo(2L * CREAM_PRICE);
+        assertThat(settlement.getCancelDeduction()).isEqualTo(CREAM_PRICE);
+        assertThat(settlement.getCancelCount()).isEqualTo(1);
+        assertThat(settlement.getConfirmedSalesAmount()).isEqualTo(CREAM_PRICE);
+        assertThat(settlement.getOrdersClosedAt()).isNotNull();
+        assertThat(itemsOf(settlement)).extracting(SettlementItem::getDeliveryGroupId, SettlementItem::getStatus)
+                .containsExactlyInAnyOrder(tuple(confirmed.getId(), SettlementItemStatus.CONFIRMED),
+                        tuple(open.getId(), SettlementItemStatus.CANCELLED));
+        // 두 번째 생성은 없다 — 공구 1건 = 정산 1건.
+        assertThat(generationService.generate(groupBuy.getId(), GENERATED_AT)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("금액 스냅샷 — 리워드는 항목별 단가 × 반영 수량 · 소비자 배송비 가산 · 검산 · 명세 행 = 항목 수 · payout 3행 WAITING · 이력")
+    void snapshotAmounts() {
+        OrderDeliveryGroup creams = confirmedGroup(creamVariant, 2);   // 54,400 · 무료배송
+        OrderDeliveryGroup serum = confirmedGroup(serumVariant, 1);    // 24,000 + 배송비
+        endGroupBuy();
+
+        Settlement s = generate(GENERATED_AT);
+
+        long deliveryFees = creams.getDeliveryFee() + serum.getDeliveryFee();
+        long confirmedSales = 2L * CREAM_PRICE + SERUM_PRICE;
+        long reward = 2L * (CREAM_PRICE * 12 / 100) + SERUM_PRICE * 10 / 100;   // 3,264 × 2 + 2,400
+        long rewardVat = reward / 10;
+        long pgFee = confirmedSales * 3 / 100;
+        long withholding = reward * 3 / 100 + reward * 3 / 1000;
+        assertThat(s.getConfirmedSalesAmount()).isEqualTo(confirmedSales);
+        assertThat(s.getConsumerDeliveryFeeAmount()).isEqualTo(deliveryFees);
+        assertThat(s.getOriginalRewardAmount()).isEqualTo(reward);
+        assertThat(s.getRewardAmount()).isEqualTo(reward);
+        assertThat(s.getRewardVatAmount()).isEqualTo(rewardVat);
+        assertThat(s.getPgFeeAmount()).isEqualTo(pgFee);
+        assertThat(s.getPlatformFeeAmount()).isZero();
+        assertThat(s.getWithholdingAmount()).isEqualTo(withholding);
+        assertThat(s.getCreatorPayoutAmount()).isEqualTo(reward - withholding);
+        assertThat(s.getBrandPayoutAmount()).isEqualTo(confirmedSales - pgFee - reward - rewardVat + deliveryFees);
+        assertThat(s.getPlatformShareAmount()).isEqualTo(rewardVat);
+        assertThat(s.getBrandPayoutAmount() + s.getCreatorPayoutAmount() + s.getWithholdingAmount()
+                + s.getPlatformShareAmount() + s.getPgFeeAmount()).isEqualTo(confirmedSales + deliveryFees);
+
+        List<SettlementItem> items = itemsOf(s);
+        assertThat(items).hasSize(2);
+        SettlementItem creamItem = items.stream().filter(i -> i.getDeliveryGroupId().equals(creams.getId()))
+                .findFirst().orElseThrow();
+        assertThat(creamItem.getUnitReward()).isEqualTo(3_264);
+        assertThat(creamItem.getRewardAmount()).isEqualTo(6_528);
+        assertThat(creamItem.getSettledQuantity()).isEqualTo(2);
+        assertThat(creamItem.getConsumerNameMasked()).isNotBlank().contains("*");
+
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getPayee, SettlementPayout::getStatus,
+                        SettlementPayout::getAmount)
+                .containsExactly(tuple(SettlementPayee.BRAND, PayoutStatus.WAITING, s.getBrandPayoutAmount()),
+                        tuple(SettlementPayee.CREATOR, PayoutStatus.WAITING, s.getCreatorPayoutAmount()),
+                        tuple(SettlementPayee.PLATFORM, PayoutStatus.WAITING, s.getPlatformShareAmount()));
+        assertThat(settlementEvents(s.getId())).containsExactly(SettlementEventType.CREATED);
+        assertThat(groupBuyHistoryRepository.findAll()).extracting(GroupBuyHistory::getEventType)
+                .contains(GroupBuyEventType.SALES_FINALIZED);
+    }
+
+    @Test
+    @DisplayName("ST-03 판매 0건 공구는 대상에서 빠지고 영구 미생성")
+    void zeroSalesNeverGenerates() {
+        endGroupBuy();
+
+        assertThat(generationService.findGroupBuyIdsToGenerate(200)).doesNotContain(groupBuy.getId());
+        assertThat(generationService.generate(groupBuy.getId(), GENERATED_AT)).isEmpty();
+        assertThat(scheduler).as("통합 테스트는 생성 배치가 꺼져 있다").isNull();
+    }
+
+    @Test
+    @DisplayName("ST-04 계약 항목 없는 상품의 매출 → 생성 실패 · 롤백 · 계약을 고치면 다음 회차에 생성")
+    void missingContractItemFailsAndRetries() {
+        confirmedGroup(serumVariant, 1);
+        endGroupBuy();
+        jdbc.update("UPDATE contract_item SET product_id = NULL WHERE product_id = ?", serum.getProductId());
+
+        assertThatThrownBy(() -> generationService.generate(groupBuy.getId(), GENERATED_AT))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.SETTLEMENT_GENERATION_INCONSISTENT);
+        assertThat(settlementRepository.count()).isZero();
+        assertThat(settlementItemRepository.count()).isZero();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM settlement_number_sequence", Integer.class)).isZero();
+
+        jdbc.update("UPDATE contract_item SET product_id = ? WHERE product_id IS NULL", serum.getProductId());
+        assertThat(generationService.findGroupBuyIdsToGenerate(200)).contains(groupBuy.getId());
+        assertThat(generate(GENERATED_AT).getConfirmedSalesAmount()).isEqualTo(SERUM_PRICE);
+    }
+
+    @Test
+    @DisplayName("정산 전 운영자 사유 환불(06a B5) → 배송 예외 차감 · 전액이면 배송 예외 · 부분이면 반영액만 줄고 수량 · 리워드는 그대로")
+    void operatorRefundBeforeSettlement() {
+        OrderDeliveryGroup full = confirmedGroup(creamVariant, 1);
+        OrderDeliveryGroup partial = confirmedGroup(serumVariant, 1);
+        operatorRefund(full, "POST_CONFIRM_DEFECT", CREAM_PRICE);
+        operatorRefund(partial, "POST_CONFIRM_DEFECT", 4_000);
+        endGroupBuy();
+
+        Settlement s = generate(GENERATED_AT);
+
+        assertThat(s.getDeliveryExceptionDeduction()).isEqualTo(CREAM_PRICE + 4_000);
+        assertThat(s.getDeliveryExceptionCount()).isEqualTo(2);
+        assertThat(s.getConfirmedSalesAmount()).isEqualTo(SERUM_PRICE - 4_000);
+        assertThat(s.getRewardAmount()).isEqualTo(SERUM_PRICE / 10);
+        List<SettlementItem> items = itemsOf(s);
+        SettlementItem fullItem = items.stream().filter(i -> i.getDeliveryGroupId().equals(full.getId()))
+                .findFirst().orElseThrow();
+        SettlementItem partialItem = items.stream().filter(i -> i.getDeliveryGroupId().equals(partial.getId()))
+                .findFirst().orElseThrow();
+        assertThat(fullItem.getStatus()).isEqualTo(SettlementItemStatus.DELIVERY_EXCEPTION);
+        assertThat(fullItem.getSettledQuantity()).isZero();
+        assertThat(fullItem.getRewardAmount()).isZero();
+        assertThat(partialItem.getStatus()).isEqualTo(SettlementItemStatus.CONFIRMED);
+        assertThat(partialItem.getSettledAmount()).isEqualTo(SERUM_PRICE - 4_000);
+        assertThat(partialItem.getSettledQuantity()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("GN-07 요율 스냅샷 — 플랫폼 수수료율을 0.02 로 바꾼 뒤 생긴 정산만 0.02 · 이미 생긴 정산은 0 그대로(07b 분해도 행 값)")
+    void ratesAreSnapshotted() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement before = generate(GENERATED_AT);
+        BigDecimal original = settlementProperties.getPlatformFeeRate();
+        Settlement after;
+        try {
+            settlementProperties.setPlatformFeeRate(new BigDecimal("0.02"));
+            openNextGroupBuy(creator);
+            confirmedGroup(creamVariant, 1);
+            endGroupBuy();
+            after = generate(GENERATED_AT);
+        } finally {
+            settlementProperties.setPlatformFeeRate(original);
+        }
+
+        assertThat(settlement(before.getId()).getPlatformFeeRate()).isEqualByComparingTo("0");
+        assertThat(settlement(before.getId()).getPlatformFeeAmount()).isZero();
+        assertThat(settlement(after.getId()).getPlatformFeeRate()).isEqualByComparingTo("0.02");
+        assertThat(settlement(after.getId()).getPlatformFeeAmount()).isEqualTo(CREAM_PRICE * 2 / 100);
+        // 검산 — 플랫폼 수수료가 생겨도 다섯 몫의 합은 확정 거래액 + 소비자 배송비다.
+        Settlement s = settlement(after.getId());
+        assertThat(s.getBrandPayoutAmount() + s.getCreatorPayoutAmount() + s.getWithholdingAmount()
+                + s.getPlatformShareAmount() + s.getPgFeeAmount())
+                .isEqualTo(s.getConfirmedSalesAmount() + s.getConsumerDeliveryFeeAmount());
+
+        // 설정을 되돌린 뒤에도 각 정산은 생성 때 요율로 읽힌다.
+        adminGet("/v1/admin/settlements/" + before.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.rate").value(0))
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.amount").value(0));
+        adminGet("/v1/admin/settlements/" + after.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.rate").value(0.02))
+                .andExpect(jsonPath("$.breakdown.brand.platformFee.amount").value(CREAM_PRICE * 2 / 100));
+    }
+
+    @Test
+    @DisplayName("GN-08 같은 공구를 두 스레드가 동시에 생성 — 한쪽만 정산을 만들고 다른 쪽은 빈 결과(공구 행 잠금) 또는 유일 제약 위반 · 정산 · 수취자 행 · 생성 이력 1벌")
+    void concurrentGenerationCreatesOne() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+
+        List<String> results = race(2, () -> generationService.generate(groupBuy.getId(), GENERATED_AT)
+                .map(id -> "CREATED").orElse("EMPTY"));
+
+        assertThat(results).containsOnlyOnce("CREATED");
+        assertThat(results).filteredOn(r -> !r.equals("CREATED"))
+                .allSatisfy(r -> assertThat(r).isIn("EMPTY", DataIntegrityViolationException.class.getSimpleName()));
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM settlement WHERE group_buy_id = ?", Long.class,
+                groupBuy.getId())).isEqualTo(1);
+        Settlement s = settlementRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow();
+        assertThat(payoutsOf(s.getId())).hasSize(3);
+        assertThat(itemsOf(s)).hasSize(1);
+        assertThat(settlementEvents(s.getId())).containsExactly(SettlementEventType.CREATED);
+        assertThat(jdbc.queryForObject("SELECT last_no FROM settlement_number_sequence", Integer.class)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("ST-12(1/2) 공구 상세 settlement.stage 는 포트 값 · 정산 확인 409 · 06a ④ · 06c settlement")
+    void portsFilled() throws Exception {
+        OrderDeliveryGroup group = confirmedGroup(creamVariant, 1);
+        Long refundTaskId = operatorRefund(confirmedGroup(serumVariant, 1), "POST_CONFIRM_DEFECT", 1_000);
+        adminGet(ADMIN_REFUNDS + "/" + refundTaskId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.settlement.state").value("BEFORE_SETTLEMENT"))
+                .andExpect(jsonPath("$.settlement.settlementNumber").doesNotExist());
+        adminGet(ADMIN_ORDERS + "/" + group.getOrder().getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].settlement").doesNotExist());
+        endGroupBuy();
+
+        Settlement s = generate(GENERATED_AT);
+
+        adminGet("/v1/admin/group-buys/" + groupBuy.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.afterEnd.settlement.stage").value("WAITING"))
+                .andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("PORT"))
+                .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
+        adminPost("/v1/admin/group-buys/" + groupBuy.getId() + "/settlement/confirm", java.util.Map.of())
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_SETTLEMENT_NOT_READY"));
+
+        JsonNode order = json(adminGet(ADMIN_ORDERS + "/" + group.getOrder().getId()).andExpect(status().isOk()));
+        JsonNode settlement = order.at("/groups/0/settlement");
+        assertThat(settlement.get("settlementNumber").asText()).isEqualTo(s.getSettlementNumber());
+        assertThat(settlement.get("status").asText()).isEqualTo("REVIEWING");
+        assertThat(settlement.get("settledAmount").asLong()).isEqualTo(CREAM_PRICE);
+        assertThat(settlement.get("rewardAmount").asLong()).isEqualTo(CREAM_PRICE * 12 / 100);
+        assertThat(settlement.get("clawbacks")).isEmpty();
+        // [SG-00] 06a ④ 상태 문장 · 확정 전이라 확정 시각 없음.
+        assertThat(settlement.get("statusLabel").asText()).isEqualTo("정산 확인 중");
+        assertThat(settlement.get("confirmedAt").isNull()).isTrue();
+
+        adminGet(ADMIN_REFUNDS + "/" + refundTaskId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.settlement.state").value("SETTLED"))
+                .andExpect(jsonPath("$.settlement.settlementNumber").value(s.getSettlementNumber()))
+                // [SG-00] 정산 전에 나간 환불은 생성 때 반영됐다 — 차감이 아니다.
+                .andExpect(jsonPath("$.settlement.stateLabel").value("정산 " + s.getSettlementNumber() + " 생성 후"))
+                .andExpect(jsonPath("$.settlement.clawback").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[SG-04] 정산 생성 뒤 운영자 개설 반품 통과(PG 자동 · CLAIM_RETURN_PASSED) — 운영자 사유와 같은 차감 2행 · 사유 「반품 통과(운영자 개설)」")
+    void operatorOpenedReturnPassedAfterSettlement() throws Exception {
+        OrderDeliveryGroup group = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+
+        long claimId = json(adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/defect-claims", java.util.Map.of(
+                "items", List.of(java.util.Map.of("orderProductId", itemsOf(group).get(0).getId(), "quantity", 1)),
+                "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "구매확정 후 용기 파손",
+                "evidenceImageUrls", List.of("https://img.test/d.jpg"))).andExpect(status().isOk()))
+                .get("claimIds").get(0).asLong();
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .put("/v1/user/claims/" + claimId + "/collection-invoice")
+                        .header(org.springframework.http.HttpHeaders.AUTHORIZATION, consumerToken)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .content(toJson(java.util.Map.of("carrier", "CJ", "trackingNumber", nextTrackingNumber()))))
+                .andExpect(status().isOk());
+        passClaim(claimId);
+
+        Long taskId = jdbc.queryForObject("SELECT refund_task_id FROM order_refund_task WHERE source = 'CLAIM_RETURN_PASSED' "
+                + "AND delivery_group_id = ?", Long.class, group.getId());
+        assertThat(jdbc.queryForObject("SELECT status FROM order_refund_task WHERE refund_task_id = ?", String.class, taskId))
+                .isEqualTo("DONE");
+        List<java.util.Map<String, Object>> clawbacks = jdbc.queryForList("SELECT side, amount, status, reason, "
+                + "origin_settlement_id FROM settlement_clawback WHERE refund_task_id = ? ORDER BY clawback_id", taskId);
+        assertThat(clawbacks).extracting(row -> row.get("side")).containsExactly("BRAND", "CREATOR");
+        assertThat(clawbacks).allSatisfy(row -> {
+            assertThat(row.get("status")).isEqualTo("PENDING");
+            assertThat(row.get("reason")).isNull();
+            assertThat(((Number) row.get("origin_settlement_id")).longValue()).isEqualTo(s.getId());
+        });
+        assertThat(((Number) clawbacks.get(1).get("amount")).longValue()).isEqualTo(CREAM_PRICE * 12 / 100);
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("PENDING"))
+                .andExpect(jsonPath("$.settlement.stateLabel").value(org.hamcrest.Matchers.startsWith("정산 후 · 차감 CLW-")));
+        assertThat(settlement(s.getId()).getBrandPayoutAmount()).isEqualTo(s.getBrandPayoutAmount());
+    }
+
+    @Test
+    @DisplayName("[SG-04] 분실 · 반송 완료 환불은 정산 뒤에 생길 수 없다 — 배송중 하위주문이 있으면 정산이 생기지 않고, 분실로 닫은 뒤 생성되면 차감이 아니라 배송 예외로 반영")
+    void lostCannotHappenAfterSettlement() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        OrderDeliveryGroup shipping = preparing(paidGroup());
+        registerShipment(shipping, "CJ", nextTrackingNumber()).andExpect(status().isOk());
+        endGroupBuy();
+        assertThat(generationService.generate(groupBuy.getId(), LocalDateTime.now())).isEmpty();
+
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ?, shipped_at = ? "
+                + "WHERE delivery_group_id = ?", LocalDateTime.now().minusDays(29), LocalDateTime.now().minusDays(30), shipping.getId());
+        adminPost(ADMIN_ORDERS + "/groups/" + shipping.getId() + "/lost", java.util.Map.of("reason", "택배사 분실 확인"))
+                .andExpect(status().isOk());
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+
+        assertThat(itemsOf(s)).filteredOn(item -> item.getDeliveryGroupId().equals(shipping.getId()))
+                .extracting(SettlementItem::getStatus).containsOnly(SettlementItemStatus.DELIVERY_EXCEPTION);
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM settlement_clawback", Integer.class)).isZero();
+    }
+
+    // ------------------------------------------------------------------ 보조
+
+    /** 같은 호출을 n 스레드에서 같은 순간에 출발시킨다 — 예외는 클래스 이름으로 바꿔 돌려준다(누가 이겼는지는 테스트가 판정). */
+    private static List<String> race(int threads, Callable<String> call) throws Exception {
+        CountDownLatch ready = new CountDownLatch(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        try (ExecutorService pool = Executors.newFixedThreadPool(threads)) {
+            List<Future<String>> futures = new ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                futures.add(pool.submit(() -> {
+                    ready.countDown();
+                    start.await();
+                    try {
+                        return call.call();
+                    } catch (Exception e) {
+                        return e.getClass().getSimpleName();
+                    }
+                }));
+            }
+            assertThat(ready.await(5, TimeUnit.SECONDS)).isTrue();
+            start.countDown();
+            List<String> results = new ArrayList<>();
+            for (Future<String> future : futures) {
+                results.add(future.get(30, TimeUnit.SECONDS));
+            }
+            return results;
+        }
+    }
+}

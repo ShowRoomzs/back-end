@@ -13,7 +13,7 @@ public enum ClaimEventType {
     ARRIVED("회수 완료 · 브랜드 도착"),
     RECEIVED("입고 확인"),
     INSPECTION_PASSED("검수 통과"),
-    INSPECTION_REJECTED("검수 거절"),
+    INSPECTION_REJECTED("검수 반려"),
     RESHIP_FEE_PAID("소비자 재배송비 결제"),
     RESHIP_FEE_SETTLED("재배송비 정산"),
     WITHDRAWN("요청 철회"),
@@ -25,7 +25,11 @@ public enum ClaimEventType {
     RESHIP_DELIVERED("재발송 도착"),
     REFUND_EXECUTED("환불 집행"),
     STORAGE_NOTICE_SENT("미결제 고지"),
-    DISPOSED("보관 기간 만료 · 폐기");
+    DISPOSED("보관 기간 만료 · 폐기"),
+    /** 반려에 대한 소비자 이의를 운영자가 인용 — 운영자 사유 환불로 종결(어드민 06b B2 · 1009 기획 수정본 8-3). */
+    DISPUTE_ACCEPTED("반려 이의 인용 · 운영자 사유 환불"),
+    /** 검수 지연 자동 알림 N회 무응답 — 운영자가 운영자 사유 환불로 종결(41 보고 4번 · 어드민 06b). */
+    INSPECTION_UNANSWERED("검수 무응답 · 운영자 사유 환불");
 
     private final String label;
 }

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 import showroomz.api.admin.thread.type.AdminChannelMemberStatus;
 import showroomz.api.admin.thread.type.AdminChannelTab;
 import showroomz.api.common.attachment.dto.AttachmentSummary;
+import showroomz.api.common.thread.dto.MessageCardResponse;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.message.type.MessageCardActionState;
 import showroomz.domain.message.type.MessageCardTone;
@@ -50,14 +51,44 @@ public final class AdminThreadDto {
             @Schema(description = "최근 메시지 시각 — 메시지가 없는 채널은 null", nullable = true) LocalDateTime lastMessageAt,
             @Schema(description = "운영팀 기준 안 읽은 수 — 어느 운영자가 읽든 함께 줄어든다", example = "1") long unreadCount,
             @Schema(description = "메시지를 보낼 수 있는가 — 탈퇴 회원의 채널은 false(열람만)", example = "true")
-            boolean writable) {
+            boolean writable,
+            @Schema(description = "[이슈 탭] 정산 조정 협의 — tab = ISSUE 일 때만", nullable = true) IssueListItem issue) {
+    }
+
+    @Schema(description = "이슈 탭 행 — 정산 조정 협의(44 이슈 스레드 설계서 4-1). 행의 name = 공구명")
+    public record IssueListItem(
+            @Schema(example = "77") Long adjustmentId,
+            @Schema(description = "OPEN · AGREED · EXPIRED", example = "OPEN") String status,
+            @Schema(example = "협의 중") String statusLabel,
+            @Schema(description = "운영자 기준 배지 — 응답 대기 · 합의 · 금액 변경 · 기한 만료 · 원래 금액", example = "응답 대기")
+            String badgeLabel,
+            @Schema(description = "INFO · SUCCESS · NEUTRAL", example = "INFO") String badgeTone,
+            @Schema(description = "「{브랜드명} × {쇼룸명} · 정산 조정 요청」", example = "벨라코스 × 소연_쇼룸 · 정산 조정 요청")
+            String subtitle,
+            Long settlementId,
+            @Schema(example = "STL-2609-006") String settlementNumber,
+            Long groupBuyId,
+            Long marketId,
+            @Schema(example = "벨라코스") String brandName,
+            Long creatorId,
+            @Schema(example = "소연_쇼룸") String showroomName,
+            @Schema(description = "합의 기한", example = "2026-09-17T23:59:59") LocalDateTime deadlineAt,
+            @Schema(description = "D-N — 종결 뒤 null", nullable = true) Integer remainingBusinessDays) {
     }
 
     @Schema(description = "탭 배지 — 탭 숫자의 뜻이 확정되기 전이라 두 값을 함께 내린다")
     public record Summary(
             TabSummary brand,
             TabSummary influencer,
-            @Schema(description = "이슈 스레드 탭 — 추후 기획 예정이라 항상 null", nullable = true) TabSummary issue) {
+            @Schema(description = "이슈 스레드 탭 — 진행 중 · 종결 seg 숫자. 게시물·소통 GNB 배지에는 더하지 않는다") IssueTabSummary issue) {
+    }
+
+    @Schema(description = "이슈 탭 배지 — 운영팀은 참가자가 아니라 안 읽은 수 · 미처리 카드는 항상 0")
+    public record IssueTabSummary(
+            @Schema(example = "0") long unreadCount,
+            @Schema(example = "0") long pendingCardCount,
+            @Schema(description = "진행 중(OPEN) 협의 수", example = "1") long openCount,
+            @Schema(description = "종결(AGREED · EXPIRED) 협의 수", example = "8") long closedCount) {
     }
 
     public record TabSummary(
@@ -77,7 +108,88 @@ public final class AdminThreadDto {
             boolean writable,
             Profile profile,
             Progress progress,
-            @Schema(description = "그 회원이 당사자인 열린 공구 3자 스레드") List<OpenIssueThread> openIssueThreads) {
+            @Schema(description = "그 회원이 당사자인 열린 공구 3자 스레드") List<OpenIssueThread> openIssueThreads,
+            @Schema(description = "[이슈 스레드] 정산 조정 패널 — tab = ISSUE 일 때만", nullable = true) IssuePanel issue,
+            @Schema(description = "[브랜드–인플루언서 1:1 스레드 열람] 그 쌍 — 이슈 패널의 링크로 들어온 PAIR 스레드일 때만(tab = null)",
+                    nullable = true) PairInfo pair) {
+    }
+
+    @Schema(description = "이슈 패널(44 이슈 스레드 설계서 4-3) — 정산 영향 · 이슈 정보 · 진행 단계 · 참고 링크")
+    public record IssuePanel(
+            Long adjustmentId,
+            @Schema(description = "OPEN · AGREED · EXPIRED", example = "OPEN") String status,
+            @Schema(example = "협의 중") String statusLabel,
+            @Schema(example = "응답 대기") String badgeLabel,
+            @Schema(example = "INFO") String badgeTone,
+            IssueSettlement settlement,
+            IssueGroupBuy groupBuy,
+            IssueContract contract,
+            IssueBrand brand,
+            IssueInfluencer influencer,
+            @Schema(description = "처음 요청한 쪽 — SELLER · CREATOR", example = "CREATOR") String requesterType,
+            LocalDateTime openedAt,
+            @Schema(description = "합의 기한 — 개설 + 10영업일 23:59:59", example = "2026-09-17T23:59:59") LocalDateTime deadlineAt,
+            @Schema(description = "D-N — 종결 뒤 null", nullable = true) Integer remainingBusinessDays,
+            @Schema(nullable = true) LocalDateTime closedAt,
+            @Schema(description = "진행 단계 4칸 — REQUESTED · OPEN · AGREED · CLOSED") List<IssueStep> steps,
+            IssueLinks links) {
+    }
+
+    @Schema(description = "정산 영향")
+    public record IssueSettlement(
+            Long settlementId,
+            @Schema(example = "STL-2609-006") String settlementNumber,
+            @Schema(description = "정산 보류 · 전액 / 보류 해제 · 금액 변경 / 보류 해제 · 금액 변경 없음", example = "정산 보류 · 전액")
+            String holdLabel,
+            @Schema(description = "WARNING · SUCCESS", example = "WARNING") String holdTone,
+            @Schema(description = "원래 리워드(공급가)", example = "150528") long originalRewardAmount,
+            @Schema(description = "최신 제안", nullable = true) IssueProposal currentProposal,
+            @Schema(description = "합의 금액 — AGREED 일 때", nullable = true) Long agreedRewardAmount,
+            @Schema(description = "확정 리워드 — 종결 뒤", nullable = true) Long finalRewardAmount,
+            @Schema(description = "확정 리워드 기준 인플루언서 실지급 — 종결 뒤", nullable = true) Long finalCreatorNetAmount) {
+    }
+
+    public record IssueProposal(
+            Long proposalId,
+            int seq,
+            @Schema(example = "165528") long rewardAmount,
+            @Schema(description = "SELLER · CREATOR", example = "SELLER") String proposerType,
+            @Schema(example = "벨라코스") String proposerName,
+            @Schema(description = "답할 쪽 이름", example = "소연_쇼룸") String responderName,
+            @Schema(description = "PENDING · ACCEPTED · REJECTED · COUNTERED · CLOSED", example = "PENDING") String status) {
+    }
+
+    public record IssueGroupBuy(Long groupBuyId, @Schema(example = "GB-20260814-041") String groupBuyNumber,
+                                @Schema(example = "여름 수분 세럼 공구") String title) {
+    }
+
+    public record IssueContract(Long contractId, @Schema(example = "CTR-20260801-019") String contractNumber) {
+    }
+
+    public record IssueBrand(Long marketId, @Schema(example = "벨라코스") String name) {
+    }
+
+    public record IssueInfluencer(Long creatorId, @Schema(example = "소연_쇼룸") String name) {
+    }
+
+    public record IssueStep(
+            @Schema(description = "REQUESTED · OPEN · AGREED · CLOSED", example = "OPEN") String key,
+            @Schema(example = "협의") String label,
+            @Schema(description = "DONE · CURRENT · TODO · SKIPPED(만료 — 합의 · 반영이 일어나지 않음)", example = "CURRENT") String state,
+            @Schema(example = "양측 직접") String note) {
+    }
+
+    public record IssueLinks(
+            @Schema(description = "그 쌍의 브랜드–인플루언서 1:1 스레드 — 열람 전용 · 끊긴 연결이면 null", nullable = true)
+            Long pairThreadId,
+            Long settlementId,
+            Long marketId,
+            Long creatorId) {
+    }
+
+    @Schema(description = "브랜드–인플루언서 1:1 스레드 열람 헤더 — 읽기 전용")
+    public record PairInfo(Long marketId, @Schema(example = "벨라코스") String brandName,
+                           Long creatorId, @Schema(example = "소연_쇼룸") String showroomName) {
     }
 
     @Schema(description = "① 정보 — 브랜드와 인플루언서가 채우는 칸이 다르다. 해당 없는 값은 null")
@@ -103,7 +215,8 @@ public final class AdminThreadDto {
 
     public record OpenIssueThread(
             Long threadId,
-            @Schema(description = "GROUP_BUY_ISSUE · GROUP_BUY_FULFILLMENT") ThreadKind kind,
+            @Schema(description = "SETTLEMENT_ADJUSTMENT(정산 조정 — 이슈 탭으로 이동) · GROUP_BUY_ISSUE · GROUP_BUY_FULFILLMENT(폐기 이력)")
+            ThreadKind kind,
             Long groupBuyId,
             @Schema(nullable = true) String groupBuyTitle) {
     }
@@ -145,7 +258,7 @@ public final class AdminThreadDto {
             @Schema(example = "CTR-20260813-041") String contractNumber,
             @Schema(example = "겨울 리페어 크림 공구") String groupBuyTitle,
             CardDetail detail,
-            @Schema(description = "재발송 요청 카드의 액션 — 결과 카드는 null", nullable = true) CardAction action) {
+            @Schema(description = "재발송 요청 카드 · 정산 조정 제안 카드의 액션 — 결과 카드는 null", nullable = true) CardAction action) {
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -156,18 +269,23 @@ public final class AdminThreadDto {
             @Schema(description = "[직권 취소] 사유 라벨 + 메모 — 당사자에게도 같은 문구가 나간다") String reasonLabel,
             @Schema(description = "[직권 취소] 처리 시각") LocalDateTime processedAt,
             @Schema(description = "[직권 취소] 처리 운영자 — 어드민에만 내려간다", example = "김운영") String processedByName,
-            @Schema(description = "[직권 취소] 양측 통지 여부") Boolean notifiedBothParties) {
+            @Schema(description = "[직권 취소] 양측 통지 여부") Boolean notifiedBothParties,
+            @Schema(description = "[정산 조정] 카드의 사실 — 파트너센터 · 스튜디오와 같은 스냅샷") MessageCardResponse.AdjustmentDetail adjustment) {
     }
 
     public record CardAction(
-            @Schema(example = "RESEND_NOTICE") String type,
+            @Schema(description = "RESEND_NOTICE(재발송 요청) · ADJUSTMENT_RESPOND(정산 조정 제안 — 운영자 버튼 없음)",
+                    example = "RESEND_NOTICE") String type,
             @Schema(description = "PENDING(버튼 노출) · DONE(전송됨) · CLOSED(계약이 서명 단계를 벗어나 닫힘 — 버튼 없음)",
                     example = "PENDING") MessageCardActionState state,
             @Schema(description = "[재발송 완료 알림 보내기]를 누를 수 있는가", example = "true") boolean canExecute,
             @Schema(description = "알림 전송 시각", nullable = true) LocalDateTime doneAt,
             @Schema(description = "알림을 보낸 운영자 — 어드민에만 내려간다", example = "김운영", nullable = true)
             String doneByName,
-            @Schema(description = "자동 안내 말풍선의 메시지 ID", nullable = true) Long noticeMessageId) {
+            @Schema(description = "자동 안내 말풍선의 메시지 ID", nullable = true) Long noticeMessageId,
+            @Schema(description = "[정산 조정] 결과 문구 — 동의 · 반대 · 다른 금액 제안으로 응답됨 · 기한 만료", nullable = true)
+            String resultLabel,
+            @Schema(description = "[정산 조정] 운영자는 답하지 않는다 — 항상 false", example = "false") boolean respondable) {
     }
 
     @Schema(description = "운영자 메시지 전송")

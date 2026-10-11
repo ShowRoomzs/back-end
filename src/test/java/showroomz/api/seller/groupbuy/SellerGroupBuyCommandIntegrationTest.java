@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -346,6 +347,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     // ── B5 · C5~C7 종료 후 ────────────────────────────────────────────────
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("이행 확인 — 이행은 1회 · 불가역 · 미이행은 사유 필수")
     void fulfillmentCheck() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
@@ -371,6 +373,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("미이행 — 같은 쌍에 3자 스레드를 열고 사유가 첫 글이 된다 · 연결 스레드는 그대로 하나다")
     void unfulfilledOpensDisputeThread() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
@@ -407,6 +410,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
+    @Disabled("[기획 제외] 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절) — 기획 복귀 시 되살린다")
     @DisplayName("미이행 — 쌍의 연결이 끊겼으면 스레드를 붙일 곳이 없어 503 · 확인도 남지 않는다")
     void unfulfilledWithoutConnectionIsUnavailable() throws Exception {
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
@@ -423,7 +427,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("이슈 스레드 — 진행중엔 409 · 종료 후에는 3자 스레드를 열고 상대가 답하기 전까지 「답변 대기」다")
+    @DisplayName("이슈 직접 개설은 폐기 — 진행중 · 종료 모두 409 · 이슈 스레드 없음(이슈는 정산 조정 요청으로만 열린다)")
     void issueThread() throws Exception {
         GroupBuy selling = seedIn(GroupBuyStatus.IN_PROGRESS);
         action(selling.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "스토리 누락"))
@@ -432,30 +436,14 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
 
         GroupBuy ended = seedIn(GroupBuyStatus.ENDED);
         action(ended.getId(), "issues", Map.of("issueType", "CONTENT_FULFILLMENT", "content", "스토리 누락"))
-                .andExpect(status().isCreated());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
         detail(ended.getId())
-                .andExpect(jsonPath("$.afterEnd.openIssue.type").value("CONTENT_FULFILLMENT"))
-                .andExpect(jsonPath("$.afterEnd.openIssue.openerType").value("SELLER"))
-                .andExpect(jsonPath("$.afterEnd.openIssue.threadId").isNumber())
-                .andExpect(jsonPath("$.afterEnd.openIssue.awaitingReply").value(true))
+                .andExpect(jsonPath("$.afterEnd.openIssue").doesNotExist())
                 .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
         assertThat(groupBuyHistoryRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(ended.getId()))
-                .anyMatch(entry -> entry.getEventType() == GroupBuyEventType.ISSUE_OPENED);
-
-        MessageThread thread = messageThreadRepository.findAll().stream()
-                .filter(candidate -> candidate.getKind() == ThreadKind.GROUP_BUY_ISSUE
-                        && ended.getId().equals(candidate.getSubjectId()))
-                .findFirst().orElseThrow();
-        assertThat(messagesOf(thread.getId())).singleElement()
-                .satisfies(first -> assertThat(first.getContent()).isEqualTo("스토리 누락"));
-
-        // 인플루언서가 스레드에 답하면 답변 대기가 풀린다 — 이슈는 그대로 열려 있다.
-        transactionTemplate.executeWithoutResult(tx -> messageThreadService.sendMessage(
-                messageThreadRepository.findById(thread.getId()).orElseThrow(), ParticipantType.CREATOR,
-                creator.getId(), "reply-1", "확인해 보겠습니다.", null));
-        detail(ended.getId())
-                .andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(thread.getId()))
-                .andExpect(jsonPath("$.afterEnd.openIssue.awaitingReply").value(false));
+                .noneMatch(entry -> entry.getEventType() == GroupBuyEventType.ISSUE_OPENED);
+        assertThat(messageThreadRepository.findAll()).noneMatch(thread -> thread.getKind() == ThreadKind.GROUP_BUY_ISSUE);
     }
 
     @Test

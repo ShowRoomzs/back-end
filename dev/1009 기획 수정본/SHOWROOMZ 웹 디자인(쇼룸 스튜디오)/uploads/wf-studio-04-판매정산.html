@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>wf-studio-04 · 성과 관리 + 정산 관리 · 1440×1024</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,"Malgun Gothic","맑은 고딕",sans-serif; background:#e6e6e6; color:#222; }
+  .doc-head { padding:24px 40px 4px; }
+  .doc-head h1 { font-size:18px; font-weight:700; }
+  .doc-head h1 span { font-weight:400; color:#888; font-size:13px; }
+  .doc-head .sub { font-size:12px; color:#777; margin-top:4px; line-height:1.6; }
+  .doc-head .spec { display:inline-block; margin-top:8px; font-size:11px; color:#555; background:#fff; border:1px solid #ccc; border-radius:4px; padding:4px 8px; }
+  .stack { padding:16px 40px 60px; }
+  .ftitle { font-size:13px; font-weight:700; color:#333; margin:22px 0 8px; }
+  .ftitle span { font-weight:400; color:#888; font-size:12px; }
+  .ftitle .pill { font-weight:400; font-size:11px; color:#555; background:#fff; border:1px solid #bbb; border-radius:10px; padding:1px 8px; margin-left:6px; }
+
+  .frame { width:1440px; background:#fff; border:1px solid #b5b5b5; border-radius:8px; box-shadow:0 1px 5px rgba(0,0,0,.1); overflow:hidden; position:relative; }
+  .chrome { height:32px; background:#e2e2e2; border-bottom:1px solid #c8c8c8; display:flex; align-items:center; padding:0 12px; gap:6px; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#c0c0c0; }
+  .urlbar { flex:1; height:18px; background:#fff; border:1px solid #d0d0d0; border-radius:9px; font-size:11px; color:#888; display:flex; align-items:center; padding:0 10px; margin-left:8px; }
+  .app { display:flex; min-height:992px; }
+  .gnb { width:224px; flex-shrink:0; background:#3f3f3f; color:#cfcfcf; padding:0 0 20px; }
+  .gnb .brand { padding:22px 20px 18px; border-bottom:1px solid #565656; }
+  .gnb .brand .m { font-size:15px; font-weight:800; color:#fff; letter-spacing:.5px; }
+  .gnb .brand .s { font-size:10px; color:#a5a5a5; margin-top:3px; }
+  .gnb-item { display:flex; align-items:center; gap:8px; padding:12px 20px; font-size:13px; color:#c2c2c2; border-left:3px solid transparent; }
+  .gnb-item .n { font-size:11px; color:#8f8f8f; width:14px; }
+  .gnb-item.on { background:#2a2a2a; color:#fff; font-weight:700; border-left-color:#fff; }
+  .gnb-item.on .n { color:#ddd; }
+  .main { flex:1; background:#f7f7f7; min-width:0; position:relative; }
+  .topbar { height:56px; background:#fff; border-bottom:1px solid #e2e2e2; display:flex; align-items:center; justify-content:space-between; padding:0 24px; }
+  .crumb { font-size:14px; font-weight:700; color:#222; }
+  .crumb .sub { font-weight:400; color:#999; font-size:12px; }
+  .brand-chip { display:flex; align-items:center; gap:8px; font-size:12px; color:#555; }
+  .brand-chip .st { border:1px solid #999; border-radius:12px; padding:2px 10px; background:#f2f2f2; }
+  .content { padding:24px; }
+
+  .toolbar { display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .search { width:280px; height:38px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 12px; font-size:13px; color:#a3a3a3; }
+  .selbox { height:38px; border:1px solid #bbb; border-radius:6px; background:#fff; display:flex; align-items:center; padding:0 14px; font-size:13px; color:#666; gap:24px; }
+  .selbox::after { content:"▾"; color:#999; }
+  .spacer { flex:1; }
+  .btn-line { height:38px; border-radius:6px; background:#fff; border:1px solid #999; color:#555; font-size:12px; display:inline-flex; align-items:center; justify-content:center; padding:0 14px; }
+  .btn { height:40px; border-radius:6px; background:#333; color:#fff; font-size:13px; font-weight:700; display:inline-flex; align-items:center; justify-content:center; padding:0 18px; }
+
+  .summary-row { display:flex; gap:12px; margin-bottom:18px; }
+  .stat { flex:1; border:1px solid #e6e6e6; border-radius:8px; padding:14px; background:#fff; text-align:center; }
+  .stat .num { font-size:19px; font-weight:800; color:#333; }
+  .stat .lb { font-size:11px; color:#888; margin-top:4px; }
+  .stat.hi { background:#333; border-color:#333; } .stat.hi .num { color:#fff; } .stat.hi .lb { color:#ccc; }
+
+  table.grid { width:100%; border-collapse:collapse; font-size:13px; background:#fff; }
+  table.grid th { text-align:left; padding:11px 12px; background:#f4f4f4; border-bottom:1px solid #e2e2e2; color:#555; font-weight:700; font-size:12px; }
+  table.grid td { padding:12px; border-bottom:1px solid #eee; color:#444; }
+  .card { background:#fff; border:1px solid #e2e2e2; border-radius:8px; overflow:hidden; margin-bottom:18px; }
+  .card-h { padding:14px 16px; border-bottom:1px solid #eee; font-size:14px; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+  .link { color:#666; text-decoration:underline; font-size:12px; }
+  .badge { border:1px solid #999; border-radius:10px; padding:2px 9px; font-size:11px; color:#444; background:#f6f6f6; white-space:nowrap; }
+  .badge.on2 { background:#e3e3e3; } .badge.done { background:#333; color:#fff; border-color:#333; }
+  .badge.warn { border-style:dashed; color:#999; }
+  .badge.live { background:#333; color:#fff; border-color:#333; }
+
+  .cols { display:flex; gap:18px; align-items:flex-start; }
+  .col-l { flex:1; min-width:0; } .col-r { width:420px; flex-shrink:0; }
+  .panel { border:1px solid #e2e2e2; border-radius:8px; background:#fff; }
+  .panel-h { padding:14px 16px; border-bottom:1px solid #eee; font-size:14px; font-weight:700; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .panel-b { padding:16px; }
+
+  .calc { width:100%; border-collapse:collapse; font-size:12.5px; }
+  .calc td { padding:8px 4px; border-bottom:1px solid #f0f0f0; }
+  .calc .lbl { color:#777; } .calc .val { text-align:right; color:#333; font-variant-numeric:tabular-nums; }
+  .calc tr.sub .lbl { padding-left:14px; color:#999; font-size:11.5px; }
+  .calc tr.sub .val { color:#999; font-size:11.5px; }
+  .calc tr.minus .val::before { content:"− "; }
+  .calc tr.plus .val::before { content:"+ "; }
+  .calc tr.total { border-top:1.5px solid #999; }
+  .calc tr.total .lbl, .calc tr.total .val { font-weight:800; color:#222; font-size:14px; padding-top:10px; }
+
+  .op-gate { font-size:11px; color:#999; border:1px dashed #bbb; border-radius:5px; padding:5px 10px; display:inline-block; margin-top:10px; }
+  .waittag { border:1px dashed #999; border-radius:4px; padding:0 6px; font-size:10.5px; color:#777; margin-left:4px; white-space:nowrap; }
+
+  .prow { display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid #f0f0f0; font-size:12.5px; }
+  .stats { display:flex; flex-wrap:wrap; gap:10px; }
+  .prow:last-child { border-bottom:none; }
+  .prow .pn { flex:1; color:#444; } .prow .pv { color:#333; font-weight:700; }
+
+  .foldline { position:absolute; left:0; right:0; top:1024px; border-top:1.5px dashed #c4553f; z-index:5; }
+  .foldline::after { content:"↑ 1440×1024 뷰포트 경계 · 이하 스크롤"; position:absolute; right:14px; top:-9px; background:#f7f7f7; padding:0 8px; font-size:10px; color:#c4553f; }
+  .note { margin:14px 0 0; border:1.5px dashed #999; border-radius:6px; background:#fafafa; padding:9px 12px; font-size:11.5px; color:#555; line-height:1.6; }
+  .note.inbody { margin:14px 0 0; }
+  .note b { color:#333; } .note .tag { font-weight:700; margin-right:4px; }
+  .note.legal { border:2px dashed #333; background:#f3f3f3; color:#222; }
+  .down { text-align:center; padding:12px 0 2px; } .down .a { font-size:24px; color:#888; } .down .l { font-size:11px; color:#777; }
+</style>
+</head>
+<body>
+
+<div class="doc-head">
+  <h1>④ 쇼룸 스튜디오 · 6. 성과 관리 + 7. 정산 관리 <span>wf-studio-04 · 데스크톱 1440×1024</span></h1>
+  <div class="sub">그레이스케일 lo-fi · <b>인플루언서 = 열람 전용</b>(확인·이체는 운영자) · 근거: wf-partner-06 대칭 구조 + ③ draft45 §11·§11-2 · <b>2026.07 개편(2차, 구 판매 현황→주문 내역→성과 관리)</b> — 주문 하나하나가 아니라 <b>추이·랭킹·비교 중심의 인사이트</b>로 성격 확정. 공구 상세(GNB #4)의 실시간 스냅샷·성과 카드와는 "개별 공구 vs 전체 기간" 축으로 역할 분리</div>
+  <div class="spec">프레임 1440×1024 · 정산 단위 = 공구 1건 + 고정 지급비(계약 단위, 별도 라인) · 정산 기한 = 마지막 구매확정 후 영업일 5일</div>
+</div>
+
+<div class="stack">
+
+<!-- ============ F1. 성과 관리 ============ -->
+<div class="ftitle">1. 성과 관리 <span>— 전체 기간 누적 추이·랭킹·비교(주문 하나하나가 아니라 인사이트)</span><span class="pill">GNB #6 · 2026.07 개편(2차)</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/insights</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item on"><span class="n">6</span> 성과 관리</div>
+      <div class="gnb-item"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">성과 관리</div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content">
+
+        <!-- 1) 요약 지표 -->
+        <div class="summary-row">
+          <div class="stat hi"><div class="num">150,528</div><div class="lb">이번달 예상 리워드(원)</div></div>
+          <div class="stat"><div class="num">32</div><div class="lb">진행중 공구 주문 건수</div></div>
+          <div class="stat"><div class="num">1,024,000</div><div class="lb">진행중 공구 판매액(원)</div></div>
+          <div class="stat"><div class="num">18,420,528</div><div class="lb">누적 지급완료(원)</div></div>
+        </div>
+
+        <!-- 2) 판매 추이 -->
+        <div class="card">
+          <div class="card-h"><span>판매 추이 <span style="font-size:12px;font-weight:400;color:#999">일별 판매액 · 주문건수</span></span><div class="selbox">기간 최근 30일</div></div>
+          <div class="sec" style="padding:16px">
+            <div style="display:flex;align-items:flex-end;gap:5px;height:110px;border-bottom:1px solid #ddd;padding-bottom:4px">
+              <div style="flex:1;background:#ddd;height:30%"></div><div style="flex:1;background:#ddd;height:45%"></div><div style="flex:1;background:#ddd;height:38%"></div>
+              <div style="flex:1;background:#ddd;height:60%"></div><div style="flex:1;background:#333;height:82%"></div><div style="flex:1;background:#ddd;height:55%"></div>
+              <div style="flex:1;background:#ddd;height:40%"></div><div style="flex:1;background:#ddd;height:65%"></div><div style="flex:1;background:#ddd;height:70%"></div>
+              <div style="flex:1;background:#ddd;height:50%"></div><div style="flex:1;background:#ddd;height:35%"></div><div style="flex:1;background:#333;height:90%"></div>
+              <div style="flex:1;background:#ddd;height:58%"></div><div style="flex:1;background:#ddd;height:42%"></div>
+            </div>
+            <div class="note inbody"><span class="tag">[표현 방식]</span> 막대 = 일별 판매액(높이), 진하게 표시된 막대 = 공구 오픈일 등 이벤트 발생일 · 실제 구현 시 판매액·주문건수 토글 라인차트로 대체</div>
+          </div>
+        </div>
+
+        <!-- 3) Top 5 -->
+        <div class="card">
+          <div class="card-h">잘 팔리는 상품·옵션 Top 5 <span style="font-size:12px;font-weight:400;color:#999">전체 기간 누적 · 수량 기준</span></div>
+          <table class="grid">
+            <thead><tr><th style="width:50px">순위</th><th>상품</th><th style="width:130px">옵션</th><th style="width:90px">판매수량</th><th style="width:110px">매출액</th></tr></thead>
+            <tbody>
+              <tr><td><b>1</b></td><td>○○ 세럼</td><td>30ml/수분</td><td>84개</td><td>2,436,000원</td></tr>
+              <tr><td><b>2</b></td><td>○○ 크림</td><td>50ml</td><td>52개</td><td>1,404,000원</td></tr>
+              <tr><td><b>3</b></td><td>○○ 세럼</td><td>30ml/진정</td><td>41개</td><td>1,148,000원</td></tr>
+              <tr><td><b>4</b></td><td>퓨어랩 립밤</td><td>딸기맛</td><td>36개</td><td>432,000원</td></tr>
+              <tr><td><b>5</b></td><td>모이스처하우스 토너</td><td>200ml</td><td>19개</td><td>266,000원</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 4) 공구별 비교 -->
+        <div class="card">
+          <div class="card-h">공구별 성과 비교 <span style="font-size:12px;font-weight:400;color:#999">진행했던 공구 전체</span></div>
+          <div class="sec" style="padding:16px">
+            <div class="prow"><span class="pn">여름 수분 세럼 공구</span><div style="flex:2;background:#eee;border-radius:3px;overflow:hidden"><div style="width:82%;background:#333;height:16px"></div></div><span class="pv">1,024,000원</span></div>
+            <div class="prow"><span class="pn">퓨어랩 립밤 공구</span><div style="flex:2;background:#eee;border-radius:3px;overflow:hidden"><div style="width:33%;background:#333;height:16px"></div></div><span class="pv">412,000원</span></div>
+            <div class="prow"><span class="pn">모이스처하우스 토너 공구</span><div style="flex:2;background:#eee;border-radius:3px;overflow:hidden"><div style="width:8%;background:#333;height:16px"></div></div><span class="pv">98,000원</span></div>
+          </div>
+          <table class="grid">
+            <thead><tr><th>공구명</th><th style="width:110px">판매액</th><th style="width:110px">예상 리워드</th><th style="width:100px">전환율</th></tr></thead>
+            <tbody>
+              <tr><td>여름 수분 세럼 공구</td><td>1,024,000원</td><td>150,528원</td><td><span class="waittag">[집계 대기]</span></td></tr>
+              <tr style="color:#999"><td>퓨어랩 립밤 공구</td><td>412,000원</td><td>62,340원</td><td><span class="waittag">[집계 대기]</span></td></tr>
+              <tr style="color:#999"><td>모이스처하우스 토너 공구</td><td>98,000원</td><td>14,700원</td><td><span class="waittag">[집계 대기]</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 5) 퍼널 요약 -->
+        <div class="card">
+          <div class="card-h">퍼널 요약 <span style="font-size:12px;font-weight:400;color:#999">전체 기간 누적 · 노출→클릭→쇼룸방문→구매</span> <span class="waittag">[집계 대기]</span></div>
+          <div class="sec" style="padding:16px">
+            <div class="stats">
+              <div class="stat"><div class="num">48,920</div><div class="lb">누적 노출수</div></div>
+              <div class="stat"><div class="num">4,108</div><div class="lb">누적 클릭수</div></div>
+              <div class="stat"><div class="num">8.4%</div><div class="lb">CTR</div></div>
+            </div>
+            <div class="stats" style="margin-top:10px">
+              <div class="stat"><div class="num">2,560</div><div class="lb">누적 쇼룸 방문수</div></div>
+              <div class="stat"><div class="num">832</div><div class="lb">누적 좋아요</div></div>
+              <div class="stat"><div class="num">3.4%</div><div class="lb">전환율</div></div>
+            </div>
+            <div class="note inbody"><span class="tag">[집계 대기]</span> 노출·클릭·쇼룸 방문 = <b>이벤트 로깅 신규 필요</b>(김화창 파이프라인) · CTR=클릭/노출, 전환율=주문/노출 파생 · <b>체류시간 MVP 제외</b> · <b>소비자 비노출</b></div>
+          </div>
+        </div>
+
+        <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[2026.07 개편 · 2차]</span> 1차 개편(주문 단위 세부 내역)은 폐기 — <b>인플루언서에게 필요한 건 개별 주문 열람이 아니라 인사이트</b>라는 판단에 따라 <b>추이·랭킹·비교·퍼널</b> 중심으로 재구성. 화면명도 주문 내역 → <b>성과 관리</b>로 확정. 개별 주문 열람·이행 상태 확인은 이 플랫폼에서 인플루언서 몫이 아님(브랜드가 담당, wf-partner-05)</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[역할 분리]</span> 공구 상세(공구 관리 GNB #4)의 판매 현황·성과 카드 = <b>이 공구 하나</b>의 실시간 스냅샷 · 이 화면(성과 관리) = <b>전체 기간·전체 공구</b>를 가로지르는 추이·랭킹·비교 · 종료 공구도 계속 포함(재계약 판단·시즌 비교 근거)</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">GNB #7 정산 관리</div></div>
+
+<!-- ============ F2. 정산 목록 ============ -->
+<div class="ftitle">2. 정산 목록 <span>— 공구 정산 + 고정 지급비 정산 통합 목록</span><span class="pill">GNB #7 · 열람</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/settlements</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 성과 관리</div>
+      <div class="gnb-item on"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="summary-row">
+          <div class="stat hi"><div class="num">150,528</div><div class="lb">이번달 지급 예정(원)</div></div>
+          <div class="stat"><div class="num">2</div><div class="lb">정산대기</div></div>
+          <div class="stat"><div class="num">0</div><div class="lb">보류</div></div>
+          <div class="stat"><div class="num">18,420,528</div><div class="lb">누적 지급완료(원)</div></div>
+        </div>
+        <div class="toolbar"><div class="search">공구명 검색</div><div class="selbox">구분 전체(공구·고정)</div><div class="selbox">상태 전체</div><div class="spacer"></div><div class="btn-line">엑셀 내보내기</div></div>
+        <div class="card">
+          <table class="grid">
+            <thead><tr>
+              <th>공구명 / 브랜드</th><th style="width:90px">구분</th><th style="width:130px">기준일</th><th style="width:110px">지급액</th><th style="width:100px">상태</th><th style="width:130px">지급(예정)일</th><th style="width:70px">관리</th>
+            </tr></thead>
+            <tbody>
+              <tr><td>여름 수분 세럼 공구 <span style="color:#999;font-size:11px">· ○○ 브랜드</span></td><td><span class="badge">공구</span></td><td>2026.00.00</td><td>115,050원</td><td><span class="badge">정산대기</span></td><td>2026.00.00 (D+5)</td><td><span class="link">상세</span></td></tr>
+              <tr><td>여름 수분 세럼 공구 <span style="color:#999;font-size:11px">· ○○ 브랜드</span></td><td><span class="badge on2">고정</span></td><td>2026.00.00 <span style="color:#999">(노출중 전환)</span></td><td>300,000원</td><td><span class="badge">정산대기</span></td><td>즉시</td><td><span class="link">상세</span></td></tr>
+              <tr><td>글로우 크림 앵콜 공구 <span style="color:#999;font-size:11px">· 글로우랩</span></td><td><span class="badge on2">고정</span></td><td>2026.00.00 <span style="color:#999">(노출중 전환)</span></td><td>200,000원</td><td><span class="badge warn">보류</span></td><td>브랜드 출금 실패</td><td><span class="link">상세</span></td></tr>
+              <tr><td>퓨어랩 립밤 공구 <span style="color:#999;font-size:11px">· 퓨어랩</span></td><td><span class="badge">공구</span></td><td>2026.00.00</td><td>62,340원</td><td><span class="badge done">지급완료</span></td><td>2026.00.00 지급됨</td><td><span class="link">상세</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="note" style="margin-left:0;margin-right:0"><span class="tag">[역할]</span> 인플루언서는 정산 내역 <b>열람만</b> — 확인·이체 실행은 <b>운영자 어드민</b> 권한 · <b>구분 = 공구(매출연동) / 고정(고정 지급비)</b> 2종을 한 목록에서 통합 관리(③ draft45 §11·§11-2)</div>
+        <div class="note legal" style="margin-left:0;margin-right:0"><span class="tag">[고정 지급비 · 신규]</span> 트리거 = <b>공구 게시물 "노출중" 전환</b>(공구 종료·구매확정 안 기다림) · 수수료 미적용 · <b>브랜드 결제수단 출금 실패 시 "보류"</b>로 표시(위 예시 · 게시물은 유지됨, 재촉 알림은 브랜드에게 감) <span class="waittag">[PG 상담 대기]</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[상세] — 공구 정산(매출연동)</div></div>
+
+<!-- ============ F3. 정산 상세 — 공구(매출연동) ============ -->
+<div class="ftitle">3. 정산 상세 — 공구(매출연동) <span>— 계산 근거 명세</span><span class="pill">GNB #7 · 열람</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/settlements/st-2026-0031</span></div>
+  <div class="app">
+    <div class="foldline"></div>
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 성과 관리</div>
+      <div class="gnb-item on"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub">› 여름 수분 세럼 공구 · 공구 정산</span></div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="cols">
+          <div class="col-l">
+            <div class="panel">
+              <div class="panel-h">계산 근거 명세 <span class="badge">정산대기</span></div>
+              <div class="panel-b">
+                <table class="calc">
+                  <tr><td class="lbl">구매확정 매출 (공구가 × 수량 합계)</td><td class="val">1,024,000원</td></tr>
+                  <tr class="minus"><td class="lbl">환불분 (취소·반품)</td><td class="val">18,000원</td></tr>
+                  <tr><td class="lbl"><b>정산 대상 금액 S</b></td><td class="val"><b>1,006,000원</b></td></tr>
+                  <tr class="minus"><td class="lbl">플랫폼 수수료 (2%)</td><td class="val">20,120원</td></tr>
+                  <tr><td class="lbl"><b>분배 재원 (S × 98%)</b></td><td class="val"><b>985,880원</b></td></tr>
+                  <tr class="sub"><td class="lbl">├ ○○ 세럼 (리워드 15%)</td><td class="val">88,290원</td></tr>
+                  <tr class="sub"><td class="lbl">└ ○○ 크림 (리워드 12%)</td><td class="val">41,760원</td></tr>
+                  <tr><td class="lbl">내 지급액 (Σ 항목별 리워드)</td><td class="val">130,050원</td></tr>
+                  <tr class="minus"><td class="lbl">유상 샘플비 차감 (→ 브랜드, 리워드 한도 내)</td><td class="val">15,000원</td></tr>
+                  <tr class="total"><td class="lbl">내 실지급액</td><td class="val">115,050원</td></tr>
+                </table>
+                <div class="op-gate">정산 확인·이체 실행 = 운영자 (영업일 5일 이내)</div>
+                <div class="note legal"><span class="tag">[세무 대기]</span> 사업자면 세금계산서 발행 / 비사업자면 <b>원천징수 3.3% 공제 후 지급</b> <span class="waittag">[세무 확정 대기]</span> · 유상 샘플비 부족분(리워드&lt;샘플비)은 비고·수기 처리</div>
+              </div>
+            </div>
+          </div>
+          <div class="col-r">
+            <div class="panel">
+              <div class="panel-h">정산 정보</div>
+              <div class="panel-b">
+                <table class="calc">
+                  <tr><td class="lbl">공구</td><td class="val">여름 수분 세럼 공구</td></tr>
+                  <tr><td class="lbl">계약 상대</td><td class="val">○○ 브랜드</td></tr>
+                  <tr><td class="lbl">구매확정 완료일</td><td class="val">2026.00.00</td></tr>
+                  <tr><td class="lbl">정산 기한(D+5)</td><td class="val">2026.00.00</td></tr>
+                  <tr><td class="lbl">지급 계좌</td><td class="val">○○은행 ***-**-****** (기본정보 관리 등록)</td></tr>
+                </table>
+                <div class="note" style="margin-top:12px"><span class="tag">[상태 이력]</span> 집계·계산(시스템) → <b>정산대기</b>(현재) → 운영자확인 → 지급완료 · 이상 발견 시 <b>보류</b>(기한 연장) → 해소 시 정산대기 복귀</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="down"><div class="a">↓</div><div class="l">[상세] — 고정 지급비(보류 사례)</div></div>
+
+<!-- ============ F4. 정산 상세 — 고정 지급비 ============ -->
+<div class="ftitle">4. 정산 상세 — 고정 지급비 <span>— 보류 사례(브랜드 출금 실패)</span><span class="pill">GNB #7 · 신규 · draft45 §11-2</span></div>
+<div class="frame">
+  <div class="chrome"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="urlbar">studio.showroomz.com/settlements/fx-2026-0007</span></div>
+  <div class="app">
+    <div class="gnb">
+      <div class="brand"><div class="m">SHOWROOMZ</div><div class="s">쇼룸 스튜디오</div></div>
+      <div class="gnb-item"><span class="n">1</span> 홈</div>
+      <div class="gnb-item"><span class="n">2</span> 연결·소통</div>
+      <div class="gnb-item"><span class="n">3</span> 계약 관리</div>
+      <div class="gnb-item"><span class="n">4</span> 공구 관리</div>
+      <div class="gnb-item"><span class="n">5</span> 게시물</div>
+      <div class="gnb-item"><span class="n">6</span> 성과 관리</div>
+      <div class="gnb-item on"><span class="n">7</span> 정산 관리</div>
+      <div class="gnb-item"><span class="n">8</span> 쇼룸 관리</div>
+      <div class="gnb-item"><span class="n">9</span> 기본정보 관리</div>
+    </div>
+    <div class="main">
+      <div class="topbar"><div class="crumb">정산 관리 <span class="sub">› 글로우 크림 앵콜 공구 · 고정 지급비</span></div><div class="brand-chip">뷰티_소연 <span class="st">활성</span></div></div>
+      <div class="content">
+        <div class="cols">
+          <div class="col-l">
+            <div class="panel">
+              <div class="panel-h">계산 근거 명세 <span class="badge warn">보류</span></div>
+              <div class="panel-b">
+                <table class="calc">
+                  <tr><td class="lbl">고정 지급비 (계약 협의 금액)</td><td class="val">200,000원</td></tr>
+                  <tr><td class="lbl">플랫폼 수수료</td><td class="val">미적용 (0%)</td></tr>
+                  <tr class="total"><td class="lbl">내 실지급액</td><td class="val">200,000원</td></tr>
+                </table>
+                <div class="op-gate" style="border-color:#c4553f;color:#c4553f">브랜드 결제수단 출금 실패 — 운영자가 브랜드에 재결제 요청 알림 발송함</div>
+                <div class="note legal"><span class="tag">[중요]</span> <b>내 게시물은 그대로 노출 유지</b>됩니다 — 출금 실패로 게시물이 내려가거나 계약이 취소되지 않습니다. 정산만 보류 상태이며, 브랜드가 재결제하면 자동으로 <b>정산대기</b>로 전환됩니다.</div>
+                <div class="note legal"><span class="tag">[세무 대기]</span> 원천징수는 공구 정산과 <b>동일 원칙</b> 적용(비사업자 3.3%) <span class="waittag">[세무 확정 대기]</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-r">
+            <div class="panel">
+              <div class="panel-h">지급 정보</div>
+              <div class="panel-b">
+                <table class="calc">
+                  <tr><td class="lbl">계약</td><td class="val">글로우 크림 앵콜 공구</td></tr>
+                  <tr><td class="lbl">계약 상대</td><td class="val">글로우랩</td></tr>
+                  <tr><td class="lbl">트리거</td><td class="val">공구 게시물 "노출중" 전환 (2026.00.00)</td></tr>
+                  <tr><td class="lbl">지급 계좌</td><td class="val">○○은행 ***-**-****** (기본정보 관리 등록)</td></tr>
+                </table>
+                <div class="note" style="margin-top:12px"><span class="tag">[상태 이력]</span> 트리거 발생 → 정산대기 → <b>보류</b>(출금 실패, 현재) → 정산대기(재결제 성공 시 자동 복귀) → 지급완료</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

@@ -12,9 +12,11 @@ import showroomz.api.seller.order.dto.SellerOrderListItem;
 import showroomz.api.seller.order.dto.SellerOrderSummaryResponse;
 import showroomz.api.seller.order.service.SellerOrderAccessGuard.SellerScope;
 import showroomz.api.seller.order.service.SellerOrderAssembler.ClaimOverlay;
+import showroomz.domain.order.entity.DeliveryTrackingEvent;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
+import showroomz.domain.order.repository.DeliveryTrackingEventRepository;
 import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
@@ -66,6 +68,7 @@ public class SellerOrderQueryService {
     private final PaymentRepository paymentRepository;
     private final SellerOrderAssembler assembler;
     private final OrderProperties orderProperties;
+    private final DeliveryTrackingEventRepository trackingEventRepository;
 
     /** 목록 — 행마다 항목·취소 요청이 필요하다. 페이지의 그룹 id 로 테이블당 IN 쿼리 1번씩 모아 조립한다. */
     public PageResponse<SellerOrderListItem> getOrders(String sellerEmail, OrderTab tab, OrderDateBasis dateBasis,
@@ -149,10 +152,14 @@ public class SellerOrderQueryService {
         String paymentMethod = group.getOrder().getPaidPaymentId() == null ? null
                 : paymentRepository.findById(group.getOrder().getPaidPaymentId())
                         .map(payment -> payment.getMethod().getLabel()).orElse(null);
+        // 지금 송장의 마지막 스캔 — 송장을 고쳤으면 옛 송장의 이력은 읽지 않는다(송장이 키다).
+        DeliveryTrackingEvent lastTrackingEvent = group.getCarrier() == null || group.getTrackingNumber() == null ? null
+                : trackingEventRepository.findFirstByCarrierAndTrackingNumberOrderBySeqDesc(group.getCarrier(),
+                        group.getTrackingNumber()).orElse(null);
         return assembler.toDetail(group, groupBuyTitle, paymentMethod, items, pending,
                 historyRepository.findByDeliveryGroupId(deliveryGroupId), LocalDateTime.now(),
                 orderProperties.getPurchaseConfirmDays(),
-                claimOverlays(List.of(group)).getOrDefault(deliveryGroupId, ClaimOverlay.NONE));
+                claimOverlays(List.of(group)).getOrDefault(deliveryGroupId, ClaimOverlay.NONE), lastTrackingEvent);
     }
 
     // ------------------------------------------------------------------ 내부 · 공용

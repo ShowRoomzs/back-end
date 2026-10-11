@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-admin-03-onboarding-influencer — 어드민 입점 관리(인플루언서) rev.1</title>
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  /* ── 어드민 셸 전용 [신규제안] — 웹 v1.1에 레이아웃 치수 정의 없음 ── */
+  --adm-sidebar-w:240px; --adm-topbar-h:56px; --adm-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .warn{color:var(--danger-text);font-weight:600;}
+.rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule table{border-collapse:collapse;margin:8px 0;width:100%;}
+.rule th,.rule td{border:1px solid var(--n-200);padding:5px 8px;text-align:left;font-size:var(--fs-micro);vertical-align:top;}
+.rule th{background:var(--n-50);font-weight:600;color:var(--n-900);white-space:nowrap;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바 ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--adm-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--adm-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;overflow-y:auto;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:7px 10px;border-radius:var(--r-sm);margin-bottom:2px;cursor:pointer;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--danger-text);color:#fff;
+  border-radius:8px;padding:0 5px;min-width:16px;text-align:center;}
+.gnb-item .chev{width:14px;height:14px;color:var(--n-500);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:transform .15s;}
+.gnb-item .chev svg{width:11px;height:11px;display:block;}
+.gnb-item.open .chev{transform:rotate(180deg);color:var(--n-700);}
+.gnb-group{overflow:hidden;}
+.gnb-group.closed{display:none;}
+.gnb-item:hover:not(.active){background:var(--n-200);}
+.gnb-item.open{color:var(--n-900);font-weight:500;}
+.gnb-sub{display:flex;align-items:center;justify-content:space-between;font-size:var(--fs-micro);
+  color:var(--n-500);padding:5px 10px 5px 33px;border-radius:var(--r-sm);margin-bottom:1px;cursor:pointer;}
+.gnb-sub:hover:not(.active){background:var(--n-200);}
+.gnb-sub.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-sub.active .scnt{color:#fff;}
+.scnt{font-size:10px;color:var(--n-500);}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--adm-sidebar-w);right:0;top:0;height:var(--adm-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--adm-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.op{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);}
+.op-av{width:24px;height:24px;border-radius:50%;background:var(--n-200);color:var(--n-600);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);font-weight:600;}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--adm-sidebar-w);right:0;top:var(--adm-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--adm-pad);}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);cursor:pointer;padding:0 12px;height:32px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);white-space:nowrap;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-btn .ic{font-size:14px;line-height:1;margin-top:-1px;}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+
+/* ══ 필터 카드 [신규제안] ══ */
+.filter{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);
+  padding:var(--sp-3) var(--sp-4);margin-bottom:var(--sp-4);display:flex;align-items:center;
+  justify-content:space-between;gap:var(--sp-4);}
+.tabs{display:flex;gap:0;}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:6px 2px;margin-right:20px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+.search{display:flex;gap:6px;}
+.inp{font-family:inherit;font-size:var(--fs-body);padding:6px 10px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:32px;width:200px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:7px 14px;cursor:pointer;transition:background .12s;height:32px;display:inline-flex;
+  align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:var(--accent-500);color:#fff;border:none;}
+.btn-primary:hover{background:var(--accent-600);}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:hover{background:var(--n-100);}
+.btn-ghost{background:transparent;color:var(--n-600);border:none;}
+.btn-ghost:hover{background:var(--n-100);}
+.btn-danger{background:var(--danger-text);color:#fff;border:none;}
+.btn-danger:hover{background:#8F2828;}
+.btn-lg{height:36px;padding:0 18px;font-size:var(--fs-body);}
+.btn:disabled{background:var(--n-100);color:var(--n-400);border:1px solid var(--n-200);cursor:not-allowed;}
+
+/* ══ 테이블 카드 ══ */
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);
+  border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);}
+.tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:10px 18px;white-space:nowrap;border-bottom:1px solid var(--n-200);}
+tbody td{padding:14px 18px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);
+  vertical-align:middle;white-space:nowrap;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-main{color:var(--accent-600);}
+.t-main{font-size:var(--fs-body);font-weight:500;color:var(--n-900);}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);}
+.t-tel{font-variant-numeric:tabular-nums;letter-spacing:.1px;color:var(--n-700);}
+.t-c{text-align:center;} .t-r{text-align:right;}
+.over{color:var(--warning-text);font-weight:600;}
+.link{color:var(--n-500);font-size:var(--fs-micro);white-space:nowrap;}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 페이지네이션 ══ */
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;
+  border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+
+/* ══ 빈 상태 [신규제안] ══ */
+.empty{padding:72px 24px;text-align:center;}
+.empty-ic{font-size:28px;color:var(--n-300);margin-bottom:10px;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+
+/* ══ 상세 ══ */
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-1) var(--sp-4) var(--sp-3);}
+.frow{display:flex;align-items:baseline;gap:12px;padding:9px 0;
+  border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.flabel{width:140px;color:var(--n-500);flex-shrink:0;}
+.fval{color:var(--n-900);flex:1;}
+.ch-link{color:var(--accent-600);text-decoration:none;}
+.ch-link:hover{text-decoration:underline;}
+.fval .mono{font-family:ui-monospace,monospace;}
+.purged{color:var(--n-400);font-style:normal;}
+.purged::before{content:"— ";}
+.purge-note{display:flex;gap:8px;background:var(--n-100);border-radius:var(--r-sm);padding:11px 13px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.6;margin:var(--sp-2) 0 var(--sp-3);}
+.rej-reason{background:var(--danger-bg);border-radius:var(--r-sm);padding:11px 13px;margin-top:10px;}
+.rej-t{font-size:var(--fs-micro);color:var(--danger-text);font-weight:600;margin-bottom:4px;}
+.rej-d{font-size:var(--fs-micro);color:var(--n-700);line-height:1.6;}
+.fnote{font-size:var(--fs-micro);color:var(--n-500);margin-left:6px;}
+
+/* 첨부 서류 */
+.files{display:flex;flex-direction:column;gap:8px;}
+.file{display:flex;align-items:center;gap:10px;border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:9px 12px;}
+.file-ic{width:28px;height:28px;border-radius:var(--r-sm);background:var(--accent-50);color:var(--accent-600);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;}
+.file-n{flex:1;font-size:var(--fs-caption);}
+.file-s{font-size:var(--fs-micro);color:var(--n-500);}
+.files.narrow .file{gap:8px;padding:8px 10px;}
+.files.narrow .file-n{font-size:var(--fs-micro);line-height:1.35;}
+.files.narrow .btn{padding:0 9px;height:26px;font-size:var(--fs-micro);}
+.files.narrow .file-ic{width:24px;height:24px;font-size:8px;}
+
+/* 우측 액션 */
+.side-card{position:sticky;top:0;}
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-acts{display:flex;gap:8px;margin-top:var(--sp-4);}
+.st-acts .btn{flex:1;}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--n-100);}
+.hitem:last-child{border-bottom:none;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.on{background:var(--accent-500);}
+.hdot.ok{background:var(--success-text);}
+.hdot.rj{background:var(--n-500);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ══ 모달 ══ */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;
+  justify-content:center;}
+.modal{width:520px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal.sm{width:400px;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:600;color:var(--n-600);margin:var(--sp-4) 0 6px;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:8px 12px;}
+.msel{height:36px;appearance:none;-webkit-appearance:none;padding-right:30px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;}
+.mta{min-height:96px;resize:vertical;line-height:1.6;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.mwarn{display:flex;gap:8px;background:var(--danger-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--danger-text);line-height:1.6;margin-top:var(--sp-4);font-weight:500;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+
+/* ══ 토스트 [신규제안] ══ */
+.toast-wrap{position:absolute;top:72px;right:24px;display:flex;flex-direction:column;gap:8px;}
+.toast{min-width:260px;background:#fff;border:1px solid var(--n-200);border-left:3px solid var(--success-text);
+  border-radius:7px;box-shadow:0 4px 16px rgba(26,27,31,.1);padding:11px 14px;font-size:var(--fs-caption);
+  font-weight:500;display:flex;align-items:center;gap:8px;}
+.toast.warn{border-left-color:var(--warning-text);}
+.toast.err{border-left-color:var(--danger-text);}
+
+
+/* ══ 미리보기 모달 [신규제안] — 라이트박스 + 대조 패널 ══ */
+.modal.pv{width:1040px;}
+.pv-body{display:grid;grid-template-columns:1fr 320px;height:600px;}
+.pv-view{background:var(--n-900);display:flex;flex-direction:column;position:relative;}
+.pv-canvas{flex:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:20px;}
+.pv-img{width:430px;height:300px;background:#fff;border-radius:2px;position:relative;
+  box-shadow:0 4px 18px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:var(--fs-caption);}
+.pv-img.rot{transform:rotate(90deg);}
+.pv-bar{height:48px;background:rgba(255,255,255,.06);border-top:1px solid rgba(255,255,255,.12);
+  display:flex;align-items:center;justify-content:space-between;padding:0 14px;}
+.pv-nav{display:flex;align-items:center;gap:6px;}
+.pv-b{height:28px;padding:0 10px;border-radius:var(--r-sm);background:rgba(255,255,255,.1);
+  color:rgba(255,255,255,.85);font-size:var(--fs-micro);font-weight:500;cursor:pointer;
+  display:inline-flex;align-items:center;gap:5px;border:none;font-family:inherit;}
+.pv-b:hover{background:rgba(255,255,255,.2);color:#fff;}
+.pv-idx{font-size:var(--fs-micro);color:rgba(255,255,255,.6);padding:0 6px;}
+.pv-thumbs{display:flex;gap:6px;}
+.pv-th{width:34px;height:24px;border-radius:3px;background:rgba(255,255,255,.15);cursor:pointer;
+  border:1.5px solid transparent;}
+.pv-th.on{border-color:#fff;background:rgba(255,255,255,.35);}
+.pv-side{background:#fff;border-left:1px solid var(--n-200);padding:var(--sp-4);overflow-y:auto;}
+.pv-t{font-size:var(--fs-h3);font-weight:600;margin-bottom:2px;}
+.pv-d{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:var(--sp-4);}
+.pv-sec{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;padding-bottom:6px;
+  border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-2);}
+.pv-row{padding:10px 0;border-bottom:1px solid var(--n-100);}
+.pv-row:last-child{border-bottom:none;}
+.pv-k{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:2px;}
+.pv-v{font-size:var(--fs-body);font-weight:500;}
+.pv-note{display:flex;gap:7px;background:var(--n-100);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-600);line-height:1.55;margin-top:var(--sp-4);}
+
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>어드민 · 입점 관리 (인플루언서) <span style="color:var(--n-400);font-weight:400;">ui-admin-03-onboarding-influencer · rev.1</span></h1>
+  <p class="meta">근거: wf-admin-02-입점관리 F2·F3·F4·F5 (인플루언서) · 토큰: SHOWROOMZ_웹_디자인시스템_v1.1 · 1440×1024 · 상태 7종</p>
+  <div class="rule">
+    <b>이 파일의 성격</b> — <code>ui-admin-02-onboarding-brand.html</code>(rev.1)의 셸·CSS·인터랙션 패턴을 <b>그대로 재사용</b>하고, 도메인 콘텐츠(필드·문구)만 인플루언서 심사 기준으로 교체한 것이다. 어드민 공통 규격(기능요구사항 §5-8)이 두 화면 모두에 동일 적용된다.
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>상세 카드 구성</td><td>브랜드의 <b>기본정보·사업자정보·정산정보·첨부서류(4장)</b> → <b>본인인증·활동채널·약관동의(3장)</b>로 교체</td><td>인플루언서 신청은 첨부 서류가 없음(본인인증이 PASS로 자동화되어 있어 서류 대조 자체가 불필요)</td></tr>
+      <tr><td>목록 컬럼</td><td>브랜드의 <b>브랜드명·담당자·연락처·사업자구분</b> → <b>계정 아이디·실명/연락처·팔로워 수</b>로 교체(wf-admin-02 F2 기준). <b>[신규수정] "활동명"은 제외</b> — 실제로 수집하는 정보가 아니라 목록·검색 전부에서 제거, 계정 아이디를 주요(굵게) 식별 컬럼으로 대체</td><td>인플루언서는 채널·팔로워가 심사 판단의 핵심 재료. 활동명은 도메인모델(§1-2 활동 채널)에 없는 필드 — 목업 단계 임의 표기였음</td></tr>
+      <tr><td>반려 시 재신청 정책</td><td class="warn">브랜드와 <b>의도적으로 다름</b> — 브랜드는 계정 폐기 후 <b>쿨다운 없이</b> 즉시 재가입, 인플루언서는 <b>반려일로부터 14일</b> 경과해야 완전히 새 신청서로만 재신청 가능</td><td><code>ui-studio-01-login.html</code>(rev.1) §7-3에서 확정한 정책과 동일하게 맞춤. 두 화면이 같을 필요는 없다고 판단</td></tr>
+      <tr><td>반려 사유 선택지</td><td>브랜드(사업자등록번호 불일치·통신판매업 신고 미완료·첨부 서류 불량 등 서류 중심) → <b>채널 실적 확인 불가·본인 인증 정보 불일치·허위 팔로워 의심</b>으로 교체</td><td>인플루언서 심사는 서류 대조가 아니라 채널·실적 검증이 핵심</td></tr>
+      <tr><td>승인 시 안내</td><td>"로그인 후 온보딩(반품 수취 주소 등)" → <b>"로그인 후 온보딩(쇼룸명·사업자 여부·정산계좌)"</b>로 교체</td><td>wf-admin-02 F3 인플루언서 상세의 규칙 노트 그대로 반영 — 쇼룸명은 신청서가 아닌 온보딩에서 입력(심사 통과 전 선점 방지)</td></tr>
+      <tr><td>계좌번호 마스킹 여부</td><td>해당 없음 — 인플루언서 신청서에는 정산계좌 항목 자체가 없음(온보딩에서 별도 입력)</td><td>브랜드의 "계좌번호 전체 노출" 규칙은 인플루언서 화면에 적용되지 않음</td></tr>
+    </table>
+    <b class="warn">[법률 대기]</b> 쟁점 F — 인플루언서가 사업자등록 없이 활동 시 통신판매업자로 오인될 리스크. 심사 단계에서 별도 안내 문구 필요 여부는 변호사 검토 후 반영(wf-admin-02 F3 원본 노트).<br>
+    <b class="warn">확인 필요</b> — 목록의 반려 행에서 실명·연락처·팔로워 수를 "파기됨"으로 표시했다(브랜드의 담당자·연락처 파기 표시와 동일 원칙 적용). 인플루언서도 브랜드와 같은 수준의 파기가 맞는지, 아니면 14일 후 재신청을 전제로 일부 보존해야 하는지는 <b>[법률 대기]</b> 쟁점과 함께 확인 필요.<br>
+    <b>rev.1 최초 시안</b> — 어드민 입점 관리(인플루언서). 근거 와이어 <code>wf-admin-02</code> F2·F3·F4·F5.<br>
+    <span class="warn">[중요] 어드민 공통 디자인 시스템 v1.0(2026.05) 사용 금지 — 폐기 확정(2026.07).</span>
+    본 시안은 <b>SHOWROOMZ_웹_디자인시스템 v1.1 토큰만</b> 사용한다. 브랜드 어드민 화면(<code>ui-admin-02-onboarding-brand</code>)과 완전히 동일한 셸·토큰이다.<br>
+    <b>포함하지 않은 상태</b> — 브랜드 화면에 있던 <b>A2(검색 결과 없음)</b>·<b>D1(첨부 서류 미리보기)</b>는 이 화면에서 제외했다. D1은 애초에 첨부 서류가 없어 불필요하고, A2는 브랜드와 동일 패턴이라 중복 제작하지 않았다 — 재구현 시 브랜드 화면의 해당 상태를 그대로 가져다 쓰면 된다. <b>T(처리 완료 토스트)는 이번에 추가</b>했다.<br>
+    <b class="new">[신규제안] 반려 후 악용 신청 방지 — 전부 파기하면 왜 문제가 안 되는가</b>
+    <table>
+      <tr><th>보존 항목</th><th>내용</th><th>목적</th></tr>
+      <tr><td>연락처 해시</td><td>휴대폰 번호를 <b>단방향 해시</b>로만 보존(복원 불가) — 브랜드의 사업자등록번호 해시 보존과 동일 원칙</td><td>다른 소셜 계정으로 재가입을 시도해도 <b>동일인 여부를 대조</b>할 수 있다</td></tr>
+      <tr><td>계정 아이디 · 채널 주소</td><td><b>파기하지 않고 그대로 유지</b> — Instagram 핸들·URL은 공개 식별자라 개인정보로 보기 어렵다</td><td>같은 채널이 이름·연락처를 바꿔가며 반복 신청하는 것을 <b>차단 목록으로 직접 대조</b></td></tr>
+      <tr><td>감사 로그</td><td>신청 ID · 연락처 해시 · 계정 아이디 · 반려 유형·사유 · 처리자 · 처리 시각</td><td>브랜드와 동일하게 <b>보존되는 감사 로그의 최소 범위</b></td></tr>
+      <tr><td>소셜 로그인 계정 자체</td><td>스튜디오는 <b>소비자 계정과 동일 소셜 로그인</b>을 쓴다(§7-1 계정 원칙). 신청서를 파기해도 그 사람의 소비자 계정 자체는 남아있다</td><td>악성 사용자로 확인되면 <b>소비자 계정 단에서 정지</b>하는 것이 더 근본적 차단 — 회원 관리 쪽 정책과 연동 필요(§7-5 미결 2번 참고)</td></tr>
+    </table>
+    <b class="warn">확인 필요</b> — 연락처 해시 대조 로직(같은 해시로 며칠 내 반복 신청 시 자동 경고 등)은 이번 화면에 넣지 않았다. 반려 건수가 쌓였을 때 필요한 <b>운영 기능</b>이라 MVP 이후 별도 검토 대상.
+  </div>
+</div>
+<section class="state">
+  <div class="state-bar"><span class="state-id">A1</span><span class="state-label">목록 · 기본 (심사 대기 탭)</span>
+  <span class="state-spec">경과시간 내림차순 · SLA 초과 최상단 · 컬럼은 채널·팔로워 중심(wf-admin-02 F2) · 행 전체 클릭 → 상세 이동</span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h">
+    <div><div class="page-t">인플루언서 입점 신청</div></div>
+  </div>
+  <div class="filter"><div class="tabs"><div class="tab active">심사 대기<span class="tn">2</span></div><div class="tab">승인<span class="tn">1</span></div><div class="tab">반려<span class="tn">1</span></div><div class="tab">전체<span class="tn">4</span></div></div>
+    <div class="search"><input class="inp" type="text" placeholder="계정 아이디로 검색" value="">
+    <button class="btn btn-secondary">검색</button></div>
+  </div>
+  <div class="tcard">
+    <div class="tbar"><div class="tbar-l">총 <b>4</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>20건</option><option>50건</option><option>100건</option></select></div>
+    </div>
+    <table><colgroup><col style="width:24%"><col style="width:14%"><col style="width:16%"><col style="width:16%"><col style="width:12%"><col style="width:18%"></colgroup>
+    <thead><tr>
+<td>계정 아이디</td><td>실명</td><td>팔로워 수</td><td>신청일</td>
+<td class="t-c">경과</td><td class="t-c">상태</td>
+</tr></thead><tbody>
+<tr><td><span class="t-main">@beauty_soyeon</span></td><td>이소연</td><td>42,300명</td><td class="t-sub">2026.07.13</td><td class="t-c"><span class="over">18h</span></td><td class="t-c"><span class="badge b-warning">SLA 초과</span></td></tr>
+<tr><td><span class="t-main">@glow_jimin</span></td><td>정지민</td><td>18,900명</td><td class="t-sub">2026.07.14</td><td class="t-c"><span>6h</span></td><td class="t-c"><span class="badge b-info">심사 대기</span></td></tr>
+<tr><td><span class="t-main">@cosme_minji</span></td><td>박민지</td><td>65,100명</td><td class="t-sub">2026.07.07</td><td class="t-c"><span>—</span></td><td class="t-c"><span class="badge b-success">승인</span></td></tr>
+<tr><td><span class="t-main">@honeydew_yerin</span></td><td><span class="purged">파기됨</span></td><td><span class="purged">파기됨</span></td><td class="t-sub">2026.07.06</td><td class="t-c"><span>—</span></td><td class="t-c"><span class="badge b-neutral">반려</span></td></tr>
+</tbody></table><div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">›</span></div>
+  </div>
+</div>
+
+  </div>
+</section>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">B1</span><span class="state-label">상세 · 심사 대기 (조치 가능)</span>
+  <span class="state-spec">본인인증·활동채널·약관동의 3카드 · 첨부 서류 없음(본인인증 자동화) · 우측 액션 카드 <b>sticky</b></span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서 / 뷰티_소연</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">뷰티_소연</div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn"><span class="ic">‹</span>이전</span><span class="nav-btn">다음<span class="ic">›</span></span></div></div>
+  <div class="detail">
+    <div><div class="card"><div class="card-h">본인 인증</div><div class="card-b"><div class="frow"><div class="flabel">실명</div><div class="fval">이소연 (인증 완료)</div></div><div class="frow"><div class="flabel">생년월일</div><div class="fval">1998.03.12</div></div><div class="frow"><div class="flabel">연락처</div><div class="fval">010-****-5678</div></div><div class="frow"><div class="flabel">인증 수단</div><div class="fval">휴대폰 본인인증(PASS)</div></div></div></div><div class="card"><div class="card-h">활동 채널<span class="ch-n">계약 이행 검증 식별 키</span></div><div class="card-b"><div class="frow"><div class="flabel">플랫폼</div><div class="fval">Instagram (고정)</div></div><div class="frow"><div class="flabel">채널 주소</div><div class="fval"><a class="ch-link" href="https://instagram.com/beauty_soyeon" target="_blank" rel="noopener">instagram.com/beauty_soyeon ↗</a></div></div><div class="frow"><div class="flabel">계정 아이디</div><div class="fval">@beauty_soyeon</div></div><div class="frow"><div class="flabel">팔로워 수</div><div class="fval">42,300명 <span class="fnote">자기 신고값</span></div></div><div class="frow"><div class="flabel">업무용 이메일</div><div class="fval">soyeon.biz@gmail.com</div></div></div></div><div class="card"><div class="card-h">약관 동의</div><div class="card-b"><div class="frow"><div class="flabel">마케팅 정보 수신 동의</div><div class="fval">미동의 (선택)</div></div></div></div></div>
+    <div class="side-card">
+      <div class="card"><div class="card-h">현재 상태</div>
+        <div class="st-now"><div class="st-line"><span class="st-lbl">심사 상태</span><span class="badge b-info">심사 대기</span></div>
+        <div class="st-meta"><div class="mrow"><span class="mk">신청번호</span><span class="mv">INF-2201</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv">2026.07.13 18:04</span></div><div class="mrow"><span class="mk">경과</span><span class="mv">18h</span></div></div><div class="st-acts"><button class="btn btn-lg btn-danger">반려</button><button class="btn btn-lg btn-primary">승인</button></div><div class="st-hint">승인 시 계정이 즉시 활성화되어 온보딩(쇼룸명·사업자여부·정산계좌)이 강제됩니다. <b style="color:var(--danger-text)">반려 시 이번 신청 건이 종료</b>되며, <b>14일 후</b>에만 새 신청이 가능합니다.</div></div></div>
+      
+      <div class="card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="hist"><div class="hitem"><div class="hdot on"></div><div><div class="htxt">신청 접수</div><div class="hmeta">2026.07.13 18:04</div></div></div></div></div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">B2</span><span class="state-label">상세 · 처리 완료(승인) <span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">와이어에 없던 상태 — <b>액션 버튼 제거</b>(재처리 불가) · 승인 시 계정 활성화 → 온보딩(쇼룸명·사업자여부·정산계좌) 강제 안내</span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서 / 코스메_민지</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">코스메_민지</div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn"><span class="ic">‹</span>이전</span></div></div>
+  <div class="detail">
+    <div><div class="card"><div class="card-h">본인 인증</div><div class="card-b"><div class="frow"><div class="flabel">실명</div><div class="fval">이소연 (인증 완료)</div></div><div class="frow"><div class="flabel">생년월일</div><div class="fval">1998.03.12</div></div><div class="frow"><div class="flabel">연락처</div><div class="fval">010-****-5678</div></div><div class="frow"><div class="flabel">인증 수단</div><div class="fval">휴대폰 본인인증(PASS)</div></div></div></div><div class="card"><div class="card-h">활동 채널<span class="ch-n">계약 이행 검증 식별 키</span></div><div class="card-b"><div class="frow"><div class="flabel">플랫폼</div><div class="fval">Instagram (고정)</div></div><div class="frow"><div class="flabel">채널 주소</div><div class="fval"><a class="ch-link" href="https://instagram.com/beauty_soyeon" target="_blank" rel="noopener">instagram.com/beauty_soyeon ↗</a></div></div><div class="frow"><div class="flabel">계정 아이디</div><div class="fval">@beauty_soyeon</div></div><div class="frow"><div class="flabel">팔로워 수</div><div class="fval">42,300명 <span class="fnote">자기 신고값</span></div></div><div class="frow"><div class="flabel">업무용 이메일</div><div class="fval">soyeon.biz@gmail.com</div></div></div></div><div class="card"><div class="card-h">약관 동의</div><div class="card-b"><div class="frow"><div class="flabel">마케팅 정보 수신 동의</div><div class="fval">미동의 (선택)</div></div></div></div></div>
+    <div class="side-card">
+      <div class="card"><div class="card-h">현재 상태</div>
+        <div class="st-now"><div class="st-line"><span class="st-lbl">심사 상태</span><span class="badge b-success">승인 완료</span></div>
+        <div class="st-meta"><div class="mrow"><span class="mk">신청번호</span><span class="mv">INF-2198</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv">2026.07.07 10:15</span></div><div class="mrow"><span class="mk">경과</span><span class="mv">6일</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div></div><div class="st-hint" style="margin-top:var(--sp-3)">처리가 완료된 건입니다. 추가 조치가 필요하면 <b>회원 관리</b>에서 계정 상태를 변경하세요.</div></div></div>
+      
+      <div class="card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="hist"><div class="hitem"><div class="hdot ok"></div><div><div class="htxt">승인 처리 · 김운영</div><div class="hmeta">2026.07.09 11:20</div></div></div><div class="hitem"><div class="hdot on"></div><div><div class="htxt">신청 접수</div><div class="hmeta">2026.07.07 10:15</div></div></div></div></div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">B3</span><span class="state-label">상세 · 처리 완료(반려) <span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec"><b class="warn">신청 폐기 상태</b> — 대부분 필드가 <b>파기됨</b>으로 표시 · <b>[결정 변경]</b> 즉시 재제출 아닌 <b>반려일로부터 14일 후 완전히 새 신청</b>만 가능(ui-studio-01-login 정책과 동일)</span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서 / 허니듀_예린</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">허니듀_예린</div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn">다음<span class="ic">›</span></span></div></div>
+  <div class="detail">
+    <div><div class="card"><div class="card-h">본인 인증<span class="ch-n">파기됨</span></div><div class="card-b"><div class="purge-note"><span>ℹ</span><span>반려 처리 시 <b>실명·생년월일 등 개인정보는 파기</b>됩니다. 단, <b>연락처는 단방향 해시로 보존</b>해 동일인의 반복·악용 신청을 대조할 수 있게 합니다(<b>[신규제안]</b> 브랜드 사업자등록번호 해시 보존과 동일 원칙). 이 신청 건은 종료되며, <b>반려일로부터 14일 후</b> 완전히 새 신청서로만 재신청할 수 있습니다(§8-4 · ui-studio-01-login 정책과 동일).</span></div><div class="frow"><div class="flabel">실명</div><div class="fval"><span class="purged">파기됨</span></div></div><div class="frow"><div class="flabel">생년월일</div><div class="fval"><span class="purged">파기됨</span></div></div><div class="frow"><div class="flabel">연락처 해시</div><div class="fval"><span class="mono">b71e…4a02</span><span class="fnote">단방향 · 복원 불가</span></div></div></div></div><div class="card"><div class="card-h">활동 채널<span class="ch-n">계정 아이디·채널은 유지</span></div><div class="card-b"><div class="frow"><div class="flabel">플랫폼</div><div class="fval">Instagram (고정)</div></div><div class="frow"><div class="flabel">채널 주소</div><div class="fval"><a class="ch-link" href="https://instagram.com/honeydew_yerin" target="_blank" rel="noopener">instagram.com/honeydew_yerin ↗</a></div></div><div class="frow"><div class="flabel">계정 아이디</div><div class="fval">@honeydew_yerin <span class="fnote">차단 목록 대조용 · 개인정보 아님</span></div></div><div class="frow"><div class="flabel">팔로워 수</div><div class="fval"><span class="purged">파기됨</span></div></div><div class="frow"><div class="flabel">업무용 이메일</div><div class="fval"><span class="purged">파기됨</span></div></div></div></div><div class="card"><div class="card-h">약관 동의<span class="ch-n">파기됨</span></div><div class="card-b"><div class="frow"><div class="flabel">동의 이력</div><div class="fval"><span class="purged">파기됨</span></div></div></div></div></div>
+    <div class="side-card">
+      <div class="card"><div class="card-h">현재 상태</div>
+        <div class="st-now"><div class="st-line"><span class="st-lbl">심사 상태</span><span class="badge b-neutral">반려 · 파기 완료</span></div>
+        <div class="st-meta"><div class="mrow"><span class="mk">신청번호</span><span class="mv">INF-2189</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv">2026.07.06 09:12</span></div><div class="mrow"><span class="mk">경과</span><span class="mv">1일 2h</span></div><div class="mrow"><span class="mk">처리자</span><span class="mv">김운영</span></div></div><div class="rej-reason"><div class="rej-t">반려 사유 · 채널 실적 확인 불가</div><div class="rej-d">신고된 팔로워 수와 실제 채널 지표가 크게 달라 확인이 어렵습니다.</div></div><div class="st-hint"><b>반려일로부터 14일 후</b>에만 재신청이 가능합니다. 재신청 시 <b>신규 건으로 새 행이 생성</b>되며, 본 건에는 누적되지 않습니다.</div></div></div>
+      
+      <div class="card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="hist"><div class="hitem"><div class="hdot rj"></div><div><div class="htxt">제출 정보 파기 · 14일 재신청 제한 시작</div><div class="hmeta">2026.07.06 11:00</div></div></div><div class="hitem"><div class="hdot rj"></div><div><div class="htxt">반려 처리 · 김운영</div><div class="hmeta">2026.07.06 11:00</div></div></div><div class="hitem"><div class="hdot on"></div><div><div class="htxt">신청 접수</div><div class="hmeta">2026.07.06 09:12</div></div></div></div></div>
+    </div>
+  </div>
+</div>
+
+  </div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">C1</span><span class="state-label">반려 모달</span>
+  <span class="state-spec">사유 <b>필수</b> · 상세 <b>선택</b>(단 "기타"는 필수) · 반려 시 <b>14일 재신청 제한</b> 경고 노출(브랜드=즉시 재가입과 다름)</span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서 / 뷰티_소연</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">뷰티_소연</div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn"><span class="ic">‹</span>이전</span><span class="nav-btn">다음<span class="ic">›</span></span></div></div>
+  <div class="detail">
+    <div><div class="card"><div class="card-h">본인 인증</div><div class="card-b"><div class="frow"><div class="flabel">실명</div><div class="fval">이소연 (인증 완료)</div></div><div class="frow"><div class="flabel">생년월일</div><div class="fval">1998.03.12</div></div><div class="frow"><div class="flabel">연락처</div><div class="fval">010-****-5678</div></div><div class="frow"><div class="flabel">인증 수단</div><div class="fval">휴대폰 본인인증(PASS)</div></div></div></div><div class="card"><div class="card-h">활동 채널<span class="ch-n">계약 이행 검증 식별 키</span></div><div class="card-b"><div class="frow"><div class="flabel">플랫폼</div><div class="fval">Instagram (고정)</div></div><div class="frow"><div class="flabel">채널 주소</div><div class="fval"><a class="ch-link" href="https://instagram.com/beauty_soyeon" target="_blank" rel="noopener">instagram.com/beauty_soyeon ↗</a></div></div><div class="frow"><div class="flabel">계정 아이디</div><div class="fval">@beauty_soyeon</div></div><div class="frow"><div class="flabel">팔로워 수</div><div class="fval">42,300명 <span class="fnote">자기 신고값</span></div></div><div class="frow"><div class="flabel">업무용 이메일</div><div class="fval">soyeon.biz@gmail.com</div></div></div></div><div class="card"><div class="card-h">약관 동의</div><div class="card-b"><div class="frow"><div class="flabel">마케팅 정보 수신 동의</div><div class="fval">미동의 (선택)</div></div></div></div></div>
+    <div class="side-card">
+      <div class="card"><div class="card-h">현재 상태</div>
+        <div class="st-now"><div class="st-line"><span class="st-lbl">심사 상태</span><span class="badge b-info">심사 대기</span></div>
+        <div class="st-meta"><div class="mrow"><span class="mk">신청번호</span><span class="mv">INF-2201</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv">2026.07.13 18:04</span></div><div class="mrow"><span class="mk">경과</span><span class="mv">18h</span></div></div><div class="st-acts"><button class="btn btn-lg btn-danger">반려</button><button class="btn btn-lg btn-primary">승인</button></div><div class="st-hint">승인 시 계정이 즉시 활성화되어 온보딩이 강제됩니다. <b style="color:var(--danger-text)">반려 시 이번 신청 건이 종료</b>되며, <b>14일 후</b>에만 새 신청이 가능합니다.</div></div></div>
+      
+      <div class="card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="hist"><div class="hitem"><div class="hdot on"></div><div><div class="htxt">신청 접수</div><div class="hmeta">2026.07.13 18:04</div></div></div></div></div>
+    </div>
+  </div>
+</div>
+<div class="overlay"><div class="modal">
+  <div class="modal-h">입점 신청 반려<span class="modal-x">✕</span></div>
+  <div class="modal-b">
+    <b>뷰티_소연</b>의 입점 신청을 반려합니다. 반려 사유는 <b>내부 기록용</b>이며 신청자에게 별도로 안내되지 않습니다.
+    <label class="mlabel">반려 사유<span class="req">*</span> <span style="font-weight:400;color:var(--n-500)">(내부 기록용 · 신청자 미노출)</span></label>
+    <select class="msel"><option>반려 사유 선택</option><option>채널 실적 확인 불가</option>
+      <option>본인 인증 정보 불일치</option><option>허위 팔로워 의심</option><option>기타(직접 입력)</option></select>
+    <label class="mlabel">상세 사유 <span style="font-weight:400;color:var(--n-500)">(선택 · 내부 기록용 · 신청자 미노출)</span></label>
+    <textarea class="mta" placeholder="신청자에게는 발송되지 않습니다. 내부 심사 기록·재발 방지용으로 구체적으로 남겨주세요."></textarea>
+    <div class="mhint">사유를 <b>기타(직접 입력)</b>로 선택한 경우 상세 사유는 <b>필수</b>입니다. <b>[신규수정]</b> 이 텍스트는 신청자 통지에 포함되지 않습니다 — 이전 버전의 플레이스홀더가 "통지 이메일·문자에 발송됩니다"라고 되어 있어 브랜드 반려 모달(공개) 문구가 잘못 복사돼 있었습니다.</div>
+    <div class="mwarn"><span>⚠</span><span>반려 즉시 <b>제출 정보가 파기</b>되며, 이번 신청 건은 종료됩니다. 신청자는 <b>반려일로부터 14일 후</b>에만 완전히 새 신청서로 재신청할 수 있습니다. <b>이 처리는 되돌릴 수 없습니다.</b></span></div>
+  </div>
+  <div class="modal-f"><button class="btn btn-secondary">취소</button>
+    <button class="btn btn-danger">반려 처리</button></div>
+</div></div>
+  </div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">C2</span><span class="state-label">승인 모달</span>
+  <span class="state-spec">사유 입력 없음 · 소형 모달 400px · 승인 시 온보딩(쇼룸명·사업자여부·정산계좌) 강제 안내 포함</span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서 / 뷰티_소연</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">뷰티_소연</div><div class="navgrp"><span class="nav-btn">목록</span><span class="nav-sep"></span><span class="nav-btn"><span class="ic">‹</span>이전</span><span class="nav-btn">다음<span class="ic">›</span></span></div></div>
+  <div class="detail">
+    <div><div class="card"><div class="card-h">본인 인증</div><div class="card-b"><div class="frow"><div class="flabel">실명</div><div class="fval">이소연 (인증 완료)</div></div><div class="frow"><div class="flabel">생년월일</div><div class="fval">1998.03.12</div></div><div class="frow"><div class="flabel">연락처</div><div class="fval">010-****-5678</div></div><div class="frow"><div class="flabel">인증 수단</div><div class="fval">휴대폰 본인인증(PASS)</div></div></div></div><div class="card"><div class="card-h">활동 채널<span class="ch-n">계약 이행 검증 식별 키</span></div><div class="card-b"><div class="frow"><div class="flabel">플랫폼</div><div class="fval">Instagram (고정)</div></div><div class="frow"><div class="flabel">채널 주소</div><div class="fval"><a class="ch-link" href="https://instagram.com/beauty_soyeon" target="_blank" rel="noopener">instagram.com/beauty_soyeon ↗</a></div></div><div class="frow"><div class="flabel">계정 아이디</div><div class="fval">@beauty_soyeon</div></div><div class="frow"><div class="flabel">팔로워 수</div><div class="fval">42,300명 <span class="fnote">자기 신고값</span></div></div><div class="frow"><div class="flabel">업무용 이메일</div><div class="fval">soyeon.biz@gmail.com</div></div></div></div><div class="card"><div class="card-h">약관 동의</div><div class="card-b"><div class="frow"><div class="flabel">마케팅 정보 수신 동의</div><div class="fval">미동의 (선택)</div></div></div></div></div>
+    <div class="side-card">
+      <div class="card"><div class="card-h">현재 상태</div>
+        <div class="st-now"><div class="st-line"><span class="st-lbl">심사 상태</span><span class="badge b-info">심사 대기</span></div>
+        <div class="st-meta"><div class="mrow"><span class="mk">신청번호</span><span class="mv">INF-2201</span></div><div class="mrow"><span class="mk">신청일</span><span class="mv">2026.07.13 18:04</span></div><div class="mrow"><span class="mk">경과</span><span class="mv">18h</span></div></div><div class="st-acts"><button class="btn btn-lg btn-danger">반려</button><button class="btn btn-lg btn-primary">승인</button></div><div class="st-hint">승인 시 계정이 즉시 활성화되어 온보딩이 강제됩니다. <b style="color:var(--danger-text)">반려 시 이번 신청 건이 종료</b>되며, <b>14일 후</b>에만 새 신청이 가능합니다.</div></div></div>
+      
+      <div class="card"><div class="card-h">처리 이력<span class="ch-n">최신순</span></div><div class="hist"><div class="hitem"><div class="hdot on"></div><div><div class="htxt">신청 접수</div><div class="hmeta">2026.07.13 18:04</div></div></div></div></div>
+    </div>
+  </div>
+</div>
+<div class="overlay"><div class="modal sm">
+  <div class="modal-h">입점 신청 승인<span class="modal-x">✕</span></div>
+  <div class="modal-b"><b>뷰티_소연</b>의 입점 신청을 승인하시겠습니까?<br><br>
+    승인 시 계정이 즉시 활성화되고 신청자에게 <b>이메일</b>로 통지됩니다.
+    신청자는 로그인 후 온보딩(쇼룸명·사업자 여부·정산계좌) 입력이 강제됩니다.</div>
+  <div class="modal-f"><button class="btn btn-secondary">취소</button>
+    <button class="btn btn-primary">승인하기</button></div>
+</div></div>
+  </div>
+</section>
+
+
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">T</span><span class="state-label">처리 완료 · 토스트 <span class="state-id" style="background:var(--accent-500)">신규</span></span>
+  <span class="state-spec">처리 후 목록 복귀 + 성공 토스트(우상단 3초) · 해당 건은 <b>승인</b> 배지로 갱신</span></div>
+  <div class="stage">
+<div class="side">
+<div class="side-brand"><svg viewBox="0 0 1863.4 200" width="130" height="14" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">어드민</span></div>
+<div class="side-nav">
+<div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+<div class="gnb-item open" data-acc="2"><span class="gn">2</span><span class="gt">입점 관리</span><span class="gcnt">7</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group" data-grp="2">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">4</span></div>
+<div class="gnb-sub active"><span>인플루언서</span><span class="scnt">3</span></div>
+</div>
+<div class="gnb-item" data-acc="3"><span class="gn">3</span><span class="gt">회원 관리</span><span class="gcnt">1</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="3">
+<div class="gnb-sub"><span>브랜드</span><span class="scnt">12</span></div>
+<div class="gnb-sub"><span>인플루언서</span><span class="scnt">18</span></div>
+<div class="gnb-sub"><span>소비자</span><span class="scnt">2,340</span></div>
+</div>
+<div class="gnb-item"><span class="gn">4</span><span class="gt">상품 관리</span></div>
+<div class="gnb-item"><span class="gn">5</span><span class="gt">공구 관리</span><span class="gcnt">4</span></div>
+<div class="gnb-item"><span class="gn">6</span><span class="gt">거래 관리</span><span class="gcnt">3</span></div>
+<div class="gnb-item" data-acc="7"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">6</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="7">
+<div class="gnb-sub"><span>공구 정산</span></div>
+<div class="gnb-sub"><span>고정 지급비 정산</span></div>
+</div>
+<div class="gnb-item" data-acc="8"><span class="gn">8</span><span class="gt">CS·콘텐츠 관리</span><span class="gcnt">5</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="8">
+<div class="gnb-sub"><span>1:1 문의</span></div>
+<div class="gnb-sub"><span>상품 문의 모니터링</span></div>
+<div class="gnb-sub"><span>FAQ 관리</span></div>
+<div class="gnb-sub"><span>공지 관리</span></div>
+<div class="gnb-sub"><span>약관 관리</span></div>
+</div>
+<div class="gnb-item" data-acc="9"><span class="gn">9</span><span class="gt">게시물·소통 모니터링</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="9">
+<div class="gnb-sub"><span>공구 게시물</span></div>
+<div class="gnb-sub"><span>일반 게시물</span></div>
+<div class="gnb-sub"><span>소통 스레드</span></div>
+</div>
+<div class="gnb-item" data-acc="10"><span class="gn">10</span><span class="gt">설정</span><span class="chev"><svg viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+<div class="gnb-group closed" data-grp="10">
+<div class="gnb-sub"><span>소셜 로그인 설정</span></div>
+<div class="gnb-sub"><span>운영자 계정 관리</span></div>
+</div>
+</div></div>
+<div class="top"><div class="crumb">입점 관리<span class="c-sub">/ 인플루언서</span></div><div class="op"><span>김운영 <b style="font-weight:600">운영자</b></span><span class="op-av">김</span></div></div>
+<div class="main">
+  <div class="page-h">
+    <div><div class="page-t">인플루언서 입점 신청</div></div>
+  </div>
+  <div class="filter"><div class="tabs"><div class="tab active">심사 대기<span class="tn">1</span></div><div class="tab">승인<span class="tn">2</span></div><div class="tab">반려<span class="tn">1</span></div><div class="tab">전체<span class="tn">4</span></div></div>
+    <div class="search"><input class="inp" type="text" placeholder="계정 아이디로 검색" value="">
+    <button class="btn btn-secondary">검색</button></div>
+  </div>
+  <div class="tcard">
+    <div class="tbar"><div class="tbar-l">총 <b>4</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>20건</option><option>50건</option><option>100건</option></select></div>
+    </div>
+    <table><colgroup><col style="width:24%"><col style="width:14%"><col style="width:16%"><col style="width:16%"><col style="width:12%"><col style="width:18%"></colgroup>
+    <thead><tr>
+<td>계정 아이디</td><td>실명</td><td>팔로워 수</td><td>신청일</td>
+<td class="t-c">경과</td><td class="t-c">상태</td>
+</tr></thead><tbody>
+<tr><td><span class="t-main">@beauty_soyeon</span></td><td>이소연</td><td>42,300명</td><td class="t-sub">2026.07.13</td><td class="t-c"><span>—</span></td><td class="t-c"><span class="badge b-success">승인</span></td></tr>
+<tr><td><span class="t-main">@glow_jimin</span></td><td>정지민</td><td>18,900명</td><td class="t-sub">2026.07.14</td><td class="t-c"><span>6h</span></td><td class="t-c"><span class="badge b-info">심사 대기</span></td></tr>
+<tr><td><span class="t-main">@cosme_minji</span></td><td>박민지</td><td>65,100명</td><td class="t-sub">2026.07.07</td><td class="t-c"><span>—</span></td><td class="t-c"><span class="badge b-success">승인</span></td></tr>
+<tr><td><span class="t-main">@honeydew_yerin</span></td><td><span class="purged">파기됨</span></td><td><span class="purged">파기됨</span></td><td class="t-sub">2026.07.06</td><td class="t-c"><span>—</span></td><td class="t-c"><span class="badge b-neutral">반려</span></td></tr>
+</tbody></table><div class="pager"><span class="page-item">‹</span><span class="page-item active">1</span><span class="page-item">2</span><span class="page-item">›</span></div>
+  </div>
+</div><div class="toast-wrap"><div class="toast"><span>✅</span><span>뷰티_소연 입점 신청을 승인했습니다.</span></div></div>
+
+  </div>
+</section>
+
+<script>
+document.querySelectorAll('.gnb-item[data-acc]').forEach(function(it){
+  it.addEventListener('click', function(){
+    var side = it.closest('.side');
+    var grp = side.querySelector('.gnb-group[data-grp="'+it.dataset.acc+'"]');
+    if(!grp) return;
+    var willOpen = grp.classList.contains('closed');
+    grp.classList.toggle('closed', !willOpen);
+    it.classList.toggle('open', willOpen);
+  });
+});
+</script>
+</body>
+</html>

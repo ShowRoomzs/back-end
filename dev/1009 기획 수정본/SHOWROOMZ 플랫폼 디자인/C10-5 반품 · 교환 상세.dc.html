@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#F2456E"/><g fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"><path d="M34 52h44a10 10 0 0 1 0 20H46"/><path d="M46 60 34 52l12-8"/><path d="M54 80l12 8-12 8"/></g></svg>
+</template>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C10-5 반품 · 교환 상세</span></div>
+<p class="dv-tsub">주문 내역·주문 상세의 해당 항목에서 진입합니다. 세 흐름 모두 <b>항목(옵션) 단위</b>로 열리고, 구조는 <b>현재 상태 → 진행 단계 → 대상 상품 → 사유·금액 → 다음 단계 안내</b>로 같습니다. 진행 단계 수와 종결 지점만 다릅니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>반품 상세 — 직접 발송</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px"><span style="font:600 11px/1 Pretendard,sans-serif;color:rgba(0,0,0,.45);margin-right:3px">상태</span>
+<sc-for list="{{ rtSw }}" as="w" hint-placeholder-count="3">
+<span onClick="{{ w.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ w.bg }};color:{{ w.color }};border:1px solid {{ w.border }};font:{{ w.font }}">{{ w.label }}</span>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C10-5 반품 상세" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">반품 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:22px 14px 18px;display:flex;align-items:flex-end;gap:12px">
+<div style="flex:1;min-width:0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.10.04(일) 13:31</div>
+<div style="margin-top:7px;font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">주문번호 20260923-1020</div>
+</div>
+<span style="flex:none;padding:12px 0;margin:-12px 0;font:500 12.5px/1.4 Pretendard,sans-serif;color:#737373;text-decoration:underline;text-underline-offset:3px;cursor:pointer">주문 상세</span>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">반품 상품</span><span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">{{ rtCount }}</span></div>
+
+<sc-if value="{{ rtGuide }}" hint-placeholder-val="{{ true }}">
+<div style="margin:14px 14px 0;padding:13px 14px;border-radius:8px;background:#FEF4F6">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#CF3D61">유의해 주세요</div>
+<div style="margin-top:9px;display:grid;gap:4px">
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">가까운 택배사에 접수한 뒤 <b style="font-weight:600">회수 송장을 등록</b>해 주세요. 등록해야 회수 상황이 추적돼요.</span></div>
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">이 상품만 한 박스에 포장해 주세요. 다른 반품·교환 상품은 함께 넣지 마세요.</span></div>
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">브랜드가 받아 검수를 마치면 환불되고, 알림으로 알려드려요.</span></div>
+</div>
+</div>
+</sc-if>
+
+<div style="padding:16px 14px 0;display:flex;align-items:center;gap:6px;font:600 12.5px/1.3 Pretendard,sans-serif"><span style="flex:none;color:#0F0F0F">{{ rtStatus }}</span><span style="flex:1;min-width:0;word-break:keep-all;color:{{ rtSubColor }}">{{ rtStatusSub }}</span></div>
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:linear-gradient(135deg,#EFE7DC,#DCCFBE);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">하루 코스메틱</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">수분 진정 마스크 10매</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">단품 / 1개</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">14,000원</div>
+</div>
+</div>
+<sc-if value="{{ rtHasActions }}" hint-placeholder-val="{{ true }}">
+<div style="padding:14px 14px 0;display:flex;gap:7px">
+<sc-for list="{{ rtActions }}" as="b" hint-placeholder-count="2">
+<div onClick="{{ b.tap }}" style="flex:1;min-width:0;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">{{ b.label }}</div>
+</sc-for>
+</div>
+</sc-if>
+
+
+<sc-if value="{{ rtPartRej }}" hint-placeholder-val="{{ false }}">
+<div style="margin:18px 14px 0;border-top:.5px solid #F0F0F0"></div>
+<div style="padding:16px 14px 0;display:flex;align-items:center;gap:6px;font:600 12.5px/1.3 Pretendard,sans-serif"><span style="flex:none;color:#0F0F0F">반품 승인</span><span style="flex:1;min-width:0;word-break:keep-all;color:#737373">검수 완료 · 환불 예정</span></div>
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:linear-gradient(135deg,#F1E7EA,#DCCCD3);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">하루 코스메틱</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">진정 토너 패드 60매</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">2개 묶음 / 1개</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">17,500원</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ rtRej }}" hint-placeholder-val="{{ false }}">
+<div style="margin:16px 14px 0;padding:14px;border-radius:8px;background:#F7F7F8">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#0F0F0F">반려 사유</div>
+<div style="margin-top:9px;font:600 13.5px/1.55 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">상품 개봉 · 사용 흔적 확인</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">전자상거래법상 청약철회 제한 사유에 해당해요</div>
+<div style="margin-top:12px;display:flex;gap:8px">
+<div style="width:64px;height:64px;border-radius:4px;background:linear-gradient(135deg,#E4DED6,#CFC6BB);flex:none"></div>
+<div style="width:64px;height:64px;border-radius:4px;background:linear-gradient(135deg,#E9E2DE,#D4CAC4);flex:none"></div>
+</div>
+<div style="margin-top:7px;font:400 11.5px/1.5 Pretendard,sans-serif;color:#737373">브랜드가 입고 검수 때 촬영한 사진이에요</div>
+<div style="margin-top:12px;padding:11px 12px;border-radius:8px;background:#fff">
+<div style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">하루 코스메틱의 메시지</div>
+<div style="margin-top:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">펌프 부분에 사용 흔적이 있어 재판매가 어려워요. 불편을 드려 죄송합니다.</div>
+</div>
+</div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">상품 다시 받기</div>
+<sc-if value="{{ rtRejPaid }}" hint-placeholder-val="{{ false }}">
+<div style="margin:10px 14px 0;padding:13px 14px;border-radius:8px;border:1px solid #E3E3E5;display:flex;gap:10px;align-items:flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:1px"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">{{ rtRejPaidTitle }}</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">재발송 배송비 3,000원 · 카카오페이 결제 완료 (10.10)</div>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ rtFullRej }}" hint-placeholder-val="{{ true }}">
+<div style="padding:8px 14px 0;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">반품이 반려된 상품을 다시 보내드려요. <b style="font-weight:600">10.23(금)까지</b> 재발송 배송비를 결제해 주세요.</div>
+<div style="padding:12px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">재발송 배송비</span><span style="flex:1;min-width:0;text-align:right;font:700 15px/1.4 Pretendard,sans-serif">3,000원</span></div>
+<div style="padding:12px 14px 0;display:flex;gap:8px">
+<div onClick="{{ rjPickCard }}" style="flex:1;min-width:0;height:74px;border-radius:8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;border:{{ rjCardBorder }};background:{{ rjCardBg }}" style-active="opacity:.6">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ rjCardIcon }}" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><rect x="3" y="6" width="18" height="12.5" rx="2.4"></rect><path d="M3 10.2h18"></path><path d="M6.4 14.6h3.4"></path></svg>
+<span style="font:{{ rjCardFont }};color:{{ rjCardColor }}">신용 · 체크카드</span>
+</div>
+<div onClick="{{ rjPickEasy }}" style="flex:1;min-width:0;height:74px;border-radius:8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;border:{{ rjEasyBorder }};background:{{ rjEasyBg }}" style-active="opacity:.6">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ rjEasyIcon }}" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><rect x="6" y="3" width="12" height="18" rx="2.6"></rect><path d="M10.3 6.6h3.4"></path><circle cx="12" cy="16.4" r="1.9"></circle></svg>
+<span style="font:{{ rjEasyFont }};color:{{ rjEasyColor }}">간편결제</span>
+</div>
+</div>
+<sc-if value="{{ rjCardOpen }}" hint-placeholder-val="{{ false }}">
+<div style="padding:10px 14px 0">
+<div onClick="{{ rjOpenIssuer }}" style="height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ rjIssuerColor }}">{{ rjIssuerLabel }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ rjEasyOpen }}" hint-placeholder-val="{{ false }}">
+<div style="padding:10px 14px 0;display:grid;gap:7px">
+<sc-for list="{{ rjPays }}" as="p" hint-placeholder-count="3">
+<div onClick="{{ p.pick }}" style="display:flex;align-items:center;gap:11px;min-height:52px;padding:0 13px;border-radius:8px;box-sizing:border-box;cursor:pointer;border:{{ p.border }};background:{{ p.bg }}" style-active="opacity:.6">
+<span style="width:20px;height:20px;border-radius:50%;flex:none;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:{{ p.dotBg }};border:{{ p.dotBorder }}"><i style="width:7px;height:7px;border-radius:50%;background:{{ p.dotInner }}"></i></span>
+<span style="flex:1;min-width:0;font:{{ p.font }};color:{{ p.color }}">{{ p.label }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<div style="padding:10px 14px 0;font:400 11.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">보관 기한 <b style="font-weight:600;color:#3C3C3C">10.23</b> · 이후 처리는 고객센터로 안내드려요.</div>
+</sc-if>
+<sc-if value="{{ rtPartRej }}" hint-placeholder-val="{{ false }}">
+<div style="margin:10px 14px 0;padding:13px 14px;border-radius:8px;border:1px solid #E3E3E5;display:flex;gap:10px;align-items:flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:1px"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">함께 반품한 상품의 환불액에서 재발송 배송비 3,000원을 빼고 보내드려요</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">반품이 승인된 진정 토너 패드 60매 환불액에서 차감돼요. 추가 결제는 없어요.</div>
+</div>
+</div>
+</sc-if>
+</sc-if>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+<div style="padding:18px 14px 8px;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">반품 신청 정보</div>
+<div style="padding:0 14px">
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">신청 일시</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">2026-10-04 13:31:54</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">완료 일시</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ rtDoneColor }}">{{ rtDoneAt }}</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">구매확정</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ rtPcColor }};text-wrap:pretty">{{ rtPc }}</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">반품 사유</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">단순 변심</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">반품 방법</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">고객 직접 발송</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">회수 송장</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ rtInvColor }};text-wrap:pretty">{{ rtInv }}</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">반품 수거지</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">김수* / 010-****-5678<br>(06234) 서울 강남구 테헤란로 *** ****</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">반품 도착지</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">하루 코스메틱 반품센터 / 02-0000-0000<br>(06234) 서울 강남구 테헤란로 000, 쇼룸타워 B1 물류센터</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:14px"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">환불 정보</div>
+<div style="padding:14px 14px 0;display:grid;gap:9px">
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">{{ rtPaidLabel }}</span><span style="flex:1;min-width:0;text-align:right;font:400 13.5px/1.4 Pretendard,sans-serif;color:{{ rtPaidColor }};text-decoration:{{ rtPaidDeco }}">14,000원</span></div>
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">반품 배송비 (차감)</span><span style="flex:1;min-width:0;text-align:right;font:400 13.5px/1.4 Pretendard,sans-serif;color:#CF3D61">-3,000원</span></div>
+<sc-if value="{{ rtPartRej }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">승인 상품 금액</span><span style="flex:1;min-width:0;text-align:right;font:400 13.5px/1.4 Pretendard,sans-serif">17,500원</span></div>
+<div style="display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">재발송 배송비 (차감)</span><span style="flex:1;min-width:0;text-align:right;font:400 13.5px/1.4 Pretendard,sans-serif;color:#CF3D61">-3,000원</span></div>
+</sc-if>
+</div>
+<div style="margin:12px 14px 0;padding-top:12px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="flex:none;font:600 14px/1 Pretendard,sans-serif">{{ rtRefundLabel }}</span><span style="flex:1;min-width:0;text-align:right;font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px;color:{{ rtRefundColor }}">{{ rtRefund }}</span></div>
+<div style="padding:9px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">환불 수단</span><span style="flex:1;min-width:0;text-align:right;font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">신한카드 결제 취소</span></div>
+<div style="padding:18px 14px 26px;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">무료배송으로 받은 주문을 단순 변심으로 반품하면 최초 배송비 3,000원이 차감돼요.</span></div>
+</div>
+
+</div>
+
+<sc-if value="{{ rtFullRej }}" hint-placeholder-val="{{ false }}">
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ rjBtnBg }};color:{{ rjBtnColor }};font:600 15px/1 Pretendard,sans-serif;cursor:{{ rjBtnCursor }}" style-active="opacity:{{ rjBtnPress }}">{{ rjBtnLabel }}</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ rjIssuerSheet }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ rjCloseIssuer }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:24"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:25;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">카드사 선택</div>
+<div style="padding:0 20px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px">
+<sc-for list="{{ rjIssuers }}" as="c" hint-placeholder-count="9">
+<div onClick="{{ c.pick }}" style="height:46px;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;cursor:pointer;border:{{ c.border }};background:{{ c.bg }};font:{{ c.font }};color:{{ c.color }}" style-active="opacity:.6">{{ c.label }}</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{ ivRtOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:12;background:#fff;display:flex;flex-direction:column">
+<div style="flex:none">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 16px">
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회수 송장 등록</span>
+<div onClick="{{ ivClose }}" style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></div>
+</div>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:18px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">택배사</div>
+<div onClick="{{ ivOpenCarrier }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ ivCarrierColor }}">{{ ivCarrier }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<div style="margin-top:18px;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">송장 번호</div>
+<div onClick="{{ ivFill }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;padding:0 13px;cursor:text">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ ivNumColor }}">{{ ivNum }}</span>
+</div>
+<div style="margin-top:8px;font:400 11.5px/1.6 Pretendard,sans-serif;color:#737373">숫자만 입력해 주세요 · 택배 영수증의 운송장 번호예요</div>
+</div>
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">보내실 주소</div>
+<div style="padding:12px 14px 0;font:400 13.5px/1.7 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">하루 코스메틱 반품센터 / 02-0000-0000<br>(06234) 서울 강남구 테헤란로 000, 쇼룸타워 B1 물류센터</div>
+<div style="padding:8px 14px 0;display:flex"><div style="display:flex;align-items:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55"><span style="height:30px;padding:0 11px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;font:600 11.5px/1 Pretendard,sans-serif;color:#3C3C3C">주소 복사</span></div></div>
+<div style="margin:20px 14px 0;padding-top:16px;border-top:.5px solid #F0F0F0;display:grid;gap:6px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">보내신 상품의 운송장 정보를 입력해 주세요. 입력하면 회수 상황이 자동으로 업데이트돼요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">택배사에서 배송 완료가 되어도 브랜드 입고·검수까지 1~3일이 더 걸릴 수 있어요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">반송 택배비는 택배사에 직접 결제해 주세요. 상자에 현금은 넣지 마세요.</span></div>
+</div>
+<div style="height:26px"></div>
+</div>
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div onClick="{{ ivSubmit }}" style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ ivBtnBg }};color:{{ ivBtnColor }};font:600 15px/1 Pretendard,sans-serif;cursor:{{ ivBtnCursor }}" style-active="opacity:{{ ivBtnPress }}">등록하기</div>
+</div>
+
+<sc-if value="{{ ivSheet }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ ivCloseSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:2"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:3;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">택배사 선택</div>
+<sc-for list="{{ ivCarriers }}" as="c" hint-placeholder-count="5">
+<div onClick="{{ c.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-top:{{ c.divider }};cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:{{ c.font }};color:{{ c.color }}">{{ c.label }}</span>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;opacity:{{ c.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ ivRtToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:14px;right:14px;bottom:30px;z-index:11;display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:8px;background:#0F0F0F">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+<span style="flex:1;min-width:0;font:500 13px/1.4 Pretendard,sans-serif;color:#fff">회수 송장이 등록되었어요</span>
+</div>
+</sc-if>
+<sc-if value="{{ rtWithdrawOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ rtCloseWithdraw }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 18px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">반품 요청을 철회할까요?</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">철회하면 이 상품은 다시<br>배송완료 상태로 돌아가요.</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ rtCloseWithdraw }}" style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">닫기</div>
+<div onClick="{{ rtCloseWithdraw }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">철회하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>구매확정 일시 정지</b> — 반품·교환을 요청하면 해당 항목의 구매확정 타이머가 멈추므로, 예정일 대신 "반품 처리 중 · 구매확정 일시 정지"를 신청 정보에 적습니다. 철회·자동 취소되면 남은 일수부터 다시 흐르고, 교환이 완료되면 7일이 새로 시작됩니다. <b>검수 반려 보관</b>은 약관 반영 전까지 폐기 문구 없이 "보관 기한 MM.DD · 이후 처리는 고객센터로 안내"로만 씁니다. 택배사 목록은 <b>추적 연동 업체 목록</b>과 같고 자유 입력은 없습니다.<br><br><b>직접 발송 흐름에 맞춘 반품 상세</b> — 구성은 참고 화면 그대로입니다: 신청 일시 + 주문번호 + [주문 상세] → <b>반품 상품 N개</b> → 유의 박스 → 상품 위 상태 → 상품 아래 버튼 → 반품 신청 정보 → 환불 정보 → 안내. 위 [상태]로 세 구간을 전환합니다.<br><br><b>상태별 차이</b> — <b>송장 입력 필요</b>: 상태 줄 "반품 요청 · 회수 송장 입력 필요"(뒷부분 로즈 — 사용자가 해야 할 일), 회수 송장 칸에 등록 기한, 버튼 [요청 철회] [회수 송장 등록]. 송장 등록은 <b>이 화면 안의 회수 송장 등록</b> 화면으로 갑니다. 철회는 확인 모달로 처리합니다(상품 하나 단위라 별도 페이지가 필요 없음). <b>회수중</b>: 송장이 붙어 추적 중 — 이미 보냈으므로 철회 버튼이 사라지고 [회수 조회]만 남습니다. <b>반품 완료</b>: 유의 박스가 사라지고 완료 일시가 채워지며 금액 라벨이 "환불 금액"으로 바뀝니다. 할 일이 끝난 상태라 버튼은 두지 않습니다.<br><br><b>검수 반려</b> — 반려는 <b>상품이 브랜드에 도착한 뒤 검수 단계에서만</b> 일어납니다(요청 단계 반려 없음). 상태 줄 "반품 반려 · 재발송 배송비 결제 필요"(로즈) 아래에 <b>반려 사유 블록</b> — 사유 · 법적 근거 · 브랜드 증빙 사진 · 브랜드 메시지 — 을 두고, 이어서 <b>상품 다시 받기</b>(재발송 배송비 3,000원 · 결제 기한 14일 · 결제 수단은 C9와 같은 신용·체크카드 / 간편결제)를 붙였습니다. 하단 고정 CTA는 "3,000원 결제하고 다시 받기"이고, 상품 아래 버튼은 이의 제기용 [1:1 문의하기] 하나입니다. 환불 금액은 0원(회색) — <b>환불이 없어 차감할 곳이 없으므로 결제가 필요한 유일한 경우</b>입니다. <b>일부 반려</b>(여러 상품 중 일부만 반려)는 승인된 상품의 환불액이 있으므로 <b>거기서 재발송 배송비를 차감</b>하고 결제 수단·CTA를 두지 않습니다(환불 정보에 승인 상품 금액 · 재발송비 차감 줄 추가). <b>미결제 시</b> — 기한(14일)이 지나면 2회 이상 다시 고지하고, 최종 고지일로부터 3개월 보관 후 반환 요청이 없으면 폐기할 수 있다고 안내합니다(올리브영 정책 참고, 약관 반영 필요). <b>결제 후</b>에는 [반려 · 재발송](버튼 [배송 조회] → C10-2 "반려 상품 재발송") → [반려 · 수령 완료](버튼 없음, 종결)로 이어집니다 — 반려 사유 블록은 이력으로 남고 결제 블록 자리에 "결제 완료" 확인 박스가 들어갑니다.<br><br><b>버튼 연결</b> — [회수 송장 등록] → 이 화면 안의 송장 등록 · [회수 조회] → <b>C10-4 회수 조회</b>(고객 → 브랜드, 검수 단계 포함) · 반려 후 재발송 [배송 조회] → <b>C10-2 배송 조회</b>("반려 상품 재발송" 라벨) · [1:1 문의하기] → C12.<br><br><b>반품 수거지 · 도착지</b> — 직접 발송이라 수거지는 "보내는 사람" 정보이고, 도착지에 브랜드 반품센터 주소를 그대로 적어 송장 접수 때 이 화면만 보고 쓰면 되게 했습니다. 이전 안의 "택배사가 문 앞에서 수거" 문구와 4단계 진행 바는 직접 발송 흐름과 맞지 않아 걷어냈습니다.<br><br><b>남은 결정</b> — ① 송장 등록 기한(현재 7일) ② 검수 후 공제 금액이 달라질 때 고지 방식 ③ 반송비 차감 문구 법무 확정.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>교환 상세 — 직접 발송</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px"><span style="font:600 11px/1 Pretendard,sans-serif;color:rgba(0,0,0,.45);margin-right:3px">상태</span>
+<sc-for list="{{ exSw }}" as="w" hint-placeholder-count="4">
+<span onClick="{{ w.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ w.bg }};color:{{ w.color }};border:1px solid {{ w.border }};font:{{ w.font }}">{{ w.label }}</span>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C10-5 교환 상세" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">교환 상세</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:22px 14px 18px;display:flex;align-items:flex-end;gap:12px">
+<div style="flex:1;min-width:0">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.10.04(일) 14:27</div>
+<div style="margin-top:7px;font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">주문번호 20260923-1020</div>
+</div>
+<span style="flex:none;padding:12px 0;margin:-12px 0;font:500 12.5px/1.4 Pretendard,sans-serif;color:#737373;text-decoration:underline;text-underline-offset:3px;cursor:pointer">주문 상세</span>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">교환 상품</span><span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">1개</span></div>
+
+<sc-if value="{{ exGuide }}" hint-placeholder-val="{{ true }}">
+<div style="margin:14px 14px 0;padding:13px 14px;border-radius:8px;background:#FEF4F6">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#CF3D61">유의해 주세요</div>
+<div style="margin-top:9px;display:grid;gap:4px">
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">가까운 택배사에 <b style="font-weight:600">선불로 접수</b>한 뒤 회수 송장을 등록해 주세요. 반송 택배비는 택배사에 직접 결제해요.</span></div>
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">상품이 도착해 검수를 마치면 새 상품이 출발해요.</span></div>
+<div style="display:flex;gap:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C"><span style="flex:none">•</span><span style="text-wrap:pretty">이 상품만 한 박스에 포장해 주세요. 다른 반품·교환 상품은 함께 넣지 마세요.</span></div>
+</div>
+</div>
+</sc-if>
+
+<div style="padding:16px 14px 0;display:flex;align-items:center;gap:6px;font:600 12.5px/1.3 Pretendard,sans-serif"><span style="flex:none;color:#0F0F0F">{{ exStatus }}</span><span style="flex:1;min-width:0;word-break:keep-all;color:{{ exSubColor }}">{{ exStatusSub }}</span></div>
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">라보에이치</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">시카 리페어 앰플 30ml 리필 2개 세트 기획</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#9E9E9E;text-decoration:line-through">30ml + 리필 2개 / 1개</div>
+<div style="margin-top:2px;font:400 12px/1.4 Pretendard,sans-serif;color:#0F0F0F">30ml + 리필 2개 (무향) / 1개</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</div>
+</div>
+</div>
+<sc-if value="{{ exHasActions }}" hint-placeholder-val="{{ true }}">
+<div style="padding:14px 14px 0;display:flex;gap:7px">
+<sc-for list="{{ exActions }}" as="b" hint-placeholder-count="2">
+<div onClick="{{ b.tap }}" style="flex:1;min-width:0;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">{{ b.label }}</div>
+</sc-for>
+</div>
+</sc-if>
+
+
+<sc-if value="{{ exRej }}" hint-placeholder-val="{{ false }}">
+<div style="margin:16px 14px 0;padding:14px;border-radius:8px;background:#F7F7F8">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#0F0F0F">반려 사유</div>
+<div style="margin-top:9px;font:600 13.5px/1.55 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">상품 개봉 · 사용 흔적 확인</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">전자상거래법상 청약철회 제한 사유에 해당해요</div>
+<div style="margin-top:12px;display:flex;gap:8px">
+<div style="width:64px;height:64px;border-radius:4px;background:linear-gradient(135deg,#E4DED6,#CFC6BB);flex:none"></div>
+<div style="width:64px;height:64px;border-radius:4px;background:linear-gradient(135deg,#E9E2DE,#D4CAC4);flex:none"></div>
+</div>
+<div style="margin-top:7px;font:400 11.5px/1.5 Pretendard,sans-serif;color:#737373">브랜드가 입고 검수 때 촬영한 사진이에요</div>
+<div style="margin-top:12px;padding:11px 12px;border-radius:8px;background:#fff">
+<div style="font:600 12px/1 Pretendard,sans-serif;color:#3C3C3C">라보에이치의 메시지</div>
+<div style="margin-top:7px;font:400 12.5px/1.65 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">펌프 부분에 사용 흔적이 있어 재판매가 어려워요. 불편을 드려 죄송합니다.</div>
+</div>
+</div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">상품 다시 받기</div>
+<div style="margin:10px 14px 0;padding:13px 14px;border-radius:8px;border:1px solid #E3E3E5;display:flex;gap:10px;align-items:flex-start">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3C3C3C" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;margin-top:1px"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+<div style="flex:1;min-width:0">
+<div style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">요청 때 결제한 배송비로 다시 보내드려요</div>
+<div style="margin-top:4px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-wrap:pretty">새 상품 대신 받으신 상품을 그대로 돌려보내요. 추가 결제는 없어요.</div>
+</div>
+</div>
+</sc-if>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+<div style="padding:18px 14px 8px;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">교환 신청 정보</div>
+<div style="padding:0 14px">
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">신청 일시</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">2026-10-04 14:27:01</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">완료 일시</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ exDoneColor }}">{{ exDoneAt }}</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">구매확정</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ exPcColor }};text-wrap:pretty">{{ exPc }}</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">교환 사유</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">주문 실수</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">교환 방법</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">고객 직접 발송</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">회수 송장</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:{{ exInvColor }};text-wrap:pretty">{{ exInv }}</span></div>
+<sc-if value="{{ exHasResend }}" hint-placeholder-val="{{ false }}">
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">재발송 송장</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">CJ대한통운 5521-0093-2847</span></div>
+</sc-if>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373">교환 도착지</span><span style="flex:1;min-width:0;font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">라보에이치 반품센터 / 02-0000-0000<br>(06234) 서울 강남구 테헤란로 000, 쇼룸타워 B1 물류센터</span></div>
+<div style="display:flex;gap:14px;padding:6px 0"><span style="flex:none;width:76px;font:400 13.5px/1.5 Pretendard,sans-serif;color:#737373;word-break:keep-all">교환받을 배송지</span><div style="flex:1;min-width:0"><div style="font:400 13.5px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">김수* / 010-****-5678<br>(06234) 서울 강남구 테헤란로 *** ****</div>
+<sc-if value="{{ exCanAddr }}" hint-placeholder-val="{{ true }}"><div style="display:flex;margin-top:4px"><span style="padding:8px 0;margin:-4px 0;font:500 12.5px/1.4 Pretendard,sans-serif;color:#737373;text-decoration:underline;text-underline-offset:3px;cursor:pointer">배송지 변경</span></div></sc-if>
+</div></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:14px"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 정보</div>
+<div style="padding:14px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 13.5px/1.4 Pretendard,sans-serif;color:#3C3C3C">재발송 배송비</span><span style="flex:1;min-width:0;text-align:right;font:400 13.5px/1.4 Pretendard,sans-serif">3,000원</span></div>
+<div style="margin:12px 14px 0;padding-top:12px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between;gap:12px"><span style="flex:none;font:600 14px/1 Pretendard,sans-serif">결제 금액</span><span style="flex:1;min-width:0;text-align:right;font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">3,000원</span></div>
+<div style="padding:9px 14px 0;display:flex;justify-content:space-between;gap:12px"><span style="flex:none;font:400 12.5px/1.5 Pretendard,sans-serif;color:#737373">결제 수단</span><span style="flex:1;min-width:0;text-align:right;font:400 12.5px/1.5 Pretendard,sans-serif;color:#3C3C3C">신한카드</span></div>
+<div style="padding:18px 14px 26px;display:grid;gap:7px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">반송 택배비는 보내실 때 택배사에 직접 결제해요. 앱에서는 새 상품을 보내는 재발송 배송비만 결제돼요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">요청을 철회하거나 검수에서 브랜드 귀책으로 확인되면 재발송 배송비는 결제 취소돼요.</span></div>
+</div>
+
+</div>
+
+
+<sc-if value="{{ ivExOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;z-index:12;background:#fff;display:flex;flex-direction:column">
+<div style="flex:none">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 16px">
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">회수 송장 등록</span>
+<div onClick="{{ ivClose }}" style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></div>
+</div>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:18px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">택배사</div>
+<div onClick="{{ ivOpenCarrier }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ ivCarrierColor }}">{{ ivCarrier }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<div style="margin-top:18px;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">송장 번호</div>
+<div onClick="{{ ivFill }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;padding:0 13px;cursor:text">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ ivNumColor }}">{{ ivNum }}</span>
+</div>
+<div style="margin-top:8px;font:400 11.5px/1.6 Pretendard,sans-serif;color:#737373">숫자만 입력해 주세요 · 택배 영수증의 운송장 번호예요</div>
+</div>
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">보내실 주소</div>
+<div style="padding:12px 14px 0;font:400 13.5px/1.7 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">라보에이치 반품센터 / 02-0000-0000<br>(06234) 서울 강남구 테헤란로 000, 쇼룸타워 B1 물류센터</div>
+<div style="padding:8px 14px 0;display:flex"><div style="display:flex;align-items:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55"><span style="height:30px;padding:0 11px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;font:600 11.5px/1 Pretendard,sans-serif;color:#3C3C3C">주소 복사</span></div></div>
+<div style="margin:20px 14px 0;padding-top:16px;border-top:.5px solid #F0F0F0;display:grid;gap:6px">
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">보내신 상품의 운송장 정보를 입력해 주세요. 입력하면 회수 상황이 자동으로 업데이트돼요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">택배사에서 배송 완료가 되어도 브랜드 입고·검수까지 1~3일이 더 걸릴 수 있어요.</span></div>
+<div style="display:flex;gap:7px;font:400 12px/1.65 Pretendard,sans-serif;color:#737373"><span style="flex:none">•</span><span style="text-wrap:pretty">반송 택배비는 택배사에 직접 결제해 주세요. 상자에 현금은 넣지 마세요.</span></div>
+</div>
+<div style="height:26px"></div>
+</div>
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div onClick="{{ ivSubmit }}" style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ ivBtnBg }};color:{{ ivBtnColor }};font:600 15px/1 Pretendard,sans-serif;cursor:{{ ivBtnCursor }}" style-active="opacity:{{ ivBtnPress }}">등록하기</div>
+</div>
+
+<sc-if value="{{ ivSheet }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ ivCloseSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:2"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:3;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">택배사 선택</div>
+<sc-for list="{{ ivCarriers }}" as="c" hint-placeholder-count="5">
+<div onClick="{{ c.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-top:{{ c.divider }};cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:{{ c.font }};color:{{ c.color }}">{{ c.label }}</span>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;opacity:{{ c.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{ ivExToast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:14px;right:14px;bottom:30px;z-index:11;display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:8px;background:#0F0F0F">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+<span style="flex:1;min-width:0;font:500 13px/1.4 Pretendard,sans-serif;color:#fff">회수 송장이 등록되었어요</span>
+</div>
+</sc-if>
+<sc-if value="{{ exWithdrawOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ exCloseWithdraw }}" style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:10;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:26px 22px 18px;text-align:center">
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">교환 요청을 철회할까요?</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">결제한 재발송 배송비 3,000원은<br>결제 취소되고, 상품은 배송완료로 돌아가요.</div>
+</div>
+<div style="display:flex;gap:8px;padding:0 18px 18px">
+<div onClick="{{ exCloseWithdraw }}" style="flex:1;height:48px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">닫기</div>
+<div onClick="{{ exCloseWithdraw }}" style="flex:1;height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">철회하기</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>반품 상세(1b)와 같은 구성</b>입니다 — 다른 점만 적습니다. 상품 행에 <b>받은 옵션(취소선) → 새 옵션</b>을 두 줄로, 금액 섹션은 환불이 아니라 <b>결제 정보</b>(재발송 배송비)입니다. 위 [상태]로 네 구간을 전환합니다.<br><br><b>상태별 차이</b> — <b>송장 입력 필요</b>: [요청 철회] [회수 송장 등록] · 배송지 변경 가능. <b>회수중</b>: [회수 조회]만, 배송지 변경은 아직 가능(새 상품이 출발하기 전까지 — [배송지 변경]은 <b>C13-2 배송지 선택</b> 페이지로 이동). <b>재발송</b>: 새 상품이 출발 — 재발송 송장 줄이 생기고 버튼은 [배송 조회], 배송지 변경은 사라집니다. <b>교환 완료</b>: 유의 박스·버튼 없음, 완료 일시 채움.<br><br><b>검수 반려</b> — 반품(1b)과 같은 블록입니다. 교환이 반려되면 새 상품은 나가지 않으므로 <b>요청 때 낸 재발송 배송비 3,000원을 그대로 받은 상품을 돌려보내는 데 씁니다</b> — 결제 수단·CTA 없이 안내 한 줄만 둡니다. 브랜드 귀책 사유로 0원 요청했다가 검수에서 귀책이 뒤집힌 경우에만 결제가 필요합니다(반품 전체 반려와 같은 결제 블록).<br><br><b>버튼 연결</b> — [회수 조회] → <b>C10-4 회수 조회</b> · 재발송 상태 [배송 조회] → <b>C10-2 배송 조회</b>("교환 상품 발송" 라벨) · 반려 후 재발송도 같은 화면("반려 상품 재발송").<br><br><b>배송비 구조(B안)</b> — 반송 택배비는 고객이 <b>선불로 택배사에 직접</b>, 앱에서는 <b>재발송 배송비만</b> 결제합니다. 유의 박스와 하단 안내 두 곳에서 "선불로 접수"를 반복하는 이유는, 착불로 보내면 브랜드가 받기를 거부할 수 있기 때문입니다. 브랜드 귀책은 요청 화면에서 이미 착불 안내 · 재발송비 0원으로 갈립니다. 철회 시 재발송비 결제 취소를 모달에 명시했습니다.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  pmVals(M, iss, pay, sheet, set, pre){
+    const tile = on => ({ bg: on ? '#FEF4F6' : '#fff', border: on ? '1.5px solid #F2456E' : '1px solid #E3E3E5', icon: on ? '#F2456E' : '#8E8E8E', color: on ? '#CF3D61' : '#3C3C3C', font: (on ? '600' : '400') + ' 13.5px/1 Pretendard,sans-serif' });
+    const c = tile(M === 'card'), e = tile(M === 'easy');
+    const ISS = ['신한', '삼성', '현대', 'KB국민', '롯데', '하나', 'BC', 'NH농협', '우리'];
+    const PAYS = ['카카오페이', '네이버페이', '토스페이'];
+    const o = {
+      CardBg: c.bg, CardBorder: c.border, CardIcon: c.icon, CardColor: c.color, CardFont: c.font,
+      EasyBg: e.bg, EasyBorder: e.border, EasyIcon: e.icon, EasyColor: e.color, EasyFont: e.font,
+      PickCard: () => set('M', 'card'), PickEasy: () => set('M', 'easy'),
+      CardOpen: M === 'card', EasyOpen: M === 'easy',
+      IssuerLabel: iss ? iss + '카드' : '카드사를 선택해 주세요', IssuerColor: iss ? '#0F0F0F' : '#B5B5B5',
+      OpenIssuer: () => set('sheet', true), CloseIssuer: () => set('sheet', false), IssuerSheet: !!sheet,
+      Issuers: ISS.map(l => { const on = iss === l; return { label: l, border: on ? '1.5px solid #F2456E' : '1px solid #E3E3E5', bg: on ? '#FEF4F6' : '#fff', font: (on ? '600' : '400') + ' 13.5px/1 Pretendard,sans-serif', color: on ? '#CF3D61' : '#3C3C3C', pick: () => set('iss', l) }; }),
+      Pays: PAYS.map(l => { const on = pay === l; return { label: l, border: on ? '1px solid #F2456E' : '1px solid #E3E3E5', bg: on ? '#FEF4F6' : '#fff', dotBg: on ? '#F2456E' : '#fff', dotBorder: on ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0', dotInner: on ? '#fff' : 'transparent', font: (on ? '600' : '400') + ' 14.5px/1.35 Pretendard,sans-serif', color: on ? '#0F0F0F' : '#3C3C3C', pick: () => set('pay', l) }; })
+    };
+    const out = {};
+    Object.keys(o).forEach(k => { out[pre + k] = o[k]; });
+    return out;
+  }
+
+  segs(labels, cur){
+    return labels.map((label, i) => ({
+      label,
+      bar: i < cur ? '#0F0F0F' : (i === cur ? '#F2456E' : '#EAEAEC'),
+      font: (i === cur ? '600' : '400') + ' 11.5px/1.35 Pretendard,sans-serif',
+      color: i === cur ? '#0F0F0F' : (i < cur ? '#3C3C3C' : '#9E9E9E')
+    }));
+  }
+
+  log(rows){
+    return rows.map((r, i, arr) => {
+      const last = i === arr.length - 1;
+      return {
+        label: r.l,
+        at: r.at,
+        dot: '#C7C7C7',
+        line: last ? 'transparent' : '#DEDEE0',
+        pad: last ? '0' : '16px',
+        font: '500 14px/1.4 Pretendard,sans-serif',
+        color: '#737373'
+      };
+    });
+  }
+
+  guide(rows, cur){
+    return rows.map((g, i) => ({
+      title: g.t,
+      desc: g.d,
+      dot: i === cur ? '#F2456E' : (i < cur ? '#C7C7C7' : '#EAEAEC'),
+      font: (i === cur ? '700' : '400') + ' 13.5px/1.45 Pretendard,sans-serif',
+      color: i === cur ? '#0F0F0F' : (i < cur ? '#737373' : '#3C3C3C')
+    }));
+  }
+
+  renderVals(){
+    const EX = this.state.ex || '송장 입력 필요';
+    const EXS = ['송장 입력 필요', '회수중', '재발송', '교환 완료', '검수 반려'];
+    const eNeed = EX === '송장 입력 필요', eBack = EX === '회수중', eSend = EX === '재발송', eDone = EX === '교환 완료', eRej = EX === '검수 반려';
+    const exVals = {
+      exSw: EXS.map(k => ({ label: k, pick: () => this.setState({ ex: k, exW: false }), bg: EX === k ? '#1a1a1a' : '#fff', color: EX === k ? '#fff' : 'rgba(0,0,0,.6)', border: EX === k ? '#1a1a1a' : 'rgba(0,0,0,.15)', font: (EX === k ? '600' : '500') + ' 11px/1 Pretendard,sans-serif' })),
+      exGuide: eNeed || eBack,
+      exRej: eRej,
+      exStatus: eRej ? '교환 반려' : (eNeed ? '교환 요청' : (eBack ? '회수중' : (eSend ? '재발송' : '교환 완료'))),
+      exStatusSub: eRej ? '받은 상품을 다시 보내드려요' : (eNeed ? '회수 송장 입력 필요' : (eBack ? 'CJ대한통운 6849-2201-3378' : (eSend ? '새 상품이 출발했어요' : ''))),
+      exSubColor: eNeed ? '#CF3D61' : '#737373',
+      exActions: eNeed ? [{ label: '요청 철회', tap: () => this.setState({ exW: true }) }, { label: '회수 송장 등록', tap: () => this.setState({ iv: 'ex', ivC: null, ivN: false, ivS: false }) }]
+        : (eBack ? [{ label: '회수 조회', tap: () => {} }] : (eSend ? [{ label: '배송 조회', tap: () => {} }] : (eRej ? [{ label: '1:1 문의하기', tap: () => {} }] : []))),
+      exHasActions: !eDone,
+      exPc: eDone ? '교환 완료일부터 7일 새로 시작' : '교환 처리 중 · 구매확정 일시 정지',
+      exPcColor: '#0F0F0F',
+      exDoneAt: eDone ? '2026-10-12 11:04:37' : (eRej ? '반려 · 2026-10-09 15:20:11' : '새 상품 도착 후 표시돼요'),
+      exDoneColor: (eDone || eRej) ? '#0F0F0F' : '#9E9E9E',
+      exInv: eNeed ? '미등록 · 10.11(일)까지 등록해 주세요' : 'CJ대한통운 6849-2201-3378',
+      exInvColor: eNeed ? '#CF3D61' : '#0F0F0F',
+      exHasResend: eSend || eDone,
+      exCanAddr: eNeed || eBack,
+      exWithdrawOpen: !!this.state.exW,
+      exCloseWithdraw: () => this.setState({ exW: false })
+    };
+    const RT = this.state.rt || '송장 입력 필요';
+    const RTS = ['송장 입력 필요', '회수중', '반품 완료', '검수 반려', '일부 반려', '반려 · 재발송', '반려 · 수령 완료'];
+    const need = RT === '송장 입력 필요', back = RT === '회수중', done = RT === '반품 완료', part = RT === '일부 반려', rSend = RT === '반려 · 재발송', rGot = RT === '반려 · 수령 완료', rPaid = rSend || rGot, rej = RT === '검수 반려' || part || rPaid;
+    const rjLabel = this.state.rjM === 'card' ? (this.state.rjIss ? this.state.rjIss + '카드' : '') : (this.state.rjM === 'easy' ? (this.state.rjPm || '') : '');
+    const rjOk = !!rjLabel;
+    const rjVals = {
+      ...this.pmVals(this.state.rjM, this.state.rjIss, this.state.rjPm, this.state.rjSheet, (f, v) => this.setState(f === 'M' ? { rjM: v } : f === 'iss' ? { rjIss: v, rjSheet: false } : f === 'pay' ? { rjPm: v } : { rjSheet: v }), 'rj'),
+      rjBtnLabel: rjOk ? '3,000원 결제하고 다시 받기' : '결제 수단을 선택해 주세요',
+      rjBtnBg: rjOk ? '#F2456E' : '#F4F4F5', rjBtnColor: rjOk ? '#fff' : '#B5B5B5', rjBtnCursor: rjOk ? 'pointer' : 'default', rjBtnPress: rjOk ? '.75' : '1'
+    };
+    const IVC = ['CJ대한통운', '우체국택배', '한진택배', '롯데택배', '로젠택배', '경동택배', '대신택배', '일양로지스', 'CU 편의점택배', 'GS25 편의점택배'];
+    const ivReady = !!this.state.ivC && !!this.state.ivN;
+    const ivVals = {
+      ivRtOpen: this.state.iv === 'rt', ivExOpen: this.state.iv === 'ex',
+      ivRtToast: this.state.ivT === 'rt', ivExToast: this.state.ivT === 'ex',
+      ivClose: () => this.setState({ iv: null }),
+      ivCarrier: this.state.ivC || '택배사를 선택해 주세요', ivCarrierColor: this.state.ivC ? '#0F0F0F' : '#B5B5B5',
+      ivNum: this.state.ivN ? '684922013378' : '송장 번호를 입력해 주세요', ivNumColor: this.state.ivN ? '#0F0F0F' : '#B5B5B5',
+      ivFill: () => this.setState({ ivN: true }),
+      ivOpenCarrier: () => this.setState({ ivS: true }), ivCloseSheet: () => this.setState({ ivS: false }), ivSheet: !!this.state.ivS,
+      ivCarriers: IVC.map((label, i) => { const on = this.state.ivC === label; return { label, checked: on ? 1 : 0, divider: i === 0 ? 'none' : '.5px solid #F0F0F0', font: (on ? '600' : '400') + ' 15px/1.35 Pretendard,sans-serif', color: on ? '#0F0F0F' : '#3C3C3C', pick: () => this.setState({ ivC: label, ivS: false }) }; }),
+      ivBtnBg: ivReady ? '#F2456E' : '#F4F4F5', ivBtnColor: ivReady ? '#fff' : '#B5B5B5', ivBtnCursor: ivReady ? 'pointer' : 'default', ivBtnPress: ivReady ? '.75' : '1',
+      ivSubmit: () => { if (!ivReady) return; const w = this.state.iv; this.setState(w === 'rt' ? { iv: null, rt: '회수중', ivT: 'rt' } : { iv: null, ex: '회수중', ivT: 'ex' }); clearTimeout(this.ivTm); this.ivTm = setTimeout(() => this.setState({ ivT: null }), 2200); }
+    };
+    return {
+      ...rjVals,
+      ...ivVals,
+      ...exVals,
+      rtSw: RTS.map(k => ({ label: k, pick: () => this.setState({ rt: k, rtW: false }), bg: RT === k ? '#1a1a1a' : '#fff', color: RT === k ? '#fff' : 'rgba(0,0,0,.6)', border: RT === k ? '#1a1a1a' : 'rgba(0,0,0,.15)', font: (RT === k ? '600' : '500') + ' 11px/1 Pretendard,sans-serif' })),
+      rtGuide: !done && !rej,
+      rtRej: rej,
+      rtFullRej: RT === '검수 반려',
+      rtRejPaid: rPaid,
+      rtPc: done ? '반품 완료 · 해당 없음' : '반품 처리 중 · 구매확정 일시 정지',
+      rtPcColor: done ? '#9E9E9E' : '#0F0F0F',
+      rtRejPaidTitle: rGot ? '반려 상품을 받으셨어요' : '반려 상품을 다시 보내드렸어요',
+      rtPartRej: part,
+      rtCount: part ? '2개' : '1개',
+      rtPaidLabel: part ? '반려 상품 금액 (환불 제외)' : '결제 금액',
+      rtPaidColor: part ? '#9E9E9E' : '#0F0F0F',
+      rtPaidDeco: part ? 'line-through' : 'none',
+      rtRefund: part ? '11,500원' : (rej ? '0원' : '11,000원'),
+      rtRefundColor: (rej && !part) ? '#9E9E9E' : '#0F0F0F',
+      rtHasActions2: true,
+      rtStatus: rej ? '반품 반려' : (need ? '반품 요청' : (back ? '회수중' : '반품 완료')),
+      rtStatusSub: rSend ? '반려 상품 재발송 중' : rGot ? '반려 상품 수령 완료' : part ? '환불액에서 재발송비 차감' : rej ? '재발송 배송비 결제 필요' : (need ? '회수 송장 입력 필요' : (back ? 'CJ대한통운 6849-2201-3378' : '')),
+      rtSubColor: (need || RT === '검수 반려') ? '#CF3D61' : '#737373',
+      rtActions: need ? [{ label: '요청 철회', tap: () => this.setState({ rtW: true }) }, { label: '회수 송장 등록', tap: () => this.setState({ iv: 'rt', ivC: null, ivN: false, ivS: false }) }]
+        : (back ? [{ label: '회수 조회', tap: () => {} }] : (rSend ? [{ label: '배송 조회', tap: () => {} }] : rGot ? [] : (rej ? [{ label: '1:1 문의하기', tap: () => {} }] : []))),
+      rtHasActions: !done && !rGot,
+      rtDoneAt: done ? '2026-10-09 15:20:11' : (rej ? '반려 · 2026-10-09 15:20:11' : '검수 후 표시돼요'),
+      rtDoneColor: (done || rej) ? '#0F0F0F' : '#9E9E9E',
+      rtInv: need ? '미등록 · 10.11(일)까지 등록해 주세요' : 'CJ대한통운 6849-2201-3378',
+      rtInvColor: need ? '#CF3D61' : '#0F0F0F',
+      rtRefundLabel: (done || rej) ? '환불 금액' : '환불 예정 금액',
+      rtWithdrawOpen: !!this.state.rtW,
+      rtCloseWithdraw: () => this.setState({ rtW: false }),
+      segCancel: this.segs(['접수', '환불 완료'], 1),
+      segReturn: this.segs(['접수', '회수중', '입고 완료', '환불 완료'], 1),
+      segExchange: this.segs(['접수', '회수중', '입고 완료', '재발송', '배송완료'], 3),
+
+      logCancel: this.log([
+        { l:'취소 접수', at:'08.02 (일) 21:14' },
+        { l:'브랜드 승인', at:'08.03 (월) 10:02' },
+        { l:'환불 완료', at:'08.03 (월) 10:05' }
+      ]),
+
+      guideReturn: this.guide([
+        { t:'접수', d:'요청이 등록되고 브랜드가 승인했어요.' },
+        { t:'회수중', d:'택배사가 문 앞에서 상품을 수거해요. 지금 이 단계예요.' },
+        { t:'입고 완료', d:'브랜드에 도착해 검수를 진행해요. 이때 확정 환불액이 정해집니다.' },
+        { t:'환불 완료', d:'결제한 수단으로 환불돼요. 카드는 카드사 처리에 2~3영업일이 더 걸릴 수 있어요.' }
+      ], 1),
+
+      guideExchange: this.guide([
+        { t:'접수', d:'요청이 등록되고 브랜드가 승인했어요.' },
+        { t:'회수중', d:'기존 옵션을 택배사가 수거했어요.' },
+        { t:'입고 완료', d:'브랜드가 받아 검수를 마쳤어요.' },
+        { t:'재발송', d:'새 옵션(C)을 발송했어요. 지금 이 단계예요.' },
+        { t:'배송완료', d:'도착하면 자동으로 완료되고, 구매확정 7일이 새로 시작돼요.' }
+      ], 3)
+    };
+  }
+}
+</script>
+</body>
+</html>

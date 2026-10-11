@@ -62,8 +62,13 @@ public class OrderGroupBuySalesReader implements GroupBuySalesReader {
         byStatus.remove(FulfillmentStatus.PENDING); // 결제 전은 집계 밖
         int total = byStatus.values().stream().mapToInt(Integer::intValue).sum();
         int confirmed = byStatus.getOrDefault(FulfillmentStatus.CONFIRMED, 0);
+        // 반송은 환불로 종결된다 — 이행 상태는 RETURNING 에 머무르므로 반송 환불이 집행된 건을 환불 종결로 옮긴다.
+        int returnRefunded = Math.toIntExact(deliveryGroupRepository.countReturnRefundedForGroupBuy(groupBuyId));
+        if (returnRefunded > 0) {
+            byStatus.computeIfPresent(FulfillmentStatus.RETURNING, (status, count) -> count - returnRefunded);
+        }
         // 결제 전(PENDING)은 위에서 뺐다 — 남은 CANCELLED 는 결제 후 취소, 곧 환불 종결이다.
-        int refunded = byStatus.getOrDefault(FulfillmentStatus.CANCELLED, 0);
+        int refunded = byStatus.getOrDefault(FulfillmentStatus.CANCELLED, 0) + returnRefunded;
         int closed = confirmed + refunded;
         int awaitingShipment = byStatus.getOrDefault(FulfillmentStatus.NEW, 0)
                 + byStatus.getOrDefault(FulfillmentStatus.PREPARING, 0);

@@ -48,23 +48,41 @@ public interface OrderCancelRequestRepository extends JpaRepository<OrderCancelR
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderCancelRequest r SET r.status = showroomz.domain.order.type.CancelRequestStatus.APPROVED, "
-            + "r.decidedAt = :now, r.decidedBy = :sellerId "
+            + "r.decidedAt = :now, r.decidedBy = :sellerId, r.autoApproved = :auto "
             + "WHERE r.id = :id AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
             + "AND EXISTS (SELECT g FROM OrderDeliveryGroup g WHERE g.id = r.deliveryGroup.id "
             + "    AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
             + "        showroomz.domain.order.type.FulfillmentStatus.PREPARING))")
-    int approve(@Param("id") Long id, @Param("sellerId") Long sellerId, @Param("now") LocalDateTime now);
+    int approve(@Param("id") Long id, @Param("sellerId") Long sellerId, @Param("auto") boolean auto,
+                @Param("now") LocalDateTime now);
+
+    /** 자동 승인 대상 — 응답 기한이 지난 검토 중 요청(1009 기획 수정본 3-2). */
+    @Query("SELECT r.id FROM OrderCancelRequest r WHERE r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
+            + "AND r.respondDueAt < :now ORDER BY r.respondDueAt ASC, r.id ASC")
+    List<Long> findOverdueIds(@Param("now") LocalDateTime now, org.springframework.data.domain.Pageable pageable);
+
+    /** 하위주문당 검토 중 1건 — DB 생성 컬럼 UNIQUE 의 앞단 검사(H2 · 정확한 오류 코드). */
+    @Query("SELECT COUNT(r) > 0 FROM OrderCancelRequest r WHERE r.deliveryGroup.id = :deliveryGroupId "
+            + "AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING")
+    boolean existsPendingByGroup(@Param("deliveryGroupId") Long deliveryGroupId);
+
+    /** 소비자 취소 상세 — 그 항목이 들어간 요청 중 가장 최근 것. */
+    @Query("SELECT r FROM OrderCancelRequest r JOIN r.items i WHERE i.orderProduct.id = :orderProductId "
+            + "ORDER BY r.id DESC")
+    List<OrderCancelRequest> findByOrderProductIdLatestFirst(@Param("orderProductId") Long orderProductId);
 
     /** 거부 — 사유 필수(소비자에게 그대로 전달 · 약관 제18조①)는 서비스가 검증한다. 그룹 조건은 승인과 같다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderCancelRequest r SET r.status = showroomz.domain.order.type.CancelRequestStatus.REJECTED, "
-            + "r.decidedAt = :now, r.decidedBy = :sellerId, r.rejectReason = :rejectReason "
+            + "r.decidedAt = :now, r.decidedBy = :sellerId, r.rejectReason = :rejectReason, "
+            + "r.rejectReasonCode = :rejectReasonCode "
             + "WHERE r.id = :id AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
             + "AND EXISTS (SELECT g FROM OrderDeliveryGroup g WHERE g.id = r.deliveryGroup.id "
             + "    AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
             + "        showroomz.domain.order.type.FulfillmentStatus.PREPARING))")
-    int reject(@Param("id") Long id, @Param("sellerId") Long sellerId, @Param("rejectReason") String rejectReason,
-               @Param("now") LocalDateTime now);
+    int reject(@Param("id") Long id, @Param("sellerId") Long sellerId,
+               @Param("rejectReasonCode") showroomz.domain.order.type.CancelRejectReason rejectReasonCode,
+               @Param("rejectReason") String rejectReason, @Param("now") LocalDateTime now);
 
     /** 승인·거부 0행의 사유 판정 — 요청이 아직 PENDING 이면 그룹 쪽이 바뀐 것이다. */
     @Query("SELECT r.status FROM OrderCancelRequest r WHERE r.id = :id")

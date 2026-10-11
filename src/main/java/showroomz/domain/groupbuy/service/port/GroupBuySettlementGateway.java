@@ -6,8 +6,8 @@ import java.util.Optional;
  * 정산 모듈 포트 — 어드민 정산 확인(32 설계 8-2 · 4-8 ⑤). <b>정산 상태머신은 공구에 두지 않는다</b>(30 설계 5-2) —
  * 공구가 아는 것은 {@code SETTLED} 하나고, 중간 단계(대기 · 운영자 확인)는 이 포트로 읽기만 한다.
  *
- * <p>정산 모듈이 생기기 전에는 {@link EmptyGroupBuySettlementGateway}가 empty를 돌려주고 정산 확인 버튼은 항상 닫힌다
- * — §33-4 #1 「정산 화면 착수 게이트」.
+ * <p>구현은 정산 모듈의 {@code SettlementGroupBuyGateway}(44 어드민 설계서 8-1)다. 운영자 정산 확인({@link #confirm})은
+ * 폐기된 절차라(§41-1 #6) 항상 거절되고 공구의 정산 확인 버튼은 닫혀 있다 — 확정은 시스템(자동 · 합의 · 만료)만 한다.
  */
 public interface GroupBuySettlementGateway {
 

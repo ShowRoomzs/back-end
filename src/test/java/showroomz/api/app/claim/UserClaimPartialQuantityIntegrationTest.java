@@ -207,8 +207,8 @@ class UserClaimPartialQuantityIntegrationTest extends ClaimTestSupport {
         Long orderProductId = items(group).get(0).getId();
         Map<String, Object> body = claimBody(group, "RETURN", "CHANGE_OF_MIND", orderProductId, 1, null);
         body.put("invoice", Map.of("carrier", "CJ", "trackingNumber", newInvoice()));
+        // 검수 통과 = PG 즉시 자동 환불(1009 기획 수정본 2절).
         passed(json(userPost(USER_CLAIMS, body).andExpect(status().isCreated())).get("claimIds").get(0).asLong());
-        claimService.completeRefund(refundTaskIds(group).get(0), CREAM_PRICE, 1L, LocalDateTime.now());
 
         detail(group.getOrder().getId())
                 .andExpect(jsonPath("$.items[0].status").value("DELIVERED"))

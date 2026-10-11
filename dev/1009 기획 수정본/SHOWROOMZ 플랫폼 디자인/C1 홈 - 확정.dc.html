@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&amp;family=Noto+Serif+KR:wght@500;600;700&amp;family=Archivo:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+.dv-turn{padding:40px 44px 32px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;scroll-margin-top:16px;width:390px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{max-width:100%;border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-opt:target .dv-oid{background:#F2456E;color:#fff}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-next{margin:26px 0 0;font:12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5)}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t7">
+<div class="dv-thd"><a class="dv-tid" href="#t7">7</a><span class="dv-tname">C1 홈 (팔로잉 피드) — 확정</span></div>
+<p class="dv-tsub">확정 화면입니다. 헤더는 로고 대신 검색 필드 한 줄, 아이콘은 각진 라인 세트(알림 · 장바구니), 상품 더보기는 외곽선 버튼. 탭바 활성색은 잉크, 포인트 컬러(#F2456E)는 D-day · 할인율 · 알림 점 · 장바구니 배지에만. ⋯ 탭 시 신고 바텀 시트가 열립니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="7c">
+<div class="dv-olabel"><a class="dv-oid" href="#7c">7c</a>C1 홈 · 확정</div>
+<div class="dv-card" style="width:390px">
+<div data-screen-label="7c C1 홈" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:2px 16px 12px">
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸 이름 또는 아이디로 검색</span>
+</div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M6 9.6a6 6 0 0 1 12 0v4.9l1.6 3H4.4l1.6-3z"></path><path d="M9.8 20.4h4.4"></path></svg><i style="position:absolute;top:10px;right:10px;width:7px;height:7px;background:#F2456E;border:1.5px solid #fff;border-radius:100px"></i></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg><span style="position:absolute;top:4px;right:2px;min-width:18px;height:18px;box-sizing:border-box;background:#F2456E;border:1.5px solid #fff;border-radius:100px;display:flex;align-items:center;justify-content:center;padding:0 3px"><span style="display:block;font:400 10px/1 Pretendard,sans-serif;color:#fff;text-align:center">{{ cartCount }}</span></span></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:12px 0 14px;border-bottom:.5px solid #EFEFEF">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box;flex:none"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">제니의 뷰티룸</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 2시간</span></div>
+<div onClick="{{ openSheet }}" style="cursor:pointer;display:flex;padding:12px;margin:-12px" style-active="opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="display:flex;gap:6px;padding:0 14px 8px">
+<span style="padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">공동구매 D-3</span>
+<sc-if value="{{ showAd }}" hint-placeholder-val="{{ true }}"><span style="padding:4px 8px;border-radius:8px;background:#F4F4F5;color:#737373;font:500 11px/1 Pretendard,sans-serif">유료 광고 포함</span></sc-if>
+</div>
+<div style="padding:0 14px">
+<div style="font:700 16px/1.45 Pretendard,sans-serif;letter-spacing:-.4px;text-wrap:pretty">여름 끝 무너진 장벽, 3주면 돌아옵니다</div>
+<div style="margin-top:4px;font:400 13.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">제가 두 달 동안 아침저녁으로 써본 조합이에요. 이번 공구는 리필까지 같이 넣었고 배송은 다음 주 월요일부터 순차로 나갑니다. <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+
+<div style="margin-top:14px;padding:0 22px">
+<div style="padding:0 0 9px;display:flex;gap:12px;align-items:center">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">시카 리페어 앰플 30ml 리필 2개 세트 기획 · 토너 패드 증정</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div>
+</div>
+</div>
+<sc-if value="{{ expK }}" hint-placeholder-val="{{ false }}">
+<div style="padding:9px 0;border-top:.5px solid #F0F0F0;display:flex;gap:12px;align-items:center">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#F1E7EA,#DCCCD3);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">진정 토너 패드 60매</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">26,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">33%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">17,500원</span></div>
+</div>
+</div>
+<div style="padding:9px 0;border-top:.5px solid #F0F0F0;display:flex;gap:12px;align-items:center">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#E7ECE8,#CCD6CF);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">배리어 크림 50ml 대용량 리뉴얼</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">32,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">32%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">21,900원</span></div>
+</div>
+</div>
+</sc-if>
+<div onClick="{{ toggleK }}" style="margin-top: 5px; height: 38px; border: 1px solid #E3E3E5; border-radius: 8px; display: flex; align-items: center; justify-content: center; gap: 6px; font: 600 12.5px/1 Pretendard,sans-serif; color: #3C3C3C; cursor: pointer" style-active="background:#F7F7F8">
+{{ moreLabelK }}
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="transform:{{ chevronK }}"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+</div>
+
+<div style="padding:14px 14px 0;display:flex;align-items:center">
+<div onClick="{{ likeU }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="{{ heartStrokeU }}" fill="{{ heartFillU }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">{{ countU }}</span>
+</div>
+</div>
+</div>
+
+<div style="padding:12px 0 18px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,#D9E2F0,#C3CEDD);flex:none"></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px"><span style="font:600 13.5px/1.3 Pretendard,sans-serif">미아 스킨노트</span><span style="font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 어제</span></div>
+<div onClick="{{ openSheet }}" style="cursor:pointer;display:flex;padding:12px;margin:-12px" style-active="opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="position:relative;aspect-ratio:4/5;background:linear-gradient(150deg,#EFEAE6,#DCD4CD 55%,#E7DFE2)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 12px/1 Pretendard,sans-serif;color:#A9A19A">이미지 · 영상 캐러셀</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:11px 0 3px">
+<i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+</div>
+<div style="padding:4px 14px 0;display:flex;align-items:center">
+<div onClick="{{ likeV }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="{{ heartStrokeV }}" fill="{{ heartFillV }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">{{ countV }}</span>
+</div>
+</div>
+<div style="padding:9px 14px 0;font:400 13.5px/1.55 Pretendard,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden"><b style="font-weight:600">미아 스킨노트</b> 요즘 아침 루틴 정리했어요. 세안 후 3분 안에 끝내는 게 핵심 <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:26px 30px 22px;display:flex;flex-direction:column;align-items:center">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="12" cy="12" r="8.5"></circle><path d="M8.6 12.2l2.4 2.4 4.4-5"></path></svg>
+<div style="margin-top:11px;font:600 14px/1.5 Pretendard,sans-serif;text-align:center">새 게시물을 모두 확인했어요</div>
+<div style="margin-top:5px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">팔로우한 쇼룸의 소식은 여기까지예요</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 4px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">회원님을 위한 추천</div>
+
+<div style="padding:12px 0 14px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box;flex:none"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#E4EAE2,#CBD6CC)"></div></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px">
+<span style="font:600 13.5px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">하루 코스메틱</span>
+<span style="flex:none;font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 5시간</span>
+</div>
+<sc-if value="{{ showFollowC }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ followC }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55">
+<span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:8px;box-sizing:border-box;background:#F4F4F5;color:#3C3C3C;font:600 12.5px/1 Pretendard,sans-serif">팔로우</span>
+</div>
+</sc-if>
+<div onClick="{{ openSheet }}" style="cursor:pointer;display:flex;padding:12px;margin:-12px" style-active="opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F" style="display:block"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="display:flex;gap:6px;padding:0 14px 8px">
+<span style="padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">공동구매 D-5</span>
+</div>
+<div style="padding:0 14px">
+<div style="font:700 16px/1.45 Pretendard,sans-serif;letter-spacing:-.4px;text-wrap:pretty">각질 정리부터 다시, 순한 성분만 골랐어요</div>
+<div style="margin-top:4px;font:400 13.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">이번 주부터 바꾼 루틴이에요. 자극 없이 결만 정리해 주는 조합으로 묶었습니다. <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+<div style="margin-top:14px;padding:0 22px">
+<div style="display:flex;gap:12px;align-items:center">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#E7ECE8,#CCD6CF);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">마일드 필링 패드 70매 대용량</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">29,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">31%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">19,900원</span></div>
+</div>
+</div>
+</div>
+<div style="padding:14px 14px 0;display:flex;align-items:center">
+<div onClick="{{ likeY }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="{{ heartStrokeY }}" fill="{{ heartFillY }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">{{ countY }}</span>
+</div>
+</div>
+</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+<sc-if value="{{ sheetOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeSheet }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 10px;font:600 15px/1.4 Pretendard,sans-serif">이 게시물을 신고하는 이유를 알려주세요</div>
+<div style="padding:0 20px 14px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#8E8E8E">신고는 익명으로 접수되며, 검토까지 최대 24시간이 걸립니다.</div>
+<div style="border-top:.5px solid #F0F0F0"></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">스팸 또는 반복 홍보<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">허위·과장된 효능 표시<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">대가관계 미표시<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">부적절하거나 불쾌한 콘텐츠<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:.5px solid #F0F0F0;font:400 14.5px/1 Pretendard,sans-serif">저작권·초상권 침해<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 20px;font:400 14.5px/1 Pretendard,sans-serif">기타<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="padding:14px 20px 0"><div onClick="{{ closeSheet }}" style="height:46px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:center;font:600 14px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">취소</div></div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+<p class="dv-note"><b>헤더</b> — 로고 제거로 한 줄(38px 검색 필드 + 아이콘 2개)이 되어 피드가 42px 더 보입니다. 브랜드 노출은 스플래시·마이 탭·앱 아이콘에서 담당하는 게 일반적이니 손실은 크지 않습니다. <b>더보기 버튼</b>은 상품 영역(좌우 22) 안에 갇힌 외곽선 버튼이라, 게시물 여백(14)에 걸린 좋아요와 소속·형태 양쪽으로 구분됩니다. <b>이번 수정</b> — 탭바 활성색을 잉크(#0F0F0F)로 되돌려 포인트 컬러는 공구 신호(D-day·할인율·알림·장바구니 수)에만 남겼고, 하트는 곡률이 부드러운 형태로 교체, 알림↔장바구니 순서 교체, 장바구니 배지(1~99, Tweaks에서 조절), ⋯ 탭 시 신고 바텀 시트를 붙였습니다. 신고 바텀 신고는 추후 업데이트 예정.<br><br><b>추천 영역</b> — 팔로잉 게시물을 다 보면 <b>"새 게시물을 모두 확인했어요"</b> 구분 블록이 나오고, 그 아래 <b>[회원님을 위한 추천]</b>으로 팔로우하지 않은 쇼룸의 게시물이 이어집니다. 8px 회색 밴드로 위아래를 끊고 다른 화면과 같은 섹션 라벨 규격(12/600 · #8E8E8E)을 써서, 내가 팔로우한 소식과 추천이 <b>섞이지 않게</b> 했습니다 — 이 구분이 없으면 팔로우한 적 없는 쇼룸의 광고가 내 피드에 낀 것처럼 느껴집니다. 추천 카드 헤더에도 회색 팔로우 버튼이 붙습니다.</p>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="7d">
+<div class="dv-olabel"><a class="dv-oid" href="#7d">7d</a>C1 홈 · 팔로잉 0 — 빈 상태 + 발견 피드</div>
+<div class="dv-card" style="width:390px">
+<div data-screen-label="C1 홈 빈 상태" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:12px;padding:2px 16px 12px">
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸 이름 또는 아이디로 검색</span>
+</div>
+<div style="display:flex;gap:18px;color:#0F0F0F">
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><path d="M6 9.6a6 6 0 0 1 12 0v4.9l1.6 3H4.4l1.6-3z"></path><path d="M9.8 20.4h4.4"></path></svg></div>
+<div style="position:relative;display:flex;padding:9px;margin:-9px;cursor:pointer"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg></div>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:44px 30px 30px;display:flex;flex-direction:column;align-items:center">
+<svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter" style="display:block"><path d="M4 4.5h16l1.4 4.2a3 3 0 0 1-5.8 1 3 3 0 0 1-5.6 0 3 3 0 0 1-5.8-1z"></path><path d="M5 10.8V20h14v-9.2"></path><path d="M9.6 20v-5.4h4.8V20"></path></svg>
+<div style="margin-top:18px;font:700 17px/1.5 Pretendard,sans-serif;letter-spacing:-.3px;text-align:center;text-wrap:pretty">팔로우한 쇼룸이 없어요</div>
+<div style="margin-top:8px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">쇼룸을 팔로우하면 새 공구와 게시물이<br>이 피드에 모여요</div>
+<div style="margin-top:20px;height:45px;padding:0 22px;border-radius:8px;background:#F2456E;display:flex;align-items:center;font:600 14px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">쇼룸 검색하기</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 4px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">회원님을 위한 추천</div>
+
+<div style="padding:12px 0 14px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box;flex:none"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:center;gap:5px;min-width:0">
+<span style="font:600 13.5px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">제니의 뷰티룸</span>
+<span style="flex:none;font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 2시간</span>
+</div>
+</div>
+<sc-if value="{{ showFollowA }}" hint-placeholder-val="{{ true }}">
+<div onClick="{{ followA }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55">
+<span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:8px;box-sizing:border-box;background:#F4F4F5;color:#3C3C3C;font:600 12.5px/1 Pretendard,sans-serif">팔로우</span>
+</div>
+</sc-if>
+<div onClick="{{ openSheet }}" style="cursor:pointer;display:flex;padding:12px;margin:-12px" style-active="opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F" style="display:block"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="display:flex;gap:6px;padding:0 14px 8px">
+<span style="padding:4px 8px;border-radius:8px;background:#F2456E;color:#fff;font:600 11px/1 Pretendard,sans-serif">공동구매 D-3</span>
+</div>
+<div style="padding:0 14px">
+<div style="font:700 16px/1.45 Pretendard,sans-serif;letter-spacing:-.4px;text-wrap:pretty">여름 끝 무너진 장벽, 3주면 돌아옵니다</div>
+<div style="margin-top:4px;font:400 13.5px/1.6 Pretendard,sans-serif;color:#3C3C3C;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">제가 두 달 동안 아침저녁으로 써본 조합이에요. 이번 공구는 리필까지 같이 넣었고 배송은 다음 주 월요일부터 순차로 나갑니다. <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+<div style="margin-top:14px;padding:0 22px">
+<div style="display:flex;gap:12px;align-items:center">
+<div style="width:90px;height:90px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">시카 리페어 앰플 30ml 리필 2개 세트 기획</div>
+<div style="margin-top:8px;font:400 12px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:5px;display:flex;align-items:baseline;gap:6px"><span style="font:700 15px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span></div>
+</div>
+</div>
+</div>
+<div style="padding:14px 14px 0;display:flex;align-items:center">
+<div onClick="{{ likeW }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="{{ heartStrokeW }}" fill="{{ heartFillW }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">{{ countW }}</span>
+</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8"></div>
+
+<div style="padding:12px 0 18px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(140deg,#D9E2F0,#C3CEDD);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:center;gap:5px;min-width:0">
+<span style="font:600 13.5px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">미아 스킨노트</span>
+<span style="flex:none;font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 어제</span>
+</div>
+</div>
+<sc-if value="{{ showFollowB }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ followB }}" style="flex:none;display:flex;align-items:center;justify-content:center;padding:7px 0;margin:-7px 0;cursor:pointer" style-active="opacity:.55">
+<span style="display:flex;align-items:center;justify-content:center;height:30px;padding:0 12px;border-radius:8px;box-sizing:border-box;background:#F4F4F5;color:#3C3C3C;font:600 12.5px/1 Pretendard,sans-serif">팔로우</span>
+</div>
+</sc-if>
+<div onClick="{{ openSheet }}" style="cursor:pointer;display:flex;padding:12px;margin:-12px" style-active="opacity:.4"><svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F" style="display:block"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg></div>
+</div>
+<div style="position:relative;aspect-ratio:4/5;background:linear-gradient(150deg,#EFEAE6,#DCD4CD 55%,#E7DFE2)">
+<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:400 12px/1 Pretendard,sans-serif;color:#A9A19A">이미지 · 영상 캐러셀</div>
+</div>
+<div style="display:flex;align-items:center;justify-content:center;gap:5px;padding:11px 0 3px">
+<i style="width:6px;height:6px;border-radius:100px;background:#0F0F0F"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+<i style="width:6px;height:6px;border-radius:100px;background:#DEDEE0"></i>
+</div>
+<div style="padding:4px 14px 0;display:flex;align-items:center">
+<div onClick="{{ likeX }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="{{ heartStrokeX }}" fill="{{ heartFillX }}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">{{ countX }}</span>
+</div>
+</div>
+<div style="padding:9px 14px 0;font:400 13.5px/1.55 Pretendard,sans-serif;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden"><b style="font-weight:600">미아 스킨노트</b> 요즘 아침 루틴 정리했어요. 세안 후 3분 안에 끝내는 게 핵심 <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"></circle><path d="M3.5 19.5c0-3.1 2.5-5.2 5.5-5.2s5.5 2.1 5.5 5.2"></path><path d="M16.2 11.2a3 3 0 1 0 0-6"></path><path d="M17.2 14.4c2 .6 3.3 2.5 3.3 5.1"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+
+</div>
+</div>
+<sc-if value="{{ showNotes }}" hint-placeholder-val="{{ true }}">
+<p class="dv-note"><b>빈 상태</b> — 쇼룸 목록을 나열하는 대신 <b>팔로우하지 않은 쇼룸의 게시물을 그대로 보여줍니다</b>. 이름만 있는 목록으로는 팔로우를 결정할 근거가 없지만, 게시물을 보면 무엇을 파는 쇼룸인지 바로 판단할 수 있습니다 — 빈 상태가 곧 발견(discovery) 피드가 됩니다.<br><br><b>게시물 헤더 팔로우 버튼</b> — 미팔로우 쇼룸에만 붙고 <b>누르면 사라집니다</b>. 색은 <b>회색 채움</b>(#F4F4F5 · 라벨 #3C3C3C)입니다 — 피드에서는 게시물 콘텐츠가 주인공이고 로즈는 공구 신호(D-day·할인율)에 이미 쓰이므로, 헤더 버튼까지 로즈로 채우면 카드마다 로즈가 두 번 나와 D-day의 힘이 죽습니다. C2 팔로잉·C14 검색처럼 <b>목록형 화면에서는 로즈 채움</b>을 유지합니다(그곳에는 경쟁하는 로즈가 없고 팔로우가 화면의 주 액션)(팔로잉 상태는 표시하지 않음 — 이미 팔로우한 대상에게 버튼 자리를 낭비하지 않고, 팔로우 취소는 C2·C4에서 합니다). 버튼을 눌러 확인해 보세요. 헤더는 7c와 동일하게 <b>이름 + 시간 한 줄</b>입니다(아이디는 목록형 화면에서만 — 피드에서는 이름과 게시물 자체가 식별을 담당).<br><br><b>규격</b> — 안내 아이콘 52 · 제목 17/700 · 설명 13/#737373 · CTA 45px/14 로즈. 카드 규격은 7c와 동일하고, 알림·장바구니 배지는 팔로잉 0 상태라 숨겼습니다.</p>
+</sc-if>
+</div>
+
+</div>
+<p class="dv-next">다음 한마디로 이어가실 수 있어요: "C6 · C2 · C3 · C14로 확장해줘" · "빈 상태와 공구 종료 카드도 그려줘" · "다크 모드 대응안 보여줘"</p>
+</section>
+
+
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;cartCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:3,&quot;min&quot;:1,&quot;max&quot;:99,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;7c 화면&quot;},&quot;showAdBadge&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;표시 옵션&quot;},&quot;showNotes&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;표시 옵션&quot;}}">
+class Component extends DCLogic {
+  state = { discoverFollow: {}, liked: { W:false, X:true, A:false, B:true, C:false, D:true, E:false, F:true, G:false, H:true, I:false, J:true, K:false, L:true, M:false, N:true, O:false, P:true, Q:false, R:true, S:false, T:true, U:false, V:true }, exp: { A:false, B:false, C:false, D:false, E:false, F:false, G:false, H:false, I:false, J:false, K:false } };
+
+  openSheet = () => this.setState({ sheet: true });
+  closeSheet = () => this.setState({ sheet: false });
+  like(k){ this.setState(s => ({ liked: { ...s.liked, [k]: !s.liked[k] } })); }
+  exp(k){ this.setState(s => ({ exp: { ...s.exp, [k]: !s.exp[k] } })); }
+
+  renderVals(){
+    const DF = this.state.discoverFollow || {};
+    const L = this.state.liked, E = this.state.exp;
+    const base = { A:24, B:124, C:24, D:124, E:24, F:124, G:24, H:124, I:24, J:124, K:24, L:124, M:24, N:124, O:24, P:124, Q:24, R:124, S:24, T:124, U:24, V:124, W:31, X:86, Y:47 };
+    const seed = { A:false, B:true, C:false, D:true, E:false, F:true, G:false, H:true, I:false, J:true, K:false, L:true, M:false, N:true, O:false, P:true, Q:false, R:true, S:false, T:true, U:false, V:true, W:false, X:true, Y:false };
+    const cnt = k => base[k] + (L[k] ? 1 : 0) - (seed[k] ? 1 : 0);
+    const rose = '#F2456E';
+    const v = {
+      showAd: this.props.showAdBadge ?? true,
+      showNotes: this.props.showNotes ?? true,
+      expA: E.A, expB: E.B, expC: E.C, expD: E.D, expE: E.E, expF: E.F, expG: E.G, expH: E.H, expI: E.I, expJ: E.J, expK: E.K,
+      sheetOpen: !!this.state.sheet,
+      openSheet: this.openSheet,
+      closeSheet: this.closeSheet,
+      chevronK: E.K ? 'rotate(180deg)' : 'none',
+      showFollowC: !DF.c,
+      followC: () => this.setState(s => ({ discoverFollow: { ...(s.discoverFollow || {}), c: true } })),
+      showFollowA: !DF.a,
+      showFollowB: !DF.b,
+      followA: () => this.setState(s => ({ discoverFollow: { ...(s.discoverFollow || {}), a: true } })),
+      followB: () => this.setState(s => ({ discoverFollow: { ...(s.discoverFollow || {}), b: true } })),
+      cartCount: String(Math.min(99, Math.max(1, this.props.cartCount ?? 3)))
+    };
+    ['A','B','C','D','E','F','G','H','I','J','K'].forEach(k => {
+      v['toggle'+k] = () => this.exp(k);
+      v['moreLabel'+k] = E[k] ? '상품 접기' : '상품 2개 더보기';
+    });
+    const muted = { W:'#0F0F0F', X:'#0F0F0F', Y:'#0F0F0F', A:'rgba(60,60,67,.5)', B:'rgba(60,60,67,.5)', C:'rgba(255,255,255,.65)', D:'rgba(255,255,255,.85)', E:'#8A8078', F:'#8A8078', G:'#0F0F0F', H:'#0F0F0F', I:'#0F0F0F', J:'#0F0F0F', K:'#fff', L:'#fff', M:'#0F0F0F', N:'#0F0F0F', O:'#0F0F0F', P:'#0F0F0F', Q:'#0F0F0F', R:'#0F0F0F', S:'#0F0F0F', T:'#0F0F0F', U:'#0F0F0F', V:'#0F0F0F' };
+    ['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y'].forEach(k => {
+      v['like'+k] = () => this.like(k);
+      v['count'+k] = String(cnt(k));
+      v['heartFill'+k] = L[k] ? rose : 'none';
+      v['heartStroke'+k] = L[k] ? rose : muted[k];
+    });
+    return v;
+  }
+}
+</script>
+</body>
+</html>

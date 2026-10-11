@@ -3,6 +3,9 @@ package showroomz.api.seller.order.service;
 import org.springframework.stereotype.Component;
 import showroomz.api.seller.order.dto.SellerOrderDetailResponse;
 import showroomz.api.seller.order.dto.SellerOrderListItem;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.order.entity.DeliveryTrackingEvent;
 import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
@@ -66,9 +69,11 @@ public class SellerOrderAssembler {
                 overlays(group, pendingRequest != null, now, claims),
                 paidAt,
                 group.getShipDueAt(),
+                group.getShipDueBusinessDays(),
                 group.getCarrier(),
                 group.getCarrier() == null ? null : group.getCarrier().getLabel(),
                 group.getTrackingNumber(),
+                group.getShippedAt(),
                 group.getLastTrackingAt(),
                 group.getDeliveredAt(),
                 group.getDeliveredSource() == null ? null : group.getDeliveredSource().getLabel(),
@@ -94,6 +99,16 @@ public class SellerOrderAssembler {
                                               List<OrderProduct> items, OrderCancelRequest pendingRequest,
                                               List<OrderFulfillmentHistory> history, LocalDateTime now,
                                               int confirmDays, ClaimOverlay claims) {
+        return toDetail(group, groupBuyTitle, paymentMethod, items, pendingRequest, history, now, confirmDays, claims,
+                null);
+    }
+
+    /** @param lastTrackingEvent 지금 송장의 마지막 스캔 — 우 레일 「배송중 · 대전 허브 출발」. 없으면 null */
+    public SellerOrderDetailResponse toDetail(OrderDeliveryGroup group, String groupBuyTitle, String paymentMethod,
+                                              List<OrderProduct> items, OrderCancelRequest pendingRequest,
+                                              List<OrderFulfillmentHistory> history, LocalDateTime now,
+                                              int confirmDays, ClaimOverlay claims,
+                                              DeliveryTrackingEvent lastTrackingEvent) {
         FulfillmentStatus status = group.getFulfillmentStatus();
         Set<Long> requestedProductIds = requestedProductIds(pendingRequest);
         var order = group.getOrder();
@@ -123,7 +138,7 @@ public class SellerOrderAssembler {
                         group.getProductTotal() + group.getDeliveryFee(),
                         pendingRequest == null ? null : pendingRequest.totalRefundAmount(),
                         cancelledAmount),
-                timeline(group, now, confirmDays, claims),
+                timeline(group, now, confirmDays, claims, lastTrackingEvent),
                 cancelRequestBlock(group, pendingRequest, items),
                 actions(group, pendingCancel),
                 history.stream().map(h -> new SellerOrderDetailResponse.HistoryItem(
@@ -176,6 +191,7 @@ public class SellerOrderAssembler {
                 request.getReasonDetail(),
                 request.getRequestedAt(),
                 Math.max(0, Duration.between(request.getRequestedAt(), now).toHours()),
+                request.getRespondDueAt(),
                 summary);
     }
 
@@ -192,11 +208,19 @@ public class SellerOrderAssembler {
                 .count();
         Long hoursSincePrepare = group.getPrepareStartedAt() == null ? null
                 : Math.max(0, Duration.between(group.getPrepareStartedAt(), request.getRequestedAt()).toHours());
+        String requesterName = displayName(group.getOrder().getUser());
+        String recipientName = group.getOrder().getRecipientName();
+        GroupBuyStatus groupBuyStatus = group.getGroupBuy() == null ? null : group.getGroupBuy().getStatus();
         return new SellerOrderDetailResponse.CancelRequestBlock(
                 request.getId(),
+                requesterName,
+                requesterName != null && recipientName != null && requesterName.trim().equals(recipientName.trim()),
+                groupBuyStatus,
+                groupBuyStatus == null ? null : groupBuyStatus.getLabel(),
                 request.getReasonCode().getLabel(),
                 request.getReasonDetail(),
                 request.getRequestedAt(),
+                request.getRespondDueAt(),
                 request.getStatusAtRequest().getLabel(),
                 hoursSincePrepare,
                 request.getItems().stream().map(this::toRequestItem).toList(),
@@ -211,16 +235,27 @@ public class SellerOrderAssembler {
                 item.getRefundAmount());
     }
 
+    /** 소비자 표시명 — 실명, 없으면 닉네임(어드민 문의 화면과 같은 규칙). */
+    private static String displayName(Users user) {
+        if (user == null) {
+            return null;
+        }
+        return user.getName() != null && !user.getName().isBlank() ? user.getName() : user.getNickname();
+    }
+
     private SellerOrderDetailResponse.Timeline timeline(OrderDeliveryGroup group, LocalDateTime now, int confirmDays,
-                                                        ClaimOverlay claims) {
+                                                        ClaimOverlay claims, DeliveryTrackingEvent lastTrackingEvent) {
         return new SellerOrderDetailResponse.Timeline(
                 group.getShipDueAt(),
+                group.getShipDueBusinessDays(),
                 group.getPrepareStartedAt(),
                 group.getShippedAt(),
                 group.getCarrier(),
                 group.getCarrier() == null ? null : group.getCarrier().getLabel(),
                 group.getTrackingNumber(),
                 group.getLastTrackingAt(),
+                lastTrackingEvent == null ? null : lastTrackingEvent.getLocation(),
+                lastTrackingEvent == null ? null : lastTrackingEvent.getDescription(),
                 group.getReturnDetectedAt(),
                 group.getDeliveredAt(),
                 group.getDeliveredSource() == null ? null : group.getDeliveredSource().getLabel(),

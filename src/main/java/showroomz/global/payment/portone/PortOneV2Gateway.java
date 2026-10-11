@@ -134,6 +134,34 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
         return new PortOneCancelResult(PortOneCancelResult.Outcome.PENDING, null, raw);
     }
 
+    /**
+     * 부분 취소(1009 기획 수정본 2-3) — {@code amount}만큼 취소한다. {@code currentCancellableAmount}를 함께 보내 그사이 다른 취소가
+     * 끼어들었으면 PG 가 거절하게 한다 — 결과를 모르는 재시도가 같은 금액을 두 번 돌려주지 못한다.
+     */
+    @Override
+    public PortOneCancelResult cancelPartial(String paymentId, long amount, long currentCancellableAmount, String reason) {
+        String cancelReason = reason == null || reason.isBlank() ? "환불" : reason;
+        CancelPaymentResponse response;
+        try {
+            response = await(client.cancelPayment(paymentId, amount, null, null, cancelReason, CancelRequester.Admin.INSTANCE,
+                    null, currentCancellableAmount, null, null, null), "결제 부분 취소");
+        } catch (PaymentGatewayRejectedException e) {
+            if (e.getCause() instanceof PaymentAlreadyCancelledException) {
+                return new PortOneCancelResult(PortOneCancelResult.Outcome.ALREADY_CANCELLED, null, e.getMessage());
+            }
+            throw e;
+        }
+        PaymentCancellation cancellation = response.getCancellation();
+        String raw = cancellation.toString();
+        if (cancellation instanceof SucceededPaymentCancellation succeeded) {
+            return new PortOneCancelResult(PortOneCancelResult.Outcome.SUCCEEDED, succeeded.getPgCancellationId(), raw);
+        }
+        if (cancellation instanceof FailedPaymentCancellation failed) {
+            throw new PaymentGatewayRejectedException(200, "CANCELLATION_FAILED", failed.getReason());
+        }
+        return new PortOneCancelResult(PortOneCancelResult.Outcome.PENDING, null, raw);
+    }
+
     @Override
     public List<PortOnePayment> listPayments(LocalDateTime from, LocalDateTime until, List<PortOneStatus> statuses) {
         List<PaymentStatus> sdkStatuses = statuses.stream().map(PortOneV2Gateway::statusOf).filter(java.util.Objects::nonNull).toList();
@@ -227,7 +255,7 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
     private static PortOnePayment toModel(Payment payment) {
         if (!(payment instanceof Payment.Recognized recognized)) {
             return new PortOnePayment(null, PortOneStatus.UNKNOWN, null, null, null, null, null, null, null, null, null, null,
-                    String.valueOf(payment));
+                    String.valueOf(payment), null);
         }
         PortOneStatus status = statusOf(payment);
         LocalDateTime paidAt = null;
@@ -260,7 +288,8 @@ public class PortOneV2Gateway implements PortOnePaymentGateway {
                 cancelledAt,
                 failCode,
                 failMessage,
-                rawJson(payment)
+                rawJson(payment),
+                recognized.getAmount() != null ? recognized.getAmount().getCancelled() : null
         );
     }
 

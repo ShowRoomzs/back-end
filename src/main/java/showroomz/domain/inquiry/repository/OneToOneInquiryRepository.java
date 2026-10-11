@@ -13,6 +13,9 @@ public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry
 
     long countByUser_Id(Long userId);
 
+    /** 어드민 주문 상세 「문의 N건」 — 이 주문을 가리키는 1:1 문의(37 설계서 8절 #11). */
+    long countByOrderId(Long orderId);
+
     /** 문의 내역 탭 건수 — 상태별 (C12 [답변 대기만] 필터·탭 배지) */
     long countByUser_IdAndStatus(Long userId, InquiryStatus status);
 

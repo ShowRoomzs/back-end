@@ -9,15 +9,12 @@ import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyAppealAttachment;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
-import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
 import showroomz.domain.groupbuy.repository.GroupBuyAppealAttachmentRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyIssueRepository;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.service.port.GroupBuySettlementGateway;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
-import showroomz.domain.groupbuy.type.FulfillmentResult;
-import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyIssueStatus;
 import showroomz.domain.groupbuy.type.GroupBuyIssueType;
@@ -29,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -96,17 +94,17 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("미종결 주문이 있거나 이행 확인이 없으면 막고, 모두 끝나면 정산 포트에만 확인을 위임한다")
+    @DisplayName("정산 확인은 폐기 — 미종결이 있어도 · 모두 끝나도 항상 409 · 포트에 위임하지 않는다(§41-1 #6 · 44 정산 설계서 8-1)")
     void settlementConfirmationRequiresAllFactsAndDelegates() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.ENDED);
         when(settlementGateway.readStage(groupBuy.getId()))
                 .thenReturn(Optional.of(GroupBuySettlementGateway.SettlementStage.WAITING));
         when(salesReader.readClosure(groupBuy.getId())).thenReturn(Optional.of(
                 new GroupBuySalesReader.GroupBuyOrderClosure(10, 9, 1, 0, 1, List.of(), null, null)));
-        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
-                .andExpect(jsonPath("$.afterEnd.settlement.blockers[1]").value("FULFILLMENT_PENDING"))
+        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(1))
+                .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
+                .andExpect(jsonPath("$.afterEnd.fulfillment").value(nullValue()))
                 .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
-        addFulfilledChecks(groupBuy);
 
         adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.stageSource").value("PORT"))
                 .andExpect(jsonPath("$.afterEnd.settlement.blockers[0]").value("UNCLOSED_ORDERS"))
@@ -119,34 +117,26 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.settlement.blockers.length()").value(0))
                 .andExpect(jsonPath("$.afterEnd.orderClosure.purchaseConfirmedCount").value(9))
                 .andExpect(jsonPath("$.afterEnd.orderClosure.refundedCount").value(1))
-                .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(true));
-        adminAction(groupBuy.getId(), "settlement/confirm", null).andExpect(status().isNoContent());
-        verify(settlementGateway).confirm(groupBuy.getId(), operator.getId());
+                .andExpect(jsonPath("$.permissions.canConfirmSettlement").value(false));
+        adminAction(groupBuy.getId(), "settlement/confirm", null).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_SETTLEMENT_NOT_READY"));
+        verify(settlementGateway, never()).confirm(groupBuy.getId(), operator.getId());
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.ENDED);
     }
 
     @Test
-    @DisplayName("운영자 이슈 개설은 3자 스레드·이력·열린 이슈 1건을 묶고 중복 개설을 막는다")
+    @DisplayName("운영자 이슈 개설은 폐기 — 중단 공구에도 409 · 이슈 행 · 3자 스레드를 만들지 않는다(44 정산조정 이슈스레드 설계서 7절)")
     void adminIssueOpensExactlyOneThread() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.SUSPENDED);
-        // 첫 글의 보낸 사람이 처리 운영자여야 한다 — 3자 스레드에서 누가 열었는지가 남는다.
-        when(threadGateway.openAdminIssueThread(any(), eq(operator.getId()), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
-                eq("정산 금액에 이견이 있습니다."))).thenReturn(9_001L);
 
         adminAction(groupBuy.getId(), "issues",
                 Map.of("issueType", "SETTLEMENT_AMOUNT", "content", "정산 금액에 이견이 있습니다."))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.issueId").isNumber())
-                .andExpect(jsonPath("$.threadId").value(9_001));
-        assertThat(issueRepository.existsByGroupBuyIdAndStatus(groupBuy.getId(), GroupBuyIssueStatus.OPEN)).isTrue();
-        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.openIssue.threadId").value(9_001))
-                .andExpect(jsonPath("$.afterEnd.openIssue.openerType").value("ADMIN"))
-                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
-        adminAction(groupBuy.getId(), "issues", Map.of("issueType", "ETC", "content", "중복"))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_ISSUE_ALREADY_OPEN"));
-        verify(threadGateway).openAdminIssueThread(any(), eq(operator.getId()), eq(GroupBuyIssueType.SETTLEMENT_AMOUNT),
-                eq("정산 금액에 이견이 있습니다."));
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
+        assertThat(issueRepository.existsByGroupBuyIdAndStatus(groupBuy.getId(), GroupBuyIssueStatus.OPEN)).isFalse();
+        adminDetail(groupBuy.getId()).andExpect(jsonPath("$.afterEnd.openIssue").value(nullValue()))
+                .andExpect(jsonPath("$.permissions.canOpenIssue").value(false));
+        verify(threadGateway, never()).openAdminIssueThread(any(), any(), any(), any());
     }
 
     @Test
@@ -171,16 +161,6 @@ class AdminGroupBuyPortIntegrationTest extends AdminGroupBuyTestSupport {
         adminGet(another.getId(), "admin-suspension/attachments/" + uploaded.getId())
                 .andExpect(status().isNotFound());
         verify(appealStorage).presignDownload("appeal/evidence.pdf", "evidence.pdf");
-    }
-
-    private void addFulfilledChecks(GroupBuy groupBuy) {
-        transactionTemplate.executeWithoutResult(tx -> {
-            GroupBuy reference = groupBuyRepository.findById(groupBuy.getId()).orElseThrow();
-            fulfillmentCheckRepository.save(GroupBuyFulfillmentCheck.manual(reference, FulfillmentSide.SELLER,
-                    FulfillmentResult.FULFILLED, null, brand.seller().getId(), null, LocalDateTime.now()));
-            fulfillmentCheckRepository.save(GroupBuyFulfillmentCheck.manual(reference, FulfillmentSide.CREATOR,
-                    FulfillmentResult.FULFILLED, null, creator.getId(), null, LocalDateTime.now()));
-        });
     }
 
     private GroupBuyAppealAttachment addAttachment(GroupBuyAdminSuspension notice, boolean uploaded,

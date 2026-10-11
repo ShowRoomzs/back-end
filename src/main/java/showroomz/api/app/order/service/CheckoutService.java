@@ -1,5 +1,6 @@
 package showroomz.api.app.order.service;
 
+import showroomz.domain.order.service.ShipDuePolicy;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,7 +50,6 @@ import showroomz.global.utils.DiscountRate;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
@@ -84,6 +84,8 @@ public class CheckoutService {
     private final OrderAssembler assembler;
     private final StockReleaser stockReleaser;
     private final PortOnePaymentGateway gateway;
+    private final PaymentMethodCatalog paymentMethodCatalog;
+    private final ShipDuePolicy shipDuePolicy;
     private final OrderProperties orderProperties;
 
     // ------------------------------------------------------------------ 주문서
@@ -101,7 +103,7 @@ public class CheckoutService {
                 .memoPresets(OrderDto.MEMO_PRESETS)
                 .groups(prepared.groups().stream().map(group -> toGroupDto(group, prepared.pricing())).toList())
                 .summary(toSummary(prepared.summary(), prepared.lines().size()))
-                .paymentMethods(availablePaymentMethods())
+                .paymentMethods(paymentMethodCatalog.available())
                 .ctaLabel(OrderAssembler.ctaLabel(prepared.summary().finalTotal()))
                 .build();
     }
@@ -417,16 +419,6 @@ public class CheckoutService {
         return new PaymentChoice(method, cardIssuer, provider, channelKey);
     }
 
-    /** 지금 열려 있는 채널만 — 채널키가 "-" 로 꺼진 간편결제는 빠져 앱이 고장 난 버튼을 그리지 않는다(5-2). */
-    private OrderDto.PaymentMethods availablePaymentMethods() {
-        List<CardIssuer> cards = gateway.channelKeyFor(PaymentMethod.CARD, null).isPresent()
-                ? Arrays.asList(CardIssuer.values()) : List.of();
-        List<EasyPayProvider> providers = Arrays.stream(EasyPayProvider.values())
-                .filter(provider -> gateway.channelKeyFor(PaymentMethod.EASY_PAY, provider).isPresent())
-                .toList();
-        return OrderDto.PaymentMethods.builder().cardIssuers(cards).easyPayProviders(providers).build();
-    }
-
     private OrderDto.Group toGroupDto(LineGroup group, Pricing pricing) {
         GroupShipping shipping = group.shipping();
         return OrderDto.Group.builder()
@@ -441,7 +433,15 @@ public class CheckoutService {
                         .freeShippingThreshold(shipping.freeShippingThreshold())
                         .isFreeShipping(shipping.isFreeShipping())
                         .build())
+                // 결제 전 발송 시기 고지(1009 기획 · C9) — 지금 계산한 예상값. 주문 뒤에는 하위주문의 스냅샷이 정본이다.
+                .expectedShipDueDate(expectedShipDueDate(group.groupBuy(), ShipDuePolicy.businessDaysOf(group.market())))
+                .shipDueText(ShipDuePolicy.noticeText(ShipDuePolicy.businessDaysOf(group.market())))
                 .build();
+    }
+
+    private java.time.LocalDate expectedShipDueDate(GroupBuy groupBuy, int businessDays) {
+        java.time.LocalDateTime base = groupBuy.getEndedAt() != null ? groupBuy.getEndedAt() : groupBuy.getEndAt();
+        return base == null ? null : shipDuePolicy.dueAt(base, businessDays).toLocalDate();
     }
 
     private OrderDto.Item toItemDto(Line line, Pricing pricing) {

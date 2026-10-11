@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-11-issue-thread — 쇼룸 스튜디오 연결·소통 · 이슈 스레드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바(플랫 리스트) ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-sm{height:28px;padding:0 10px;font-size:var(--fs-micro);}
+
+/* ══ 입력 ══ */
+.inp,.sel{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp::placeholder{color:var(--n-400);}
+.inp:focus,.sel:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+
+/* ══ 본문 레이아웃 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;overflow:hidden;
+  display:flex;flex-direction:column;}
+.page-h{display:flex;align-items:center;justify-content:space-between;padding:var(--pt-pad) var(--pt-pad) var(--sp-4);flex-shrink:0;}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+
+/* ══ 2패널 ══ */
+.cs-wrap{flex:1;display:flex;min-height:0;border-top:1px solid var(--n-200);}
+.cs-list{width:320px;flex-shrink:0;border-right:1px solid var(--n-200);background:#fff;display:flex;flex-direction:column;}
+.cs-lh{padding:14px;border-bottom:1px solid var(--n-100);flex-shrink:0;}
+.cs-lh input{width:100%;}
+.cs-items{flex:1;overflow-y:auto;}
+.cs-item{display:flex;gap:10px;padding:13px 14px;border-bottom:1px solid var(--n-100);cursor:pointer;}
+.cs-item:hover{background:var(--n-50);}
+.cs-item.active{background:var(--accent-50);box-shadow:inset 3px 0 0 var(--accent-500);}
+.cs-item.op{border-bottom:1px solid var(--n-200);}
+.cs-avatar{width:38px;height:38px;border-radius:50%;background:var(--n-200);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0;}
+.cs-avatar.op{background:var(--accent-500);color:#fff;font-size:11px;font-weight:700;}
+.cs-meta{flex:1;min-width:0;}
+.cs-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+.cs-name{font-size:var(--fs-body);font-weight:600;color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cs-time{font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;}
+.cs-prev-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:3px;}
+.cs-prev{font-size:var(--fs-caption);color:var(--n-500);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;}
+.cs-unread{background:var(--accent-500);color:#fff;border-radius:9px;min-width:18px;height:18px;
+  font-size:var(--fs-micro);font-weight:600;display:inline-flex;align-items:center;justify-content:center;padding:0 5px;flex-shrink:0;}
+.cs-lf{padding:12px 16px;border-top:1px solid var(--n-100);flex-shrink:0;height:64px;display:flex;align-items:center;}
+.cs-lf .btn{height:40px;}
+
+.cs-thread{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--n-50);}
+.th-head{height:64px;background:#fff;border-bottom:1px solid var(--n-200);display:flex;align-items:center;
+  padding:0 var(--sp-5);gap:12px;flex-shrink:0;}
+.th-head .cs-avatar{width:40px;height:40px;}
+.th-hmeta{flex:1;}
+.th-hname{font-size:var(--fs-h3);font-weight:600;}
+.th-hstat{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.th-notice{background:var(--n-100);color:var(--n-500);font-size:var(--fs-micro);text-align:center;
+  padding:8px 16px;flex-shrink:0;}
+.th-body{flex:1;padding:var(--sp-5);display:flex;flex-direction:column;align-items:flex-start;gap:16px;overflow-y:auto;}
+.daymark{align-self:center;text-align:center;font-size:var(--fs-micro);color:var(--n-400);}
+.msg{max-width:56%;}
+.msg .who{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:4px;}
+/* 말풍선 + 전송 시각을 한 줄에 나란히 배치 — them: 말풍선 오른쪽에 시각, me: 말풍선 왼쪽에 시각 */
+.msg-row{display:flex;align-items:flex-end;gap:6px;}
+.msg.me .msg-row{flex-direction:row-reverse;}
+.msg-body{min-width:0;}
+.bubble{display:inline-block;width:fit-content;max-width:100%;border-radius:12px;padding:10px 14px;
+  font-size:var(--fs-body);line-height:1.55;word-break:break-word;white-space:pre-wrap;}
+.msg.them .bubble{background:#fff;color:var(--n-900);border:1px solid var(--n-200);border-top-left-radius:2px;}
+.msg.me{align-self:flex-end;text-align:right;}
+.msg.me .bubble{background:var(--accent-500);color:#fff;border-top-right-radius:2px;text-align:left;}
+.msg .tstamp{font-size:var(--fs-micro);color:var(--n-400);flex-shrink:0;white-space:nowrap;}
+.sf-warn{width:16px;height:16px;border-radius:50%;background:var(--danger-text);color:#fff;font-size:10px;
+  font-weight:700;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;}
+.send-fail{display:flex;align-items:center;gap:7px;margin-top:4px;justify-content:flex-end;
+  font-size:var(--fs-micro);color:var(--danger-text);font-weight:500;}
+.send-fail .sf-btn{color:var(--n-600);text-decoration:underline;cursor:pointer;font-weight:500;}
+.send-fail .sf-btn:hover{color:var(--n-900);}
+.msg .media{width:150px;height:110px;border-radius:var(--r-sm);background:var(--n-200);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-micro);margin-top:6px;position:relative;cursor:pointer;}
+.msg.me .media{margin-left:auto;}
+.msg.them .media{margin-right:auto;}
+.media-save{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;
+  background:rgba(26,27,31,.55);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.media-save svg{width:13px;height:13px;}
+
+/* 다중 이미지 첨부 그리드 */
+.mgrid{display:grid;gap:3px;margin-top:6px;border-radius:var(--r-sm);overflow:hidden;}
+.mgrid > div{background:var(--n-200);color:var(--n-500);display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-micro);position:relative;}
+.mgrid.n2{grid-template-columns:1fr 1fr;width:220px;height:120px;}
+.mgrid.n3{grid-template-columns:1fr 1fr 1fr;width:270px;height:90px;}
+.mgrid.n4{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;width:180px;height:180px;}
+.mgrid.n5,.mgrid.n6plus{grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr 1fr;width:270px;height:180px;}
+.msg.me .mgrid{margin-left:auto;}
+.msg.them .mgrid{margin-right:auto;}
+.mgrid .more-overlay{position:absolute;inset:0;background:rgba(26,27,31,.55);color:#fff;font-weight:600;
+  font-size:var(--fs-h3);display:flex;align-items:center;justify-content:center;}
+
+/* 문서 첨부 (영상도 mp4 아이콘으로 동일한 file-chip UI 사용) */
+.file-chip{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:10px 12px;width:230px;margin-top:6px;cursor:pointer;}
+.file-chip:hover{background:var(--n-50);}
+.msg.me .file-chip{margin-left:auto;}
+.file-ic{width:38px;height:38px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.file-ic.pdf{background:#D64545;} .file-ic.docx{background:#2E5AAC;} .file-ic.hwp{background:#3B5BDB;}
+.file-ic.xlsx{background:#1F7A54;} .file-ic.pptx{background:#D96B2B;} .file-ic.zip{background:var(--n-500);}
+.file-ic.default{background:var(--n-400);}
+.file-meta{flex:1;min-width:0;}
+.file-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-size{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.file-dl{color:var(--n-400);flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:var(--r-sm);}
+.file-dl:hover{background:var(--n-100);color:var(--n-700);}
+.file-dl svg{width:17px;height:17px;}
+.file-dl.done{color:var(--success-text);}
+.file-dl.done:hover{background:var(--success-bg);}
+.file-dl.downloading{color:var(--accent-500);}
+.file-ic.mp4{background:#6B4FD1;}
+
+/* 일괄 다운로드 — 한 메시지에 첨부(사진·영상·파일) 2개 이상이면 첨부 영역 바로 아래 노출 */
+.bulk-dl{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;margin-top:6px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-600);
+  font-size:var(--fs-micro);font-weight:500;cursor:pointer;width:fit-content;}
+.bulk-dl:hover{background:var(--n-100);color:var(--n-900);}
+.bulk-dl svg{width:13px;height:13px;flex-shrink:0;}
+.msg.me .bulk-dl{margin-left:auto;}
+.msg.them .bulk-dl{margin-right:auto;}
+
+/* 이미지·영상 미리보기 창(라이트박스) */
+.lightbox{position:absolute;inset:0;background:rgba(10,11,13,.92);display:flex;align-items:center;justify-content:center;z-index:10;}
+.lightbox-top{position:absolute;top:0;left:0;right:0;height:64px;display:flex;align-items:center;
+  justify-content:space-between;padding:0 20px;color:#fff;}
+.lightbox-who{display:flex;align-items:center;gap:10px;font-size:var(--fs-caption);}
+.lightbox-who .cs-avatar{width:30px;height:30px;}
+.lightbox-actions{display:flex;align-items:center;gap:8px;}
+.lb-btn{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.lb-btn:hover{background:rgba(255,255,255,.22);}
+.lb-btn svg{width:17px;height:17px;}
+.lightbox-body{width:520px;height:600px;background:var(--n-700);color:var(--n-400);
+  display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);border-radius:var(--r-sm);}
+.lightbox-nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;
+  background:rgba(255,255,255,.12);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.lightbox-nav:hover{background:rgba(255,255,255,.22);}
+.lightbox-nav.prev{left:24px;} .lightbox-nav.next{right:24px;}
+.lightbox-nav svg{width:20px;height:20px;}
+.lightbox-counter{position:absolute;bottom:24px;left:50%;transform:translateX(-50%);color:#fff;
+  font-size:var(--fs-micro);background:rgba(255,255,255,.12);padding:4px 12px;border-radius:var(--r-pill);}
+
+/* 영상 플레이어 */
+.vplayer-body{width:640px;height:400px;background:#000;border-radius:var(--r-sm);position:relative;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.vplayer-bigplay{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.92);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.vplayer-bigplay svg{width:24px;height:24px;color:var(--n-900);margin-left:3px;}
+.vplayer-controls{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(transparent,rgba(0,0,0,.75));
+  padding:28px 16px 12px;display:flex;flex-direction:column;gap:8px;}
+.vplayer-bar{height:4px;background:rgba(255,255,255,.3);border-radius:2px;position:relative;}
+.vplayer-bar-fill{position:absolute;left:0;top:0;bottom:0;width:38%;background:var(--accent-500);border-radius:2px;}
+.vplayer-bar-fill::after{content:"";position:absolute;right:-5px;top:50%;transform:translateY(-50%);
+  width:11px;height:11px;border-radius:50%;background:#fff;}
+.vplayer-row{display:flex;align-items:center;gap:12px;color:#fff;}
+.vplayer-row svg{width:16px;height:16px;cursor:pointer;}
+.vplayer-time{font-size:var(--fs-micro);color:#fff;opacity:.85;}
+.vplayer-spacer{flex:1;}
+.spin svg{animation:sz-spin 0.8s linear infinite;transform-origin:12px 12px;}
+@keyframes sz-spin{to{transform:rotate(360deg);}}
+.file-size.downloading{color:var(--accent-600);font-weight:500;}
+.file-size.done{color:var(--success-text);font-weight:500;}
+
+/* 업로드 진행 중 */
+.file-uploading{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:10px 12px;width:230px;margin-top:6px;}
+.msg.me .file-uploading{margin-left:auto;}
+.fu-body{flex:1;min-width:0;}
+.fu-top{display:flex;justify-content:space-between;gap:8px;}
+.fu-pct{font-size:var(--fs-micro);color:var(--accent-600);font-weight:600;flex-shrink:0;}
+.fu-bar{height:4px;background:var(--n-200);border-radius:2px;margin-top:7px;overflow:hidden;}
+.fu-bar-fill{height:100%;background:var(--accent-500);border-radius:2px;}
+.fu-cancel{width:22px;height:22px;border-radius:50%;background:var(--n-100);color:var(--n-500);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;font-size:13px;}
+
+/* 첨부 미리보기(혼합: 이미지/영상/문서) */
+.ap-file{position:relative;height:64px;padding:0 34px 0 6px;border-radius:var(--r-sm);background:#fff;
+  border:1px solid var(--n-200);display:flex;align-items:center;gap:8px;}
+.ap-file .file-ic{width:30px;height:30px;font-size:8px;}
+.ap-file .fn{font-size:var(--fs-micro);font-weight:600;color:var(--n-900);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ap-file .fs{font-size:9px;color:var(--n-500);}
+.size-warn{display:flex;align-items:center;gap:6px;color:var(--danger-text);font-size:var(--fs-micro);
+  font-weight:500;padding:0 0 8px;}
+
+/* 검색 결과 상태 */
+.res{border:1px solid var(--n-200);border-radius:var(--r-sm);margin-top:12px;max-height:280px;overflow-y:auto;}
+.res-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--n-100);}
+.res-item:last-child{border-bottom:none;}
+.res-empty{padding:36px 20px;text-align:center;}
+.res-empty .ic{font-size:26px;color:var(--n-300);margin-bottom:8px;}
+.res-empty .t{font-size:var(--fs-caption);font-weight:600;color:var(--n-600);margin-bottom:3px;}
+.res-empty .d{font-size:var(--fs-micro);color:var(--n-500);}
+.res-count{font-size:var(--fs-micro);color:var(--n-500);margin-top:8px;}
+
+/* 연결코드 확인 결과 */
+.code-result{margin-top:12px;border-radius:var(--r-sm);}
+.code-found{border:1px solid var(--success-text);background:var(--success-bg);border-radius:var(--r-sm);
+  padding:12px;display:flex;align-items:center;gap:10px;}
+.code-found .cf-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);}
+.code-found .cf-sub{font-size:var(--fs-micro);color:var(--n-600);margin-top:1px;}
+.code-notfound{display:flex;align-items:center;gap:6px;color:var(--danger-text);font-size:var(--fs-micro);
+  margin-top:8px;font-weight:500;}
+.th-input{border-top:1px solid var(--n-200);background:#fff;padding:12px 16px;flex-shrink:0;min-height:64px;
+  display:flex;flex-direction:column;justify-content:center;}
+.th-input-row{display:flex;align-items:center;gap:10px;}
+.th-attach{width:36px;height:36px;border:1px solid var(--n-300);border-radius:var(--r-sm);display:flex;
+  align-items:center;justify-content:center;color:var(--n-500);flex-shrink:0;cursor:pointer;}
+.th-attach:hover{background:var(--n-100);}
+.th-attach svg{width:17px;height:17px;}
+.th-field{flex:1;height:40px;border:1px solid var(--n-300);border-radius:20px;display:flex;align-items:center;
+  padding:0 16px;font-size:var(--fs-body);color:var(--n-400);}
+.th-send{width:40px;height:40px;border-radius:50%;flex-shrink:0;padding:0;}
+.th-send svg{width:18px;height:18px;display:block;}
+
+/* 첨부 미리보기 */
+.attach-preview{display:flex;gap:8px;padding:0 0 10px;flex-wrap:wrap;}
+.ap-item{position:relative;width:64px;height:64px;border-radius:var(--r-sm);background:var(--n-200);
+  display:flex;align-items:center;justify-content:center;color:var(--n-500);font-size:var(--fs-micro);flex-shrink:0;}
+.ap-x{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;
+  background:var(--n-900);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:2;}
+.ap-file .ap-x{top:6px;right:6px;}
+.ap-x svg{width:10px;height:10px;}
+
+/* 첨부 개수가 많을 때 — 줄바꿈 대신 가로 스크롤(한 줄 고정) */
+.attach-preview.scrollx{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;padding-top:8px;padding-bottom:12px;
+  scrollbar-width:thin;}
+.attach-preview.scrollx .ap-item,.attach-preview.scrollx .ap-file{flex-shrink:0;}
+.attach-preview.scrollx::-webkit-scrollbar{height:6px;}
+.attach-preview.scrollx::-webkit-scrollbar-track{background:var(--n-100);border-radius:3px;}
+.attach-preview.scrollx::-webkit-scrollbar-thumb{background:var(--n-300);border-radius:3px;}
+
+/* 빈 스레드 상태 */
+.th-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+  color:var(--n-400);text-align:center;padding:40px;}
+.th-empty .ic{font-size:32px;}
+.th-empty .t{font-size:var(--fs-h3);font-weight:600;color:var(--n-600);}
+.th-empty .d{font-size:var(--fs-caption);color:var(--n-500);max-width:280px;line-height:1.6;}
+
+/* 전체 빈 상태(연결 없음) */
+.empty-page{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  color:var(--n-400);text-align:center;}
+.empty-page .ic{font-size:40px;}
+.empty-page .t{font-size:var(--fs-h2);font-weight:600;color:var(--n-700);}
+.empty-page .d{font-size:var(--fs-caption);color:var(--n-500);max-width:340px;line-height:1.7;}
+
+/* ══ 모달 ══ */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:460px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:16px 22px;border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;font-size:var(--fs-body);}
+.modal-b{padding:22px;}
+.modal-f{padding:14px 22px;border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.seg{display:flex;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;margin-bottom:16px;}
+.seg-item{flex:1;text-align:center;padding:9px;font-size:var(--fs-caption);color:var(--n-600);background:#fff;cursor:pointer;}
+.seg-item.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.flabel{font-size:var(--fs-caption);color:var(--n-600);margin-bottom:6px;font-weight:500;}
+.res{border:1px solid var(--n-200);border-radius:var(--r-sm);margin-top:12px;}
+.res-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--n-100);}
+.res-item:last-child{border-bottom:none;}
+.res-item .cs-avatar{width:34px;height:34px;}
+.res-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);}
+.res-sub{font-size:var(--fs-micro);color:var(--n-500);margin-top:1px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.6;}
+.code-box{display:flex;gap:8px;align-items:center;}
+
+/* ══ 이슈 스레드 고유 (05 셸 위에만 얹는다) ══ */
+.iss-pin{background:#fff;border-bottom:1px solid var(--n-200);padding:12px 16px;flex-shrink:0;}
+.iss-pin-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.iss-pin-t{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);}
+.iss-rows{display:grid;grid-template-columns:repeat(2,1fr);gap:5px 20px;}
+.iss-r{display:flex;gap:8px;font-size:var(--fs-micro);}
+.iss-r .ik{color:var(--n-500);width:58px;flex-shrink:0;}
+.iss-r .iv{color:var(--n-900);}
+.iss-r.wide{grid-column:1/-1;}
+.iss-r.wide .iv{color:var(--n-700);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.msg.op{max-width:64%;align-self:flex-start;}
+.msg.op .bubble{background:var(--accent-50);border:1px solid var(--accent-100);color:var(--n-900);border-radius:10px;}
+.msg.op .who{color:var(--accent-600);font-weight:600;}
+.op-tag{display:inline-flex;align-items:center;font-size:10px;font-weight:700;
+  background:var(--accent-500);color:#fff;border-radius:9px;padding:1px 7px;}
+.sysbar{align-self:stretch;text-align:center;font-size:var(--fs-micro);color:var(--n-500);
+  background:var(--n-100);border-radius:var(--r-sm);padding:8px 12px;line-height:1.6;}
+.sysbar b{color:var(--n-700);}
+.res{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px 16px;align-self:stretch;}
+.res-h{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:9px;}
+.res-r{display:flex;gap:10px;font-size:var(--fs-caption);padding:5px 0;}
+.res-r .rk{color:var(--n-600);width:84px;flex-shrink:0;}
+.res-r .rv{color:var(--n-900);flex:1;line-height:1.6;}
+.res-r .rsub{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+.res-f{display:flex;gap:8px;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--n-100);}
+.cs-item.iss .cs-avatar{background:var(--warning-bg);color:var(--warning-text);font-size:10px;font-weight:700;}
+.th-field.off{color:var(--n-400);background:var(--n-100);}
+.th-empty2{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;padding:40px;}
+.th-empty2 .t{font-size:var(--fs-h3);font-weight:600;color:var(--n-600);}
+.th-empty2 .d{font-size:var(--fs-caption);color:var(--n-500);max-width:340px;line-height:1.7;}
+.mdl-p{font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;margin:0 0 14px;}
+.mdl-p b{color:var(--n-900);}
+.mdl-tgt{background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;font-size:var(--fs-micro);color:var(--n-600);line-height:1.7;}
+.mdl-tgt b{color:var(--n-900);}
+.mta{font-family:inherit;font-size:var(--fs-body);width:100%;min-height:96px;padding:9px 12px;border:1px solid var(--n-300);border-radius:var(--r-sm);resize:none;color:var(--n-900);}
+.mta::placeholder{color:var(--n-400);}
+.mcnt{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:5px;font-variant-numeric:tabular-nums;}
+.doc-toc{max-width:1440px;margin:0 auto 20px;background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);padding:12px 14px;}
+.toc-h{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:9px;}
+.toc-h span{font-weight:400;color:var(--n-500);}
+.toc-g{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+.toc-i{display:flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:var(--n-700);text-decoration:none;
+  background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:7px 9px;}
+.toc-i:hover{background:var(--accent-50);border-color:var(--accent-100);color:var(--accent-600);}
+.toc-i .ti{font-size:10px;font-weight:700;background:var(--n-900);color:#fff;border-radius:4px;padding:1px 5px;flex-shrink:0;}
+/* ── 05에 없는 유틸리티 (ui-partner-13-settlement와 동일 값) ── */
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+.tnum{font-variant-numeric:tabular-nums;}
+.new{color:var(--accent-600);font-weight:600;}
+.rule b{color:var(--n-900);}
+.rule .new{color:var(--accent-600);font-weight:600;}
+.rule .wait{color:var(--danger-text);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+</style>
+
+</head>
+
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-11-issue-thread <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 연결·소통 · 이슈 스레드</span></h1>
+  <p class="meta">GNB #2 연결·소통 · 1440×1024 · 전역 Compact · 액센트 인디고 #3B5BDB 단일 · 셸·2패널·말풍선·첨부 <b>전부 ui-partner-14-issue-thread에서 상속</b>(head 통째로 포크 후 셸 마크업만 스튜디오 9항목으로 교체) · 진입 = <a href="ui-studio-09-groupbuys.html">공구 관리</a> C5·C6 「미이행 제출 · 스레드 열기」 · 상태 8종</p>
+  <div class="rule">
+    <b class="new">[파트너센터 파일을 그대로 상속한다]</b> <code>ui-partner-14-issue-thread</code>의 head를 <b>통째로 포크</b>하고 <b>스튜디오 셸 마크업만</b> 갈았다 — <code>.cs-*</code>(2패널 · 목록) · <code>.th-*</code>(스레드 · 입력창) · <code>.msg</code>(말풍선 · 시각) · <code>.mgrid</code>/<code>.file-chip</code>/<code>.bulk-dl</code>(첨부) · <code>.iss-pin</code>(고정 카드) · <code>.res</code>(중재 · 종결 카드) · <code>.sysbar</code>를 <b>한 줄도 재설계하지 않았다</b>. 프론트에서 공유 컴포넌트로 리프트할 것을 전제한다. 스튜디오 규칙에 따라 <b>GNB 배지만 중립 회색</b>(파트너센터는 위험색)으로 바꿨다 — 배지는 숫자만, 상태색 없음.<br>
+    <b class="new">[발신자 좌우가 반대다 · 이 파일에서 가장 중요한 차이]</b> 채팅에서 <b>우측은 「나」</b>다. 그래서 파트너센터에서 우측(인디고)이던 <b>브랜드가 여기서는 좌측 흰색</b>이 되고, 좌측이던 <b>인플루언서가 우측 인디고</b>가 된다. 운영자는 <b>양쪽 파일 모두 좌측 · 인디고 연톤 · 「중재」 태그</b>로 같다 — 운영자를 우측이나 가운데에 두면 발신자 규칙이 깨지므로 <b>위치가 아니라 색과 태그</b>로 구분한다. 마크업 클래스(<code>.msg.me</code>/<code>.them</code>/<code>.op</code>)는 동일하고 <b>어느 주체에 붙이는지만</b> 다르다.<br>
+    <b class="new">[고정 카드에 「정산」 행을 추가했다 — 파트너센터에 없는 행]</b> 이슈가 열리면 <b>내 리워드 지급이 멈춘다</b>. 브랜드에게 이슈는 「사실관계를 다투는 일」이지만 인플루언서에게는 <b>받을 돈이 언제 들어오는지의 문제</b>다 — 그래서 <b>보류 사실 · 보류 금액 · 정산 관리 딥링크</b>를 고정 카드 전폭 행으로 박아 <b>스크롤과 무관하게</b> 보이게 했다. 종결(T5)에서는 같은 자리가 <b>「보류가 해제되었습니다」</b>로 바뀌어 <b>돈이 다시 움직인다는 사실</b>을 같은 위치에서 알린다. 다만 <b>금액을 조정하지는 않는다</b> — 정산 금액의 단일 소스는 <b>정산 관리</b>이고 이 화면은 보류 · 해제 <b>사실</b>만 말한다.<br>
+    <b class="new">[스튜디오는 수신 측이지만 이슈는 양쪽 다 열 수 있다]</b> 연결과 계약은 브랜드가 발신하고 인플루언서는 수락 · 거절만 하지만, <b>계약 이행 확인은 양측이 각자</b> 한다(공구 관리 C5) — 그래서 이슈도 <b>내가 여는 경우(T1)와 브랜드가 여는 경우(T2)</b>가 모두 존재한다. 이것은 <b>발신 액션을 새로 만든 것이 아니라</b> 이미 확정된 이행 확인 규칙의 결과다. T2를 별 상태로 그린 이유는 <b>조치 주체가 나</b>여서 화면이 요구하는 것이 다르기 때문이다 — sysbar가 <b>「내 입장과 근거를 등록해 주세요」</b>로 바뀌고, <b>답변 기한을 넘기면 브랜드 주장과 제출된 자료만으로 판단</b>된다는 사실을 함께 고지한다(방치가 곧 포기가 되는 상황을 숨기지 않는다).<br>
+    <b>[개설은 여기가 아니다]</b> 이슈는 <b>공구 관리 › 계약 이행 확인</b>에서만 열린다. 이 화면에 개설 버튼을 두지 않는 이유는 <b>무엇에 대한 이견인지가 먼저</b>여야 하기 때문이다 — 공구 · 계약이 특정되지 않은 이견은 운영자가 판단할 수 없다.<br>
+    <b class="new">[빈 상태를 이 파일에 그리지 않는다]</b> 이슈가 없을 때의 화면은 <b>일반 소통 스레드의 빈 상태를 그대로 쓴다</b>(ui-studio-04-connections). 이슈는 <b>별 메뉴가 아니라 스레드의 한 종류</b>이므로 「이슈가 없다」는 별개 상태가 아니라 <b>그냥 스레드가 선택되지 않은 상태</b>다 — 전용 빈 상태를 만들면 같은 자리에 <b>빈 화면이 두 종류</b> 생기고, 어느 쪽이 뜰지 규칙을 따로 정해야 한다.<br>
+    <b class="new">[목록 하단 [+ 연결 요청] 버튼을 뺐다]</b> 파트너센터 목록에는 하단에 <b>[+ 연결 요청]</b>이 있지만 <b>스튜디오에는 없다</b> — 연결은 브랜드가 발신하고 인플루언서는 수락 · 거절만 한다. 없는 권한의 버튼을 두면 <b>누를 수 없는 버튼</b>이 되거나 <b>있지도 않은 발신 기능</b>을 약속한다. 목록 검색 placeholder도 「쇼룸명 검색」에서 <b>「브랜드명 검색」</b>으로 바꿨다(상대가 브랜드다).<br>
+    <b>[증빙은 말풍선에 붙는다]</b> 별 첨부함을 만들지 않는다 — <b>어느 주장의 근거인지</b> 붙어 있어야 판단이 가능하다. 파일만 모아두면 누가 무엇을 근거로 말했는지 복원할 수 없다.<br>
+    <b class="new">[스레드 헤더에 액션 버튼을 두지 않는다]</b> 파트너센터에는 헤더 우측에 <b>[종결 요청]</b>이 있지만 스튜디오에서는 <b>이 자리를 비웠다</b>. 종결로 가는 길이 이미 있기 때문이다 — <b>운영자가 중재 의견을 내고 양측이 동의</b>하면 종결된다. 그 위에 「종결 요청」을 얹으면 ①의견이 나오기 전에 눌러 <b>판단 없이 닫자는 요청</b>이 되거나 ②의견이 나온 뒤에는 <b>[동의]와 같은 뜻</b>이 되어, 어느 쪽이든 <b>같은 결과로 가는 문이 두 개</b>가 된다. 종결은 <b>중재 카드의 [동의] 하나</b>로만 향한다. <b>[공구 상세]</b> 버튼도 뺐다 — <b>고정 카드의 「공구 상세」 링크와 완전히 같은 이동</b>이라 같은 화면에 같은 목적지가 두 번 있었다.<br>
+    <b class="new">[「이의 제기」가 아니라 「반대」]</b> 두 버튼이 <b>같은 질문에 대한 두 답</b>(이 의견을 받아들이나)이므로 <b>[동의] · [반대]</b>로 짝을 맞췄다. 「이의 제기」는 <b>절차 신청</b>처럼 들려 무겁고, [동의]와 문장 층이 달라 <b>한쪽이 더 정식 절차처럼</b> 보인다.<br>
+    <b class="new">[동의와 반대의 모달이 다른 것을 요구한다]</b> <b>[동의](T5)</b>는 판단이 끝난 행위라 <b>입력 필드가 없다</b> — 대신 <b>불가역 · 브랜드 동의 필요 · 보류 해제와 지급 금액 · 재반대 불가</b>를 눌리기 전에 말한다. 남길 말이 있으면 <b>스레드에 쓰면 된다</b>. <b>[반대](T6)</b>는 <b>사유가 곧 재검토 자료</b>이므로 <b>필수 입력</b>이고, <b>에러 문구 없이 버튼 비활성만</b>으로 표현한다. 반대의 대가는 <b>정산 보류가 계속되는 것</b>이라 그 사실을 첫 줄에 둔다 — 인플루언서에게 반대는 「돈을 더 기다리겠다」는 선택이므로 대가를 숨기면 안 된다.<br>
+    <b class="new">[반대는 스레드에 두 층으로 남는다]</b> 반대 등록 직후(T7)는 <b>내 사유가 말풍선(우측)</b>으로, <b>중재 의견이 보류됐다는 절차 사실</b>은 <b>sysbar</b>로 갈라 적는다 — 하나로 합치면 ①말풍선만 두면 <b>절차가 어디까지 갔는지</b> 알 수 없고 ②시스템 줄만 두면 <b>내가 무엇을 근거로 반대했는지</b>가 사라진다. 중재 카드의 <b>액션은 사라지고 「반대 · 재검토 대기」로 굳는다</b> — 같은 카드에 뒤늦게 동의할 수 없고, 재검토가 끝나면 <b>새 중재 카드</b>가 온다. 고정 카드 배지는 <b>진행 중 그대로</b>다(반대는 부정 결과의 확정이 아니라 논의의 연장이다 — 위험색을 쓰지 않는다).<br>
+    <b>[중재 의견은 말풍선이 아니라 카드다]</b> 결론이 대화에 섞이면 스크롤에 묻힌다. <b>판단 · 근거 · 후속 조치 · 이의 기한</b> 네 줄로 고정하고 <b>이 카드의 [동의]·[반대]가 이 화면의 유일한 액션</b>이다. <b>종결 처리는 운영자</b>다 — 이해당사자가 자기 이견의 결론을 찍지 않는다(공구 관리 · 계약 관리와 같은 원칙).<br>
+    <b>[종결해도 지우지 않고 입력창만 잠근다]</b> 기록은 <b>다음 계약의 판단 근거</b>이고 재발 시 이력이 필요하므로 스레드를 남긴다. 입력창을 잠가 <b>새 이견은 새 스레드</b>로 가게 한다 — 한 스레드에 여러 이견이 쌓이면 무엇이 결론이었는지 알 수 없다. 일반 대화는 같은 브랜드의 소통 스레드에서 계속된다.<br>
+    <b>[상태색]</b> 진행 중=<b>경고</b>(내가 답해야 넘어가거나 내 돈이 멈춰 있다 · 원칙①) · 종결=<b>중립</b>(원칙②). <b>위험색은 쓰지 않는다</b> — 이슈는 부정 결과의 확정이 아니라 <b>논의가 진행 중인 상태</b>다.<br>
+    <b>[용어]</b> 인플루언서 · 브랜드 · 소비자 · 쇼룸 스튜디오 · 쇼룸. UI 문구에서는 <b>「이견」</b>을 쓰고 <b>「분쟁」은 기록 · 보관 서술에만</b> 쓴다.<br>
+    <span class="wait">[확인 필요]</span> ① <b>이의 기한</b>(현재 중재 의견 후 3일 가정) · 반대 사유 <b>1,000자 상한</b>과 <b>T2의 답변 기한</b>(현재 3일 가정) — 무응답 시 「제출된 자료만으로 판단」이 법적으로 성립하는지 확인 필요. ② <b>보류 금액 표기</b> — 고정 카드에 금액을 적는 것이 맞는지, 아니면 보류 사실만 적고 금액은 정산 관리로 보낼지. ③ 운영자 <b>미배정 구간</b>(제출 직후 ~ 담당자 배정 전) 표시 여부. ④ 반대 후 <b>재중재 회차 제한</b>. ⑤ 기록 <b>보존 기간</b>. ⑥ 종결 후 <b>정산 재개 시점</b> — 즉시인지 다음 정산 주기인지(현재 「정산 일정에 따라」로 표기).
+  </div>
+</div>
+<div class="doc-toc">
+  <div class="toc-h">상태 목차 <span>8장</span></div>
+  <div class="toc-g">
+    <a class="toc-i" href="#T1"><span class="ti">T1</span>개설 직후(내가 열었다)</a>
+    <a class="toc-i" href="#T2"><span class="ti">T2</span>브랜드가 열었다</a>
+    <a class="toc-i" href="#T3"><span class="ti">T3</span>양측 진술 · 증빙</a>
+    <a class="toc-i" href="#T4"><span class="ti">T4</span>운영자 중재 의견</a>
+    <a class="toc-i" href="#T5"><span class="ti">T5</span>모달 · 동의</a>
+    <a class="toc-i" href="#T6"><span class="ti">T6</span>모달 · 반대</a>
+    <a class="toc-i" href="#T7"><span class="ti">T7</span>반대 등록 이후</a>
+    <a class="toc-i" href="#T8"><span class="ti">T8</span>종결</a>
+  </div>
+</div>
+
+<section class="state" id="T1">
+  <div class="state-bar"><span class="state-id">T1</span><span class="state-label">이슈 스레드 · 개설 직후(내가 열었다)</span>
+  <span class="state-spec">공구 관리 <b>계약 이행 확인에서 «미이행»을 제출한 직후</b> — 이슈는 이 화면에서 만들 수 없고 <b>공구 상세에서만</b> 열린다(무엇에 대한 이견인지가 먼저다) · 제출할 때 쓴 사유가 <b>내 첫 글로 그대로 등록</b>된다 · <b>내가 「나」(우측 인디고)</b>이고 브랜드는 좌측 — 파트너센터와 <b>발신자 좌우가 반대</b>다 · 고정 카드에 <b>정산 보류와 보류 금액</b>을 박는다</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 진행 중 · 운영자 참여</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">합의가 끝날 때까지 <b>내 리워드 150,528원 지급이 보류</b>됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.01</div>
+        <div class="sysbar"><b>이슈 스레드가 개설되었습니다.</b> 운영자가 참여해 양측 의견을 확인하고 중재합니다 · 아래 첫 글은 <b>계약 이행 확인에서 제출한 내용</b>입니다</div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">공구 종료 후 3일이 지났는데 18건이 아직 배송 시작되지 않았습니다. 소비자 문의가 제 쇼룸으로 들어오고 있어 확인이 필요합니다.</div></div><div class="tstamp">10:40</div></div></div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">접수했습니다. 주문 처리 내역과 계약상 발송 기한을 확인한 뒤 안내드리겠습니다. 브랜드 답변을 기다립니다.</div></div><div class="tstamp">10:41</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="T2">
+  <div class="state-bar"><span class="state-id">T2</span><span class="state-label">이슈 스레드 · 브랜드가 열었다(내 답변 필요)</span>
+  <span class="state-spec">스튜디오 <b>고유 상태</b> — 이슈는 <b>양쪽 다 열 수 있다</b>(계약 이행 확인을 양측이 하므로). 브랜드가 내 콘텐츠 의무를 «미이행»으로 제출한 경우다 · 이때 첫 글이 <b>좌측(브랜드)</b>에 오고 <b>내 답변란이 비어 있다</b> — 조치 주체가 나이므로 sysbar가 <b>무엇을 해야 하는지</b>를 말한다 · <b>기한 없이 방치하면 브랜드 주장만 남는다</b>는 사실을 함께 고지</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div><span class="cs-unread">2</span></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">퓨어랩</div><div class="th-hstat">이슈 진행 중 · 내 답변 필요</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">퓨어랩 립밤 공구 · 콘텐츠 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260703-009 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260628-021 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">콘텐츠 이행 문제(내 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.02 09:12 · 퓨어랩</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">이 공구의 <b>내 리워드 62,340원 지급이 보류</b>되었습니다 · 합의가 끝나면 정산 일정에 따라 재개됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.02</div>
+        <div class="sysbar"><b>브랜드가 이슈를 열었습니다.</b> 이 스레드에 <b>내 입장과 근거를 등록</b>해 주세요 · <b>2026.09.05까지 답변이 없으면</b> 운영자가 브랜드 주장과 제출된 자료만으로 판단합니다</div>
+        <div class="msg them"><div class="who">퓨어랩</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">계약한 콘텐츠 의무 중 릴스 1건이 게시되지 않았습니다. 공구는 07.17에 종료됐고 게시 완료 기한도 지났습니다. 확인 부탁드립니다.</div></div><div class="tstamp">09:12</div></div>
+          <div class="file-chip"><div class="file-ic pdf">PDF</div><div class="file-meta"><div class="file-name">계약_콘텐츠의무_발췌.pdf</div><div class="file-size">312KB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div></div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">접수했습니다. 인플루언서 답변과 게시 내역을 확인한 뒤 안내드리겠습니다. 게시 화면 · 게시 시각이 담긴 자료가 있으면 이 스레드에 올려주세요.</div></div><div class="tstamp">09:20</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="T3">
+  <div class="state-bar"><span class="state-id">T3</span><span class="state-label">이슈 스레드 · 양측 진술 · 증빙 첨부</span>
+  <span class="state-spec">내가 근거를 올리고 브랜드가 답한 상태 — <b>증빙은 말풍선에 붙는다</b>(별 첨부함을 만들지 않는다: 어느 주장의 근거인지 붙어 있어야 판단이 된다) · 첨부 컴포넌트는 <b>파트너센터와 완전 동일 마크업</b>(사진 <code>mgrid</code> + [전체 다운로드], 문서 <code>file-chip</code>) · 운영자는 <b>좌측 · 인디고 연톤 · 「중재」 태그</b>로 갈린다</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 진행 중 · 운영자 참여</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">합의가 끝날 때까지 <b>내 리워드 150,528원 지급이 보류</b>됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.01</div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">소비자들이 제 쇼룸 게시물에 남긴 문의입니다. 배송이 시작되지 않아 저에게 먼저 묻고 있습니다.</div></div><div class="tstamp">14:20</div></div>
+          <div class="mgrid n3"><div>IMG</div><div>IMG</div><div>IMG</div></div>
+          <div class="bulk-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg><span>전체 다운로드 (3)</span></div></div>
+        <div class="msg them"><div class="who">○○ 브랜드</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인했습니다. 원료 입고가 지연돼 18건이 밀렸고 09.03까지 순차 발송합니다. 지연 안내는 저희가 소비자에게 직접 발송하겠습니다.</div></div><div class="tstamp">16:05</div></div>
+          <div class="file-chip"><div class="file-ic xlsx">XLSX</div><div class="file-meta"><div class="file-name">미발송_18건_발송예정표.xlsx</div><div class="file-size">88KB</div></div><div class="file-dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg></div></div></div>
+        <div class="daymark">2026.09.02</div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">양측 자료를 확인했습니다. 계약상 발송 기한(종료 후 2영업일)을 초과한 구간이 있어 사실관계는 확인됐습니다. 발송 완료 여부를 09.03에 다시 확인하고 중재 의견을 드리겠습니다.</div></div><div class="tstamp">11:30</div></div></div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="T4">
+  <div class="state-bar"><span class="state-id">T4</span><span class="state-label">이슈 스레드 · 운영자 중재 의견</span>
+  <span class="state-spec">운영자가 <b>판단을 카드로</b> 낸다 — 말풍선에 섞으면 스크롤에 묻혀 나중에 무엇이 결론이었는지 찾을 수 없다 · <b>판단 · 근거 · 후속 조치 · 이의 기한</b> 네 줄 고정이고 <b>금액은 담지 않는다</b>(정산 금액의 단일 소스는 정산 관리 — 후속 조치는 「정산 재개」까지만 말한다) · 내 액션은 <b>[동의]·[반대]</b> 둘이고 <b>종결 처리는 운영자</b>가 한다</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 진행 중 · 중재 의견 도착</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">합의가 끝날 때까지 <b>내 리워드 150,528원 지급이 보류</b>됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.03</div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인이 끝나 중재 의견을 드립니다. 아래 내용에 이의가 없으면 동의를 눌러주세요.</div></div><div class="tstamp">15:10</div></div></div>
+        <div class="res">
+          <div class="res-h"><span class="op-tag">중재</span>운영자 중재 의견</div>
+          <div class="res-r"><span class="rk">판단</span><span class="rv">브랜드 의무 <b>일부 미이행으로 인정</b> — 발송 기한 초과는 확인되며 <b>인플루언서 귀책이 아닙니다</b></span></div>
+          <div class="res-r"><span class="rk">근거</span><span class="rv">공구 종료 08.31 · 계약상 발송 기한 종료 후 2영업일(09.02) · 미발송 18건이 09.03 발송 완료 · 소비자 문의 3건 접수</span></div>
+          <div class="res-r"><span class="rk">후속 조치</span><span class="rv">지연 안내는 브랜드가 소비자에게 직접 발송 · <b>인플루언서 리워드는 조정 없이 정산 재개</b>합니다 <span class="rsub">지급 일정과 명세는 정산 관리에서 확인합니다</span></span></div>
+          <div class="res-r"><span class="rk">이의 기한</span><span class="rv tnum">2026.09.06 23:59 <span class="rsub">기한 내 이의가 없으면 이 의견으로 종결됩니다</span></span></div>
+          <div class="res-f"><button class="btn btn-secondary">반대</button><button class="btn btn-primary">동의</button></div>
+        </div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="T5">
+  <div class="state-bar"><span class="state-id">T5</span><span class="state-label">모달 · 중재 의견 동의</span>
+  <span class="state-spec">결과를 먼저 말한다 — <b>불가역</b> · <b>브랜드도 동의해야 종결</b> · <b>보류 해제와 지급 금액</b> · <b>재이의 불가</b> 네 줄 · <b>입력 필드가 없다</b> — 동의는 판단이 끝난 행위이고 남길 말이 있으면 스레드에 쓰면 된다 · 버튼은 처음부터 활성</span></div>
+<div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 진행 중 · 중재 의견 도착</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">합의가 끝날 때까지 <b>내 리워드 150,528원 지급이 보류</b>됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.03</div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인이 끝나 중재 의견을 드립니다. 아래 내용에 이의가 없으면 동의를 눌러주세요.</div></div><div class="tstamp">15:10</div></div></div>
+        <div class="res">
+          <div class="res-h"><span class="op-tag">중재</span>운영자 중재 의견</div>
+          <div class="res-r"><span class="rk">판단</span><span class="rv">브랜드 의무 <b>일부 미이행으로 인정</b> — 발송 기한 초과는 확인되며 <b>인플루언서 귀책이 아닙니다</b></span></div>
+          <div class="res-r"><span class="rk">근거</span><span class="rv">공구 종료 08.31 · 계약상 발송 기한 종료 후 2영업일(09.02) · 미발송 18건이 09.03 발송 완료 · 소비자 문의 3건 접수</span></div>
+          <div class="res-r"><span class="rk">후속 조치</span><span class="rv">지연 안내는 브랜드가 소비자에게 직접 발송 · <b>인플루언서 리워드는 조정 없이 정산 재개</b>합니다 <span class="rsub">지급 일정과 명세는 정산 관리에서 확인합니다</span></span></div>
+          <div class="res-r"><span class="rk">이의 기한</span><span class="rv tnum">2026.09.06 23:59 <span class="rsub">기한 내 이의가 없으면 이 의견으로 종결됩니다</span></span></div>
+          <div class="res-f"><button class="btn btn-secondary">반대</button><button class="btn btn-primary">동의</button></div>
+        </div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="overlay">
+    <div class="modal">
+      <div class="modal-h">중재 의견에 동의<span class="modal-x">✕</span></div>
+      <div class="modal-b">
+        <div class="mdl-tgt">여름 수분 세럼 공구 · <b>계약 이행 문제(브랜드 의무)</b><br>중재 의견 <b>2026.09.03 15:10</b> · 이의 기한 <b>2026.09.06 23:59</b></div>
+        <p class="mdl-p">이 의견에 동의하면 <b>되돌릴 수 없습니다</b>.<br>· <b>브랜드도 동의</b>하면 운영자가 종결 처리합니다<br>· 종결되면 <b>보류가 해제</b>되고 내 리워드 <b>150,528원</b>은 정산 일정에 따라 지급됩니다<br>· 같은 사안으로 <b>다시 이의를 제기할 수 없습니다</b></p>
+      </div>
+      <div class="modal-f"><button class="btn btn-secondary">닫기</button><button class="btn btn-primary">동의</button></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="state" id="T6">
+  <div class="state-bar"><span class="state-id">T6</span><span class="state-label">모달 · 중재 의견 반대</span>
+  <span class="state-spec">반대는 <b>사유가 곧 재검토 자료</b>이므로 <b>입력 필수</b> — <b>에러 문구 없이 버튼 비활성만</b>으로 표현한다 · <b>정산 보류가 계속</b>된다는 사실을 먼저 말한다(반대의 가장 큰 대가다) · 등록 내용은 <b>스레드에 그대로 남는다</b></span></div>
+<div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 진행 중 · 중재 의견 도착</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">합의가 끝날 때까지 <b>내 리워드 150,528원 지급이 보류</b>됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.03</div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인이 끝나 중재 의견을 드립니다. 아래 내용에 이의가 없으면 동의를 눌러주세요.</div></div><div class="tstamp">15:10</div></div></div>
+        <div class="res">
+          <div class="res-h"><span class="op-tag">중재</span>운영자 중재 의견</div>
+          <div class="res-r"><span class="rk">판단</span><span class="rv">브랜드 의무 <b>일부 미이행으로 인정</b> — 발송 기한 초과는 확인되며 <b>인플루언서 귀책이 아닙니다</b></span></div>
+          <div class="res-r"><span class="rk">근거</span><span class="rv">공구 종료 08.31 · 계약상 발송 기한 종료 후 2영업일(09.02) · 미발송 18건이 09.03 발송 완료 · 소비자 문의 3건 접수</span></div>
+          <div class="res-r"><span class="rk">후속 조치</span><span class="rv">지연 안내는 브랜드가 소비자에게 직접 발송 · <b>인플루언서 리워드는 조정 없이 정산 재개</b>합니다 <span class="rsub">지급 일정과 명세는 정산 관리에서 확인합니다</span></span></div>
+          <div class="res-r"><span class="rk">이의 기한</span><span class="rv tnum">2026.09.06 23:59 <span class="rsub">기한 내 이의가 없으면 이 의견으로 종결됩니다</span></span></div>
+          <div class="res-f"><button class="btn btn-secondary">반대</button><button class="btn btn-primary">동의</button></div>
+        </div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    <div class="overlay">
+    <div class="modal">
+      <div class="modal-h">중재 의견에 반대<span class="modal-x">✕</span></div>
+      <div class="modal-b">
+        <div class="mdl-tgt">여름 수분 세럼 공구 · <b>계약 이행 문제(브랜드 의무)</b><br>중재 의견 <b>2026.09.03 15:10</b> · 이의 기한 <b>2026.09.06 23:59</b></div>
+        <p class="mdl-p">반대하면 <b>운영자가 다시 검토</b>합니다.<br>· <b>정산 보류가 계속</b>됩니다 — 재검토가 끝날 때까지 리워드는 지급되지 않습니다<br>· 등록한 내용은 <b>스레드에 그대로 남아</b> 브랜드와 운영자가 함께 봅니다<br>· 근거 자료는 스레드에 올려주세요</p>
+        <label class="flabel">어떤 점에 반대하나요?<span style="color:var(--danger-text)">*</span></label>
+        <textarea class="mta" placeholder="의견 중 사실과 다른 부분, 빠진 근거를 적어주세요."></textarea>
+        <div class="mcnt">0 / 1,000</div>
+      </div>
+      <div class="modal-f"><button class="btn btn-secondary">닫기</button><button class="btn btn-primary" disabled>반대 등록</button></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<section class="state" id="T7">
+  <div class="state-bar"><span class="state-id">T7</span><span class="state-label">반대 등록 이후 · 재검토 대기</span>
+  <span class="state-spec">반대는 <b>대화의 한 발언이 아니라 절차상의 사건</b>이므로 말풍선이 아니라 <b>내 발언 + 시스템 줄</b> 두 층으로 남긴다 — 내가 쓴 사유는 <b>말풍선(우측)</b>으로 남아 근거로 읽히고, <b>중재 의견이 보류됐다는 사실</b>은 sysbar가 말한다 · 중재 카드의 <b>액션은 사라지고 「반대 등록」 상태로 굳는다</b>(같은 카드에 다시 동의할 수 없다 — 재검토 후 새 의견이 온다) · 고정 카드 배지는 <b>진행 중 그대로</b>다(반대는 부정 결과의 확정이 아니다)</span></div>
+<div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">10:32</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 진행 중 · 운영자 재검토 대기</div></div>
+      </div>
+      <div class="th-notice">이슈 스레드입니다 · 운영자가 참여해 중재하며 대화 내용은 분쟁 기록으로 보관됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-warning" style="margin-left:auto">진행 중</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv">합의가 끝날 때까지 <b>내 리워드 150,528원 지급이 보류</b>됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.03</div>
+        <div class="msg op"><div class="who">운영자 <span class="op-tag">중재</span></div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인이 끝나 중재 의견을 드립니다. 아래 내용에 이의가 없으면 동의를 눌러주세요.</div></div><div class="tstamp">15:10</div></div></div>
+        <div class="res">
+          <div class="res-h"><span class="op-tag">중재</span>운영자 중재 의견</div>
+          <div class="res-r"><span class="rk">판단</span><span class="rv">브랜드 의무 <b>일부 미이행으로 인정</b> — 발송 기한 초과는 확인되며 <b>인플루언서 귀책이 아닙니다</b></span></div>
+          <div class="res-r"><span class="rk">근거</span><span class="rv">공구 종료 08.31 · 계약상 발송 기한 종료 후 2영업일(09.02) · 미발송 18건이 09.03 발송 완료 · 소비자 문의 3건 접수</span></div>
+          <div class="res-r"><span class="rk">후속 조치</span><span class="rv">지연 안내는 브랜드가 소비자에게 직접 발송 · <b>인플루언서 리워드는 조정 없이 정산 재개</b>합니다 <span class="rsub">지급 일정과 명세는 정산 관리에서 확인합니다</span></span></div>
+          <div class="res-r"><span class="rk">이의 기한</span><span class="rv tnum">2026.09.06 23:59 <span class="rsub">기한 내 이의가 없으면 이 의견으로 종결됩니다</span></span></div>
+          <div class="res-f" style="align-items:center;justify-content:space-between"><span style="font-size:var(--fs-micro);color:var(--n-500)">내 응답 <b style="color:var(--n-900)">반대</b> · 2026.09.04 09:20</span><span class="badge b-neutral">재검토 대기</span></div>
+        </div>
+        <div class="daymark">2026.09.04</div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">발송 기한 초과 구간이 2영업일이 아니라 4영업일입니다. 09.02에 발송됐다고 하신 6건도 실제로는 09.03 접수로 확인됩니다. 운송장 접수일 기준으로 다시 확인해 주세요.</div></div><div class="tstamp">09:20</div></div></div>
+        <div class="sysbar"><b>중재 의견에 반대했습니다.</b> 운영자가 다시 검토한 뒤 새 의견을 드립니다 · <b>정산 보류는 계속</b>됩니다</div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field">메시지 입력…</div>
+          <button class="btn btn-primary th-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    </div>
+</div>
+</section>
+
+<section class="state" id="T8">
+  <div class="state-bar"><span class="state-id">T8</span><span class="state-label">이슈 스레드 · 종결</span>
+  <span class="state-spec">양측 동의로 종결 — <b>스레드를 지우지 않는다</b>: 기록은 다음 계약의 판단 근거이고 재발 시 이력이 필요하다 · 배지가 <b>중립 「종결」</b>로 바뀌고 <b>입력창이 잠긴다</b>(새 이견은 새 스레드로 — 한 스레드에 여러 이견이 쌓이면 무엇이 결론인지 알 수 없다) · 정산 행이 <b>「보류 해제」</b>로 바뀌어 <b>돈이 다시 움직인다는 사실</b>을 같은 자리에서 알린다</span></div>
+  <div class="stage">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item active"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item"><span class="gn">7</span><span class="gt">정산 관리</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">연결·소통</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div class="page-t">연결·소통</div></div>
+  <div class="cs-wrap">
+    <div class="cs-list">
+      <div class="cs-lh"><input class="inp" placeholder="브랜드명 검색"></div>
+      <div class="cs-items">
+        <div class="cs-item op">
+          <div class="cs-avatar op">SZ</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">SHOWROOMZ 운영팀</span><span class="cs-time">3일전</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">8월 정산 예정 안내드립니다.</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss active">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">09.06</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 계약 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item iss">
+          <div class="cs-avatar">이슈</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">퓨어랩</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">[이슈] 콘텐츠 이행 문제 · 운영자 참여</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">○○ 브랜드</span><span class="cs-time">어제</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">다음 공구 일정 조율해요</div></div>
+          </div>
+        </div>
+        <div class="cs-item">
+          <div class="cs-avatar">IMG</div>
+          <div class="cs-meta">
+            <div class="cs-top"><span class="cs-name">모이스처하우스</span><span class="cs-time">08.20</span></div>
+            <div class="cs-prev-row"><div class="cs-prev">계약서 확인 부탁드립니다.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="cs-thread">
+      <div class="th-head">
+        <div class="cs-avatar">IMG</div>
+        <div class="th-hmeta"><div class="th-hname">○○ 브랜드</div><div class="th-hstat">이슈 종결 · 2026.09.06 11:05</div></div>
+      </div>
+      <div class="th-notice">종결된 이슈입니다 · 기록은 삭제되지 않고 다음 계약·재발 시 근거로 조회됩니다</div>
+      <div class="iss-pin">
+        <div class="iss-pin-h">
+          <span class="op-tag">이슈</span>
+          <span class="iss-pin-t">여름 수분 세럼 공구 · 계약 이행 문제</span>
+          <span class="badge b-neutral" style="margin-left:auto">종결</span>
+        </div>
+        <div class="iss-rows">
+          <div class="iss-r"><span class="ik">공구</span><span class="iv">GB-20260724-011 <span class="flink">공구 상세</span></span></div>
+          <div class="iss-r"><span class="ik">계약</span><span class="iv">CTR-20260718-032 <span class="flink">계약서 보기</span></span></div>
+          <div class="iss-r"><span class="ik">유형</span><span class="iv">계약 이행 문제(브랜드 의무)</span></div>
+          <div class="iss-r"><span class="ik">개설</span><span class="iv tnum">2026.09.01 10:40 · 뷰티_소연(나)</span></div>
+          <div class="iss-r wide"><span class="ik">정산</span><span class="iv"><b>보류가 해제</b>되었습니다 · 내 리워드 150,528원은 정산 일정에 따라 지급됩니다 <span class="flink">정산 관리</span></span></div>
+        </div>
+      </div>
+      <div class="th-body">
+        <div class="daymark">2026.09.04</div>
+        <div class="msg me">
+          <div class="msg-row"><div class="msg-body"><div class="bubble">확인했습니다. 중재 의견에 동의합니다.</div></div><div class="tstamp">09:40</div></div></div>
+        <div class="msg them"><div class="who">○○ 브랜드</div>
+          <div class="msg-row"><div class="msg-body"><div class="bubble">저희도 동의합니다. 다음 공구에서는 발송 일정을 미리 공유하겠습니다.</div></div><div class="tstamp">10:15</div></div></div>
+        <div class="res">
+          <div class="res-h"><span class="badge b-neutral">종결</span>이슈 종결</div>
+          <div class="res-r"><span class="rk">결론</span><span class="rv">브랜드 의무 일부 미이행 인정 · 인플루언서 귀책 없음 · 내 리워드 조정 없음</span></div>
+          <div class="res-r"><span class="rk">종결 방식</span><span class="rv">양측 동의 <span class="rsub">인플루언서 09.04 09:40 · 브랜드 09.04 10:15</span></span></div>
+          <div class="res-r"><span class="rk">종결 처리</span><span class="rv tnum">2026.09.06 11:05 · 운영자</span></div>
+        </div>
+        <div class="sysbar"><b>종결된 이슈입니다.</b> 새로운 이견은 <b>공구 관리 › 계약 이행 확인</b>에서 새 이슈 스레드를 열어주세요 · 일반 대화는 같은 브랜드의 소통 스레드에서 계속할 수 있습니다</div>
+      </div>
+      <div class="th-input">
+        <div class="th-input-row">
+          <div class="th-attach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg></div>
+          <div class="th-field off">종결된 이슈에는 메시지를 보낼 수 없습니다</div>
+          <button class="btn btn-primary th-send" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+
+</body>
+</html>

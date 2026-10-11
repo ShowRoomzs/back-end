@@ -11,6 +11,8 @@ import showroomz.api.common.attachment.dto.CompleteAttachmentRequest;
 import showroomz.api.common.attachment.dto.PresignRequest;
 import showroomz.api.common.attachment.dto.PresignResponse;
 import showroomz.api.common.attachment.service.MessageAttachmentService;
+import showroomz.api.common.thread.dto.ThreadAdjustmentBadge;
+import showroomz.api.common.thread.service.ThreadAdjustmentViews;
 import showroomz.api.creator.thread.dto.MessageItem;
 import showroomz.api.creator.thread.dto.MessageListResponse;
 import showroomz.api.creator.thread.dto.SendMessageRequest;
@@ -36,6 +38,8 @@ import showroomz.domain.message.service.MessageCardReader;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadStatus;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentThreadGuard;
+import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -66,6 +70,8 @@ public class CreatorThreadService {
     private final MessageCardReader messageCardReader;
     private final ContractRepository contractRepository;
     private final GroupBuyRepository groupBuyRepository;
+    private final ThreadAdjustmentViews adjustmentViews;
+    private final SettlementAdjustmentThreadGuard adjustmentThreadGuard;
 
     /**
      * §14-3 `연결됨` 탭. 안 읽은 수는 페이지 전체를 한 쿼리로 집계한다(스레드당 카운트 금지).
@@ -84,9 +90,11 @@ public class CreatorThreadService {
         Set<Long> marketsWithContract = marketsWithReceivedContract(creator, threads.getContent());
         Map<Long, String> groupBuyTitles = groupBuyRepository.findTitleMapByIds(
                 threads.getContent().stream().map(MessageThread::getSubjectId).filter(Objects::nonNull).distinct().toList());
+        Map<Long, ThreadAdjustmentBadge> adjustments = adjustmentViews.badges(threads.getContent(),
+                SettlementParty.CREATOR);
 
         return PageResponse.of(threads.map(thread ->
-                toListItem(thread, unreadByThread, marketsWithContract, groupBuyTitles)));
+                toListItem(thread, unreadByThread, marketsWithContract, groupBuyTitles, adjustments)));
     }
 
     /**
@@ -137,9 +145,11 @@ public class CreatorThreadService {
 
         Map<Long, List<AttachmentSummary>> attachmentsByMessage = loadAttachments(page);
         Map<Long, MessageCardReader.CardView> cards = loadCards(page);
+        Long respondableProposalId = cards.isEmpty() ? null
+                : adjustmentViews.respondableProposalId(thread, SettlementParty.CREATOR);
         List<MessageItem> items = page.stream()
                 .map(m -> toMessageItem(m, creator.getId(), attachmentsByMessage.getOrDefault(m.getId(), List.of()),
-                        cards.get(m.getId())))
+                        cards.get(m.getId()), respondableProposalId))
                 .toList();
         return new MessageListResponse(items, nextCursor, hasNext);
     }
@@ -151,6 +161,7 @@ public class CreatorThreadService {
     public SendMessageOutcome sendMessage(String creatorEmail, Long threadId, SendMessageRequest request) {
         Creator creator = getMyCreator(creatorEmail);
         MessageThread thread = getMyThread(creator, threadId);
+        adjustmentThreadGuard.requireWritable(thread);
 
         MessageThreadService.SendResult result = messageThreadService.sendMessage(
                 thread, ParticipantType.CREATOR, creator.getId(),
@@ -158,7 +169,7 @@ public class CreatorThreadService {
 
         Map<Long, List<AttachmentSummary>> attachments = loadAttachments(List.of(result.message()));
         MessageItem item = toMessageItem(result.message(), creator.getId(),
-                attachments.getOrDefault(result.message().getId(), List.of()), null);
+                attachments.getOrDefault(result.message().getId(), List.of()), null, null);
         return new SendMessageOutcome(item, result.created());
     }
 
@@ -174,6 +185,7 @@ public class CreatorThreadService {
     public PresignResponse createPresignedUpload(String creatorEmail, Long threadId, PresignRequest request) {
         Creator creator = getMyCreator(creatorEmail);
         MessageThread thread = getMyThread(creator, threadId);
+        adjustmentThreadGuard.requireWritable(thread);
         return messageAttachmentService.createPresignedUpload(thread, ParticipantType.CREATOR, creator.getId(), request);
     }
 
@@ -224,7 +236,8 @@ public class CreatorThreadService {
      * [계약 확인] 게이트는 연결 쌍의 대화에만 붙는다.
      */
     private ThreadListItem toListItem(MessageThread thread, Map<Long, Long> unreadByThread,
-                                      Set<Long> marketsWithContract, Map<Long, String> groupBuyTitles) {
+                                      Set<Long> marketsWithContract, Map<Long, String> groupBuyTitles,
+                                      Map<Long, ThreadAdjustmentBadge> adjustments) {
         Connection connection = thread.getConnection();
         boolean isOperator = connection.getType() == ConnectionType.OPERATOR_CREATOR;
         String name = isOperator ? OPERATOR_CHANNEL_NAME : connection.getMarket().getMarketName();
@@ -236,7 +249,8 @@ public class CreatorThreadService {
                 thread.getId(), name, isOperator ? null : connection.getMarket().getMarketImageUrl(),
                 isOperator, hasContract, thread.getLastMessagePreview(), thread.getLastMessageAt(), unread,
                 thread.getKind(), thread.getSubjectId(),
-                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()));
+                thread.getSubjectId() == null ? null : groupBuyTitles.get(thread.getSubjectId()),
+                adjustments.get(thread.getId()));
     }
 
     /** 카드가 있는 페이지만 읽는다 — 카드 없는 대화가 대부분이다. */
@@ -249,11 +263,11 @@ public class CreatorThreadService {
      * 운영자 이름 · id · 자동 안내 표시는 이 응답에 싣지 않는다 — 상대에게 운영팀은 「SHOWROOMZ 운영팀」뿐이다(§36-4).
      */
     private MessageItem toMessageItem(Message message, Long myCreatorId, List<AttachmentSummary> attachments,
-                                      MessageCardReader.CardView card) {
+                                      MessageCardReader.CardView card, Long respondableProposalId) {
         boolean mine = !message.isCard()
                 && message.getSenderType() == ParticipantType.CREATOR && message.getSenderId().equals(myCreatorId);
         return new MessageItem(message.getId(), message.getSenderType(), mine, message.getContent(), attachments,
-                message.getCreatedAt(), message.getMessageType(), MessageCardResponse.from(card));
+                message.getCreatedAt(), message.getMessageType(), MessageCardResponse.from(card, respondableProposalId));
     }
 
     private MessageThread getMyThread(Creator creator, Long threadId) {

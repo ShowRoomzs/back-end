@@ -252,7 +252,22 @@ public record CreatorContractDetailResponse(
                     + "**실지급액은 계산하지 않는다**(§25-5-6). 스튜디오는 이 값이 파트너보다 중요한데, "
                     + "세무가 확정되기 전에 숫자를 지어내면 그 숫자로 서명을 결정하게 된다",
                     nullable = true) WithholdingType withholdingType,
-            @Schema(example = "원천징수 3.3%", nullable = true) String withholdingLabel
+            @Schema(example = "원천징수 3.3%", nullable = true) String withholdingLabel,
+            @Schema(description = "리워드 지급자 — SHOWROOMZ(PG 분배 · 1009 기획 수정본 9절 · 2026-10-07 리워드 지급 구조)",
+                    example = "SHOWROOMZ") String rewardPayer,
+            @Schema(description = "「정산 방식」 블록의 예상 실수령 미리보기 — 리워드 100,000원 기준 예시. 실제 금액은 정산 관리가 정본이다",
+                    nullable = true) NetPreview netPreview,
+            @Schema(description = "고정 지급비 안내 — 브랜드 직접 지급이고 정산에 포함되지 않는다",
+                    example = "고정 지급비는 브랜드가 직접 지급해요 · 정산에 포함되지 않아요") String fixedFeeNote
+    ) {
+    }
+
+    @Schema(name = "CreatorContractNetPreview", description = "예상 실수령 미리보기 — 비사업자는 3.3% 원천징수 후 입금, 사업자는 "
+            + "공급가 = 리워드 · 부가세 10% 별도(세금계산서는 SHOWROOMZ 앞으로)")
+    public record NetPreview(
+            @Schema(description = "예시 리워드(세전)", example = "100000") long gross,
+            @Schema(description = "예상 입금액", example = "96700") long net,
+            @Schema(description = "계산식 문구", example = "100,000원 − 원천징수 3.3%(3,300원) = 96,700원") String formula
     ) {
     }
 

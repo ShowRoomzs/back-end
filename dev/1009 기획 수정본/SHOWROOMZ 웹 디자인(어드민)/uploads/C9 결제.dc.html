@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+.dv-sw{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:-2px 0 2px}
+.dv-swl{font:600 10px/1 Pretendard,sans-serif;color:rgba(0,0,0,.38);letter-spacing:.02em;margin-right:2px}
+</style>
+<template id="__bundler_thumbnail">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" fill="#F2456E"></rect><g fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"><rect x="30" y="42" width="60" height="38" rx="5"></rect><path d="M30 56h60"></path></g></svg>
+</template>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C9 결제 — 주문/결제</span></div>
+<p class="dv-tsub">장바구니 또는 상품 상세의 [구매하기]에서 진입합니다. 배송지 → 요청사항 → 주문 상품 → 결제수단 → 금액, 하단에 동의 + 결제 CTA 고정. <b>요청사항 드롭다운·결제수단 라디오·카드사 시트·동의 체크가 모두 실제로 동작</b>하고, 배송지 유무는 상단 버튼으로 전환합니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C9 결제</div>
+<div class="dv-sw">
+<span class="dv-swl">배송지</span>
+<sc-for list="{{ swAddr }}" as="o" hint-placeholder-count="2">
+<div onClick="{{ o.pick }}" style="padding:6px 10px;border-radius:6px;cursor:pointer;font:{{ o.font }};background:{{ o.bg }};color:{{ o.color }};border:1px solid {{ o.border }}">{{ o.label }}</div>
+</sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C9 결제" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">주문/결제</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:18px 14px 0">
+<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">배송지</span>
+<sc-if value="{{ hasAddr }}" hint-placeholder-val="{{ true }}">
+<div style="flex:none;display:flex;align-items:center;padding:7px 0 7px 12px;margin:-15px 0;cursor:pointer" style-active="opacity:.55">
+<span style="height:30px;padding:0 11px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;font:600 11.5px/1 Pretendard,sans-serif;color:#3C3C3C">변경</span>
+</div>
+</sc-if>
+</div>
+</div>
+
+<sc-if value="{{ hasAddr }}" hint-placeholder-val="{{ true }}">
+<div style="padding:12px 14px 0">
+<div style="display:flex;align-items:center;gap:6px">
+<span style="font:600 14.5px/1.4 Pretendard,sans-serif">김수민</span>
+<span style="flex:none;padding:4px 8px;border-radius:8px;background:#FEF4F6;color:#CF3D61;font:600 11px/1 Pretendard,sans-serif">기본 배송지</span>
+</div>
+<div style="margin-top:6px;font:400 13px/1.7 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">010-1234-5678<br>(06234) 서울 강남구 테헤란로 000, 쇼룸타워 12층 1203호</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ noAddr }}" hint-placeholder-val="{{ false }}">
+<div style="padding:12px 14px 0">
+<div style="border:1px dashed #DCDCDE;border-radius:8px;padding:26px 16px;display:flex;flex-direction:column;align-items:center">
+<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 21s7-5.4 7-11a7 7 0 0 0-14 0c0 5.6 7 11 7 11z"></path><circle cx="12" cy="10" r="2.6"></circle></svg>
+<div style="margin-top:13px;font:600 14px/1.5 Pretendard,sans-serif">등록된 배송지가 없어요</div>
+<div style="margin-top:5px;font:400 12.5px/1.6 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">배송지를 추가하면 주문을 이어갈 수 있어요</div>
+<div style="margin-top:16px;height:44px;padding:0 20px;border-radius:8px;background:#F2456E;display:flex;align-items:center;gap:6px;font:600 13.5px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M12 6v12"></path><path d="M6 12h12"></path></svg>
+배송지 추가
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ hasAddr }}" hint-placeholder-val="{{ true }}">
+<div style="padding:18px 14px 0">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">배송 요청사항</div>
+<div onClick="{{ openMemo }}" style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ memoColor }}">{{ memoLabel }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+<sc-if value="{{ memoCustom }}" hint-placeholder-val="{{ false }}">
+<div style="margin-top:8px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 13px">
+<span style="flex:1;min-width:0;font:400 14.5px/1 Pretendard,sans-serif;color:#B5B5B5">예) 부재 시 문 앞에 놓아주세요</span>
+<span style="flex:none;font:400 11.5px/1 Pretendard,sans-serif;color:#737373">0/50</span>
+</div>
+</sc-if>
+</div>
+</sc-if>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0;display:flex;align-items:baseline;gap:7px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">주문 상품</span>
+<span style="font:700 15px/1 Pretendard,sans-serif;color:#737373">1</span>
+</div>
+
+<div style="padding:14px 14px 0;display:flex;gap:12px">
+<div style="width:64px;height:64px;border-radius:4px;background:linear-gradient(135deg,#EFEBE7,#D9D2CB);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:400 11.5px/1.35 Pretendard,sans-serif;color:#737373">라보에이치</div>
+<div style="margin-top:3px;font:400 13.5px/1.45 Pretendard,sans-serif;color:#2E2E2E;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">시카 리페어 앰플 30ml 리필 2개 세트 기획</div>
+<div style="margin-top:5px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+<span style="font:400 12px/1.4 Pretendard,sans-serif;color:#737373">30ml + 리필 2개 · 1개</span>
+<span style="flex:none;font:700 14px/1 Pretendard,sans-serif;letter-spacing:-.2px">24,900원</span>
+</div>
+</div>
+</div>
+
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+
+<div style="padding:18px 14px 0">
+<div style="display:flex;align-items:baseline;gap:8px">
+<span style="font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제수단</span>
+<span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">카드 · 간편결제</span>
+</div>
+</div>
+
+<div style="padding:12px 14px 0;display:flex;gap:8px">
+<div onClick="{{ pickCard }}" style="flex:1;min-width:0;height:74px;border-radius:8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;border:{{ cardBorder }};background:{{ cardBg }}" style-active="opacity:.6">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ cardIcon }}" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><rect x="3" y="6" width="18" height="12.5" rx="2.4"></rect><path d="M3 10.2h18"></path><path d="M6.4 14.6h3.4"></path></svg>
+<span style="font:{{ cardFont }};color:{{ cardColor }}">신용 · 체크카드</span>
+</div>
+<div onClick="{{ pickEasy }}" style="flex:1;min-width:0;height:74px;border-radius:8px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;cursor:pointer;border:{{ easyBorder }};background:{{ easyBg }}" style-active="opacity:.6">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{ easyIcon }}" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><rect x="6" y="3" width="12" height="18" rx="2.6"></rect><path d="M10.3 6.6h3.4"></path><circle cx="12" cy="16.4" r="1.9"></circle></svg>
+<span style="font:{{ easyFont }};color:{{ easyColor }}">간편결제</span>
+</div>
+</div>
+
+<sc-if value="{{ cardOpen }}" hint-placeholder-val="{{ false }}">
+<div style="padding:10px 14px 0">
+<div onClick="{{ openIssuer }}" style="height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 13px;cursor:pointer" style-active="background:#F7F7F8">
+<span style="font:400 14.5px/1 Pretendard,sans-serif;color:{{ issuerColor }}">{{ issuerLabel }}</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M5 9l7 7 7-7"></path></svg>
+</div>
+
+</div>
+</sc-if>
+
+<sc-if value="{{ easyOpen }}" hint-placeholder-val="{{ false }}">
+<div style="padding:10px 14px 0;display:grid;gap:7px">
+<sc-for list="{{ pays }}" as="p" hint-placeholder-count="3">
+<div onClick="{{ p.pick }}" style="display:flex;align-items:center;gap:11px;min-height:52px;padding:0 13px;border-radius:8px;box-sizing:border-box;cursor:pointer;border:{{ p.border }};background:{{ p.bg }}" style-active="opacity:.6">
+<span style="width:20px;height:20px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ p.dotBg }};border:{{ p.dotBorder }}"><i style="width:7px;height:7px;border-radius:50%;background:{{ p.dotInner }}"></i></span>
+<span style="flex:1;min-width:0;font:{{ p.font }};color:{{ p.color }}">{{ p.label }}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<div style="height:5px;background:#F7F7F8;margin-top:14px"></div>
+
+<div style="padding:18px 14px 0;font:700 15px/1 Pretendard,sans-serif;letter-spacing:-.2px">결제 금액</div>
+<div style="padding:13px 14px 0;display:grid;gap:7px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">총 상품 가격</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">38,000원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">공동구매 할인</span><span style="font:600 13.5px/1.5 Pretendard,sans-serif;color:#CF3D61">−13,100원</span></div>
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:400 13px/1.5 Pretendard,sans-serif;color:#737373">배송비</span><span style="font:400 13.5px/1.5 Pretendard,sans-serif">3,000원</span></div>
+</div>
+<div style="margin:14px 14px 0;padding-top:13px;border-top:.5px solid #F0F0F0;display:flex;align-items:baseline;justify-content:space-between">
+<span style="font:700 14.5px/1 Pretendard,sans-serif">총 결제 금액</span>
+<span style="font:700 17px/1 Pretendard,sans-serif;letter-spacing:-.4px">27,900원</span>
+</div>
+
+<div style="padding:20px 14px 26px;font:400 11.5px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">쇼룸즈는 통신판매중개자로서 거래 당사자가 아니며, 상품·배송·환불 책임은 판매자에게 있습니다.</div>
+
+</div>
+
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div onClick="{{ toggleAgree }}" style="display:flex;align-items:flex-start;gap:10px;padding:2px 0 12px;cursor:pointer" style-active="opacity:.6">
+<span style="width:21px;height:21px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;background:{{ agreeBg }};border:{{ agreeBorder }};margin-top:1px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="{{ agreeCheck }}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M4.5 12.5l5 5 10-11"></path></svg></span>
+<span style="flex:1;min-width:0;font:400 12.5px/1.6 Pretendard,sans-serif;color:#3C3C3C"><span style="font-weight:600;color:#CF3D61">[필수]</span> 주문 내용을 확인했으며 결제에 동의합니다</span>
+</div>
+<div onClick="{{ pay }}" style="height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:{{ ctaBg }};color:{{ ctaColor }};font:600 15.5px/1 Pretendard,sans-serif;cursor:{{ ctaCursor }}" style-active="opacity:{{ ctaPress }}">{{ ctaLabel }}</div>
+</div>
+
+<sc-if value="{{ memoOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeMemo }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:10"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:11;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 20px;box-shadow:0 -8px 40px rgba(0,0,0,.16)">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px"></div>
+<div style="padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">배송 요청사항</div>
+<sc-for list="{{ memoOptions }}" as="o" hint-placeholder-count="5">
+<div onClick="{{ o.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-top:{{ o.divider }};cursor:pointer;background:{{ o.bg }}" style-active="background:#F7F7F8">
+<span style="font:{{ o.font }};color:{{ o.color }}">{{ o.label }}</span>
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;opacity:{{ o.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{ issuerOpen }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ closeIssuer }}" style="position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:12"></div>
+<div style="position:absolute;left:0;right:0;bottom:0;z-index:13;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 20px;box-shadow:0 -8px 40px rgba(0,0,0,.16);max-height:560px;display:flex;flex-direction:column">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 14px;flex:none"></div>
+<div style="flex:none;padding:0 20px 12px;font:600 15px/1.4 Pretendard,sans-serif;text-align:center">카드사 선택</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<sc-for list="{{ issuers }}" as="i" hint-placeholder-count="6">
+<div onClick="{{ i.pick }}" style="display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:13px 20px;border-top:{{ i.divider }};cursor:pointer;background:{{ i.bg }}" style-active="background:#F7F7F8">
+<span style="font:{{ i.font }};color:{{ i.color }}">{{ i.label }}</span>
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F2456E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" style="display:block;flex:none;opacity:{{ i.checked }}"><path d="M4.5 12.5l5 5 10-11"></path></svg>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{ payOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:center;justify-content:center;padding:0 32px">
+<div style="width:100%;background:#fff;border-radius:8px;overflow:hidden">
+<div style="padding:28px 22px 22px;text-align:center">
+<div style="width:44px;height:44px;border-radius:100px;background:#F4F4F5;display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 6v6l4 2"></path><circle cx="12" cy="12" r="8.5"></circle></svg>
+</div>
+<div style="font:700 16.5px/1.5 Pretendard,sans-serif;letter-spacing:-.3px">결제사 인증 창으로 이동해요</div>
+<div style="margin-top:9px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">인증을 마치면 이 화면으로 돌아와<br>주문이 완료됩니다.</div>
+</div>
+<div style="padding:0 18px 18px">
+<div onClick="{{ closePay }}" style="height:48px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">확인</div>
+</div>
+</div>
+</div>
+</sc-if>
+
+</div>
+</div>
+<p class="dv-note"><b>순서</b> — 배송지 → 요청사항 → 주문 상품 → 결제수단 → 금액. <b>배송지를 맨 위</b>에 둔 이유는 여기서 가장 자주 바뀌는 값이고(선물·회사 배송), 잘못 보내면 되돌릴 수 없어 <b>결제 전에 반드시 한 번 읽히는 위치</b>여야 하기 때문입니다. 금액은 CTA 직전에 놓아 "무엇을 얼마에" 순서가 맞습니다.<br><br><b>배송지 없음(최초)</b> — 위 버튼으로 전환합니다. 빈 자리를 숨기지 않고 <b>점선 박스 + [배송지 추가] 로즈 버튼</b>으로 채워 다음에 할 일을 한 곳에 모았고, 요청사항 섹션은 <b>배송지가 정해지기 전이라 아예 감춥니다</b>(고를 수 없는 것을 비활성으로 남기면 화면만 길어집니다). 하단 CTA는 <b>금액 대신 "배송지를 추가해 주세요"</b>를 띄워 막힌 이유를 버튼 자리에서 말합니다 — 비활성 버튼만 두면 왜 안 눌리는지 찾아 헤매게 됩니다. 동의 체크도 함께 잠깁니다.<br><br><b>결제수단 — 2분할 카드 + 인라인 펼침</b> — 라디오 점 목록을 쓰지 않고 <b>같은 크기의 카드 둘</b>로 나란히 놓았습니다. 선택지가 딱 두 개이고 <b>동등한 무게</b>라서, 세로 목록보다 한 쌍으로 보이는 편이 "둘 중 하나"라는 구조를 그대로 드러냅니다. 아이콘이 붙어 훑을 때 글자를 읽지 않아도 구분되고, 히트 영역이 74px로 커져 라디오 점을 겨냥하지 않아도 됩니다. 선택은 <b>로즈 테두리 1.5 + 틴트 배경</b>(시트 선택 행과 같은 규칙).<br><br>고른 카드 아래에 세부가 펼쳐집니다 — <b>카드</b>는 카드사 시트, <b>간편결제</b>는 카카오·네이버·토스페이 목록(<b>선택 원 + 이름</b> — 브랜드 로고·색 칩을 쓰지 않습니다: 상표 사용 승인이 필요하고, 세 색이 나란히 놓이면 로즈 선택 신호가 묻힙니다). 선택하지 않은 쪽은 접혀 있어 <b>화면에 한 번에 한 갈래만</b> 보입니다. 카드사·페이는 <b>선택 전에는 CTA가 잠깁니다</b> — 수단만 고르고 세부를 비워 두면 결제창에서 실패합니다.<br><br><b>일시불 고정 · 카드번호는 받지 않습니다</b> — 할부 선택을 두지 않았습니다. 대부분의 PG가 5만원 이상부터 할부를 허용해 현재 공구 단가(2~5만원대)에서는 선택지가 뜨지 않고, 칸만 남기면 고를 수 없는 옵션을 설명해야 합니다. 카드번호도 PG 인증 창에서 입력하므로 <b>카드사만</b> 고르게 하고, 두 사실을 회색 한 줄로 함께 밝혀 두었습니다(입력란·할부칸이 없는 것을 미완성으로 오해하지 않게).<br><br><b>동의와 CTA</b> — [필수] 결제 동의는 <b>하단 고정</b>에 CTA와 붙여 둡니다(스크롤 위에 두면 체크하러 되돌아가야 함). 활성 조건은 <b>배송지 + 결제수단(세부까지) + 동의</b> 셋이고, CTA 라벨에 <b>금액을 함께</b> 넣어 버튼만 봐도 결제액이 확인됩니다.<br><br><b>남은 결정</b> — ① 결제 실패·중단 시 복귀 지점(장바구니 유지 + 사유 표시) ② 개인정보 제3자 제공 동의 문구·노출 위치(법무 대기) ③ 쿠폰·포인트 도입 여부(현재 없음) ④ 여러 쇼룸 동시 주문 시 배송비 합산·분리 발송 표기 ⑤ 결제수단에 계좌이체·휴대폰 결제를 추가할지 ⑥ 고가 공구(30만원 이상)가 생기면 할부를 다시 열지.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;addrState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;있음&quot;,&quot;없음&quot;],&quot;default&quot;:&quot;있음&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;배송지&quot;}}">
+class Component extends DCLogic {
+  state = { method: null, issuer: null, plan: '일시불', pay: null, memo: null, agree: false, memoOpen: false, issuerOpen: false, payOpen: false };
+
+  sw(key, opts, def, propKey){
+    const cur = this.state[key] ?? this.props[propKey || key] ?? def;
+    return opts.map(label => ({
+      label,
+      pick: () => this.setState({ [key]: label }),
+      bg: label === cur ? '#1a1a1a' : '#fff',
+      color: label === cur ? '#fff' : 'rgba(0,0,0,.62)',
+      border: label === cur ? '#1a1a1a' : 'rgba(0,0,0,.14)',
+      font: (label === cur ? '600' : '400') + ' 11px/1 Pretendard,sans-serif'
+    }));
+  }
+
+  renderVals(){
+    const addrState = this.state.addrState ?? this.props.addrState ?? '있음';
+    const hasAddr = addrState === '있음';
+
+    const M = this.state.method;
+    const isCard = M === 'card';
+    const isEasy = M === 'easy';
+
+    const ISSUERS = ['신한', '삼성', '현대', 'KB국민', '롯데', '하나', 'BC', 'NH농협', '우리', '카카오뱅크'];
+    const issuers = ISSUERS.map((label, i) => {
+      const on = this.state.issuer === label;
+      return {
+        label: label + '카드',
+        checked: on ? 1 : 0,
+        bg: on ? '#FEF4F6' : '#fff',
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        font: (on ? '600' : '400') + ' 14.5px/1.35 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ issuer: label, issuerOpen: false })
+      };
+    });
+
+    const PAYS = [
+      { label:'카카오페이' },
+      { label:'네이버페이' },
+      { label:'토스페이' }
+    ];
+    const pays = PAYS.map(p => {
+      const on = this.state.pay === p.label;
+      return {
+        label: p.label,
+        dotBg: on ? '#F2456E' : '#fff',
+        dotBorder: on ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+        dotInner: on ? '#fff' : 'transparent',
+        bg: on ? '#FEF4F6' : '#fff',
+        border: on ? '1px solid #F2456E' : '1px solid #E3E3E5',
+        font: (on ? '600' : '400') + ' 14px/1.35 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ pay: p.label })
+      };
+    });
+
+    const MEMOS = ['문 앞에 놓아주세요', '경비실에 맡겨주세요', '부재 시 연락해주세요', '배송 전 미리 연락해주세요', '직접 입력'];
+    const memoOptions = MEMOS.map((label, i) => {
+      const on = this.state.memo === label;
+      return {
+        label,
+        checked: on ? 1 : 0,
+        bg: on ? '#FEF4F6' : '#fff',
+        divider: i === 0 ? 'none' : '.5px solid #F0F0F0',
+        font: (on ? '600' : '400') + ' 15px/1.35 Pretendard,sans-serif',
+        color: on ? '#0F0F0F' : '#3C3C3C',
+        pick: () => this.setState({ memo: label, memoOpen: false })
+      };
+    });
+
+    const methodReady = M === 'card' ? !!this.state.issuer : (M === 'easy' ? !!this.state.pay : false);
+    const ready = hasAddr && methodReady && this.state.agree;
+    const canAgree = hasAddr;
+
+    return {
+      swAddr: this.sw('addrState', ['있음', '없음(최초)'], '있음').map(o => ({
+        ...o,
+        pick: () => this.setState({ addrState: o.label === '없음(최초)' ? '없음' : '있음' })
+      })),
+      hasAddr,
+      noAddr: !hasAddr,
+
+      memoLabel: this.state.memo || '요청사항을 선택해 주세요',
+      memoColor: this.state.memo ? '#0F0F0F' : '#B5B5B5',
+      memoCustom: this.state.memo === '직접 입력',
+      memoOptions,
+      memoOpen: this.state.memoOpen,
+      openMemo: () => this.setState({ memoOpen: true }),
+      closeMemo: () => this.setState({ memoOpen: false }),
+
+      cardBg: isCard ? '#FEF4F6' : '#fff',
+      cardBorder: isCard ? '1.5px solid #F2456E' : '1px solid #E3E3E5',
+      cardIcon: isCard ? '#F2456E' : '#8E8E8E',
+      cardColor: isCard ? '#CF3D61' : '#3C3C3C',
+      cardFont: (isCard ? '600' : '400') + ' 13.5px/1 Pretendard,sans-serif',
+      pickCard: () => this.setState({ method: 'card' }),
+      easyBg: isEasy ? '#FEF4F6' : '#fff',
+      easyBorder: isEasy ? '1.5px solid #F2456E' : '1px solid #E3E3E5',
+      easyIcon: isEasy ? '#F2456E' : '#8E8E8E',
+      easyColor: isEasy ? '#CF3D61' : '#3C3C3C',
+      easyFont: (isEasy ? '600' : '400') + ' 13.5px/1 Pretendard,sans-serif',
+      pickEasy: () => this.setState({ method: 'easy' }),
+      cardOpen: isCard,
+      easyOpen: isEasy,
+      issuers,
+      pays,
+      issuerLabel: this.state.issuer ? (this.state.issuer + '카드') : '카드사를 선택해 주세요',
+      issuerColor: this.state.issuer ? '#0F0F0F' : '#B5B5B5',
+      issuerOpen: this.state.issuerOpen,
+      openIssuer: () => this.setState({ issuerOpen: true }),
+      closeIssuer: () => this.setState({ issuerOpen: false }),
+
+      agreeBg: (canAgree && this.state.agree) ? '#F2456E' : '#fff',
+      agreeBorder: (canAgree && this.state.agree) ? '1.5px solid #F2456E' : '1.5px solid #DEDEE0',
+      agreeCheck: (canAgree && this.state.agree) ? '#fff' : '#DEDEE0',
+      toggleAgree: () => { if (canAgree) this.setState(s => ({ agree: !s.agree })); },
+
+      ctaLabel: !hasAddr ? '배송지를 추가해 주세요'
+        : (!M ? '결제수단을 선택해 주세요'
+        : (!methodReady ? (M === 'card' ? '카드사를 선택해 주세요' : '간편결제를 선택해 주세요')
+        : (!this.state.agree ? '결제에 동의해 주세요' : '27,900원 결제하기'))),
+      ctaBg: ready ? '#F2456E' : '#F4F4F5',
+      ctaColor: ready ? '#fff' : '#B5B5B5',
+      ctaCursor: ready ? 'pointer' : 'default',
+      ctaPress: ready ? '.75' : '1',
+      payOpen: this.state.payOpen,
+      pay: () => { if (ready) this.setState({ payOpen: true }); },
+      closePay: () => this.setState({ payOpen: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

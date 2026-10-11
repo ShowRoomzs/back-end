@@ -65,6 +65,9 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
 
     protected static final String SELLER_ORDERS = "/v1/seller/orders";
     protected static final String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    @org.springframework.beans.factory.annotation.Autowired
+    protected showroomz.domain.groupbuy.service.port.GroupBuyClosureHook groupBuyClosureHook;
+
     protected static final int SHIPPING_LEAD_DAYS = 2;
     protected static final int SERUM_PRICE = 24_000;
     protected static final int FREE_SHIPPING_THRESHOLD = 100_000;
@@ -208,13 +211,23 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
         return historyRepository.findByDeliveryGroupId(group.getId());
     }
 
+    /** 그 유형의 가장 최근 이력 — PG 자동 환불(REFUND_EXECUTED)이 커밋 뒤에 쌓여 최신 행이 바뀌는 경우에 쓴다. */
+    protected OrderFulfillmentHistory history(OrderDeliveryGroup group, FulfillmentEventType eventType) {
+        return history(group).stream().filter(h -> h.getEventType() == eventType).findFirst().orElseThrow();
+    }
+
     protected long historyCount(OrderDeliveryGroup group, FulfillmentEventType eventType) {
         return history(group).stream().filter(h -> h.getEventType() == eventType).count();
     }
 
+    /**
+     * 환불 큐의 <b>작업</b> 행 — 기록 전용 행(결제완료 소비자 취소 · 재발송비 결제 취소 · 39 설계서 0-4)은 뺀다. 그 행들은 이미 PG 가
+     * 돌려준 사실을 어드민 환불 관리에 보이려고 DONE 으로 적은 것이라 큐가 할 일이 아니다(검증은 {@code AdminRefundIntegrationTest}).
+     */
     protected List<Map<String, Object>> refundTasks(OrderDeliveryGroup group) {
         return jdbc.queryForList("SELECT source, source_id, refund_amount, status FROM order_refund_task "
-                + "WHERE delivery_group_id = ? ORDER BY refund_task_id", group.getId());
+                + "WHERE delivery_group_id = ? AND source NOT IN ('USER_CANCEL_BEFORE_PREPARE', 'CLAIM_PAYMENT_CANCELLED') "
+                + "ORDER BY refund_task_id", group.getId());
     }
 
     protected String orderNumberOf(OrderDeliveryGroup group) {
@@ -238,6 +251,11 @@ public abstract class SellerOrderTestSupport extends OrderPaymentTestSupport {
 
     protected void backdatePaidAt(OrderDeliveryGroup group, LocalDateTime paidAt) {
         jdbc.update("UPDATE orders SET paid_at = ? WHERE order_id = ?", paidAt, group.getOrder().getId());
+    }
+
+    /** 공구 종결 — 그 공구 주문의 발송기한이 마감 + 주문 시점 N영업일로 확정된다(1009 기획 수정본 1-2). */
+    protected void closeGroupBuy(LocalDateTime endedAt) {
+        transactionTemplate.executeWithoutResult(tx -> groupBuyClosureHook.onGroupBuyClosed(groupBuy.getId(), endedAt));
     }
 
     protected void backdateShipDueAt(OrderDeliveryGroup group, LocalDateTime shipDueAt) {

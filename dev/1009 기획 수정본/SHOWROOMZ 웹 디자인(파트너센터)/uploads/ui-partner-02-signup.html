@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-partner-02-signup — 브랜드 회원가입 (디자인 시안 rev.2)</title>
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --logo-dark:#1A1B1F;
+  /* Auth 전용 — [확정] 주 액션 검정: 로그인·회원가입 공통 예외 */
+  --auth-action:#1A1B1F; --auth-action-hover:#3A3D45;
+  --auth-control-h:40px; --signup-card-w:480px;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  margin:0; padding:32px; background:var(--n-200); color:var(--n-900); font-size:var(--fs-body); line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .warn{color:var(--danger-text);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule table{border-collapse:collapse;margin:8px 0;width:100%;}
+.rule th,.rule td{border:1px solid var(--n-200);padding:5px 8px;text-align:left;font-size:var(--fs-micro);vertical-align:top;}
+.rule th{background:var(--n-50);font-weight:600;color:var(--n-900);white-space:nowrap;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-md);overflow:hidden;overflow-y:auto;}
+.stage-inner{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;padding:0;}
+/* 하단 여백은 컨테이너 padding이 아니라 카드 padding으로 준다 —
+   flex 스크롤 컨테이너에서 padding-bottom이 무시되는 문제 회피(rev.3) */
+.auth-card{width:var(--signup-card-w);background:transparent;padding:56px 0;}
+.auth-head{text-align:center;margin-bottom:var(--sp-5);}
+.wordmark{display:block;margin:0 auto;}
+.auth-sub{font-size:var(--fs-caption);color:var(--n-500);margin-top:8px;}
+.stepper{display:flex;align-items:center;justify-content:center;margin-bottom:var(--sp-6);}
+.st{display:flex;align-items:center;gap:8px;}
+.st-c{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:var(--fs-micro);font-weight:600;background:var(--n-100);color:var(--n-500);border:1px solid var(--n-300);}
+.st-l{font-size:var(--fs-caption);color:var(--n-500);}
+.st.active .st-c{background:var(--n-900);color:#fff;border-color:var(--n-900);}
+.st.active .st-l{color:var(--n-900);font-weight:600;}
+.st.done .st-c{background:var(--success-text);color:#fff;border-color:var(--success-text);}
+.st.done .st-l{color:var(--n-700);}
+.st-sep{width:36px;height:1px;background:var(--n-300);margin:0 6px;}
+.sec{margin-bottom:var(--sp-5);}
+.sec-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:var(--sp-3);
+  padding-bottom:8px;border-bottom:1px solid var(--n-200);}
+.field{margin-bottom:var(--sp-4);}
+.lb{display:block;font-size:var(--fs-caption);color:var(--n-600);font-weight:500;margin-bottom:6px;}
+.inp-wrap{position:relative;display:flex;align-items:center;}
+.inp{width:100%;height:var(--auth-control-h);border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;padding:0 12px;font-family:inherit;font-size:var(--fs-body);color:var(--n-900);outline:none;
+  transition:border-color .12s, box-shadow .12s;}
+.inp::placeholder{color:var(--n-400);}
+select.inp{appearance:none;-webkit-appearance:none;padding-right:32px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 12px center;}
+.inp:hover:not(:disabled){border-color:var(--n-400);}
+.inp:focus:not(:disabled){border-color:var(--n-900);box-shadow:0 0 0 3px var(--n-200);}
+.inp-wrap.is-error .inp{border-color:var(--danger-text);}
+.inp-wrap.is-error .inp:focus{border-color:var(--danger-text);box-shadow:0 0 0 3px var(--danger-bg);}
+.eye{position:absolute;right:8px;height:28px;padding:0 8px;border:none;background:transparent;
+  font-family:inherit;font-size:var(--fs-micro);color:var(--n-500);cursor:pointer;border-radius:4px;}
+.eye:hover{background:var(--n-100);color:var(--n-700);}
+.err-msg{font-size:var(--fs-caption);color:var(--danger-text);margin:6px 0 0;}
+.help{font-size:var(--fs-micro);color:var(--n-500);margin:6px 0 0;}
+.inp-search{display:flex;gap:8px;} .inp-search .inp{flex:1;}
+.inp-search.is-error .inp{border-color:var(--danger-text);}
+.btn-search{height:var(--auth-control-h);padding:0 16px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;color:var(--n-700);font-size:var(--fs-caption);font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-search:hover{background:var(--n-100);}
+.upload{border:1px dashed var(--n-300);border-radius:var(--r-sm);padding:14px;margin-bottom:var(--sp-4);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--n-50);}
+.upload.is-error{border-color:var(--danger-text);background:var(--danger-bg);}
+.upload.done{border-style:solid;border-color:var(--success-text);background:var(--success-bg);}
+.upload.done .up-name::before{content:"✓ ";color:var(--success-text);font-weight:700;}
+.upload.done .up-hint{color:var(--success-text);font-weight:500;}
+.upload.is-exempt{opacity:.6;}
+.upload + .err-msg{margin:-10px 0 var(--sp-4);}
+.up-l{display:flex;flex-direction:column;gap:2px;}
+.up-name{font-size:var(--fs-caption);color:var(--n-700);font-weight:500;}
+.up-hint{font-size:var(--fs-micro);color:var(--n-500);}
+.btn-upload{height:32px;padding:0 14px;border:1px solid var(--n-300);border-radius:var(--r-sm);
+  background:#fff;color:var(--n-700);font-size:var(--fs-micro);font-weight:500;cursor:pointer;white-space:nowrap;}
+.btn-upload:hover{background:var(--n-100);}
+.split-row{display:flex;align-items:center;gap:6px;}
+.split-in{width:72px;height:var(--auth-control-h);border:1px solid var(--n-300);border-radius:var(--r-sm);
+  text-align:center;font-size:var(--fs-body);color:var(--n-900);display:flex;align-items:center;justify-content:center;background:#fff;}
+.split-in.is-ph{color:var(--n-400);} .split-in.is-error{border-color:var(--danger-text);}
+.split-sep{color:var(--n-400);} .split-fx{font-size:var(--fs-caption);color:var(--n-600);}
+.split-row + .err-msg{margin-top:6px;}
+.divider{height:1px;background:var(--n-200);margin:var(--sp-5) 0;}
+.corp-note{display:flex;gap:8px;background:var(--warning-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--warning-text);margin-bottom:var(--sp-4);line-height:1.6;font-weight:500;}
+.exempt-note{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:10px 12px;
+  font-size:var(--fs-micro);color:var(--n-700);margin-bottom:var(--sp-4);line-height:1.6;}
+.terms-box{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;margin-bottom:var(--sp-5);}
+.terms-all{display:flex;align-items:center;gap:10px;padding:14px 16px;background:var(--n-50);
+  border-bottom:1px solid var(--n-200);font-size:var(--fs-h3);font-weight:600;}
+.terms-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--n-100);}
+.terms-row:last-child{border-bottom:none;}
+.t-left{display:flex;align-items:center;gap:10px;}
+.cbox{width:18px;height:18px;border:1.5px solid var(--n-300);border-radius:4px;background:#fff;flex-shrink:0;}
+.cbox.on{background:var(--n-900);border-color:var(--n-900);position:relative;}
+.cbox.on::after{content:"";position:absolute;left:5px;top:1px;width:5px;height:9px;border:solid #fff;
+  border-width:0 2px 2px 0;transform:rotate(45deg);}
+.t-lbl{font-size:var(--fs-body);color:var(--n-900);}
+.t-lbl .req{color:var(--danger-text);font-size:var(--fs-micro);margin-left:4px;}
+.t-view{font-size:var(--fs-caption);color:var(--n-500);cursor:pointer;}
+.btn-row{display:flex;gap:10px;margin-top:var(--sp-6);}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;height:var(--auth-control-h);
+  border-radius:var(--r-sm);font-family:inherit;font-size:var(--fs-body);font-weight:500;cursor:pointer;transition:background .12s;}
+.btn-line{flex:0 0 120px;background:#fff;color:var(--n-700);border:1px solid var(--n-300);}
+.btn-line:hover{background:var(--n-100);}
+.btn-primary{flex:1;background:var(--auth-action);color:#fff;border:1px solid var(--auth-action);}
+.btn-primary:hover:not(:disabled){background:var(--auth-action-hover);border-color:var(--auth-action-hover);}
+.btn-primary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-primary.is-loading:disabled{background:var(--n-700);color:#fff;border-color:var(--n-700);cursor:progress;}
+.spin{width:13px;height:13px;border:2px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;display:inline-block;}
+.cpl{text-align:center;}
+.cpl-ic{width:56px;height:56px;border-radius:50%;background:var(--success-bg);color:var(--success-text);
+  display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto var(--sp-4);}
+.cpl-t{font-size:var(--fs-h2);font-weight:600;margin-bottom:8px;}
+.cpl-d{font-size:var(--fs-caption);color:var(--n-600);line-height:1.7;margin-bottom:var(--sp-5);}
+.info-box{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;margin-bottom:var(--sp-5);text-align:left;}
+.info-r{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--n-100);}
+.info-r:last-child{border-bottom:none;}
+.info-l{font-size:var(--fs-caption);color:var(--n-500);}
+.info-v{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.notice{display:flex;gap:8px;background:var(--info-bg);border-radius:var(--r-sm);padding:12px 14px;
+  font-size:var(--fs-caption);color:var(--n-700);text-align:left;margin-bottom:var(--sp-5);line-height:1.6;}
+.ni{width:16px;height:16px;border-radius:50%;background:var(--info-text);color:#fff;font-size:10px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:700;margin-top:1px;}
+.is-disabled{opacity:.55;pointer-events:none;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>브랜드 회원가입 <span style="color:var(--n-400);font-weight:400;">ui-partner-02-signup · rev.2</span></h1>
+  <p class="meta">근거: wf-partner-01-가입온보딩 F1~F4 · 토큰: SHOWROOMZ_웹_디자인시스템_v1.1 · 1440×1024 · 상태 12종</p>
+  <div class="rule">
+    <b class="warn">[rev.7] 계좌번호 형식 변경 — 하이픈 포함 → 숫자만</b> — <code>ui-studio-03-onboarding.html</code>(쇼룸 스튜디오 온보딩) 작업 중 정산 API(포트원 계좌실명조회)가 하이픈 없는 순수 숫자를 요구한다는 점이 확인되어, 이 화면의 계좌번호도 동일하게 맞춘다.
+    <table>
+      <tr><th>항목</th><th>이전(하이픈 포함)</th><th>변경 후(숫자만)</th></tr>
+      <tr><td>플레이스홀더</td><td><code>'-' 포함 입력</code></td><td><code>- 없이 숫자만 입력</code></td></tr>
+      <tr><td>예시 값</td><td><code>123-456-789012</code></td><td><code>123456789012</code></td></tr>
+      <tr><td>검증</td><td>형식만 확인(자릿수 검증 없음)</td><td><b>10~16자리 숫자</b> 검증 — 부족 시 에러</td></tr>
+      <tr><td>입력 중 처리</td><td>없음</td><td>하이픈·문자 입력 시 <b>실시간 자동 제거</b>(차단이 아니라 정제, 붙여넣기도 동일 적용)</td></tr>
+    </table>
+    <b class="warn">영향 — 아래 rev.6 노트 일부 무효화</b> — rev.6에서 "계좌번호·사업자등록번호의 <code>'-' 포함</code> 표기 패턴과 동일"이라 적었던 3필드 통일 근거가, 이번 변경으로 <b>사업자등록번호·전화번호 2필드만 하이픈 포함</b>으로 남고 계좌번호는 제외된다. 사업자등록번호·전화번호는 이번 요청 범위가 아니라 그대로 두었다.<br>
+    <b class="new">[신규제안] 업로드 완료 상태 시각 구분 추가</b> — 기존엔 대시 보더 + 텍스트("업로드 완료")만으로 미완료와 구분했는데, <code>ui-studio-03-onboarding.html</code>에서 만든 <b>실선 보더 + 연한 그린 배경 + 체크(✓)</b> 스타일을 역으로 가져와 적용. 완료된 첨부 3종(사업자등록증·통신판매업신고증·통장 사본) 전부 적용.<br>
+    <b>rev.6 변경</b> — 고객센터 전화번호 placeholder를 <b><code>'-' 포함 8~12자리 숫자</code></b>로 확정.
+    자릿수 안내를 노출하면서 <b>하이픈 포함 규칙(rev.4)과의 충돌을 회피</b>한다
+    (<code>8~12자리 숫자</code> 단독 표기는 숫자만 입력하도록 오해를 유발). 계좌번호·사업자등록번호의 <code>'-' 포함</code> 표기 패턴과 동일.<br>
+    <b>rev.4 변경</b> — <b>고객센터 전화번호를 하이픈 포함 형식으로 전환</b>
+    (<code>'-' 제외 8~12자리 숫자</code> → <code>02-1234-5678</code>). 담당자·대표자 연락처와 규칙 통일.
+    문구도 <b>"올바른 전화번호 형식으로 입력해 주세요. (예: 02-1234-5678)"</b>로 변경.<br>
+    <b>rev.3 변경</b><br>
+    &nbsp;&nbsp;· <span class="warn">Step2 하단 여백 0px 버그 수정</span> — flex 스크롤 컨테이너에서 <code>padding-bottom</code>이 무시되던 문제.
+    여백을 컨테이너가 아닌 <code>.auth-card</code> 자체 padding으로 이전(전 상태 상·하 56px 보장)<br>
+    &nbsp;&nbsp;· <b>2-E 법인 사업자 분기 신설</b> — 정산 정보 상단 안내 <b>"법인 사업자는 반드시 법인 명의 계좌만 등록 가능합니다."</b> +
+    예금주명 문구 분기<br>
+    &nbsp;&nbsp;· 2-B 예금주명 문구를 기본형(<code>예금주명을 입력해 주세요.</code>)으로 정정 — 법인 케이스는 2-E로 분리<br>
+    <b>rev.2 변경</b> — 유효성 검사 기준 전면 반영. <span class="warn">주 액션 버튼을 조건부 활성(gating)으로 전환.</span><br>
+    &nbsp;&nbsp;· <b>[다음]·[신청하기]는 전 필드 유효성 통과 시에만 활성.</b> 하나라도 미통과면 비활성 유지<br>
+    &nbsp;&nbsp;· <span class="warn">로그인 rev.7과 의도적으로 분기</span> — 로그인은 필드 2개라 상시 활성이 낫고, 가입은 필드 18개라 어디가 틀렸는지 먼저 잡아주는 편이 낫다. 기능요구사항 v0.6 §4에 <b>분기 사유 명시</b><br>
+    &nbsp;&nbsp;· <b>필수 약관 미동의 에러 문구 삭제</b> — 버튼 비활성만으로 표현(3-A)<br>
+    &nbsp;&nbsp;· 완료 화면 <code>상태 · 심사대기(검토 중)</code> pill <b>제거</b><br>
+    &nbsp;&nbsp;· 은행 드롭다운 <b>20개 확정</b> — 국민·신한·우리·하나·농협·기업·카카오뱅크·토스뱅크·케이뱅크·SC제일·씨티·부산·대구·경남·광주·전북·제주·새마을금고·신협·우체국<br>
+    <b>검사 시점 원칙</b>
+    <table>
+      <tr><th>대상</th><th>시점</th></tr>
+      <tr><td>텍스트 입력</td><td>포커스 아웃(blur) 시점부터 검사 시작 → 이후 입력값 변경 시 즉시 재검사</td></tr>
+      <tr><td>드롭다운</td><td>선택 즉시</td></tr>
+      <tr><td>파일 업로드</td><td>파일 선택 즉시</td></tr>
+      <tr><td>사업장 주소</td><td>주소 검색 팝업에서 선택 완료 시</td></tr>
+      <tr><td>주 액션 버튼</td><td>전 필드 통과 시에만 활성</td></tr>
+    </table>
+    <b>간이과세자 예외</b> — 통신판매업 <b>신고증 사본 · 신고번호</b>는 유효성 검사 제외. 미첨부·미기재로도 [다음] 활성(2-D).<br>
+    <b>중복 확인 3종</b> — 이메일(Step1) · <b>브랜드명(Step1, 신규)</b> · 사업자등록번호(Step2).
+    조회 대상은 <b>활성·심사대기 계정만</b>, <span class="warn">반려(폐기) 건은 제외</span>.
+    <span class="warn">브랜드명은 기능요구사항 v0.5 §2-2에서 "미확인"으로 확정돼 있어 v0.6 패치가 필요하다.</span><br>
+    <b>결정 사항(rev.2에서 확정)</b>
+    <table>
+      <tr><th>항목</th><th>결정</th><th>사유</th></tr>
+      <tr><td>연락처·전화번호 형식</td><td>하이픈 <b>포함</b> — 담당자·대표자 연락처(010-0000-0000) · <b>고객센터 전화번호(02-1234-5678)</b></td><td>구 목업은 "'-' 제외"였으나 사업자등록번호('-' 포함)와 규칙을 통일. rev.4에서 고객센터 전화번호까지 확대 적용</td></tr>
+      <tr><td>문구 어미</td><td><b>"입력해 주세요"</b> (띄어씀)</td><td>기능요구사항 v0.5 §1-3 확정 문구 5종과 정합</td></tr>
+      <tr><td>필수값 문구</td><td><b>필드명 명시형</b> ("대표자명을 입력해 주세요.")</td><td>구 목업의 "필수 입력 항목입니다"는 필드 18개에서 어느 항목인지 식별 불가</td></tr>
+      <tr><td>용어</td><td>셀러 정보 → <b>브랜드 담당자 정보</b> · 마켓 정보 → <b>브랜드 정보</b> · 마켓명 → <b>브랜드명</b></td><td>§4 확정 용어</td></tr>
+      <tr><td>예금주명 문구</td><td>법인 사업자 = "법인 명의 예금주명을 입력해 주세요." / 그 외 = "예금주명을 입력해 주세요."</td><td>사업자 구분에 따라 분기 (2-E)</td></tr>
+      <tr><td>빈 필드 blur</td><td><b>필드명 명시형 문구</b>를 띄운다 ("필수 입력 항목입니다" 아님)</td><td>필드 18개에서 공통 문구는 어느 항목인지 식별 불가</td></tr>
+      <tr><td>미입력 요약 표시</td><td><b>두지 않는다</b> (현행 유지)</td><td>드롭다운·파일·주소검색 6종은 blur가 없어 미선택 시 에러가 발동하지 않으나, <b>미입력 상태가 화면에 이미 드러난다</b>(파일=파일명 유무, 드롭다운="선택하세요", 주소=빈칸). 별도 요약 UI 불필요 — <b>재논의 금지</b></td></tr>
+    </table>
+    <b>주 액션 검정</b> — [확정] 로그인·회원가입 공통 예외. §9 인디고(#3B5BDB)는 타 전 화면 유지.<br>
+    <b>이 화면의 책임 범위 밖</b> — 심사대기·반려 안내 없음. 결과는 <b>이메일·문자 통지</b>로만 전달(로그인 rev.7 · wf-admin-02 정합).
+</div>
+</div>
+
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-A</span><span class="state-label">Step1 · 초기 (빈 폼)</span>
+  <span class="state-spec">전 필드 미입력 · <b>[다음] 비활성</b> · 미입력 상태에서는 에러를 띄우지 않음(blur 전)</span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st active"><div class="st-c">1</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">계정 정보</div>
+<div class="field"><label class="lb" for="s1-email">이메일</label><div class="inp-wrap"><input class="inp" id="s1-email" type="email" value="" placeholder="brand@example.com"></div></div>
+<div class="field"><label class="lb" for="s1-pw">비밀번호</label><div class="inp-wrap"><input class="inp" id="s1-pw" type="password" value="" placeholder="8~16자 영문·숫자·특수문자 조합"><button type="button" class="eye">표시</button></div></div>
+<div class="field"><label class="lb" for="s1-pw2">비밀번호 재입력</label><div class="inp-wrap"><input class="inp" id="s1-pw2" type="password" value="" placeholder="비밀번호를 다시 입력하세요"><button type="button" class="eye">표시</button></div></div>
+</div>
+<div class="sec"><div class="sec-t">브랜드 담당자 정보</div>
+<div class="field"><label class="lb" for="s1-mgr">판매 담당자 이름</label><div class="inp-wrap"><input class="inp" id="s1-mgr" type="text" value="" placeholder="담당자 이름"></div></div>
+<div class="field"><label class="lb" for="s1-tel">판매 담당자 연락처</label><div class="inp-wrap"><input class="inp" id="s1-tel" type="tel" value="" placeholder="010-0000-0000"></div></div>
+</div>
+<div class="sec"><div class="sec-t">브랜드 정보</div>
+<div class="field"><label class="lb" for="s1-brand">브랜드명</label><div class="inp-wrap"><input class="inp" id="s1-brand" type="text" value="" placeholder="공백·특수문자 제외"></div></div>
+<div class="field"><label class="lb" for="s1-cs">고객센터 전화번호</label><div class="inp-wrap"><input class="inp" id="s1-cs" type="tel" value="" placeholder="'-' 포함 8~12자리 숫자"></div><p class="help">소비자 앱 상품 상세에 노출됩니다. 존재하지 않는 번호 입력 시 서비스 이용이 제한될 수 있습니다.</p></div>
+</div>
+<div class="btn-row"><div class="btn btn-line">취소</div><button type="submit" class="btn btn-primary" disabled>다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-B</span><span class="state-label">Step1 · 유효성 에러</span>
+  <span class="state-spec">blur 시점부터 검사 시작 → 이후 입력 변경 시 즉시 재검사 · 필드별 인라인 · <b>[다음] 비활성 유지</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st active"><div class="st-c">1</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">계정 정보</div>
+<div class="field"><label class="lb" for="s1b-email">이메일</label><div class="inp-wrap is-error"><input class="inp" id="s1b-email" type="text" value="safsdf" placeholder="" aria-invalid="true" aria-describedby="s1b-email-err"></div><p class="err-msg" id="s1b-email-err" role="alert">올바른 이메일 형식이 아닙니다. (예: example@domain.com)</p></div>
+<div class="field"><label class="lb" for="s1b-pw">비밀번호</label><div class="inp-wrap is-error"><input class="inp" id="s1b-pw" type="password" value="" placeholder="8~16자 영문·숫자·특수문자 조합" aria-invalid="true" aria-describedby="s1b-pw-err"><button type="button" class="eye">표시</button></div><p class="err-msg" id="s1b-pw-err" role="alert">8~16자 영문·숫자·특수문자 조합으로 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s1b-pw2">비밀번호 재입력</label><div class="inp-wrap is-error"><input class="inp" id="s1b-pw2" type="password" value="a" placeholder="" aria-invalid="true" aria-describedby="s1b-pw2-err"><button type="button" class="eye">표시</button></div><p class="err-msg" id="s1b-pw2-err" role="alert">비밀번호가 일치하지 않습니다.</p></div>
+</div>
+<div class="sec"><div class="sec-t">브랜드 담당자 정보</div>
+<div class="field"><label class="lb" for="s1b-mgr">판매 담당자 이름</label><div class="inp-wrap is-error"><input class="inp" id="s1b-mgr" type="text" value="" placeholder="담당자 이름" aria-invalid="true" aria-describedby="s1b-mgr-err"></div><p class="err-msg" id="s1b-mgr-err" role="alert">판매 담당자 이름을 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s1b-tel">판매 담당자 연락처</label><div class="inp-wrap is-error"><input class="inp" id="s1b-tel" type="tel" value="010" placeholder="" aria-invalid="true" aria-describedby="s1b-tel-err"></div><p class="err-msg" id="s1b-tel-err" role="alert">올바른 핸드폰 번호 형식으로 입력해 주세요. (예: 010-0000-0000)</p></div>
+</div>
+<div class="sec"><div class="sec-t">브랜드 정보</div>
+<div class="field"><label class="lb" for="s1b-brand">브랜드명</label><div class="inp-wrap is-error"><input class="inp" id="s1b-brand" type="text" value="앤드모어" placeholder="" aria-invalid="true" aria-describedby="s1b-brand-err"></div><p class="err-msg" id="s1b-brand-err" role="alert">이미 사용 중인 브랜드명입니다.</p></div>
+<div class="field"><label class="lb" for="s1b-cs">고객센터 전화번호</label><div class="inp-wrap is-error"><input class="inp" id="s1b-cs" type="tel" value="122131" placeholder="" aria-invalid="true" aria-describedby="s1b-cs-err"></div><p class="err-msg" id="s1b-cs-err" role="alert">올바른 전화번호 형식으로 입력해 주세요. (예: 02-1234-5678)</p></div>
+</div>
+<div class="btn-row"><div class="btn btn-line">취소</div><button type="submit" class="btn btn-primary" disabled>다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">1-C</span><span class="state-label">Step1 · 전체 통과</span>
+  <span class="state-spec">모든 필드 통과 → <b>[다음] 활성</b> (검정)</span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st active"><div class="st-c">1</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">계정 정보</div>
+<div class="field"><label class="lb" for="s1c-email">이메일</label><div class="inp-wrap"><input class="inp" id="s1c-email" type="email" value="brand@awesome.com" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s1c-pw">비밀번호</label><div class="inp-wrap"><input class="inp" id="s1c-pw" type="password" value="Aa1!aa11" placeholder=""><button type="button" class="eye">표시</button></div></div>
+<div class="field"><label class="lb" for="s1c-pw2">비밀번호 재입력</label><div class="inp-wrap"><input class="inp" id="s1c-pw2" type="password" value="Aa1!aa11" placeholder=""><button type="button" class="eye">표시</button></div></div>
+</div>
+<div class="sec"><div class="sec-t">브랜드 담당자 정보</div>
+<div class="field"><label class="lb" for="s1c-mgr">판매 담당자 이름</label><div class="inp-wrap"><input class="inp" id="s1c-mgr" type="text" value="김담당" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s1c-tel">판매 담당자 연락처</label><div class="inp-wrap"><input class="inp" id="s1c-tel" type="tel" value="010-1234-5678" placeholder=""></div></div>
+</div>
+<div class="sec"><div class="sec-t">브랜드 정보</div>
+<div class="field"><label class="lb" for="s1c-brand">브랜드명</label><div class="inp-wrap"><input class="inp" id="s1c-brand" type="text" value="어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s1c-cs">고객센터 전화번호</label><div class="inp-wrap"><input class="inp" id="s1c-cs" type="tel" value="02-1234-5678" placeholder=""></div></div>
+</div>
+<div class="btn-row"><div class="btn btn-line">취소</div><button type="submit" class="btn btn-primary">다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-A</span><span class="state-label">Step2 · 초기 (빈 폼)</span>
+  <span class="state-spec">전 필드 미입력 · <b>[다음] 비활성</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">사업자 유형</div>
+<div class="field"><label class="lb" for="s2-type">사업자 구분</label><div class="inp-wrap"><select class="inp" id="s2-type"><option>선택하세요</option><option>일반과세자</option><option>간이과세자</option><option>면세사업자</option><option>법인 사업자</option></select></div></div>
+</div>
+<div class="sec"><div class="sec-t">사업자 정보</div>
+<div class="field"><label class="lb" for="s2-rep">대표자명</label><div class="inp-wrap"><input class="inp" id="s2-rep" type="text" value="" placeholder="공동대표는 쉼표로 나열"></div></div>
+<div class="field"><label class="lb" for="s2-reptel">대표자 연락처</label><div class="inp-wrap"><input class="inp" id="s2-reptel" type="tel" value="" placeholder="010-0000-0000"></div></div>
+<div class="field"><label class="lb" for="s2-bn">사업자등록증 상호명</label><div class="inp-wrap"><input class="inp" id="s2-bn" type="text" value="" placeholder="사업자등록증 상 상호명"></div></div>
+<div class="field"><label class="lb" for="s2-bno">사업자등록번호</label><div class="inp-wrap"><input class="inp" id="s2-bno" type="text" value="" placeholder="000-00-00000"></div></div>
+<div class="field"><label class="lb" for="s2-up">업태</label><div class="inp-wrap"><input class="inp" id="s2-up" type="text" value="" placeholder="사업자등록증 대표 업태 한 가지"></div></div>
+<div class="field"><label class="lb" for="s2-addr">사업장 주소</label><div class="inp-search"><input class="inp" id="s2-addr" type="text" value="" placeholder="사업자등록증 기재 주소"><button type="button" class="btn-search">🔍 검색</button></div></div>
+<div class="field"><label class="lb" for="s2-addr2">상세주소</label><div class="inp-wrap"><input class="inp" id="s2-addr2" type="text" value="" placeholder="상세주소"></div></div>
+<div class="field"><label class="lb" for="s2-mail">이메일 (tax 확인용)</label><div class="inp-wrap"><input class="inp" id="s2-mail" type="email" value="" placeholder="세금계산서·정산 확인용 메일 주소"></div></div>
+</div>
+<div class="upload"><div class="up-l"><div class="up-name">📎 사업자등록증 사본</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div>
+<div class="upload"><div class="up-l"><div class="up-name">📎 통신판매업신고증 사본</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">통신판매업신고번호</div>
+<div class="split-row"><span class="split-fx">제</span><div class="split-in is-ph">년도</div><span class="split-sep">–</span><div class="split-in is-ph">지역</div><span class="split-sep">–</span><div class="split-in is-ph">번호</div><span class="split-fx">호</span></div>
+</div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">정산 정보</div>
+<div class="field"><label class="lb" for="s2-bank">은행명</label><div class="inp-wrap"><select class="inp" id="s2-bank"><option>은행 선택</option><option>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div></div>
+<div class="field"><label class="lb" for="s2-hold">예금주명</label><div class="inp-wrap"><input class="inp" id="s2-hold" type="text" value="" placeholder="법인은 법인 명의 계좌만"></div></div>
+<div class="field"><label class="lb" for="s2-acct">계좌번호</label><div class="inp-wrap"><input class="inp acct-only" id="s2-acct" type="text" inputmode="numeric" maxlength="16" value="" placeholder="- 없이 숫자만 입력"></div></div>
+</div>
+<div class="upload"><div class="up-l"><div class="up-name">📎 통장 사본</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary" disabled>다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-B</span><span class="state-label">Step2 · 유효성 에러 (전 항목 예시)</span>
+  <span class="state-spec">드롭다운·파일은 <b>선택 즉시</b> 검사 · 텍스트는 <b>blur 이후</b> · 주소는 <b>검색 팝업 선택 완료 시</b> · <b>[다음] 비활성 유지</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">사업자 유형</div>
+<div class="field"><label class="lb" for="s2b-type">사업자 구분</label><div class="inp-wrap is-error"><select class="inp" id="s2b-type"><option>선택하세요</option><option>일반과세자</option><option>간이과세자</option><option>면세사업자</option><option>법인 사업자</option></select></div><p class="err-msg" id="s2b-type-err" role="alert">사업자 구분을 선택해 주세요.</p></div>
+</div>
+<div class="sec"><div class="sec-t">사업자 정보</div>
+<div class="field"><label class="lb" for="s2b-rep">대표자명</label><div class="inp-wrap is-error"><input class="inp" id="s2b-rep" type="text" value="" placeholder="" aria-invalid="true" aria-describedby="s2b-rep-err"></div><p class="err-msg" id="s2b-rep-err" role="alert">대표자명을 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-reptel">대표자 연락처</label><div class="inp-wrap is-error"><input class="inp" id="s2b-reptel" type="tel" value="010" placeholder="" aria-invalid="true" aria-describedby="s2b-reptel-err"></div><p class="err-msg" id="s2b-reptel-err" role="alert">올바른 핸드폰 번호 형식으로 입력해 주세요. (예: 010-0000-0000)</p></div>
+<div class="field"><label class="lb" for="s2b-bn">사업자등록증 상호명</label><div class="inp-wrap is-error"><input class="inp" id="s2b-bn" type="text" value="" placeholder="" aria-invalid="true" aria-describedby="s2b-bn-err"></div><p class="err-msg" id="s2b-bn-err" role="alert">사업자등록증 상호명을 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-bno">사업자등록번호</label><div class="inp-wrap is-error"><input class="inp" id="s2b-bno" type="text" value="123-45-67890" placeholder="" aria-invalid="true" aria-describedby="s2b-bno-err"></div><p class="err-msg" id="s2b-bno-err" role="alert">이미 입점 신청이 접수된 사업자등록번호입니다. 담당자에게 확인해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-up">업태</label><div class="inp-wrap is-error"><input class="inp" id="s2b-up" type="text" value="" placeholder="" aria-invalid="true" aria-describedby="s2b-up-err"></div><p class="err-msg" id="s2b-up-err" role="alert">업태를 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-addr">사업장 주소</label><div class="inp-search is-error"><input class="inp" id="s2b-addr" type="text" value="" placeholder=""><button type="button" class="btn-search">🔍 검색</button></div><p class="err-msg" role="alert">사업장 주소를 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-addr2">상세주소</label><div class="inp-wrap is-error"><input class="inp" id="s2b-addr2" type="text" value="" placeholder="" aria-invalid="true" aria-describedby="s2b-addr2-err"></div><p class="err-msg" id="s2b-addr2-err" role="alert">상세주소를 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-mail">이메일 (tax 확인용)</label><div class="inp-wrap is-error"><input class="inp" id="s2b-mail" type="text" value="tax@" placeholder="" aria-invalid="true" aria-describedby="s2b-mail-err"></div><p class="err-msg" id="s2b-mail-err" role="alert">올바른 이메일 형식이 아닙니다. (예: example@domain.com)</p></div>
+</div>
+<div class="upload is-error"><div class="up-l"><div class="up-name">📎 사업자등록증 사본</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div><p class="err-msg" role="alert">사업자등록증 사본을 첨부해 주세요.</p>
+<div class="upload is-error"><div class="up-l"><div class="up-name">📎 통신판매업신고증 사본</div><div class="up-hint">선택한 파일 6.2MB</div></div><button type="button" class="btn-upload">파일 선택</button></div><p class="err-msg" role="alert">파일 크기가 5MB를 초과했습니다. 5MB 이하의 파일을 선택해 주세요.</p>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">통신판매업신고번호</div>
+<div class="split-row"><span class="split-fx">제</span><div class="split-in is-error">26</div><span class="split-sep">–</span><div class="split-in is-error is-ph">지역</div><span class="split-sep">–</span><div class="split-in is-error is-ph">번호</div><span class="split-fx">호</span></div><p class="err-msg" role="alert">년도는 4자리 숫자로 입력해 주세요. (예: 2024)</p>
+</div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">정산 정보</div>
+<div class="field"><label class="lb" for="s2b-bank">은행명</label><div class="inp-wrap is-error"><select class="inp" id="s2b-bank"><option>은행 선택</option><option>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div><p class="err-msg" id="s2b-bank-err" role="alert">은행명을 선택해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-hold">예금주명</label><div class="inp-wrap is-error"><input class="inp" id="s2b-hold" type="text" value="" placeholder="" aria-invalid="true" aria-describedby="s2b-hold-err"></div><p class="err-msg" id="s2b-hold-err" role="alert">예금주명을 입력해 주세요.</p></div>
+<div class="field"><label class="lb" for="s2b-acct">계좌번호</label><div class="inp-wrap is-error"><input class="inp acct-only" id="s2b-acct" type="text" inputmode="numeric" maxlength="16" value="110123" placeholder="" aria-invalid="true" aria-describedby="s2b-acct-err"></div><p class="err-msg" id="s2b-acct-err" role="alert">계좌번호는 10~16자리 숫자로 입력해 주세요.</p></div>
+</div>
+<div class="upload is-error"><div class="up-l"><div class="up-name">📎 통장 사본</div><div class="up-hint">최대 5MB · jpg, jpeg, png</div></div><button type="button" class="btn-upload">파일 선택</button></div><p class="err-msg" role="alert">통장 사본을 첨부해 주세요.</p>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary" disabled>다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-C</span><span class="state-label">Step2 · 전체 통과 (일반과세자)</span>
+  <span class="state-spec">모든 필드 통과 → <b>[다음] 활성</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">사업자 유형</div>
+<div class="field"><label class="lb" for="s2c-type">사업자 구분</label><div class="inp-wrap"><select class="inp" id="s2c-type"><option>선택하세요</option><option selected>일반과세자</option><option>간이과세자</option><option>면세사업자</option><option>법인 사업자</option></select></div></div>
+</div>
+<div class="sec"><div class="sec-t">사업자 정보</div>
+<div class="field"><label class="lb" for="s2c-rep">대표자명</label><div class="inp-wrap"><input class="inp" id="s2c-rep" type="text" value="박대표" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-reptel">대표자 연락처</label><div class="inp-wrap"><input class="inp" id="s2c-reptel" type="tel" value="010-1234-5678" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-bn">사업자등록증 상호명</label><div class="inp-wrap"><input class="inp" id="s2c-bn" type="text" value="어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-bno">사업자등록번호</label><div class="inp-wrap"><input class="inp" id="s2c-bno" type="text" value="123-45-67890" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-up">업태</label><div class="inp-wrap"><input class="inp" id="s2c-up" type="text" value="화장품 도소매" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-addr">사업장 주소</label><div class="inp-search"><input class="inp" id="s2c-addr" type="text" value="서울특별시 강남구 테헤란로 123" placeholder=""><button type="button" class="btn-search">🔍 검색</button></div></div>
+<div class="field"><label class="lb" for="s2c-addr2">상세주소</label><div class="inp-wrap"><input class="inp" id="s2c-addr2" type="text" value="4층" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-mail">이메일 (tax 확인용)</label><div class="inp-wrap"><input class="inp" id="s2c-mail" type="email" value="tax@awesome.com" placeholder=""></div></div>
+</div>
+<div class="upload done"><div class="up-l"><div class="up-name">사업자등록증_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="upload done"><div class="up-l"><div class="up-name">통신판매업신고증_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">통신판매업신고번호</div>
+<div class="split-row"><span class="split-fx">제</span><div class="split-in">2026</div><span class="split-sep">–</span><div class="split-in">서울</div><span class="split-sep">–</span><div class="split-in">01234</div><span class="split-fx">호</span></div>
+</div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">정산 정보</div>
+<div class="field"><label class="lb" for="s2c-bank">은행명</label><div class="inp-wrap"><select class="inp" id="s2c-bank"><option>은행 선택</option><option selected>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div></div>
+<div class="field"><label class="lb" for="s2c-hold">예금주명</label><div class="inp-wrap"><input class="inp" id="s2c-hold" type="text" value="어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2c-acct">계좌번호</label><div class="inp-wrap"><input class="inp acct-only" id="s2c-acct" type="text" inputmode="numeric" maxlength="16" value="123456789012" placeholder=""></div></div>
+</div>
+<div class="upload done"><div class="up-l"><div class="up-name">통장_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary">다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-D</span><span class="state-label">Step2 · <b>간이과세자 예외</b></span>
+  <span class="state-spec">통신판매업 <b>신고증 사본 · 신고번호 유효성 검사 제외</b> · 미첨부·미기재 상태로 <b>[다음] 활성</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">사업자 유형</div>
+<div class="field"><label class="lb" for="s2s-type">사업자 구분</label><div class="inp-wrap"><select class="inp" id="s2s-type"><option>선택하세요</option><option>일반과세자</option><option selected>간이과세자</option><option>면세사업자</option><option>법인 사업자</option></select></div></div>
+</div>
+<div class="sec"><div class="sec-t">사업자 정보</div>
+<div class="field"><label class="lb" for="s2s-rep">대표자명</label><div class="inp-wrap"><input class="inp" id="s2s-rep" type="text" value="박대표" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-reptel">대표자 연락처</label><div class="inp-wrap"><input class="inp" id="s2s-reptel" type="tel" value="010-1234-5678" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-bn">사업자등록증 상호명</label><div class="inp-wrap"><input class="inp" id="s2s-bn" type="text" value="어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-bno">사업자등록번호</label><div class="inp-wrap"><input class="inp" id="s2s-bno" type="text" value="123-45-67890" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-up">업태</label><div class="inp-wrap"><input class="inp" id="s2s-up" type="text" value="화장품 도소매" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-addr">사업장 주소</label><div class="inp-search"><input class="inp" id="s2s-addr" type="text" value="서울특별시 강남구 테헤란로 123" placeholder=""><button type="button" class="btn-search">🔍 검색</button></div></div>
+<div class="field"><label class="lb" for="s2s-addr2">상세주소</label><div class="inp-wrap"><input class="inp" id="s2s-addr2" type="text" value="4층" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-mail">이메일 (tax 확인용)</label><div class="inp-wrap"><input class="inp" id="s2s-mail" type="email" value="tax@awesome.com" placeholder=""></div></div>
+</div>
+<div class="upload done"><div class="up-l"><div class="up-name">사업자등록증_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="exempt-note"><span>ℹ</span><span><b>간이과세자</b>는 통신판매업 신고 면제 대상 → 신고증 사본·신고번호 <b>유효성 검사 제외</b>. 미첨부 상태로 다음 단계 진행 가능합니다.</span></div>
+<div class="upload is-exempt"><div class="up-l"><div class="up-name">📎 통신판매업신고증 사본</div><div class="up-hint">간이과세자 — 첨부 불필요</div></div><button type="button" class="btn-upload">파일 선택</button></div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">통신판매업신고번호</div>
+<div class="split-row"><span class="split-fx">제</span><div class="split-in is-ph">년도</div><span class="split-sep">–</span><div class="split-in is-ph">지역</div><span class="split-sep">–</span><div class="split-in is-ph">번호</div><span class="split-fx">호</span></div>
+<p class="help">간이과세자 — 기재 불필요 (유효성 검사 제외)</p>
+</div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">정산 정보</div>
+<div class="field"><label class="lb" for="s2s-bank">은행명</label><div class="inp-wrap"><select class="inp" id="s2s-bank"><option>은행 선택</option><option selected>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div></div>
+<div class="field"><label class="lb" for="s2s-hold">예금주명</label><div class="inp-wrap"><input class="inp" id="s2s-hold" type="text" value="어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2s-acct">계좌번호</label><div class="inp-wrap"><input class="inp acct-only" id="s2s-acct" type="text" inputmode="numeric" maxlength="16" value="123456789012" placeholder=""></div></div>
+</div>
+<div class="upload done"><div class="up-l"><div class="up-name">통장_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary">다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">2-E</span><span class="state-label">Step2 · <b>법인 사업자 분기</b></span>
+  <span class="state-spec">정산 정보 상단에 <b>법인 명의 계좌 안내</b> 노출 · 예금주명 미입력 시 문구 분기 → <b>"법인 명의 예금주명을 입력해 주세요."</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">2</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st "><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="sec"><div class="sec-t">사업자 유형</div>
+<div class="field"><label class="lb" for="s2e-type">사업자 구분</label><div class="inp-wrap"><select class="inp" id="s2e-type"><option>선택하세요</option><option>일반과세자</option><option>간이과세자</option><option>면세사업자</option><option selected>법인 사업자</option></select></div></div>
+</div>
+<div class="sec"><div class="sec-t">사업자 정보</div>
+<div class="field"><label class="lb" for="s2e-rep">대표자명</label><div class="inp-wrap"><input class="inp" id="s2e-rep" type="text" value="박대표" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-reptel">대표자 연락처</label><div class="inp-wrap"><input class="inp" id="s2e-reptel" type="tel" value="010-1234-5678" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-bn">사업자등록증 상호명</label><div class="inp-wrap"><input class="inp" id="s2e-bn" type="text" value="어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-bno">사업자등록번호</label><div class="inp-wrap"><input class="inp" id="s2e-bno" type="text" value="123-45-67890" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-up">업태</label><div class="inp-wrap"><input class="inp" id="s2e-up" type="text" value="화장품 도소매" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-addr">사업장 주소</label><div class="inp-search"><input class="inp" id="s2e-addr" type="text" value="서울특별시 강남구 테헤란로 123" placeholder=""><button type="button" class="btn-search">🔍 검색</button></div></div>
+<div class="field"><label class="lb" for="s2e-addr2">상세주소</label><div class="inp-wrap"><input class="inp" id="s2e-addr2" type="text" value="4층" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-mail">이메일 (tax 확인용)</label><div class="inp-wrap"><input class="inp" id="s2e-mail" type="email" value="tax@awesome.com" placeholder=""></div></div>
+</div>
+<div class="upload done"><div class="up-l"><div class="up-name">사업자등록증_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="upload done"><div class="up-l"><div class="up-name">통신판매업신고증_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">통신판매업신고번호</div>
+<div class="split-row"><span class="split-fx">제</span><div class="split-in">2026</div><span class="split-sep">–</span><div class="split-in">서울</div><span class="split-sep">–</span><div class="split-in">01234</div><span class="split-fx">호</span></div>
+</div>
+<div class="divider"></div>
+<div class="sec"><div class="sec-t">정산 정보</div>
+<div class="corp-note"><span>⚠</span><span>법인 사업자는 반드시 <b>법인 명의 계좌</b>만 등록 가능합니다.</span></div>
+<div class="field"><label class="lb" for="s2e-bank">은행명</label><div class="inp-wrap"><select class="inp" id="s2e-bank"><option>은행 선택</option><option selected>국민은행</option><option>신한은행</option><option>우리은행</option><option>하나은행</option><option>농협은행</option><option>기업은행</option><option>카카오뱅크</option><option>토스뱅크</option><option>케이뱅크</option><option>SC제일은행</option><option>씨티은행</option><option>부산은행</option><option>대구은행</option><option>경남은행</option><option>광주은행</option><option>전북은행</option><option>제주은행</option><option>새마을금고</option><option>신협</option><option>우체국</option></select></div></div>
+<div class="field"><label class="lb" for="s2e-hold">예금주명</label><div class="inp-wrap"><input class="inp" id="s2e-hold" type="text" value="(주)어썸코스메틱" placeholder=""></div></div>
+<div class="field"><label class="lb" for="s2e-acct">계좌번호</label><div class="inp-wrap"><input class="inp acct-only" id="s2e-acct" type="text" inputmode="numeric" maxlength="16" value="123456789012" placeholder=""></div></div>
+</div>
+<div class="upload done"><div class="up-l"><div class="up-name">통장_사본.jpg</div><div class="up-hint">업로드 완료</div></div><button type="button" class="btn-upload">다시 선택</button></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary">다음</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">3-A</span><span class="state-label">Step3 · 약관 미동의</span>
+  <span class="state-spec"><b>3개 전부 필수</b> · <b>[신청하기] 비활성</b> — 미동의 에러 문구는 표시하지 않는다(버튼 비활성으로만 표현)</span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st done"><div class="st-c">✓</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="terms-box"><div class="terms-all"><div class="cbox "></div><span>이용 약관에 모두 동의합니다.</span></div><div class="terms-row"><div class="t-left"><div class="cbox "></div><span class="t-lbl">개인정보처리방침<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div><div class="terms-row"><div class="t-left"><div class="cbox "></div><span class="t-lbl">서비스 이용 약관<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div><div class="terms-row"><div class="t-left"><div class="cbox "></div><span class="t-lbl">서비스 운영정책<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary" disabled>신청하기</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">3-B</span><span class="state-label">Step3 · 전체 동의</span>
+  <span class="state-spec">전체 동의 → <b>[신청하기] 활성</b></span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st done"><div class="st-c">✓</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="terms-box"><div class="terms-all"><div class="cbox on"></div><span>이용 약관에 모두 동의합니다.</span></div><div class="terms-row"><div class="t-left"><div class="cbox on"></div><span class="t-lbl">개인정보처리방침<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div><div class="terms-row"><div class="t-left"><div class="cbox on"></div><span class="t-lbl">서비스 이용 약관<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div><div class="terms-row"><div class="t-left"><div class="cbox on"></div><span class="t-lbl">서비스 운영정책<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary">신청하기</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">D</span><span class="state-label">Step3 · 로딩 (제출 중)</span>
+  <span class="state-spec">폼 전체 disabled · 스피너 + "제출 중" · 중복 제출 차단</span></div>
+  <div class="stage"><div class="stage-inner"><form class="auth-card is-disabled" onsubmit="return false;">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="stepper"><div class="st done"><div class="st-c">✓</div><div class="st-l">기본 정보</div></div><div class="st-sep"></div><div class="st done"><div class="st-c">✓</div><div class="st-l">사업자 정보</div></div><div class="st-sep"></div><div class="st active"><div class="st-c">3</div><div class="st-l">완료</div></div></div>
+<div class="terms-box"><div class="terms-all"><div class="cbox on"></div><span>이용 약관에 모두 동의합니다.</span></div><div class="terms-row"><div class="t-left"><div class="cbox on"></div><span class="t-lbl">개인정보처리방침<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div><div class="terms-row"><div class="t-left"><div class="cbox on"></div><span class="t-lbl">서비스 이용 약관<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div><div class="terms-row"><div class="t-left"><div class="cbox on"></div><span class="t-lbl">서비스 운영정책<span class="req">(필수)</span></span></div><span class="t-view">보기 ›</span></div></div>
+<div class="btn-row"><div class="btn btn-line">이전</div><button type="submit" class="btn btn-primary is-loading" disabled><span class="spin" aria-hidden="true"></span>제출 중</button></div>
+  </form></div></div>
+</section>
+<section class="state">
+  <div class="state-bar"><span class="state-id">E</span><span class="state-label">완료 — 입점 신청 접수</span>
+  <span class="state-spec">심사 결과는 <b>이메일·문자</b>로만 통지 · 상태 표시 pill 제거(rev.2)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+<div class="auth-head"><svg class="wordmark" viewBox="0 0 1863.4 200" width="167.7" height="18" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><div class="auth-sub">브랜드 파트너센터 · 입점 신청</div></div>
+<div class="cpl">
+  <div class="cpl-ic">✓</div>
+  <div class="cpl-t">입점 신청이 완료되었습니다</div>
+  <div class="cpl-d">신청서가 정상적으로 접수되었습니다.<br>검토 후 영업일 기준 3~5일 이내에 등록하신 이메일로 결과를 안내해 드립니다.</div>
+  <div class="info-box">
+    <div class="info-r"><span class="info-l">브랜드명</span><span class="info-v">어썸코스메틱</span></div>
+    <div class="info-r"><span class="info-l">신청 일시</span><span class="info-v">2026.07.23 14:32</span></div>
+    <div class="info-r"><span class="info-l">결과 안내</span><span class="info-v">가입 시 등록한 이메일</span></div>
+    <div class="info-r"><span class="info-l">처리 예정</span><span class="info-v">영업일 기준 3~5일 이내</span></div>
+  </div>
+  <div class="notice"><span class="ni">i</span><span>심사 결과는 <b>이메일·문자</b>로 안내합니다. 승인 완료 후 <b>파트너센터</b>에서 상품 등록·운영을 시작할 수 있습니다.</span></div>
+  <button type="button" class="btn btn-primary" style="width:100%;">홈으로 이동</button>
+</div>
+  </div></div></div>
+</section>
+
+<script>
+document.querySelectorAll('.eye').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var w = btn.closest('.inp-wrap'); var t = w ? w.querySelector('input') : null;
+    if (!t) return;
+    var show = t.type === 'password';
+    t.type = show ? 'text' : 'password';
+    btn.textContent = show ? '숨김' : '표시';
+  });
+});
+document.querySelectorAll('.acct-only').forEach(function (el) {
+  el.addEventListener('input', function () {
+    this.value = this.value.replace(/[^0-9]/g, '');
+  });
+});
+</script>
+
+</body>
+</html>

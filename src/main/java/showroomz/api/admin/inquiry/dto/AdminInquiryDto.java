@@ -133,6 +133,9 @@ public class AdminInquiryDto {
         private String userName;
         @Schema(description = "참조 주문 ID — 선택값이라 없으면 null (화면에서는 `—`)", example = "456")
         private Long orderId;
+        @Schema(description = "반려 이의 대상 클레임 ID — 앱 「이의 제기」로 쓴 문의만, 아니면 null. 반품·교환 상세(06b)로 가는 링크용",
+                example = "3008")
+        private Long claimId;
         @Schema(description = "접수일시", example = "2026-07-16T10:12:00")
         private LocalDateTime createdAt;
         @Schema(description = "답변일시 — 미답변이면 null")

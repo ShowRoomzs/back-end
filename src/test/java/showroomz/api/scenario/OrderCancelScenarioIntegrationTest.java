@@ -153,7 +153,7 @@ class OrderCancelScenarioIntegrationTest extends OrderFlowTestSupport {
             assertThat(itemOf(group, serum).getStatus()).isEqualTo(OrderProductStatus.PAID);
             assertThat(stockOf(creamVariant)).isEqualTo(creamStock + 1);
             assertThat(stockOf(serumVariant)).isEqualTo(serumStock);
-            assertThat(refundTasks(group)).containsExactly(new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "PENDING"));
+            assertThat(refundTasks(group)).containsExactly(new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE, "DONE"));
             sellerOrders("tab=PREPARING").andExpect(jsonPath("$.content[0].deliveryGroupId").value(group.getId()));
             sellerOrders("tab=CANCEL_REQUESTED").andExpect(jsonPath("$.content.length()").value(0));
 
@@ -181,7 +181,7 @@ class OrderCancelScenarioIntegrationTest extends OrderFlowTestSupport {
             assertThat(cancelled.getCancelType()).isEqualTo(OrderCancelType.REQUEST_APPROVED);
             assertThat(cancelled.getStatusAtCancel()).isEqualTo(FulfillmentStatus.PREPARING);
             assertThat(refundTasks(group)).containsExactly(
-                    new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE + SERUM_PRICE + DELIVERY_FEE, "PENDING"));
+                    new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE + SERUM_PRICE + DELIVERY_FEE, "DONE"));
             sellerOrders("tab=CANCELLED")
                     .andExpect(jsonPath("$.content[0].cancelTypeLabel").value("취소 요청 승인 · 브랜드 승인"));
         }
@@ -205,7 +205,8 @@ class OrderCancelScenarioIntegrationTest extends OrderFlowTestSupport {
             assertThat(fulfillmentHistoryRepository.findByDeliveryGroupId(group.getId()))
                     .filteredOn(h -> h.getEventType().name().equals("CANCEL_REQUEST_REJECTED"))
                     .singleElement()
-                    .satisfies(h -> assertThat(h.getDetail()).isEqualTo(reason));
+                    // 구 FE 처럼 사유 코드 없이 상세만 보내면 「기타」로 받는다(1009 기획 수정본 3-3).
+                    .satisfies(h -> assertThat(h.getDetail()).isEqualTo("기타 · " + reason));
             assertThat(refundTasks(group)).isEmpty();
 
             sellerOrders("tab=PREPARING").andExpect(jsonPath("$.content[0].deliveryGroupId").value(group.getId()));
@@ -238,10 +239,11 @@ class OrderCancelScenarioIntegrationTest extends OrderFlowTestSupport {
                     assertThat(item.getCancelType()).isEqualTo(OrderCancelType.SELLER_DIRECT));
             assertThat(stockOf(creamVariant)).isEqualTo(stockBefore + 1);
             assertThat(refundTasks(group)).containsExactly(
-                    new RefundTask("SELLER_DIRECT_CANCEL", CREAM_PRICE + DELIVERY_FEE, "PENDING"));
-            // 환불은 운영자 집행 — PG 를 브랜드가 부르지 않는다.
+                    new RefundTask("SELLER_DIRECT_CANCEL", CREAM_PRICE + DELIVERY_FEE, "DONE"));
+            // 환불은 PG 즉시 자동(1009 기획 수정본 2절) — 브랜드가 아니라 시스템이 부분 취소로 돌려준다. 전액이라 결제가 닫힌다.
             assertThat(fake.cancelCalls()).isEmpty();
-            assertThat(payment(purchase.paymentId()).getStatus()).isEqualTo(PaymentStatus.PAID);
+            assertThat(fake.partialCancelCalls()).containsExactly(purchase.paymentId() + ":" + (CREAM_PRICE + DELIVERY_FEE));
+            assertThat(payment(purchase.paymentId()).getStatus()).isEqualTo(PaymentStatus.CANCELLED);
 
             sellerOrder(group)
                     .andExpect(jsonPath("$.timeline.cancelTypeLabel").value("브랜드 직권 취소"))

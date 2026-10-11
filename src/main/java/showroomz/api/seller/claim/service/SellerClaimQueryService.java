@@ -15,6 +15,7 @@ import showroomz.api.seller.order.service.SellerOrderAccessGuard;
 import showroomz.api.seller.order.service.SellerOrderAccessGuard.SellerScope;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderClaimAttachment;
+import showroomz.domain.order.entity.OrderClaimCharge;
 import showroomz.domain.order.entity.OrderClaimCollection;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
@@ -81,9 +82,32 @@ public class SellerClaimQueryService {
                                                        ClaimReason reason, LocalDate from, LocalDate to,
                                                        String keyword, PagingRequest pagingRequest) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
+        return searchClaims(scope.market().getId(), tab, types, reason, from, to, keyword, pagingRequest);
+    }
+
+    /** 목록 — {@code marketId}가 null 이면 전 브랜드(어드민 거래 관리 06b · 1009 기획 수정본 8-3). */
+    public PageResponse<SellerClaimListItem> searchClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
+                                                          ClaimReason reason, LocalDate from, LocalDate to,
+                                                          String keyword, PagingRequest pagingRequest) {
+        return searchClaims(marketId, tab, types, reason, from, to, keyword, null, null, null, pagingRequest);
+    }
+
+    /**
+     * 어드민 06b — 파트너와 같은 조회에 브랜드명 · 소비자명 검색과 정렬 셀렉트를 더한다(38 설계서 7절 #2 · #3). 전체 탭은 검수
+     * 지연을 상단에 고정한다(페이지를 넘어서도 고정되도록 서버 정렬).
+     */
+    public PageResponse<SellerClaimListItem> searchClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
+                                                          ClaimReason reason, LocalDate from, LocalDate to,
+                                                          String keyword, String marketName, String consumerName,
+                                                          showroomz.domain.order.type.ClaimSort sort,
+                                                          PagingRequest pagingRequest) {
         LocalDateTime now = LocalDateTime.now();
-        SellerClaimSearchCondition condition = buildCondition(scope.market().getId(), tab, types, reason, from, to,
-                keyword, now);
+        SellerClaimSearchCondition base = buildCondition(marketId, tab, types, reason, from, to, keyword, now);
+        boolean admin = marketId == null;
+        SellerClaimSearchCondition condition = new SellerClaimSearchCondition(base.marketId(), base.tab(), base.types(),
+                base.reason(), base.from(), base.to(), base.claimId(), base.orderNumber(),
+                admin ? marketName : null, admin ? consumerName : null, sort,
+                admin && base.tab() == ClaimTab.ALL, now);
         int size = pagingRequest.getSize();
         if (size < 1 || size > orderProperties.getListPageSizeMax()) {
             throw new BusinessException(ErrorCode.ORDER_PAGE_SIZE_INVALID);
@@ -97,7 +121,11 @@ public class SellerClaimQueryService {
     /** KPI · 탭 카운트 · 유형 카운트 — 검색 조건·기간과 무관한 전체 기준이다. 결제 대기(접수 전)는 세지 않는다. */
     public SellerClaimSummaryResponse getSummary(String sellerEmail) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        Long marketId = scope.market().getId();
+        return summarize(scope.market().getId());
+    }
+
+    /** 요약 — {@code marketId}가 null 이면 전 브랜드(어드민 06b). 탭 · 건수가 파트너 11 과 같은 기준이다. */
+    public SellerClaimSummaryResponse summarize(Long marketId) {
 
         Map<ClaimStatus, Long> byStatus = new EnumMap<>(ClaimStatus.class);
         Map<String, Long> typeCounts = new LinkedHashMap<>();
@@ -129,6 +157,19 @@ public class SellerClaimQueryService {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         OrderClaim claim = claimRepository.findOwned(claimId, scope.market().getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        return detail(claim);
+    }
+
+    /** 상세 — 브랜드 범위 없이(어드민 06b). 결제 대기(접수 전)는 없는 것으로 본다. */
+    public SellerClaimDetailResponse getClaimForAdmin(Long claimId) {
+        OrderClaim claim = claimRepository.findById(claimId)
+                .filter(found -> found.getStatus() != ClaimStatus.PAYMENT_PENDING)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        return detail(claim);
+    }
+
+    private SellerClaimDetailResponse detail(OrderClaim claim) {
+        Long claimId = claim.getId();
         LocalDateTime now = LocalDateTime.now();
         OrderClaimCollection collection = claim.getCollection();
         OrderDeliveryGroup group = claim.getDeliveryGroup();
@@ -137,22 +178,31 @@ public class SellerClaimQueryService {
         List<OrderClaimAttachment> attachments = attachmentRepository.findByClaimIds(List.of(claimId));
         List<String> consumerPhotos = urls(attachments, ClaimAttachmentOwner.CONSUMER);
         List<String> sellerPhotos = urls(attachments, ClaimAttachmentOwner.SELLER);
+        List<OrderClaimCharge> charges = chargeRepository.findByCollectionId(collection.getId());
         ClaimStatus status = claim.getStatus();
 
         return new SellerClaimDetailResponse(
-                assembler.toListItem(claim, boxClaims, groupItems, consumerPhotos.size(), sellerPhotos.size(), now),
+                assembler.toListItem(claim, boxClaims, groupItems, consumerPhotos.size(), sellerPhotos.size(), charges,
+                        now),
                 group.getOrder().getOrderNumber(),
                 group.getId(),
                 OrderAddressMasker.maskPhone(group.getOrder().getRecipientPhone()),
                 claim.getReasonDetail(),
                 claim.getType() != ClaimType.EXCHANGE ? null
-                        : chargeRepository.findByCollectionId(collection.getId()).stream()
+                        : charges.stream()
                         .anyMatch(charge -> charge.getType() == ClaimChargeType.EXCHANGE_RESHIP
                                 && charge.getStatus() == ClaimChargeStatus.PAID),
                 refund(claim, collection, boxClaims),
                 consumerPhotos,
                 sellerPhotos,
                 claim.getRejectDetail(),
+                claim.getRejectedAt() == null ? null : new SellerClaimDetailResponse.Rejection(
+                        claim.getRejectLegalBasis(),
+                        claim.getRejectLegalBasis() == null ? null : claim.getRejectLegalBasis().getLabel(),
+                        claim.getRejectConsumerMessage(),
+                        claim.isFaultChangedToSeller(),
+                        claim.getSplitFromClaimId() == null ? null : "CLM-" + claim.getSplitFromClaimId()),
+                purchaseConfirm(group, now),
                 result(claim, group),
                 status != ClaimStatus.REJECT_HOLD ? List.of() : noticeRepository.findByClaimId(claimId).stream()
                         .map(notice -> new SellerClaimDetailResponse.Notice(notice.getSeq(), notice.getNotifiedAt(),
@@ -167,6 +217,17 @@ public class SellerClaimQueryService {
     }
 
     // ------------------------------------------------------------------ 내부
+
+    /** 구매확정 타이머(1009 기획 수정본 4-2) — 정지 중이면 정지 시점 기준으로 멈춘 남은 일수. */
+    private SellerClaimDetailResponse.PurchaseConfirm purchaseConfirm(OrderDeliveryGroup group, LocalDateTime now) {
+        if (group.confirmBaseAt() == null) {
+            return null;
+        }
+        int days = orderProperties.getPurchaseConfirmDays();
+        boolean paused = group.getConfirmPausedAt() != null;
+        return new SellerClaimDetailResponse.PurchaseConfirm(paused, group.confirmRemainingDays(days, now),
+                paused ? null : group.confirmBaseAt().plusDays(days));
+    }
 
     private SellerClaimSearchCondition buildCondition(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                       ClaimReason reason, LocalDate from, LocalDate to,
@@ -220,13 +281,17 @@ public class SellerClaimQueryService {
             photos.computeIfAbsent((Long) row[0], id -> new EnumMap<>(ClaimAttachmentOwner.class))
                     .put((ClaimAttachmentOwner) row[1], ((Long) row[2]).intValue());
         }
+        Map<Long, List<OrderClaimCharge>> chargesByCollection = chargeRepository.findByCollectionIds(collectionIds)
+                .stream()
+                .collect(Collectors.groupingBy(charge -> charge.getCollection().getId()));
         return claims.stream().map(claim -> {
             Map<ClaimAttachmentOwner, Integer> counts = photos.getOrDefault(claim.getId(), Map.of());
             return assembler.toListItem(claim,
                     boxes.getOrDefault(claim.getCollection().getId(), List.of(claim)),
                     itemsByGroup.getOrDefault(claim.getDeliveryGroup().getId(), List.of()),
                     counts.getOrDefault(ClaimAttachmentOwner.CONSUMER, 0),
-                    counts.getOrDefault(ClaimAttachmentOwner.SELLER, 0), now);
+                    counts.getOrDefault(ClaimAttachmentOwner.SELLER, 0),
+                    chargesByCollection.getOrDefault(claim.getCollection().getId(), List.of()), now);
         }).toList();
     }
 

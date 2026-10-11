@@ -214,7 +214,7 @@ class OrderFulfillmentTrackingIntegrationTest extends SellerOrderTestSupport {
         }
 
         @Test
-        @DisplayName("반송 완료(입고) → 운영자 환불 큐 1행(항목 합 + 배송비 전액 · 예정액) · 재감지에도 중복 없음")
+        @DisplayName("반송 완료(입고) → 환불 큐 1행(항목 합 + 배송비 전액) → PG 즉시 자동 환불 · 재감지에도 중복 없음")
         void returnCompletedEnqueuesRefundOnce() throws Exception {
             OrderDeliveryGroup group = returning(shippingGroup("030040005001"));
             LocalDateTime now = batchNow();
@@ -228,7 +228,8 @@ class OrderFulfillmentTrackingIntegrationTest extends SellerOrderTestSupport {
             assertThat(refundTasks(group)).singleElement().satisfies(task -> {
                 assertThat(task.get("source")).isEqualTo("RETURN_COMPLETED");
                 assertThat(((Number) task.get("refund_amount")).intValue()).isEqualTo(CREAM_PRICE + DELIVERY_FEE);
-                assertThat(task.get("status")).isEqualTo("PENDING");
+                // 운영자 집행 단계 없이 커밋 직후 PG 부분 취소로 돌려준다(1009 기획 수정본 2절).
+                assertThat(task.get("status")).isEqualTo("DONE");
             });
             assertThat(historyCount(group, FulfillmentEventType.RETURN_COMPLETED)).isEqualTo(1);
         }

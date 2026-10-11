@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>원천징수영수증</title>
+<style>
+  @page { size: A4; }
+  body { font-family: 'Noto Sans KR', 'Malgun Gothic', sans-serif; font-size: 11px; color: #111; }
+  h1 { font-size: 18px; text-align: center; margin: 0 0 4px; }
+  .sub { text-align: center; color: #555; margin-bottom: 18px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
+  th, td { border: 1px solid #999; padding: 6px 8px; }
+  th { background: #f2f2f2; width: 28%; text-align: left; font-weight: 600; }
+  td.num { text-align: right; }
+  .section { font-weight: 700; margin: 12px 0 6px; }
+  .note { color: #555; font-size: 10px; }
+</style>
+</head>
+<body>
+<h1>원천징수영수증</h1>
+<div class="sub">사업소득 · 지급명세서 간이 — {{settlementNumber}}</div>
+
+<div class="section">원천징수의무자(발행)</div>
+<table>
+  <tr><th>상호</th><td>{{issuerName}}</td></tr>
+  <tr><th>대표자</th><td>{{issuerRepresentative}}</td></tr>
+  <tr><th>사업자등록번호</th><td>{{issuerRegistrationNumber}}</td></tr>
+  <tr><th>소재지</th><td>{{issuerAddress}}</td></tr>
+</table>
+
+<div class="section">소득자</div>
+<table>
+  <tr><th>성명</th><td>{{recipientName}}</td></tr>
+  <tr><th>주민등록번호</th><td>{{residentNumber}}</td></tr>
+</table>
+
+<div class="section">지급 내역</div>
+<table>
+  <tr><th>지급일</th><td>{{paidDate}}</td></tr>
+  <tr><th>귀속 공구</th><td>{{groupBuyTitle}}</td></tr>
+  <tr><th>지급액(차감 후 리워드)</th><td class="num">{{grossAmount}}원</td></tr>
+  <tr><th>소득세({{incomeRate}})</th><td class="num">{{incomeTax}}원</td></tr>
+  <tr><th>지방소득세({{localRate}})</th><td class="num">{{localTax}}원</td></tr>
+  <tr><th>실지급액</th><td class="num">{{netAmount}}원</td></tr>
+</table>
+
+<p class="note">위 금액을 정히 영수(지급)합니다. 발행일 {{issuedDate}} · 이 문서는 SHOWROOMZ 정산 시스템이 생성했습니다.</p>
+</body>
+</html>

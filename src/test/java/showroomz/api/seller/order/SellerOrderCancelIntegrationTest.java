@@ -135,12 +135,13 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
                 assertThat(task.get("source")).isEqualTo("SELLER_DIRECT_CANCEL");
                 assertThat(task.get("source_id")).isNull();
                 assertThat(((Number) task.get("refund_amount")).intValue()).isEqualTo(CREAM_PRICE + DELIVERY_FEE);
-                assertThat(task.get("status")).isEqualTo("PENDING");
+                // 커밋 직후 PG 즉시 자동 환불(1009 기획 수정본 2절).
+                assertThat(task.get("status")).isEqualTo("DONE");
             });
-            OrderFulfillmentHistory latest = history(group).get(0);
-            assertThat(latest.getEventType()).isEqualTo(FulfillmentEventType.CANCELLED_BY_SELLER);
+            assertThat(history(group).get(0).getEventType()).isEqualTo(FulfillmentEventType.REFUND_EXECUTED);
+            OrderFulfillmentHistory latest = history(group, FulfillmentEventType.CANCELLED_BY_SELLER);
             assertThat(latest.getDetail()).isEqualTo("품절 · " + SOLD_OUT_MESSAGE);
-            // 주문 결제는 그대로다 — 환불은 운영자가 큐를 보고 집행한다.
+            // 주문 상태는 그대로다 — 하위주문 취소는 결제를 부분 취소로 돌려줄 뿐 주문을 닫지 않는다.
             assertThat(order(group.getOrder().getId()).getStatus()).isEqualTo(OrderStatus.PAID);
 
             sellerGet(SELLER_ORDERS + "?tab=CANCELLED")
@@ -238,8 +239,10 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
             directCancel(List.of(area.getId()), "UNDELIVERABLE_AREA", "도서산간 지역 배송 불가").andExpect(status().isOk());
 
             assertThat(reload(etc).getCancelReasonCode()).isEqualTo(SellerCancelReason.ETC);
-            assertThat(history(etc).get(0).getDetail()).isEqualTo("기타 · 공급처 사정으로 출고가 중단되었습니다.");
-            assertThat(history(area).get(0).getDetail()).isEqualTo("배송 불가 지역 · 도서산간 지역 배송 불가");
+            assertThat(history(etc, FulfillmentEventType.CANCELLED_BY_SELLER).getDetail())
+                    .isEqualTo("기타 · 공급처 사정으로 출고가 중단되었습니다.");
+            assertThat(history(area, FulfillmentEventType.CANCELLED_BY_SELLER).getDetail())
+                    .isEqualTo("배송 불가 지역 · 도서산간 지역 배송 불가");
         }
 
         @Test
@@ -283,7 +286,7 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.items[?(@.productName == '글로우 세럼 30ml')].itemStatusLabel", contains("상품준비중")))
                     .andExpect(jsonPath("$.actions.canRegisterInvoice").value(true))
                     .andExpect(jsonPath("$.history[0].eventType").value("CANCEL_REQUEST_APPROVED"))
-                    .andExpect(jsonPath("$.history[0].detail").value("요청 1건 취소 · 환불 예정 " + CREAM_PRICE + "원"));
+                    .andExpect(jsonPath("$.history[0].detail").value(String.format("요청 1건 취소 · 환불 %,d원(PG 자동)", CREAM_PRICE)));
 
             OrderProduct cream = itemOf(group, creamVariant);
             assertThat(cream.getStatus()).isEqualTo(OrderProductStatus.CANCELLED);
@@ -378,7 +381,8 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.cancelRequest").value(nullValue()))
                     .andExpect(jsonPath("$.actions.canRegisterInvoice").value(true))
                     .andExpect(jsonPath("$.history[0].eventType").value("CANCEL_REQUEST_REJECTED"))
-                    .andExpect(jsonPath("$.history[0].detail").value(reason));
+                    // 사유 코드 없이 상세만 보내는 구 요청은 「기타」로 받는다(1009 기획 수정본 3-3).
+                    .andExpect(jsonPath("$.history[0].detail").value("기타 · " + reason));
 
             OrderCancelRequest decided = cancelRequestRepository.findById(request.getId()).orElseThrow();
             assertThat(decided.getStatus()).isEqualTo(CancelRequestStatus.REJECTED);
@@ -564,7 +568,7 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
             approve(second.getId())
                     .andExpect(jsonPath("$.status").value("CANCELLED"))
                     .andExpect(jsonPath("$.history[0].detail")
-                            .value("요청 1건 취소 · 환불 예정 " + (SERUM_PRICE + DELIVERY_FEE) + "원"));
+                            .value(String.format("요청 1건 취소 · 환불 %,d원(PG 자동)", SERUM_PRICE + DELIVERY_FEE)));
 
             OrderDeliveryGroup cancelled = reload(group);
             assertThat(cancelled.getCancelType()).isEqualTo(OrderCancelType.REQUEST_APPROVED);
@@ -591,7 +595,7 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
             approve(second.getId())
                     .andExpect(jsonPath("$.status").value("CANCELLED"))
                     .andExpect(jsonPath("$.history[0].detail")
-                            .value("요청 1건 취소 · 환불 예정 " + (SERUM_PRICE + DELIVERY_FEE) + "원"));
+                            .value(String.format("요청 1건 취소 · 환불 %,d원(PG 자동)", SERUM_PRICE + DELIVERY_FEE)));
 
             assertThat(stockOf(creamVariant)).isEqualTo(creamAfterFirst);
             assertThat(stockOf(serumVariant)).isEqualTo(serumBefore + 1);

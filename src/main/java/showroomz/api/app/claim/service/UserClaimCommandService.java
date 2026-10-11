@@ -16,7 +16,6 @@ import showroomz.domain.order.service.OrderClaimService.RequestCommand;
 import showroomz.domain.order.service.OrderClaimService.RequestResult;
 import showroomz.domain.order.service.OrderClaimService.ReshipAddress;
 import showroomz.domain.order.type.ClaimChargeType;
-import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
@@ -63,7 +62,7 @@ public class UserClaimCommandService {
 
         ClaimReason reason = request.getReasonCode();
         OrderProperties.Claim config = orderProperties.getClaim();
-        if (!reason.isConsumerSelectable()) {
+        if (reason == null || !reason.isSelectableFor(request.getType())) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "선택할 수 없는 사유입니다.");
         }
         String detail = request.getReasonDetail();
@@ -71,8 +70,8 @@ public class UserClaimCommandService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                     "상세 내용은 " + config.getDetailMaxLength() + "자 이내로 입력해 주세요.");
         }
-        // 사진은 브랜드 귀책 사유에서만 받는다 — 그 밖의 사유에 딸려 온 것은 무시한다(시안: 그때만 블록이 열린다).
-        List<String> imageUrls = reason.getFeeBearer() == ClaimFeeBearer.SELLER && request.getImageUrls() != null
+        // 사진은 상세 입력란이 열리는 사유(브랜드 귀책 · 기타)에서만 받는다 — 그 밖의 사유에 딸려 온 것은 무시한다.
+        List<String> imageUrls = reason.isDetailRequired() && request.getImageUrls() != null
                 ? request.getImageUrls() : List.of();
         if (imageUrls.size() > config.getPhotoMax()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
@@ -197,12 +196,12 @@ public class UserClaimCommandService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
     }
 
-    /** 소비자가 고를 수 있는 택배사만 — 형식 검증과 숫자 정제는 도메인이 한다. */
+    /** 추적 연동 택배사만 — 출고 · 회수 · 재발송 공통 목록이다. 형식 검증과 숫자 정제는 도메인이 한다. */
     private static Invoice toInvoice(UserClaimDto.InvoiceRequest request) {
         if (request == null) {
             return null;
         }
-        if (request.getCarrier() == null || !request.getCarrier().isConsumerSelectable()) {
+        if (request.getCarrier() == null || !request.getCarrier().isSelectable()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "택배사를 선택해 주세요.");
         }
         return new Invoice(request.getCarrier(), request.getTrackingNumber());

@@ -39,6 +39,9 @@ public class FakePaymentGateway implements PortOnePaymentGateway {
     private final Map<String, Object> cancelBehaviours = new ConcurrentHashMap<>();
     private final List<PortOnePayment> listed = new CopyOnWriteArrayList<>();
     private final List<String> cancelCalls = new CopyOnWriteArrayList<>();
+    /** 부분 취소 호출 — {@code paymentId:amount}. */
+    private final List<String> partialCancelCalls = new CopyOnWriteArrayList<>();
+    private final Map<String, Long> cancelledAmounts = new ConcurrentHashMap<>();
     private final List<String> preRegisterCalls = new CopyOnWriteArrayList<>();
     private final AtomicInteger lookupCalls = new AtomicInteger();
     private final java.util.concurrent.atomic.AtomicBoolean failNextPreRegister = new java.util.concurrent.atomic.AtomicBoolean();
@@ -53,6 +56,8 @@ public class FakePaymentGateway implements PortOnePaymentGateway {
         cancelBehaviours.clear();
         listed.clear();
         cancelCalls.clear();
+        partialCancelCalls.clear();
+        cancelledAmounts.clear();
         preRegisterCalls.clear();
         lookupCalls.set(0);
         failNextPreRegister.set(false);
@@ -105,6 +110,14 @@ public class FakePaymentGateway implements PortOnePaymentGateway {
 
     public List<String> cancelCalls() {
         return List.copyOf(cancelCalls);
+    }
+
+    public List<String> partialCancelCalls() {
+        return List.copyOf(partialCancelCalls);
+    }
+
+    public long cancelledAmountOf(String paymentId) {
+        return cancelledAmounts.getOrDefault(paymentId, 0L);
     }
 
     public List<String> preRegisterCalls() {
@@ -179,6 +192,41 @@ public class FakePaymentGateway implements PortOnePaymentGateway {
             lookups.put(paymentId, Optional.of(PortOnePayment.of(paymentId, PortOneStatus.CANCELLED, STORE_ID, total)));
         }
         return new PortOneCancelResult(outcome, "fake-cancel-" + paymentId, "{\"fake\":true}");
+    }
+
+    /**
+     * 부분 취소 — 실 PG 처럼 {@code currentCancellableAmount}가 잔액과 다르면 거절한다. 취소 누적액을 기억해 이후 조회가
+     * PARTIAL_CANCELLED · CANCELLED 로 보이게 한다. 실패 시나리오는 전액 취소와 같은 {@code willFailCancel}을 쓴다.
+     */
+    @Override
+    public PortOneCancelResult cancelPartial(String paymentId, long amount, long currentCancellableAmount, String reason) {
+        partialCancelCalls.add(paymentId + ":" + amount);
+        Object behaviour = cancelBehaviours.get(paymentId);
+        if (behaviour == Failure.TIMEOUT) {
+            throw new PaymentGatewayException("fake: 부분 취소 타임아웃");
+        }
+        if (behaviour == Failure.REJECTED) {
+            throw new PaymentGatewayRejectedException(409, "PG_PROVIDER", "fake: 부분 취소 거절");
+        }
+        Long registered = preRegistered.get(paymentId);
+        Optional<PortOnePayment> looked = lookups.getOrDefault(paymentId, Optional.empty());
+        long total = registered != null ? registered
+                : looked.map(PortOnePayment::totalAmount).orElse(currentCancellableAmount);
+        long cancelled = cancelledAmounts.getOrDefault(paymentId, 0L);
+        if (total - cancelled != currentCancellableAmount || amount > currentCancellableAmount) {
+            throw new PaymentGatewayRejectedException(409, "CANCELLABLE_AMOUNT_CONSISTENCY_BROKEN",
+                    "fake: 취소 가능 금액 불일치");
+        }
+        PortOneCancelResult.Outcome outcome = behaviour instanceof PortOneCancelResult.Outcome o
+                ? o : PortOneCancelResult.Outcome.SUCCEEDED;
+        if (outcome == PortOneCancelResult.Outcome.SUCCEEDED) {
+            long after = cancelled + amount;
+            cancelledAmounts.put(paymentId, after);
+            PortOneStatus status = after >= total ? PortOneStatus.CANCELLED : PortOneStatus.PARTIAL_CANCELLED;
+            lookups.put(paymentId, Optional.of(PortOnePayment.of(paymentId, PortOneStatus.PAID, STORE_ID, total)
+                    .withCancelled(status, after)));
+        }
+        return new PortOneCancelResult(outcome, "fake-partial-" + paymentId + "-" + cancelled, "{\"fake\":true}");
     }
 
     @Override

@@ -7,6 +7,11 @@ import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * 운영자 식별 — 계약·공구 어드민이 함께 쓴다(32 설계 9-2). 두 벌이 되면 최고관리자 한정 정책이 확정될 때
  * 한쪽만 검사가 붙는다.
@@ -30,5 +35,21 @@ public class AdminOperatorResolver {
                 .filter(seller -> seller.getRoleType() == RoleType.ADMIN)
                 .map(seller -> seller.getName() == null ? DEFAULT_NAME : seller.getName())
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS));
+    }
+
+    /**
+     * 표시용 이름 일괄 조회 — 목록 · 상세의 「편입 · 집행 운영자」. 막지 않는다(계정이 사라졌거나 권한이 바뀌어도 기록은 보여야 한다):
+     * 이름이 없거나 찾지 못하면 「운영자」.
+     */
+    public Map<Long, String> namesOf(Collection<Long> operatorIds) {
+        Map<Long, String> names = new HashMap<>();
+        java.util.List<Long> ids = operatorIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return names;
+        }
+        sellers.findAllById(ids).forEach(seller ->
+                names.put(seller.getId(), seller.getName() == null ? DEFAULT_NAME : seller.getName()));
+        ids.forEach(id -> names.putIfAbsent(id, DEFAULT_NAME));
+        return names;
     }
 }

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C14 쇼룸 검색</span></div>
+<p class="dv-tsub">검색 대상은 <b>쇼룸 이름과 아이디(@handle)</b>입니다(상품 검색·카테고리 탐색은 범위 밖). 세 상태를 만들었습니다 — <a class="dv-oid" href="#1a">1a</a> 입력 전(최근 검색 + 활동 중인 쇼룸), <a class="dv-oid" href="#1b">1b</a> 결과 있음, <a class="dv-oid" href="#1c">1c</a> 결과 없음. 최근 검색은 인스타 형식의 세로 리스트(쇼룸 · 검색어 혼합)입니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>입력 전</div>
+<div class="dv-card">
+<div data-screen-label="C14 검색 입력 전" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:6px;padding:2px 12px 12px 2px">
+<div style="display:flex;padding:11px;cursor:pointer;flex:none" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸 이름 또는 아이디로 검색</span>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:16px 14px 6px;display:flex;align-items:center">
+<span style="font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">최근 검색</span>
+<div style="flex:1"></div>
+<span style="font:500 12px/1 Pretendard,sans-serif;color:#737373;cursor:pointer;padding:16px 0 16px 16px;margin:-16px 0" style-active="opacity:.5">전체 삭제</span>
+</div>
+<div style="padding:4px 0 10px">
+<sc-for list="{{ recent }}" as="q" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:12px;padding:8px 4px 8px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:{{ q.ring }};padding:2px;display:flex;align-items:center;justify-content:center;background:{{ q.plainBg }}">
+<sc-if value="{{ q.isShowroom }}" hint-placeholder-val="{{ true }}">
+<div style="width:100%;height:100%;border-radius:50%;background:{{ q.avatar }}"></div>
+</sc-if>
+<sc-if value="{{ q.isTerm }}" hint-placeholder-val="{{ false }}">
+<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+</sc-if>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font:600 14px/1.35 Pretendard,sans-serif;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ q.text }}</div>
+<sc-if value="{{ q.isShowroom }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top: 2px; font: 400 12.5px/1.35 Pretendard,sans-serif; color: #737373; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px">{{ q.handle }}</div>
+</sc-if>
+</div>
+<div style="flex:none;display:flex;align-items:center;justify-content:center;width:44px;height:44px;cursor:pointer" style-active="opacity:.4">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</div>
+</div>
+</sc-for>
+</div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>최근 검색</b> — 인스타 형식의 세로 리스트입니다. <b>쇼룸</b>은 아바타 + 이름 + 아이디(탭하면 바로 C4 쇼룸으로), <b>검색어</b>는 회색 원 안 돋보기 + 텍스트(탭하면 그 단어로 재검색)로 구분했습니다. 각 행 우측에 개별 삭제 X를 두되 <b>44×44 히트 영역</b>을 확보했고, 상단에 [전체 삭제]도 남겼습니다. "지금 활동 중인 쇼룸" 섹션은 제거해 입력 전 화면을 최근 검색만으로 단순하게 두었습니다. 후자는 탐색 시스템이 아니라 <b>베타 규모(10개 수준)의 마중물</b>이라 랭킹 표기 없이 목록만 두었고, 행 규격은 C2 팔로잉과 동일(아바타 44 · 이름 14.5/600)합니다. 공구 진행 중인 쇼룸만 아바타에 로즈 링.</p>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>최근 검색 없음</div>
+<div class="dv-card">
+<div data-screen-label="C14 최근 검색 없음" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:6px;padding:2px 12px 12px 2px">
+<div style="display:flex;padding:11px;cursor:pointer;flex:none" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸 이름 또는 아이디로 검색</span>
+</div>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px 80px">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="display:block"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.6-4.6"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">최근 검색 기록이 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#8E8E8E;text-align:center;text-wrap:pretty">쇼룸 이름이나 아이디로 검색하면<br>여기에 기록이 남아요</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>최근 검색 없음</b> — 검색 기록을 지웠거나 첫 방문일 때입니다. 목록 대신 <b>돋보기 아이콘 + 안내 문구</b>만 중앙에 두고, [전체 삭제]·섹션 라벨은 그립 대상이 없으니 감춥니다. "지금 활동 중인 쇼룸" 추천을 이 자리에 넣을지는 <a class="dv-oid" href="#1c">결과 없음</a>의 추천 블록과 정책을 맞춘 뒤 결정합니다(현재는 최근 검색 화면을 단순하게 유지).</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>결과 있음 — "브라이"</div>
+<div class="dv-card">
+<div data-screen-label="C14 검색 결과" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:6px;padding:2px 12px 12px 2px">
+<div style="display:flex;padding:11px;cursor:pointer;flex:none" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="flex:1;font:400 14px/1 Pretendard,sans-serif;color:#0F0F0F">브라이</span>
+<span style="display:flex;align-items:center;justify-content:center;flex:none;padding:13px;margin:-13px;cursor:pointer" style-active="opacity:.5"><span style="width:17px;height:17px;border-radius:50%;background:#9E9E9E;display:flex;align-items:center;justify-content:center;flex:none"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></span></span>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:16px 14px 10px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">검색 결과 {{ resultCount }}</div>
+
+<sc-for list="{{ results }}" as="row" hint-placeholder-count="3">
+<div style="display:flex;align-items:center;gap:12px;padding:8px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:{{ row.ring }};padding:2px">
+<div style="width:100%;height:100%;border-radius:50%;background:{{ row.avatar }}"></div>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font:600 14.5px/1.35 Pretendard,sans-serif;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span style="color:#CF3D61">{{ row.hit }}</span>{{ row.rest }}</div>
+<div style="margin-top: 3px; font: 400 12.5px/1.35 Pretendard,sans-serif; color: #737373; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px"><span style="color:#CF3D61">{{ row.handleHit }}</span>{{ row.handleRest }}</div>
+</div>
+</div>
+</sc-for>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>결과</b> — 이름과 아이디를 모두 검색하며, <b>일치 구간을 로즈로 하이라이트</b>해 왜 걸렸는지 보이게 했습니다(두 번째 행은 이름은 다르지만 아이디 <span style="color:#CF3D61">@brai</span>_beauty가 걸린 경우). 부분 일치·유사 포함. 검색 결과에는 <b>팔로우 버튼을 두지 않습니다</b> — 행 전체가 C4 쇼룸으로 가는 단일 액션이고, 팔로우는 쇼룸을 확인한 뒤 그곳에서 하는 것이 자연스럽습니다. 우측 셰브런도 제거해 좌측 정보만 남겼고, 한 줄 소개는 빼고 <b>이름 + 아이디(@handle)</b> 2줄로 정리해, 같은 이름의 쇼룸을 아이디로 구별하게 했습니다. 아이디는 쇼룸 고유값(중복 불가)이므로 이름보다 정확한 검색 키이며, 인스타 연동값을 그대로 쓸 경우 <b>연동 인증 없이는 사칭 우려</b>가 있어 가입 시 소유 확인 절차가 필요합니다. 검색어 필드에는 지우기(⊗ 17px 원 · 44 히트 영역)를 두었고, 팔로워 수는 <b>표기하지 않았습니다</b> — 베타 규모에서 낮은 숫자는 오히려 신뢰를 떨어뜨리므로 한 줄 소개만 둡니다. 필요하면 넣어 드리겠습니다.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>결과 없음</div>
+<div class="dv-card">
+<div data-screen-label="C14 검색 결과 없음" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="display:flex;align-items:center;gap:6px;padding:2px 12px 12px 2px">
+<div style="display:flex;padding:11px;cursor:pointer;flex:none" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border-radius:8px;background:#F4F4F5">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg>
+<span style="flex:1;font:400 14px/1 Pretendard,sans-serif;color:#0F0F0F">브라이언트홈</span>
+<span style="display:flex;align-items:center;justify-content:center;flex:none;padding:13px;margin:-13px;cursor:pointer" style-active="opacity:.5"><span style="width:17px;height:17px;border-radius:50%;background:#9E9E9E;display:flex;align-items:center;justify-content:center;flex:none"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.4" stroke-linecap="round" style="display:block"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></span></span>
+</div>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<div style="padding:52px 40px 34px;display:flex;flex-direction:column;align-items:center">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linecap="square" style="display:block"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="M20 20l-4.4-4.4"></path></svg>
+<div style="margin-top:16px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">'브라이언트홈' 검색 결과가 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">쇼룸 이름의 일부만 입력해도 찾을 수 있어요</div>
+</div>
+
+<div style="height:8px;background:#F7F7F8"></div>
+
+<div style="padding:18px 14px 10px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">이런 쇼룸은 어떠세요</div>
+<sc-for list="{{ active }}" as="row" hint-placeholder-count="4">
+<div style="display:flex;align-items:center;gap:12px;padding:8px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:{{ row.ring }};padding:2px">
+<div style="width:100%;height:100%;border-radius:50%;background:{{ row.avatar }}"></div>
+</div>
+<div style="flex:1;min-width:0">
+<div style="font:600 14.5px/1.35 Pretendard,sans-serif;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ row.name }}</div>
+
+<div style="margin-top: 3px; font: 400 12px/1.35 Pretendard,sans-serif; color: #737373; font-size: 11px">{{ row.handle }}</div>
+</div>
+</div>
+</sc-for>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>결과 없음</b> — 검색어를 문구에 그대로 넣어 오타를 스스로 확인하게 하고, 부분 입력 팁을 한 줄 덧붙였습니다. 빈 화면으로 끝내지 않고 아래에 활동 중인 쇼룸을 이어 붙여 다음 행동을 만들었습니다(입력 전과 같은 목록, 헤더 문구만 다름).</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { follow: { a:false, b:true, c:false } };
+
+  renderVals(){
+    const F = this.state.follow;
+    const ROSE = '1.5px solid #F2456E';
+    const NONE = '1.5px solid transparent';
+
+    const results = [
+      { k:'a', hit:'브라이', rest:'튼 룸', bio:'저자극 스킨케어 큐레이션', handleHit:'', handleRest:'@brighten_room', deals:1, avatar:'linear-gradient(140deg,#F4D9DF,#E6C3CD)' },
+      { k:'b', hit:'', rest:'맑은살림', bio:'메이크업 · 색조 전문', handleHit:'@brai', handleRest:'_beauty', deals:0, avatar:'linear-gradient(140deg,#D9E2F0,#C3CEDD)' },
+      { k:'c', hit:'브라이', rest:'슨 코스메틱', bio:'클린뷰티 · 비건 인증', handleHit:'', handleRest:'@bryson_cosmetic', deals:2, avatar:'linear-gradient(140deg,#E4EAE2,#CBD6CC)' }
+    ].map(r => ({
+      hit: r.hit,
+      rest: r.rest,
+      bio: r.bio,
+      handleHit: r.handleHit,
+      handleRest: r.handleRest,
+      avatar: r.avatar,
+      ring: r.deals > 0 ? ROSE : NONE,
+      btnLabel: F[r.k] ? '팔로잉' : '팔로우',
+      btnBorder: F[r.k] ? '1px solid #E3E3E5' : '1px solid #F2456E',
+      btnBg: F[r.k] ? '#fff' : '#F2456E',
+      btnColor: F[r.k] ? '#3C3C3C' : '#fff',
+      toggle: () => this.setState(s => ({ follow: { ...s.follow, [r.k]: !s.follow[r.k] } }))
+    }));
+
+    const active = [
+      { name:'제니의 뷰티룸', bio:'저자극 앰플 · 데일리 케어', handle:'@jenny_beautyroom', deals:1, avatar:'linear-gradient(140deg,#F4D9DF,#E6C3CD)' },
+      { name:'하루 코스메틱', bio:'각질 케어 전문', handle:'@haru_cosmetic', deals:2, avatar:'linear-gradient(140deg,#E4EAE2,#CBD6CC)' },
+      { name:'미아 스킨노트', bio:'아침 루틴 · 데일리 기록', handle:'@mia_skinnote', deals:0, avatar:'linear-gradient(140deg,#D9E2F0,#C3CEDD)' },
+      { name:'윤의 클린뷰티', bio:'비건 · 향료 무첨가', handle:'@yoon_clean', deals:0, avatar:'linear-gradient(140deg,#EFE7DC,#DCCFBE)' }
+    ].map(r => ({
+      name: r.name,
+      bio: r.bio,
+      handle: r.handle,
+      avatar: r.avatar,
+      ring: r.deals > 0 ? ROSE : NONE
+    }));
+
+    return {
+      results,
+      active,
+      resultCount: String(results.length),
+      recent: [
+        { text:'제니의 뷰티룸', handle:'@jenny_beautyroom', showroom:true, deals:1, avatar:'linear-gradient(140deg,#F4D9DF,#E6C3CD)' },
+        { text:'브라이', showroom:false },
+        { text:'하루 코스메틱', handle:'@haru_cosmetic', showroom:true, deals:2, avatar:'linear-gradient(140deg,#E4EAE2,#CBD6CC)' },
+        { text:'클린뷰티', showroom:false }
+      ].map(r => ({
+        text: r.text,
+        handle: r.handle || '',
+        sub: r.sub || '',
+        hasSub: !!r.sub,
+        isShowroom: r.showroom,
+        isTerm: !r.showroom,
+        avatar: r.avatar || 'transparent',
+        plainBg: r.showroom ? 'transparent' : '#F4F4F5',
+        ring: r.showroom && r.deals > 0 ? ROSE : NONE
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,3 +1,15 @@
 sentry:
-  enabled: false  
+  enabled: false
 
+# 정산 배치는 전부 끄고 서비스를 직접 부른다(44 구현 계획서 1-2) — 테스트 중간에 생성 · 확정 · 지급이 끼어들지 않게.
+settlement:
+  generation-scheduler-enabled: false
+  auto-confirm-scheduler-enabled: false
+  payout-scheduler-enabled: false
+  payout-result-scheduler-enabled: false
+  receipt-retry-scheduler-enabled: false
+  clawback-scheduler-enabled: false
+  payout:
+    mode: SIMULATED
+  adjustment:
+    scheduler-enabled: false

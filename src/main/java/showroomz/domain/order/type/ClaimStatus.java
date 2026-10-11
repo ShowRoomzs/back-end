@@ -20,7 +20,7 @@ public enum ClaimStatus {
     REFUND_PENDING("환불 대기"),
     RESHIP_READY("재발송 대기"),
     RESHIPPING("재발송 중"),
-    REJECT_HOLD("거절 보류"),
+    REJECT_HOLD("반려 보류"),
     COMPLETED("완료");
 
     private final String label;

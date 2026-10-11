@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-12-settlement — 쇼룸 스튜디오 정산 관리</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-50:#EEF1FC; --accent-100:#DCE2F8; --accent-500:#3B5BDB; --accent-600:#2E48B0;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --success-bg:#E4F1EA; --success-text:#1F7A54;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --neutral-bg:#F1F2F4; --neutral-text:#5B5F68;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  --pt-sidebar-w:240px; --pt-topbar-h:56px; --pt-pad:24px;
+}
+*{box-sizing:border-box;}
+body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕',sans-serif;
+  margin:0;padding:32px;background:var(--n-200);color:var(--n-900);font-size:var(--fs-body);line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule .new{color:var(--accent-600);font-weight:600;}
+.rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule .wait{color:var(--danger-text);font-weight:600;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage.tall{height:auto;min-height:1024px;}
+.stage.tall .main{position:static;margin:var(--pt-topbar-h) 0 0 var(--pt-sidebar-w);overflow:visible;}
+.stage{position:relative;width:1440px;min-height:1024px;background:var(--n-50);
+  border:1px solid var(--n-300);border-radius:var(--r-md);overflow:hidden;}
+
+/* ══ 사이드바 ══ */
+.side{position:absolute;left:0;top:0;bottom:0;width:var(--pt-sidebar-w);background:var(--n-100);
+  border-right:1px solid var(--n-200);display:flex;flex-direction:column;}
+.side-brand{height:var(--pt-topbar-h);display:flex;align-items:center;gap:8px;padding:0 var(--sp-4);
+  border-bottom:1px solid var(--n-200);flex-shrink:0;}
+.side-brand .sfx{font-size:var(--fs-micro);color:var(--n-500);font-weight:500;
+  border-left:1px solid var(--n-300);padding-left:8px;margin-left:2px;}
+.side-nav{flex:1;padding:var(--sp-2) var(--sp-2);}
+.gnb-item{display:flex;align-items:center;gap:8px;font-size:var(--fs-caption);color:var(--n-600);
+  padding:9px 10px;border-radius:var(--r-sm);margin-bottom:2px;}
+.gnb-item .gn{width:15px;color:var(--n-400);font-size:var(--fs-micro);text-align:center;flex-shrink:0;}
+.gnb-item .gt{flex:1;}
+.gnb-item .gcnt{font-size:10px;font-weight:600;background:var(--n-200);color:var(--n-700);
+  border-radius:9px;min-width:18px;height:18px;padding:0 5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gnb-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.gnb-item.active .gn{color:rgba(255,255,255,.8);}
+.gnb-item.active .gcnt{background:rgba(255,255,255,.24);color:#fff;}
+
+/* ══ 탑바 ══ */
+.top{position:absolute;left:var(--pt-sidebar-w);right:0;top:0;height:var(--pt-topbar-h);background:#fff;
+  border-bottom:1px solid var(--n-200);display:flex;align-items:center;justify-content:space-between;
+  padding:0 var(--pt-pad);}
+.crumb{font-size:var(--fs-h2);font-weight:600;}
+.crumb .c-sub{font-size:var(--fs-caption);color:var(--n-500);font-weight:400;margin-left:6px;}
+.brand-chip{display:flex;align-items:center;gap:7px;font-size:var(--fs-caption);color:var(--n-600);}
+.brand-chip .st{font-size:var(--fs-micro);font-weight:500;padding:2px 9px;border-radius:var(--r-pill);
+  background:var(--success-bg);color:var(--success-text);}
+
+/* ══ 본문 ══ */
+.main{position:absolute;left:var(--pt-sidebar-w);right:0;top:var(--pt-topbar-h);bottom:0;
+  overflow-y:auto;padding:var(--pt-pad);}
+.page-h{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:var(--sp-4);}
+.page-t{font-size:var(--fs-h1);font-weight:600;}
+.page-d{font-size:var(--fs-caption);color:var(--n-600);margin-top:2px;}
+.navgrp{display:flex;align-items:center;gap:6px;}
+.nav-btn{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-caption);font-weight:500;
+  color:var(--n-700);padding:0 12px;height:32px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);white-space:nowrap;cursor:pointer;}
+.nav-btn:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-400);}
+.nav-sep{width:1px;height:18px;background:var(--n-300);margin:0 2px;}
+
+/* ══ 버튼 ══ */
+.btn{font-family:inherit;font-size:var(--fs-caption);font-weight:500;border-radius:var(--r-sm);
+  padding:0 14px;height:32px;display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  border:none;cursor:pointer;white-space:nowrap;}
+.btn-primary{background:var(--accent-500);color:#fff;border:1px solid var(--accent-500);}
+.btn-primary:disabled{background:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.btn-secondary{background:#fff;color:var(--n-900);border:1px solid var(--n-300);}
+.btn-secondary:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-ghost{background:transparent;color:var(--n-600);}
+.btn-danger{background:#fff;color:var(--danger-text);border:1px solid #E9C9C9;}
+.btn-danger:hover{background:var(--danger-bg);}
+.btn-danger:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.btn-lg{height:38px;padding:0 20px;font-size:var(--fs-body);}
+
+/* ══ 입력 ══ */
+.inp,.sel,.ta{font-family:inherit;font-size:var(--fs-body);padding:8px 12px;
+  border-radius:var(--r-sm);border:1px solid var(--n-300);background:#fff;color:var(--n-900);height:36px;}
+.inp:focus,.sel:focus,.ta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.inp:disabled,.sel:disabled,.ta:disabled{background:var(--n-100);color:var(--n-500);cursor:not-allowed;}
+.inp::placeholder,.ta::placeholder{color:var(--n-400);}
+.inp.is-error{border-color:var(--danger-text);}
+.ta{height:auto;min-height:76px;resize:vertical;line-height:1.65;padding-top:9px;width:100%;}
+.sel{appearance:none;-webkit-appearance:none;padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.err{font-size:var(--fs-micro);color:var(--danger-text);margin-top:5px;}
+.hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:5px;line-height:1.55;}
+.hint b{color:var(--n-700);}
+
+/* 세그먼트 · 칩 */
+.seg{display:inline-flex;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;background:#fff;}
+.seg .sg{padding:0 15px;height:34px;display:flex;align-items:center;font-size:var(--fs-caption);
+  color:var(--n-600);cursor:pointer;border-right:1px solid var(--n-200);}
+.seg .sg:last-child{border-right:none;}
+.seg .sg.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.seg.dis .sg{background:var(--n-100);color:var(--n-400);cursor:not-allowed;}
+.chips{display:inline-flex;gap:6px;}
+.chip{border:1px solid var(--n-300);border-radius:16px;padding:5px 13px;font-size:var(--fs-caption);
+  color:var(--n-600);background:#fff;cursor:pointer;}
+.chip.on{background:var(--accent-50);border-color:var(--accent-500);color:var(--accent-600);font-weight:500;}
+.numinp{width:62px;text-align:center;padding-left:6px;padding-right:6px;}
+.unit{font-size:var(--fs-caption);color:var(--n-600);}
+
+/* ══ 배지 ══ */
+.badge{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-micro);font-weight:500;
+  padding:2px 9px;border-radius:var(--r-pill);white-space:nowrap;}
+.badge::before{content:"";width:5px;height:5px;border-radius:50%;background:currentColor;opacity:.75;}
+.badge.nodot::before{display:none;}
+.b-success{background:var(--success-bg);color:var(--success-text);}
+.b-danger{background:var(--danger-bg);color:var(--danger-text);}
+.b-neutral{background:var(--neutral-bg);color:var(--neutral-text);}
+.b-info{background:var(--info-bg);color:var(--info-text);}
+.b-warning{background:var(--warning-bg);color:var(--warning-text);}
+
+/* ══ 상태 탭 ══ */
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab{font-size:var(--fs-caption);color:var(--n-500);padding:9px 2px;margin-right:22px;cursor:pointer;
+  border-bottom:2px solid transparent;display:flex;align-items:center;gap:6px;}
+.tab:hover:not(.active){color:var(--n-700);}
+.tab.active{color:var(--accent-500);border-bottom-color:var(--accent-500);font-weight:500;}
+.tab .tn{font-size:10px;background:var(--n-100);color:var(--n-600);border-radius:8px;padding:0 5px;}
+.tab.active .tn{background:var(--accent-50);color:var(--accent-600);}
+
+/* ══ 툴바 ══ */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:var(--sp-4);flex-wrap:wrap;}
+.toolbar .spacer{flex:1;}
+.tl-lbl{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+
+/* ══ 목록 ══ */
+.tbar{display:flex;align-items:center;justify-content:space-between;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);}
+.tbar-l{font-size:var(--fs-caption);color:var(--n-600);} .tbar-l b{color:var(--n-900);}
+.tbar-r{display:flex;align-items:center;gap:8px;}
+.sel-sm{font-family:inherit;font-size:var(--fs-caption);height:28px;padding:0 22px 0 8px;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-700);
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='9' height='5'><path d='M0 0L4.5 5L9 0Z' fill='%237B7F89'/></svg>");
+  background-repeat:no-repeat;background-position:right 8px center;cursor:pointer;}
+.tcard{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;}
+table{width:100%;border-collapse:collapse;table-layout:fixed;}
+thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;
+  padding:11px 16px;white-space:nowrap;border-bottom:1px solid var(--n-200);letter-spacing:.2px;}
+tbody td{padding:13px 16px;font-size:var(--fs-caption);border-top:1px solid var(--n-100);vertical-align:middle;}
+tbody tr:first-child td{border-top:none;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--accent-50);}
+tbody tr:hover .t-nm{color:var(--accent-600);}
+.t-prod{color:var(--n-700);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-c{text-align:center;}
+.tnum{font-variant-numeric:tabular-nums;}
+.duty{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.duty-r{display:flex;align-items:center;gap:10px;padding:11px 13px;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.duty-r:last-child{border-bottom:none;}
+.duty-r.wait{background:#FDFAF4;}
+.duty-r .dl{flex:1;}
+.duty-r .dw{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.duty-r .ds{font-size:var(--fs-micro);color:var(--n-500);flex-shrink:0;font-variant-numeric:tabular-nums;}
+.duty-r.ro .dl{color:var(--n-600);}
+.duty-r.ro .dw{color:var(--n-400);}
+.duty-r .ds.ok{color:var(--success-text);font-weight:600;}
+.duty-r .ds.bad{color:var(--danger-text);font-weight:600;}
+.jrow{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:11px 13px;margin-bottom:8px;}
+.jrow:last-of-type{margin-bottom:0;}
+.jrow .jt{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.jrow .jd{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;line-height:1.6;}
+.jpick{display:flex;gap:7px;margin-top:9px;}
+.jopt{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:32px;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:500;color:var(--n-600);background:#fff;cursor:pointer;}
+.jopt.on{border-color:var(--accent-500);background:var(--accent-50);color:var(--accent-600);}
+.jopt.on.bad{border-color:var(--danger-text);background:var(--danger-bg);color:var(--danger-text);}
+.modal.wide{width:560px;}
+.t-note{font-size:var(--fs-micro);color:var(--n-600);}
+.t-note.em{color:var(--danger-text);font-weight:500;}
+.t-nm{font-weight:500;color:var(--n-900);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.t-sub{color:var(--n-500);font-size:var(--fs-micro);display:block;margin-top:2px;}
+.t-dim{color:var(--n-400);}
+.t-date{color:var(--n-500);white-space:nowrap;}
+.pager{display:flex;align-items:center;justify-content:center;gap:4px;padding:12px;border-top:1px solid var(--n-200);}
+.page-item{min-width:26px;height:26px;padding:0 6px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--r-sm);font-size:var(--fs-caption);color:var(--n-600);cursor:pointer;}
+.page-item:hover:not(.active){background:var(--n-100);}
+.page-item.active{background:var(--accent-500);color:#fff;font-weight:500;}
+.empty{padding:72px 24px;text-align:center;}
+.empty-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:4px;}
+.empty-d{font-size:var(--fs-caption);color:var(--n-500);}
+.empty .btn{margin-top:var(--sp-4);}
+
+/* ══ 카드 ══ */
+.card{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.card:last-child{margin-bottom:0;}
+.card-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;
+  justify-content:space-between;gap:8px;}
+.card-h .ch-n{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.card-b{padding:var(--sp-4);}
+.detail{display:grid;grid-template-columns:1fr 320px;gap:var(--sp-4);align-items:start;}
+
+/* 폼 행 — 라벨 140px */
+.frow{display:flex;gap:var(--sp-3);padding:9px 0;border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.frow:last-child{border-bottom:none;}
+.frow:first-child{padding-top:0;}
+.fk{width:140px;flex-shrink:0;color:var(--n-500);padding-top:8px;}
+.frow.ro .fk{padding-top:0;}
+.fk .req{color:var(--danger-text);margin-left:2px;}
+.fv{flex:1;color:var(--n-900);min-width:0;}
+.fv .fsub{color:var(--n-500);font-size:var(--fs-micro);margin-top:2px;}
+.fline{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.tk .flink{color:var(--n-900);}
+.tk .flink:hover{color:var(--accent-600);}
+.flink{color:var(--n-600);text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+.flink:hover{color:var(--accent-600);}
+
+/* 계약 상품 항목 */
+.items{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.it-h{display:flex;gap:56px;padding:8px 28px 8px 12px;background:var(--n-50);border-bottom:1px solid var(--n-200);
+  font-size:var(--fs-micro);color:var(--n-500);font-weight:600;}
+.it-r{display:flex;gap:56px;padding:10px 28px 10px 12px;border-bottom:1px solid var(--n-100);align-items:flex-start;}
+.it-r:last-child{border-bottom:none;}
+.c-prod{width:300px;flex-shrink:0;min-width:0;} .c-price{width:96px;flex-shrink:0;} .c-rw{width:62px;flex-shrink:0;}
+.c-del{width:26px;flex-shrink:0;text-align:center;color:var(--n-400);cursor:pointer;padding-top:8px;}
+.c-del:hover{color:var(--danger-text);}
+.c-prod .inp,.c-prod .sel,.c-price .inp,.c-rw .inp,.c-qty .inp{width:100%;}
+.it-r .pmeta{font-size:var(--fs-micro);color:var(--n-500);margin-top:4px;}
+.addrow{border:1px dashed var(--n-300);border-radius:var(--r-sm);text-align:center;padding:9px;
+  font-size:var(--fs-caption);color:var(--n-600);margin-top:8px;cursor:pointer;background:#fff;}
+.addrow:hover{border-color:var(--accent-500);color:var(--accent-600);background:var(--accent-50);}
+
+/* 조항 박스(읽기 전용 표준 조항) */
+.terms{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 14px;}
+.trow{display:flex;gap:14px;padding:9px 0;border-bottom:1px solid var(--n-200);font-size:var(--fs-caption);}
+.trow:last-child{border-bottom:none;}
+.tk{width:118px;flex-shrink:0;color:var(--n-500);}
+.tv{color:var(--n-700);line-height:1.6;flex:1;}
+.tv b{color:var(--n-900);}
+.wtag{display:inline-block;border:1px dashed var(--n-400);border-radius:4px;padding:0 5px;
+  font-size:10px;color:var(--n-500);margin-left:4px;white-space:nowrap;}
+
+/* 진행 단계 */
+.steps{display:flex;align-items:center;gap:3px;flex-wrap:wrap;}
+.stp{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:6px 10px;font-size:var(--fs-micro);
+  color:var(--n-400);background:#fff;line-height:1.35;}
+.stp .who{display:block;font-size:10px;color:var(--n-400);margin-top:1px;}
+.stp.done{background:var(--n-100);color:var(--n-600);border-color:var(--n-200);}
+.stp.done .who{color:var(--n-500);}
+.stp.cur{border-color:var(--accent-500);color:var(--accent-600);font-weight:600;background:var(--accent-50);}
+.stp.cur .who{color:var(--accent-600);}
+.stp.stop{border-color:#E9C9C9;color:var(--danger-text);font-weight:600;background:var(--danger-bg);}
+.stp.stop .who{color:var(--danger-text);}
+.stp.halt{border-color:var(--n-300);color:var(--n-600);font-weight:600;background:var(--n-100);}
+.stp.halt .who{color:var(--n-500);}
+.stp-ar{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 서명 박스 */
+.signs{display:flex;gap:12px;}
+.sbox{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px;background:var(--n-50);}
+.sbox.mine{background:var(--accent-50);border-color:var(--accent-100);}
+.s-who{font-size:var(--fs-micro);color:var(--n-500);}
+.s-name{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin:4px 0 10px;}
+.s-done{font-size:var(--fs-micro);color:var(--success-text);font-weight:500;}
+.s-wait{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 안내 배너 */
+.notice{display:flex;gap:8px;border-radius:var(--r-sm);padding:11px 13px;font-size:var(--fs-micro);line-height:1.6;}
+.notice.info{background:var(--info-bg);color:var(--info-text);}
+.notice.warn{background:var(--warning-bg);color:var(--warning-text);}
+.notice.danger{background:var(--danger-bg);color:var(--danger-text);}
+.notice.neutral{background:var(--n-100);color:var(--n-600);}
+.notice.consent{background:var(--n-50);border:1px solid var(--n-200);color:var(--n-700);}
+.notice.consent b{color:var(--n-900);}
+.notice b{font-weight:600;}
+
+/* 우측 카드 */
+.st-now{padding:var(--sp-4);}
+.st-line{display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding-bottom:var(--sp-3);border-bottom:1px solid var(--n-100);}
+.st-lbl{font-size:var(--fs-caption);color:var(--n-500);flex-shrink:0;}
+.st-meta{padding-top:var(--sp-2);}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:var(--fs-caption);
+  border-bottom:1px solid var(--n-100);}
+.mrow:last-child{border-bottom:none;}
+.mk{color:var(--n-500);} .mv{color:var(--n-900);font-weight:500;text-align:right;}
+.st-acts{display:flex;flex-direction:column;gap:8px;margin-top:var(--sp-4);}
+.st-hint{font-size:var(--fs-micro);color:var(--n-500);margin-top:10px;line-height:1.55;}
+.hist{padding:var(--sp-2) var(--sp-4) var(--sp-3);}
+.hitem{display:flex;gap:10px;padding:9px 0;}
+.hdot{width:7px;height:7px;border-radius:50%;background:var(--n-300);margin-top:6px;flex-shrink:0;}
+.hdot.h-info{background:var(--info-text);}
+.hdot.h-success{background:var(--success-text);}
+.hdot.h-warning{background:var(--warning-text);}
+.hdot.h-danger{background:var(--danger-text);}
+.htxt{font-size:var(--fs-caption);}
+.hmeta{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 폼 하단 액션바 */
+.formbar{display:flex;justify-content:flex-end;gap:8px;padding:var(--sp-4) 0 0;}
+
+
+/* 접미사 붙은 입력(%· 원) */
+.iw{position:relative;display:inline-flex;align-items:center;}
+.iw .inp{padding-right:26px;width:100%;}
+.iw .sfx-u{position:absolute;right:9px;font-size:var(--fs-caption);color:var(--n-500);pointer-events:none;}
+.iw.w-full{display:flex;}
+
+/* 공구 기간 트리거(달력 모달 호출) */
+.dtrig{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 12px;background:#fff;
+  border:1px solid var(--n-300);border-radius:var(--r-sm);font-size:var(--fs-body);color:var(--n-900);
+  cursor:pointer;min-width:340px;}
+.dtrig:hover{border-color:var(--accent-500);}
+.dtrig.ph{color:var(--n-400);}
+.dtrig.dis{background:var(--n-100);border-color:var(--n-200);color:var(--n-400);cursor:not-allowed;}
+.dtrig.dis:hover{border-color:var(--n-200);}
+.dtrig{min-width:260px;}
+.dtrig .cal{width:14px;height:14px;color:var(--n-500);flex-shrink:0;}
+.dtrig .dur{margin-left:auto;font-size:var(--fs-micro);color:var(--n-500);}
+
+/* 달력 */
+.modal.cal{width:392px;}
+.cal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;}
+.cal-mh{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.cal-nav{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:var(--r-sm);
+  color:var(--n-600);cursor:pointer;font-size:15px;line-height:1;border:1px solid var(--n-200);background:#fff;}
+.cal-nav:hover{background:var(--n-100);color:var(--n-900);border-color:var(--n-300);}
+.cal-nav.dis{color:var(--n-300);border-color:var(--n-100);cursor:not-allowed;}
+.cal-nav.dis:hover{background:#fff;color:var(--n-300);border-color:var(--n-100);}
+.cal-note{font-size:var(--fs-micro);color:var(--n-500);line-height:1.6;margin:8px 0 12px;}
+.cal-note b{color:var(--n-700);font-weight:600;}
+.cal-g{display:grid;grid-template-columns:repeat(7,1fr);row-gap:2px;}
+.cal-wd{font-size:10px;color:var(--n-400);text-align:center;padding:0 0 8px;font-weight:600;letter-spacing:.4px;}
+.cal-d{height:38px;display:flex;align-items:center;justify-content:center;font-size:var(--fs-caption);
+  color:var(--n-700);cursor:pointer;border-radius:var(--r-sm);font-variant-numeric:tabular-nums;
+  position:relative;transition:background .1s;}
+.cal-d:hover:not(.off):not(.on):not(.mid):not(.blank){background:var(--n-100);}
+.cal-d.off{color:var(--n-300);cursor:not-allowed;}
+.cal-d.blank{cursor:default;}
+.cal-d.mid{background:var(--accent-50);border-radius:0;color:var(--accent-600);}
+.cal-d.on{background:var(--accent-500);color:#fff;font-weight:600;}
+.cal-d.on.s{border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-d.on.e{border-radius:0 var(--r-sm) var(--r-sm) 0;}
+/* 줄바꿈 지점의 구간 끝은 둥글게 — 행 끝에서 잘린 것처럼 보이지 않게 */
+.cal-g .cal-d.mid:nth-child(7n+1){border-radius:var(--r-sm) 0 0 var(--r-sm);}
+.cal-g .cal-d.mid:nth-child(7n){border-radius:0 var(--r-sm) var(--r-sm) 0;}
+.cal-g .cal-d.on.s:nth-child(7n){border-radius:var(--r-sm);}
+.cal-g .cal-d.on.e:nth-child(7n+1){border-radius:var(--r-sm);}
+.cal-d.today::after{content:"";position:absolute;bottom:5px;left:50%;margin-left:-2px;
+  width:4px;height:4px;border-radius:50%;background:var(--n-400);}
+.cal-d.on.today::after{background:rgba(255,255,255,.9);}
+.cal-time{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  margin-top:16px;padding-top:14px;border-top:1px solid var(--n-100);}
+.cal-tl{font-size:var(--fs-caption);color:var(--n-600);font-weight:500;}
+.tsel{display:flex;align-items:center;gap:5px;}
+.tsel .sel{width:70px;padding-right:24px;height:34px;}
+.tsep{font-size:var(--fs-caption);color:var(--n-500);}
+.cal-anchor{display:flex;align-items:center;gap:8px;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:9px 12px;font-size:var(--fs-caption);color:var(--n-900);margin-bottom:14px;}
+.cal-anchor .ak{color:var(--n-500);}
+.cal-anchor .flink{margin-left:auto;}
+.cal-sum{margin-right:auto;align-self:center;font-size:var(--fs-caption);color:var(--n-700);
+  font-variant-numeric:tabular-nums;}
+.cal-sum .d{color:var(--accent-600);font-weight:600;}
+/* 체크박스(고지 확인) */
+.chk{display:inline-flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:inherit;cursor:pointer;font-weight:500;}
+.cbox{width:15px;height:15px;border:1.5px solid var(--n-400);border-radius:4px;background:#fff;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;}
+.cbox svg{width:10px;height:10px;}
+.chk.on .cbox{background:var(--accent-500);border-color:var(--accent-500);}
+.chk .req{color:var(--danger-text);}
+
+/* 잠긴 세그먼트 값 */
+.seg .sg.locked{color:var(--n-400);background:var(--n-100);cursor:not-allowed;}
+
+/* 상품 항목 컬럼(정가·예상 리워드 추가) */
+.c-list{width:78px;flex-shrink:0;}
+.c-est{width:82px;flex-shrink:0;}
+.c-qty{width:80px;flex-shrink:0;}
+.ro-cell{font-size:var(--fs-caption);color:var(--n-600);padding-top:9px;font-variant-numeric:tabular-nums;}
+.c-del.dis{color:var(--n-300);cursor:not-allowed;}
+.c-del.dis:hover{color:var(--n-300);}
+
+
+/* 비고 글자수 */
+.ta-count{text-align:right;font-size:var(--fs-micro);color:var(--n-400);margin-top:6px;}
+
+/* 모달 */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal{width:480px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);overflow:hidden;}
+.modal-h{font-size:var(--fs-h3);font-weight:600;padding:14px var(--sp-5);border-bottom:1px solid var(--n-200);
+  display:flex;align-items:center;justify-content:space-between;}
+.modal-x{color:var(--n-400);cursor:pointer;}
+.modal-b{padding:var(--sp-5);font-size:var(--fs-caption);color:var(--n-700);line-height:1.7;}
+.modal-f{padding:12px var(--sp-5);border-top:1px solid var(--n-200);display:flex;justify-content:flex-end;gap:8px;}
+.msum{border:1px solid var(--n-200);border-radius:var(--r-sm);background:var(--n-50);padding:2px 12px;margin-bottom:var(--sp-4);}
+.msum .trow{padding:8px 0;} .msum .tk{width:96px;}
+.mlabel{display:block;font-size:var(--fs-caption);font-weight:500;color:var(--n-600);margin:var(--sp-4) 0 4px;}
+.modal-b > .mlabel:first-child{margin-top:0;}
+.mlabel .req{color:var(--danger-text);margin-left:2px;}
+.mlabel .opt{color:var(--n-400);margin-left:4px;font-weight:400;}
+.msel,.mta{width:100%;font-family:inherit;font-size:var(--fs-body);border:1px solid var(--n-300);
+  border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:6px 10px;}
+.msel:focus,.mta:focus{outline:none;border-color:var(--accent-500);box-shadow:0 0 0 3px var(--accent-50);}
+.msel{height:34px;appearance:none;-webkit-appearance:none;padding-right:32px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;}
+.mta{min-height:76px;resize:vertical;line-height:1.6;height:auto;padding-top:8px;}
+.mhint{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;}
+.mwarn{display:flex;gap:8px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);
+  padding:11px 13px;font-size:var(--fs-micro);color:var(--n-700);line-height:1.7;margin-top:var(--sp-4);}
+.mwarn b{color:var(--n-900);font-weight:600;}
+
+.doc-toc{max-width:1440px;margin:0 auto 24px;background:#fff;border:1px solid var(--n-300);border-radius:var(--r-sm);padding:14px 16px;}
+.toc-h{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);margin-bottom:10px;}
+.toc-h span{font-size:var(--fs-micro);font-weight:400;color:var(--n-500);margin-left:6px;}
+.toc-g{display:grid;grid-template-columns:repeat(4,1fr);gap:2px 14px;}
+.toc-i{display:flex;align-items:center;gap:7px;font-size:var(--fs-micro);color:var(--n-600);
+  text-decoration:none;padding:4px 6px;border-radius:var(--r-sm);}
+.toc-i:hover{background:var(--accent-50);color:var(--accent-600);}
+.toc-i .ti{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:17px;
+  background:var(--n-100);color:var(--n-700);border-radius:4px;font-size:10px;font-weight:600;flex-shrink:0;}
+.toc-i:hover .ti{background:var(--accent-500);color:#fff;}
+a{color:var(--accent-600);}
+a:hover{color:var(--accent-500);}
+
+/* ── 준비 조건 체크리스트 ── */
+.ck{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.ck-i{display:flex;align-items:center;gap:10px;padding:12px 13px;font-size:var(--fs-caption);
+  color:var(--n-900);border-bottom:1px solid var(--n-100);}
+.ck-i:last-child{border-bottom:none;}
+.ck-i .cm{width:18px;height:18px;border-radius:50%;background:var(--success-bg);color:var(--success-text);
+  display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0;font-weight:700;}
+.ck-i .cl{flex:1;}
+.ck-i .cw{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.ck-i .cs{font-size:var(--fs-micro);color:var(--n-500);font-variant-numeric:tabular-nums;flex-shrink:0;}
+.ck-i .fp-item{flex-shrink:0;}
+.fp-item{display:inline-flex;align-items:center;gap:6px;flex-shrink:0;cursor:pointer;font-size:var(--fs-caption);color:var(--n-600);}
+.fp-box{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;background:#fff;}
+.fp-box svg{width:9px;height:9px;display:none;}
+.fp-item.on .fp-box{background:var(--accent-500);border-color:var(--accent-500);}
+.fp-item.on .fp-box svg{display:block;}
+.fp-item.on{color:var(--n-900);font-weight:500;}
+.fp-n{font-size:var(--fs-micro);color:var(--n-400);}
+.fp-item.on .fp-n{color:var(--n-500);}
+.ck-i .fp-item svg{width:9px;height:9px;}
+.ck-i.wait{background:#FDFAF4;}
+.ck-i.wait .cm{background:var(--warning-bg);color:var(--warning-text);}
+.ck-i.wait .cl{font-weight:600;}
+.ck-i.todo .cm{background:var(--n-100);color:var(--n-400);}
+.ck-i.todo{color:var(--n-500);}
+
+/* ── 실적 KPI ── */
+.kpi{display:flex;gap:12px;}
+.kpi .k{flex:1;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;}
+.kpi .kn{font-size:19px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;}
+.kpi .kl{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.kpi .ks{font-size:10px;color:var(--n-400);margin-top:2px;font-variant-numeric:tabular-nums;}
+
+/* ── 진행 마대 ── */
+.pbar{height:5px;border-radius:3px;background:var(--n-200);overflow:hidden;}
+.pbar i{display:block;height:100%;border-radius:3px;background:var(--accent-500);}
+.pbar.done i{background:var(--success-text);}
+
+/* ── 게시물 열람 ── */
+.post{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px 16px;}
+.post .pb{min-width:0;}
+.post .pitems{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.post .pchip{font-size:var(--fs-micro);color:var(--n-700);background:var(--n-100);
+  border-radius:var(--r-sm);padding:4px 9px;}
+.post .ptt{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:3px;}
+.post .pd2{font-size:var(--fs-micro);color:var(--n-600);line-height:1.65;}
+.post .pm2{font-size:var(--fs-micro);color:var(--n-500);margin-top:6px;font-variant-numeric:tabular-nums;}
+
+.act-btn{height:26px;padding:0 11px;font-size:var(--fs-micro);font-weight:500;border:1px solid var(--n-300);
+  background:#fff;border-radius:var(--r-sm);color:var(--n-700);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;}
+.act-btn:hover{background:var(--n-100);border-color:var(--n-400);}
+.act-btn.primary{background:var(--accent-500);border-color:var(--accent-500);color:#fff;}
+.act-btn.primary:hover{background:var(--accent-600);border-color:var(--accent-600);}
+.stage.tall.xl{min-height:1400px;}
+.stage.list1{min-height:760px;}
+.stage.list2{min-height:660px;}
+.stage.tall.xl2{min-height:1500px;}
+.stage.tall.xxl{min-height:1950px;}
+/* ── 조회 조건 블록 ── */
+.qform{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px 16px;margin-bottom:var(--sp-3);}
+.qrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.qrow+.qrow{margin-top:10px;padding-top:10px;border-top:1px solid var(--n-100);}
+.qlab{font-size:var(--fs-micro);color:var(--n-500);font-weight:600;width:62px;flex-shrink:0;}
+.preset{display:flex;gap:0;border:1px solid var(--n-300);border-radius:var(--r-sm);overflow:hidden;}
+.pbtn{padding:0 13px;height:32px;font-size:var(--fs-caption);color:var(--n-600);background:#fff;
+  border-right:1px solid var(--n-200);display:inline-flex;align-items:center;cursor:pointer;white-space:nowrap;}
+.pbtn:last-child{border-right:none;}
+.pbtn:hover:not(.on){background:var(--n-50);color:var(--n-900);}
+.pbtn.on{background:var(--accent-500);color:#fff;font-weight:500;}
+.qsub{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ── 일괄 액션 바(테이블 위 상시) ── */
+.abar{display:flex;align-items:center;gap:8px;padding:10px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);flex-wrap:wrap;}
+.abar .asel{font-size:var(--fs-caption);color:var(--n-600);margin-left:4px;}
+.abar .asel b{color:var(--accent-600);}
+.abar .ar{margin-left:auto;display:flex;gap:8px;}
+
+/* ── 행 확장 ── */
+.xt{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
+  color:var(--n-400);font-size:9px;cursor:pointer;border-radius:3px;}
+.xt:hover{background:var(--n-100);color:var(--n-700);}
+.xt.on{color:var(--accent-600);}
+tr.xrow td{background:var(--n-50);padding:0 16px 12px 68px;border-top:none;}
+tr.xrow .xtab{width:100%;border-collapse:collapse;font-size:var(--fs-micro);background:#fff;
+  border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+tr.xrow .xtab td{background:#fff;padding:8px 12px;border-top:1px solid var(--n-100);}
+tr.xrow .xtab tr:first-child td{border-top:none;}
+tr.xrow .xtab thead td{background:var(--n-100);color:var(--n-600);font-weight:600;border-top:none;}
+.sort{color:var(--n-400);font-size:8px;margin-left:3px;}
+.sort.on{color:var(--accent-600);}
+.qbar{display:flex;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;margin-bottom:var(--sp-4);}
+.qb{flex:1;padding:12px 16px;border-right:1px solid var(--n-100);cursor:pointer;}
+.qb:last-child{border-right:none;}
+.qb:hover{background:var(--n-50);}
+.qb .qn{font-size:20px;font-weight:600;color:var(--n-400);font-variant-numeric:tabular-nums;line-height:1.2;}
+.qb .ql{font-size:var(--fs-micro);color:var(--n-600);margin-top:3px;}
+.qb.on{background:#FDFAF4;}
+.qb.on .qn{color:var(--warning-text);}
+.qb.on .ql{color:var(--n-700);font-weight:500;}
+.tabs1{display:flex;gap:2px;border-bottom:1px solid var(--n-200);margin-bottom:var(--sp-4);}
+.tab1{padding:9px 18px;font-size:var(--fs-body);color:var(--n-500);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+.tab1.on{color:var(--accent-600);font-weight:600;border-bottom-color:var(--accent-500);}
+.tab1 .t1n{font-size:var(--fs-micro);color:var(--n-400);margin-left:5px;font-variant-numeric:tabular-nums;}
+.tab1.on .t1n{color:var(--accent-500);}
+.cb{width:15px;height:15px;border:1.5px solid var(--n-300);border-radius:4px;background:#fff;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;vertical-align:middle;}
+.cb svg{width:9px;height:9px;display:none;}
+.cb.on{background:var(--accent-500);border-color:var(--accent-500);}
+.cb.on svg{display:block;}
+tbody tr.sel{background:var(--accent-50);}
+.bulk{position:absolute;left:calc(var(--pt-sidebar-w) + var(--pt-pad));right:var(--pt-pad);bottom:var(--pt-pad);background:var(--n-900);border-radius:var(--r-md);padding:12px 16px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow-popover);}
+.bulk .bn{font-size:var(--fs-caption);color:#fff;font-weight:500;}
+.bulk .bs{font-size:var(--fs-micro);color:rgba(255,255,255,.6);}
+.bulk .ba{margin-left:auto;display:flex;gap:8px;}
+.bulk .btn-ghost{color:rgba(255,255,255,.8);}
+.otab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);table-layout:fixed;}
+.otab thead td{background:var(--n-50);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;padding:9px 12px;border-bottom:1px solid var(--n-200);}
+.otab tbody td{padding:11px 12px;border-top:1px solid var(--n-100);vertical-align:middle;}
+.otab tbody tr:first-child td{border-top:none;}
+.otab tbody tr.void td{color:var(--n-400);}
+.otab .oname{color:var(--n-900);display:block;}
+.otab .oopt{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;}
+.otab tbody tr.void .oname{color:var(--n-400);text-decoration:line-through;}
+.sum{border-top:1px solid var(--n-200);margin-top:var(--sp-3);padding-top:var(--sp-3);}
+.sumrow{display:flex;justify-content:space-between;font-size:var(--fs-caption);padding:5px 0;}
+.sumrow .sk{color:var(--n-600);} .sumrow .sv{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.sumrow.minus .sv{color:var(--danger-text);}
+.sumrow.total{border-top:1px solid var(--n-200);margin-top:6px;padding-top:10px;font-weight:600;}
+.sumrow.total .sk,.sumrow.total .sv{font-size:var(--fs-h2);color:var(--n-900);}
+.ship{padding:var(--sp-4);}
+.shiprow{display:flex;justify-content:space-between;gap:10px;font-size:var(--fs-caption);padding:6px 0;}
+.shiprow .sk{color:var(--n-500);flex-shrink:0;}
+.shiprow .sv{color:var(--n-900);text-align:right;}
+.track{background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:10px 12px;margin-top:var(--sp-2);}
+.track .tl{font-size:var(--fs-caption);color:var(--n-900);font-weight:500;}
+.track .tm{font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;font-variant-numeric:tabular-nums;}
+.dcount{display:inline-flex;align-items:baseline;gap:6px;}
+.dcount .dn{font-size:19px;font-weight:600;color:var(--accent-600);font-variant-numeric:tabular-nums;}
+.dcount .dl{font-size:var(--fs-micro);color:var(--n-500);}
+
+/* ══ rev.2 ══ */
+.modal.wide{width:1040px;display:flex;flex-direction:column;}
+.modal.wide .modal-h{flex-shrink:0;}
+.mh-l{display:flex;align-items:center;gap:10px;}
+.mh-r{display:flex;align-items:center;gap:6px;margin-left:auto;}
+.modal.wide .mbody{padding:var(--sp-4) var(--sp-5) var(--sp-5);display:grid;grid-template-columns:1fr 300px;gap:var(--sp-4);align-items:start;}
+.modal.wide .mcol{min-width:0;display:flex;flex-direction:column;gap:var(--sp-3);}
+.mbox{border:1px solid var(--n-200);border-radius:var(--r-md);background:#fff;}
+.mbox-h{font-size:var(--fs-h3);font-weight:600;padding:11px var(--sp-4);border-bottom:1px solid var(--n-200);background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;display:flex;align-items:center;gap:8px;}
+.mbox-h .bn2{font-size:var(--fs-micro);color:var(--n-500);font-weight:400;}
+.mbox-b{padding:var(--sp-4);}
+.mbox-b.tight{padding:var(--sp-3) var(--sp-4);}
+
+/* 인라인 입력(우 레일) */
+.inl{border:1px solid var(--accent-100);background:var(--accent-50);border-radius:var(--r-sm);padding:var(--sp-3);margin-top:var(--sp-3);}
+.inl-t{font-size:var(--fs-caption);font-weight:600;color:var(--accent-600);margin-bottom:var(--sp-2);}
+.inl label{display:block;font-size:var(--fs-micro);color:var(--n-600);margin:8px 0 3px;}
+.inl label:first-of-type{margin-top:0;}
+.inl .fi{width:100%;font-family:inherit;font-size:var(--fs-caption);height:30px;padding:0 9px;border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);}
+.inl .fi.err{border-color:var(--danger-text);}
+.inl .fi.wn{border-color:var(--warning-text);}
+.inl select.fi{appearance:none;-webkit-appearance:none;padding-right:26px;cursor:pointer;
+  background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center;}
+.inl .ie{font-size:10px;color:var(--danger-text);margin-top:4px;line-height:1.5;}
+.inl .iw2{font-size:10px;color:var(--warning-text);margin-top:4px;line-height:1.5;}
+.inl .ih{font-size:10px;color:var(--n-500);margin-top:4px;line-height:1.5;}
+.inl-a{display:flex;gap:6px;margin-top:var(--sp-3);}
+.inl-a .btn{flex:1;height:28px;font-size:var(--fs-micro);}
+
+/* 메모 아이콘 */
+.memo{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:4px;background:var(--warning-bg);color:var(--warning-text);cursor:help;}
+.memo svg{width:11px;height:11px;}
+.memo-none{color:var(--n-300);font-size:var(--fs-micro);}
+
+/* 드롭존 */
+.drop{border:1.5px dashed var(--n-300);border-radius:var(--r-md);background:var(--n-50);padding:32px 20px;text-align:center;}
+.drop-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-700);margin-bottom:5px;}
+.drop-d{font-size:var(--fs-caption);color:var(--n-500);line-height:1.7;}
+.drop-b{margin-top:var(--sp-4);display:flex;gap:8px;justify-content:center;}
+
+/* 검증 결과 */
+.vres{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.vrow{display:flex;align-items:center;gap:9px;padding:11px 13px;font-size:var(--fs-caption);border-bottom:1px solid var(--n-100);}
+.vrow:last-child{border-bottom:none;}
+.vrow .vi{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.vrow.ok .vi{background:var(--success-bg);color:var(--success-text);}
+.vrow.sub{background:#fff;color:var(--n-600);font-size:var(--fs-micro);padding-left:34px;}
+.vrow.sub .vn{color:var(--n-500);}
+.vrow.bad{background:#FEF7F7;}
+.vrow.bad .vi{background:var(--danger-bg);color:var(--danger-text);}
+.vrow .vt{flex:1;} .vrow .vt b{color:var(--n-900);}
+.vrow .vn{font-size:var(--fs-micro);color:var(--n-500);font-variant-numeric:tabular-nums;}
+.verr{background:#FEF7F7;border:1px solid #F0DADA;border-radius:var(--r-sm);padding:var(--sp-3);margin-top:var(--sp-2);}
+.verr-i{display:flex;gap:8px;font-size:var(--fs-micro);color:var(--n-700);padding:4px 0;line-height:1.6;}
+.verr-i .vl{color:var(--n-500);flex-shrink:0;font-variant-numeric:tabular-nums;width:78px;}
+.verr-a{margin-top:var(--sp-2);}
+
+/* 컬럼 양식 안내표 */
+.grow{display:flex;align-items:center;gap:9px;background:var(--n-50);border:1px solid var(--n-200);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:var(--sp-3);flex-wrap:wrap;}
+.glab{font-size:var(--fs-micro);color:var(--n-600);font-weight:600;}
+.gsub{font-size:var(--fs-micro);color:var(--n-500);}
+.gtab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);table-layout:fixed;border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.gtab thead td{background:var(--n-100);color:var(--n-600);font-size:var(--fs-micro);font-weight:600;padding:9px 12px;}
+.gtab tbody td{padding:8px 12px;border-top:1px solid var(--n-100);vertical-align:top;}
+tbody tr.filled{background:var(--accent-50);}
+tbody tr.filled.err{background:#FDF6F6;}
+.act-btn:disabled{background:var(--n-100);color:var(--n-400);border-color:var(--n-200);cursor:not-allowed;}
+.act-btn:disabled:hover{background:var(--n-100);border-color:var(--n-200);}
+.gtab tbody tr.err{background:#FDF6F6;}
+.gsel{width:100%;height:30px;font-family:inherit;font-size:var(--fs-caption);border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:0 24px 0 8px;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%235B5F68' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.ginp{width:100%;height:30px;font-family:inherit;font-size:var(--fs-caption);border:1px solid var(--n-300);border-radius:var(--r-sm);background:#fff;color:var(--n-900);padding:0 9px;}
+.ginp.bad{border-color:var(--danger-text);}
+.gerr{display:block;font-size:var(--fs-micro);color:var(--danger-text);margin-top:4px;line-height:1.5;}
+.chkrow{display:flex;gap:9px;align-items:flex-start;background:var(--n-50);border:1px solid var(--n-200);
+  border-radius:var(--r-sm);padding:11px 13px;}
+.chkt{font-size:var(--fs-caption);color:var(--n-900);line-height:1.55;}
+.chks{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+.cols{display:flex;flex-wrap:wrap;gap:5px;}
+.cols span{font-size:var(--fs-micro);color:var(--n-700);background:var(--n-100);border-radius:4px;padding:4px 8px;}
+
+/* ── 성과 KPI 카드 ── */
+.kgrid{display:grid;gap:12px;margin-bottom:var(--sp-4);}
+.kgrid.c5{grid-template-columns:repeat(5,1fr);}
+.kgrid.c4{grid-template-columns:repeat(4,1fr);}
+.kgrid.c3{grid-template-columns:repeat(3,1fr);}
+.kc{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);padding:14px 16px;}
+.kc .kl{font-size:var(--fs-micro);color:var(--n-600);}
+.kc .kv{font-size:21px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;margin-top:5px;line-height:1.2;}
+.kc .kv.sm{font-size:17px;}
+.kc .ks{font-size:var(--fs-micro);color:var(--n-500);margin-top:4px;font-variant-numeric:tabular-nums;}
+.kc.link{border-color:var(--accent-100);background:var(--accent-50);cursor:pointer;}
+.kc.link .kv{color:var(--accent-600);}
+.kc.link .ks{color:var(--accent-600);}
+.kc.pend .kv{font-size:var(--fs-body);color:var(--n-500);font-weight:500;}
+
+/* ── 섹션 카드 ── */
+.grp{display:flex;align-items:baseline;gap:9px;margin:var(--sp-5) 0 var(--sp-3);padding-bottom:8px;border-bottom:1.5px solid var(--n-300);}
+.grp:first-of-type{margin-top:var(--sp-4);}
+.grp-t{font-size:var(--fs-h2);font-weight:600;color:var(--n-900);}
+.grp-s{font-size:var(--fs-micro);color:var(--n-500);}
+.sec{background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);margin-bottom:var(--sp-4);}
+.sec-h{display:flex;align-items:center;gap:8px;padding:12px var(--sp-4);border-bottom:1px solid var(--n-200);
+  background:var(--n-50);border-radius:var(--r-md) var(--r-md) 0 0;}
+.sec-t{font-size:var(--fs-h3);font-weight:600;color:var(--n-900);}
+.sec-n{font-size:var(--fs-micro);color:var(--n-500);}
+.sec-b{padding:var(--sp-4);}
+.cap{font-size:var(--fs-micro);color:var(--n-600);margin-top:var(--sp-3);padding-top:var(--sp-3);
+  border-top:1px solid var(--n-100);font-variant-numeric:tabular-nums;}
+.note2{font-size:var(--fs-micro);color:var(--n-500);margin-top:var(--sp-3);}
+
+/* ── 퍼널 ── */
+.fun{display:flex;gap:8px;align-items:stretch;}
+.fs{flex:1;border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;background:#fff;}
+.fs .fl{font-size:var(--fs-micro);color:var(--n-600);}
+.fs .fv{font-size:17px;font-weight:600;color:var(--n-900);font-variant-numeric:tabular-nums;margin-top:4px;}
+.fs .fp{font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;font-variant-numeric:tabular-nums;}
+.fs .fbar{height:4px;border-radius:2px;background:var(--n-200);margin-top:9px;overflow:hidden;}
+.fs .fbar i{display:block;height:100%;background:var(--accent-500);border-radius:2px;}
+.fs.pend .fv{font-size:var(--fs-body);color:var(--n-500);font-weight:500;}
+.fs.pend .fbar i{background:var(--n-300);}
+
+/* ── 분해 트리 ── */
+.tree{display:flex;flex-direction:column;gap:10px;}
+.tg{border:1px solid var(--n-200);border-radius:var(--r-sm);overflow:hidden;}
+.tgh{display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--n-50);
+  border-bottom:1px solid var(--n-100);font-size:var(--fs-caption);}
+.tgh b{color:var(--n-900);} .tgh > b{flex:1;}
+.tgh .tgn{font-variant-numeric:tabular-nums;color:var(--n-700);}
+.tl2{display:flex;align-items:center;gap:8px;padding:8px 13px 8px 26px;font-size:var(--fs-caption);
+  color:var(--n-700);border-bottom:1px solid var(--n-100);}
+.tl2 > :first-child{flex:1;min-width:0;}
+.tl2:last-child{border-bottom:none;}
+.tl2 .tn{width:56px;text-align:right;font-variant-numeric:tabular-nums;}
+.tl2 .tq{width:78px;text-align:right;font-variant-numeric:tabular-nums;color:var(--n-500);font-size:var(--fs-micro);}
+.tl2 .tm{width:104px;text-align:right;font-variant-numeric:tabular-nums;color:var(--n-600);}
+
+/* ── 차트 ── */
+.chart{border:1px solid var(--n-200);border-radius:var(--r-sm);padding:14px;background:#fff;}
+.chart-t{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:2px;}
+.chart-s{font-size:var(--fs-micro);color:var(--n-500);margin-bottom:10px;}
+.lgd{display:flex;gap:12px;font-size:var(--fs-micro);color:var(--n-600);margin-top:8px;}
+.lgd i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:middle;}
+
+/* ── 팝오버 ── */
+.pop{position:absolute;background:#fff;border:1px solid var(--n-300);border-radius:var(--r-md);
+  box-shadow:var(--shadow-popover);width:340px;z-index:20;}
+.pop-h{font-size:var(--fs-caption);font-weight:600;padding:11px 14px;border-bottom:1px solid var(--n-200);}
+.pop-b{padding:10px 14px 14px;}
+.pr{display:flex;justify-content:space-between;gap:10px;font-size:var(--fs-caption);padding:6px 0;}
+.pr .pk{color:var(--n-600);} .pr .pv{color:var(--n-900);font-variant-numeric:tabular-nums;}
+.pr.minus .pv{color:var(--danger-text);}
+.pr.mid{border-top:1px solid var(--n-100);margin-top:4px;padding-top:9px;font-weight:600;}
+.pr.tot{border-top:1.5px solid var(--n-300);margin-top:6px;padding-top:10px;}
+.pr.tot .pk,.pr.tot .pv{font-size:var(--fs-h2);font-weight:600;color:var(--n-900);}
+.pop-n{font-size:var(--fs-micro);color:var(--n-500);margin-top:9px;padding-top:9px;border-top:1px solid var(--n-100);}
+
+/* ── 링크 표 ── */
+.ltab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);}
+.ltab thead td{background:var(--n-50);color:var(--n-600);font-size:var(--fs-micro);font-weight:500;
+  padding:9px 12px;border-bottom:1px solid var(--n-200);}
+.ltab tbody td{padding:10px 12px;border-top:1px solid var(--n-100);}
+.ltab tbody tr:first-child td{border-top:none;}
+.ltab .num{text-align:right;font-variant-numeric:tabular-nums;}
+.ltab tfoot td{padding:9px 12px;border-top:1px solid var(--n-200);background:var(--n-50);font-weight:600;}
+
+/* 목록 2줄 셀 */
+.tw{display:block;}
+.tw .t2{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:3px;}
+
+/* ── 금액 분해 표 ── */
+.mtab{width:100%;border-collapse:collapse;font-size:var(--fs-caption);}
+.mtab td{padding:10px 12px;}
+.mtab tbody tr td:last-child{text-align:right;font-variant-numeric:tabular-nums;}
+.mtab tr.sep td{border-top:1px solid var(--n-200);}
+.mtab tr.sub td{color:var(--n-600);}
+.mtab tr.sub td:last-child{color:var(--n-700);}
+.mtab tr.mid td{border-top:1px solid var(--n-300);font-weight:600;background:var(--n-50);}
+.mtab tr.tot td{border-top:1.5px solid var(--n-400);background:var(--n-50);}
+.mtab tr.tot td{font-size:17px;font-weight:600;color:var(--n-900);}
+.mnote{display:block;font-size:var(--fs-micro);color:var(--n-500);margin-top:2px;font-variant-numeric:normal;font-weight:400;word-break:keep-all;}
+.pb{display:inline-block;font-size:10px;padding:1px 5px;border-radius:3px;background:var(--n-100);color:var(--n-500);margin-left:5px;vertical-align:middle;}
+.hold{border:1px solid var(--warning-text);background:var(--warning-bg);border-radius:var(--r-md);
+  padding:13px 16px;margin-bottom:var(--sp-4);display:flex;gap:12px;align-items:flex-start;}
+.hold .ht{font-size:var(--fs-caption);font-weight:600;color:var(--n-900);margin-bottom:4px;}
+.hold .hd{font-size:var(--fs-micro);color:var(--n-700);line-height:1.7;}
+.hold .hd b{color:var(--n-900);}
+.hold .hb{margin-left:auto;flex-shrink:0;}
+.alt{border:1px dashed var(--accent-100);background:var(--accent-50);border-radius:var(--r-sm);
+  padding:11px 14px;margin-bottom:var(--sp-4);font-size:var(--fs-micro);color:var(--n-700);line-height:1.7;}
+.alt b{color:var(--accent-600);}
+.mtab tr.rate td{color:var(--n-600);}
+.mtab tr.rate td:last-child{color:var(--n-700);}
+</style>
+
+
+
+
+
+</head>
+
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 380.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+<div class="doc-head">
+  <h1>ui-studio-12-settlement <span style="font-weight:400;color:var(--n-500)">— 쇼룸 스튜디오 정산 관리</span></h1>
+  <p class="meta">GNB #7 정산 관리 · 1440×1024 · 전역 Compact · 액센트 인디고 #3B5BDB 단일 · 셸·컴포넌트·토큰 <b>전부 ui-partner-13-settlement에서 상속</b>(head 통째로 포크 후 셸 마크업만 스튜디오 9항목으로 교체) · 상류 = <a href="ui-studio-09-groupbuys.html">공구 관리</a>(주문 종결 · 이행 확인) · 해석은 <a href="ui-studio-10-performance.html">성과 관리</a> · 보류 합의는 <a href="ui-studio-11-issue-thread.html">이슈 스레드</a> · 상태 6종</p>
+  <div class="rule">
+    <b class="new">[파트너센터 파일을 그대로 상속한다]</b> <code>ui-partner-13-settlement</code>의 head를 <b>통째로 포크</b>하고 <b>스튜디오 셸 마크업만</b> 갈았다 — <code>.kgrid</code>/<code>.kc</code>(KPI) · <code>.qform</code>/<code>.fp-item</code>(필터) · <code>.tcard</code>/<code>table</code>(목록) · <code>.grp</code>/<code>.sec</code>(섹션) · <code>.mtab</code>(금액 분해) · <code>.ltab</code>(링크 표) · <code>.frow</code>(읽기 전용 폼 행) · <code>.empty</code>를 <b>한 줄도 재설계하지 않았다</b>. 스튜디오 규칙에 따라 <b>GNB 배지만 중립 회색</b>으로 바꿨다.<br>
+    <b>[이 화면이 금액의 단일 소스다]</b> 성과 관리와의 경계는 <b>성과는 해석, 정산은 돈의 사실</b>이다. 성과 관리는 <b>예상 리워드</b>까지만 말하고 <b>확정 · 지급 · 세금은 이 화면</b>이 말한다. 단 <b>같은 숫자가 두 곳에서 다르게 보이는 지점</b>이 하나 있다 — 성과 관리의 「내 리워드」는 <b>세전 약정액</b>(548,000 + 400,000 = 948,000)이고 이 화면의 실지급액은 <b>세후</b>(529,916 + 386,800 = 916,716)다. 그래서 정산 상세의 고정 지급비 카드에 <b>두 값의 관계를 적어</b> 어긋난 게 아니라 <b>기준이 다른 것</b>임을 밝힌다.<br>
+    <b class="new">[분해의 주인공이 다르다 — 브랜드 수취액 · PG 수수료 열이 없다]</b> 파트너센터의 분해는 <b>확정 거래액 → 수수료 → 리워드 차감 → 브랜드 수취액</b>으로, 리워드가 <b>빠져나가는 돈</b>이다. 스튜디오는 반대로 리워드가 <b>들어오는 돈</b>이라 분해를 <b>확정 거래액 → 리워드율 → 판매 리워드 → 원천징수 → 실지급액</b>으로 다시 짰다. <b>플랫폼 수수료 · PG 결제 수수료 행은 넣지 않았다</b> — 내 리워드에서 차감되지 않고 브랜드 몫에서 처리되는 비용인데, 분해 표에 두면 <b>내 돈에서 빠지는 것처럼</b> 읽힌다. 대신 표 아래에 <b>「내 리워드에서 차감되지 않습니다」</b>를 명시하고, 실제 흐름은 <b>3자 분배 섹션</b>에서 본다.<br>
+    <b>[3자 분배는 그대로 둔다]</b> 소비자 결제금은 <b>PG에서 브랜드 · 인플루언서 · 플랫폼에게 각각 직접 지급</b>된다. 「플랫폼이 정산해 준다」로 읽히면 <b>대금 보관 주체를 오해</b>하는데, 이것은 <b>수취자에게 더 중요한 사실</b>이다 — 돈이 안 들어왔을 때 누구에게 물어야 하는지가 달라진다. 다만 표의 <b>행 순서를 바꿨다</b>: 파트너센터는 브랜드가 첫 행이지만 여기서는 <b>내가 첫 행</b>이고 브랜드 · 플랫폼은 회색 보조로 내린다.<br>
+    <b class="new">[사업자 여부는 「나 하나」의 속성이다 — D3는 별 건이 아니라 대안 분기]</b> 파트너센터는 상대 인플루언서가 여럿이라 <b>비사업자(D1)와 사업자(D3)가 같은 목록에 공존</b>한다. 스튜디오는 <b>인플루언서가 나 한 사람</b>이므로 두 케이스가 동시에 존재할 수 없다 — 그래서 목록 수치는 <b>비사업자 기준으로 통일</b>하고, D3는 <b>「같은 공구를 사업자로 등록한 경우」</b>로 명시해 상단에 안내 박스를 뒀다. 이걸 별 건처럼 그리면 <b>내 세무 구분이 공구마다 다를 수 있다</b>는 잘못된 인상을 준다.<br>
+    <b class="new">[사업자 케이스는 이 파일의 유일한 「내 조치」다]</b> 비사업자면 <b>3.3%가 자동 차감</b>되고 내가 할 일이 없다(원천징수영수증 다운로드뿐). 사업자면 <b>내가 브랜드에게 세금계산서를 발행</b>해야 하고, 발행 전에는 <b>지급이 시작되지 않는다</b> — 파트너센터에서는 「수취 대기(중립) · 재촉 액션 없음」이었지만 스튜디오에서는 <b>내가 안 하면 내 돈이 안 들어온다</b>. 그래서 <b>경고색 카드로 기한 · 공급받는자 · 사업자등록번호 · 공급가액</b>을 띄운다. 발행 자체는 <b>홈택스 등 외부 행위</b>라 액션은 <b>[발행 정보 복사]·[발행 안내 보기]</b>까지다 — 우리가 발행을 대행하지 않는다.<br>
+    <b class="new">[정산 명세에서 소비자 정보를 뺐다]</b> 파트너센터 명세에는 <b>소비자 열(김**)</b>이 있지만 스튜디오에서는 <b>삭제</b>했다 — 인플루언서는 배송 · CS 주체가 아니라 <b>소비자를 식별할 업무상 이유가 없다</b>(개인정보 최소 수집). 대신 <b>「내 리워드」 열을 추가</b>해 주문 단위로 <b>내 몫이 검산</b>되게 했다. 이것이 인플루언서가 명세를 보는 유일한 이유다.<br>
+    <b class="new">[반품 · 교환 배송비 섹션을 뺐다]</b> 파트너센터에는 <b>부담 주체별 배송비</b> 섹션이 있지만 스튜디오에서는 <b>삭제</b>했다 — 배송비는 <b>소비자와 브랜드 사이에서 정산</b>되고 <b>내 리워드에 영향이 없다</b>(확정 거래액에서 이미 제외된 뒤 리워드율이 곱해진다). 영향 없는 금액을 보여주면 <b>내 돈이 깎였는지 계산해 봐야</b> 한다.<br>
+    <b>[고정 지급비는 정산 분해에 넣지 않는다]</b> 계약 시 브랜드가 <b>플랫폼에 선결제</b>해 <b>게시 시점에 지급</b>되는 <b>별도 트랙</b>이다 — 지급 시점이 다르므로 분해 표에 섞으면 <b>실지급액 계산이 틀린다</b>. 하단에 <b>조회용 이력</b>으로 두고, <b>원천징수 후 실수령액</b>과 <b>공구 총 수령액</b>을 함께 적는다. 정산 보류(D4)에서도 <b>고정 지급비는 회수되지 않는다</b>는 사실을 명시한다.<br>
+    <b>[미확정 금액은 값을 주지 않는다]</b> 정산 대기(D2)에서 분해는 <b>「예정」 배지 + 회색</b>이고 <b>3자 분배 · 지급 정보 · 증빙은 값 대신 「정산 확정 후 표시」</b>다 — 아직 돈이 움직이지 않았으므로 수령자 · 계좌 · 증빙이 <b>존재하지 않는다</b>. 명세 다운로드도 <b>비활성</b>이다: 확정 전 파일을 내보내면 그 숫자가 근거로 돌아다닌다. <b>단 고정 지급비 카드만 실제 값</b>을 유지한다 — 이미 받은 확정 금액이다.<br>
+    <b class="new">[보류는 목록에 두 건 있다]</b> 스튜디오에서 보류는 <b>내가 연 이견</b>(여름 수분 세럼 · 계약 이행 문제)과 <b>브랜드가 연 이견</b>(퓨어랩 립밤 · 콘텐츠 이행 문제) 양쪽에서 생긴다 — <b>이슈 스레드 파일의 T1 · T2와 같은 두 건</b>이고 보류 금액도 같다(150,528 · 62,340 · 세전 기준). 이견이 열려 있는 공구가 정산에서 <b>지급 예정으로 보이면 두 화면이 서로를 반박</b>하므로, 이슈가 있는 건은 <b>반드시 보류로만</b> 나타난다.<br>
+    <b class="new">[보류의 액션이 다르다 — [운영자 문의]가 아니라 [이슈 스레드 열기]]</b> 파트너센터는 보류 사유 카드의 액션이 <b>[운영자 문의]</b>지만 스튜디오는 <b>[이슈 스레드 열기]</b>다. 스튜디오에서 보류는 <b>계약 이행 확인에서 내가 «미이행»을 제출</b>해 생기고, 그 순간 <b>연결·소통에 3자 스레드</b>가 이미 열려 있다 — 별도 문의 창구를 만들면 <b>같은 사안이 두 곳에서 논의</b>된다. 합의 경로는 스레드 하나다.<br>
+    <b>[상태색 — 정산 보류만 경고]</b> 정산 대기=<b>중립</b> · 정산 확정=<b>중립</b> · 지급 완료=<b>성공</b> · <b>정산 보류=경고</b>(원칙①). 정산은 조치 화면이 아니라 대기가 길어도 다급함을 만들지 않지만, <b>보류는 내 돈이 멈췄고 금액이 바뀔 수 있는</b> 상태다. <b>위험색은 쓰지 않는다</b> — 부정 결과의 확정이 아니라 진행이 멈춘 상태다. KPI에 <b>정산 보류 건수</b>를 넣은 것도 같은 이유다(목록을 열기 전에 알아야 한다). <b>사업자 세금계산서 발행 필요</b>도 경고를 쓴다 — 내가 안 하면 지급이 시작되지 않는다.<br>
+    <b>[조회 전용 — 나도 돈을 만지지 않는다]</b> 금액 수정 · 지급 요청 · 정산 승인 액션이 <b>존재하지 않는다</b>. 목록에 체크박스 · 관리 열 · 일괄 액션이 없고, 상세의 버튼은 <b>[성과 관리에서 보기] · [다운로드] · [발행 정보 복사] · [이슈 스레드 열기]</b>처럼 <b>조회 · 이동 · 내보내기</b>뿐이다. <b>지급을 앞당겨 달라는 요청 버튼을 만들지 않았다</b> — 지급일은 규칙(마지막 구매확정 + 3일)으로 정해지고 협상 대상이 아니다.<br>
+    <b class="new">[한 줄짜리 표는 표로 두지 않는다]</b> 고정 지급비 · <b>원천징수 · 세금계산서</b>는 모두 <b>공구당 한 건</b>이라 헤더 + 데이터 1행짜리 표가 되어, 전폭에 <b>빈 칸만 늘어나</b> 보였다. <b>비교할 다른 행이 없으면 표의 일(열 정렬로 행을 견주는 것)이 없다</b> — 그래서 <b>인라인 요약 바</b>(금액 · 지급일 · 원천징수 · 실수령)로 바꿨다. 이 형태는 상세 상단의 <b>정산 확정일 · 지급일 요약 바와 같은 컴포넌트</b>라 새 패턴을 만든 것도 아니다. 「지급 완료」 배지와 「게시 시점 지급」처럼 <b>모든 건에서 같은 값</b>인 항목은 행마다 반복하지 않고 <b>섹션 헤더 보조문</b>으로 올렸다. <b>관리 버튼(영수증 · 발행 정보 복사)은 바 우측 끝</b>에 둔다 — 표의 「관리」 열이 하던 역할과 같은 자리다.<br>
+    <b class="new">[디자인시스템 정합 점검 — 분해 표]</b> v1.3의 표 규칙(<b>본문 셀 Caption 12px · 헤더 Micro 11px/500 · 숫자 tabular-nums · 우측 정렬</b>)에 맞춰 두 곳을 고쳤다 — ①<b>실지급액 행의 큰 숫자</b>가 <code>--fs-h2</code>(16px)였는데, H2는 <b>섹션 타이틀 토큰</b>이고 <b>수치 토큰은 메트릭 값 17px/600</b>이다. 금액을 제목 토큰으로 그리면 다른 화면의 KPI 숫자와 크기가 어긋난다. ②<code>.ltab</code> 헤더가 <b>600</b>이었는데 시스템 헤더는 <b>500</b>이다. 나머지(소계 <code>.mid</code> · 총계 <code>.tot</code>의 <code>--n-50</code> 배경과 상단 보더 위계, 우측 정렬, <code>.mnote</code> 보조행)는 시스템 범위 안이다. <b>이 두 수정은 파트너센터 원본에도 반영이 필요하다</b>(같은 컴포넌트다).<br>
+    <b>[목록 정렬]</b> 기본 정렬은 <b>정산 확정일 최신순</b>이고, <b>확정일이 아직 없는 정산 대기 행은 맨 위</b>에 모은다(파트너센터 상속 규칙) — 확정일이 없는 행을 최신순에 섞으면 위치가 임의가 된다. 그래서 실제 순서는 <b>대기 → 09.03(보류) → 08.31 → 08.28 → 07.21(보류) → 07.14</b>이다 — <b>보류 행은 별로 모으지 않는다</b>: 보류는 금액이 확정된 뒤 지급만 멈춘 상태라 <b>확정일이 있고</b>, 정렬에서 빠질 이유가 없다(대기와 다르다).<br>
+    <b>[더미 수치 정합]</b> D1: 6,020,000 − 160,000 − 350,000 − 30,000 = <b>5,480,000</b> × 10% = <b>548,000</b> − 18,084(3.3%) = <b>529,916</b> / 고정 400,000 − 13,200 = 386,800 → 공구 총 <b>916,716</b>. D2: 6,760,000 − 140,000 − 480,000 − 20,000 = <b>6,120,000</b> × 15% = <b>918,000</b>(예정). D3: 548,000 원천징수 없음 → <b>548,000</b> / 고정 400,000 → 공구 총 <b>948,000</b>(성과 관리 「내 리워드」와 일치). D4: 1,024,000 − 20,480 = <b>1,003,520</b> × 15% = <b>150,528</b> − 4,967 = <b>145,561</b>(이슈 스레드의 보류 금액 150,528과 동일 · 세전 기준). 목록 KPI 누적 수령 <b>1,127,522</b> = 529,916 + 597,606 · 지급 예정 <b>99,505</b> = 모이스처 토너 1건(686,000 × 15% = 102,900 − 3,395) · 보류 <b>2건</b> = 여름 수분 세럼 · 퓨어랩 립밤 → <b>KPI · 상태 칩 · 총 건수(6건)가 모두 같은 6행에서 나온다.</b><br>
+    <span class="wait">[확인 필요]</span> ① <b>원천징수 의무자</b>(브랜드/플랫폼) <b>[자문대기-세무]</b> ② <b>사업자 세금계산서 발행 기한</b>과 <b>미발행 시 처리</b> — 현재 확정 후 5일 가정이고, 기한을 넘기면 지급이 무기한 멈추는지 자동 지급되는지 미정 ③ <b>고정 지급비의 원천징수</b> — 판매 리워드와 <b>별도로 3.3%</b>를 차감하는지 합산 과세인지(현재 시안은 별도 차감) ④ 정산 명세 엑셀의 컬럼 구성 ⑤ <b>보류 중 원천징수 시점</b> — 현재 시안은 「지급 시 징수」다 ⑥ 지급일이 <b>공휴일 · 주말</b>일 때의 처리.
+  </div>
+</div>
+<div class="doc-toc">
+  <div class="toc-h">상태 목차 <span>6장</span></div>
+  <div class="toc-g">
+    <a class="toc-i" href="#L1"><span class="ti">L1</span>목록 · 기본</a>
+    <a class="toc-i" href="#L2"><span class="ti">L2</span>목록 · 빈 상태</a>
+    <a class="toc-i" href="#D1"><span class="ti">D1</span>지급 완료(비사업자)</a>
+    <a class="toc-i" href="#D2"><span class="ti">D2</span>정산 대기</a>
+    <a class="toc-i" href="#D3"><span class="ti">D3</span>사업자 분기</a>
+    <a class="toc-i" href="#D4"><span class="ti">D4</span>정산 보류</a>
+  </div>
+</div>
+
+<section class="state" id="L1">
+  <div class="state-bar"><span class="state-id">L1</span><span class="state-label">목록 · 기본</span>
+  <span class="state-spec">인플루언서가 묻는 것은 <b>내가 얼마를 언제 받나</b> 하나다 — 열을 <b>확정 거래액 → 리워드율 → 판매 리워드 → 원천징수 → 실지급액</b> 순으로 <b>계산 순서 그대로</b> 놓아 목록에서 분해가 읽히게 한다 · <b>브랜드 수취액 · PG 수수료 열은 없다</b>(내 돈이 아니고 내 리워드에서 차감되지도 않는다) · <b>조회 전용</b>이라 관리 열 · 체크박스 · 일괄 액션이 없다 · KPI에 <b>정산 보류</b>를 넣었다 — 내 돈이 멈춘 건수는 목록을 열기 전에 알아야 한다</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">정산 관리</div><div class="page-d">공구별 내 리워드가 어떻게 계산되고 언제 지급되는지 확인합니다.</div></div></div>
+  <div class="kgrid c4">
+    <div class="kc"><div class="kl">누적 수령</div><div class="kv">1,127,522원</div><div class="ks">지급 완료 2건 · 세후</div></div>
+    <div class="kc"><div class="kl">지급 예정</div><div class="kv">99,505원</div><div class="ks">확정 1건 · 09.10 지급 예정</div></div>
+    <div class="kc"><div class="kl">정산 대기</div><div class="kv">1건</div><div class="ks">주문 처리가 끝나면 확정</div></div>
+    <div class="kc"><div class="kl">정산 보류</div><div class="kv">2건</div><div class="ks">이견 합의 후 지급 재개</div></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">상태</span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>정산 대기<span class="fp-n">1</span></span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>정산 확정<span class="fp-n">1</span></span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>정산 보류<span class="fp-n">2</span></span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>지급 완료<span class="fp-n">2</span></span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <input class="inp" placeholder="공구명 · 브랜드명 검색" style="width:320px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="tbar">
+      <div class="tbar-l">총 <b>6</b>건</div>
+      <div class="tbar-r"><select class="sel-sm"><option>정산 확정일 최신순</option><option>실지급액 높은순</option></select><select class="sel-sm"><option>20건씩</option></select></div>
+    </div>
+    <table>
+      <thead><tr>
+        <td>공구명</td><td style="width:112px">브랜드</td>
+        <td class="t-c" style="width:132px">정산 대상 기간</td>
+        <td class="t-c" style="width:116px">확정 거래액</td><td class="t-c" style="width:74px">리워드율</td>
+        <td class="t-c" style="width:110px">판매 리워드</td><td class="t-c" style="width:96px">원천징수</td>
+        <td class="t-c" style="width:112px">실지급액</td>
+        <td class="t-c" style="width:96px">상태</td><td class="t-c" style="width:104px">지급(예정)일</td>
+      </tr></thead>
+      <tbody>
+        <tr style="opacity:.62">
+          <td><span class="t-nm" style="color:var(--n-500)" title="모든 주문 처리가 끝나면 정산 금액이 확정됩니다">하이드라 앰플 공구</span></td><td style="color:var(--n-500)">퓨어네이처</td>
+          <td class="t-c t-date tnum" style="color:var(--n-500)">08.20 ~ 08.26</td>
+          <td class="t-c" style="color:var(--n-400)">—</td><td class="t-c tnum" style="color:var(--n-500)">15%</td>
+          <td class="t-c" style="color:var(--n-400)">—</td><td class="t-c" style="color:var(--n-400)">—</td>
+          <td class="t-c" style="color:var(--n-400)">—</td>
+          <td class="t-c"><span class="badge b-neutral">정산 대기</span></td>
+          <td class="t-c" style="color:var(--n-400)">—</td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">여름 수분 세럼 공구</span></td><td>○○ 브랜드</td>
+          <td class="t-c t-date tnum">08.24 ~ 08.31</td>
+          <td class="t-c tnum">1,003,520원</td><td class="t-c tnum">15%</td>
+          <td class="t-c tnum">150,528원</td><td class="t-c tnum">−4,967원</td>
+          <td class="t-c tnum"><b>145,561원</b></td>
+          <td class="t-c"><span class="badge b-warning">정산 보류</span></td>
+          <td class="t-c" style="color:var(--n-400)">—</td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">모이스처 토너 공구</span></td><td>모이스처하우스</td>
+          <td class="t-c t-date tnum">08.18 ~ 08.25</td>
+          <td class="t-c tnum">686,000원</td><td class="t-c tnum">15%</td>
+          <td class="t-c tnum">102,900원</td><td class="t-c tnum">−3,395원</td>
+          <td class="t-c tnum"><b>99,505원</b></td>
+          <td class="t-c"><span class="badge b-neutral">정산 확정</span></td>
+          <td class="t-c t-date tnum">09.10 예정</td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">데일리 선크림 공구</span></td><td>데일리랩</td>
+          <td class="t-c t-date tnum">08.01 ~ 08.07</td>
+          <td class="t-c tnum">5,480,000원</td><td class="t-c tnum">10%</td>
+          <td class="t-c tnum">548,000원</td><td class="t-c tnum">−18,084원</td>
+          <td class="t-c tnum"><b>529,916원</b></td>
+          <td class="t-c"><span class="badge b-success">지급 완료</span></td>
+          <td class="t-c t-date tnum">08.31</td>
+        </tr>
+              <tr>
+          <td><span class="t-nm">퓨어랩 립밤 공구</span></td><td>퓨어랩</td>
+          <td class="t-c t-date tnum">07.10 ~ 07.17</td>
+          <td class="t-c tnum">415,600원</td><td class="t-c tnum">15%</td>
+          <td class="t-c tnum">62,340원</td><td class="t-c tnum">−2,057원</td>
+          <td class="t-c tnum"><b>60,283원</b></td>
+          <td class="t-c"><span class="badge b-warning">정산 보류</span></td>
+          <td class="t-c" style="color:var(--n-400)">—</td>
+        </tr>
+        <tr>
+          <td><span class="t-nm">글로우 세럼 공구</span></td><td>글로우코스</td>
+          <td class="t-c t-date tnum">07.05 ~ 07.11</td>
+          <td class="t-c tnum">4,120,000원</td><td class="t-c tnum">15%</td>
+          <td class="t-c tnum">618,000원</td><td class="t-c tnum">−20,394원</td>
+          <td class="t-c tnum"><b>597,606원</b></td>
+          <td class="t-c"><span class="badge b-success">지급 완료</span></td>
+          <td class="t-c t-date tnum">07.24</td>
+        </tr>
+</tbody>
+    </table>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="L2">
+  <div class="state-bar"><span class="state-id">L2</span><span class="state-label">목록 · 빈 상태</span>
+  <span class="state-spec">정산은 <b>공구 종료 + 전 주문 종결</b> 후에 생긴다 — 신규 인플루언서가 가장 먼저 보는 화면이다 · 내가 이 화면에서 만들 수 있는 것이 없으므로 <b>CTA는 공구 관리로</b> 보낸다 · KPI는 <b>0원이 아니라 「—」</b>로 둔다(0원은 실적처럼 읽힌다)</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">정산 관리</div><div class="page-d">공구별 내 리워드가 어떻게 계산되고 언제 지급되는지 확인합니다.</div></div></div>
+  <div class="kgrid c4">
+    <div class="kc"><div class="kl">누적 수령</div><div class="kv">—</div><div class="ks">지급 완료 0건</div></div>
+    <div class="kc"><div class="kl">지급 예정</div><div class="kv">—</div><div class="ks">예정 없음</div></div>
+    <div class="kc"><div class="kl">정산 대기</div><div class="kv">—</div><div class="ks">주문 처리가 끝나면 확정</div></div>
+    <div class="kc"><div class="kl">정산 보류</div><div class="kv">—</div><div class="ks">보류 없음</div></div>
+  </div>
+  <div class="qform">
+    <div class="qrow">
+      <span class="qlab">상태</span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>정산 대기<span class="fp-n">0</span></span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>정산 확정<span class="fp-n">0</span></span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>정산 보류<span class="fp-n">0</span></span>
+      <span class="fp-item on"><span class="fp-box"><svg viewBox="0 0 9 9"><path d="M1 4.5L3.3 7L8 1.5" stroke="#fff" stroke-width="1.6" fill="none"/></svg></span>지급 완료<span class="fp-n">0</span></span>
+    </div>
+    <div class="qrow">
+      <span class="qlab">검색</span>
+      <input class="inp" placeholder="공구명 · 브랜드명 검색" style="width:320px;height:32px">
+      <button class="btn btn-primary">검색</button>
+      <button class="btn btn-secondary">초기화</button>
+    </div>
+  </div>
+  <div class="tcard">
+    <div class="empty">
+      <div class="empty-t">정산 내역이 없습니다</div>
+      <div class="empty-d">공구가 종료되고 <b>모든 주문 처리가 끝나면</b> 정산 내역이 표시됩니다.<br>고정 지급비는 <b>게시물 게시 시점</b>에 먼저 지급되며 여기에도 이력이 남습니다.</div>
+      <button class="btn btn-secondary">공구 관리로 이동</button>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="D1">
+  <div class="state-bar"><span class="state-id">D1</span><span class="state-label">상세 · 지급 완료(비사업자 · 원천징수)</span>
+  <span class="state-spec"><b>내 리워드가 어떻게 나왔는지</b>가 이 화면의 전부다 — 분해를 <b>확정 거래액 → 리워드율 → 판매 리워드 → 원천징수 → 실지급액</b> 순으로 세로로 놓고 소계와 총계를 갈랐다 · <b>플랫폼 · PG 수수료는 분해에 넣지 않고</b> 「내 리워드에서 차감되지 않는다」고 주석으로 못박는다(브랜드 화면에서는 차감 행이지만 내 돈에서 빠지는 것은 원천징수뿐이다) · <b>3자 분배</b>는 그대로 둔다 — 플랫폼이 대금을 보관했다 나눠주는 구조가 아니라 <b>PG가 각 수령자에게 직접 지급</b>한다는 사실은 수취자에게 더 중요하다 · <b>고정 지급비는 분해에 넣지 않고</b> 조회용 이력만 둔다(지급 시점이 다른 별도 트랙)</span></div>
+  <div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">데일리 선크림 공구</div>
+    <div class="page-d">데일리랩 · 정산 대상 기간 2026.08.01 ~ 08.07 <span class="badge b-success" style="margin-left:6px">지급 완료</span></div></div>
+    <div class="navgrp"><span class="nav-btn">목록으로</span><span class="nav-sep"></span><button class="btn btn-secondary">성과 관리에서 보기</button></div></div>
+  <div class="sec" style="margin-bottom:var(--sp-4)">
+    <div class="sec-b" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:12px var(--sp-4)">
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 확정일 <b class="tnum" style="color:var(--n-900)">2026.08.28</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">지급일 <b class="tnum" style="color:var(--n-900)">2026.08.31</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 근거 <b class="tnum" style="color:var(--n-900)">마지막 구매확정 08.25 + 3일</b></span>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">금액</span><span class="grp-s">내 리워드가 어떻게 나왔나</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">내 리워드 분해</span><span class="sec-n">확정</span></div>
+    <div class="sec-b">
+      <table class="mtab">
+        <tbody>
+          <tr><td>총 주문 금액</td><td>6,020,000원</td></tr>
+          <tr class="sub"><td>취소 차감 <span class="mnote">8건</span></td><td>−160,000원</td></tr>
+          <tr class="sub"><td>반품 차감 <span class="mnote">13건</span></td><td>−350,000원</td></tr>
+          <tr class="sub"><td>배송 예외 차감 <span class="mnote">1건</span></td><td>−30,000원</td></tr>
+          <tr class="mid"><td>확정 거래액</td><td>5,480,000원</td></tr>
+          <tr class="rate"><td>리워드율 <span class="mnote">계약 확정값 · 상품별로 다를 수 있습니다</span></td><td>10%</td></tr>
+          <tr class="mid"><td>판매 리워드</td><td>548,000원</td></tr>
+          <tr class="sub"><td>원천징수 <span class="mnote">소득세 3% + 지방세 0.3% · 비사업자</span></td><td>−18,084원</td></tr>
+          <tr class="tot"><td>실지급액</td><td>529,916원</td></tr>
+        </tbody>
+      </table>
+      <div class="note2"><b>플랫폼 수수료와 PG 결제 수수료는 내 리워드에서 차감되지 않습니다</b> — 소비자 결제금에서 브랜드 몫에 대해 처리되는 비용입니다. 내 리워드에서 빠지는 것은 <b>원천징수</b>뿐입니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">분배 · 지급</span><span class="grp-s">누구에게 얼마가 갔고 언제 들어왔나</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:var(--sp-4)">
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">3자 분배 내역</span><span class="sec-n">PG 직접 지급</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:100px">수령자</td><td class="num">지급 금액</td><td style="width:128px">지급 상태</td></tr></thead>
+        <tbody>
+          <tr><td>인플루언서<span class="mnote">나</span></td><td class="num tnum"><b>529,916원</b><span class="mnote">판매 리워드 548,000원 − 원천징수 18,084원</span></td><td>08.31 지급 완료</td></tr>
+          <tr><td>브랜드<span class="mnote">데일리랩</span></td><td class="num tnum" style="color:var(--n-500)">4,767,600원</td><td style="color:var(--n-500)">08.31 지급 완료</td></tr>
+          <tr><td>플랫폼</td><td class="num tnum" style="color:var(--n-500)">0원</td><td style="color:var(--n-500)">베타 기간 수수료 0%</td></tr>
+        </tbody>
+      </table>
+      <div class="note2">소비자 결제 금액은 <b>PG사에서 각 수령자에게 직접 지급</b>됩니다. 플랫폼이 대금을 보관했다가 나누어 지급하지 않습니다 — 내 리워드도 <b>PG사에서 내 계좌로 바로</b> 들어옵니다.</div>
+    </div>
+  </div>
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">지급 정보</span></div>
+    <div class="sec-b">
+      <div class="frow ro" style="padding-top:0"><div class="fk">입금 계좌</div><div class="fv">OO은행 123-****-**89 <div class="fsub">예금주 김소연 · <span class="flink">입금 계좌 변경은 기본정보 관리에서</span></div></div></div>
+      <div class="frow ro"><div class="fk">지급 예정일</div><div class="fv tnum">08.31</div></div>
+      <div class="frow ro"><div class="fk">실지급일</div><div class="fv tnum">08.31</div></div>
+      <div class="frow ro"><div class="fk">PG 거래 참조번호</div><div class="fv tnum">PG-20260831-004821</div></div>
+    </div>
+  </div>
+  </div>
+  <div class="grp"><span class="grp-t">증빙</span><span class="grp-s">세금 처리</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">원천징수</span><span class="sec-n">비사업자 · 지급 시 차감 완료</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">대상 <b class="tnum" style="color:var(--n-900)">판매 리워드</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">징수액 <b class="tnum" style="color:var(--n-900)">18,084원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">상태 <b class="tnum" style="color:var(--n-900)">징수 완료</b></span>
+        <span style="margin-left:auto"><button class="act-btn">원천징수영수증</button></span>
+      </div>
+      <div class="note2">기본정보 관리에 <b>비사업자 개인</b>으로 등록되어 있어 리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 차감되고 원천징수영수증이 발급됩니다. 이 금액은 <b>다음해 5월 종합소득세 신고</b> 때 기납부세액으로 반영됩니다. <b style="color:var(--danger-text)">[자문대기-세무]</b> 원천징수 의무자(브랜드/플랫폼) 확정 대기.</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">고정 지급비 이력</span><span class="sec-n">게시물 게시 시점 지급 완료 · 조회 전용 · 위 정산 금액에 포함되지 않음</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">금액 <b class="tnum" style="color:var(--n-900)">400,000원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">지급일 <b class="tnum" style="color:var(--n-900)">2026.07.18</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">원천징수 <b class="tnum" style="color:var(--n-900)">−13,200원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">실수령 <b class="tnum" style="color:var(--n-900)">386,800원</b></span>
+      </div>
+      <div class="note2">고정 지급비는 <b>계약 시 브랜드가 선결제해 게시 시점에 먼저 지급되는 별도 금액</b>으로, 위 정산 분해에는 포함되지 않습니다 — <b>지급 시점이 다르기 때문</b>입니다. 이 공구로 받은 총액은 <b>386,800 + 529,916 = 916,716원</b>입니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">명세</span><span class="grp-s">주문 단위로 확인</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">정산 명세</span><span class="sec-n">주문 단위 · 미리보기 5건</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:124px">주문번호</td><td>상품 · 옵션</td><td class="num" style="width:56px">수량</td><td class="num" style="width:104px">결제금액</td><td style="width:82px">상태</td><td class="num" style="width:116px">정산 반영액</td><td class="num" style="width:110px">내 리워드</td></tr></thead>
+        <tbody>
+          <tr><td class="tnum">ORD-24118</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">19,800원</td><td>확정</td><td class="num tnum">19,800원</td><td class="num tnum">1,980원</td></tr>
+          <tr><td class="tnum">ORD-24117</td><td>데일리 선크림 리필 / 단품</td><td class="num tnum">2</td><td class="num tnum">25,600원</td><td>확정</td><td class="num tnum">25,600원</td><td class="num tnum">2,560원</td></tr>
+          <tr style="color:var(--n-500)"><td class="tnum">ORD-24115</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">19,800원</td><td>취소</td><td class="num tnum">0원</td><td class="num tnum">0원</td></tr>
+          <tr style="color:var(--n-500)"><td class="tnum">ORD-24114</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">19,800원</td><td>반품</td><td class="num tnum">0원</td><td class="num tnum">0원</td></tr>
+          <tr><td class="tnum">ORD-24112</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">3</td><td class="num tnum">59,400원</td><td>확정</td><td class="num tnum">59,400원</td><td class="num tnum">5,940원</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:var(--sp-3)">
+        <span class="note2" style="margin:0;flex:1">취소 · 반품 건은 정산 반영액과 내 리워드가 <b>0원</b>입니다 · <b>소비자 정보는 표시되지 않습니다</b>.</span>
+        <button class="btn btn-secondary">전체 명세 다운로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="D2">
+  <div class="state-bar"><span class="state-id">D2</span><span class="state-label">상세 · 정산 대기(금액 미확정)</span>
+  <span class="state-spec">공구는 끝났지만 <b>반품 · 회수가 남아 금액이 확정되지 않은</b> 상태 — 분해 표는 <b>「예정」 배지 + 회색</b>이고 차감 행에 <b>처리 중 건수</b>를 부기한다 · <b>3자 분배 · 지급 정보 · 증빙은 값 대신 「정산 확정 후 표시」</b>: 아직 돈이 움직이지 않았으므로 수령자 · 계좌 · 증빙이 <b>존재하지 않는다</b> · 명세 다운로드도 <b>비활성</b>(확정 전 파일을 내보내면 그 숫자가 근거로 돌아다닌다) · <b>정산 대기는 중립색</b> — 내가 할 일이 없다 · <b>고정 지급비는 이미 확정</b>이라 그 카드만 실제 값을 유지한다</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">하이드라 앰플 공구</div>
+    <div class="page-d">퓨어네이처 · 정산 대상 기간 2026.08.20 ~ 08.26 <span class="badge b-neutral" style="margin-left:6px">정산 대기</span></div></div>
+    <div class="navgrp"><span class="nav-btn">목록으로</span><span class="nav-sep"></span><button class="btn btn-secondary">성과 관리에서 보기</button></div></div>
+  <div class="sec" style="margin-bottom:var(--sp-4)">
+    <div class="sec-b" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:12px var(--sp-4)">
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 확정일 <b style="color:var(--n-500)">미정</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">지급 예정일 <b style="color:var(--n-500)">미정</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 근거 <b style="color:var(--n-900)">마지막 구매확정 + 3일</b> <span style="color:var(--n-500)">· 미처리 반품 3건 남음</span></span>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">금액</span><span class="grp-s">내 리워드가 어떻게 나왔나</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">내 리워드 분해</span><span class="sec-n">예정 · 처리 결과에 따라 줄어들 수 있습니다</span></div>
+    <div class="sec-b">
+      <table class="mtab">
+        <tbody>
+          <tr><td>총 주문 금액</td><td>6,760,000원</td></tr>
+          <tr class="sub"><td>취소 차감 <span class="mnote">7건</span></td><td>−140,000원</td></tr>
+          <tr class="sub"><td>반품 차감 <span class="mnote">확정 19건 · <b style="color:var(--warning-text)">처리 중 3건</b></span></td><td>−480,000원</td></tr>
+          <tr class="sub"><td>배송 예외 차감 <span class="mnote">1건</span></td><td>−20,000원</td></tr>
+          <tr class="mid"><td>확정 거래액 <span class="pb">예정</span></td><td>6,120,000원</td></tr>
+          <tr class="rate"><td>리워드율 <span class="mnote">계약 확정값</span></td><td>15%</td></tr>
+          <tr class="mid"><td>판매 리워드 <span class="pb">예정</span></td><td>918,000원</td></tr>
+          <tr class="sub"><td>원천징수 <span class="mnote">확정 후 계산됩니다</span></td><td style="color:var(--n-500)">정산 확정 후 표시</td></tr>
+          <tr class="tot"><td>실지급액 <span class="pb">예정</span></td><td style="color:var(--n-500);font-size:var(--fs-body)">정산 확정 후 표시</td></tr>
+        </tbody>
+      </table>
+      <div class="note2"><b>플랫폼 수수료와 PG 결제 수수료는 내 리워드에서 차감되지 않습니다</b> — 소비자 결제금에서 브랜드 몫에 대해 처리되는 비용입니다. 내 리워드에서 빠지는 것은 <b>원천징수</b>뿐입니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">분배 · 지급</span><span class="grp-s">누구에게 얼마가 갔고 언제 들어왔나</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:var(--sp-4)">
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">3자 분배 내역</span><span class="sec-n">PG 직접 지급</span></div>
+    <div class="sec-b">
+      <div class="empty" style="padding:32px 20px">
+        <div class="empty-t" style="font-size:var(--fs-caption)">정산 확정 후 표시됩니다</div>
+        <div class="empty-d">아직 지급이 일어나지 않아 수령자별 금액이 없습니다.</div>
+      </div>
+      <div class="note2">소비자 결제 금액은 <b>PG사에서 각 수령자에게 직접 지급</b>됩니다. 플랫폼이 대금을 보관했다가 나누어 지급하지 않습니다 — 내 리워드도 <b>PG사에서 내 계좌로 바로</b> 들어옵니다.</div>
+    </div>
+  </div>
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">지급 정보</span></div>
+    <div class="sec-b">
+      <div class="frow ro" style="padding-top:0"><div class="fk">입금 계좌</div><div class="fv">OO은행 123-****-**89 <div class="fsub">예금주 김소연 · <span class="flink">입금 계좌 변경은 기본정보 관리에서</span></div></div></div>
+      <div class="frow ro"><div class="fk">지급 예정일</div><div class="fv" style="color:var(--n-500)">정산 확정 후 표시</div></div>
+      <div class="frow ro"><div class="fk">실지급일</div><div class="fv" style="color:var(--n-500)">—</div></div>
+      <div class="frow ro"><div class="fk">PG 거래 참조번호</div><div class="fv" style="color:var(--n-500)">—</div></div>
+    </div>
+  </div>
+  </div>
+  <div class="grp"><span class="grp-t">증빙</span><span class="grp-s">세금 처리</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">원천징수</span><span class="sec-n">비사업자 · 확정 대기</span></div>
+    <div class="sec-b">
+      <div class="empty" style="padding:32px 20px">
+        <div class="empty-t" style="font-size:var(--fs-caption)">정산 확정 후 발급됩니다</div>
+        <div class="empty-d">지급이 일어난 뒤 원천징수영수증을 내려받을 수 있습니다.</div>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">고정 지급비 이력</span><span class="sec-n">게시물 게시 시점 지급 완료 · 조회 전용 · 위 정산 금액에 포함되지 않음</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">금액 <b class="tnum" style="color:var(--n-900)">300,000원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">지급일 <b class="tnum" style="color:var(--n-900)">2026.08.21</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">원천징수 <b class="tnum" style="color:var(--n-900)">−9,900원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">실수령 <b class="tnum" style="color:var(--n-900)">290,100원</b></span>
+      </div>
+      <div class="note2">고정 지급비는 <b>계약 시 브랜드가 선결제해 게시 시점에 먼저 지급되는 별도 금액</b>으로, 위 정산 분해에는 포함되지 않습니다 — <b>지급 시점이 다르기 때문</b>입니다. 고정 지급비 <b>290,100원은 이미 받은 확정 금액</b>이라 정산이 확정되지 않아도 값이 그대로 표시됩니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">명세</span><span class="grp-s">주문 단위로 확인</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">정산 명세</span><span class="sec-n">주문 단위 · 미리보기 5건</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:124px">주문번호</td><td>상품 · 옵션</td><td class="num" style="width:56px">수량</td><td class="num" style="width:104px">결제금액</td><td style="width:82px">상태</td><td class="num" style="width:116px">정산 반영액</td><td class="num" style="width:110px">내 리워드</td></tr></thead>
+        <tbody>
+          <tr><td class="tnum">ORD-25204</td><td>하이드라 앰플 30ml / 단품</td><td class="num tnum">1</td><td class="num tnum">24,000원</td><td>확정</td><td class="num tnum">24,000원</td><td class="num tnum">3,600원</td></tr>
+          <tr><td class="tnum">ORD-25203</td><td>하이드라 앰플 미니 10ml / 단품</td><td class="num tnum">2</td><td class="num tnum">18,000원</td><td>확정</td><td class="num tnum">18,000원</td><td class="num tnum">2,700원</td></tr>
+          <tr style="color:var(--warning-text)"><td class="tnum">ORD-25201</td><td>하이드라 앰플 30ml / 단품</td><td class="num tnum">1</td><td class="num tnum">24,000원</td><td>반품 처리중</td><td class="num tnum">미확정</td><td class="num tnum">미확정</td></tr>
+          <tr style="color:var(--n-500)"><td class="tnum">ORD-25198</td><td>하이드라 앰플 30ml / 단품</td><td class="num tnum">1</td><td class="num tnum">24,000원</td><td>취소</td><td class="num tnum">0원</td><td class="num tnum">0원</td></tr>
+          <tr><td class="tnum">ORD-25195</td><td>하이드라 앰플 30ml / 단품</td><td class="num tnum">2</td><td class="num tnum">48,000원</td><td>확정</td><td class="num tnum">48,000원</td><td class="num tnum">7,200원</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:var(--sp-3)">
+        <span class="note2" style="margin:0;flex:1"><b>반품 처리중</b> 건은 결과가 나올 때까지 <b>미확정</b>으로 표시됩니다 · 확정 전에는 명세를 내려받을 수 없습니다.</span>
+        <button class="btn btn-secondary" disabled>전체 명세 다운로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="D3">
+  <div class="state-bar"><span class="state-id">D3</span><span class="state-label">상세 · 같은 공구를 사업자로 등록한 경우</span>
+  <span class="state-spec">D1과 <b>같은 공구 · 같은 골격 · 다른 세무 처리</b> — <b>인플루언서는 나 한 사람</b>이므로 비사업자와 사업자가 같은 목록에 공존할 수 없다. 그래서 이 상태는 별 건이 아니라 <b>D1의 대안 분기</b>다(내가 기본정보 관리에 사업자로 등록하면 모든 정산이 이렇게 보인다) · <b>원천징수 없이 리워드 전액</b>이 지급되고, 대신 <b>내가 세금계산서를 발행</b>해야 한다 — <b>내 조치가 필요한 유일한 정산 화면</b>이라 발행 전에는 <b>경고</b>로 알린다</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">데일리 선크림 공구</div>
+    <div class="page-d">데일리랩 · 정산 대상 기간 2026.08.01 ~ 08.07 <span class="badge b-neutral" style="margin-left:6px">정산 확정</span></div></div>
+    <div class="navgrp"><span class="nav-btn">목록으로</span><span class="nav-sep"></span><button class="btn btn-secondary">성과 관리에서 보기</button></div></div>
+  <div class="alt">이 화면은 <b>D1과 같은 공구</b>를 <b>사업자로 등록한 경우</b>로 보여준 것입니다 — 인플루언서는 한 사람이므로 비사업자 · 사업자가 동시에 존재하지 않습니다.</div>
+  <div class="hold" style="border-color:var(--warning-text)">
+    <div>
+      <div class="ht">세금계산서를 발행해야 지급됩니다</div>
+      <div class="hd"><b>2026.09.05까지</b> 아래 정보로 세금계산서를 발행해 주세요 · 발행이 확인되면 <b>다음 지급일에 리워드 전액이 입금</b>됩니다.<br>공급받는자 <b>데일리랩</b> · 사업자등록번호 <b>123-45-67890</b> · 공급가액 <b>548,000원</b>(부가세 별도 여부는 계약 기준)</div>
+    </div>
+    <div class="hb"><button class="btn btn-secondary">발행 안내 보기</button></div>
+  </div>
+  <div class="sec" style="margin-bottom:var(--sp-4)">
+    <div class="sec-b" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:12px var(--sp-4)">
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 확정일 <b class="tnum" style="color:var(--n-900)">2026.08.28</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">지급 예정일 <b class="tnum" style="color:var(--n-900)">세금계산서 발행 확인 후</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 근거 <b class="tnum" style="color:var(--n-900)">마지막 구매확정 08.25 + 3일</b></span>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">금액</span><span class="grp-s">내 리워드가 어떻게 나왔나</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">내 리워드 분해</span><span class="sec-n">확정</span></div>
+    <div class="sec-b">
+      <table class="mtab">
+        <tbody>
+          <tr><td>총 주문 금액</td><td>6,020,000원</td></tr>
+          <tr class="sub"><td>취소 차감 <span class="mnote">8건</span></td><td>−160,000원</td></tr>
+          <tr class="sub"><td>반품 차감 <span class="mnote">13건</span></td><td>−350,000원</td></tr>
+          <tr class="sub"><td>배송 예외 차감 <span class="mnote">1건</span></td><td>−30,000원</td></tr>
+          <tr class="mid"><td>확정 거래액</td><td>5,480,000원</td></tr>
+          <tr class="rate"><td>리워드율 <span class="mnote">계약 확정값 · 상품별로 다를 수 있습니다</span></td><td>10%</td></tr>
+          <tr class="mid"><td>판매 리워드</td><td>548,000원</td></tr>
+          <tr class="sub"><td>원천징수 <span class="mnote">사업자는 원천징수하지 않습니다</span></td><td style="color:var(--n-500)">해당 없음</td></tr>
+          <tr class="tot"><td>실지급액</td><td>548,000원</td></tr>
+        </tbody>
+      </table>
+      <div class="note2"><b>플랫폼 수수료와 PG 결제 수수료는 내 리워드에서 차감되지 않습니다</b> — 소비자 결제금에서 브랜드 몫에 대해 처리되는 비용입니다. 내 리워드에서 빠지는 것은 <b>원천징수</b>뿐입니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">분배 · 지급</span><span class="grp-s">누구에게 얼마가 갔고 언제 들어왔나</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:var(--sp-4)">
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">3자 분배 내역</span><span class="sec-n">PG 직접 지급</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:100px">수령자</td><td class="num">지급 금액</td><td style="width:128px">지급 상태</td></tr></thead>
+        <tbody>
+          <tr><td>인플루언서<span class="mnote">나</span></td><td class="num tnum"><b>548,000원</b><span class="mnote">판매 리워드 전액 · 원천징수 없음</span></td><td style="color:var(--warning-text)">세금계산서 발행 대기</td></tr>
+          <tr><td>브랜드<span class="mnote">데일리랩</span></td><td class="num tnum" style="color:var(--n-500)">4,767,600원</td><td style="color:var(--n-500)">08.31 지급 완료</td></tr>
+          <tr><td>플랫폼</td><td class="num tnum" style="color:var(--n-500)">0원</td><td style="color:var(--n-500)">베타 기간 수수료 0%</td></tr>
+        </tbody>
+      </table>
+      <div class="note2">소비자 결제 금액은 <b>PG사에서 각 수령자에게 직접 지급</b>됩니다. 플랫폼이 대금을 보관했다가 나누어 지급하지 않습니다 — 내 리워드도 <b>PG사에서 내 계좌로 바로</b> 들어옵니다.</div>
+    </div>
+  </div>
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">지급 정보</span></div>
+    <div class="sec-b">
+      <div class="frow ro" style="padding-top:0"><div class="fk">입금 계좌</div><div class="fv">OO은행 123-****-**89 <div class="fsub">예금주 김소연 · <span class="flink">입금 계좌 변경은 기본정보 관리에서</span></div></div></div>
+      <div class="frow ro"><div class="fk">지급 예정일</div><div class="fv" style="color:var(--n-500)">세금계산서 발행 확인 후</div></div>
+      <div class="frow ro"><div class="fk">실지급일</div><div class="fv" style="color:var(--n-500)">—</div></div>
+      <div class="frow ro"><div class="fk">PG 거래 참조번호</div><div class="fv" style="color:var(--n-500)">발행 확인 후 생성</div></div>
+    </div>
+  </div>
+  </div>
+  <div class="grp"><span class="grp-t">증빙</span><span class="grp-s">세금 처리</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">세금계산서</span><span class="sec-n">사업자 · 내가 발행</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">발행 구분 <b class="tnum" style="color:var(--n-900)">나 → 브랜드</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">대상 <b class="tnum" style="color:var(--n-900)">리워드 용역</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">공급가액 <b class="tnum" style="color:var(--n-900)">548,000원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">상태 <b class="tnum" style="color:var(--warning-text)">발행 필요</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">기한 <b class="tnum" style="color:var(--n-900)">2026.09.05</b></span>
+        <span style="margin-left:auto"><button class="act-btn">발행 정보 복사</button></span>
+      </div>
+      <div class="note2">기본정보 관리에 <b>사업자</b>로 등록되어 있어 원천징수 없이 <b>리워드 전액</b>이 지급됩니다. 대신 <b>내가 브랜드에게 세금계산서를 발행</b>해야 하며, 발행은 <b>홈택스 등 외부에서</b> 진행합니다 — 이 화면은 발행에 필요한 정보를 제공하고 <b>발행 여부만 확인</b>합니다. <b style="color:var(--danger-text)">[자문대기-세무]</b> 발행 기한과 미발행 시 처리 확정 대기.</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">고정 지급비 이력</span><span class="sec-n">게시물 게시 시점 지급 완료 · 조회 전용 · 위 정산 금액에 포함되지 않음</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">금액 <b class="tnum" style="color:var(--n-900)">400,000원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">지급일 <b class="tnum" style="color:var(--n-900)">2026.07.18</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">원천징수 <b class="tnum" style="color:var(--n-500)">해당 없음</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">실수령 <b class="tnum" style="color:var(--n-900)">400,000원</b></span>
+      </div>
+      <div class="note2">고정 지급비는 <b>계약 시 브랜드가 선결제해 게시 시점에 먼저 지급되는 별도 금액</b>으로, 위 정산 분해에는 포함되지 않습니다 — <b>지급 시점이 다르기 때문</b>입니다. 사업자는 고정 지급비도 <b>원천징수 없이 전액</b> 받고 <b>세금계산서를 발행</b>합니다 — 이 공구의 총 수령액은 <b>400,000 + 548,000 = 948,000원</b>입니다(성과 관리의 「내 리워드」와 같은 값).</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">명세</span><span class="grp-s">주문 단위로 확인</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">정산 명세</span><span class="sec-n">주문 단위 · 미리보기 5건</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:124px">주문번호</td><td>상품 · 옵션</td><td class="num" style="width:56px">수량</td><td class="num" style="width:104px">결제금액</td><td style="width:82px">상태</td><td class="num" style="width:116px">정산 반영액</td><td class="num" style="width:110px">내 리워드</td></tr></thead>
+        <tbody>
+          <tr><td class="tnum">ORD-24118</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">19,800원</td><td>확정</td><td class="num tnum">19,800원</td><td class="num tnum">1,980원</td></tr>
+          <tr><td class="tnum">ORD-24117</td><td>데일리 선크림 리필 / 단품</td><td class="num tnum">2</td><td class="num tnum">25,600원</td><td>확정</td><td class="num tnum">25,600원</td><td class="num tnum">2,560원</td></tr>
+          <tr style="color:var(--n-500)"><td class="tnum">ORD-24115</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">19,800원</td><td>취소</td><td class="num tnum">0원</td><td class="num tnum">0원</td></tr>
+          <tr style="color:var(--n-500)"><td class="tnum">ORD-24114</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">19,800원</td><td>반품</td><td class="num tnum">0원</td><td class="num tnum">0원</td></tr>
+          <tr><td class="tnum">ORD-24112</td><td>데일리 선크림 50ml / 단품</td><td class="num tnum">3</td><td class="num tnum">59,400원</td><td>확정</td><td class="num tnum">59,400원</td><td class="num tnum">5,940원</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:var(--sp-3)">
+        <span class="note2" style="margin:0;flex:1">취소 · 반품 건은 정산 반영액과 내 리워드가 <b>0원</b>입니다 · <b>소비자 정보는 표시되지 않습니다</b>.</span>
+        <button class="btn btn-secondary">전체 명세 다운로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+<section class="state" id="D4">
+  <div class="state-bar"><span class="state-id">D4</span><span class="state-label">상세 · 정산 보류(이견 진행 중)</span>
+  <span class="state-spec"><b>금액은 확정됐지만 지급만 멈춘</b> 상태 — 정산 대기(D2)와 다르다: 분해 · 분배 금액은 <b>확정값 그대로</b>이고 <b>지급 정보만 「보류 중」</b>이다 · <b>보류 사유 카드</b>를 맨 위에 둬 <b>왜 멈췄고 무엇이 풀려야 지급되는지</b>를 먼저 읽게 한다 · 파트너센터는 액션이 [운영자 문의]지만 스튜디오는 <b>[이슈 스레드 열기]</b>다 — 이견이 이미 <b>연결·소통에 스레드로</b> 있고 그것이 유일한 합의 경로다 · <b>경고색을 쓴다</b>: 이 파일의 유일한 예외로, <b>내 돈이 멈췄고 금액이 바뀔 수 있는</b> 상태다(위험색은 쓰지 않는다 — 부정 결과의 확정이 아니다)</span></div>
+<div class="stage tall">
+<div class="side">
+  <div class="side-brand"><svg viewBox="0 0 1863.4 200" width="112" height="12" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="var(--logo-dark)"/></svg><span class="sfx">쇼룸 스튜디오</span></div>
+  <div class="side-nav">
+    <div class="gnb-item"><span class="gn">1</span><span class="gt">홈</span></div>
+    <div class="gnb-item"><span class="gn">2</span><span class="gt">연결·소통</span><span class="gcnt">3</span></div>
+    <div class="gnb-item"><span class="gn">3</span><span class="gt">계약 관리</span></div>
+    <div class="gnb-item"><span class="gn">4</span><span class="gt">공구 관리</span><span class="gcnt">2</span></div>
+    <div class="gnb-item"><span class="gn">5</span><span class="gt">게시물</span></div>
+    <div class="gnb-item"><span class="gn">6</span><span class="gt">성과 관리</span></div>
+    <div class="gnb-item active"><span class="gn">7</span><span class="gt">정산 관리</span><span class="gcnt">1</span></div>
+    <div class="gnb-item"><span class="gn">8</span><span class="gt">쇼룸 관리</span></div>
+    <div class="gnb-item"><span class="gn">9</span><span class="gt">기본정보 관리</span></div>
+  </div>
+</div>
+<div class="top"><div class="crumb">정산 관리</div><div class="brand-chip">뷰티_소연<span class="st">활성</span></div></div>
+<div class="main">
+  <div class="page-h"><div><div class="page-t">여름 수분 세럼 공구</div>
+    <div class="page-d">○○ 브랜드 · 정산 대상 기간 2026.08.24 ~ 08.31 <span class="badge b-warning" style="margin-left:6px">정산 보류</span></div></div>
+    <div class="navgrp"><span class="nav-btn">목록으로</span><span class="nav-sep"></span><button class="btn btn-secondary">이슈 스레드 열기</button></div></div>
+  <div class="hold">
+    <div>
+      <div class="ht">계약 이행 이견으로 지급이 보류되었습니다</div>
+      <div class="hd">계약 이행 확인에서 <b>내가 «미이행»을 제출</b>해 <b>연결·소통에 3자 스레드</b>가 열려 있습니다 · <b>합의가 끝나면 지급이 재개</b>되며, 합의 내용에 따라 <b>금액이 조정될 수 있습니다</b> · 종결 권한은 운영자에게 있습니다.</div>
+    </div>
+    <div class="hb"><button class="btn btn-secondary">이슈 스레드 열기</button></div>
+  </div>
+  <div class="sec" style="margin-bottom:var(--sp-4)">
+    <div class="sec-b" style="display:flex;align-items:center;gap:24px;flex-wrap:wrap;padding:12px var(--sp-4)">
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 확정일 <b class="tnum" style="color:var(--n-900)">2026.09.03</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">지급 예정일 <b style="color:var(--warning-text)">보류 중</b></span>
+      <span style="font-size:var(--fs-caption);color:var(--n-600)">정산 근거 <b class="tnum" style="color:var(--n-900)">마지막 구매확정 08.31 + 3일</b></span>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">금액</span><span class="grp-s">내 리워드가 어떻게 나왔나</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">내 리워드 분해</span><span class="sec-n">확정 · 합의 결과에 따라 조정될 수 있습니다</span></div>
+    <div class="sec-b">
+      <table class="mtab">
+        <tbody>
+          <tr><td>총 주문 금액</td><td>1,024,000원</td></tr>
+          <tr class="sub"><td>취소 차감 <span class="mnote">1건</span></td><td>−20,480원</td></tr>
+          <tr class="mid"><td>확정 거래액</td><td>1,003,520원</td></tr>
+          <tr class="rate"><td>리워드율 <span class="mnote">계약 확정값</span></td><td>15%</td></tr>
+          <tr class="mid"><td>판매 리워드</td><td>150,528원</td></tr>
+          <tr class="sub"><td>원천징수 <span class="mnote">소득세 3% + 지방세 0.3% · 비사업자</span></td><td>−4,967원</td></tr>
+          <tr class="tot"><td>실지급액</td><td>145,561원</td></tr>
+        </tbody>
+      </table>
+      <div class="note2"><b>플랫폼 수수료와 PG 결제 수수료는 내 리워드에서 차감되지 않습니다</b> — 소비자 결제금에서 브랜드 몫에 대해 처리되는 비용입니다. 내 리워드에서 빠지는 것은 <b>원천징수</b>뿐입니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">분배 · 지급</span><span class="grp-s">누구에게 얼마가 갔고 언제 들어왔나</span></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:start;margin-bottom:var(--sp-4)">
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">3자 분배 내역</span><span class="sec-n">PG 직접 지급</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:100px">수령자</td><td class="num">지급 금액</td><td style="width:128px">지급 상태</td></tr></thead>
+        <tbody>
+          <tr><td>인플루언서<span class="mnote">나</span></td><td class="num tnum"><b>145,561원</b><span class="mnote">판매 리워드 150,528원 − 원천징수 4,967원</span></td><td class="t-c" style="color:var(--warning-text)">보류 중</td></tr>
+          <tr><td>브랜드<span class="mnote">○○ 브랜드</span></td><td class="num tnum" style="color:var(--n-500)">822,886원</td><td style="color:var(--n-500)">보류 중</td></tr>
+          <tr><td>플랫폼</td><td class="num tnum" style="color:var(--n-500)">0원</td><td style="color:var(--n-500)">베타 기간 수수료 0%</td></tr>
+        </tbody>
+      </table>
+      <div class="note2">소비자 결제 금액은 <b>PG사에서 각 수령자에게 직접 지급</b>됩니다 — 보류 중에는 <b>양쪽 모두 지급이 멈춥니다</b>. 소비자 결제금은 PG사에 그대로 남아 있으며 합의 후 분배됩니다.</div>
+    </div>
+  </div>
+    <div class="sec" style="margin-bottom:0">
+    <div class="sec-h"><span class="sec-t">지급 정보</span></div>
+    <div class="sec-b">
+      <div class="frow ro" style="padding-top:0"><div class="fk">입금 계좌</div><div class="fv">OO은행 123-****-**89 <div class="fsub">예금주 김소연 · <span class="flink">입금 계좌 변경은 기본정보 관리에서</span></div></div></div>
+      <div class="frow ro"><div class="fk">지급 예정일</div><div class="fv" style="color:var(--warning-text)">보류 중 <div class="fsub" style="color:var(--n-600)">합의 종결 후 다음 지급일에 지급</div></div></div>
+      <div class="frow ro"><div class="fk">실지급일</div><div class="fv" style="color:var(--n-500)">—</div></div>
+      <div class="frow ro"><div class="fk">PG 거래 참조번호</div><div class="fv" style="color:var(--n-500)">지급 시 생성</div></div>
+    </div>
+  </div>
+  </div>
+  <div class="grp"><span class="grp-t">증빙</span><span class="grp-s">세금 처리</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">원천징수</span><span class="sec-n">비사업자 · 보류 중이라 아직 징수되지 않았습니다</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">대상 <b class="tnum" style="color:var(--n-900)">판매 리워드</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">징수 예정액 <b class="tnum" style="color:var(--n-900)">4,967원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">상태 <b class="tnum" style="color:var(--n-500)">지급 시 징수</b></span>
+        <span style="margin-left:auto"><button class="act-btn" disabled>원천징수영수증</button></span>
+      </div>
+      <div class="note2">기본정보 관리에 <b>비사업자 개인</b>으로 등록되어 있어 리워드에서 <b>3.3%</b>(소득세 3% + 지방세 0.3%)가 차감되고 원천징수영수증이 발급됩니다. 이 금액은 <b>다음해 5월 종합소득세 신고</b> 때 기납부세액으로 반영됩니다. <b style="color:var(--danger-text)">[자문대기-세무]</b> 원천징수 의무자(브랜드/플랫폼) 확정 대기.</div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">고정 지급비 이력</span><span class="sec-n">게시물 게시 시점 지급 완료 · 조회 전용 · 위 정산 금액에 포함되지 않음</span></div>
+    <div class="sec-b">
+      <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">금액 <b class="tnum" style="color:var(--n-900)">1,200,000원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">지급일 <b class="tnum" style="color:var(--n-900)">2026.08.21</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">원천징수 <b class="tnum" style="color:var(--n-900)">−39,600원</b></span>
+        <span style="font-size:var(--fs-caption);color:var(--n-600)">실수령 <b class="tnum" style="color:var(--n-900)">1,160,400원</b></span>
+      </div>
+      <div class="note2">고정 지급비는 <b>이미 지급이 끝난 확정 금액</b>이라 <b>보류의 영향을 받지 않습니다</b> — 회수되지도 않습니다. 보류된 것은 <b>판매 리워드 145,561원</b>뿐입니다.</div>
+    </div>
+  </div>
+  <div class="grp"><span class="grp-t">명세</span><span class="grp-s">주문 단위로 확인</span></div>
+  <div class="sec">
+    <div class="sec-h"><span class="sec-t">정산 명세</span><span class="sec-n">주문 단위 · 미리보기 5건</span></div>
+    <div class="sec-b">
+      <table class="ltab">
+        <thead><tr><td style="width:124px">주문번호</td><td>상품 · 옵션</td><td class="num" style="width:56px">수량</td><td class="num" style="width:104px">결제금액</td><td style="width:82px">상태</td><td class="num" style="width:116px">정산 반영액</td><td class="num" style="width:110px">내 리워드</td></tr></thead>
+        <tbody>
+          <tr><td class="tnum">ORD-24902</td><td>수분진정 세럼 30ml / 단품</td><td class="num tnum">1</td><td class="num tnum">28,000원</td><td>확정</td><td class="num tnum">28,000원</td><td class="num tnum">4,200원</td></tr>
+          <tr><td class="tnum">ORD-24899</td><td>수분진정 크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">22,000원</td><td>확정</td><td class="num tnum">22,000원</td><td class="num tnum">3,300원</td></tr>
+          <tr><td class="tnum">ORD-24895</td><td>수분진정 세럼 30ml / 단품</td><td class="num tnum">2</td><td class="num tnum">56,000원</td><td>확정</td><td class="num tnum">56,000원</td><td class="num tnum">8,400원</td></tr>
+          <tr style="color:var(--n-500)"><td class="tnum">ORD-24891</td><td>수분진정 크림 50ml / 단품</td><td class="num tnum">1</td><td class="num tnum">20,480원</td><td>취소</td><td class="num tnum">0원</td><td class="num tnum">0원</td></tr>
+          <tr><td class="tnum">ORD-24888</td><td>수분진정 세럼 30ml / 단품</td><td class="num tnum">1</td><td class="num tnum">28,000원</td><td>확정</td><td class="num tnum">28,000원</td><td class="num tnum">4,200원</td></tr>
+        </tbody>
+      </table>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:var(--sp-3)">
+        <span class="note2" style="margin:0;flex:1">금액은 <b>확정된 값</b>이라 명세를 내려받을 수 있습니다 — 다만 <b>합의 결과에 따라 조정될 수 있습니다</b>.</span>
+        <button class="btn btn-secondary">전체 명세 다운로드</button>
+      </div>
+    </div>
+  </div>
+</div>
+  </div>
+</section>
+
+</body>
+</html>

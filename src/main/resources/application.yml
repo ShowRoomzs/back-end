@@ -139,6 +139,19 @@ order:
   arrival-stats-window-days: 90                     # 택배사별 실제 소요일 평균의 표본 범위
   arrival-stats-min-samples: 30                     # 표본이 이보다 적은 택배사는 기본값
   arrival-stats-refresh-hours: 6                    # 평균 재집계 주기
+  refund-retry-scheduler-enabled: true              # PG 자동 환불 재시도 배치(10분) — 놓친 대기 · 실패 재시도 · 결과 미확인 정리
+  refund-auto-max-attempts: 2                       # PG 자동 환불 자동 시도 상한 — 넘으면 어드민 환불 관리 「실패」 탭
+  refund-stale-minutes: 30                          # 결과 미확인 집행 중 건을 포트원 조회로 정리하기까지
+  cancel-request-respond-business-days: 1           # 취소 요청 응답 기한 — 요청 + N영업일, 넘기면 자동 승인(거래 관리 결정 8)
+  cancel-request-auto-approve-scheduler-enabled: true  # 취소 요청 자동 승인 배치(10분)
+  overdue-notice-scheduler-enabled: true            # 처리 지연 자동 알림 배치(영업일 10·15시) — 횟수만 센다(발송은 알림 모듈)
+  act-on-behalf-notice-threshold: 3                 # 자동 알림 N회 무응답이면 어드민 대행(송장 대행 · 직권 취소)이 열린다
+  exception:                                        # 어드민 예외 관리(06d · 40 설계서 1-4) — 근거 대기 값
+    reship-due-business-days: 2                     # 재발송 지연 — 검수 통과 · 재발송비 결제 + N영업일(자동 알림 없음)
+    collection-unscanned-hours: 24                  # 회수 송장 미조회 — 등록 후 N시간 추적 0건
+    badge-scope: ALL                                # 사이드바 배지 — ALL(처리 지연 + 배송 예외) · DELAY(처리 지연만)
+    fetch-limit: 1000                               # 유형별 원천 조회 상한 — 닿으면 경고 로그
+    stalled-resolve-days: 28                        # 추적 정지 종결 — 마지막 추적 + N일이면 운영자가 분실 · 배송완료 판정(41 보고 3번)
   claim:                                            # 반품·교환(35 설계서 · 앱 클레임 설계서) — 기한·횟수는 미결이 많아 전부 설정값
     collect-due-business-days: 2                    # 기한 ① 회수 대기 방치 — 신청 + N영업일(「지연」 표시)
     inspect-due-business-days: 2                    # 기한 ② 검수 완료 — 입고 확인 + N영업일
@@ -171,6 +184,44 @@ delivery:
     validation-enabled: false                       # 송장 형식 검증 — 에러 104 판정을 택배사별로 확인한 뒤 켠다
     usage-alert-ratio: 0.2                          # 이용권 잔여 사용량 경고 기준
 
+# SettlementProperties.java — 정산 관리(44 어드민 정산관리 설계서 9-1). 전부 [근거 대기] 값이다.
+# 요율은 생성 시점에 정산 행에 스냅샷된다 — 바꿔도 지난 정산은 그때 요율로 읽힌다.
+settlement:
+  review-business-days: 3                           # 정산 확인 기간 — 생성 다음 영업일부터 N영업일째 23:59:59
+  payout-business-days: 3                           # 지급 예정일 — 확정일 + N영업일
+  payout-hour: 10                                   # 지급 배치 — 영업일 N시(KST)
+  payout-retry-limit: 3                             # 재분배 상한(M3)
+  pg-fee-rate: 0.03                                 # PG 수수료 [자문대기-PG]
+  platform-fee-rate: 0.00                           # 플랫폼 수수료 — 베타 0
+  platform-fee-normal-rate: 0.02                    # 정상 요율(표시용)
+  reward-vat-rate: 0.10
+  withholding-income-rate: 0.03                     # 원천징수 소득세 — 지방소득세와 각각 절사
+  withholding-local-rate: 0.003
+  brand-invoice-due-day: 10                         # 브랜드 세금계산서 — 공급일이 속한 달의 다음 달 N일
+  tax-invoice-attachment-max-bytes: 10485760        # 세금계산서 첨부 · 발행본 10MB
+  generation-scheduler-enabled: true                # 정산 생성 배치(10분)
+  auto-confirm-scheduler-enabled: true              # 자동 확정 배치(10분)
+  payout-scheduler-enabled: true                    # 지급 배치(영업일 payout-hour 시)
+  payout-result-scheduler-enabled: true             # 지급 결과 폴링(30분 · PG 모드만)
+  receipt-retry-scheduler-enabled: true             # 원천징수영수증 재생성(매시 40분)
+  clawback-scheduler-enabled: true                  # 차감 미회수 판정(매일 01:00)
+  payout:
+    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG — 운영 프로필은 PG 강제(어댑터 미구현 · 런칭 게이트)
+  platform:                                         # SHOWROOMZ 사업자 정보 — 운영 값 수령 전 더미(이름에 TEST). 운영 프로필에서 비면 기동 실패
+    business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:SHOWROOMZ TEST}
+    representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:TEST 대표}
+    registration-number: ${SETTLEMENT_PLATFORM_REGISTRATION_NUMBER:000-00-00000}
+    address: ${SETTLEMENT_PLATFORM_ADDRESS:TEST 주소}
+    tax-email: ${SETTLEMENT_PLATFORM_TAX_EMAIL:tax-test@showroomz.shop}
+  adjustment:                                       # 정산 조정 협의(44 이슈 스레드 설계서 1-8)
+    deadline-business-days: 10                      # 합의 기한 — 개설 + N영업일 · 연장 없음
+    deadline-time: "23:59:59"                       # 마감 시각(§46 B-4 미결)
+    notice-business-days-before: 1                  # D-1 통지 — 영업일 기준(잠정)
+    notice-time: "10:00"
+    reason-max-length: 1000
+    scheduler-enabled: true                         # 합의 기한 배치(10분 · D-1 통지 · 만료)
+    batch-size: 200
+
 # Sentry 설정 (공통)
 sentry:
   dsn: ${SENTRY_DSN:https://default-dsn-address@sentry.io/0} # Sentry에서 발급받은 DSN을 환경 변수에서 읽어옴
@@ -179,3 +230,8 @@ sentry:
     minimum-event-level: error # log.error() 이상은 무조건 Sentry로 보냄
     minimum-breadcrumb-level: info # log.info()는 Sentry 이슈 내의 '타임라인(Breadcrumb)'에 기록으로 남김
 
+
+# 고유식별정보 암호화(PersonalDataCipher · 1009 기획 수정본 7-a) — base64 32바이트. 비우면 jwt.secret 에서 파생한다(운영은 전용 키).
+showroomz:
+  crypto:
+    personal-data-key: ${PERSONAL_DATA_KEY:}

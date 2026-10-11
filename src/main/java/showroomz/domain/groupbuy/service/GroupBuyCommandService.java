@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyFulfillmentCheck;
-import showroomz.domain.groupbuy.repository.GroupBuyFulfillmentCheckRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyIssueRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
@@ -31,7 +30,6 @@ import java.util.List;
 public class GroupBuyCommandService {
 
     private final GroupBuyRepository groupBuyRepository;
-    private final GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
     private final GroupBuyIssueRepository issueRepository;
     private final GroupBuySalesReader salesReader;
     private final GroupBuyHistoryRecorder historyRecorder;
@@ -59,8 +57,10 @@ public class GroupBuyCommandService {
     }
 
     /**
-     * 공구 → 정산 · 정산 게이트. ENDED ∧ 미종결 0 ∧ 양측 이행 확인 ∧ 보류 아님.
+     * 공구 → 정산 · 정산 게이트. ENDED ∧ 미종결 0.
      * <b>판매 포트가 비어 있으면 false</b>다 — 모르는 미종결 건수를 0으로 읽으면 게이트가 거짓으로 열린다(설계서 0-6).
+     * 양측 이행 확인 · 미이행 보류는 계약 이행 확인 폐기(2026-10-06 · 1009 기획 수정본 6절)로 게이트에서 빠졌다 —
+     * 어드민 정산 차단 사유({@code AdminGroupBuyPermissionPolicy#settlementBlockers})와 같은 판정이다.
      */
     @Transactional(readOnly = true)
     public boolean isSettlementReady(Long groupBuyId) {
@@ -68,11 +68,9 @@ public class GroupBuyCommandService {
         if (groupBuy.getStatus() != GroupBuyStatus.ENDED) {
             return false;
         }
-        boolean allOrdersClosed = salesReader.readClosure(groupBuyId)
+        return salesReader.readClosure(groupBuyId)
                 .map(closure -> closure.unclosedCount() == 0)
                 .orElse(false);
-        List<GroupBuyFulfillmentCheck> checks = fulfillmentCheckRepository.findByGroupBuyId(groupBuyId);
-        return allOrdersClosed && checks.size() == 2 && !isSettlementOnHold(groupBuy, checks);
     }
 
     /** 정산 보류 = 파생값 — 미이행이 있고 양측 동의 종결이 아직이다(설계서 1-9). 별도 hold 컬럼을 두지 않는다. */
@@ -82,6 +80,7 @@ public class GroupBuyCommandService {
     }
 
     /**
+     * <b>폐기 이력 · 신규 호출 없음</b>(44 정산조정 이슈스레드 설계서 7절 — 새 구조에서 공구는 합의 통보를 받지 않는다).
      * 연결·소통 → 공구 · 이행 3자 스레드 양측 동의 종결(제20조⑤ · 32 설계 8-4). 당사자 합의이지 운영자 판정이 아니다 —
      * 미이행 확인 행은 고치지 않는다(제20조② 불가역). <b>정산 보류는 여기서 풀리지 않는다</b> — 해제는 정산 관리가 한다.
      * 멱등 — 이미 합의 시각이 있으면 무시한다.
@@ -97,6 +96,7 @@ public class GroupBuyCommandService {
     }
 
     /**
+     * <b>폐기 이력 · 신규 호출 없음</b>(44 정산조정 이슈스레드 설계서 7절).
      * 정산 관리 → 공구 · 정산 보류 해제(32 설계 8-4). <b>합의 없이 해제가 오면 거부한다</b> — 제20조⑤ 「양측 모두 동의해야
      * 종결·보류 해제」. D-2(보류 출구 없음)의 답이 나올 때까지 이 가드를 둔다. 멱등.
      */
@@ -115,7 +115,7 @@ public class GroupBuyCommandService {
                 GroupBuyActor.admin(operatorId, operatorName), "정산 관리", null, releasedAt);
     }
 
-    /** 연결·소통 → 공구 · 이슈 스레드 종결. 이후 새 이견은 새 이슈다. */
+    /** <b>폐기 이력 · 신규 호출 없음</b>(이슈 행이 더 생기지 않는다) — 연결·소통 → 공구 · 이슈 스레드 종결. */
     public void closeIssue(Long groupBuyId, LocalDateTime closedAt) {
         issueRepository.findFirstByGroupBuyIdAndStatus(groupBuyId, GroupBuyIssueStatus.OPEN)
                 .ifPresent(issue -> issue.close(closedAt));

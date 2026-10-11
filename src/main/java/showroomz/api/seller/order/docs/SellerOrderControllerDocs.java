@@ -168,7 +168,10 @@ public interface SellerOrderControllerDocs {
                     | `canCancelDirectly` 직권 취소 | `NEW` · `PREPARING` ∧ 검토 중 취소 요청 없음 |
                     | `canDecideCancelRequest` 승인·거부 | 검토 중 취소 요청 있음(`cancelRequest` 블록이 채워진다) |
 
-                    - `timeline` — 아직 일어나지 않은 시각은 `null`이다.
+                    - `timeline` — 아직 일어나지 않은 시각은 `null`이다. `lastTrackingLocation` · `lastTrackingDescription`은
+                      지금 송장의 마지막 스캔(택배사 원문) — 「배송중 · 대전 허브 출발」 · 추적 정지의 「마지막 위치」. 스캔 전이면 `null`.
+                    - `cancelRequest` — `requesterName`(주문한 소비자) · `requesterIsRecipient`(「수취인과 동일」) ·
+                      `groupBuyStatusLabel`(「진행중」 — 검토 중 요청은 발송 전 하위주문에만 걸리므로 「· 발송 전」은 FE 가 붙인다).
                     - `history` — 최신순. `detail`에 송장(「CJ대한통운 640012345678」) · 수정 전후(「구 → 신」) · 취소 사유 등이 남는다.
                     - 실행 API(송장 수정 · 취소 요청 승인/거부)도 성공 시 이 응답을 그대로 돌려준다.
                     """)
@@ -377,9 +380,11 @@ public interface SellerOrderControllerDocs {
                     나머지는 등록한다. 빈 값 행은 에러 없이 조용히 제외된다(`succeeded`·`skipped` 어디에도 세지 않는다).
 
                     송장번호는 숫자만 남기고 판정한다(`6400-1234-5678` → `640012345678`).
-                    택배사는 11종 enum 만 — 자유 입력·「미지원 택배사」 없음:
-                    `CJ` CJ대한통운 · `LOTTE` 롯데택배 · `HANJIN` 한진택배 · `EPOST` 우체국택배 · `KYUNGDONG` 경동택배 ·
-                    `DAESIN` 대신택배 · `LOGEN` 로젠택배 · `HAPDONG` 합동택배 · `COUPANG` 쿠팡택배 · `WOORI` 우리택배 · `CU` CU편의점택배
+                    택배사는 **추적 연동 업체 12종**만 — 출고 · 회수 · 재발송 공통 목록이고 자유 입력·「미지원 택배사」 없음
+                    (`GET /v1/common/delivery-carriers` 가 같은 목록을 내린다):
+                    `CJ` CJ대한통운 · `EPOST` 우체국택배 · `HANJIN` 한진택배 · `LOTTE` 롯데택배 · `LOGEN` 로젠택배 ·
+                    `KYUNGDONG` 경동택배 · `DAESIN` 대신택배 · `ILYANG` 일양로지스 · `CU` CU 편의점택배 · `GS25` GS25 편의점택배 ·
+                    `HAPDONG` 합동택배 · `WOORI` 우리택배. `COUPANG`(쿠팡택배)은 추적 연동이 없어 `CARRIER_INVALID` 로 제외된다
 
                     **행별 검사 순서:** 요청 안 중복 → 전역 중복 → 형식 → 상태
 
@@ -585,7 +590,7 @@ public interface SellerOrderControllerDocs {
             summary = "직권 취소(판매 취소)",
             description = """
                     품절·하자 대응(E5 · §34-8). 하위주문 전 항목이 취소되고 재고가 돌아간다. **되돌릴 수 없다.**
-                    환불은 운영자가 집행한다(환불 큐 적재 · 배송비 포함 전액) · 취소율에 반영된다.
+                    환불은 **PG 가 즉시 자동 처리**한다(환불 큐 적재 → 커밋 직후 부분 취소 · 배송비 포함 전액) · 취소율에 반영된다.
 
                     **권한:** SELLER · **버튼 노출:** `actions.canCancelDirectly`
 
@@ -639,7 +644,7 @@ public interface SellerOrderControllerDocs {
     @Operation(
             summary = "취소 요청 승인",
             description = """
-                    E6 — **요청 항목만 취소 · 남은 항목은 발송**한다. 환불은 운영자 집행(환불 큐) · 취소율 미반영. **바디 없음.**
+                    E6 — **요청 항목만 취소 · 남은 항목은 발송**한다. 환불은 **PG 즉시 자동**(환불 큐 → 커밋 직후 부분 취소) · 취소율 미반영. **바디 없음.**
 
                     **권한:** SELLER · **버튼 노출:** `actions.canDecideCancelRequest`
 
@@ -672,8 +677,13 @@ public interface SellerOrderControllerDocs {
     @Operation(
             summary = "취소 요청 거부",
             description = """
-                    E7 — 사유 필수(소비자에게 그대로 전달 · 약관 제18조①). 전 항목 배송이 진행되고 소비자는
-                    수령 후 반품으로만 돌릴 수 있다(반품비 발생).
+                    E7 — 사유 필수(소비자에게 그대로 전달 · 약관 제18조①). 사유는 드롭다운 `reasonCode` —
+                    `ALREADY_PACKED`(이미 포장·출고가 완료됨) · `PICKED_UP`(택배사 집화가 완료됨) · `MADE_TO_ORDER`(주문 제작·맞춤 상품) ·
+                    `ETC`(기타 — `detail` 필수). **환불은 일어나지 않는다.** 전 항목 배송이 진행되고 소비자는 수령 후 반품으로만 돌릴 수
+                    있다(반품비 발생).
+
+                    **응답 기한 1영업일**(주말·공휴일 제외) — 요청 + 1영업일의 끝까지 승인·거부하지 않으면 **자동 승인**되고 PG 가 즉시
+                    환불한다. 목록 · 상세의 `cancelRequest.respondDueAt` 가 그 시각이다.
 
                     **권한:** SELLER · **버튼 노출:** `actions.canDecideCancelRequest`
 
@@ -687,12 +697,13 @@ public interface SellerOrderControllerDocs {
                     schema = @Schema(implementation = CancelRequestRejectRequest.class),
                     examples = @ExampleObject(name = "출고 완료", value = """
                             {
-                              "reason": "이미 출고 작업이 끝나 취소가 어렵습니다. 수령 후 반품으로 접수해 주세요."
+                              "reasonCode": "ALREADY_PACKED",
+                              "detail": "오늘 오전에 출고 작업이 끝났습니다. 수령 후 반품으로 접수해 주세요."
                             }
                             """)))
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "처리 후 상세"),
-            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `reason` 공백 · 500자 초과",
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — 사유 코드 없음 · ETC 인데 상세 없음 · 500자 초과",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 취소 요청 · 타 브랜드 주문의 요청",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

@@ -55,6 +55,10 @@ public class PaymentCancel extends BaseTimeEntity {
     @Column(name = "raw_response", columnDefinition = "TEXT")
     private String rawResponse;
 
+    /** 환불 큐 집행의 부분 취소면 그 큐 행(1009 기획 수정본 2-3) — 전액 취소는 null. */
+    @Column(name = "refund_task_id")
+    private Long refundTaskId;
+
     private PaymentCancel(Payment payment, int amount, String reason, CancelRequester requestedBy, LocalDateTime requestedAt) {
         this.payment = payment;
         this.amount = amount;
@@ -67,5 +71,21 @@ public class PaymentCancel extends BaseTimeEntity {
     public static PaymentCancel requested(Payment payment, int amount, String reason, CancelRequester requestedBy,
                                           LocalDateTime requestedAt) {
         return new PaymentCancel(payment, amount, reason, requestedBy, requestedAt);
+    }
+
+    /**
+     * 환불 큐 집행의 부분 취소 기록 — PG 확인 뒤에 완료 상태로 바로 남긴다. 집행 중에는 REQUESTED 행을 두지 않는다
+     * (전액 취소 수렴의 {@code finishRequested}가 결제 단위로 REQUESTED 를 닫기 때문이다).
+     */
+    public static PaymentCancel partialSucceeded(Payment payment, int amount, String reason, CancelRequester requestedBy,
+                                                 LocalDateTime requestedAt, String pgCancellationId, String raw,
+                                                 Long refundTaskId, LocalDateTime completedAt) {
+        PaymentCancel cancel = new PaymentCancel(payment, amount, reason, requestedBy, requestedAt);
+        cancel.status = PaymentCancelStatus.SUCCEEDED;
+        cancel.pgCancellationId = pgCancellationId;
+        cancel.rawResponse = raw;
+        cancel.refundTaskId = refundTaskId;
+        cancel.completedAt = completedAt;
+        return cancel;
     }
 }

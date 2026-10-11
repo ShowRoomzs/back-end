@@ -122,8 +122,9 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
                                                     Pageable pageable);
 
     /**
-     * 정보 바의 「열린 이슈 스레드」(36 설계 3-4) — 그 회원이 당사자인 공구 3자 스레드. 이슈 스레드는 이슈가 열려 있는 것만,
-     * 이행 이견 스레드는 전량이다(닫힘 표시가 스레드에 없다 — 이슈 스레드 기획에서 정한다).
+     * 정보 바의 「열린 이슈 스레드」(36 설계 3-4 · 44 이슈 스레드 설계서 4-6) — 그 회원이 당사자인 3자 스레드.
+     * 정산 조정 스레드는 협의가 진행 중(OPEN)인 것만. 폐기 이력 두 종류의 조건은 그대로다 — 구 이슈 스레드는 이슈가 열려 있는 것만,
+     * 이행 이견 스레드는 전량(닫힘 표시가 스레드에 없다).
      */
     @Query("SELECT t FROM MessageThread t JOIN t.connection c " +
            "WHERE t.status = showroomz.domain.message.type.ThreadStatus.OPEN " +
@@ -132,7 +133,10 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
            "AND (t.kind = showroomz.domain.message.type.ThreadKind.GROUP_BUY_FULFILLMENT " +
            "     OR (t.kind = showroomz.domain.message.type.ThreadKind.GROUP_BUY_ISSUE AND EXISTS (" +
            "         SELECT 1 FROM GroupBuyIssue i WHERE i.threadId = t.id " +
-           "         AND i.status = showroomz.domain.groupbuy.type.GroupBuyIssueStatus.OPEN))) " +
+           "         AND i.status = showroomz.domain.groupbuy.type.GroupBuyIssueStatus.OPEN)) " +
+           "     OR (t.kind = showroomz.domain.message.type.ThreadKind.SETTLEMENT_ADJUSTMENT AND EXISTS (" +
+           "         SELECT 1 FROM SettlementAdjustment a WHERE a.threadId = t.id " +
+           "         AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN))) " +
            "ORDER BY t.id DESC")
     List<MessageThread> findOpenGroupBuyThreadsOf(@Param("marketId") Long marketId,
                                                   @Param("creatorId") Long creatorId);
