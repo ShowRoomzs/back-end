@@ -42,6 +42,7 @@ public class SecurityConfig {
     private static final String[] AUTH_WHITELIST = {
             "/", "/error", "/test/**",  // 기본
             "/v1/webhooks/portone",     // 포트원 웹훅 — 서명 검증이 인증을 대신한다(결제 계획서 5-7 · 6-3)
+            "/v1/webhooks/toss/payouts", // 토스 지급대행 웹훅 — HMAC 서명 검증이 인증을 대신한다(44 토스 설계서 5-4)
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
             //auth 관련

@@ -98,25 +98,43 @@ public class Seller {
     @Column(name = "BANKBOOK_URL", length = 1024)
     private String bankbookImageUrl;
 
-    // PG 파트너 정산 연결(44 포트원 설계서 3-1) — 브랜드 = 포트원 파트너 1건
-    @Column(name = "PORTONE_PARTNER_ID", length = 64)
-    private String portonePartnerId;
+    // PG 지급대행 셀러 연결(44 토스 설계서 3-1) — 브랜드 = 토스 셀러 1건
+    /** PG 가 발급한 셀러 id(토스 · ≤35). */
+    @Column(name = "PG_PARTNER_ID", length = 64)
+    private String pgPartnerId;
 
-    @Column(name = "PORTONE_PARTNER_STATUS", length = 16)
-    private String portonePartnerStatus;
+    /** 우리 참조 id({@code refSellerId} · brand-{market_id}). */
+    @Column(name = "PG_PARTNER_REF", length = 20)
+    private String pgPartnerRef;
 
-    @Column(name = "PORTONE_PARTNER_SYNCED_AT")
-    private LocalDateTime portonePartnerSyncedAt;
+    /** TEST | LIVE — 현재 모드와 다르면 연결 없음으로 본다. */
+    @Column(name = "PG_PARTNER_ENV", length = 8)
+    private String pgPartnerEnv;
 
-    /** 포트원에 보낸 계좌의 sha256(bank|number|holder) — 평문 비교 없이 변경을 감지한다. */
-    @Column(name = "PORTONE_PARTNER_ACCOUNT_HASH", length = 64)
-    private String portonePartnerAccountHash;
+    /** PG 원시 상태(APPROVAL_REQUIRED · PARTIALLY_APPROVED · KYC_REQUIRED · APPROVED). */
+    @Column(name = "PG_PARTNER_STATUS", length = 32)
+    private String pgPartnerStatus;
 
-    public void linkPortOnePartner(String partnerId, String status, String accountHash, LocalDateTime at) {
-        this.portonePartnerId = partnerId;
-        this.portonePartnerStatus = status;
-        this.portonePartnerAccountHash = accountHash;
-        this.portonePartnerSyncedAt = at;
+    @Column(name = "PG_PARTNER_SYNCED_AT")
+    private LocalDateTime pgPartnerSyncedAt;
+
+    /** PG 에 보낸 계좌의 sha256(bank|number|holder) — 평문 비교 없이 변경을 감지한다. */
+    @Column(name = "PG_PARTNER_ACCOUNT_HASH", length = 64)
+    private String pgPartnerAccountHash;
+
+    public void linkPgPartner(String externalId, String ref, String env, String status, String accountHash, LocalDateTime at) {
+        this.pgPartnerId = externalId;
+        this.pgPartnerRef = ref;
+        this.pgPartnerEnv = env;
+        this.pgPartnerStatus = status;
+        this.pgPartnerAccountHash = accountHash;
+        this.pgPartnerSyncedAt = at;
+    }
+
+    /** 웹훅({@code seller.changed}) — 상태만. */
+    public void updatePgPartnerStatus(String status, LocalDateTime at) {
+        this.pgPartnerStatus = status;
+        this.pgPartnerSyncedAt = at;
     }
 
     // 약관 동의 내역

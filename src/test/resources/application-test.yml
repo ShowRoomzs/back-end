@@ -13,3 +13,8 @@ settlement:
     mode: SIMULATED
   adjustment:
     scheduler-enabled: false
+
+# 토스 지급대행 웹훅 서명 검증용 고정 보안 키(64 hex) — 모드는 SIMULATED 라 토스 호출은 없다(44 토스 설계서 8-1).
+toss:
+  payouts:
+    security-key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef

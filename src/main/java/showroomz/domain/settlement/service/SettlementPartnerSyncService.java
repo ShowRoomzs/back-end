@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.market.entity.Market;
@@ -30,15 +31,17 @@ import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementEventType;
 import showroomz.domain.settlement.type.SettlementPayee;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 수취자 ↔ PG 파트너 동기화(44_포트원_파트너정산_연동_BE_설계서.md 4절). 확정 뒤(AfterCommit)에 두 수취자의 파트너를 보장하고,
- * 실패하면 확정은 그대로 둔 채 그 수취자 행만 {@code BLOCKED(사유)} 로 둔다 — 지급일에 등록 실패가 터지지 않게. 지급 배치 앞단이
- * 같은 메서드로 다시 시도한다({@code SettlementPayoutService.releaseBlocked}).
+ * 수취자 ↔ PG 셀러 동기화(44_토스페이먼츠_지급대행_연동_BE_설계서.md 4절). 확정 뒤(AfterCommit)에 두 수취자의 셀러를 보장하고,
+ * 승인되지 않으면 확정은 그대로 둔 채 그 수취자 행만 {@code BLOCKED(사유)} 로 둔다 — 지급일에 등록 실패가 터지지 않게. 지급 배치 앞단과
+ * {@code seller.changed} 웹훅이 다시 판정한다.
  *
- * <p>외부 호출은 트랜잭션 밖에서 하고, 읽기 · 쓰기는 각각 짧은 트랜잭션이다 — 포트원 지연 · 실패가 확정을 되돌리면 안 된다(0-8).
+ * <p>외부 호출은 트랜잭션 밖에서 하고, 읽기 · 쓰기는 각각 짧은 트랜잭션이다 — PG 지연 · 실패가 확정을 되돌리면 안 된다(0-11).
+ * PG 가 발급한 셀러 id 는 회원 정보에 반드시 남긴다(0-5) — 참조 id 로는 조회할 수 없다.
  */
 @Slf4j
 @Service
@@ -47,9 +50,11 @@ public class SettlementPartnerSyncService {
     private final SettlementRepository settlementRepository;
     private final SettlementPayoutRepository payoutRepository;
     private final MarketRepository marketRepository;
+    private final SellerRepository sellerRepository;
     private final CreatorRepository creatorRepository;
     private final BankRepository bankRepository;
     private final SettlementPartnerGateway gateway;
+    private final SettlementPayoutTransitions transitions;
     private final SettlementHistoryRecorder historyRecorder;
     private final SettlementNotifier notifier;
     private final TransactionTemplate readTransaction;
@@ -57,15 +62,18 @@ public class SettlementPartnerSyncService {
 
     public SettlementPartnerSyncService(SettlementRepository settlementRepository,
                                         SettlementPayoutRepository payoutRepository, MarketRepository marketRepository,
-                                        CreatorRepository creatorRepository, BankRepository bankRepository,
-                                        SettlementPartnerGateway gateway, SettlementHistoryRecorder historyRecorder,
+                                        SellerRepository sellerRepository, CreatorRepository creatorRepository,
+                                        BankRepository bankRepository, SettlementPartnerGateway gateway,
+                                        SettlementPayoutTransitions transitions, SettlementHistoryRecorder historyRecorder,
                                         SettlementNotifier notifier, PlatformTransactionManager transactionManager) {
         this.settlementRepository = settlementRepository;
         this.payoutRepository = payoutRepository;
         this.marketRepository = marketRepository;
+        this.sellerRepository = sellerRepository;
         this.creatorRepository = creatorRepository;
         this.bankRepository = bankRepository;
         this.gateway = gateway;
+        this.transitions = transitions;
         this.historyRecorder = historyRecorder;
         this.notifier = notifier;
         this.readTransaction = new TransactionTemplate(transactionManager);
@@ -77,14 +85,14 @@ public class SettlementPartnerSyncService {
 
     // ------------------------------------------------------------------ 확정 뒤
 
-    /** 확정 뒤 — 브랜드 · 인플루언서 파트너 보장. 실패한 수취자 행만 보류한다(4-3). 예외를 밖으로 내지 않는다. */
+    /** 확정 뒤 — 브랜드 · 인플루언서 셀러 보장. 승인되지 않은 수취자 행만 보류한다(4-3). 예외를 밖으로 내지 않는다. */
     public void ensureForSettlement(Long settlementId) {
         for (SettlementPayee payee : List.of(SettlementPayee.BRAND, SettlementPayee.CREATOR)) {
             PartnerResult result;
             try {
                 result = ensure(settlementId, payee);
             } catch (RuntimeException e) {
-                log.error("PG 파트너 동기화 실패 - settlementId: {}, payee: {}", settlementId, payee, e);
+                log.error("PG 셀러 동기화 실패 - settlementId: {}, payee: {}", settlementId, payee, e);
                 result = PartnerResult.failed(PayoutBlockReason.PARTNER_NOT_READY.name(), "PG 호출 실패 — " + e.getMessage());
             }
             if (!result.isApproved()) {
@@ -94,8 +102,8 @@ public class SettlementPartnerSyncService {
     }
 
     /**
-     * 수취자 1명의 파트너 보장 — 연결돼 있고 계좌가 같고 승인 상태면 호출하지 않는다. 결과는 회원 정보에 기록한다.
-     * 프로필을 만들 수 없는 사유(계좌 없음 · 미지원 은행 · 생년월일 없음)는 PG 를 부르지 않고 실패로 돌려준다.
+     * 수취자 1명의 셀러 보장 — 연결돼 있고 계좌가 같고 지급 가능 상태면 호출하지 않는다. 결과(PG 발급 id · 원시 상태)는 회원 정보에 기록한다.
+     * 프로필을 만들 수 없는 사유는 PG 를 부르지 않고 실패로 돌려준다.
      */
     public PartnerResult ensure(Long settlementId, SettlementPayee payee) {
         Prepared prepared;
@@ -105,26 +113,26 @@ public class SettlementPartnerSyncService {
             return PartnerResult.failed(e.reason.name(), e.getMessage());
         }
         if (prepared.upToDate()) {
-            return PartnerResult.approved();
+            return PartnerResult.approved(prepared.profile().externalId(), prepared.rawStatus());
         }
         PartnerResult result = gateway.ensure(prepared.profile());
         LocalDateTime now = LocalDateTime.now();
-        if (result.status() != PartnerStatus.FAILED && gateway.isExternal()) {
+        if (result.hasExternalId() && gateway.isExternal()) {
             writeTransaction.executeWithoutResult(tx -> link(prepared, result, now));
         }
         return result;
     }
 
-    /** 정산계좌 변경 승인 — 이미 연결된 브랜드 파트너의 계좌를 즉시 갱신한다(4-3 · 4-4). 연결 전이면 다음 확정이 만든다. */
+    /** 정산계좌 변경 승인 — 이미 연결된 브랜드 셀러의 계좌를 즉시 갱신한다(4-3 · 4-4). 연결 전이면 다음 확정이 만든다. */
     public void onBrandAccountChanged(Long marketId) {
         Prepared prepared;
         try {
             prepared = readTransaction.execute(tx -> prepareBrand(marketRepository.findById(marketId).orElseThrow()));
         } catch (ProfileIncomplete e) {
-            log.warn("브랜드 계좌 변경 — PG 파트너 갱신 보류 - marketId: {}, {}", marketId, e.getMessage());
+            log.warn("브랜드 계좌 변경 — PG 셀러 갱신 보류 - marketId: {}, {}", marketId, e.getMessage());
             return;
         } catch (RuntimeException e) {
-            log.error("브랜드 계좌 변경 — PG 파트너 갱신 준비 실패 - marketId: {}", marketId, e);
+            log.error("브랜드 계좌 변경 — PG 셀러 갱신 준비 실패 - marketId: {}", marketId, e);
             return;
         }
         if (!gateway.isExternal() || !prepared.profile().existing() || prepared.upToDate()) {
@@ -132,14 +140,68 @@ public class SettlementPartnerSyncService {
         }
         try {
             PartnerResult result = gateway.ensure(prepared.profile());
-            if (result.status() != PartnerStatus.FAILED) {
+            if (result.hasExternalId()) {
                 writeTransaction.executeWithoutResult(tx -> link(prepared, result, LocalDateTime.now()));
             } else {
-                log.warn("브랜드 계좌 변경 — PG 파트너 갱신 실패 - marketId: {}, {}", marketId, result.failReason());
+                log.warn("브랜드 계좌 변경 — PG 셀러 갱신 실패 - marketId: {}, {}", marketId, result.failReason());
             }
         } catch (RuntimeException e) {
-            log.error("브랜드 계좌 변경 — PG 파트너 갱신 실패 - marketId: {}", marketId, e);
+            log.error("브랜드 계좌 변경 — PG 셀러 갱신 실패 - marketId: {}", marketId, e);
         }
+    }
+
+    // ------------------------------------------------------------------ 웹훅 seller.changed(4-3)
+
+    /**
+     * 셀러 상태 변경 — 회원 정보의 원시 상태를 갱신하고, 지급 가능이 됐으면 셀러 사유 보류 행을 <b>즉시</b> 예정으로 · 대기(KYC) 가 됐으면
+     * 예정 행을 보류로. 우리 셀러가 아니면 false.
+     */
+    public boolean onPartnerStatusChanged(String externalId, String rawStatus, LocalDateTime now) {
+        if (externalId == null || rawStatus == null) {
+            return false;
+        }
+        Linked linked = writeTransaction.execute(tx -> {
+            Seller seller = sellerRepository.findByPgPartnerId(externalId).orElse(null);
+            if (seller != null) {
+                seller.updatePgPartnerStatus(rawStatus, now);
+                Long marketId = marketRepository.findBySeller(seller).map(Market::getId).orElse(null);
+                return new Linked(SettlementPayee.BRAND, marketId);
+            }
+            Creator creator = creatorRepository.findByPgPartnerId(externalId).orElse(null);
+            if (creator != null) {
+                creator.updatePgPartnerStatus(rawStatus, now);
+                return new Linked(SettlementPayee.CREATOR, creator.getId());
+            }
+            return null;
+        });
+        if (linked == null || linked.refId() == null) {
+            return linked != null;
+        }
+        PartnerStatus status = gateway.statusOf(rawStatus);
+        LocalDate today = now.toLocalDate();
+        if (status == PartnerStatus.APPROVED) {
+            List<SettlementPayout> blocked = readTransaction.execute(tx -> linked.payee() == SettlementPayee.BRAND
+                    ? payoutRepository.findBlockedForMarket(linked.refId(), PayoutBlockReason.PARTNER_CODES)
+                    : payoutRepository.findBlockedForCreator(linked.refId(), PayoutBlockReason.PARTNER_CODES));
+            for (SettlementPayout payout : blocked) {
+                if (transitions.releasePartnerBlocked(payout.getSettlementId(), payout.getId(), payout.getPayee(), today)) {
+                    log.info("PG 셀러 승인 — 보류 해제 - payoutId: {}", payout.getId());
+                }
+            }
+        } else if (status == PartnerStatus.PENDING) {
+            String code = gateway.blockCodeOf(rawStatus);
+            List<SettlementPayout> scheduled = readTransaction.execute(tx -> linked.payee() == SettlementPayee.BRAND
+                    ? payoutRepository.findScheduledForMarket(linked.refId())
+                    : payoutRepository.findScheduledForCreator(linked.refId()));
+            for (SettlementPayout payout : scheduled) {
+                transitions.blockScheduled(payout.getSettlementId(), payout.getId(), payout.getPayee(), code,
+                        "PG 셀러 상태 " + rawStatus, now);
+            }
+        }
+        return true;
+    }
+
+    private record Linked(SettlementPayee payee, Long refId) {
     }
 
     // ------------------------------------------------------------------ 프로필(4-1)
@@ -149,7 +211,7 @@ public class SettlementPartnerSyncService {
         return switch (payee) {
             case BRAND -> prepareBrand(settlement.getMarket());
             case CREATOR -> prepareCreator(settlement.getCreator());
-            case PLATFORM -> throw new IllegalArgumentException("플랫폼 몫은 파트너가 아니다");
+            case PLATFORM -> throw new IllegalArgumentException("플랫폼 몫은 셀러가 아니다");
         };
     }
 
@@ -160,20 +222,21 @@ public class SettlementPartnerSyncService {
         }
         Account account = account(seller.getBankName(), seller.getAccountNumber(), seller.getAccountHolder());
         String email = blank(seller.getTaxEmail()) ? seller.getEmail() : seller.getTaxEmail();
-        Contact contact = new Contact(firstNonBlank(seller.getRepresentativeName(), market.getMarketName()),
-                seller.getPhoneNumber(), email);
-        // 빠진 값(사업자등록번호 등)의 판정은 구현(포트원)이 한다 — SIMULATED 는 아무것도 막지 않는다.
-        Business business = new Business(firstNonBlank(seller.getCompanyName(), market.getMarketName()),
-                digits(seller.getBusinessRegistrationNumber()), seller.getRepresentativeName(),
-                seller.getBusinessAddress(), seller.getBusinessCondition());
-        String partnerId = SettlementPartnerIds.partnerId(gateway.partnerIdPrefix(), SettlementPayee.BRAND, market.getId());
-        boolean existing = partnerId.equals(seller.getPortonePartnerId());
-        PartnerProfile profile = new PartnerProfile(SettlementPayee.BRAND, market.getId(), partnerId,
-                market.getMarketName(), contact, account, business, null, existing);
+        // 개인사업자는 이 번호로 본인인증 문자가 간다(0-8 · Q2) — 대표자 연락처 우선.
+        String phone = firstNonBlank(seller.getRepresentativeContact(), seller.getPhoneNumber());
+        Contact contact = new Contact(firstNonBlank(seller.getRepresentativeName(), market.getMarketName()), phone, email);
+        String brn = digits(seller.getBusinessRegistrationNumber());
+        Business business = new Business(firstNonBlank(seller.getCompanyName(), market.getMarketName()), brn,
+                seller.getRepresentativeName(), seller.getBusinessAddress(), seller.getBusinessCondition(),
+                SettlementPartnerIds.isCorporate(brn, seller.getBusinessType()));
+        String ref = SettlementPartnerIds.partnerRef(gateway.partnerRefPrefix(), SettlementPayee.BRAND, market.getId());
+        boolean existing = linked(seller.getPgPartnerId(), seller.getPgPartnerRef(), seller.getPgPartnerEnv(), ref);
+        PartnerProfile profile = new PartnerProfile(SettlementPayee.BRAND, market.getId(), ref,
+                existing ? seller.getPgPartnerId() : null, market.getMarketName(), contact, account, business, null, existing);
         String hash = SettlementPartnerIds.accountHash(account.bankCode(), account.accountNumber(), account.holder());
-        boolean upToDate = existing && hash.equals(seller.getPortonePartnerAccountHash())
-                && PartnerStatus.APPROVED.name().equals(seller.getPortonePartnerStatus());
-        return new Prepared(profile, hash, upToDate, seller.getId(), null);
+        boolean upToDate = existing && hash.equals(seller.getPgPartnerAccountHash())
+                && gateway.statusOf(seller.getPgPartnerStatus()) == PartnerStatus.APPROVED;
+        return new Prepared(profile, hash, upToDate, seller.getPgPartnerStatus(), seller.getId(), null);
     }
 
     private Prepared prepareCreator(Creator creator) {
@@ -181,22 +244,25 @@ public class SettlementPartnerSyncService {
         Contact contact = new Contact(firstNonBlank(creator.getRealName(), creator.getShowroomName()),
                 creator.getPhoneNumber(), creator.getBusinessEmail());
         Business business = null;
-        String birthdate = null;
         if (creator.getBusinessType() == CreatorBusinessType.BUSINESS) {
-            business = new Business(firstNonBlank(creator.getShowroomName(), creator.getRealName()),
-                    digits(creator.getBusinessRegistrationNumber()), creator.getRealName(), null, null);
-        } else {
-            // 비사업자 = 원천징수 대상자 — 생년월일이 필요하다(없으면 구현이 거절한다). 주민등록번호 앞자리로 보완하지 않는다(4-1).
-            birthdate = blank(creator.getBirthday()) ? null : creator.getBirthday();
+            String brn = digits(creator.getBusinessRegistrationNumber());
+            business = new Business(firstNonBlank(creator.getShowroomName(), creator.getRealName()), brn,
+                    creator.getRealName(), null, null, SettlementPartnerIds.isCorporate(brn, null));
         }
-        String partnerId = SettlementPartnerIds.partnerId(gateway.partnerIdPrefix(), SettlementPayee.CREATOR, creator.getId());
-        boolean existing = partnerId.equals(creator.getPortonePartnerId());
-        PartnerProfile profile = new PartnerProfile(SettlementPayee.CREATOR, creator.getId(), partnerId,
-                creator.getShowroomName(), contact, account, business, birthdate, existing);
+        String ref = SettlementPartnerIds.partnerRef(gateway.partnerRefPrefix(), SettlementPayee.CREATOR, creator.getId());
+        boolean existing = linked(creator.getPgPartnerId(), creator.getPgPartnerRef(), creator.getPgPartnerEnv(), ref);
+        PartnerProfile profile = new PartnerProfile(SettlementPayee.CREATOR, creator.getId(), ref,
+                existing ? creator.getPgPartnerId() : null, creator.getShowroomName(), contact, account, business,
+                blank(creator.getBirthday()) ? null : creator.getBirthday(), existing);
         String hash = SettlementPartnerIds.accountHash(account.bankCode(), account.accountNumber(), account.holder());
-        boolean upToDate = existing && hash.equals(creator.getPortonePartnerAccountHash())
-                && PartnerStatus.APPROVED.name().equals(creator.getPortonePartnerStatus());
-        return new Prepared(profile, hash, upToDate, null, creator.getId());
+        boolean upToDate = existing && hash.equals(creator.getPgPartnerAccountHash())
+                && gateway.statusOf(creator.getPgPartnerStatus()) == PartnerStatus.APPROVED;
+        return new Prepared(profile, hash, upToDate, creator.getPgPartnerStatus(), null, creator.getId());
+    }
+
+    /** 연결이 있는가 — PG 발급 id · 같은 참조 id · 같은 환경(테스트 셀러가 운영에 섞이지 않게 · 3-1). */
+    private boolean linked(String externalId, String storedRef, String storedEnv, String ref) {
+        return !blank(externalId) && ref.equals(storedRef) && gateway.env().equals(storedEnv);
     }
 
     /** 회원 정보의 은행 이름을 코드로 — 못 찾으면 코드 null(구현이 {@code UNSUPPORTED_BANK}). 계좌가 비어도 그대로(구현이 {@code ACCOUNT_MISSING}). */
@@ -207,14 +273,16 @@ public class SettlementPartnerSyncService {
     }
 
     private void link(Prepared prepared, PartnerResult result, LocalDateTime now) {
-        String status = result.status().name();
+        String externalId = result.hasExternalId() ? result.externalId() : prepared.profile().externalId();
         String hash = result.isApproved() ? prepared.accountHash() : null;
+        String ref = prepared.profile().partnerRef();
+        String env = gateway.env();
         if (prepared.sellerId() != null) {
             marketRepository.findById(prepared.profile().refId()).map(Market::getSeller)
-                    .ifPresent(seller -> seller.linkPortOnePartner(prepared.profile().partnerId(), status, hash, now));
+                    .ifPresent(seller -> seller.linkPgPartner(externalId, ref, env, result.rawStatus(), hash, now));
         } else {
             creatorRepository.findById(prepared.creatorId())
-                    .ifPresent(creator -> creator.linkPortOnePartner(prepared.profile().partnerId(), status, hash, now));
+                    .ifPresent(creator -> creator.linkPgPartner(externalId, ref, env, result.rawStatus(), hash, now));
         }
     }
 
@@ -232,7 +300,7 @@ public class SettlementPartnerSyncService {
             if (payout.getStatus() == PayoutStatus.SCHEDULED) {
                 changed = payoutRepository.blockWithReason(payout.getId(), code, reason) == 1;
             } else if (payout.getStatus() == PayoutStatus.BLOCKED && !code.equals(payout.getFailCode())) {
-                // 이미 다른 사유(주민등록번호)로 보류 중 — 파트너 사유를 덧붙인다(재판정이 둘 다 본다).
+                // 이미 다른 사유(주민등록번호)로 보류 중 — 셀러 사유를 덧붙인다(재판정이 둘 다 본다).
                 changed = payoutRepository.updateBlockReason(payout.getId(), code, reason) == 1;
             } else {
                 changed = false;
@@ -242,14 +310,20 @@ public class SettlementPartnerSyncService {
                 historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
                         "%s · %s · %s".formatted(payee.getLabel(), PayoutBlockReason.fromCode(code)
                                 .map(PayoutBlockReason::getLabel).orElse(code), reason), now);
-                notifier.payoutBlocked(settlementId, payee, code);
+                if (PayoutBlockReason.PAYEE_ACTION_CODES.contains(code)) {
+                    // 본인인증 · KYC — 수취자 본인이 푼다. 개인 수취자의 첫 등록은 늘 여기를 지나므로 운영자는 부르지 않는다.
+                    notifier.partnerVerificationRequired(settlementId, payee, code);
+                } else {
+                    notifier.payoutBlocked(settlementId, payee, code);
+                }
             }
         });
     }
 
     // ------------------------------------------------------------------ 보조
 
-    private record Prepared(PartnerProfile profile, String accountHash, boolean upToDate, Long sellerId, Long creatorId) {
+    private record Prepared(PartnerProfile profile, String accountHash, boolean upToDate, String rawStatus, Long sellerId,
+                            Long creatorId) {
     }
 
     /** PG 를 부를 수 없는 프로필 — 사유는 {@link PayoutBlockReason} 이름으로 행에 남는다. */

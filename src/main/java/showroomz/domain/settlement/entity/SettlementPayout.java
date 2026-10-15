@@ -79,13 +79,21 @@ public class SettlementPayout {
     @Column(name = "attempt", nullable = false)
     private int attempt;
 
-    /** PG 정산건 id(포트원 수기 정산건 · 지시 때) — 결과 조회의 키. 시뮬레이터는 비운다. */
+    /** PG 지급 참조 id({@code refPayoutId} · 우리 발급 · 지시 때) — 결과 조회 · 멱등 키의 원본. 시뮬레이터는 비운다. */
     @Column(name = "pg_transfer_id", length = 64)
     private String pgTransferId;
 
-    /** PG 지급 id(결과 조회 뒤) — {@code pg_reference} 와 같은 값. */
+    /** PG 지급 id(토스 발급 · 요청 응답 즉시) — {@code pg_reference} 와 같은 값. */
     @Column(name = "pg_payout_id", length = 64)
     private String pgPayoutId;
+
+    /** {@code EXPRESS | SCHEDULED}(토스 · 44 토스 설계서 0-4). */
+    @Column(name = "pg_schedule_type", length = 10)
+    private String pgScheduleType;
+
+    /** PG 지급일 — SCHEDULED 면 수취자 화면 「{날짜} 지급 예정」. */
+    @Column(name = "pg_payout_date")
+    private LocalDate pgPayoutDate;
 
     /** 생성(2-7) — 금액은 2-4 값 · 확정 전 WAITING. */
     public static SettlementPayout waiting(Long settlementId, SettlementPayee payee, long amount) {

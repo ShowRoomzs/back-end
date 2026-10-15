@@ -116,12 +116,23 @@ portone:
     kakaopay: ${PORTONE_CHANNEL_KAKAOPAY:}          # 비워 두면 카드 채널을 따라간다
     naverpay: ${PORTONE_CHANNEL_NAVERPAY:}
     tosspay: ${PORTONE_CHANNEL_TOSSPAY:}
-  platform:                                         # 파트너 정산(Platform) — 44_포트원_파트너정산_연동_BE_설계서.md 6-3. 상점 · Secret 은 위 값을 쓴다
-    api-secret: ${PORTONE_PLATFORM_API_SECRET:}     # 지급 권한 Secret 을 분리할 때만 — 비우면 portone.api-secret
+
+# TossPayoutsProperties.java — 토스페이먼츠 지급대행(Payouts v2) · 44_토스페이먼츠_지급대행_연동_BE_설계서.md 6-3. 결제(포트원 허브형)와 키를 공유하지 않는다
+toss:
+  payouts:
+    base-url: https://api.tosspayments.com
+    secret-key: ${TOSS_PAYOUTS_SECRET_KEY:}            # test_sk_…(PG_TEST) | live_sk_…(PG) — Basic 인증 · 로그 금지
+    security-key: ${TOSS_PAYOUTS_SECURITY_KEY:}        # 64자 hex — 요청 JWE · 웹훅 서명 · 로그 금지
+    connect-timeout-millis: 3000
     read-timeout-millis: 10000
-    partner-id-prefix-test: "t-"                    # PG_TEST 모드의 파트너 · 정산건 id 접두
-    startup-check: true                             # 기동 시 getPlatformSetting 1회(활성화 · deductWht=false)
-    withdrawal-memo: "SHOWROOMZ 정산"
+    transaction-description: "쇼룸즈정산"                # 이체 적요 ≤7자 — 기획 L-3
+    partner-ref-prefix-test: "t-"                      # PG_TEST 의 refSellerId · refPayoutId 접두
+    express-window-start: "08:00"                      # EXPRESS(당일 지급) 요청 가능 창(영업일) — 밖이면 SCHEDULED(다음 영업일)
+    express-window-end: "15:00"
+    startup-check: true                                # 기동 시 GET /v2/balances 1회(인증 · 계약)
+    not-found-grace-business-days: 1                   # 결과 모름 행이 N영업일 뒤에도 토스 목록에 없으면 「지급 미생성」
+    test:
+      corporate-override-brn: ${TOSS_PAYOUTS_TEST_BRN:}   # PG_TEST 전용 — 비법인 수취자 대체 등록용 법인 사업자번호 · PG 에서 값이 있으면 기동 실패
 
 # OrderProperties.java 관련 설정 — 주문·결제 운영값(결제 계획서 4-4 · 4-8 · 6-2)
 order:
@@ -209,12 +220,13 @@ settlement:
   generation-scheduler-enabled: true                # 정산 생성 배치(10분)
   auto-confirm-scheduler-enabled: true              # 자동 확정 배치(10분)
   payout-scheduler-enabled: true                    # 지급 배치(영업일 payout-hour 시)
-  payout-result-scheduler-enabled: true             # 지급 결과 폴링(30분 · PG 모드만)
+  payout-result-scheduler-enabled: true             # 지급 결과 폴링(30분 · PG 모드만 · 웹훅의 백스톱)
   receipt-retry-scheduler-enabled: true             # 원천징수영수증 재생성(매시 40분)
   clawback-scheduler-enabled: true                  # 차감 미회수 판정(매일 01:00)
   payout:
-    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG_TEST(포트원 테스트 모드 · 개발 서버) | PG(운영) — 운영 프로필은 PG 만
-    result-stale-business-days: 1                   # 지시 뒤 N영업일 지나도 PG 지급이 없으면 「지급 미실행」 알림
+    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG_TEST(토스 테스트 키 · 개발 서버) | PG(토스 운영 키) — 런칭 게이트 켠 운영은 PG 만
+    result-stale-business-days: 1                   # 지시 뒤 N영업일 지나도 REQUESTED 가 닫히지 않으면 「PG 처리 지연」 알림
+    weekly-limit-amount: 10000000                   # PARTIALLY_APPROVED 셀러 주당 한도(토스 정책) — 우리가 먼저 센다
   platform:                                         # SHOWROOMZ 사업자 정보 — 운영 값 수령 전 더미(이름에 TEST). 운영 프로필에서 비면 기동 실패
     business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:SHOWROOMZ TEST}
     representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:TEST 대표}

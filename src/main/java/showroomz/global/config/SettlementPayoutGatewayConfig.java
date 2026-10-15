@@ -1,8 +1,6 @@
 package showroomz.global.config;
 
-import io.portone.sdk.server.errors.PlatformNotEnabledException;
-import io.portone.sdk.server.platform.PlatformClient;
-import io.portone.sdk.server.platform.PlatformSetting;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
@@ -10,88 +8,77 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
+import org.springframework.web.client.RestClient;
 import showroomz.domain.settlement.port.SettlementPartnerGateway;
 import showroomz.domain.settlement.port.SettlementPayoutGateway;
-import showroomz.global.config.properties.PortOnePlatformProperties;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.config.properties.SettlementProperties.PayoutMode;
+import showroomz.global.config.properties.TossPayoutsProperties;
+import showroomz.global.payment.portone.PaymentGatewayException;
 import showroomz.global.payment.portone.PaymentGatewayRejectedException;
-import showroomz.global.payment.portone.PortOneProperties;
 import showroomz.global.payment.settlement.NoopSettlementPartnerGateway;
 import showroomz.global.payment.settlement.SimulatedSettlementPayoutGateway;
-import showroomz.global.payment.settlement.portone.PortOnePartnerRegistrar;
-import showroomz.global.payment.settlement.portone.PortOneSettlementPayoutGateway;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import showroomz.global.payment.settlement.toss.TossJwe;
+import showroomz.global.payment.settlement.toss.TossPayoutsClient;
+import showroomz.global.payment.settlement.toss.TossSellerRegistrar;
+import showroomz.global.payment.settlement.toss.TossSettlementPayoutGateway;
+import showroomz.global.utils.BusinessCalendar;
 
 /**
- * 정산 지급 포트 선택(44 어드민 설계서 0-5 · 공통 결정 #9 · 포트원 설계서 6-4) — {@code settlement.payout.mode}.
+ * 정산 지급 포트 선택(44 어드민 설계서 0-5 · 공통 결정 #9 · 토스 설계서 6-4) — {@code settlement.payout.mode}.
  *
  * <ul>
- *   <li>{@code SIMULATED} — 즉시 지급 완료. <b>운영 프로필({@code prod})에서는 기동 실패</b> — 시뮬레이터가 운영에 새면 돈이 나간
- *       것처럼 기록된다</li>
- *   <li>{@code PG_TEST} — 포트원 파트너 정산 **테스트 모드**(전 호출 {@code test=true}). 운영 프로필에서는 기동 실패</li>
- *   <li>{@code PG} — 포트원 운영. 기동 시 {@code getPlatformSetting} 1회로 활성화 · {@code deductWht=false} 를 검증한다</li>
+ *   <li>{@code SIMULATED} — 즉시 지급 완료. <b>런칭 게이트 켜진 운영 프로필({@code prod})에서는 기동 실패</b></li>
+ *   <li>{@code PG_TEST} — 토스 지급대행 <b>테스트 키</b>({@code test_sk_}). 런칭 게이트 켜진 운영 프로필에서는 기동 실패</li>
+ *   <li>{@code PG} — 토스 지급대행 운영({@code live_sk_}). 테스트 대체 사업자번호가 차 있으면 기동 실패</li>
  * </ul>
- * 검증 방식은 {@code PortOneV2Gateway}의 {@code requireText}와 같다 — 설정이 틀렸으면 뜨지 않는다.
+ * 검증 방식은 {@code PortOneV2Gateway}의 {@code requireText}와 같다 — 설정이 틀렸으면 뜨지 않는다. 기동 시 토스 호출은
+ * {@code GET /v2/balances} 1회 · 읽기(인증 · 계약 확인).
  */
 @Slf4j
 @Configuration
 public class SettlementPayoutGatewayConfig {
 
-    /** 포트원 Platform 클라이언트 — 결제 {@code PaymentClient} 와 별 인스턴스. 포트원 모드에서만 만든다. */
+    /** 토스 지급대행 클라이언트 — PG 모드에서만 만든다. */
     @Bean
     @ConditionalOnExpression("'${settlement.payout.mode:SIMULATED}' != 'SIMULATED'")
-    public PlatformClient settlementPlatformClient(SettlementProperties settlement, PortOneProperties portone,
-                                                   PortOnePlatformProperties platform, Environment environment) {
+    public TossPayoutsClient tossPayoutsClient(SettlementProperties settlement, TossPayoutsProperties toss,
+                                               Environment environment, RestClient.Builder builder, ObjectMapper objectMapper) {
         PayoutMode mode = settlement.getPayout().getMode();
         validateMode(settlement, environment);
-        if (!portone.isEnabled()) {
-            throw new IllegalStateException("settlement.payout.mode=" + mode + " 는 portone.enabled=true 가 필요합니다.");
-        }
-        requireText(portone.getStoreId(), "portone.store-id");
-        String secret = platform.getApiSecret() == null || platform.getApiSecret().isBlank()
-                ? portone.getApiSecret() : platform.getApiSecret();
-        requireText(secret, "portone.api-secret(또는 portone.platform.api-secret)");
-        PlatformClient client = new PlatformClient(secret, portone.getBaseUrl(), portone.getStoreId());
-        if (platform.isStartupCheck()) {
-            checkPlatform(client, mode == PayoutMode.PG_TEST, platform.getReadTimeoutMillis());
+        validateToss(mode, toss);
+        TossPayoutsClient client = new TossPayoutsClient(toss, builder.requestFactory(TossPayoutsClient.requestFactory(toss)), objectMapper);
+        if (toss.isStartupCheck()) {
+            checkContract(client, mode);
         }
         return client;
     }
 
     @Bean
     public SettlementPayoutGateway settlementPayoutGateway(SettlementProperties settlement, Environment environment,
-                                                           ObjectProvider<PlatformClient> platformClient,
-                                                           PortOnePlatformProperties platform) {
+                                                           ObjectProvider<TossPayoutsClient> client, TossPayoutsProperties toss,
+                                                           BusinessCalendar businessCalendar, ObjectMapper objectMapper) {
         PayoutMode mode = settlement.getPayout().getMode();
         validateMode(settlement, environment);
         if (mode == PayoutMode.SIMULATED) {
             return new SimulatedSettlementPayoutGateway();
         }
-        boolean test = mode == PayoutMode.PG_TEST;
-        return new PortOneSettlementPayoutGateway(platformClient.getObject(), test, prefix(platform, test),
-                platform.getReadTimeoutMillis());
+        return new TossSettlementPayoutGateway(client.getObject(), mode.isTest(), toss, businessCalendar, objectMapper);
     }
 
     @Bean
     public SettlementPartnerGateway settlementPartnerGateway(SettlementProperties settlement,
-                                                             ObjectProvider<PlatformClient> platformClient,
-                                                             PortOnePlatformProperties platform) {
+                                                             ObjectProvider<TossPayoutsClient> client, TossPayoutsProperties toss) {
         PayoutMode mode = settlement.getPayout().getMode();
         if (mode == PayoutMode.SIMULATED) {
             return new NoopSettlementPartnerGateway();
         }
-        boolean test = mode == PayoutMode.PG_TEST;
-        return new PortOnePartnerRegistrar(platformClient.getObject(), test, prefix(platform, test),
-                platform.getReadTimeoutMillis());
+        return new TossSellerRegistrar(client.getObject(), mode.isTest(), toss);
     }
 
     /**
-     * 런칭 게이트가 켜진 운영 프로필은 {@code PG} 만 — 시뮬레이터 · 테스트 모드가 운영에 새면 지급이 된 것처럼 기록된다(44 어드민 0-5 ·
-     * 포트원 6-4). 게이트를 끈 개발 단계 {@code prod} 는 경고만 남기고 뜬다.
+     * 런칭 게이트가 켜진 운영 프로필은 {@code PG} 만 — 시뮬레이터 · 테스트 키가 운영에 새면 지급이 된 것처럼 기록된다(44 어드민 0-5 ·
+     * 토스 9-4). 게이트를 끈 개발 단계 {@code prod} 는 경고만 남기고 뜬다.
      */
     static void validateMode(SettlementProperties settlement, Environment environment) {
         PayoutMode mode = settlement.getPayout().getMode();
@@ -100,48 +87,61 @@ public class SettlementPayoutGatewayConfig {
         }
         if (settlement.isLaunchGateEnabled()) {
             throw new IllegalStateException("settlement.payout.mode=" + mode + " 는 런칭 게이트가 켜진 운영 프로필(prod)에서 쓸 수 "
-                    + "없습니다 — 운영은 PG(포트원 파트너 정산 운영 모드)만 됩니다(44 정산 설계서 0-5).");
+                    + "없습니다 — 운영은 PG(토스 지급대행 운영 키)만 됩니다(44 정산 설계서 0-5).");
         }
         log.warn("정산 런칭 게이트 꺼짐(settlement.launch-gate-enabled=false) — prod 인데 지급 모드 {} 입니다. 실제 돈은 나가지 않습니다. "
-                + "실제 돈이 오가는 운영 서버에서는 반드시 켜고 PG 로 두세요(44 포트원 설계서 9-4).", mode);
+                + "실제 돈이 오가는 운영 서버에서는 반드시 켜고 PG 로 두세요(44 토스 설계서 9-4).", mode);
     }
 
-    /** 기동 검증 — 상점에 Platform 이 켜져 있고 원천징수를 포트원이 떼지 않는다(포트원 설계서 0-4 · 2-1). */
-    static void checkPlatform(PlatformClient client, boolean test, long timeoutMillis) {
-        PlatformSetting setting;
+    /** 키 · 보안 키 · 적요 · 테스트 대체 사업자번호 — 네트워크 앞에서 끝나는 검증(6-4). */
+    public static void validateToss(PayoutMode mode, TossPayoutsProperties toss) {
+        requireText(toss.getSecretKey(), "toss.payouts.secret-key");
+        if (mode == PayoutMode.PG_TEST && !toss.isTestKey()) {
+            throw new IllegalStateException("settlement.payout.mode=PG_TEST 는 토스 테스트 키(test_sk_…)만 받습니다 — "
+                    + "라이브 키로 테스트 모드를 돌리면 실제 지급이 나갑니다(44 토스 설계서 6-4).");
+        }
+        if (mode == PayoutMode.PG && !toss.isLiveKey()) {
+            throw new IllegalStateException("settlement.payout.mode=PG 는 토스 라이브 키(live_sk_…)만 받습니다(44 토스 설계서 6-4).");
+        }
+        if (mode == PayoutMode.PG && toss.getTest().hasCorporateOverride()) {
+            throw new IllegalStateException("toss.payouts.test.corporate-override-brn 은 PG_TEST 전용입니다 — 운영(PG)에서는 비우세요. "
+                    + "비법인 수취자가 가짜 법인으로 등록됩니다(44 토스 설계서 0-10).");
+        }
         try {
-            setting = client.getPlatformSetting(test).get(timeoutMillis, TimeUnit.MILLISECONDS);
-        } catch (ExecutionException e) {
-            if (e.getCause() instanceof PlatformNotEnabledException) {
-                throw new IllegalStateException("포트원 상점에 파트너 정산(Platform) 기능이 켜져 있지 않습니다 — 포트원에 활성화를 요청하세요"
-                        + "(44 포트원 설계서 2-1). 그 전까지는 settlement.payout.mode=SIMULATED 로 두세요.", e);
-            }
-            throw new IllegalStateException("포트원 Platform 설정 조회 실패 — " + e.getCause().getMessage(), e.getCause());
-        } catch (TimeoutException | InterruptedException e) {
-            if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-            }
-            throw new IllegalStateException("포트원 Platform 설정 조회 타임아웃 — portone.platform.startup-check=false 로 끄거나 네트워크를 확인하세요", e);
+            TossJwe.parseKey(toss.getSecurityKey());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException(e.getMessage() + " — 개발자센터 「API 개별 키 > 보안 키」(44 토스 설계서 2-1).", e);
         }
-        if (setting.getDeductWht()) {
-            throw new IllegalStateException("포트원 Platform 설정 deductWht=true — 원천징수는 우리 산식이 계산합니다. 콘솔에서 "
-                    + "「원천징수 공제」를 끄세요(44 포트원 설계서 0-4). 켜진 채 지급하면 인플루언서 몫이 이중 공제됩니다.");
+        String description = toss.getTransactionDescription();
+        if (description == null || description.isBlank()
+                || description.length() > TossPayoutsProperties.TRANSACTION_DESCRIPTION_MAX) {
+            throw new IllegalStateException("toss.payouts.transaction-description 은 1~7자여야 합니다(이체 적요 · 44 토스 설계서 1-4).");
         }
-        log.info("포트원 Platform 기동 검증 통과 - test: {}, deductWht: false", test);
     }
 
-    private static String prefix(PortOnePlatformProperties platform, boolean test) {
-        return test ? platform.getPartnerIdPrefixTest() : "";
+    /** 기동 검증 — 인증 · 지급대행 계약(토스 설계서 2-1). */
+    static void checkContract(TossPayoutsClient client, PayoutMode mode) {
+        try {
+            long available = client.balance().available();
+            log.info("토스 지급대행 기동 검증 통과 - mode: {}, availableAmount: {}", mode, available);
+        } catch (PaymentGatewayRejectedException e) {
+            if (e.getHttpStatus() == 401) {
+                throw new IllegalStateException("토스 지급대행 인증 실패(UNAUTHORIZED_KEY) — toss.payouts.secret-key 를 확인하세요.", e);
+            }
+            if (e.getHttpStatus() == 403) {
+                throw new IllegalStateException("토스 지급대행 계약이 없습니다(FORBIDDEN_REQUEST) — 계약 뒤 켜세요. 그 전까지는 "
+                        + "settlement.payout.mode=SIMULATED 로 두세요(44 토스 설계서 2-1).", e);
+            }
+            throw new IllegalStateException("토스 지급대행 잔액 조회 거절 — " + e.getMessage(), e);
+        } catch (PaymentGatewayException e) {
+            throw new IllegalStateException("토스 지급대행 잔액 조회 실패 — toss.payouts.startup-check=false 로 끄거나 네트워크를 확인하세요. "
+                    + e.getMessage(), e);
+        }
     }
 
     private static void requireText(String value, String key) {
         if (value == null || value.isBlank()) {
-            throw new IllegalStateException(key + " 설정이 비어 있습니다 — 포트원 파트너 정산 모드에 필요합니다.");
+            throw new IllegalStateException(key + " 설정이 비어 있습니다 — 토스 지급대행 모드에 필요합니다.");
         }
-    }
-
-    /** 테스트 · 진단용 — 거절 예외의 원인이 「미활성화」인가. */
-    static boolean isNotEnabled(PaymentGatewayRejectedException e) {
-        return e.getCause() instanceof PlatformNotEnabledException;
     }
 }

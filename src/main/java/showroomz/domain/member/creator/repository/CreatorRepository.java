@@ -22,6 +22,9 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
 
     Optional<Creator> findByConnectionCode(String connectionCode);
 
+    /** PG 지급대행 셀러 id 로 — 웹훅 {@code seller.changed}(44 토스 설계서 4-3). */
+    Optional<Creator> findByPgPartnerId(String pgPartnerId);
+
     boolean existsByConnectionCode(String connectionCode);
 
     /**

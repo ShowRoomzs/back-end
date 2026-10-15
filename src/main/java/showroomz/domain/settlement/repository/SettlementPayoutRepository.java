@@ -123,9 +123,87 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
     int recordReference(@Param("payoutId") Long payoutId, @Param("pgReference") String pgReference);
 
-    // ------------------------------------------------------------------ 포트원 파트너 정산(44 포트원 설계서 5절)
+    // ------------------------------------------------------------------ 토스 지급대행(44 토스 설계서 5절)
 
-    /** 정산건 생성 성공 — REQUESTED 행에 PG 정산건 id 를 적는다. 결과 조회 중 적는 메모(failCode)도 같은 자리. */
+    Optional<SettlementPayout> findByPgPayoutId(String pgPayoutId);
+
+    Optional<SettlementPayout> findByPgTransferId(String pgTransferId);
+
+    /** 지급 요청 성공(5-2) — REQUESTED 행에 참조 id · PG 지급 id(= 참조번호) · 유형 · 지급일을 적는다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.pgTransferId = :pgTransferId, p.pgPayoutId = :pgPayoutId, p.pgReference = :pgPayoutId, "
+            + "p.pgScheduleType = :scheduleType, p.pgPayoutDate = :payoutDate, p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int recordRequest(@Param("payoutId") Long payoutId, @Param("pgTransferId") String pgTransferId,
+                      @Param("pgPayoutId") String pgPayoutId, @Param("scheduleType") String scheduleType,
+                      @Param("payoutDate") LocalDate payoutDate);
+
+    /** 잔액 부족(5-1 ①) — 지시를 되돌려 다음 영업일 예정으로. attempt 는 그대로. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
+            + "p.dueDate = :dueDate, p.requestedAt = NULL, p.pgTransferId = NULL, p.pgPayoutId = NULL, p.pgReference = NULL, "
+            + "p.pgScheduleType = NULL, p.pgPayoutDate = NULL, p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int deferRequested(@Param("payoutId") Long payoutId, @Param("dueDate") LocalDate dueDate);
+
+    /** 본인인증 · KYC 필요(5-2 ④) — 지시한 행을 FAILED 대신 BLOCKED 로. 수취자가 풀면 다시 예정으로. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
+            + "p.dueDate = NULL, p.requestedAt = NULL, p.pgTransferId = NULL, p.pgPayoutId = NULL, p.pgReference = NULL, "
+            + "p.pgScheduleType = NULL, p.pgPayoutDate = NULL, p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int blockRequested(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                       @Param("failReason") String failReason);
+
+    /** 오늘 예정 행의 정산별 합계(플랫폼 몫 제외) — 잔액 선검사(5-1 ①). [settlementId, sum]. */
+    @Query("SELECT p.settlementId, COALESCE(SUM(p.amount), 0) FROM SettlementPayout p "
+            + "WHERE p.settlementId IN :settlementIds AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED "
+            + "AND p.dueDate <= :today AND p.payee <> showroomz.domain.settlement.type.SettlementPayee.PLATFORM "
+            + "GROUP BY p.settlementId")
+    List<Object[]> sumDueBySettlement(@Param("settlementIds") Collection<Long> settlementIds, @Param("today") LocalDate today);
+
+    /** 정산의 오늘 예정 행(플랫폼 몫 제외) — 연기 대상. */
+    @Query("SELECT p FROM SettlementPayout p WHERE p.settlementId = :settlementId "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED AND p.dueDate <= :today "
+            + "AND p.payee <> showroomz.domain.settlement.type.SettlementPayee.PLATFORM ORDER BY p.id ASC")
+    List<SettlementPayout> findScheduledDue(@Param("settlementId") Long settlementId, @Param("today") LocalDate today);
+
+    /** 브랜드의 최근 지시 · 지급 합계 — 주당 한도 선검사(5-2 ①). */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "
+            + "AND s.market.id = :marketId AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+            + "AND p.status IN (showroomz.domain.settlement.type.PayoutStatus.REQUESTED, "
+            + "    showroomz.domain.settlement.type.PayoutStatus.PAID) AND p.requestedAt >= :since")
+    long sumRecentForMarket(@Param("marketId") Long marketId, @Param("since") LocalDateTime since);
+
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "
+            + "AND s.creator.id = :creatorId AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status IN (showroomz.domain.settlement.type.PayoutStatus.REQUESTED, "
+            + "    showroomz.domain.settlement.type.PayoutStatus.PAID) AND p.requestedAt >= :since")
+    long sumRecentForCreator(@Param("creatorId") Long creatorId, @Param("since") LocalDateTime since);
+
+    /** 브랜드의 PG 셀러 사유 보류 행 — {@code seller.changed} 승인이 즉시 푼다(4-3). */
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.market.id = :marketId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED AND p.failCode IN :failCodes ORDER BY p.id ASC")
+    List<SettlementPayout> findBlockedForMarket(@Param("marketId") Long marketId, @Param("failCodes") Collection<String> failCodes);
+
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED AND p.failCode IN :failCodes ORDER BY p.id ASC")
+    List<SettlementPayout> findBlockedForCreator(@Param("creatorId") Long creatorId, @Param("failCodes") Collection<String> failCodes);
+
+    /** 브랜드의 지급 예정 행 — 셀러가 KYC_REQUIRED 로 넘어가면 보류한다(4-3). */
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.market.id = :marketId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED ORDER BY p.id ASC")
+    List<SettlementPayout> findScheduledForMarket(@Param("marketId") Long marketId);
+
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED ORDER BY p.id ASC")
+    List<SettlementPayout> findScheduledForCreator(@Param("creatorId") Long creatorId);
+
+    /** 참조 id 만 적는다(결과 모름 · 지시 중 통신 실패 뒤 복구) — 결과 조회 중 적는 메모(failCode)도 같은 자리. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.pgTransferId = COALESCE(:pgTransferId, p.pgTransferId), "
             + "p.failCode = :failCode, p.failReason = :failReason "

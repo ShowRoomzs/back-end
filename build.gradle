@@ -52,6 +52,8 @@ dependencies {
 	implementation 'org.apache.poi:poi-ooxml:5.2.5'
 	// 포트원 V2 서버 SDK — 결제 조회·취소·사전 등록·웹훅 서명 검증(결제 계획서 6-1)
 	implementation 'io.portone:server-sdk:0.24.0'
+	// 토스페이먼츠 지급대행 — 요청 본문 JWE(dir · A256GCM) 암·복호화(44 토스 설계서 6-2). oauth2-client 가 이미 끌어오는 버전을 명시한다.
+	implementation 'com.nimbusds:nimbus-jose-jwt:10.9.1'
 	/*implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.1.1'*/
 	
 	// FCM 푸시 발송 (Firebase Admin SDK)

@@ -237,7 +237,7 @@ public class AdminSettlementDetailAssembler {
         if (confirmed && creatorPayout != null && creatorPayout.getStatus() == PayoutStatus.BLOCKED) {
             blockPolicy.blockReasons(s).forEach(r -> blockReasons.add(new AdminSettlementDto.BlockReason(r.name(), r.getLabel())));
         }
-        // PG 파트너 사유(포트원 설계서 4-3)는 수취자 행의 fail_code 로 남는다 — 브랜드 행도 보류될 수 있다.
+        // PG 셀러 사유(토스 설계서 4-3 · 본인인증 · KYC 포함)는 수취자 행의 fail_code 로 남는다 — 브랜드 행도 보류될 수 있다.
         for (SettlementPayout p : payouts.values()) {
             if (p.getStatus() == PayoutStatus.BLOCKED && p.getFailCode() != null) {
                 showroomz.domain.settlement.type.PayoutBlockReason.fromCode(p.getFailCode())

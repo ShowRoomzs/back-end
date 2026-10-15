@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import showroomz.domain.settlement.type.SettlementPayee;
 
+import java.time.LocalDate;
+
 /**
  * 정산 알림 — <b>훅 자리만 두고 발송은 스텁</b>이다(44 어드민 설계서 · 이슈 스레드 설계서 8-2). {@code GroupBuyNotifier}와 같다.
  *
@@ -36,26 +38,36 @@ public class SettlementNotifier {
         stub("ADMIN", "PAYOUT_FAILED:" + payee.name(), settlementId);
     }
 
-    // ------------------------------------------------------------------ PG 지급대행(44 포트원 설계서 4-3 · 5-3 · 5-4 · 9-2)
+    // ------------------------------------------------------------------ PG 지급대행(44 토스 설계서 4-3 · 5-1 · 5-3 · 5-4)
 
-    /** 파트너 등록 실패로 수취자 행 보류 — 운영자. */
+    /** 셀러 등록 실패로 수취자 행 보류 — 운영자. */
     public void payoutBlocked(Long settlementId, SettlementPayee payee, String reasonCode) {
         stub("ADMIN", "PAYOUT_BLOCKED:" + payee.name() + ":" + reasonCode, settlementId);
     }
 
-    /** 지시 끝 — 「D 일자 지급 N건 · 합계 — 콘솔에서 일괄 지급을 실행해 주세요」 · PG 대조 결과 포함. */
-    public void payoutReadyForExecution(java.time.LocalDate settlementDate, int ourCount, long ourAmount,
-                                        Integer pgCount, Long pgAmount) {
-        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_READY_FOR_EXECUTION date={} ours={}건/{}원 pg={}건/{}원",
-                settlementDate, ourCount, ourAmount, pgCount, pgAmount);
+    /** 수취자 본인이 풀어야 하는 보류(본인인증 · KYC) — 수취자에게 「토스페이먼츠 본인인증 문자를 확인해 주세요」(4-3 · L-2′). */
+    public void partnerVerificationRequired(Long settlementId, SettlementPayee payee, String reasonCode) {
+        stub(payee.name(), "PARTNER_VERIFICATION_REQUIRED:" + reasonCode, settlementId);
     }
 
-    /** 지시 뒤 N영업일 — 아직 PG 지급이 실행되지 않았다. */
-    public void payoutExecutionOverdue(Long settlementId) {
-        stub("ADMIN", "PAYOUT_EXECUTION_OVERDUE", settlementId);
+    /** 지시 끝 — 「D 일자 지급 N건 · 합계」 · PG 대사 결과 포함(5-3). 사람이 할 일은 없고 어긋날 때만 본다. */
+    public void payoutRequestedSummary(LocalDate payoutDate, int ourCount, long ourAmount, Integer pgCount, Long pgAmount) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_REQUESTED_SUMMARY date={} ours={}건/{}원 pg={}건/{}원",
+                payoutDate, ourCount, ourAmount, pgCount, pgAmount);
     }
 
-    /** 결과 조회가 사람을 부른다 — PG 보류 · 지급액 불일치. */
+    /** 잔액 부족 — 들어가는 만큼만 지시하고 나머지는 다음 영업일로 연기했다(5-1 ①). */
+    public void payoutBalanceInsufficient(LocalDate payoutDate, long available, long required, int deferredCount) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_BALANCE_INSUFFICIENT date={} available={} required={} deferred={}",
+                payoutDate, available, required, deferredCount);
+    }
+
+    /** 지시 뒤 N영업일 — REQUESTED 가 닫히지 않는다(PG 처리 지연). */
+    public void payoutStale(Long settlementId) {
+        stub("ADMIN", "PAYOUT_STALE", settlementId);
+    }
+
+    /** 결과 조회가 사람을 부른다 — PG 보류 · 주당 한도 초과 예상. */
     public void payoutCheckRequired(Long settlementId, SettlementPayee payee, String code) {
         stub("ADMIN", "PAYOUT_CHECK_REQUIRED:" + payee.name() + ":" + code, settlementId);
     }

@@ -26,7 +26,8 @@ public enum SettlementEventType {
     PAYOUT_PAID("지급 완료"),
     PAYOUT_FAILED("분배 실패"),
     PAYOUT_RETRIED("재분배"),
-    /** PG 파트너 등록 실패로 수취자 행 보류(44 포트원 설계서 4-3). */
+    PAYOUT_DEFERRED("지급 연기 · 잔액 부족"),
+    /** PG 셀러 등록 실패 · 본인인증 · KYC 대기로 수취자 행 보류(44 토스 설계서 4-3). */
     PAYOUT_BLOCKED("지급 보류"),
     /** 결과 조회에서 사람이 봐야 할 것 — PG 보류 · 지급액 불일치 · 지급 미실행(5-4 · 9-2). */
     PAYOUT_CHECK_REQUIRED("지급 확인 필요"),
