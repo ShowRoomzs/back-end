@@ -5,14 +5,16 @@ import java.util.Locale;
 import java.util.function.Predicate;
 
 /**
- * §22-1 쇼룸 주소 생성 유틸 — 가입 시 쇼룸명을 기준으로 핸들(`showroomz.com/@{핸들}`의 뒷부분)을 만든다.
+ * §22-1 쇼룸 주소 생성 유틸 — 가입 시 <b>계정 아이디(인스타그램 핸들)</b>를 기준으로 핸들(`showroomz.com/@{핸들}`의
+ * 뒷부분)을 만든다(스튜디오 온보딩 rev.3 [정정] — 쇼룸명 기준이 아니다).
  *
- * <p>한 번 발급되면 쇼룸명을 바꿔도 따라 바뀌지 않는다. 링크가 바뀌면 인플루언서가 인스타그램
- * 프로필·스토리에 이미 뿌려둔 링크가 전부 죽기 때문이다(그래서 이 유틸은 가입 시점에만 호출한다).
+ * <p>쇼룸명은 한글이라 핸들로 옮길 글자가 없고, 나중에 바뀌면 주소도 따라 바뀌어야 해 「수정 불가」 원칙과 부딪힌다.
+ * 계정 아이디는 신청 때 받은 영문 고정값(영문 소문자 · 숫자 · 마침표 · 밑줄)이라 그대로 재사용할 수 있고, 쇼룸명이
+ * 정해지기 전(온보딩 화면)에도 주소를 미리 보여줄 수 있다.
  *
- * <p>쇼룸명은 한글이 허용되지만 URL 핸들은 ASCII로 제한한다 — 퍼센트 인코딩된 주소는 복사·공유 과정에서
- * 깨져 보이고, 소비자가 눈으로 읽고 옮겨 적을 수 없다. 한글만으로 된 쇼룸명은 남는 글자가 없으므로
- * 익명 접두사(`sr` + 랜덤)로 떨어진다.
+ * <p>한 번 발급되면 바뀌지 않는다. 링크가 바뀌면 인플루언서가 인스타그램 프로필·스토리에 이미 뿌려둔 링크가 전부
+ * 죽기 때문이다(그래서 이 유틸은 가입 시점에만 호출한다). 핸들은 ASCII 소문자 · 숫자 · 밑줄로 제한한다 — 마침표 ·
+ * 공백 · 하이픈은 밑줄로 바꾸고, 쓸 글자가 모자라면 익명 접두사(`sr` + 랜덤)로 떨어진다.
  */
 public final class ShowroomAddressGenerator {
 
@@ -28,9 +30,9 @@ public final class ShowroomAddressGenerator {
     private ShowroomAddressGenerator() {
     }
 
-    /** 쇼룸명에서 핸들 후보를 만들고, 이미 쓰이는 값이면 숫자 꼬리표 → 랜덤 순으로 비켜간다. */
-    public static String generateUnique(String showroomName, Predicate<String> alreadyExists) {
-        String base = toHandle(showroomName);
+    /** 계정 아이디에서 핸들 후보를 만들고, 이미 쓰이는 값이면 숫자 꼬리표 → 랜덤 순으로 비켜간다. */
+    public static String generateUnique(String accountId, Predicate<String> alreadyExists) {
+        String base = toHandle(accountId);
 
         if (base != null && !alreadyExists.test(base)) {
             return base;
@@ -52,19 +54,19 @@ public final class ShowroomAddressGenerator {
     }
 
     /**
-     * 쇼룸명 → 핸들. 영문·숫자는 소문자로 남기고 공백은 `_`로 바꾼다.
-     * 쓸 수 있는 글자가 {@value #MIN_LENGTH}자에 못 미치면(한글 전용 쇼룸명 등) null을 돌려준다.
+     * 계정 아이디 → 핸들. 영문·숫자는 소문자로 남기고 마침표 · 공백 · 하이픈은 `_`로 바꾼다(앞의 `@`는 버린다).
+     * 쓸 수 있는 글자가 {@value #MIN_LENGTH}자에 못 미치면 null을 돌려준다.
      */
-    private static String toHandle(String showroomName) {
-        if (showroomName == null || showroomName.isBlank()) {
+    private static String toHandle(String accountId) {
+        if (accountId == null || accountId.isBlank()) {
             return null;
         }
 
         StringBuilder sb = new StringBuilder();
-        for (char c : showroomName.trim().toLowerCase(Locale.ROOT).toCharArray()) {
+        for (char c : accountId.trim().toLowerCase(Locale.ROOT).toCharArray()) {
             if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) {
                 sb.append(c);
-            } else if (c == ' ' || c == '_' || c == '-') {
+            } else if (c == ' ' || c == '_' || c == '-' || c == '.') {
                 // 구분자가 연달아 붙거나 맨 앞에 오지 않게 한다.
                 if (sb.length() > 0 && sb.charAt(sb.length() - 1) != '_') {
                     sb.append('_');

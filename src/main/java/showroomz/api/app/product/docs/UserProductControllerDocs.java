@@ -160,7 +160,7 @@ public interface UserProductControllerDocs {
                     "  - `groupBuyId`를 생략하면 이 상품을 담은 판매 중 공구가 정확히 1개일 때만 그 공구로 정한다. 정하지 못하면 " +
                     "응답 groupBuyId가 null이고 가격은 계약 가격이 아니다 — 이때는 담기·바로 구매를 부를 수 없다.\n" +
                     "  - 응답 groupBuyId를 장바구니 담기·바로 구매 요청에 그대로 싣는다. 상품 관리에서 정가를 고쳐도 이 가격은 변하지 않는다.\n" +
-                    "- 배송 블록: delivery (발송 예정일 · 배송비 · 무료배송 기준 · 도서산간 추가비 · 반품비 · 교환비)\n" +
+                    "- 배송 블록: delivery (발송 예정일 · 배송비 · 무료배송 기준 · 제주 추가비 · 도서산간 추가비 · 반품비 · 교환비)\n" +
                     "- 상세정보 탭: description + productNotice\n" +
                     "- 판매자 정보 탭: productNotice(고시) + delivery(배송/교환/반품) + sellerInfo(사업자 정보)\n" +
                     "- 옵션 시트: optionGroups + variants (variants[].isOutOfStock으로 옵션 단위 품절 표시)\n" +
@@ -218,6 +218,7 @@ public interface UserProductControllerDocs {
                                                     "    \"shipDueText\": \"공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)\",\n" +
                                                     "    \"deliveryFee\": 3000,\n" +
                                                     "    \"freeShippingThreshold\": 30000,\n" +
+                                                    "    \"jejuSurcharge\": 3000,\n" +
                                                     "    \"remoteAreaSurcharge\": 5000,\n" +
                                                     "    \"returnFee\": 3000,\n" +
                                                     "    \"exchangeFee\": 3000\n" +

@@ -18,7 +18,13 @@ public enum ChangeRequestRejectReason {
     HOLDER_NAME_MISMATCH("예금주와 사업자 명의 불일치", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
     ACCOUNT_NUMBER_INVALID("계좌번호 오류·미개설 계좌", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
     BANKBOOK_UNREADABLE("통장 사본 판독 불가", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
-    OTHER("기타", EnumSet.of(ChangeRequestType.BUSINESS_INFO, ChangeRequestType.SETTLEMENT_ACCOUNT));
+    // ---- 인플루언서 사업자 구분 변경(§16-2a · 시안 C8b — 표기 그대로 · 두 방향 공통 · 16 설계서 2-2)
+    LICENSE_UNREADABLE("사업자등록증 판독 불가 (흐림·잘림)", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
+    LICENSE_OWNER_NAME_MISMATCH("등록증의 대표자명이 본인 실명과 다름", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
+    BUSINESS_NUMBER_MISMATCH("사업자등록번호가 등록증과 다름", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
+    BUSINESS_SUSPENDED_OR_CLOSED("휴업 · 폐업 상태의 사업자", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
+    CLOSURE_NOT_CONFIRMED("폐업 사실이 확인되지 않음 (비사업자 전환)", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
+    OTHER("기타", EnumSet.allOf(ChangeRequestType.class));
 
     private final String description;
     private final Set<ChangeRequestType> supports;

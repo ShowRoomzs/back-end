@@ -83,6 +83,7 @@ public class AdminCreatorQueryService {
     private final SettlementAdjustmentRepository adjustments;
     private final PostNotificationLogRepository postNotificationLogs;
     private final SellerRepository sellers;
+    private final showroomz.domain.changerequest.repository.BrandChangeRequestRepository changeRequests;
 
     @Value("${showroomz.showroom.base-url:https://showroomz.kr/}")
     private String showroomBaseUrl;
@@ -173,8 +174,15 @@ public class AdminCreatorQueryService {
                 .filter(h -> h.getPreviousBankName() != null || h.getPreviousLast4() != null)
                 .map(h -> new AccountChange(h.getChangedAt(), h.getPreviousBankName(), h.getPreviousLast4()))
                 .orElse(null);
+        // 53 설계서가 비워 둔 자리 — 열린 사업자 구분 변경 요청(§16-2a · 16 설계서 5-1).
+        PendingBusinessTypeChange pending = changeRequests
+                .findFirstByCreator_IdAndStatusOrderByRequestedAtDesc(creator.getId(),
+                        showroomz.domain.changerequest.type.ChangeRequestStatus.PENDING)
+                .map(r -> new PendingBusinessTypeChange(r.getId(), r.getRequestCode(), r.getType().name(),
+                        r.getRequestedAt()))
+                .orElse(null);
         return new SettlementAccount(false, creator.getBankName(), AdminCreatorMasker.maskName(creator.getRealName()),
-                AdminCreatorMasker.maskAccountNumber(creator.getAccountNumber()), change, null);
+                AdminCreatorMasker.maskAccountNumber(creator.getAccountNumber()), change, pending);
     }
 
     private Rail rail(Creator creator, Users user, LocalDateTime approvedAt, LocalDateTime now) {

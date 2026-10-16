@@ -109,8 +109,13 @@ public class BrandAdminHistoryReader {
                 .orElse(seller.getProcessedAt());
     }
 
+    /** 브랜드 행만 들어온다(market 조건 조회) — 인플루언서 유형이 들어오면 조회 조건이 틀린 것이다(16 설계서 6-1). */
     public static String typeLabel(ChangeRequestType type) {
-        return type == ChangeRequestType.SETTLEMENT_ACCOUNT ? "정산 계좌 변경 요청" : "사업자 정보 변경 요청";
+        return switch (type) {
+            case BUSINESS_INFO -> "사업자 정보 변경 요청";
+            case SETTLEMENT_ACCOUNT -> "정산 계좌 변경 요청";
+            case TO_BUSINESS, TO_INDIVIDUAL -> throw new IllegalStateException("브랜드 이력에 인플루언서 요청 유형: " + type);
+        };
     }
 
     private Map<Long, String> operatorNames(Set<Long> ids) {

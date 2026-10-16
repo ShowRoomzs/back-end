@@ -53,4 +53,10 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
 
     @Query("SELECT c FROM Creator c JOIN FETCH c.user WHERE c.id = :creatorId")
     Optional<Creator> findWithUserById(@Param("creatorId") Long creatorId);
+
+    /** 계좌 확인 재시도 대상(50 설계서 6-4) — 「확인 중」으로 남은 인플루언서. */
+    @Query("SELECT c.id FROM Creator c WHERE c.accountVerificationStatus = :status ORDER BY c.id ASC")
+    List<Long> findIdsByAccountVerificationStatus(
+            @Param("status") showroomz.domain.member.creator.type.CreatorAccountVerificationStatus status,
+            org.springframework.data.domain.Pageable pageable);
 }

@@ -24,6 +24,8 @@ public class CreatorAdminHistoryRecorder {
     public static final String REF_MEMO = "MEMO";
     public static final String REF_PRIVACY_ACCESS = "PRIVACY_ACCESS";
     public static final String REF_SETTLEMENT_ACCOUNT = "SETTLEMENT_ACCOUNT";
+    /** 사업자 구분 변경 요청(§16-2a) — 어드민 변경 요청 상세로 간다. */
+    public static final String REF_CHANGE_REQUEST = "CHANGE_REQUEST";
 
     private final CreatorAdminHistoryRepository histories;
 

@@ -33,7 +33,7 @@ public class CreatorCompleteRegistrationRequest {
 
     @Pattern(
             regexp = "^\\d{3}-\\d{2}-\\d{5}$",
-            message = "사업자등록번호 형식이 올바르지 않습니다. (예: 123-45-67890)"
+            message = "올바른 사업자등록번호 형식으로 입력해 주세요. (예: 000-00-00000)"
     )
     @Schema(description = "사업자등록번호 (사업자 선택 시 필수)", example = "123-45-67890")
     private String businessRegistrationNumber;
@@ -64,7 +64,7 @@ public class CreatorCompleteRegistrationRequest {
     @NotBlank(message = "계좌번호는 필수 입력값입니다.")
     @Pattern(
             regexp = "^[0-9]{10,16}$",
-            message = "계좌번호는 하이픈 없이 숫자 10~16자리로 입력해주세요."
+            message = "계좌번호는 10~16자리 숫자로 입력해 주세요."
     )
     @Schema(description = "계좌번호 (하이픈 없이 숫자 10~16자리)", example = "12345678901234")
     private String accountNumber;

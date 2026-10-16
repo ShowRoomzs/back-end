@@ -11,13 +11,26 @@ import lombok.Setter;
 import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequestType;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
 import showroomz.global.dto.PaginationInfo;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** 부록 A(§16) 어드민 응답·요청 스키마. */
+/** 부록 A(§16) 어드민 응답·요청 스키마. rev.7 — 요청자(브랜드 · 인플루언서) · 사업자 구분 변경(§16-2a · 16 설계서 3절). */
 public class AdminChangeRequestDto {
+
+    @Getter
+    @Builder
+    @Schema(description = "요청자(rev.7 「요청자」 열) — 브랜드면 marketId · 브랜드명, 인플루언서면 creatorId · 쇼룸명(현재값)")
+    public static class Requester {
+        @Schema(example = "CREATOR")
+        private ChangeRequesterType type;
+        @Schema(description = "BRAND → marketId([브랜드 상세 ↗]) · CREATOR → creatorId([인플루언서 상세 ↗])", example = "31")
+        private Long id;
+        @Schema(example = "예린 뷰티")
+        private String name;
+    }
 
     @Getter
     @Builder
@@ -27,9 +40,11 @@ public class AdminChangeRequestDto {
         private Long requestId;
         @Schema(description = "요청 코드", example = "CHG-2026-0001")
         private String requestCode;
-        @Schema(description = "브랜드명", example = "코코브라운")
+        private Requester requester;
+        @Schema(description = "브랜드명 — 브랜드 요청만(인플루언서 요청은 null) · requester.name 을 쓴다", example = "코코브라운",
+                deprecated = true)
         private String brandName;
-        @Schema(description = "요청 유형", example = "BUSINESS_INFO")
+        @Schema(description = "요청 유형 — BUSINESS_INFO · SETTLEMENT_ACCOUNT · TO_BUSINESS · TO_INDIVIDUAL", example = "BUSINESS_INFO")
         private ChangeRequestType type;
         @Schema(description = "요청 시각", example = "2026-08-07T10:00:00")
         private LocalDateTime requestedAt;
@@ -92,6 +107,9 @@ public class AdminChangeRequestDto {
         private boolean changed;
         @Schema(description = "사업자등록번호만 true — '변경 요청 불가' 상수 표시용", example = "false")
         private boolean locked;
+        @Schema(description = "행 성격 — REQUEST(요청 항목) · LIVE(현재 값 · 바뀌지 않음) · DERIVED(구분 변경에 따라 바뀜) · "
+                + "DOCUMENT(서버가 값을 갖지 않음 — 서류로 운영자 확인) · CHECK(규칙 판정 — holderCheck)", example = "REQUEST")
+        private String source;
     }
 
     @Getter
@@ -124,14 +142,62 @@ public class AdminChangeRequestDto {
 
     @Getter
     @Builder
-    @Schema(description = "정산 계좌 예금주 대조(§16-3)")
+    @Schema(description = "정산 계좌 예금주 대조(§16-3) — 인플루언서 건은 currentHolder · rule 을 쓴다")
     public static class HolderCheck {
+        @Schema(description = "인플루언서 건 — 현재 예금주(= 본인 인증 실명)", example = "오예린")
+        private String currentHolder;
+        @Schema(description = "인플루언서 건 — 전환 후 예금주 규칙: REPRESENTATIVE_NAME · REAL_NAME", example = "REPRESENTATIVE_NAME")
+        private String rule;
         @Schema(example = "(주)코코브라운")
         private String requestedHolder;
         @Schema(example = "(주)코코브라운")
         private String companyName;
         @Schema(description = "예금주 ≠ 상호이면 true", example = "false")
         private boolean mismatch;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "서류와 대조할 값(C5b) — 인플루언서 건만. serverCheck 가 MATCH 인 행에만 「일치」를 그린다")
+    public static class CompareItem {
+        @Schema(example = "BIRTHDAY")
+        private String key;
+        @Schema(example = "생년월일")
+        private String label;
+        @Schema(example = "1995-08-12")
+        private String value;
+        @Schema(description = "서류의 날짜가 이 시각보다 앞서야 한다(개업일 · 폐업일)", nullable = true)
+        private LocalDateTime mustBeBefore;
+        @Schema(description = "MATCH · MISMATCH · null(서버가 확인하지 않음)", nullable = true)
+        private String serverCheck;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "「승인하면」 카드(C3a · C3b · C7b) — 검토 대기일 때만")
+    public static class ApprovalImpact {
+        @Schema(description = "적용 시점 — 정산 생성 시점 스냅샷이라 「다음 정산부터」", example = "NEXT_SETTLEMENT")
+        private String appliesFrom;
+        @Schema(example = "WITHHOLDING_3_3")
+        private String payoutMethodBefore;
+        @Schema(example = "TAX_INVOICE")
+        private String payoutMethodAfter;
+        @Schema(description = "기존 구분으로 끝나는 정산 — 지급 완료가 아닌 것")
+        private List<RetainedSettlement> retainedSettlements;
+        @Schema(description = "승인 후 정산 계좌 변경 필요 — 상호 명의 계좌를 받기 전(§55 B-9)에는 항상 false")
+        private boolean accountChangeRequired;
+        @Schema(example = "REPRESENTATIVE_NAME")
+        private String accountHolderRuleAfter;
+    }
+
+    @Getter
+    @Builder
+    public static class RetainedSettlement {
+        private Long settlementId;
+        @Schema(example = "STL-2609-016")
+        private String settlementNumber;
+        @Schema(example = "REVIEWING")
+        private String status;
     }
 
     @Getter
@@ -154,9 +220,10 @@ public class AdminChangeRequestDto {
         private Long requestId;
         @Schema(example = "CHG-2026-0001")
         private String requestCode;
-        @Schema(example = "코코브라운")
+        private Requester requester;
+        @Schema(description = "브랜드 요청만 — requester.name 을 쓴다", example = "코코브라운", deprecated = true)
         private String brandName;
-        @Schema(example = "7")
+        @Schema(description = "브랜드 요청만 — requester.id 를 쓴다", example = "7", deprecated = true)
         private Long marketId;
         @Schema(example = "BUSINESS_INFO")
         private ChangeRequestType type;
@@ -167,7 +234,7 @@ public class AdminChangeRequestDto {
         @Schema(example = "2026-08-07T10:00:00")
         private LocalDateTime requestedAt;
         private LocalDateTime processedAt;
-        @Schema(example = "김담당")
+        @Schema(description = "브랜드 담당자 이름 스냅샷 — 인플루언서 요청은 null(FE 「인플루언서 본인」)", example = "김담당")
         private String requesterName;
         @Schema(example = "2일 6h")
         private String elapsedText;
@@ -178,6 +245,10 @@ public class AdminChangeRequestDto {
         private Evidence evidence;
         private List<ReferenceItem> referenceItems;
         private HolderCheck holderCheck;
+        @Schema(description = "인플루언서 건만 — 서류와 대조할 값(C5b)", nullable = true)
+        private List<CompareItem> compareItems;
+        @Schema(description = "인플루언서 건 · 검토 대기일 때만", nullable = true)
+        private ApprovalImpact approvalImpact;
         private List<HistoryEvent> history;
         private Long prevRequestId;
         private Long nextRequestId;
@@ -207,7 +278,8 @@ public class AdminChangeRequestDto {
         private Long requestId;
         @Schema(example = "CHG-2026-0001")
         private String requestCode;
-        @Schema(example = "코코브라운")
+        private Requester requester;
+        @Schema(description = "브랜드 요청만", example = "코코브라운", deprecated = true)
         private String brandName;
         @Schema(example = "BUSINESS_INFO")
         private ChangeRequestType type;

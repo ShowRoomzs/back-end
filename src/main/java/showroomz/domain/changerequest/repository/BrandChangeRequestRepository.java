@@ -33,13 +33,15 @@ public interface BrandChangeRequestRepository extends JpaRepository<BrandChangeR
 
     /**
      * 어드민 목록(§16-1) — 검토 대기가 항상 위, 그 안에서 경과 내림차순(=요청일시 오름차순),
-     * 처리 완료 건은 요청일시 최신순으로 내려간다.
+     * 처리 완료 건은 요청일시 최신순으로 내려간다. 요청자(브랜드 · 인플루언서)가 섞여도 한 정렬이다 · 검색은 브랜드명 · 쇼룸명(rev.7).
      */
     @Query(value =
             "SELECT * FROM brand_change_request r " +
             "WHERE r.status IN (:statuses) " +
             "AND (:keyword IS NULL OR :keyword = '' OR EXISTS (" +
             "    SELECT 1 FROM market m WHERE m.market_id = r.market_id AND m.market_name LIKE CONCAT('%', :keyword, '%')" +
+            ") OR EXISTS (" +
+            "    SELECT 1 FROM creator c WHERE c.creator_id = r.creator_id AND c.showroom_name LIKE CONCAT('%', :keyword, '%')" +
             ")) " +
             "ORDER BY (r.status = 'PENDING') DESC, CASE WHEN r.status = 'PENDING' THEN r.requested_at END ASC, r.requested_at DESC",
             countQuery =
@@ -47,6 +49,8 @@ public interface BrandChangeRequestRepository extends JpaRepository<BrandChangeR
             "WHERE r.status IN (:statuses) " +
             "AND (:keyword IS NULL OR :keyword = '' OR EXISTS (" +
             "    SELECT 1 FROM market m WHERE m.market_id = r.market_id AND m.market_name LIKE CONCAT('%', :keyword, '%')" +
+            ") OR EXISTS (" +
+            "    SELECT 1 FROM creator c WHERE c.creator_id = r.creator_id AND c.showroom_name LIKE CONCAT('%', :keyword, '%')" +
             "))",
             nativeQuery = true)
     Page<BrandChangeRequest> search(@Param("statuses") Collection<String> statuses,
@@ -61,8 +65,10 @@ public interface BrandChangeRequestRepository extends JpaRepository<BrandChangeR
             nativeQuery = true)
     List<Long> findOrderedIds(@Param("statuses") Collection<String> statuses);
 
-    @Query("SELECT r.status, COUNT(r) FROM BrandChangeRequest r JOIN r.market m " +
-            "WHERE (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%')) " +
+    /** 탭 건수 — 인플루언서 요청은 market 이 없으므로 LEFT JOIN 이어야 빠지지 않는다(16 설계서 2-4). */
+    @Query("SELECT r.status, COUNT(r) FROM BrandChangeRequest r LEFT JOIN r.market m LEFT JOIN r.creator c " +
+            "WHERE (:keyword IS NULL OR :keyword = '' OR m.marketName LIKE CONCAT('%', :keyword, '%') " +
+            "    OR c.showroomName LIKE CONCAT('%', :keyword, '%')) " +
             "GROUP BY r.status")
     List<Object[]> countByStatusGroup(@Param("keyword") String keyword);
 
@@ -73,4 +79,31 @@ public interface BrandChangeRequestRepository extends JpaRepository<BrandChangeR
 
     /** 어드민 브랜드 상세 처리 이력의 파생 행(52 설계서 5-2). */
     List<BrandChangeRequest> findByMarket_IdOrderByRequestedAtDesc(Long marketId);
+
+    long countByRequestCode(String requestCode);
+
+    // ------------------------------------------------------------------ 인플루언서 사업자 구분 변경(§16-2a · 50 설계서 7절)
+
+    /** 열린 요청 — 인플루언서당 1건(방향 무관 · 운영 DB 생성 컬럼 UNIQUE). 어드민 인플루언서 상세의 「변경 요청 확인 중」도 이것. */
+    Optional<BrandChangeRequest> findFirstByCreator_IdAndStatusOrderByRequestedAtDesc(Long creatorId, ChangeRequestStatus status);
+
+    /** 정산 정보 탭 배너 후보 — PENDING 이거나, 처리완료인데 아직 확인하지 않은 최신 1건(브랜드 배너와 같은 식). */
+    @Query("SELECT r FROM BrandChangeRequest r WHERE r.creator.id = :creatorId " +
+            "AND (r.status = :pending OR (r.status IN :terminalStatuses AND r.resultAcknowledgedAt IS NULL)) " +
+            "ORDER BY r.requestedAt DESC, r.id DESC")
+    List<BrandChangeRequest> findCreatorBannerCandidates(@Param("creatorId") Long creatorId,
+                                                          @Param("pending") ChangeRequestStatus pending,
+                                                          @Param("terminalStatuses") Collection<ChangeRequestStatus> terminalStatuses,
+                                                          Pageable pageable);
+
+    /** 처리가 끝났고 아직 확인하지 않은 인플루언서 요청 — 새 요청이 옛 결과 배너를 대신한다(50 설계서 7-1 ④). */
+    List<BrandChangeRequest> findByCreator_IdAndStatusInAndResultAcknowledgedAtIsNull(Long creatorId,
+                                                                                    Collection<ChangeRequestStatus> statuses);
+
+    /** 최근 승인된 구분 변경 — 정산 정보 탭 「확정일」 · 승인된 등록증 메타. */
+    Optional<BrandChangeRequest> findFirstByCreator_IdAndStatusOrderByProcessedAtDesc(Long creatorId, ChangeRequestStatus status);
+
+    Optional<BrandChangeRequest> findFirstByCreator_IdAndTypeAndStatusOrderByProcessedAtDesc(Long creatorId,
+                                                                                         ChangeRequestType type,
+                                                                                         ChangeRequestStatus status);
 }

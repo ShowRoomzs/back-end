@@ -3,6 +3,7 @@ package showroomz.api.admin.changerequest.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.changerequest.ChangeRequestElapsedFormatter;
@@ -18,9 +19,15 @@ import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequestType;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.service.CreatorAdminHistoryRecorder;
+import showroomz.domain.member.creator.service.CreatorMemberNotifier;
+import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -66,6 +73,10 @@ public class AdminChangeRequestService {
     private final SellerRepository sellerRepository;
     private final ChangeRequestApplier changeRequestApplier;
     private final MailService mailService;
+    private final CreatorBusinessTypeChangeApplier creatorApplier;
+    private final CreatorChangeRequestDetailAssembler creatorAssembler;
+    private final CreatorAdminHistoryRecorder creatorHistory;
+    private final CreatorMemberNotifier creatorNotifier;
 
     public AdminChangeRequestDto.ListResponse getList(AdminChangeRequestStatusFilter statusFilter, String keyword, Pageable pageable) {
         Page<BrandChangeRequest> page = brandChangeRequestRepository.search(statusFilter.getStatusNames(), normalize(keyword), pageable);
@@ -98,19 +109,24 @@ public class AdminChangeRequestService {
                 .toList();
     }
 
+    /** 공통부(코드 · 상태 · SLA · 경과 · 이전/다음 · 이력) + 요청자별 조립 — 이전/다음은 요청자 구분 없이 현재 탭 순서다(§16-2). */
     public AdminChangeRequestDto.DetailResponse getDetail(Long requestId, AdminChangeRequestStatusFilter statusFilter) {
         BrandChangeRequest request = getRequest(requestId);
-        Market market = request.getMarket();
-        Seller seller = market.getSeller();
 
         List<Long> orderedIds = brandChangeRequestRepository.findOrderedIds(statusFilter.getStatusNames());
         int index = orderedIds.indexOf(requestId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
 
+        if (request.isCreatorRequest()) {
+            return creatorDetail(request, prevId, nextId);
+        }
+        Market market = request.getMarket();
+        Seller seller = market.getSeller();
         return AdminChangeRequestDto.DetailResponse.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
+                .requester(requester(request))
                 .brandName(market.getMarketName())
                 .marketId(market.getId())
                 .type(request.getType())
@@ -132,11 +148,42 @@ public class AdminChangeRequestService {
                 .build();
     }
 
+    /** 인플루언서 사업자 구분 변경 건(C3a · C3b · C5b · 16 설계서 3-4 · 3-5). 변경 사유 입력란이 없어 reason 은 null 이 정상이다. */
+    private AdminChangeRequestDto.DetailResponse creatorDetail(BrandChangeRequest request, Long prevId, Long nextId) {
+        CreatorChangeRequestDetailAssembler.Parts parts = creatorAssembler.assemble(request, request.getCreator());
+        return AdminChangeRequestDto.DetailResponse.builder()
+                .requestId(request.getId())
+                .requestCode(request.getRequestCode())
+                .requester(requester(request))
+                .type(request.getType())
+                .status(request.getStatus())
+                .slaExceeded(isSlaExceeded(request))
+                .requestedAt(request.getRequestedAt())
+                .processedAt(request.getProcessedAt())
+                .requesterName(null)
+                .elapsedText(elapsedText(request))
+                .reason(request.getReason())
+                .diff(parts.diff())
+                .changedFieldLabels(parts.changedFieldLabels())
+                .evidence(parts.evidence())
+                .referenceItems(parts.referenceItems())
+                .holderCheck(parts.holderCheck())
+                .compareItems(parts.compareItems())
+                .approvalImpact(parts.approvalImpact())
+                .history(buildHistory(request))
+                .prevRequestId(prevId)
+                .nextRequestId(nextId)
+                .build();
+    }
+
     @Transactional
     public AdminChangeRequestDto.ProcessResponse approve(Long requestId, Long processorId) {
         BrandChangeRequest request = getRequest(requestId);
         if (!request.isPending()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
+        }
+        if (request.isCreatorRequest()) {
+            return approveCreator(request, processorId);
         }
 
         Market market = request.getMarket();
@@ -150,6 +197,7 @@ public class AdminChangeRequestService {
 
         changeRequestApplier.apply(request);
         request.approve(processorId);
+        flushOrConflict(request);
 
         mailService.sendChangeRequestApprovedEmail(
                 seller.getEmail(), request.getRequestCode(),
@@ -158,7 +206,35 @@ public class AdminChangeRequestService {
         return AdminChangeRequestDto.ProcessResponse.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
+                .requester(requester(request))
                 .brandName(market.getMarketName())
+                .type(request.getType())
+                .status(request.getStatus())
+                .processedAt(request.getProcessedAt())
+                .build();
+    }
+
+    /**
+     * 인플루언서 사업자 구분 변경 승인(16 설계서 3-6 · 50 설계서 8-3) — 반영(탈퇴 · 방향 재검증 포함) → 승인(암호문 비움) → 인플루언서 처리
+     * 이력 → 결과 알림(업무 이메일 · 커밋 뒤). 정산 행은 건드리지 않는다 — 「다음 정산부터」는 생성 시점 스냅샷이 만든다.
+     */
+    private AdminChangeRequestDto.ProcessResponse approveCreator(BrandChangeRequest request, Long processorId) {
+        LocalDateTime now = LocalDateTime.now();
+        Creator creator = creatorApplier.apply(request, now);
+        request.approve(processorId);
+        flushOrConflict(request);
+        creatorHistory.byOperator(creator.getId(), CreatorAdminEventType.BUSINESS_TYPE_CHANGE_APPROVED, processorId,
+                resolveAdminName(processorId), directionLabel(request.getType()) + " · " + request.getRequestCode(),
+                CreatorAdminHistoryRecorder.REF_CHANGE_REQUEST, request.getId(), now);
+        Long creatorId = creator.getId();
+        String businessEmail = creator.getBusinessEmail();
+        String code = request.getRequestCode();
+        AfterCommit.run(() -> creatorNotifier.businessTypeChangeApproved(creatorId, businessEmail, code));
+        // PG 셀러 재등록은 토스 답변 대기(구현 계획서 S6) — 셀러가 연결된 인플루언서는 반영 단계에서 409 로 막았다.
+        return AdminChangeRequestDto.ProcessResponse.builder()
+                .requestId(request.getId())
+                .requestCode(request.getRequestCode())
+                .requester(requester(request))
                 .type(request.getType())
                 .status(request.getStatus())
                 .processedAt(request.getProcessedAt())
@@ -180,10 +256,15 @@ public class AdminChangeRequestService {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_REJECT_DETAIL_REQUIRED);
         }
 
+        if (request.isCreatorRequest()) {
+            return rejectCreator(request, processorId, reasonType, rejectRequest.getReasonDetail());
+        }
+
         Market market = request.getMarket();
         Seller seller = market.getSeller();
 
         request.reject(processorId, reasonType.name(), rejectRequest.getReasonDetail());
+        flushOrConflict(request);
 
         mailService.sendChangeRequestRejectedEmail(
                 seller.getEmail(), request.getRequestCode(), request.getProcessedAt(),
@@ -192,6 +273,7 @@ public class AdminChangeRequestService {
         return AdminChangeRequestDto.ProcessResponse.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
+                .requester(requester(request))
                 .brandName(market.getMarketName())
                 .type(request.getType())
                 .status(request.getStatus())
@@ -201,11 +283,63 @@ public class AdminChangeRequestService {
                 .build();
     }
 
+    /** 인플루언서 건 반려(16 설계서 3-7) — 즉시 재요청 가능 · 결과는 스튜디오 배너(T4a · T9a)와 업무 이메일 알림이 전한다. */
+    private AdminChangeRequestDto.ProcessResponse rejectCreator(BrandChangeRequest request, Long processorId,
+                                                                ChangeRequestRejectReason reasonType, String reasonDetail) {
+        LocalDateTime now = LocalDateTime.now();
+        request.reject(processorId, reasonType.name(), reasonDetail);
+        flushOrConflict(request);
+        Creator creator = request.getCreator();
+        creatorHistory.byOperator(creator.getId(), CreatorAdminEventType.BUSINESS_TYPE_CHANGE_REJECTED, processorId,
+                resolveAdminName(processorId), reasonType.getDescription() + " · " + request.getRequestCode(),
+                CreatorAdminHistoryRecorder.REF_CHANGE_REQUEST, request.getId(), now);
+        Long creatorId = creator.getId();
+        String businessEmail = creator.getBusinessEmail();
+        String code = request.getRequestCode();
+        AfterCommit.run(() -> creatorNotifier.businessTypeChangeRejected(creatorId, businessEmail, code,
+                reasonType.getDescription()));
+        return AdminChangeRequestDto.ProcessResponse.builder()
+                .requestId(request.getId())
+                .requestCode(request.getRequestCode())
+                .requester(requester(request))
+                .type(request.getType())
+                .status(request.getStatus())
+                .processedAt(request.getProcessedAt())
+                .rejectReason(reasonType.getDescription())
+                .rejectReasonDetail(reasonDetail)
+                .build();
+    }
+
+    /** 승인 · 반려 동시 클릭 — 두 번째는 버전 충돌로 「검토 대기 상태인 요청만」(16 설계서 3-8). 알림 · 메일보다 먼저 확인한다. */
+    private void flushOrConflict(BrandChangeRequest request) {
+        try {
+            brandChangeRequestRepository.saveAndFlush(request);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
+        }
+    }
+
+    private AdminChangeRequestDto.Requester requester(BrandChangeRequest request) {
+        if (request.isCreatorRequest()) {
+            Creator creator = request.getCreator();
+            return AdminChangeRequestDto.Requester.builder()
+                    .type(ChangeRequesterType.CREATOR).id(creator.getId()).name(creator.getShowroomName()).build();
+        }
+        Market market = request.getMarket();
+        return AdminChangeRequestDto.Requester.builder()
+                .type(ChangeRequesterType.BRAND).id(market.getId()).name(market.getMarketName()).build();
+    }
+
+    private static String directionLabel(ChangeRequestType type) {
+        return type.sourceBusinessType().getDescription() + " → " + type.targetBusinessType().getDescription();
+    }
+
     private AdminChangeRequestDto.ListItem toListItem(BrandChangeRequest request) {
         return AdminChangeRequestDto.ListItem.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
-                .brandName(request.getMarket().getMarketName())
+                .requester(requester(request))
+                .brandName(request.isCreatorRequest() ? null : request.getMarket().getMarketName())
                 .type(request.getType())
                 .requestedAt(request.getRequestedAt())
                 .processedAt(request.getProcessedAt())
@@ -216,8 +350,11 @@ public class AdminChangeRequestService {
     }
 
     private List<AdminChangeRequestDto.DiffRow> buildDiff(BrandChangeRequest request, Seller seller, Market market) {
-        List<DiffFieldSpec> specs = request.getType() == ChangeRequestType.BUSINESS_INFO
-                ? BUSINESS_INFO_SPECS : SETTLEMENT_ACCOUNT_SPECS;
+        List<DiffFieldSpec> specs = switch (request.getType()) {
+            case BUSINESS_INFO -> BUSINESS_INFO_SPECS;
+            case SETTLEMENT_ACCOUNT -> SETTLEMENT_ACCOUNT_SPECS;
+            case TO_BUSINESS, TO_INDIVIDUAL -> throw new IllegalStateException("브랜드 대조표에 인플루언서 요청: " + request.getType());
+        };
         Map<String, BrandChangeRequestItem> itemsByKey = request.getItems().stream()
                 .collect(Collectors.toMap(item -> item.getFieldKey().name(), item -> item));
 
@@ -241,6 +378,7 @@ public class AdminChangeRequestService {
                     .requestedValue(requestedValue)
                     .changed(changed)
                     .locked(spec.locked())
+                    .source(changed ? "REQUEST" : "LIVE")
                     .build());
         }
         return rows;
@@ -300,15 +438,16 @@ public class AdminChangeRequestService {
 
     private List<AdminChangeRequestDto.HistoryEvent> buildHistory(BrandChangeRequest request) {
         List<AdminChangeRequestDto.HistoryEvent> history = new ArrayList<>();
+        String requesterSurface = request.isCreatorRequest() ? "쇼룸 스튜디오" : "브랜드 파트너센터";
         history.add(AdminChangeRequestDto.HistoryEvent.builder()
                 .event("REQUESTED")
                 .occurredAt(request.getRequestedAt())
-                .actorLabel("브랜드 파트너센터")
+                .actorLabel(requesterSurface)
                 .build());
 
         if (request.getProcessedAt() != null) {
             String actorLabel = request.getStatus() == ChangeRequestStatus.CANCELED
-                    ? "브랜드 파트너센터"
+                    ? requesterSurface
                     : resolveAdminName(request.getProcessedBy());
             history.add(AdminChangeRequestDto.HistoryEvent.builder()
                     .event(request.getStatus().name())

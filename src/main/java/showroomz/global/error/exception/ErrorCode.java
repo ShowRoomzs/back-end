@@ -82,7 +82,7 @@ public enum ErrorCode {
     /* * 6. 마켓 (Market) 
      */
     DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다."),
-    DUPLICATE_SHOWROOM_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_SHOWROOM_NAME", "이미 사용 중인 쇼룸명입니다."),
+    DUPLICATE_SHOWROOM_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_SHOWROOM_NAME", "이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해 주세요."),
     MARKET_NOT_FOUND(HttpStatus.NOT_FOUND, "MARKET_NOT_FOUND", "존재하지 않는 마켓입니다."),
     SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER_NOT_FOUND", "존재하지 않는 판매자입니다."),
 
@@ -255,6 +255,10 @@ public enum ErrorCode {
     CHANGE_REQUEST_EVIDENCE_REQUIRED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_EVIDENCE_REQUIRED", "증빙 서류를 첨부해주세요."),
     CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH", "해당 유형에 사용할 수 없는 반려 사유입니다."),
     CHANGE_REQUEST_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
+    // 인플루언서 사업자 구분 변경 편입(16 rev.7 · 50 설계서 10절 · 구현 계획서 2-2)
+    CHANGE_REQUEST_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_TYPE_NOT_ALLOWED", "요청할 수 없는 변경 유형입니다."),
+    CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH(HttpStatus.CONFLICT, "CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH", "현재 사업자 구분에서는 요청할 수 없습니다. 새로고침 후 다시 시도해 주세요."),
+    CHANGE_REQUEST_PG_RESYNC_PENDING(HttpStatus.CONFLICT, "CHANGE_REQUEST_PG_RESYNC_PENDING", "PG 셀러가 연결된 인플루언서의 사업자 구분 변경은 PG 재등록 절차가 준비된 뒤 승인할 수 있습니다."),
     EMAIL_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMAIL_CHANGE_LIMIT_EXCEEDED", "로그인 이메일은 월 1회만 변경할 수 있습니다."),
     NEW_PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "NEW_PASSWORD_CONFIRM_MISMATCH", "비밀번호가 일치하지 않습니다."),
 
@@ -489,6 +493,9 @@ public enum ErrorCode {
     CREATOR_WITHDRAWAL_CONDITION_UNMET(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_CONDITION_UNMET", "탈퇴 조건이 충족되지 않았습니다."),
     CREATOR_WITHDRAWAL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_WITHDRAWAL_REASON_REQUIRED", "탈퇴 사유를 입력해 주세요."),
     CREATOR_WITHDRAWAL_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_WITHDRAWAL_REJECT_DETAIL_REQUIRED", "기타 사유를 선택하면 인플루언서에게 전달할 안내를 입력해야 합니다."),
+    // 스튜디오 기본정보 관리(50 설계서 10절)
+    CREATOR_WITHDRAWAL_NOT_REJECTED(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_NOT_REJECTED", "반려된 탈퇴 신청만 확인 처리할 수 있습니다."),
+    CREATOR_ACCOUNT_UNCHANGED(HttpStatus.BAD_REQUEST, "CREATOR_ACCOUNT_UNCHANGED", "현재 등록된 계좌와 같습니다."),
     CREATOR_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
     CREATOR_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "CREATOR_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
     CREATOR_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "CREATOR_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),

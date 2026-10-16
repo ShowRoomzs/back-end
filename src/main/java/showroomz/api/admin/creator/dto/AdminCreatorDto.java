@@ -107,7 +107,15 @@ public final class AdminCreatorDto {
             @Schema(example = "김*연") String accountHolder,
             @Schema(example = "333*-**-**8842") String accountNumber,
             @Schema(description = "최근 계좌 변경 — 없으면 null") AccountChange lastChange,
-            @Schema(description = "사업자 구분 변경 요청 대기(§16-2a) — 그 기능 구현 전까지 항상 null") Object pendingBusinessTypeChange) {
+            @Schema(description = "사업자 구분 변경 요청 대기(§16-2a) — 「변경 요청 확인 중 ↗」 · 없으면 null")
+            PendingBusinessTypeChange pendingBusinessTypeChange) {
+    }
+
+    @Schema(description = "열린 사업자 구분 변경 요청 — 상세는 /v1/admin/change-requests/{changeRequestId}")
+    public record PendingBusinessTypeChange(Long changeRequestId,
+                                            @Schema(example = "CHG-2026-0083") String requestCode,
+                                            @Schema(description = "TO_BUSINESS · TO_INDIVIDUAL", example = "TO_BUSINESS") String type,
+                                            LocalDateTime requestedAt) {
     }
 
     @Schema(description = "「변경 08.29 14:02 · 이전 신한 ****3301」")

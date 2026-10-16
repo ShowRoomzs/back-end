@@ -142,4 +142,13 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("SELECT COUNT(s) FROM Settlement s WHERE s.market.id = :marketId "
             + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
     long countUnpaidForMarket(@Param("marketId") Long marketId);
+
+    /**
+     * 사업자 구분 변경 「승인하면」 카드(16 설계서 3-5 · 구현 계획서 2-2 #21) — 기존 구분으로 끝나는 정산: 그 인플루언서 · 생성 시점 구분 스냅샷이
+     * 지금 구분 · 지급 완료가 아님(분배 실패 포함 — 기존 구분으로 다시 나간다).
+     */
+    @Query("SELECT s FROM Settlement s WHERE s.creator.id = :creatorId AND s.creatorBusinessType = :businessType "
+            + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID ORDER BY s.settlementNumber ASC")
+    List<Settlement> findRetainedForBusinessTypeChange(@Param("creatorId") Long creatorId,
+                                                       @Param("businessType") showroomz.domain.member.creator.type.CreatorBusinessType businessType);
 }

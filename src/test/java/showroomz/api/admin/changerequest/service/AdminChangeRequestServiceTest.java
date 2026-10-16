@@ -61,7 +61,9 @@ class AdminChangeRequestServiceTest {
                 // PG 파트너 동기화 빈 없음 — 승인 뒤 훅은 ifAvailable 로 조용히 건너뛴다.
                 new ChangeRequestApplier(new org.springframework.beans.factory.support.DefaultListableBeanFactory()
                         .getBeanProvider(showroomz.domain.settlement.service.SettlementPartnerSyncService.class)),
-                mailService);
+                mailService,
+                // 인플루언서 사업자 구분 변경 협력자 — 브랜드 경로만 보는 테스트라 쓰이지 않는다(통합 테스트가 본다).
+                null, null, null, null);
     }
 
     private BrandChangeRequest pendingBusinessInfoRequest(String requestedName) {

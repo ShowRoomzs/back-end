@@ -207,7 +207,9 @@ public class SellerBasicInfoDto {
         private Integer defaultDeliveryFee;
         @Schema(description = "무료배송 기준금액 — 없으면 null", example = "50000", nullable = true)
         private Integer freeShippingThreshold;
-        @Schema(description = "도서산간 추가비", example = "3000")
+        @Schema(description = "제주 추가비", example = "5000")
+        private Integer jejuSurcharge;
+        @Schema(description = "도서산간 추가비 — 제주 제외", example = "5000")
         private Integer remoteAreaSurcharge;
     }
 
@@ -232,8 +234,12 @@ public class SellerBasicInfoDto {
         @Schema(description = "무료배송 기준금액 — 비우면 무료배송 없음", example = "50000", nullable = true)
         private Integer freeShippingThreshold;
 
+        @jakarta.validation.constraints.Min(value = 0, message = "제주 추가비는 0 이상이어야 합니다.")
+        @Schema(description = "제주 추가비 — 비우면 0", example = "5000", nullable = true)
+        private Integer jejuSurcharge;
+
         @jakarta.validation.constraints.Min(value = 0, message = "도서산간 추가비는 0 이상이어야 합니다.")
-        @Schema(description = "도서산간 추가비 — 비우면 0", example = "3000", nullable = true)
+        @Schema(description = "도서산간 추가비 — 제주 제외 · 비우면 0", example = "5000", nullable = true)
         private Integer remoteAreaSurcharge;
     }
 }

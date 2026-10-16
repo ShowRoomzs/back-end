@@ -51,6 +51,7 @@ public class SettlementPayoutService {
     private final SettlementProperties properties;
     private final BusinessCalendar businessCalendar;
     private final SettlementNotifier notifier;
+    private final CreatorAccountVerificationService accountVerification;
 
     @Transactional(readOnly = true)
     public List<Long> findSettlementIdsDue(LocalDate today, int limit) {
@@ -148,10 +149,16 @@ public class SettlementPayoutService {
     }
 
     /**
-     * 보류 재판정 — 지급 배치 앞단. ① PG 셀러 사유로 보류된 행(수취자 무관)은 셀러 등록 · 상태 조회를 다시 시도한다(토스 설계서 4-3)
+     * 보류 재판정 — 지급 배치 앞단. ⓪ 정산 계좌 「확인 중」으로 남은 인플루언서를 다시 확인한다(50 설계서 6-4 — 확인이 끝나면 확인 훅이
+     * 보류를 푼다) ① PG 셀러 사유로 보류된 행(수취자 무관)은 셀러 등록 · 상태 조회를 다시 시도한다(토스 설계서 4-3)
      * ② 그 밖의 인플루언서 보류 행은 주민등록번호 · 세금계산서 재판정(5-4).
      */
     public int releaseBlocked(LocalDate today) {
+        try {
+            accountVerification.retryVerifying();
+        } catch (Exception e) {
+            log.error("정산 계좌 확인 재시도 실패", e);
+        }
         int released = 0;
         for (SettlementPayout payout : findPartnerBlocked()) {
             try {

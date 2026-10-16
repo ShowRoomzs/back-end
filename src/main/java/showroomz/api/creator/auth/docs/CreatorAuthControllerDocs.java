@@ -173,7 +173,7 @@ public interface CreatorAuthControllerDocs {
                                             value = "{\n" +
                                                     "  \"isAvailable\": false,\n" +
                                                     "  \"code\": \"DUPLICATE\",\n" +
-                                                    "  \"message\": \"이미 사용 중인 쇼룸명입니다.\"\n" +
+                                                    "  \"message\": \"이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해 주세요.\"\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -199,11 +199,14 @@ public interface CreatorAuthControllerDocs {
 
     @Operation(
             summary = "추가 정보 입력용 계정·본인확인 정보 조회",
-            description = "관리자 승인 후 소셜 로그인에서 받은 `registerToken`으로 계정 아이디·본인확인 실명을 조회합니다.\n\n" +
+            description = "관리자 승인 후 소셜 로그인에서 받은 `registerToken`으로 온보딩 화면의 읽기 전용 값을 조회합니다.\n\n" +
                     "**요청 헤더:** `Authorization: Bearer {registerToken}`\n\n" +
                     "**응답:**\n" +
                     "- `accountId`: 신청 시 등록한 SNS 계정 아이디\n" +
-                    "- `realName`: 본인확인 실명\n\n" +
+                    "- `realName`: 본인확인 실명\n" +
+                    "- `maskedRealName`: 예금주 표시값(가운데 마스킹 · 「소*연 🔒 본인 인증값」) — 예금주는 입력받지 않는다\n" +
+                    "- `showroomAddress`: 쇼룸 주소 핸들 미리보기 — **계정 아이디(인스타그램 핸들) 기준** 자동 생성 · 수정 불가. " +
+                    "선점이 아니므로 제출 사이에 같은 핸들이 쓰이면 등록 시 `_2` 같은 꼬리표가 붙는다\n\n" +
                     "**권한:** registerToken (추가 정보 미입력 상태만)"
     )
     @ApiResponses(value = {
@@ -216,8 +219,10 @@ public interface CreatorAuthControllerDocs {
                             examples = @ExampleObject(
                                     name = "성공",
                                     value = "{\n" +
-                                            "  \"accountId\": \"my_channel\",\n" +
-                                            "  \"realName\": \"홍길동\"\n" +
+                                            "  \"accountId\": \"beauty_soyeon\",\n" +
+                                            "  \"realName\": \"홍길동\",\n" +
+                                            "  \"maskedRealName\": \"홍*동\",\n" +
+                                            "  \"showroomAddress\": \"beauty_soyeon\"\n" +
                                             "}"
                             )
                     )
@@ -261,12 +266,13 @@ public interface CreatorAuthControllerDocs {
                     "3.3% 원천징수를 신고하는 데 쓴다. 암호화 저장 · 어떤 응답에도 원문을 내리지 않는다(내 쇼룸은 `maskedResidentNumber`). " +
                     "형식이 틀리거나 없으면 400 `INVALID_INPUT_VALUE`. 사업자는 보내지 않는다(보내도 무시)\n" +
                     "- `bankCode`: 은행 표준 코드 (`GET /v1/common/banks` 조회)\n" +
-                    "- `accountNumber`: 계좌번호 (하이픈 없이 숫자 10~16자리)\n" +
+                    "- `accountNumber`: 계좌번호 (하이픈 없이 숫자 10~16자리 · 위반 시 「계좌번호는 10~16자리 숫자로 입력해 주세요.」)\n" +
                     "- `bankBookImageUrl`: 통장 사본 URL\n\n" +
                     "**사업자(`BUSINESS`) 선택 시 추가 필수:**\n" +
-                    "- `businessRegistrationNumber`: 사업자등록번호 (예: 123-45-67890)\n" +
+                    "- `businessRegistrationNumber`: 사업자등록번호 (하이픈 포함 000-00-00000 · 위반 시 「올바른 사업자등록번호 형식으로 입력해 주세요. (예: 000-00-00000)」)\n" +
                     "- `businessLicenseImageUrl`: 사업자등록증 URL\n\n" +
-                    "**서류 업로드:** `POST /v1/common/images?type=CREATOR_DOCUMENT` (jpg, jpeg, png, pdf / 최대 20MB, 인증 불필요)\n\n" +
+                    "**서류 업로드:** `POST /v1/common/images?type=CREATOR_DOCUMENT` (jpg, jpeg, png, pdf / **최대 10MB**, 인증 불필요)\n\n" +
+                    "**쇼룸 주소:** 계정 아이디(인스타그램 핸들) 기준으로 이 시점에 발급되며 이후 바뀌지 않는다(`registration-info`의 `showroomAddress`가 미리보기)\n\n" +
                     "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 발급됩니다."
     )
     @ApiResponses(value = {
@@ -301,7 +307,7 @@ public interface CreatorAuthControllerDocs {
                             examples = {
                                     @ExampleObject(
                                             name = "쇼룸명 중복",
-                                            value = "{\"code\": \"DUPLICATE_SHOWROOM_NAME\", \"message\": \"이미 사용 중인 쇼룸명입니다.\"}"
+                                            value = "{\"code\": \"DUPLICATE_SHOWROOM_NAME\", \"message\": \"이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해 주세요.\"}"
                                     ),
                                     @ExampleObject(
                                             name = "이미 등록 완료",
@@ -344,7 +350,7 @@ public interface CreatorAuthControllerDocs {
                                             "}"
                             ),
                             @ExampleObject(
-                                    name = "개인사업자/법인",
+                                    name = "개인사업자",
                                     value = "{\n" +
                                             "  \"showroomName\": \"myshowroom\",\n" +
                                             "  \"businessType\": \"BUSINESS\",\n" +

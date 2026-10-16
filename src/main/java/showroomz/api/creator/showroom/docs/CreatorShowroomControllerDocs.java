@@ -33,7 +33,7 @@ public interface CreatorShowroomControllerDocs {
                     "담기는 값은 **소비자에게 공개되는 것만**입니다 — 쇼룸명 · 프로필 이미지 · 쇼룸 주소 · " +
                     "소개글 · 인스타그램 URL · 연결코드.\n" +
                     "계정 · 사업자 정보 · 정산 계좌 · 활동 채널은 비공개라 기본정보 관리(#9) 소관입니다.\n\n" +
-                    "- `showroomAddress`는 가입 시 쇼룸명 기준으로 자동 생성된 뒤 **쇼룸명을 바꿔도 따라 바뀌지 않습니다.**\n" +
+                    "- `showroomAddress`는 가입 시 계정 아이디(인스타그램 핸들) 기준으로 자동 생성된 뒤 **바뀌지 않습니다**(쇼룸명을 바꿔도 그대로).\n" +
                     "- `showroomUrl`은 복사 버튼이 그대로 쓰는 전체 주소입니다.\n" +
                     "- 프로필 이미지는 소비자 앱 계정의 프로필과 **공유하지 않는 별개 값**입니다.\n\n" +
                     "**권한:** CREATOR"
@@ -120,7 +120,7 @@ public interface CreatorShowroomControllerDocs {
                                     ),
                                     @ExampleObject(
                                             name = "쇼룸명 중복",
-                                            value = "{\"code\": \"DUPLICATE_SHOWROOM_NAME\", \"message\": \"이미 사용 중인 쇼룸명입니다.\"}"
+                                            value = "{\"code\": \"DUPLICATE_SHOWROOM_NAME\", \"message\": \"이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해 주세요.\"}"
                                     ),
                                     @ExampleObject(
                                             name = "URL 형식 오류",

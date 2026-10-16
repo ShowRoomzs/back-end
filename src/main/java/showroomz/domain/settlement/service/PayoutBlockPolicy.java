@@ -20,7 +20,7 @@ import java.util.List;
  * <p>사업자는 인플루언서 세금계산서 문서 행이 {@code VERIFIED}일 때만 풀린다(운영자 M4 확인).
  *
  * <p>인플루언서 계정 정지(정산 정보 불일치 · 53 설계서 4-3)가 맨 앞 사유다 — 정지 중에는 다른 사유가 풀려도 지급하지 않는다. 해제가 이 판정을
- * 다시 불러 남은 사유를 본다({@code CreatorSettlementSanctionHook}).
+ * 다시 불러 남은 사유를 본다({@code CreatorSettlementSanctionHook}). 계좌 확인 보류도 같은 틀이다({@code CreatorAccountPayoutHook}).
  */
 @Component
 @RequiredArgsConstructor
@@ -35,13 +35,18 @@ public class PayoutBlockPolicy {
         if (creatorId != null && creatorPayoutHoldReader.isHeld(creatorId)) {
             reasons.add(PayoutBlockReason.CREATOR_SUSPENDED);
         }
+        Creator creator = settlement.getCreator();
+        // 스튜디오 계좌 변경 뒤 실명 확인 전 · 실패 · 변경 필요(50 설계서 1-3) — 사업자 · 비사업자 모두. 확인 이력 없는 기존 회원은 막지 않는다.
+        if (creator != null && creator.getAccountVerificationStatus() != null
+                && creator.getAccountVerificationStatus().blocksPayout()) {
+            reasons.add(PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED);
+        }
         if (settlement.isBusinessCreator()) {
             if (!isCreatorTaxInvoiceVerified(settlement)) {
                 reasons.add(PayoutBlockReason.TAX_INVOICE_UNVERIFIED);
             }
             return reasons;
         }
-        Creator creator = settlement.getCreator();
         if (creator == null || creator.getResidentRegistrationNumberEnc() == null) {
             reasons.add(PayoutBlockReason.RESIDENT_NUMBER_MISSING);
         }

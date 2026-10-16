@@ -7,9 +7,9 @@
 - 범위: 어드민 변경 요청 큐에 **인플루언서 사업자 구분 변경 2유형**(사업자 전환 · 비사업자 전환)을 편입 — 도메인 일반화 · 어드민 목록 · 상세 · 승인 · 반려 변경 · 승인 반영 · 스튜디오 **접수 · 취소 · 확인 API(T7 · T8 최소분)** · 53 자리 채움 · 메일 2종
 - 범위 밖: 스튜디오 정산 정보 탭 **조회 API 본체**(§50-2 — 이 문서의 배너 API를 거기에 끼운다) · 인플루언서 **계좌 변경**(§50-3 — 이 큐에 넣지 않는다 · 16-8 #9 ⓔ) · 국세청 사업자 상태 조회(16-8 #11 ⓖ) · 브랜드 변경 요청(M1 · M2) 동작 — **바꾸지 않는다**
 - 구현 위치: `showroomz.domain.changerequest.*`(일반화) · `showroomz.api.admin.changerequest.*`(분기) · `showroomz.api.creator.changerequest.{controller, docs, dto, service}`(신설) · `Creator` 메서드 2개
-- 마이그레이션: **V200** 하나 — V185 ~ V199는 동시 진행 작업 몫(52 설계서 머리말 · 세션 간 합의)
+- 마이그레이션: **V203** 하나 — 구현 계획서(`dev/브랜드, 쇼룸 정보/06-16-50_구현_계획서.md`) 2-1 재배정. V194 ~ V198 은 Flyway `out-of-order` 미설정이라 쓸 수 없다
 - 작성일: 2026-10-16 · 기준 코드 `feat/add`(4eaec5d0 + 미커밋 작업분 — 52 · 53 구현 진행 중)
-- 구현 상태: ⬜ 미착수(설계)
+- 구현 상태: 구현 계획서 S5 로 구현 — **16 ↔ 50 이 겹치는 부분은 계획서 2-2 정본표가 우선**한다(어드민 계약 · 대조 규칙 = 16, 스튜디오 API · 마스킹 · 업로드 · 에러 코드 = 50). PG 재등록(S6)은 토스 답변 대기 — ✅ S5 구현(2026-10-16 · V203). 그 전까지 PG 셀러가 연결된 인플루언서 승인은 409 `CHANGE_REQUEST_PG_RESYNC_PENDING`(임시 가드). 메일은 `CreatorMemberNotifier` 스텁(5-4 의 `MailService` 메서드 대신 — 발송 인프라 없음)
 
 ---
 
@@ -74,7 +74,7 @@
 
 - `brand_change_request_item.requested_value`에는 **마스킹값만** 둔다(대조표 · 배너 표시용).
 - 원문은 `PersonalDataCipher` 암호문으로 요청 행 `resident_number_enc`에 둔다. **승인 시 `Creator`로 옮긴 직후 · 반려 · 취소 시 즉시 `NULL`** — 엔티티의 `approve` · `reject` · `cancel` 세 전이가 스스로 비운다(호출부가 잊을 수 없게). 처리가 끝난 요청 행에는 주민번호 암호문이 남지 않는다.
-- 마스킹 표기 불일치: 시안 C3b · §50-2는 「뒤 7자리 전부」(`950812-*******` — 성별 자리도 숨김), 기존 `ResidentRegistrationNumber.mask`는 `900101-1******`(성별 자리 노출)이고 온보딩이 이 형식으로 `Creator.residentRegistrationNumberMasked`에 저장 중이다. → 항목에는 **기존 형식**으로 저장하고(승인 시 `Creator`에 그대로 옮기기 위해), **어드민 · 스튜디오 응답에서 8번째 자리를 가린다**(`ResidentRegistrationNumber.maskForDisplay` 신설). 저장값 일괄 정리는 9-2 #3.
+- 마스킹 표기 불일치: 시안 C3b · §50-2는 「뒤 7자리 전부」(`950812-*******` — 성별 자리도 숨김), 기존 `ResidentRegistrationNumber.mask`는 `900101-1******`(성별 자리 노출)이고 온보딩이 이 형식으로 `Creator.residentRegistrationNumberMasked`에 저장 중이다. → ~~항목에는 기존 형식으로 저장하고 표시에서 가린다(`maskForDisplay`)~~ **[계획서 2-2 #10 — 50 정본]** 50 9-2 가 `ResidentRegistrationNumber.mask` 자체를 `900101-*******` 로 바꾸고 저장값을 백필한다(S3). 형식이 하나라 표시 함수를 두지 않는다.
 
 ### 1-6. 대조표의 **파생 행은 저장하지 않는다** — `DiffRow.source`로 행 성격을 내린다
 
@@ -143,7 +143,7 @@
 
 ## 2. 도메인 모델 변경
 
-### 2-1. V200 — `brand_change_request` 일반화
+### 2-1. V203 — `brand_change_request` 일반화
 
 ```sql
 -- 어드민 변경 요청 rev.7 — 인플루언서 사업자 구분 변경 편입(§16-2a · 16 rev.7 수정 설계서 2-1).
@@ -156,7 +156,7 @@ ALTER TABLE brand_change_request
     MODIFY COLUMN requester_name   VARCHAR(64)  NULL COMMENT '브랜드 담당자 이름 스냅샷 — CREATOR 요청은 NULL(본인)',
     ADD COLUMN resident_number_enc VARCHAR(255) NULL COMMENT 'TO_INDIVIDUAL 주민번호 암호문 — 승인 이관 · 반려 · 취소 시 NULL(1-5)',
     ADD COLUMN version             BIGINT       NOT NULL DEFAULT 0,
-    ADD COLUMN creator_pending_key BIGINT GENERATED ALWAYS AS (IF(`status` = 'PENDING', `creator_id`, NULL)) STORED,
+    ADD COLUMN creator_pending_key BIGINT GENERATED ALWAYS AS (CASE WHEN `status` = 'PENDING' THEN `creator_id` ELSE NULL END) STORED,
     ADD UNIQUE KEY uk_brand_change_request_creator_pending (creator_pending_key),
     ADD KEY idx_brand_change_request_creator (creator_id, requested_at),
     ADD CONSTRAINT fk_brand_change_request_creator FOREIGN KEY (creator_id) REFERENCES creator (creator_id),
@@ -391,6 +391,8 @@ public void convertToIndividual(String residentNumberEnc, String residentNumberM
 ---
 
 ## 4. 스튜디오 접수 API — `/v1/creator/business-type-change-requests`
+
+> **[계획서 2-2 #11 ~ #16 — 50 정본]** 경로 · 요청 바디 · 배너 · 에러 코드 · 업로드 타입은 50 7절을 따른다 — `/v1/creator/basic-info/business-type-change-requests` · `targetType` · 배너는 `GET /v1/creator/basic-info/settlement` 의 `businessTypeChange` · 방향 불일치 `CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH` · 탈퇴 `CREATOR_WITHDRAWN` · 증빙 `CREATOR_DOCUMENT` · 사유 입력 없음. 이 절은 검증 규칙의 참고로만 남긴다.
 
 어드민 큐에 행을 넣는 생산자다. 스튜디오 정산 정보 탭 본체(§50-2)는 범위 밖이지만, 이 API 없이는 큐에 인플루언서 건이 생기지 않는다. 패키지 `showroomz.api.creator.changerequest` · 인증은 `SecurityConfig`의 `/v1/creator/**`(CREATOR) 규칙 그대로 · 현재 인플루언서는 `creatorRepository.findByUser(...)`(53 `CreatorSanctionGuard`와 같은 조회).
 

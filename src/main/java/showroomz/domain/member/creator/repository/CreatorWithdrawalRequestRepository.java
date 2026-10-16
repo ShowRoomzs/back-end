@@ -21,6 +21,9 @@ public interface CreatorWithdrawalRequestRepository extends JpaRepository<Creato
 
     boolean existsByCreatorIdAndStatus(Long creatorId, CreatorWithdrawalStatus status);
 
+    /** 가장 최근 신청 — 스튜디오 계정 탭의 반려 배너(S8) 판정. */
+    Optional<CreatorWithdrawalRequest> findFirstByCreatorIdOrderByRequestedAtDescIdDesc(Long creatorId);
+
     /** 승인 · 반려 · 취소의 경합 차단 — 행을 잠그고 상태를 다시 본다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM CreatorWithdrawalRequest r WHERE r.id = :id")

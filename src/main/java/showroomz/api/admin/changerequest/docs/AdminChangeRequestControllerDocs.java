@@ -28,10 +28,12 @@ public interface AdminChangeRequestControllerDocs {
 
     @Operation(
             summary = "목록 조회",
-            description = "브랜드 회원정보(사업자 정보·정산 계좌) 변경 요청 목록이다.\n\n" +
-                    "- 검토 대기(`PENDING`)가 항상 위, 그 안에서 경과 내림차순(SLA 초과 건이 최상단). 정렬 셀렉트는 두지 않는다(§16-1)\n" +
+            description = "회원정보 변경 요청 목록이다 — 브랜드(사업자 정보 · 정산 계좌) + 인플루언서(사업자 구분 변경 · rev.7 §16-2a).\n\n" +
+                    "- 1열 「요청자」는 `requester { type: BRAND | CREATOR, id, name }` — 브랜드명 / 쇼룸명. `brandName` 은 브랜드 행만(deprecated)\n" +
+                    "- `type`: `BUSINESS_INFO` · `SETTLEMENT_ACCOUNT` · `TO_BUSINESS`(사업자 전환) · `TO_INDIVIDUAL`(비사업자 전환). 유형 필터는 두지 않는다(§16-1)\n" +
+                    "- 검토 대기(`PENDING`)가 항상 위, 그 안에서 경과 내림차순(SLA 초과 건이 최상단) — 요청자가 섞여도 한 정렬. 정렬 셀렉트는 두지 않는다(§16-1)\n" +
                     "- `CANCELED`는 `status=ALL`에서만 노출\n" +
-                    "- `keyword`는 브랜드명 부분 일치\n" +
+                    "- `keyword`는 브랜드명 · 쇼룸명 부분 일치\n" +
                     "- `statusCounts`로 탭 배지 건수를 함께 내려준다(`all`은 CANCELED 포함 합)\n" +
                     "- `elapsedText`: 24h 미만 → `18h`, 24h 이상 → `2일 3h` / 처리 완료 건은 `null`\n" +
                     "- `slaExceeded`: PENDING && 경과 > 48h\n\n" +
@@ -120,6 +122,7 @@ public interface AdminChangeRequestControllerDocs {
             description = "유형별 정형 반려 사유를 내려준다(§16-5).\n\n" +
                     "- `BUSINESS_INFO`: 6종(증빙 미첨부·값 불일치·판독 불가·유효기간 경과·사유 불충분·기타)\n" +
                     "- `SETTLEMENT_ACCOUNT`: 5종(통장 미첨부·예금주 불일치·계좌 오류·통장 판독 불가·기타)\n" +
+                    "- `TO_BUSINESS` · `TO_INDIVIDUAL`: 6종 공통(C8b — 등록증 판독 불가 · 대표자명 불일치 · 등록번호 불일치 · 휴·폐업 · 폐업 미확인 · 기타)\n" +
                     "- `detailRequired`는 `OTHER`만 `true` — 선택 시 `reasonDetail` 필수\n\n" +
                     "**권한:** ADMIN"
     )
@@ -162,7 +165,12 @@ public interface AdminChangeRequestControllerDocs {
             description = "변경 요청 상세(대조표·증빙·이력·이전/다음)이다.\n\n" +
                     "- 대조표(`diff`)는 변경 없는 행까지 전부 내려준다. 사업자등록번호는 `locked=true`('변경 요청 불가')\n" +
                     "- `SETTLEMENT_ACCOUNT`는 `holderCheck`(예금주 vs 상호 불일치 여부)를 포함한다\n" +
-                    "- 이전/다음(`prevRequestId`/`nextRequestId`)은 `status` 파라미터가 가리키는 현재 탭 목록 순서를 따른다(§16-2)\n\n" +
+                    "- 이전/다음(`prevRequestId`/`nextRequestId`)은 `status` 파라미터가 가리키는 현재 탭 목록 순서를 따른다(§16-2) — 요청자를 넘나든다\n" +
+                    "- `diff[].source`: `REQUEST`(요청 항목) · `LIVE`(현재 값) · `DERIVED`(구분 변경에 따라 바뀜) · `DOCUMENT`(서류로 운영자 확인) · `CHECK`(규칙 판정)\n" +
+                    "- **인플루언서 건(C3a · C3b · C5b)** — `requester.type=CREATOR` · `requesterName`/`reason` null · 대조표 6행(사업자 구분 · 등록번호 · " +
+                    "상호/대표자 또는 주민등록번호 · 지급 방식 · 예금주 · 정산 계좌(마스킹)) · `compareItems`(서류와 대조할 값 — 생년월일은 서버가 " +
+                    "`MATCH`/`MISMATCH` 판정) · `approvalImpact`(검토 대기일 때만 — 「다음 정산부터」 · 기존 구분으로 끝나는 정산). 본인확인 실명 · " +
+                    "생년월일은 검토 대기 건에서만 실값이다\n\n" +
                     "**권한:** ADMIN"
     )
     @ApiResponses({
@@ -244,7 +252,11 @@ public interface AdminChangeRequestControllerDocs {
                     "- 승인 시 요청 항목이 브랜드/셀러 실제 정보에 반영된다\n" +
                     "- 브랜드명 변경 건은 승인 시점에 중복을 재검사한다(`DUPLICATE_MARKET_NAME`)\n" +
                     "- 정산 계좌 승인 시 통장 사본을 증빙 파일로 교체한다(§7-2)\n" +
-                    "- 처리 후 브랜드 담당자 이메일로 결과 안내 메일을 발송한다\n\n" +
+                    "- 처리 후 브랜드 담당자 이메일로 결과 안내 메일을 발송한다\n" +
+                    "- **인플루언서 건** — 사업자 구분 · 등록번호 · 등록증(증빙) 또는 주민등록번호를 반영한다. 이전 구분 정산이 읽는 값(주민번호 · " +
+                    "등록번호)은 지우지 않는다. 정산은 「다음 정산부터」(생성 시점 스냅샷). 탈퇴 회원 409 `CREATOR_WITHDRAWN` · 접수 뒤 구분이 바뀌었으면 " +
+                    "409 `CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH` · PG 셀러가 연결된 인플루언서는 PG 재등록 준비 전까지 409 `CHANGE_REQUEST_PG_RESYNC_PENDING`\n" +
+                    "- 동시에 두 번 처리하면 두 번째는 `CHANGE_REQUEST_NOT_PENDING`\n\n" +
                     "**권한:** ADMIN"
     )
     @ApiResponses({

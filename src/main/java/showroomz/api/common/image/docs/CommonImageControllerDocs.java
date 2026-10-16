@@ -25,7 +25,9 @@ public interface CommonImageControllerDocs {
                     "**타입별 용도:**\n" +
                     "- `SIGNUP_DOCUMENT`: 판매자 회원가입 증빙(사업자등록증·통신판매업신고증·통장사본 등)\n" +
                     "- `CREATOR_DOCUMENT`: 크리에이터 추가 정보(사업자등록증·통장사본 등)\n\n" +
-                    "**제약:** jpg, jpeg, png, pdf / 최대 20MB / 해상도·비율 제약 없음\n\n" +
+                    "**제약:** jpg, jpeg, png, pdf / 최대 20MB(`CREATOR_DOCUMENT`는 **10MB**) / 해상도·비율 제약 없음\n\n" +
+                    "`CREATOR_DOCUMENT` 위반 문구는 스튜디오 온보딩 화면과 같다 — 형식 「jpg, png, pdf 파일만 업로드할 수 있습니다.」 · " +
+                    "용량 「파일 크기가 10MB를 초과했습니다. 10MB 이하의 파일을 선택해 주세요.」\n\n" +
                     "**권한:** 인증 불필요"
     )
     @ApiResponses(value = {

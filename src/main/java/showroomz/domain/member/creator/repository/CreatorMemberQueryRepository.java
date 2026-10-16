@@ -53,6 +53,57 @@ public class CreatorMemberQueryRepository {
                 .getSingleResult();
     }
 
+    // ------------------------------------------------------------------ 스튜디오 조건 내역(50 설계서 4-1 · 표시 전용)
+
+    /** 진행 중 공구의 상태별 건수 — [status, count]. 합은 {@link #countActiveGroupBuys}와 같다. */
+    public List<Object[]> countActiveGroupBuysByStatus(Long creatorId) {
+        return em.createQuery("SELECT g.status, COUNT(g) FROM GroupBuy g WHERE g.creator.id = :creatorId "
+                        + "AND g.status IN :statuses GROUP BY g.status", Object[].class)
+                .setParameter("creatorId", creatorId)
+                .setParameter("statuses", GroupBuyStatus.ACTIVE)
+                .getResultList();
+    }
+
+    /** 끝나지 않은 계약의 상태별 건수 — [status, count]. 합은 {@link #countOpenContracts}와 같다. */
+    public List<Object[]> countOpenContractsByStatus(Long creatorId) {
+        return em.createQuery("SELECT c.status, COUNT(c) FROM Contract c WHERE c.creator.id = :creatorId "
+                        + "AND c.deletedAt IS NULL AND c.status IN :statuses GROUP BY c.status", Object[].class)
+                .setParameter("creatorId", creatorId)
+                .setParameter("statuses", OPEN_CONTRACT_STATUSES)
+                .getResultList();
+    }
+
+    /**
+     * 체결완료 계약 중 연결 공구(1:1)가 끝나지 않은 것 — 진행 중 공구 + 「종료 후 주문 종결 대기」 공구({@code awaitingIds}). 판정식은 이
+     * 계약을 세지 않는다(①이 그 공구를 센다) — 화면 내역에만 쓴다.
+     */
+    public long countConcludedContractsOfUnfinishedGroupBuys(Long creatorId, List<Long> awaitingIds) {
+        long active = em.createQuery("SELECT COUNT(g) FROM GroupBuy g WHERE g.creator.id = :creatorId "
+                        + "AND g.status IN :statuses AND g.contract.status = :concluded AND g.contract.deletedAt IS NULL", Long.class)
+                .setParameter("creatorId", creatorId)
+                .setParameter("statuses", GroupBuyStatus.ACTIVE)
+                .setParameter("concluded", ContractStatus.CONCLUDED)
+                .getSingleResult();
+        if (awaitingIds.isEmpty()) {
+            return active;
+        }
+        long awaiting = em.createQuery("SELECT COUNT(g) FROM GroupBuy g WHERE g.id IN :ids "
+                        + "AND g.contract.status = :concluded AND g.contract.deletedAt IS NULL", Long.class)
+                .setParameter("ids", awaitingIds)
+                .setParameter("concluded", ContractStatus.CONCLUDED)
+                .getSingleResult();
+        return active + awaiting;
+    }
+
+    /** 지급 완료가 아닌 정산의 상태별 건수 — [status, count]. 합은 {@link #countUnsettled}와 같다. */
+    public List<Object[]> countUnsettledByStatus(Long creatorId) {
+        return em.createQuery("SELECT s.status, COUNT(s) FROM Settlement s WHERE s.creator.id = :creatorId "
+                        + "AND s.status <> :paid GROUP BY s.status", Object[].class)
+                .setParameter("creatorId", creatorId)
+                .setParameter("paid", SettlementStatus.PAID)
+                .getResultList();
+    }
+
     /** 지급 완료가 아닌 정산 — 정산 확인 중 · 조정 협의 · 지급 예정 · 분배 실패. */
     public long countUnsettled(Long creatorId) {
         return em.createQuery("SELECT COUNT(s) FROM Settlement s WHERE s.creator.id = :creatorId "

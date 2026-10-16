@@ -25,7 +25,11 @@ public class ChangeRequestApplier {
         this.partnerSync = partnerSync;
     }
 
+    /** 브랜드 요청(M1 · M2)만 — 인플루언서 사업자 구분 변경은 {@link CreatorBusinessTypeChangeApplier}가 반영한다. */
     public void apply(BrandChangeRequest request) {
+        if (request.isCreatorRequest()) {
+            throw new IllegalArgumentException("브랜드 요청이 아니다: " + request.getType());
+        }
         Market market = request.getMarket();
         Seller seller = market.getSeller();
         for (BrandChangeRequestItem item : request.getItems()) {
@@ -57,6 +61,8 @@ public class ChangeRequestApplier {
             case BANK_CODE -> seller.setBankName(requestedValue);
             case ACCOUNT_NUMBER -> seller.setAccountNumber(requestedValue);
             case ACCOUNT_HOLDER -> seller.setAccountHolder(requestedValue);
+            case CREATOR_BUSINESS_TYPE, CREATOR_BUSINESS_REG_NUMBER, CREATOR_RESIDENT_NUMBER ->
+                    throw new IllegalArgumentException("브랜드 요청에 인플루언서 항목: " + field);
         }
     }
 }

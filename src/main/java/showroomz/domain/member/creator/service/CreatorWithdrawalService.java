@@ -16,7 +16,7 @@ import showroomz.global.utils.BusinessCalendar;
 import java.time.LocalDateTime;
 
 /**
- * 인플루언서 탈퇴 신청 · 취소의 <b>도메인 서비스</b>(§51-5 · 53 설계서 0-3). 스튜디오 화면 API(S1 · S4 ~ S8)는 범위 밖이고 그쪽이 이
+ * 인플루언서 탈퇴 신청 · 취소의 <b>도메인 서비스</b>(§51-5 · 53 설계서 0-3). 스튜디오 화면 API(S1 · S4 ~ S8 · 50 설계서 4절)가 이
  * 서비스를 부른다 — 조건 판정 · 열린 신청 1건 · 이력 기록이 어드민 심사와 같은 규칙에 묶이게 여기 둔다.
  */
 @Service
@@ -55,6 +55,10 @@ public class CreatorWithdrawalService {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWAL_CONDITION_UNMET,
                     "탈퇴 조건이 충족되지 않았습니다 — " + result.summary());
         }
+        // 반려 안내를 닫지 않고 다시 신청했다 — 새 신청 자체가 반려를 읽었다는 뜻이다(50 설계서 4-3).
+        requests.findFirstByCreatorIdOrderByRequestedAtDescIdDesc(creatorId)
+                .filter(CreatorWithdrawalRequest::isUnacknowledgedRejection)
+                .ifPresent(rejected -> rejected.acknowledgeResult(now));
         CreatorWithdrawalRequest saved = requests.save(CreatorWithdrawalRequest.request(creatorId, reason, now,
                 businessCalendar.addBusinessDays(now.toLocalDate(), APPROVAL_DUE_BUSINESS_DAYS)));
         history.byCreator(creatorId, CreatorAdminEventType.WITHDRAWAL_REQUESTED, reason,
@@ -74,5 +78,17 @@ public class CreatorWithdrawalService {
         request.cancel(now);
         history.byCreator(creatorId, CreatorAdminEventType.WITHDRAWAL_CANCELED, null,
                 CreatorAdminHistoryRecorder.REF_WITHDRAWAL_REQUEST, requestId, now);
+    }
+
+    /** 스튜디오 S8 반려 안내 [확인](50 설계서 4-5) — 표시 플래그만. 이미 확인했으면 그대로. */
+    @Transactional
+    public void acknowledgeRejection(Long creatorId, Long requestId, LocalDateTime now) {
+        CreatorWithdrawalRequest request = requests.findForUpdate(requestId)
+                .filter(r -> r.getCreatorId().equals(creatorId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_WITHDRAWAL_NOT_FOUND));
+        if (!request.isRejected()) {
+            throw new BusinessException(ErrorCode.CREATOR_WITHDRAWAL_NOT_REJECTED);
+        }
+        request.acknowledgeResult(now);
     }
 }

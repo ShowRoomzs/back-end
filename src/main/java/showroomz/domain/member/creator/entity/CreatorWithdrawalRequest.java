@@ -72,6 +72,10 @@ public class CreatorWithdrawalRequest {
     @Column(name = "approved_unsettled_count")
     private Integer approvedUnsettledCount;
 
+    /** 스튜디오 S8 반려 안내 [확인] 시각 — NULL 인 반려는 계정 탭에 배너로 남는다(50 설계서 2-3). */
+    @Column(name = "result_acknowledged_at")
+    private LocalDateTime resultAcknowledgedAt;
+
     @Version
     @Column(name = "version", nullable = false)
     private Long version;
@@ -115,5 +119,21 @@ public class CreatorWithdrawalRequest {
     public void cancel(LocalDateTime now) {
         this.status = CreatorWithdrawalStatus.CANCELED;
         this.canceledAt = now;
+    }
+
+    public boolean isRejected() {
+        return status == CreatorWithdrawalStatus.REJECTED;
+    }
+
+    /** 반려됐고 인플루언서가 아직 [확인]을 누르지 않았다 — 계정 탭 S8 배너. */
+    public boolean isUnacknowledgedRejection() {
+        return isRejected() && resultAcknowledgedAt == null;
+    }
+
+    /** S8 [확인] — 표시 플래그만 바꾼다. 사유 · 이력은 운영자 쪽에 그대로 남는다. 이미 확인했으면 그대로(멱등). */
+    public void acknowledgeResult(LocalDateTime now) {
+        if (resultAcknowledgedAt == null) {
+            this.resultAcknowledgedAt = now;
+        }
     }
 }

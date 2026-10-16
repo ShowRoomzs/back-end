@@ -115,9 +115,8 @@ public class CreatorAuthService {
         // §13-6 — 연결코드는 등록 완료 시 쇼룸별로 고정 발급된다(재발급은 §14-1 연결·소통 영역에서 별도 처리).
         creator.reissueConnectionCode(ConnectionCodeGenerator.generateUnique(creatorRepository::existsByConnectionCode));
 
-        // §22-1 — 쇼룸 주소는 쇼룸명이 확정되는 이 시점에 자동 생성되고, 이후 쇼룸명을 바꿔도 따라 바뀌지 않는다.
-        creator.assignShowroomAddressIfAbsent(ShowroomAddressGenerator.generateUnique(
-                request.getShowroomName(), creatorRepository::existsByShowroomAddress));
+        // §22-1 · 온보딩 rev.3 [정정] — 쇼룸 주소는 계정 아이디(인스타그램 핸들) 기준으로 이 시점에 발급되고 이후 바뀌지 않는다.
+        creator.assignShowroomAddressIfAbsent(showroomAddressFor(creator));
         // §22-1 — 공개용 인스타그램 URL의 기본값은 온보딩 채널 주소다(쇼룸 관리에서 독립 수정한다).
         creator.initializeInstagramUrlFromChannel();
 
@@ -132,8 +131,20 @@ public class CreatorAuthService {
         );
     }
 
+    /**
+     * 온보딩 화면의 읽기 전용 값 — 계정 아이디 · 예금주(본인 인증 실명 마스킹) · 쇼룸 주소 미리보기. 주소는 계정 아이디로 정해지므로
+     * 쇼룸명을 입력하기 전에도 보여줄 수 있다. 미리보기는 선점이 아니다 — 제출 사이에 같은 핸들이 쓰이면 제출 때 꼬리표가 붙는다.
+     */
     public CreatorRegistrationInfoResponse getRegistrationInfo(String registerTokenStr) {
-        return CreatorRegistrationInfoResponse.from(resolveNewCreatorFromRegisterToken(registerTokenStr));
+        Creator creator = resolveNewCreatorFromRegisterToken(registerTokenStr);
+        return CreatorRegistrationInfoResponse.from(creator, showroomAddressFor(creator));
+    }
+
+    private String showroomAddressFor(Creator creator) {
+        if (creator.getShowroomAddress() != null && !creator.getShowroomAddress().isBlank()) {
+            return creator.getShowroomAddress();
+        }
+        return ShowroomAddressGenerator.generateUnique(creator.getAccountId(), creatorRepository::existsByShowroomAddress);
     }
 
     private Creator resolveNewCreatorFromRegisterToken(String registerTokenStr) {
@@ -190,7 +201,7 @@ public class CreatorAuthService {
             return new ShowroomNameCheckResponse(
                     false,
                     "DUPLICATE",
-                    "이미 사용 중인 쇼룸명입니다."
+                    ErrorCode.DUPLICATE_SHOWROOM_NAME.getMessage()
             );
         }
 

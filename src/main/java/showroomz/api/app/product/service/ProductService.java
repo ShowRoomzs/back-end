@@ -490,6 +490,7 @@ public class ProductService {
                 .shipDueText(ShipDuePolicy.noticeText(ShipDuePolicy.businessDaysOf(market)))
                 .deliveryFee(market.getDefaultDeliveryFee())
                 .freeShippingThreshold(market.getFreeShippingThreshold())
+                .jejuSurcharge(market.getJejuSurcharge())
                 .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
                 .returnFee(claimFee)
                 .exchangeFee(claimFee)

@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.market.type.SnsType;
+import showroomz.domain.member.creator.type.CreatorAccountVerificationStatus;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.creator.type.CreatorStatus;
 import showroomz.domain.member.user.entity.Users;
@@ -67,7 +68,7 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "PROFILE_IMAGE_URL", length = 1024)
     private String profileImageUrl;
 
-    /** §22-1 쇼룸 주소 핸들 — 가입 시 쇼룸명 기준으로 자동 생성되고, 이후 쇼룸명을 바꿔도 따라 바뀌지 않는다. */
+    /** §22-1 쇼룸 주소 핸들 — 가입(온보딩 완료) 시 계정 아이디(인스타그램 핸들) 기준으로 자동 생성되고, 이후 바뀌지 않는다. */
     @Column(name = "SHOWROOM_ADDRESS", length = 64, unique = true)
     private String showroomAddress;
 
@@ -165,9 +166,35 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "RESIDENT_REGISTRATION_NUMBER_ENC", length = 255)
     private String residentRegistrationNumberEnc;
 
-    /** 표시용 마스킹 — {@code 900101-1******}. 화면은 원문 대신 이 값을 읽는다. */
+    /** 표시용 마스킹 — {@code 900101-*******}(이전 저장분은 {@code 900101-1******} · 읽을 때 {@code ResidentRegistrationNumber.display}). */
     @Column(name = "RESIDENT_REGISTRATION_NUMBER_MASKED", length = 14)
     private String residentRegistrationNumberMasked;
+
+    /** 주민등록번호 등록 시각 — 스튜디오 「암호화 보관 · 2026.07.02 등록」. V202 이전 등록분은 NULL(50 설계서 2-2). */
+    @Column(name = "resident_number_registered_at")
+    private LocalDateTime residentNumberRegisteredAt;
+
+    // ---- 정산 계좌 확인(50 설계서 1-2 · 1-3 · 2-2)
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "account_verification_status", nullable = false, length = 20)
+    @Builder.Default
+    private CreatorAccountVerificationStatus accountVerificationStatus = CreatorAccountVerificationStatus.UNVERIFIED;
+
+    /** 실명 확인 완료 시각 — T1 「확인일」. */
+    @Column(name = "account_verified_at")
+    private LocalDateTime accountVerifiedAt;
+
+    /** 확인 실패 사유 — {@code PayoutBlockReason} 이름. */
+    @Column(name = "account_verification_code", length = 40)
+    private String accountVerificationCode;
+
+    /** 통장 사본 원본 파일명 — 업로드 URL 은 UUID 라 이름이 없다. 온보딩분은 NULL. */
+    @Column(name = "bankbook_file_name", length = 255)
+    private String bankbookFileName;
+
+    @Column(name = "bankbook_submitted_at")
+    private LocalDateTime bankbookSubmittedAt;
 
     public void completeRegistration(
             String showroomName,
@@ -187,10 +214,32 @@ public class Creator extends BaseTimeEntity {
         this.isNewMember = false;
     }
 
-    /** 주민등록번호 등록 — 온보딩이 유일한 수집 지점이다. 사업자는 null 로 지운다. */
+    /** 주민등록번호 등록 — 온보딩의 수집 지점. 사업자는 null 로 지운다(처음 고르는 것이라 남길 이전 정산이 없다). */
     public void registerResidentNumber(String encrypted, String masked) {
         this.residentRegistrationNumberEnc = encrypted;
         this.residentRegistrationNumberMasked = masked;
+        this.residentNumberRegisteredAt = encrypted == null ? null : LocalDateTime.now();
+    }
+
+    /**
+     * §16-2a 사업자 전환 승인 — 구분 · 등록번호 · 등록증(요청 증빙)을 바꾼다. 주민등록번호는 <b>지우지 않는다</b> — 승인 전에 생성된 비사업자
+     * 정산의 지급 판정 · 원천세 신고가 그 값을 읽는다(50 설계서 1-6 · 7-5). 온보딩의 「사업자는 지운다」와 규칙이 다른 이유다.
+     */
+    public void convertToBusiness(String businessRegistrationNumber, String businessLicenseImageUrl) {
+        this.businessType = CreatorBusinessType.BUSINESS;
+        this.businessRegistrationNumber = businessRegistrationNumber;
+        this.businessLicenseImageUrl = businessLicenseImageUrl;
+    }
+
+    /**
+     * §16-2a 비사업자 전환 승인 — 구분 · 주민등록번호(요청 행 암호문 그대로 이관)를 바꾼다. 사업자등록번호 · 등록증은 <b>지우지 않는다</b> —
+     * 그 사이 확정된 사업자 정산의 세금계산서가 그 값을 읽는다(50 설계서 1-6 · 7-5).
+     */
+    public void convertToIndividual(String residentNumberEnc, String residentNumberMasked, LocalDateTime now) {
+        this.businessType = CreatorBusinessType.INDIVIDUAL;
+        this.residentRegistrationNumberEnc = residentNumberEnc;
+        this.residentRegistrationNumberMasked = residentNumberMasked;
+        this.residentNumberRegisteredAt = now;
     }
 
     public boolean isResidentNumberRegistered() {
@@ -205,6 +254,48 @@ public class Creator extends BaseTimeEntity {
         this.showroomName = showroomName;
         this.introduction = introduction;
         this.instagramUrl = instagramUrl;
+    }
+
+    /**
+     * §50-3 정산 계좌 변경 — 실명 확인(PG 셀러 계좌 검증)이 끝날 때까지 「확인 중」이다(50 설계서 6-2). 예금주는 받지 않는다 — 본인 인증
+     * 실명이다. 확인일 · 실패 사유는 새 계좌 기준으로 다시 정한다.
+     */
+    public void changeSettlementAccount(String bankName, String accountNumber, String bankbookImageUrl,
+                                        String bankbookFileName, LocalDateTime now) {
+        this.bankName = bankName;
+        this.accountNumber = accountNumber;
+        this.bankbookImageUrl = bankbookImageUrl;
+        this.bankbookFileName = bankbookFileName;
+        this.bankbookSubmittedAt = now;
+        this.accountVerificationStatus = CreatorAccountVerificationStatus.VERIFYING;
+        this.accountVerifiedAt = null;
+        this.accountVerificationCode = null;
+    }
+
+    public boolean hasAccount(String bankName, String accountNumber) {
+        return java.util.Objects.equals(this.bankName, bankName) && java.util.Objects.equals(this.accountNumber, accountNumber);
+    }
+
+    public void markAccountVerified(LocalDateTime now) {
+        this.accountVerificationStatus = CreatorAccountVerificationStatus.VERIFIED;
+        this.accountVerifiedAt = now;
+        this.accountVerificationCode = null;
+    }
+
+    /** 계좌 문제로 확인 실패 — 다른 계좌로 바꿔야 풀린다. {@code code} = {@code PayoutBlockReason} 이름. */
+    public void markAccountFailed(String code) {
+        this.accountVerificationStatus = CreatorAccountVerificationStatus.FAILED;
+        this.accountVerificationCode = code;
+    }
+
+    /** 사업자 구분 변경 뒤 예금주 규칙 위반(T10) — 상호 명의 계좌를 받기 전에는 생기지 않는다(50 설계서 1-4). */
+    public void markAccountChangeRequired() {
+        this.accountVerificationStatus = CreatorAccountVerificationStatus.CHANGE_REQUIRED;
+    }
+
+    /** §50-1 업무 이메일 — 스튜디오 계정 탭에서 셀프 수정하는 유일한 값. 즉시 저장(인증 메일 없음 · 50 설계서 Q2). */
+    public void changeBusinessEmail(String businessEmail) {
+        this.businessEmail = businessEmail;
     }
 
     /** §22-1 프로필 이미지 변경·삭제 — 삭제는 null로 되돌려 기본 이미지를 쓰게 한다. */

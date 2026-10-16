@@ -26,4 +26,20 @@ public class CreatorMemberNotifier {
     public void withdrawalRejected(Long creatorId, String reasonLabel) {
         log.info("[알림 스텁] 인플루언서 탈퇴 반려 - creatorId: {}, reason: {}", creatorId, reasonLabel);
     }
+
+    /** 스튜디오 계좌 변경 뒤 실명 확인 실패(50 설계서 6-7). */
+    public void accountVerificationFailed(Long creatorId, String reasonLabel) {
+        log.info("[알림 스텁] 인플루언서 정산 계좌 확인 실패 - creatorId: {}, reason: {}", creatorId, reasonLabel);
+    }
+
+    /** 사업자 구분 변경 승인(§16-2a · 50 설계서 8-3) — 수신은 업무 이메일. */
+    public void businessTypeChangeApproved(Long creatorId, String businessEmail, String requestCode) {
+        log.info("[알림 스텁] 인플루언서 사업자 구분 변경 승인 - creatorId: {}, to: {}, code: {}", creatorId, businessEmail, requestCode);
+    }
+
+    /** 사업자 구분 변경 반려(§16-5 — 정형 문구 + 상세 사유 가공 없이). */
+    public void businessTypeChangeRejected(Long creatorId, String businessEmail, String requestCode, String reasonLabel) {
+        log.info("[알림 스텁] 인플루언서 사업자 구분 변경 반려 - creatorId: {}, to: {}, code: {}, reason: {}", creatorId,
+                businessEmail, requestCode, reasonLabel);
+    }
 }

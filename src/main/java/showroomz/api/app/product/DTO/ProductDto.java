@@ -265,7 +265,10 @@ public class ProductDto {
         @Schema(description = "무료배송 기준 금액 — null이면 무료배송 기준이 없다", example = "30000")
         private Integer freeShippingThreshold;
 
-        @Schema(description = "도서산간 추가 배송비", example = "5000")
+        @Schema(description = "제주 추가 배송비", example = "3000")
+        private Integer jejuSurcharge;
+
+        @Schema(description = "도서산간 추가 배송비 — 제주 제외", example = "5000")
         private Integer remoteAreaSurcharge;
 
         @Schema(description = "단순 변심 반품 때 부담하는 최초 배송비 — 기본 배송비와 같은 값. 무료배송으로 받은 주문은 환불액에서 "

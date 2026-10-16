@@ -39,7 +39,11 @@ public enum PayoutBlockReason {
     /** 브랜드 정지 · 지급 정지 사유(정산 정보 불일치 · 사업자 정보 허위 기재) — 해제 다음 영업일에 지급. */
     BRAND_SUSPENDED("계정 정지 · 지급 정지", "정지 해제 다음 영업일 지급"),
     /** 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 리워드만 멈춘다. 해제 다음 영업일에 지급. */
-    CREATOR_SUSPENDED("계정 정지 · 정산 정보 불일치", "정지 해제 다음 영업일 지급");
+    CREATOR_SUSPENDED("계정 정지 · 정산 정보 불일치", "정지 해제 다음 영업일 지급"),
+
+    // ---- 인플루언서 정산 계좌 변경(50 설계서 1-3 · 6-5) — PG 재등록 경로가 아니다. 계좌 확인이 끝나면 확인 훅이 푼다.
+    /** 스튜디오에서 계좌를 바꿨고 실명 확인(토스 셀러 계좌 검증)이 아직 끝나지 않았다 · 실패했다. */
+    CREATOR_ACCOUNT_UNVERIFIED("정산 계좌 확인 중", "계좌 확인 후 지급");
 
     /** PG 셀러 사유 — 지급 배치 앞단이 다시 등록 · 상태 조회를 시도하는 코드. */
     public static final java.util.Set<String> PARTNER_CODES = java.util.Set.of(PARTNER_NOT_READY.name(),

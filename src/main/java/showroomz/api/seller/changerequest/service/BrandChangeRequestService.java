@@ -16,6 +16,7 @@ import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.changerequest.entity.BrandChangeRequest;
 import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.service.ChangeRequestCodeGenerator;
 import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
@@ -27,7 +28,6 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
-import java.time.Year;
 import java.util.List;
 import java.util.Set;
 
@@ -44,8 +44,10 @@ public class BrandChangeRequestService {
     private final MarketRepository marketRepository;
     private final BrandChangeRequestRepository brandChangeRequestRepository;
     private final BankRepository bankRepository;
+    private final ChangeRequestCodeGenerator codeGenerator;
 
     public List<ChangeRequestFieldOption> getFields(String sellerEmail, ChangeRequestType type) {
+        requireBrandType(type);
         Market market = getMyMarket(sellerEmail);
         Seller seller = market.getSeller();
         return ChangeRequestField.of(type).stream()
@@ -58,6 +60,7 @@ public class BrandChangeRequestService {
     }
 
     public ChangeRequestBannerResponse getBanner(String sellerEmail, ChangeRequestType type) {
+        requireBrandType(type);
         Market market = getMyMarket(sellerEmail);
         List<BrandChangeRequest> candidates = brandChangeRequestRepository.findBannerCandidates(
                 market.getId(), type, ChangeRequestStatus.PENDING,
@@ -73,6 +76,7 @@ public class BrandChangeRequestService {
         Market market = getMyMarket(sellerEmail);
         Seller seller = market.getSeller();
         ChangeRequestType type = request.getType();
+        requireBrandType(type);
 
         validateCreateRequest(type, request);
 
@@ -80,7 +84,7 @@ public class BrandChangeRequestService {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ALREADY_PENDING);
         }
 
-        String requestCode = generateRequestCode();
+        String requestCode = codeGenerator.next();
         BrandChangeRequest changeRequest = BrandChangeRequest.create(
                 requestCode, market, type, request.getReason(), seller.getName(),
                 request.getEvidenceFileUrl(), request.getEvidenceFileName(), request.getEvidenceFileSize());
@@ -137,10 +141,18 @@ public class BrandChangeRequestService {
         Market market = getMyMarket(sellerEmail);
         BrandChangeRequest changeRequest = brandChangeRequestRepository.findById(requestId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_FOUND));
-        if (!changeRequest.getMarket().getId().equals(market.getId())) {
+        // 인플루언서 요청(market 없음)은 브랜드 것이 아니다 — NPE(500)가 아니라 403(16 설계서 1-12).
+        if (changeRequest.getMarket() == null || !changeRequest.getMarket().getId().equals(market.getId())) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ACCESS_DENIED);
         }
         return changeRequest;
+    }
+
+    /** 셀러 API 는 브랜드 유형(M1 · M2)만 받는다 — 인플루언서 사업자 구분 변경 유형으로 요청을 만들 수 없다(16 설계서 1-12). */
+    private static void requireBrandType(ChangeRequestType type) {
+        if (type == null || type.isCreatorType()) {
+            throw new BusinessException(ErrorCode.CHANGE_REQUEST_TYPE_NOT_ALLOWED);
+        }
     }
 
     private void validateCreateRequest(ChangeRequestType type, CreateChangeRequestRequest request) {
@@ -184,12 +196,6 @@ public class BrandChangeRequestService {
 
     private ChangeRequestItemRequest findItem(List<ChangeRequestItemRequest> items, ChangeRequestField field) {
         return items.stream().filter(i -> i.getFieldKey() == field).findFirst().orElse(null);
-    }
-
-    private String generateRequestCode() {
-        String prefix = "CHG-" + Year.now().getValue() + "-";
-        long sequence = brandChangeRequestRepository.countByRequestCodeStartingWith(prefix) + 1;
-        return prefix + String.format("%04d", sequence);
     }
 
     private ChangeRequestBannerResponse toBanner(BrandChangeRequest request) {

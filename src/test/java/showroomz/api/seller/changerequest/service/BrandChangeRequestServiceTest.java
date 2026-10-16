@@ -14,6 +14,7 @@ import showroomz.api.seller.changerequest.dto.CreateChangeRequestRequest;
 import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.changerequest.entity.BrandChangeRequest;
 import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.service.ChangeRequestCodeGenerator;
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestType;
 import showroomz.domain.market.entity.Market;
@@ -29,8 +30,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,6 +47,8 @@ class BrandChangeRequestServiceTest {
     private BrandChangeRequestRepository brandChangeRequestRepository;
     @Mock
     private BankRepository bankRepository;
+    @Mock
+    private ChangeRequestCodeGenerator codeGenerator;
 
     @InjectMocks
     private BrandChangeRequestService brandChangeRequestService;
@@ -63,6 +66,7 @@ class BrandChangeRequestServiceTest {
         market = new Market(seller, "코코브라운", "02-1234-5678");
         given(sellerRepository.findByEmail(SELLER_EMAIL)).willReturn(Optional.of(seller));
         given(marketRepository.findBySeller(seller)).willReturn(Optional.of(market));
+        lenient().when(codeGenerator.next()).thenReturn("CHG-2026-0001");
     }
 
     private CreateChangeRequestRequest businessInfoRequest(String requestedRepresentativeName) {
@@ -151,7 +155,7 @@ class BrandChangeRequestServiceTest {
     void snapshotsCurrentValueFromServerState() {
         given(brandChangeRequestRepository.findByMarket_IdAndTypeAndStatus(any(), any(), any()))
                 .willReturn(Optional.empty());
-        given(brandChangeRequestRepository.countByRequestCodeStartingWith(anyString())).willReturn(0L);
+        // 요청 코드 채번은 ChangeRequestCodeGenerator(브랜드 · 인플루언서 공용)로 옮겼다 — 여기서는 목이 「CHG-2026-0001」을 준다.
         given(brandChangeRequestRepository.save(any(BrandChangeRequest.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 

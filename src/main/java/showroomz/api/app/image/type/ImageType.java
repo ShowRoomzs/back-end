@@ -23,8 +23,9 @@ public enum ImageType {
     public static final Set<ImageType> SELLER_ALLOWED_TYPES =
             EnumSet.of(MARKET, PRODUCT, CHANGE_REQUEST_DOCUMENT, CLAIM);
 
+    /** 로그인 인플루언서 — 스튜디오 기본정보의 서류 재제출(통장 사본 · 사업자등록증 · 폐업사실증명원 · 50 설계서 9-1)도 여기로 올린다. */
     public static final Set<ImageType> CREATOR_ALLOWED_TYPES =
-            EnumSet.of(POST, PRODUCT, MARKET, SHOWROOM_PROFILE);
+            EnumSet.of(POST, PRODUCT, MARKET, SHOWROOM_PROFILE, CREATOR_DOCUMENT);
 
     public static final Set<ImageType> ADMIN_ALLOWED_TYPES =
             EnumSet.of(CATEGORY);

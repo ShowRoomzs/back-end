@@ -7,7 +7,9 @@ import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.member.creator.repository.CreatorMemberQueryRepository;
 import showroomz.domain.member.creator.type.CreatorWithdrawalCondition;
 
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -53,18 +55,28 @@ public class CreatorWithdrawalEligibility {
     @Transactional(readOnly = true)
     public Result evaluate(Long creatorId) {
         Map<CreatorWithdrawalCondition, Long> counts = new EnumMap<>(CreatorWithdrawalCondition.class);
-        long groupBuys = queries.countActiveGroupBuys(creatorId);
+        long groupBuys = queries.countActiveGroupBuys(creatorId) + awaitingOrderClosureGroupBuyIds(creatorId).size();
+        counts.put(CreatorWithdrawalCondition.UNFINISHED_GROUP_BUYS, groupBuys);
+        counts.put(CreatorWithdrawalCondition.UNFINISHED_CONTRACTS, queries.countOpenContracts(creatorId));
+        counts.put(CreatorWithdrawalCondition.UNSETTLED, queries.countUnsettled(creatorId));
+        return new Result(counts);
+    }
+
+    /**
+     * 「종료 후 주문 종결 대기」 공구 — 종료 · 중단됐지만 정산이 없고 미종결 주문이 남았다. 판정(①)과 스튜디오 조건 내역
+     * ({@link CreatorWithdrawalChecklist})이 같은 식을 쓰도록 여기 하나만 둔다.
+     */
+    @Transactional(readOnly = true)
+    public List<Long> awaitingOrderClosureGroupBuyIds(Long creatorId) {
+        List<Long> ids = new ArrayList<>();
         for (Long groupBuyId : queries.findClosedGroupBuyIdsWithoutSettlement(creatorId)) {
             boolean unclosed = salesReader.readClosure(groupBuyId)
                     .map(closure -> closure.unclosedCount() > 0)
                     .orElse(false);
             if (unclosed) {
-                groupBuys++;
+                ids.add(groupBuyId);
             }
         }
-        counts.put(CreatorWithdrawalCondition.UNFINISHED_GROUP_BUYS, groupBuys);
-        counts.put(CreatorWithdrawalCondition.UNFINISHED_CONTRACTS, queries.countOpenContracts(creatorId));
-        counts.put(CreatorWithdrawalCondition.UNSETTLED, queries.countUnsettled(creatorId));
-        return new Result(counts);
+        return ids;
     }
 }

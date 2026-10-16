@@ -6,6 +6,7 @@ import lombok.Getter;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
+import showroomz.domain.member.creator.type.ResidentRegistrationNumber;
 
 import java.time.LocalDateTime;
 
@@ -56,7 +57,7 @@ public class MyShowroomResponse {
     @Schema(description = "주민등록번호 등록 여부 — 비사업자 정산 정보의 「주민등록번호 · 등록 완료」 카드", example = "true")
     private final boolean residentNumberRegistered;
 
-    @Schema(description = "주민등록번호 마스킹 값 — 원문은 어떤 API 도 내리지 않는다", example = "900101-1******",
+    @Schema(description = "주민등록번호 마스킹 값 — 뒤 7자리 전부 마스킹 · 원문은 어떤 API 도 내리지 않는다", example = "900101-*******",
             nullable = true)
     private final String maskedResidentNumber;
 
@@ -107,7 +108,7 @@ public class MyShowroomResponse {
                 .businessRegistrationNumber(creator.getBusinessRegistrationNumber())
                 .businessLicenseImageUrl(creator.getBusinessLicenseImageUrl())
                 .residentNumberRegistered(creator.isResidentNumberRegistered())
-                .maskedResidentNumber(creator.getResidentRegistrationNumberMasked())
+                .maskedResidentNumber(ResidentRegistrationNumber.display(creator.getResidentRegistrationNumberMasked()))
                 .bankName(creator.getBankName())
                 .maskedAccountNumber(maskAccountNumber(creator.getAccountNumber()))
                 .bankbookImageUrl(creator.getBankbookImageUrl())

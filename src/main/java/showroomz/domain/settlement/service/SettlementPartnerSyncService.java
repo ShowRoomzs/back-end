@@ -150,6 +150,50 @@ public class SettlementPartnerSyncService {
         }
     }
 
+    /**
+     * 인플루언서 정산 계좌 확인(50 설계서 1-2 · 6-3) — 셀러 등록 · 수정의 계좌 검증을 지급일이 아니라 변경 시점에 당겨 온다. 연결이 없으면
+     * 셀러를 <b>만든다</b>(구현 계획서 D-6). 연결 · 계좌 · 상태가 이미 최신이면 PG 를 부르지 않는다. {@code SIMULATED}(Noop)는 승인으로 본다.
+     * 결과를 받은 그 계좌({@code bankName} · {@code accountNumber})를 함께 돌려준다 — 그 사이 계좌가 또 바뀌었으면 호출자가 결과를 버린다.
+     * 예외를 밖으로 내지 않는다.
+     */
+    public CreatorAccountCheck verifyCreatorAccount(Long creatorId) {
+        Prepared prepared;
+        String[] checked = new String[2];
+        try {
+            prepared = readTransaction.execute(tx -> {
+                Creator creator = creatorRepository.findById(creatorId).orElseThrow();
+                checked[0] = creator.getBankName();
+                checked[1] = creator.getAccountNumber();
+                return prepareCreator(creator);
+            });
+        } catch (ProfileIncomplete e) {
+            return new CreatorAccountCheck(PartnerResult.failed(e.reason.name(), e.getMessage()), checked[0], checked[1]);
+        } catch (RuntimeException e) {
+            log.error("인플루언서 계좌 확인 — 준비 실패 - creatorId: {}", creatorId, e);
+            return new CreatorAccountCheck(PartnerResult.failed(PayoutBlockReason.PARTNER_NOT_READY.name(),
+                    "준비 실패 — " + e.getMessage()), checked[0], checked[1]);
+        }
+        if (prepared.upToDate()) {
+            return new CreatorAccountCheck(PartnerResult.approved(prepared.profile().externalId(), prepared.rawStatus()),
+                    checked[0], checked[1]);
+        }
+        try {
+            PartnerResult result = gateway.ensure(prepared.profile());
+            if (result.hasExternalId() && gateway.isExternal()) {
+                writeTransaction.executeWithoutResult(tx -> link(prepared, result, LocalDateTime.now()));
+            }
+            return new CreatorAccountCheck(result, checked[0], checked[1]);
+        } catch (RuntimeException e) {
+            log.error("인플루언서 계좌 확인 — PG 호출 실패 - creatorId: {}", creatorId, e);
+            return new CreatorAccountCheck(PartnerResult.failed(PayoutBlockReason.PARTNER_NOT_READY.name(),
+                    "PG 호출 실패 — " + e.getMessage()), checked[0], checked[1]);
+        }
+    }
+
+    /** 계좌 확인 결과와 그 결과가 가리키는 계좌. */
+    public record CreatorAccountCheck(PartnerResult result, String bankName, String accountNumber) {
+    }
+
     // ------------------------------------------------------------------ 웹훅 seller.changed(4-3)
 
     /**

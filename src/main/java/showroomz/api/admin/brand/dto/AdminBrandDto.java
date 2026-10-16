@@ -99,7 +99,8 @@ public final class AdminBrandDto {
     }
 
     @Schema(name = "AdminBrandDeliveryPolicy", description = "조회 전용 · 탈퇴 후에도 보존(남은 반품의 비용 기준)")
-    public record DeliveryPolicy(Integer defaultDeliveryFee, Integer freeShippingThreshold, Integer remoteAreaSurcharge,
+    public record DeliveryPolicy(Integer defaultDeliveryFee, Integer freeShippingThreshold, Integer jejuSurcharge,
+                                 @Schema(description = "도서산간 추가비 — 제주 제외") Integer remoteAreaSurcharge,
                                  Integer returnFee, Integer exchangeFee,
                                  @Schema(description = "발송 기한 N(공구 마감 + N영업일)") int shipLeadBusinessDays,
                                  String shipLeadText,

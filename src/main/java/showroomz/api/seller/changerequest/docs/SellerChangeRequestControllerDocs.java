@@ -29,6 +29,7 @@ public interface SellerChangeRequestControllerDocs {
             summary = "변경 요청 생성 (M1·M2 공통)",
             description = "사업자 정보(`BUSINESS_INFO`) 또는 정산 계좌(`SETTLEMENT_ACCOUNT`) 변경을 요청한다.\n\n" +
                     "- 동일 (브랜드, 유형)에 PENDING 요청이 있으면 409(`CHANGE_REQUEST_ALREADY_PENDING`)\n" +
+                    "- `type` 은 `BUSINESS_INFO` · `SETTLEMENT_ACCOUNT` 만 — 인플루언서 유형(`TO_BUSINESS` · `TO_INDIVIDUAL`)은 400(`CHANGE_REQUEST_TYPE_NOT_ALLOWED`)\n" +
                     "- 요청값이 현재값과 같으면 400(`CHANGE_REQUEST_VALUE_UNCHANGED`)\n" +
                     "- 사업자등록번호 등 enum에 없는 항목은 역직렬화 단계에서 400\n" +
                     "- `BUSINESS_INFO`는 변경 사유·증빙(사업자등록증) 필수, `SETTLEMENT_ACCOUNT`는 은행·계좌번호·예금주 3항목 고정 + 통장 사본 필수\n" +

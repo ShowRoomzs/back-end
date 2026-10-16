@@ -7,7 +7,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
@@ -374,15 +373,14 @@ public class SellerService {
         market.setShippingAddress(request.getAddress());
         market.setShippingDetailAddress(request.getDetailAddress());
         market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
-        market.setFreeShippingThreshold(
-                request.getFreeShippingThreshold() != null ? request.getFreeShippingThreshold() : 0
-        );
+        // 비우면 무료배송 없음(null) — 0 을 넣으면 「합계 ≥ 0」이라 모든 주문이 무료배송이 된다(06 설계서 3-1 · 기본정보 관리와 같은 규칙).
+        market.setFreeShippingThreshold(request.getFreeShippingThreshold());
+        market.setJejuSurcharge(request.getJejuSurcharge() != null ? request.getJejuSurcharge() : 0);
         market.setRemoteAreaSurcharge(
                 request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0
         );
-        // 발송 기한 N(공구 마감 후 N영업일) — 생략하면 기본 3(1009 기획 수정본 1-4).
-        market.setShippingLeadDays(request.getShippingLeadDays() != null
-                ? request.getShippingLeadDays() : ShipDuePolicy.DEFAULT_BUSINESS_DAYS);
+        // 발송 기한 N(공구 마감 후 N영업일) — 필수(§6-6 · 06 설계서 2-2).
+        market.setShippingLeadDays(request.getShippingLeadDays());
         market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
         market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
 

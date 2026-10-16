@@ -137,6 +137,7 @@ public class SellerBasicInfoService {
                 .shipDueText(ShipDuePolicy.noticeText(businessDays))
                 .defaultDeliveryFee(market.getDefaultDeliveryFee())
                 .freeShippingThreshold(market.getFreeShippingThreshold())
+                .jejuSurcharge(market.getJejuSurcharge())
                 .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
                 .build();
     }
@@ -158,6 +159,7 @@ public class SellerBasicInfoService {
         market.setShippingLeadDays(request.getShippingLeadDays());
         market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
         market.setFreeShippingThreshold(request.getFreeShippingThreshold());
+        market.setJejuSurcharge(request.getJejuSurcharge() != null ? request.getJejuSurcharge() : 0);
         market.setRemoteAreaSurcharge(request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0);
     }
 

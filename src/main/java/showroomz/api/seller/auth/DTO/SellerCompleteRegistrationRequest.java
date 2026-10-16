@@ -38,32 +38,39 @@ public class SellerCompleteRegistrationRequest {
     @Schema(description = "상세 주소", example = "4층 401호")
     private String detailAddress;
 
-    @NotNull(message = "기본 배송비는 필수 입력값입니다.")
+    @NotNull(message = "기본 배송비를 입력해 주세요.")
     @Min(value = 0, message = "기본 배송비는 0 이상이어야 합니다.")
     @Schema(description = "기본 배송비", example = "3000")
     private Integer defaultDeliveryFee;
 
     @Min(value = 0, message = "무료배송 기준금액은 0 이상이어야 합니다.")
-    @Schema(description = "무료배송 기준금액 (선택)", example = "50000")
+    @Schema(description = "무료배송 기준금액 (선택) — 비우면 무료배송 없음", example = "50000", nullable = true)
     private Integer freeShippingThreshold;
 
+    @Min(value = 0, message = "제주 추가비는 0 이상이어야 합니다.")
+    @Schema(description = "제주 추가비 (선택 · 미입력 시 0원)", example = "5000", nullable = true)
+    private Integer jejuSurcharge;
+
     @Min(value = 0, message = "도서산간 추가비는 0 이상이어야 합니다.")
-    @Schema(description = "도서산간 추가비 (미입력 시 0원)", example = "3000")
+    @Schema(description = "도서산간 추가비 — 제주 제외 (선택 · 미입력 시 0원)", example = "5000", nullable = true)
     private Integer remoteAreaSurcharge;
 
+    @NotNull(message = "발송 기한을 입력해 주세요.")
     @Min(value = 1, message = "발송 기한은 1~7영업일로 입력해 주세요.")
     @Max(value = 7, message = "발송 기한은 1~7영업일로 입력해 주세요.")
-    @Schema(description = "발송 기한 — 공구 마감 후 N영업일(주말·공휴일 제외) · 1~7 · 생략 시 3. "
-            + "소비자 상품 상세에 「공구 마감 후 N영업일 이내 발송」으로 자동 표시된다", example = "3", nullable = true)
+    @Schema(description = "발송 기한 — 공구 마감 후 N영업일(주말·공휴일 제외) · 1~7. "
+            + "소비자 상품 상세에 「공구 마감 후 N영업일 이내 발송」으로 자동 표시된다", example = "3")
     private Integer shippingLeadDays;
 
     @Min(value = 0, message = "반품비는 0 이상이어야 합니다.")
-    @Schema(description = "사용하지 않음 — 반품·교환 금액은 기본 배송비(defaultDeliveryFee) 기준이다. 생략 가능(생략 시 3000 저장)",
-            example = "3000", nullable = true, deprecated = true)
+    @Schema(description = "반품비(회수비) — 소비자 반품 금액에는 쓰지 않는다(기본 배송비 기준 · 앱 클레임 설계서 1-8). "
+            + "파트너 정산 「반품·교환 배송비」 블록의 브랜드 부담 표시에 쓴다. 생략 시 3000",
+            example = "3000", nullable = true)
     private Integer returnFee;
 
     @Min(value = 0, message = "교환비는 0 이상이어야 합니다.")
-    @Schema(description = "사용하지 않음 — 반품·교환 금액은 기본 배송비(defaultDeliveryFee) 기준이다. 생략 가능(생략 시 6000 저장)",
-            example = "6000", nullable = true, deprecated = true)
+    @Schema(description = "교환비 — 소비자 교환 금액에는 쓰지 않는다(기본 배송비 기준 · 앱 클레임 설계서 1-8). "
+            + "파트너 정산 「반품·교환 배송비」 블록의 브랜드 부담 표시에 쓴다. 생략 시 6000",
+            example = "6000", nullable = true)
     private Integer exchangeFee;
 }

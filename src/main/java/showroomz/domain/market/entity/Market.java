@@ -82,6 +82,11 @@ public class Market {
     @Column(name = "free_shipping_threshold")
     private Integer freeShippingThreshold;
 
+    // 제주는 항공 · 해상 운임이 따로라 도서산간과 금액대가 다르다(§6-4 · 06 설계서 1-1)
+    @Column(name = "jeju_surcharge", nullable = false)
+    private Integer jejuSurcharge = 0;
+
+    // 제주를 뺀 도서산간 추가비
     @Column(name = "remote_area_surcharge", nullable = false)
     private Integer remoteAreaSurcharge = 0;
 

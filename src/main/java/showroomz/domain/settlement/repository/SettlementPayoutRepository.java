@@ -332,6 +332,18 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     int releaseCreatorSuspension(@Param("payoutId") Long payoutId, @Param("suspendedCode") String suspendedCode,
                                  @Param("dueDate") LocalDate dueDate);
 
+    /**
+     * 스튜디오 계좌 변경 모달(50 설계서 6-1) — 인플루언서 몫 지급 행의 상태별 [status, count, amount]. 예정 · 보류는 변경하면 확인이 끝날 때까지
+     * 기다리고, 지시가 나간 행(REQUESTED)은 이전 계좌로 끝난다. 확정 전(WAITING · HELD)은 세지 않는다.
+     */
+    @Query("SELECT p.status, COUNT(p), COALESCE(SUM(p.amount), 0) FROM SettlementPayout p, Settlement s "
+            + "WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status IN (showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
+            + "                 showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
+            + "                 showroomz.domain.settlement.type.PayoutStatus.REQUESTED) GROUP BY p.status")
+    List<Object[]> aggregateCreatorPendingPayouts(@Param("creatorId") Long creatorId);
+
     /** 정지는 풀렸지만 다른 보류 사유(세금계산서 · 주민등록번호)가 남았다 — 정지 사유만 지우고 BLOCKED 로 둔다(기존 재판정이 푼다). */
     @Modifying(flushAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.failCode = NULL, p.failReason = NULL "
