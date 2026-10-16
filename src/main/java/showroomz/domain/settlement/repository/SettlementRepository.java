@@ -20,6 +20,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("SELECT s FROM Settlement s WHERE s.groupBuy.id = :groupBuyId")
     Optional<Settlement> findByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 
+    /** 성과 목록 · KPI(48 파트너 설계서 7-2) — 공구 여럿의 정산을 한 번에. */
+    @Query("SELECT s FROM Settlement s WHERE s.groupBuy.id IN :groupBuyIds")
+    List<Settlement> findByGroupBuyIdIn(@Param("groupBuyIds") Collection<Long> groupBuyIds);
+
     /** 상세 — 공구 · 계약 · 브랜드 · 인플루언서를 함께 올린다. */
     @Query("SELECT s FROM Settlement s "
             + "JOIN FETCH s.groupBuy g "
@@ -133,4 +137,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.market.id = :marketId "
             + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
     boolean existsUnpaidForMarket(@Param("marketId") Long marketId);
+
+    /** 지급 완료 전 정산 건수 — 탈퇴 조건 ④의 건수(52 설계서 4-1). */
+    @Query("SELECT COUNT(s) FROM Settlement s WHERE s.market.id = :marketId "
+            + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
+    long countUnpaidForMarket(@Param("marketId") Long marketId);
 }

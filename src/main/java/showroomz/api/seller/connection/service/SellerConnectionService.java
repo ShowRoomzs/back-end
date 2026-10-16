@@ -83,6 +83,9 @@ public class SellerConnectionService {
     @Transactional
     public ConnectResponse requestConnection(String sellerEmail, ConnectRequest request) {
         Market market = getMyMarket(sellerEmail);
+        // 정지 중에는 새 연결을 요청하지 않는다(§51-1 · 52 설계서 7절).
+        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONNECTION_REQUEST);
         Creator target = resolveTarget(request);
 
         if (!isConnectable(target)) {
@@ -126,7 +129,9 @@ public class SellerConnectionService {
     }
 
     private boolean isConnectable(Creator creator) {
-        return creator.getUser() != null && creator.getUser().getStatus() != UserStatus.WITHDRAWN;
+        // 인플루언서 탈퇴(스튜디오 자격 해지 · 53 설계서 4-4)는 소비자 계정 상태와 다른 축이다 — 둘 다 본다.
+        return creator.getUser() != null && creator.getUser().getStatus() != UserStatus.WITHDRAWN
+                && !creator.isWithdrawn();
     }
 
     private Market getMyMarket(String sellerEmail) {

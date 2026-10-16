@@ -105,4 +105,11 @@ public interface SettlementTaxDocumentRepository extends JpaRepository<Settlemen
             + "AND d.status IN (showroomz.domain.settlement.type.TaxDocumentStatus.PENDING_INPUT, "
             + "    showroomz.domain.settlement.type.TaxDocumentStatus.REJECTED)")
     long countCreatorInvoicesToInput(@Param("creatorId") Long creatorId);
+
+    /** 브랜드 세금계산서 발행 대기(차감 수정분 제외) — 어드민 브랜드 상세 「진행 중」 칩(52 설계서 2-5). */
+    @Query("SELECT COUNT(d) FROM SettlementTaxDocument d, Settlement s WHERE d.settlementId = s.id "
+            + "AND s.market.id = :marketId "
+            + "AND d.type = showroomz.domain.settlement.type.TaxDocumentType.BRAND_TAX_INVOICE "
+            + "AND d.status = showroomz.domain.settlement.type.TaxDocumentStatus.PENDING_ISSUE")
+    long countBrandInvoicesPendingIssue(@Param("marketId") Long marketId);
 }

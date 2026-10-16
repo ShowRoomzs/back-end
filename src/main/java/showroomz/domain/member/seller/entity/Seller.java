@@ -245,5 +245,37 @@ public class Seller {
         this.agreeTermsOfService = null;
         this.agreeOperationPolicy = null;
     }
+
+    /**
+     * 브랜드 탈퇴 승인 파기(§51-5 · 52 설계서 1-6 · 4-3) — 사업자 · 정산 · 담당자 정보를 지운다. 반려 파기와 같은 방식이되 목록이 다르다:
+     * 사업자등록번호는 해시로 남겨 「같은 사업자등록번호로 재가입 가능 · 이전 데이터 미승계」가 성립하고, 약관 동의 · 가입일 · 최근 접속 ·
+     * PG 셀러 연결 id 는 보존한다(개인정보 아님 · 지급 완료 전제).
+     *
+     * <p>로그인 차단 — 이메일은 UNIQUE NOT NULL 이라 자리표시자로, 비밀번호는 아무도 모르는 해시로 바꾼다. 리프레시 토큰 삭제는 호출자 몫이다.
+     */
+    public void purgeOnWithdrawal(String hashedBusinessRegistrationNumber, String placeholderEmail,
+                                  String discardedPasswordHash, LocalDateTime now) {
+        this.name = "파기됨";
+        this.phoneNumber = null;
+        this.businessType = null;
+        this.representativeName = null;
+        this.representativeContact = null;
+        this.companyName = null;
+        this.businessRegistrationNumber = hashedBusinessRegistrationNumber;
+        this.businessCondition = null;
+        this.businessAddress = null;
+        this.detailAddress = null;
+        this.taxEmail = null;
+        this.businessLicenseImageUrl = null;
+        this.mailOrderRegImageUrl = null;
+        this.mailOrderRegNumber = null;
+        this.bankName = null;
+        this.accountHolder = null;
+        this.accountNumber = null;
+        this.bankbookImageUrl = null;
+        this.email = placeholderEmail;
+        this.password = discardedPasswordHash;
+        this.modifiedAt = now;
+    }
 }
 

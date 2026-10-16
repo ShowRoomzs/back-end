@@ -591,6 +591,11 @@ public class SellerService {
         Seller user = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
+        // 브랜드는 셀프 즉시 탈퇴가 없다 — 신청 → 운영자 승인(§51-5 · 52 설계서 0-5). 하드 삭제하면 배송할 주문 · 정산할 금액이 주인 없이 남는다.
+        if (user.getRoleType() == RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.BRAND_WITHDRAWAL_REQUIRES_REQUEST);
+        }
+
         // 4. Refresh Token 삭제
         SellerRefreshToken adminRefreshToken = adminRefreshTokenRepository.findByAdminEmail(email);
         if (adminRefreshToken != null) {

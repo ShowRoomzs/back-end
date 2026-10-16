@@ -5,6 +5,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
 import showroomz.api.seller.contract.dto.ContractDuplicateResponse;
@@ -83,12 +84,16 @@ public class SellerContractCommandService {
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
     private final ApplicationEventPublisher eventPublisher;
+    private final CreatorSanctionGuard creatorSanctionGuard;
 
     // ── P3 · 작성 · 임시저장 ────────────────────────────────────────────────
 
     /** 빈 초안 생성(B1). 조건은 여기서 받지 않는다 — 작성 화면이 열린 뒤 PUT으로 채운다. */
     public ContractCreateResponse create(String sellerEmail, ContractCreateRequest request) {
         Market market = accessGuard.resolveMarket(sellerEmail);
+        // 브랜드 정지 중에는 새 계약을 시작하지 않는다(§51-1 · 52 설계서 7절) — 작성중 계약의 수정 · 삭제는 그대로다.
+        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Creator creator = null;
         Connection connection = null;
@@ -182,6 +187,10 @@ public class SellerContractCommandService {
         Market market = accessGuard.resolveMarket(sellerEmail);
         Contract contract = accessGuard.loadOwned(contractId, market);
         requireEditable(contract);
+        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_REVIEW_REQUEST);
+        // 정지 · 탈퇴 심사 중인 인플루언서에게는 새 계약을 보내지 않는다(§51-1 · S7 · 53 설계서 4-2).
+        creatorSanctionGuard.requireCanReceiveContract(contract.getCreator());
 
         LocalDateTime now = LocalDateTime.now();
 

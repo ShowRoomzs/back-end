@@ -16,9 +16,18 @@ import showroomz.global.error.exception.ErrorCode;
 public class CreatorProfileService {
 
     private final CreatorRepository creatorRepository;
+    private final showroomz.domain.member.creator.repository.CreatorSanctionRepository sanctionRepository;
+    private final showroomz.domain.member.creator.repository.CreatorWithdrawalRequestRepository withdrawalRequestRepository;
 
     public MyShowroomResponse getMyShowroom(Long userId) {
-        return MyShowroomResponse.from(getMyCreator(userId));
+        Creator creator = getMyCreator(userId);
+        var sanction = sanctionRepository.findByCreatorIdAndReleasedAtIsNull(creator.getId()).orElse(null);
+        boolean withdrawalPending = withdrawalRequestRepository.existsByCreatorIdAndStatus(creator.getId(),
+                showroomz.domain.member.creator.type.CreatorWithdrawalStatus.PENDING);
+        return MyShowroomResponse.from(creator, new MyShowroomResponse.Sanction(creator.getStatus(),
+                sanction == null ? null : sanction.getReason().getLabel(),
+                sanction == null ? null : sanction.getSuspendedAt(),
+                sanction != null && sanction.isPayoutHeld(), withdrawalPending));
     }
 
     public ShowroomNameResponse getMyShowroomName(Long userId) {

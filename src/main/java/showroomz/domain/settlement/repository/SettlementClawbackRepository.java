@@ -76,7 +76,8 @@ public interface SettlementClawbackRepository extends JpaRepository<SettlementCl
     @Query("SELECT c FROM SettlementClawback c, Creator cr WHERE cr.id = c.creatorId "
             + "AND c.status = showroomz.domain.settlement.type.ClawbackStatus.PENDING "
             + "AND c.side = showroomz.domain.settlement.type.ClawbackSide.CREATOR "
-            + "AND cr.user.status = showroomz.domain.member.user.type.UserStatus.WITHDRAWN ORDER BY c.id ASC")
+            + "AND (cr.user.status = showroomz.domain.member.user.type.UserStatus.WITHDRAWN "
+            + "     OR cr.status = showroomz.domain.member.creator.type.CreatorStatus.WITHDRAWN) ORDER BY c.id ASC")
     List<SettlementClawback> findPendingOfWithdrawnCreators();
 
     /** 미회수 대상(3-6) — 브랜드 측 · 마켓 탈퇴. */
@@ -101,4 +102,9 @@ public interface SettlementClawbackRepository extends JpaRepository<SettlementCl
             + "AND c.side = showroomz.domain.settlement.type.ClawbackSide.BRAND "
             + "AND c.status = showroomz.domain.settlement.type.ClawbackStatus.PENDING")
     boolean existsPendingForMarket(@Param("marketId") Long marketId);
+
+    @Query("SELECT COUNT(c) FROM SettlementClawback c WHERE c.marketId = :marketId "
+            + "AND c.side = showroomz.domain.settlement.type.ClawbackSide.BRAND "
+            + "AND c.status = showroomz.domain.settlement.type.ClawbackStatus.PENDING")
+    long countPendingForMarket(@Param("marketId") Long marketId);
 }

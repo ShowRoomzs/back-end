@@ -39,6 +39,8 @@ public class SellerBasicInfoService {
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
     private final SellerRefreshTokenRepository sellerRefreshTokenRepository;
+    private final showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository shipLeadHistoryRepository;
+    private final showroomz.domain.member.brand.service.BrandSanctionReader brandSanctionReader;
 
     public SellerBasicInfoDto.BusinessInfoResponse getBusinessInfo(String sellerEmail) {
         Market market = getMyMarket(sellerEmail);
@@ -47,6 +49,14 @@ public class SellerBasicInfoService {
         return SellerBasicInfoDto.BusinessInfoResponse.builder()
                 .brandName(market.getMarketName())
                 .brandStatus(market.getStatus())
+                .sanction(brandSanctionReader.openSanction(market.getId())
+                        .map(s -> SellerBasicInfoDto.SanctionInfo.builder()
+                                .reason(s.getReason().name())
+                                .reasonLabel(s.getReason().getLabel())
+                                .suspendedAt(s.getSuspendedAt())
+                                .payoutHeld(s.isPayoutHeld())
+                                .build())
+                        .orElse(null))
                 .businessType(seller.getBusinessType())
                 .marketName(market.getMarketName())
                 .representativeName(seller.getRepresentativeName())
@@ -138,6 +148,13 @@ public class SellerBasicInfoService {
     @Transactional
     public void updateDeliveryPolicy(String sellerEmail, SellerBasicInfoDto.UpdateDeliveryPolicyRequest request) {
         Market market = getMyMarket(sellerEmail);
+        // 발송 기한 N 변경 이력(52 설계서 0-14) — 어드민 브랜드 상세 보조줄 「08.20 2→3 변경」 · 주문별 기한이 다른 이유. 값이 바뀔 때만.
+        Integer previousDays = market.getShippingLeadDays();
+        Integer newDays = request.getShippingLeadDays();
+        if (newDays != null && !newDays.equals(previousDays)) {
+            shipLeadHistoryRepository.save(showroomz.domain.member.brand.entity.MarketShipLeadHistory.of(
+                    market.getId(), previousDays, newDays, LocalDateTime.now()));
+        }
         market.setShippingLeadDays(request.getShippingLeadDays());
         market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
         market.setFreeShippingThreshold(request.getFreeShippingThreshold());

@@ -28,7 +28,13 @@ public enum MessageCardType {
     /** 시스템 — 합의 결과. */
     SETTLEMENT_ADJUSTMENT_AGREED("합의 완료 · 정산 금액 변경 · 이슈 종결"),
     /** 시스템 — 기한 만료 결과. */
-    SETTLEMENT_ADJUSTMENT_EXPIRED("합의 기한 경과 · 원래 금액 확정 · 이슈 종결");
+    SETTLEMENT_ADJUSTMENT_EXPIRED("합의 기한 경과 · 원래 금액 확정 · 이슈 종결"),
+
+    // 계정 이용 정지(§51-4 · 52 설계서 0-12) — 회원 유형에 중립이다. 브랜드 · 인플루언서의 운영팀 채널에 붙고 그 아래 답글이 곧 소명이다.
+    /** 운영자 정지 — 사유 · 일시. */
+    ACCOUNT_SUSPENDED("계정 정지"),
+    /** 운영자 정지 해제. */
+    ACCOUNT_SUSPENSION_RELEASED("정지 해제");
 
     private final String title;
 

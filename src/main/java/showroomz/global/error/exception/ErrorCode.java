@@ -199,6 +199,12 @@ public enum ErrorCode {
    POST_REPORT_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "POST_REPORT_ALREADY_SUBMITTED", "이미 신고한 게시물입니다."),
    POST_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_REPORT_NOT_FOUND", "존재하지 않는 신고입니다."),
    POST_REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, "POST_REPORT_ALREADY_HANDLED", "이미 처리가 끝난 신고입니다."),
+   // 어드민 일반 게시물 모니터링 (§54 · 54 설계 2-5)
+   POST_POLICY_CLAUSE_REQUIRED(HttpStatus.BAD_REQUEST, "POST_POLICY_CLAUSE_REQUIRED", "근거 규정을 선택해 주세요."),
+   POST_APPEAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "POST_APPEAL_REJECT_REASON_REQUIRED", "반려 사유를 입력해 주세요."),
+   POST_REPORT_NOTHING_TO_CLOSE(HttpStatus.CONFLICT, "POST_REPORT_NOTHING_TO_CLOSE", "종결할 신고가 없습니다."),
+   POST_SUSPENSION_NOT_CANCELABLE(HttpStatus.CONFLICT, "POST_SUSPENSION_NOT_CANCELABLE", "노출 중지 상태인 게시물만 조치를 취소할 수 있습니다."),
+   POST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_IMAGE_NOT_FOUND", "게시물에서 사진을 찾을 수 없습니다."),
 
    /* 15. 위시리스트 (Wishlist)
     */
@@ -441,6 +447,53 @@ public enum ErrorCode {
     SETTLEMENT_TAX_INVOICE_NOT_OPEN(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_OPEN", "지금은 세금계산서를 제출할 수 없습니다."),
     SETTLEMENT_TAX_INVOICE_NOT_ISSUED(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_ISSUED", "세금계산서가 아직 발행되지 않았습니다."),
     SETTLEMENT_RECEIPT_NOT_READY(HttpStatus.CONFLICT, "SETTLEMENT_RECEIPT_NOT_READY", "원천징수영수증이 아직 준비되지 않았습니다."),
+
+    // 성과 관리(49 스튜디오 성과 설계서 5절)
+    /** 진행 중 · 중단 공구 — 성과는 종료 공구 전용이다(§47-0). */
+    PERFORMANCE_NOT_READY(HttpStatus.CONFLICT, "PERFORMANCE_NOT_READY", "공구가 종료되면 성과를 열람할 수 있습니다."),
+    // 파트너 성과 원가(48 파트너 성과 설계서 8절)
+    /** 집계 중(정산 전) 원가 저장 — 확정 수량이 바뀌면 소계도 달라진다(D2). */
+    PERFORMANCE_COST_LOCKED(HttpStatus.CONFLICT, "PERFORMANCE_COST_LOCKED", "집계가 끝나면 원가를 입력할 수 있습니다."),
+    PERFORMANCE_COST_ITEM_MISMATCH(HttpStatus.BAD_REQUEST, "PERFORMANCE_COST_ITEM_MISMATCH", "계약 상품 목록과 원가 항목이 일치하지 않습니다."),
+
+    // 어드민 회원 관리 — 브랜드 상세 · 제재 · 탈퇴 심사(52 설계서 9-2)
+    BRAND_WITHDRAWN(HttpStatus.CONFLICT, "BRAND_WITHDRAWN", "탈퇴한 브랜드입니다."),
+    BRAND_ALREADY_SUSPENDED(HttpStatus.CONFLICT, "BRAND_ALREADY_SUSPENDED", "이미 정지된 브랜드입니다."),
+    BRAND_NOT_SUSPENDED(HttpStatus.CONFLICT, "BRAND_NOT_SUSPENDED", "정지 상태가 아닌 브랜드입니다."),
+    BRAND_SUSPEND_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "BRAND_SUSPEND_DETAIL_REQUIRED", "기타 사유를 선택하면 상세 사유를 입력해야 합니다."),
+    BRAND_SUSPENDED(HttpStatus.CONFLICT, "BRAND_SUSPENDED", "계정 이용 정지 중에는 이용할 수 없는 기능입니다."),
+    BRAND_STATE_CHANGED(HttpStatus.CONFLICT, "BRAND_STATE_CHANGED", "브랜드 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    BRAND_WITHDRAWAL_NOT_FOUND(HttpStatus.NOT_FOUND, "BRAND_WITHDRAWAL_NOT_FOUND", "존재하지 않는 탈퇴 신청입니다."),
+    BRAND_WITHDRAWAL_NOT_PENDING(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_NOT_PENDING", "승인 대기 중인 탈퇴 신청이 아닙니다."),
+    BRAND_WITHDRAWAL_ALREADY_PENDING(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_ALREADY_PENDING", "이미 승인 대기 중인 탈퇴 신청이 있습니다."),
+    BRAND_WITHDRAWAL_CONDITION_UNMET(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_CONDITION_UNMET", "탈퇴 조건이 충족되지 않았습니다."),
+    BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED", "기타 사유를 선택하면 브랜드에 전달할 안내를 입력해야 합니다."),
+    BRAND_WITHDRAWAL_REQUIRES_REQUEST(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_REQUIRES_REQUEST", "브랜드는 즉시 탈퇴할 수 없습니다. 기본정보 관리에서 탈퇴를 신청해 주세요."),
+    BRAND_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "BRAND_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
+    BRAND_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "BRAND_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
+    BRAND_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "BRAND_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+
+    // 어드민 회원 관리 — 인플루언서 상세 · 제재 · 탈퇴 심사(53 설계서 6절 · 구현 메모 12절 — CREATOR_ 접두)
+    CREATOR_STATE_CHANGED(HttpStatus.CONFLICT, "CREATOR_STATE_CHANGED", "인플루언서 상태가 이미 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    CREATOR_WITHDRAWN(HttpStatus.CONFLICT, "CREATOR_WITHDRAWN", "탈퇴한 인플루언서입니다. 조치할 수 없습니다."),
+    CREATOR_ALREADY_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_ALREADY_SUSPENDED", "이미 정지된 인플루언서입니다."),
+    CREATOR_NOT_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_NOT_SUSPENDED", "정지 상태가 아닌 인플루언서입니다."),
+    CREATOR_SUSPEND_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_SUSPEND_DETAIL_REQUIRED", "기타 사유를 선택하면 상세 사유를 입력해야 합니다."),
+    CREATOR_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_SUSPENDED", "계정 정지 중에는 이용할 수 없는 기능입니다."),
+    CREATOR_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중에는 이용할 수 없는 기능입니다."),
+    CREATOR_COUNTERPARTY_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_COUNTERPARTY_SUSPENDED", "이용이 정지된 인플루언서에게는 서명 요청을 보낼 수 없습니다."),
+    CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중인 인플루언서에게는 서명 요청을 보낼 수 없습니다."),
+    CREATOR_WITHDRAWAL_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_WITHDRAWAL_NOT_FOUND", "존재하지 않는 탈퇴 신청입니다."),
+    CREATOR_WITHDRAWAL_NOT_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_NOT_PENDING", "이미 처리된 탈퇴 신청입니다."),
+    CREATOR_WITHDRAWAL_ALREADY_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_ALREADY_PENDING", "처리 중인 탈퇴 신청이 있습니다."),
+    CREATOR_WITHDRAWAL_CONDITION_UNMET(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_CONDITION_UNMET", "탈퇴 조건이 충족되지 않았습니다."),
+    CREATOR_WITHDRAWAL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_WITHDRAWAL_REASON_REQUIRED", "탈퇴 사유를 입력해 주세요."),
+    CREATOR_WITHDRAWAL_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_WITHDRAWAL_REJECT_DETAIL_REQUIRED", "기타 사유를 선택하면 인플루언서에게 전달할 안내를 입력해야 합니다."),
+    CREATOR_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
+    CREATOR_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "CREATOR_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
+    CREATOR_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "CREATOR_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+    CREATOR_PRIVACY_UNMASK_FORBIDDEN(HttpStatus.FORBIDDEN, "CREATOR_PRIVACY_UNMASK_FORBIDDEN", "마스킹 해제 권한이 없습니다."),
+    CREATOR_PRIVACY_UNMASK_NOT_AVAILABLE(HttpStatus.CONFLICT, "CREATOR_PRIVACY_UNMASK_NOT_AVAILABLE", "파기된 정보는 해제할 수 없습니다."),
 
     // 정산 조정 협의(44 정산조정 이슈스레드 설계서 8-1)
     SETTLEMENT_ADJUSTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_ADJUSTMENT_NOT_FOUND", "정산 조정 협의를 찾을 수 없습니다."),

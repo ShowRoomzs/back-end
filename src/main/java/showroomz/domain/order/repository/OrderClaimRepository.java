@@ -391,4 +391,20 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
             + "AND i.status = showroomz.domain.inquiry.type.InquiryStatus.WAITING "
             + "AND (:marketId IS NULL OR c.marketId = :marketId)")
     long countOpenDisputes(@Param("marketId") Long marketId);
+
+    /**
+     * 성과 반품 사유 분해(48 파트너 설계서 2-4) — 환불까지 간(또는 환불 대기) 반품 클레임의 [주문 항목 id, 사유, 수량]. 라벨은
+     * {@code ClaimReason} 이 단일 소스다(§47-3 D-5).
+     */
+    @Query("SELECT c.orderProduct.id, c.reasonCode, c.quantity FROM OrderClaim c "
+            + "WHERE c.deliveryGroup.groupBuy.id = :groupBuyId AND c.type = showroomz.domain.order.type.ClaimType.RETURN "
+            + "AND (c.result = showroomz.domain.order.type.ClaimResult.REFUNDED "
+            + "OR c.status = showroomz.domain.order.type.ClaimStatus.REFUND_PENDING) "
+            + "ORDER BY c.id ASC")
+    List<Object[]> findRefundedReturnReasons(@Param("groupBuyId") Long groupBuyId);
+
+    /** 성과 D2 배너 「미처리 반품 N건」(48 파트너 설계서 1-1) — 이 공구에서 아직 끝나지 않은 반품 클레임 수(결과 미정). */
+    @Query("SELECT COUNT(c) FROM OrderClaim c WHERE c.deliveryGroup.groupBuy.id = :groupBuyId "
+            + "AND c.type = showroomz.domain.order.type.ClaimType.RETURN AND c.result IS NULL")
+    long countOpenReturnsForGroupBuy(@Param("groupBuyId") Long groupBuyId);
 }

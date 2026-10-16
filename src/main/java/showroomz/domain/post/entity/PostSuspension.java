@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.post.type.PostPolicyClause;
 import showroomz.domain.post.type.PostSuspensionReason;
 import showroomz.domain.post.type.SuspensionResolution;
 
@@ -62,6 +63,15 @@ public class PostSuspension {
     @Column(name = "policy_ref", length = 200, updatable = false)
     private String policyRef;
 
+    /**
+     * 근거 규정 코드 (§54-5 필수). {@link #policyRef}에는 선택 시점의 조항 문구를 함께 굳힌다 —
+     * 운영정책 문서가 확정되어 조항이 바뀌어도 과거 조치의 근거 문구는 그대로 남는다.
+     * V190 이전 조치는 {@code null}일 수 있다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "policy_clause_code", length = 40, updatable = false)
+    private PostPolicyClause policyClauseCode;
+
     /** 처리자(운영자) — 조치 시점의 담당자를 고정한다 */
     @Column(name = "suspended_by", nullable = false, updatable = false)
     private Long suspendedBy;
@@ -80,6 +90,13 @@ public class PostSuspension {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 
+    /**
+     * 조치를 종결한 운영자 — 운영자가 조치를 거둔 경우({@link SuspensionResolution#CANCELED_BY_ADMIN})에만 값이 있다.
+     * 이의 승인 · 반려는 {@code post_appeal.reviewed_by}가, 기한 만료는 시스템이, 본인 삭제는 작성자가 주체다.
+     */
+    @Column(name = "resolved_by")
+    private Long resolvedBy;
+
     public PostSuspension(Post post, PostSuspensionReason reasonCode, String reasonDetail, String policyRef,
                           Long suspendedBy, LocalDateTime suspendedAt, LocalDateTime appealDeadline) {
         this.post = post;
@@ -89,6 +106,20 @@ public class PostSuspension {
         this.suspendedBy = suspendedBy;
         this.suspendedAt = suspendedAt;
         this.appealDeadline = appealDeadline;
+    }
+
+    /** 근거 규정 코드와 그 시점 문구를 함께 굳힌다 (§54-5) */
+    public PostSuspension(Post post, PostSuspensionReason reasonCode, String reasonDetail, PostPolicyClause policyClause,
+                          Long suspendedBy, LocalDateTime suspendedAt, LocalDateTime appealDeadline) {
+        this(post, reasonCode, reasonDetail, policyClause == null ? null : policyClause.getLabel(),
+                suspendedBy, suspendedAt, appealDeadline);
+        this.policyClauseCode = policyClause;
+    }
+
+    /** 운영자가 판단을 거둔다 — 조치 취소 · 재게시 (§54-4 C5) */
+    public void cancelByAdmin(Long operatorId, LocalDateTime now) {
+        resolve(SuspensionResolution.CANCELED_BY_ADMIN, now);
+        this.resolvedBy = operatorId;
     }
 
     /** 조치를 닫는다 — 어떻게 끝났는지는 {@link SuspensionResolution}이 말한다 */

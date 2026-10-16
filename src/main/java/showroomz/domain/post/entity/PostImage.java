@@ -76,6 +76,19 @@ public class PostImage {
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    /**
+     * 운영자 「신고 지목」 표시 시각 (§54-3) — {@code null}이면 지목 없음.
+     *
+     * <p>사진 단위 조치가 아니라 <b>읽기 보조 표식</b>이다. 신고 문장에 특정 장이 적혀 오면 운영자가 수동으로 켠다
+     * (C18 신고 화면에 사진 지정 칸이 없다 · ⓗ). 노출 중지는 여전히 게시물 단위다.
+     */
+    @Column(name = "report_flagged_at")
+    private LocalDateTime reportFlaggedAt;
+
+    /** 지목을 켠 운영자 */
+    @Column(name = "report_flagged_by")
+    private Long reportFlaggedBy;
+
     public PostImage(String imageUrl, String originalUrl, Integer width, Integer height, Integer fileSize) {
         this.imageUrl = imageUrl;
         this.originalUrl = originalUrl;
@@ -88,6 +101,24 @@ public class PostImage {
     void attachTo(Post post, int sortOrder) {
         this.post = post;
         this.sortOrder = sortOrder;
+    }
+
+    /** 이미 켜져 있으면 처음 켠 시각 · 운영자를 덮지 않는다 */
+    public void flagReported(Long operatorId, LocalDateTime now) {
+        if (this.reportFlaggedAt != null) {
+            return;
+        }
+        this.reportFlaggedAt = now;
+        this.reportFlaggedBy = operatorId;
+    }
+
+    public void unflagReported() {
+        this.reportFlaggedAt = null;
+        this.reportFlaggedBy = null;
+    }
+
+    public boolean isReportFlagged() {
+        return this.reportFlaggedAt != null;
     }
 
     public boolean isRepresentative() {

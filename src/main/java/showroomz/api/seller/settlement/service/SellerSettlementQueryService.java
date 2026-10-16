@@ -175,28 +175,12 @@ public class SellerSettlementQueryService {
                         brand == null ? null : brand.getDueDate(),
                         brand == null || brand.getStatus() != PayoutStatus.PAID ? null : brand.getPaidAt(),
                         views.payoutBasis(s.getId())),
-                adjustment, breakdown(s), confirmed ? payouts(s, payouts) : null,
+                adjustment, blocks.breakdownOf(s), confirmed ? payouts(s, payouts) : null,
                 confirmed ? payment(s, brand) : null, taxDocuments, influencerTax(s), claimShipping(s, market),
                 preview.getContent().stream().map(SellerSettlementQueryService::item).toList(),
                 preview.getTotalElements(),
                 new SellerSettlementDto.Actions(canRequest, blocks.canRespond(adjustment), confirmed,
                         taxDocuments != null && taxDocuments.stream().anyMatch(SellerSettlementDto.TaxDocument::downloadable)));
-    }
-
-    private SellerSettlementDto.Breakdown breakdown(Settlement s) {
-        return new SellerSettlementDto.Breakdown(s.getGrossOrderAmount(),
-                new SettlementPartyDto.AmountCount(s.getCancelDeduction(), s.getCancelCount()),
-                new SettlementPartyDto.AmountCount(s.getReturnDeduction(), s.getReturnCount()),
-                new SettlementPartyDto.AmountCount(s.getDeliveryExceptionDeduction(), s.getDeliveryExceptionCount()),
-                s.getConfirmedSalesAmount(),
-                new SellerSettlementDto.RateAmount(s.getPgFeeRate(), s.getPgFeeAmount()),
-                new SellerSettlementDto.PlatformFee(s.getPlatformFeeRate(), s.getPlatformFeeAmount(),
-                        properties.getPlatformFeeNormalRate()),
-                s.getOriginalRewardAmount(), s.getRewardAmount(),
-                new SellerSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
-                new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
-                s.getConsumerDeliveryFeeAmount(), s.getBrandPayoutBeforeClawback(), blocks.clawbacksOf(s),
-                s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
     }
 
     /** 3자 분배 — 브랜드 첫 행. 남의 행의 분배 실패는 「지급 예정」으로 접는다 · 브랜드 행 실패만 「지급 확인 중」(0-4 · §46 A-4). */

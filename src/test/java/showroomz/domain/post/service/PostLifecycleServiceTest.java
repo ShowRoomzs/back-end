@@ -104,7 +104,7 @@ class PostLifecycleServiceTest {
     }
 
     private PostSuspension overdueSuspension(Post post) {
-        PostSuspension suspension = new PostSuspension(post, PostSuspensionReason.AD_DISCLOSURE, null,
+        PostSuspension suspension = new PostSuspension(post, PostSuspensionReason.MISLEADING_INFO, null,
                 "운영정책 제12조", 9L, NOW.minusDays(8), NOW.minusDays(1));
         ReflectionTestUtils.setField(suspension, "id", 7L);
         return suspension;

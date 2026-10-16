@@ -51,6 +51,12 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
                    @Param("statuses") Collection<ContractStatus> statuses,
                    @Param("now") LocalDateTime now);
 
+    /** 브랜드 탈퇴 승인 — 작성중(보내지 않은 초안)은 함께 삭제한다(§51-5 · 52 설계서 4-3). 영속성 컨텍스트는 비우지 않는다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.deletedAt = :now WHERE c.market.id = :marketId "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.DRAFT AND c.deletedAt IS NULL")
+    int softDeleteDraftsOfMarket(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
+
     @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.status <> showroomz.domain.contract.type.ContractStatus.DRAFT "
             + "AND c.deletedAt IS NULL GROUP BY c.status")
     List<Object[]> countAdminStatuses();

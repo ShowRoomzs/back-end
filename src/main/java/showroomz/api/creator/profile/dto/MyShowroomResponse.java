@@ -75,7 +75,23 @@ public class MyShowroomResponse {
     @Schema(description = "가입일", example = "2026-01-01T10:00:00")
     private final LocalDateTime createdAt;
 
+    @Schema(description = "계정 제재 · 탈퇴 심사 상태 — 스튜디오가 막힌 기능을 비활성 + 안내로 그리는 재료(§51-1 · 53 설계서 4-2)")
+    private final Sanction sanction;
+
+    @Schema(description = "계정 제재 · 탈퇴 심사 상태")
+    public record Sanction(
+            @Schema(description = "회원 상태 — ACTIVE · SUSPENDED · WITHDRAWN") showroomz.domain.member.creator.type.CreatorStatus status,
+            @Schema(description = "정지 사유 라벨 — 정지일 때만", example = "협찬 표기 누락 반복") String reasonLabel,
+            @Schema(description = "정지 일시 — 정지일 때만") LocalDateTime suspendedAt,
+            @Schema(description = "리워드 지급 정지 — 정산 정보 불일치 사유만") boolean payoutHeld,
+            @Schema(description = "탈퇴 신청 심사 중 — 새 연결 수락 · 계약 서명이 막힌다") boolean withdrawalPending) {
+    }
+
     public static MyShowroomResponse from(Creator creator) {
+        return from(creator, null);
+    }
+
+    public static MyShowroomResponse from(Creator creator, Sanction sanction) {
         return MyShowroomResponse.builder()
                 .creatorId(creator.getId())
                 .showroomName(creator.getShowroomName())
@@ -97,6 +113,7 @@ public class MyShowroomResponse {
                 .bankbookImageUrl(creator.getBankbookImageUrl())
                 .connectionCode(creator.getConnectionCode())
                 .createdAt(creator.getCreatedAt())
+                .sanction(sanction)
                 .build();
     }
 

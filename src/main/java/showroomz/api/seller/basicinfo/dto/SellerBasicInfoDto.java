@@ -24,6 +24,8 @@ public class SellerBasicInfoDto {
     public static class BusinessInfoResponse {
         private String brandName;
         private MarketStatus brandStatus;
+        @Schema(description = "계정 이용 정지 중일 때만 — 정지 배너 재료(52 설계서 7절). 상세 사유는 내리지 않는다")
+        private SanctionInfo sanction;
         private String businessType;
         private String marketName;
         private String representativeName;
@@ -37,6 +39,19 @@ public class SellerBasicInfoDto {
         private String brandSiteUrl;
         private List<ReviewDocumentItem> reviewDocuments;
         private ChangeRequestBannerResponse changeRequest;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "계정 이용 정지 — 로그인은 되고 새로 벌이는 일만 막힌다(§51-1)")
+    public static class SanctionInfo {
+        @Schema(example = "SETTLEMENT_INFO_MISMATCH")
+        private String reason;
+        @Schema(example = "정산 정보 불일치")
+        private String reasonLabel;
+        private java.time.LocalDateTime suspendedAt;
+        @Schema(description = "브랜드 몫 지급 정지 — 해제 다음 영업일 지급")
+        private boolean payoutHeld;
     }
 
     @Getter

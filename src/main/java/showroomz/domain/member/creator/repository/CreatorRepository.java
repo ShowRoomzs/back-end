@@ -1,7 +1,10 @@
 package showroomz.domain.member.creator.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.user.entity.Users;
 
@@ -39,4 +42,15 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
     @Query(value = "SELECT creator_id FROM creator " +
                    "WHERE connection_code = CONCAT('SZ', LPAD(creator_id, 8, '0'))", nativeQuery = true)
     List<Long> findIdsWithLegacyConnectionCode();
+
+    /**
+     * 조치(정지 · 해제 · 탈퇴 승인)의 직렬화(53 설계서 4-1) — 같은 인플루언서에 대한 동시 조치를 줄 세운다. 잠근 뒤 상태를 다시 보고
+     * 엔티티로 바꾼다(조건부 UPDATE 와 같은 효과 · 관리 중인 엔티티가 벌크 UPDATE 를 덮어쓰지 않게).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Creator c JOIN FETCH c.user WHERE c.id = :creatorId")
+    Optional<Creator> findForUpdate(@Param("creatorId") Long creatorId);
+
+    @Query("SELECT c FROM Creator c JOIN FETCH c.user WHERE c.id = :creatorId")
+    Optional<Creator> findWithUserById(@Param("creatorId") Long creatorId);
 }

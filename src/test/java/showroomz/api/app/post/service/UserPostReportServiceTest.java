@@ -105,12 +105,12 @@ class UserPostReportServiceTest {
             givenUserAndPost(post);
             given(postReportRepository.existsByPost_IdAndReporter_Id(POST_ID, USER_ID)).willReturn(false);
 
-            userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.AD_DISCLOSURE, null));
+            userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.MISLEADING_INFO, null));
 
             ArgumentCaptor<PostReport> captor = ArgumentCaptor.forClass(PostReport.class);
             verify(postReportRepository).save(captor.capture());
             assertThat(captor.getValue().getStatus()).isEqualTo(PostReportStatus.PENDING);
-            assertThat(captor.getValue().getReasonCode()).isEqualTo(PostReportReason.AD_DISCLOSURE);
+            assertThat(captor.getValue().getReasonCode()).isEqualTo(PostReportReason.MISLEADING_INFO);
             assertThat(post.isVisibleToConsumer()).isTrue();
         }
 
@@ -134,7 +134,7 @@ class UserPostReportServiceTest {
             given(postReportRepository.existsByPost_IdAndReporter_Id(POST_ID, USER_ID)).willReturn(true);
 
             assertThatThrownBy(() ->
-                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.COPYRIGHT, null)))
+                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.SPAM, null)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_REPORT_ALREADY_SUBMITTED);
 
@@ -150,7 +150,7 @@ class UserPostReportServiceTest {
                     .willThrow(new DataIntegrityViolationException("uk_post_report"));
 
             assertThatThrownBy(() ->
-                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.COPYRIGHT, null)))
+                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.SPAM, null)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_REPORT_ALREADY_SUBMITTED);
         }
@@ -162,7 +162,7 @@ class UserPostReportServiceTest {
             given(postRepository.findById(POST_ID)).willReturn(Optional.of(publishedPost()));
 
             assertThatThrownBy(() ->
-                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.MEDICAL_CLAIM, null)))
+                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.ABUSE_HATE, null)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_REPORT_SELF_NOT_ALLOWED);
 
@@ -177,7 +177,7 @@ class UserPostReportServiceTest {
             givenUserAndPost(post);
 
             assertThatThrownBy(() ->
-                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.MISLEADING_AD, null)))
+                    userPostReportService.reportPost(USERNAME, POST_ID, request(PostReportReason.FRAUD_IMPERSONATION, null)))
                     .isInstanceOf(BusinessException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.POST_NOT_FOUND);
 

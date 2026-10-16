@@ -37,6 +37,53 @@ public interface MarketRepository extends JpaRepository<Market, Long> {
     @Query("SELECT m FROM Market m JOIN FETCH m.seller WHERE m.id = :id")
     Optional<Market> findByIdWithSeller(@Param("id") Long id);
 
+    // ------------------------------------------------------------------ 어드민 회원 관리 · 브랜드(52 설계서)
+
+    /** 정지 · 해제 · 탈퇴 승인의 경합 차단 — 마켓 행을 잠그고 상태를 다시 본다. */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM Market m WHERE m.id = :id")
+    Optional<Market> findForUpdate(@Param("id") Long id);
+
+    /**
+     * 브랜드 회원 목록 — 입점이 끝난 브랜드(셀러 APPROVED · SELLER)만. 회원번호(BRD-) 정확 일치 또는 브랜드명 부분 일치.
+     * 정렬은 Pageable 이 준다({@code seller.createdAt} · {@code id}).
+     */
+    @Query(value = "SELECT m FROM Market m JOIN FETCH m.seller s "
+            + "WHERE s.status = showroomz.api.seller.auth.type.SellerStatus.APPROVED "
+            + "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER "
+            + "AND m.status IN :statuses "
+            + "AND (:marketId IS NULL OR m.id = :marketId) "
+            + "AND (:name IS NULL OR m.marketName LIKE CONCAT('%', :name, '%'))",
+            countQuery = "SELECT COUNT(m) FROM Market m JOIN m.seller s "
+                    + "WHERE s.status = showroomz.api.seller.auth.type.SellerStatus.APPROVED "
+                    + "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER "
+                    + "AND m.status IN :statuses "
+                    + "AND (:marketId IS NULL OR m.id = :marketId) "
+                    + "AND (:name IS NULL OR m.marketName LIKE CONCAT('%', :name, '%'))")
+    Page<Market> searchBrandMembers(@Param("statuses") java.util.Collection<MarketStatus> statuses,
+                                    @Param("marketId") Long marketId,
+                                    @Param("name") String name,
+                                    Pageable pageable);
+
+    /** 브랜드 회원 상태별 건수 — [status, count]. 검색 조건은 그대로 · 상태만 뺀다. */
+    @Query("SELECT m.status, COUNT(m) FROM Market m JOIN m.seller s "
+            + "WHERE s.status = showroomz.api.seller.auth.type.SellerStatus.APPROVED "
+            + "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER "
+            + "AND (:marketId IS NULL OR m.id = :marketId) "
+            + "AND (:name IS NULL OR m.marketName LIKE CONCAT('%', :name, '%')) GROUP BY m.status")
+    List<Object[]> countBrandMembersByStatus(@Param("marketId") Long marketId, @Param("name") String name);
+
+    /** 상세의 「이전 · 다음」 — 회원번호 순 인접 브랜드. */
+    @Query("SELECT MAX(m.id) FROM Market m JOIN m.seller s WHERE m.id < :id "
+            + "AND s.status = showroomz.api.seller.auth.type.SellerStatus.APPROVED "
+            + "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER")
+    Long findPreviousBrandMemberId(@Param("id") Long id);
+
+    @Query("SELECT MIN(m.id) FROM Market m JOIN m.seller s WHERE m.id > :id "
+            + "AND s.status = showroomz.api.seller.auth.type.SellerStatus.APPROVED "
+            + "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER")
+    Long findNextBrandMemberId(@Param("id") Long id);
+
     /**
      * ID와 판매자 상태로 마켓 조회 (유저용 상세 조회 시 승인된 Shop만 조회)
      */

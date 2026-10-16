@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import showroomz.domain.common.BaseTimeEntity;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
+import showroomz.domain.member.creator.type.CreatorStatus;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
@@ -123,6 +124,25 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "PG_PARTNER_ACCOUNT_HASH", length = 64)
     private String pgPartnerAccountHash;
 
+    /**
+     * 인플루언서 회원 상태(53 설계서 0-1) — 소비자 계정의 {@code Users.status}와 다른 축이다. 전이는 서비스의 조건부 UPDATE
+     * ({@code CreatorRepository.transitionStatus})가 집행하고, 정지 사유 · 처리자는 {@code creator_sanction} 행이 든다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "STATUS", nullable = false, length = 16)
+    @Builder.Default
+    private CreatorStatus status = CreatorStatus.ACTIVE;
+
+    @Column(name = "WITHDRAWN_AT")
+    private LocalDateTime withdrawnAt;
+
+    @Column(name = "WITHDRAWN_BY")
+    private Long withdrawnBy;
+
+    /** 탈퇴 승인 즉시 파기를 수행한 시각(0-10) — 값이 있으면 본인확인 · 정산 카드는 「— 파기됨」이다. */
+    @Column(name = "PRIVACY_PURGED_AT")
+    private LocalDateTime privacyPurgedAt;
+
     public void linkPgPartner(String externalId, String ref, String env, String status, String accountHash, LocalDateTime at) {
         this.pgPartnerId = externalId;
         this.pgPartnerRef = ref;
@@ -207,6 +227,53 @@ public class Creator extends BaseTimeEntity {
         if (this.showroomAddress == null || this.showroomAddress.isBlank()) {
             this.showroomAddress = showroomAddress;
         }
+    }
+
+    /** 정지 — 호출자가 행을 잠그고 {@code ACTIVE}임을 확인한 뒤 부른다. 사유 · 처리자는 {@code creator_sanction} 행이 든다. */
+    public void markSuspended() {
+        this.status = CreatorStatus.SUSPENDED;
+    }
+
+    /** 정지 해제 — 호출자가 행을 잠그고 {@code SUSPENDED}임을 확인한 뒤 부른다. */
+    public void markActive() {
+        this.status = CreatorStatus.ACTIVE;
+    }
+
+    public boolean isWithdrawn() {
+        return status == CreatorStatus.WITHDRAWN;
+    }
+
+    public boolean isSuspended() {
+        return status == CreatorStatus.SUSPENDED;
+    }
+
+    public boolean isPrivacyPurged() {
+        return privacyPurgedAt != null;
+    }
+
+    /**
+     * 탈퇴 승인 — 즉시 파기 집합(53 설계서 0-10). 본인확인(이름 · 생년월일 · 휴대폰) · 정산 계좌 · 서류 이미지 · 인스타 · 연결코드를 지운다.
+     *
+     * <p><b>보존</b>: 주민등록번호 암호문 · 사업자등록번호 · 사업자 여부(원천세 신고 · 지급명세서 · 세금계산서 기록의 식별자 — 보존 기간은
+     * 쟁점 G 자문 대기) · 업무 이메일(시안대로) · 쇼룸명 · 쇼룸 주소 · 프로필 이미지 · PG 셀러 연결 id. 상태 전이는 호출자가 조건부
+     * UPDATE 로 먼저 끝낸다 — 여기서는 같은 값을 엔티티에도 맞춘다.
+     */
+    public void purgeOnWithdrawal(Long operatorId, LocalDateTime now) {
+        this.status = CreatorStatus.WITHDRAWN;
+        this.withdrawnAt = now;
+        this.withdrawnBy = operatorId;
+        this.realName = null;
+        this.birthday = null;
+        this.phoneNumber = null;
+        this.bankName = null;
+        this.accountNumber = null;
+        this.bankbookImageUrl = null;
+        this.businessLicenseImageUrl = null;
+        this.instagramUrl = null;
+        this.channelUrl = "";
+        this.connectionCode = null;
+        this.connectionCodeIssuedAt = null;
+        this.privacyPurgedAt = now;
     }
 
     /** §13-6 — 연결코드는 쇼룸별 고정(영구) 발급, 인플루언서가 원하면 재발급 가능(값 자체는 애플리케이션에서 생성해 전달). */

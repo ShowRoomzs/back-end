@@ -33,7 +33,13 @@ public enum PayoutBlockReason {
     /** 셀러 {@code KYC_REQUIRED} 또는 주당 한도 초과 예상 — KYC 통과 뒤 자동 해제. 재분배 대상이 아니다. */
     KYC_REQUIRED("KYC 심사 대기", "KYC 완료 후 지급"),
     /** 지급대행 계약 없음 · 이용료 미납 · 계정 정지 — 운영자. */
-    PAYOUT_CONTRACT_BLOCKED("PG 지급대행 이용 불가", "PG 계약 확인 후 지급");
+    PAYOUT_CONTRACT_BLOCKED("PG 지급대행 이용 불가", "PG 계약 확인 후 지급"),
+
+    // ---- 계정 정지(§51-3 · 52 설계서 0-4) — 재등록 · 수취자 알림 대상이 아니다. 운영자의 정지 해제가 푼다.
+    /** 브랜드 정지 · 지급 정지 사유(정산 정보 불일치 · 사업자 정보 허위 기재) — 해제 다음 영업일에 지급. */
+    BRAND_SUSPENDED("계정 정지 · 지급 정지", "정지 해제 다음 영업일 지급"),
+    /** 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 리워드만 멈춘다. 해제 다음 영업일에 지급. */
+    CREATOR_SUSPENDED("계정 정지 · 정산 정보 불일치", "정지 해제 다음 영업일 지급");
 
     /** PG 셀러 사유 — 지급 배치 앞단이 다시 등록 · 상태 조회를 시도하는 코드. */
     public static final java.util.Set<String> PARTNER_CODES = java.util.Set.of(PARTNER_NOT_READY.name(),

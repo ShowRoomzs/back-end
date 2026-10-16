@@ -64,6 +64,9 @@ public class ProductService {
         
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 정지 중에는 새 상품을 등록하지 않는다(§51-1 · 52 설계서 7절) — 기존 상품 수정 · 품절 처리는 그대로다.
+        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.PRODUCT_CREATE);
 
         // 3. 상품 번호 생성 (SRZ-YYYYMMDD-XXX 형식)
         String productNumber = generateProductNumber();

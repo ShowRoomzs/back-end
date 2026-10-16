@@ -177,5 +177,28 @@ public interface ProductRepository extends JpaRepository<Product, Long>, JpaSpec
     int updateGroupBuyStatus(@Param("productIds") Collection<Long> productIds,
                              @Param("status") showroomz.domain.product.type.ProductGroupBuyStatus status);
 
+    // ------------------------------------------------------------------ 어드민 브랜드 상세(52 설계서 2-4 · 4-3)
+
+    /** 판매중 — 진열 중 ∧ 품절 아님(강제 품절 아님 ∧ 옵션 재고 합 > 0). 품절식은 판매자 목록 필터와 같다. */
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.market.id = :marketId "
+            + "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY "
+            + "AND p.isOutOfStockForced = false "
+            + "AND (SELECT COALESCE(SUM(v.stock), 0) FROM ProductVariant v WHERE v.product = p) > 0")
+    long countSellingByMarket(@Param("marketId") Long marketId);
+
+    /** 품절 — 진열 중 ∧ (강제 품절 ∨ 옵션 재고 합 0). */
+    @Query("SELECT COUNT(p) FROM Product p WHERE p.market.id = :marketId "
+            + "AND p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.DISPLAY "
+            + "AND (p.isOutOfStockForced = true "
+            + "     OR (SELECT COALESCE(SUM(v.stock), 0) FROM ProductVariant v WHERE v.product = p) = 0)")
+    long countSoldOutByMarket(@Param("marketId") Long marketId);
+
+    /** 탈퇴 승인 — 상품 전건 미진열(§51-5 「상품 · 공구 게시물 비공개」). 정지는 숨기지 않는다(판매 유지). */
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("UPDATE Product p SET p.displayStatus = showroomz.domain.product.type.ProductDisplayStatus.HIDDEN "
+            + "WHERE p.market.id = :marketId "
+            + "AND p.displayStatus <> showroomz.domain.product.type.ProductDisplayStatus.HIDDEN")
+    int hideAllByMarket(@Param("marketId") Long marketId);
+
 }
 

@@ -22,7 +22,7 @@ import showroomz.domain.post.type.PostReportReason;
 public class PostReportRequest {
 
     @Schema(description = "신고 사유 코드", requiredMode = Schema.RequiredMode.REQUIRED,
-            example = "AD_DISCLOSURE")
+            example = "MISLEADING_INFO")
     @NotNull(message = "신고 사유는 필수입니다.")
     private PostReportReason reasonCode;
 

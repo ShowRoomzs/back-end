@@ -67,4 +67,10 @@ public interface BrandChangeRequestRepository extends JpaRepository<BrandChangeR
     List<Object[]> countByStatusGroup(@Param("keyword") String keyword);
 
     long countByStatus(ChangeRequestStatus status);
+
+    /** 어드민 브랜드 상세 — 정산 정보 카드 「변경 요청 대기 N건」(52 설계서 2-2). 유형 무관 · 오래된 순. */
+    List<BrandChangeRequest> findByMarket_IdAndStatusOrderByRequestedAtAsc(Long marketId, ChangeRequestStatus status);
+
+    /** 어드민 브랜드 상세 처리 이력의 파생 행(52 설계서 5-2). */
+    List<BrandChangeRequest> findByMarket_IdOrderByRequestedAtDesc(Long marketId);
 }

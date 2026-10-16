@@ -76,6 +76,14 @@ public record MessageCardPayload(
                 reasonLabel, processedAt, operatorId, null);
     }
 
+    /**
+     * 계정 정지 · 해제 카드(52 설계서 8-1) — 사유 문장 · 처리 시각 · 운영자 id 만. 기존 결과 카드 필드를 그대로 쓴다(카드 읽기 경로가 같다).
+     * 계약 필드는 비어 있다.
+     */
+    public static MessageCardPayload sanction(String reasonLabel, LocalDateTime processedAt, Long operatorId) {
+        return new MessageCardPayload(null, null, null, null, null, null, reasonLabel, processedAt, operatorId, null);
+    }
+
     public static MessageCardPayload settlementAdjustment(Long contractId, String contractNumber, String groupBuyTitle,
                                                           Adjustment adjustment) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, null, null, null, null, null, null,

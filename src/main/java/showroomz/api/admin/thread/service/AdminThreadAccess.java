@@ -105,7 +105,7 @@ public class AdminThreadAccess {
         Connection connection = thread.getConnection();
         return connection.getType() == ConnectionType.OPERATOR_MARKET
                 ? AdminChannelMemberStatus.of(connection.getMarket().getStatus())
-                : AdminChannelMemberStatus.of(connection.getCreator().getUser().getStatus());
+                : AdminChannelMemberStatus.of(connection.getCreator().getStatus());
     }
 
     /** 회원 id — 브랜드는 마켓 id, 인플루언서는 크리에이터 id다(연결·소통의 보낸 사람 규칙과 같다). */

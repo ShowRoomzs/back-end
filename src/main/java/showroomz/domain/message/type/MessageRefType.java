@@ -7,5 +7,7 @@ public enum MessageRefType {
     /** 정산 조정 협의 — 개설 · D-1 · 결과 카드(44 이슈 스레드 설계서 5-1). */
     SETTLEMENT_ADJUSTMENT,
     /** 정산 조정 제안 — 요청 · 다른 금액 제안 · 동의 · 반대 카드. 카드의 버튼 상태를 이 행에서 읽는다. */
-    SETTLEMENT_ADJUSTMENT_PROPOSAL
+    SETTLEMENT_ADJUSTMENT_PROPOSAL,
+    /** 계정 정지 1건 — 정지 · 해제 카드(52 설계서 0-12). 브랜드는 brand_sanction, 인플루언서는 그쪽 정지 행의 id 다. */
+    MEMBER_SANCTION
 }

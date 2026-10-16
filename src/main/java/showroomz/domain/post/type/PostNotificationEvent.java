@@ -27,6 +27,8 @@ public enum PostNotificationEvent {
     /** 본인 삭제 — 되돌릴 수 없는 조작이라 이력에 남긴다 */
     DELETED_BY_SELF,
 
+    /** 운영자 조치 취소 → 재게시 (§54-5) — 작성자가 "왜 다시 올라왔나"를 알 수 있어야 한다 */
+    SUSPENSION_CANCELED,
     /** 팔로워 신규 게시물 알림 — 수정 시에는 재발송하지 않는다 (§24-3) */
     PUBLISHED_TO_FOLLOWERS
 }

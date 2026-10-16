@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.contract.dto.AdminContractDto.*;
 import showroomz.domain.contract.entity.Contract;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.domain.contract.repository.*;
 import showroomz.domain.contract.service.*;
 import showroomz.domain.contract.service.port.ContractChannelGateway;
@@ -27,11 +28,14 @@ public class AdminContractCommandService {
     private final ContractHistoryRecorder history;
     private final ContractNotifier notifier;
     private final GroupBuyFactory groupBuyFactory;
+    private final CreatorSanctionGuard creatorSanctionGuard;
 
     public ProcessResponse approve(Long id, Long operator, ApproveRequest request) {
         String name = access.operatorName(operator);
         Contract c = access.lock(id);
         requireReview(c);
+        // 검토 통과 = 서명 요청 발송 — 정지 · 탈퇴 심사 중인 인플루언서면 보내지 않는다(53 설계서 4-2).
+        creatorSanctionGuard.requireCanReceiveContract(c.getCreator());
         if (!Boolean.TRUE.equals(request.recipientsRegistered()) || !Boolean.TRUE.equals(request.documentUploaded())
                 || !Boolean.TRUE.equals(request.requestSent())) fail(ErrorCode.CONTRACT_CHECKLIST_REQUIRED);
         LocalDateTime now = LocalDateTime.now();

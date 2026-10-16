@@ -13,6 +13,8 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorFollow;
+import showroomz.domain.member.creator.entity.CreatorFollowEvent;
+import showroomz.domain.member.creator.repository.CreatorFollowEventRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -46,6 +48,7 @@ public class ShowroomFollowService {
     private final PostRepository postRepository;
     private final ConnectionRepository connectionRepository;
     private final PostAttributionService postAttributionService;
+    private final CreatorFollowEventRepository followEventRepository;
 
     /**
      * 쇼룸 팔로우 — 이미 팔로우 중이면 아무 동작도 하지 않는다.
@@ -56,15 +59,19 @@ public class ShowroomFollowService {
 
         if (!creatorFollowRepository.existsByUserAndCreator(user, creator)) {
             CreatorFollow follow = new CreatorFollow(user, creator);
+            LocalDateTime now = LocalDateTime.now();
 
             // §24-7 — 이 팔로우가 어떤 게시물을 보고 누른 것인지 지금 정해 태그로 굳힌다.
             // 팔로우는 로그인 행동이므로 조회 키는 언제나 사용자 기준이다.
             follow.attributeTo(postAttributionService.resolveAttributedPostId(
                     PostAttributionService.viewerKeyOf(user.getId(), null),
                     creator.getId(),
-                    LocalDateTime.now()));
+                    now));
 
             creatorFollowRepository.save(follow);
+            // 성과의 「사건 시각 팔로워」 · 「기간 증감」은 이력으로만 셀 수 있다(49 스튜디오 성과 설계서 1-6) — 같은 트랜잭션.
+            followEventRepository.save(CreatorFollowEvent.follow(creator.getId(), user.getId(), now,
+                    follow.getAttributedPostId()));
         }
     }
 
@@ -77,6 +84,7 @@ public class ShowroomFollowService {
 
         if (creatorFollowRepository.existsByUserAndCreator(user, creator)) {
             creatorFollowRepository.deleteByUserAndCreator(user, creator);
+            followEventRepository.save(CreatorFollowEvent.unfollow(creator.getId(), user.getId(), LocalDateTime.now()));
         }
     }
 

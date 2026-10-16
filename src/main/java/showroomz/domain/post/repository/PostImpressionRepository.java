@@ -66,4 +66,15 @@ public interface PostImpressionRepository extends JpaRepository<PostImpression, 
     @Modifying
     @Query("DELETE FROM PostImpression i WHERE i.viewedAt < :threshold")
     int deleteOlderThan(@Param("threshold") LocalDateTime threshold);
+
+    /**
+     * 성과 「게시물 고유 방문 · 그중 팔로워」(48 파트너 설계서 0-9) — 기간 내 노출의 사람별 [viewerKey, user_id, 첫 노출 시각].
+     * 비로그인 노출은 user_id 가 null 이다(비팔로워).
+     */
+    @Query("SELECT i.viewerKey, u.id, MIN(i.viewedAt) FROM PostImpression i LEFT JOIN i.user u " +
+           "WHERE i.post.id = :postId AND i.viewedAt >= :from AND i.viewedAt < :to " +
+           "GROUP BY i.viewerKey, u.id")
+    List<Object[]> findViewersInPeriod(@Param("postId") Long postId,
+                                       @Param("from") LocalDateTime from,
+                                       @Param("to") LocalDateTime to);
 }

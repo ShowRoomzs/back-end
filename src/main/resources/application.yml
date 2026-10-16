@@ -98,7 +98,7 @@ springdoc:
 post:
   appeal-deadline-days: ${POST_APPEAL_DEADLINE_DAYS:7}          # 이의 신청 기한 (시안 7일)
   appeal-review-business-days: ${POST_APPEAL_REVIEW_DAYS:3}     # 심사 예상 소요 — 표시용
-  download-grace-days: ${POST_DOWNLOAD_GRACE_DAYS:30}           # 반려 후 원본 내려받기 유예
+  download-grace-days: ${POST_DOWNLOAD_GRACE_DAYS:7}            # 반려 후 원본 내려받기 유예 (§54 · 가정값)
   retention-months: ${POST_RETENTION_MONTHS:6}                  # 삭제 게시물 비공개 보관 기간
   purge-enabled: ${POST_PURGE_ENABLED:false}                    # 파기 배치 — 기본은 드라이런
   purge-batch-size: ${POST_PURGE_BATCH_SIZE:100}

@@ -229,6 +229,26 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     int blockWithReason(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
                         @Param("failReason") String failReason);
 
+    /**
+     * 계정 정지 지급 보류(52 설계서 6-1) — {@link #blockWithReason}과 같은 전이지만 <b>영속성 컨텍스트를 비우지 않는다</b>. 정지 · 확정
+     * 트랜잭션이 붙들고 있는 마켓 · 정지 행이 준영속으로 떨어지면 그 뒤 변경이 저장되지 않는다.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
+            + "p.dueDate = NULL, p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED")
+    int holdScheduled(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                      @Param("failReason") String failReason);
+
+    /** 계정 정지 지급 보류 해제(52 설계서 6-2) — 그 사유로 보류된 행만 SCHEDULED(예정일)로. 영속성 컨텍스트는 비우지 않는다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
+            + "p.dueDate = :dueDate, p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
+            + "AND p.failCode = :failCode")
+    int releaseHold(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                    @Param("dueDate") LocalDate dueDate);
+
     /** 이미 보류 중인 행의 사유 갱신(주민등록번호 보류에 파트너 사유를 덧붙일 때 · 재시도 실패 사유 변경). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.failCode = :failCode, p.failReason = :failReason "
@@ -289,4 +309,33 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     @Query("SELECT p.payee, COUNT(p), COALESCE(SUM(p.amount), 0), MIN(p.failedAt) FROM SettlementPayout p "
             + "WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.FAILED GROUP BY p.payee")
     List<Object[]> aggregateFailed();
+
+    // ------------------------------------------------------------------ 인플루언서 계정 정지(53 설계서 4-3)
+
+    /**
+     * 인플루언서 몫 보류 행 중 정지 해제가 다시 판정할 것 — 정지 사유 코드 행 + 확정 때 정책 보류로 사유 없이 BLOCKED 가 된 행.
+     * PG 셀러 사유 행은 셀러 재판정이 푼다(제외).
+     */
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
+            + "AND (p.failCode IS NULL OR p.failCode = :suspendedCode) ORDER BY p.id ASC")
+    List<SettlementPayout> findCreatorRowsForSuspensionRelease(@Param("creatorId") Long creatorId,
+                                                               @Param("suspendedCode") String suspendedCode);
+
+    /** 정지 해제 — 그 행을 SCHEDULED(예정일)로. 영속성 컨텍스트는 비우지 않는다(해제 트랜잭션이 정지 행을 붙들고 있다). */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
+            + "p.dueDate = :dueDate, p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
+            + "AND (p.failCode IS NULL OR p.failCode = :suspendedCode)")
+    int releaseCreatorSuspension(@Param("payoutId") Long payoutId, @Param("suspendedCode") String suspendedCode,
+                                 @Param("dueDate") LocalDate dueDate);
+
+    /** 정지는 풀렸지만 다른 보류 사유(세금계산서 · 주민등록번호)가 남았다 — 정지 사유만 지우고 BLOCKED 로 둔다(기존 재판정이 푼다). */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
+            + "AND p.failCode = :suspendedCode")
+    int clearCreatorSuspensionCode(@Param("payoutId") Long payoutId, @Param("suspendedCode") String suspendedCode);
 }

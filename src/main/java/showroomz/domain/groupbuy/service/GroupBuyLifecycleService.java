@@ -72,6 +72,11 @@ public class GroupBuyLifecycleService {
         if (groupBuy == null || groupBuy.getStatus() != GroupBuyStatus.READY || groupBuy.getStartAt().isAfter(now)) {
             return false;
         }
+        // 브랜드 정지 중에는 오픈 전 공구를 열지 않는다(§51-1 · 52 설계서 7절) — 예외가 아니라 건너뛴다(배치가 멈추면 안 된다).
+        // 준비완료로 남아 있다가 해제 뒤 다음 틱에 열린다.
+        if (showroomz.domain.member.brand.service.BrandSanctionGuard.isSuspended(groupBuy.getMarket())) {
+            return false;
+        }
         if (groupBuyRepository.transition(groupBuyId, EnumSet.of(GroupBuyStatus.READY), GroupBuyStatus.IN_PROGRESS) != 1) {
             return false;
         }

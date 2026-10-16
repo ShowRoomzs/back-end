@@ -41,4 +41,26 @@ public interface SettlementItemRepository extends JpaRepository<SettlementItem, 
     @Query("SELECT COALESCE(SUM(i.paidAmount), 0), COALESCE(SUM(i.settledAmount), 0), COALESCE(SUM(i.rewardAmount), 0), "
             + "COUNT(DISTINCT i.deliveryGroupId) FROM SettlementItem i WHERE i.settlementId = :settlementId")
     List<Object[]> totalsOf(@Param("settlementId") Long settlementId);
+
+    /**
+     * 성과 목록 · 요약(48 파트너 설계서 7-2) — 정산별 [정산 id, 하위주문 수, 반영 수량 합]. 정산은 공구의 전 하위주문이 종결된 뒤에 생기므로
+     * 명세의 하위주문 수 = 공구 주문 수다.
+     */
+    @Query("SELECT i.settlementId, COUNT(DISTINCT i.deliveryGroupId), COALESCE(SUM(i.settledQuantity), 0) "
+            + "FROM SettlementItem i WHERE i.settlementId IN :settlementIds GROUP BY i.settlementId")
+    List<Object[]> aggregateBySettlement(@Param("settlementIds") Collection<Long> settlementIds);
+
+    /** 정산별 [정산 id, 하위주문 수] — 주어진 명세 상태의 항목이 하나라도 있는 하위주문(구매확정 하위주문 = 확정 · 부분 반품). */
+    @Query("SELECT i.settlementId, COUNT(DISTINCT i.deliveryGroupId) FROM SettlementItem i "
+            + "WHERE i.settlementId IN :settlementIds AND i.status IN :statuses GROUP BY i.settlementId")
+    List<Object[]> countGroupsByStatus(@Param("settlementIds") Collection<Long> settlementIds,
+                                       @Param("statuses") Collection<showroomz.domain.settlement.type.SettlementItemStatus> statuses);
+
+    /**
+     * 정산별 구매확정 소비자 [정산 id, 소비자 id, 성별] — 중복 제거. 분포만 내고 식별값은 집계 밖으로 나가지 않는다(§47-2).
+     */
+    @Query("SELECT DISTINCT i.settlementId, i.consumerUserId, u.gender FROM SettlementItem i, Users u "
+            + "WHERE u.id = i.consumerUserId AND i.settlementId IN :settlementIds AND i.status IN :statuses")
+    List<Object[]> findBuyersBySettlement(@Param("settlementIds") Collection<Long> settlementIds,
+                                          @Param("statuses") Collection<showroomz.domain.settlement.type.SettlementItemStatus> statuses);
 }

@@ -9,14 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.creator.post.DTO.PostDto;
 import showroomz.api.creator.post.type.PostSaveAction;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostAppeal;
 import showroomz.domain.post.entity.PostImage;
+import showroomz.domain.post.entity.PostOriginalDownload;
 import showroomz.domain.post.entity.PostSuspension;
 import showroomz.domain.post.policy.PostPolicies;
 import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
+import showroomz.domain.post.repository.PostOriginalDownloadRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
@@ -79,6 +82,8 @@ public class ShowroomPostService {
     private final PostPolicies postPolicies;
     private final PostNotificationService postNotificationService;
     private final PostProperties postProperties;
+    private final CreatorSanctionGuard sanctionGuard;
+    private final PostOriginalDownloadRepository postOriginalDownloadRepository;
 
     // ------------------------------------------------------------------ 작성·수정
 
@@ -88,6 +93,10 @@ public class ShowroomPostService {
         List<PostDto.PostImageRequest> images = safeImages(request.getImages());
 
         validateSaveable(request.getAction(), images, request.getContent());
+        if (request.getAction() == PostSaveAction.PUBLISH) {
+            // 계정 정지 중 새 게시물 등록 차단(§51-1 · 53 설계서 4-2) — 임시저장은 막지 않는다.
+            sanctionGuard.requireCanPublishPost(creator);
+        }
 
         LocalDateTime now = LocalDateTime.now();
         BigDecimal aspectRatio = resolveAspectRatio(images);
@@ -130,6 +139,9 @@ public class ShowroomPostService {
 
         boolean publishing = request.getAction() == PostSaveAction.PUBLISH;
         boolean firstPublish = post.getStatus() == PostStatus.DRAFT && publishing;
+        if (firstPublish) {
+            sanctionGuard.requireCanPublishPost(creator);
+        }
 
         // 이미 게시중인 게시물은 action이 임시저장이어도 계속 노출된다 — 그래서 게시 조건을 다시 확인한다.
         // 확인하지 않으면 사진을 전부 뺀 저장이 통과해 소비자 피드에 사진 없는 카드가 남는다(§24-3).
@@ -159,6 +171,7 @@ public class ShowroomPostService {
                     : ErrorCode.POST_NOT_EDITABLE);
         }
 
+        sanctionGuard.requireCanPublishPost(creator);
         postPolicies.of(post).validateForPublish(post);
         post.publish(LocalDateTime.now());
         notifyFollowers(post);
@@ -312,7 +325,11 @@ public class ShowroomPostService {
      *
      * <p>크롭본이 아니라 원본을 주는 이유 — 인플루언서가 자기 콘텐츠의 원본을 잃는 상황이
      * 분쟁으로 이어진다. 그래서 파기 시점까지 {@code original_url}을 함께 보관한다.
+     *
+     * <p>삭제된 게시물을 유예 중에 받아 가면 기록을 남긴다 — 어드민 삭제 경위의 「작성자 내려받기 N회」이고
+     * 「내 사진을 돌려 달라」 문의의 답이다(§54-6). 살아 있는 게시물의 원본 조회는 상세 화면의 일부라 남기지 않는다.
      */
+    @Transactional
     public PostDto.OriginalImagesResponse getOriginalImages(Long userId, Long postId) {
         Creator creator = getMyCreator(userId);
         Post post = postRepository.findById(postId)
@@ -333,6 +350,10 @@ public class ShowroomPostService {
         }
 
         List<PostImage> images = postImageRepository.findByPost_IdOrderBySortOrderAsc(postId);
+        if (rejectedWithinGrace && post.isDeleted()) {
+            postOriginalDownloadRepository.save(new PostOriginalDownload(
+                    postId, creator.getId(), appeal.getId(), images.size(), now));
+        }
         return PostDto.OriginalImagesResponse.builder()
                 .graceUntil(appeal == null ? null : appeal.getGraceUntil())
                 .images(toImageResponses(images))

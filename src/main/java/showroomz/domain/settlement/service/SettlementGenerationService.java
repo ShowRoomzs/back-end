@@ -22,8 +22,6 @@ import showroomz.domain.order.repository.SettlementSourceRow;
 import showroomz.domain.order.service.BusinessDayCalculator;
 import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.FulfillmentStatus;
-import showroomz.domain.order.type.OrderCancelType;
-import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementItem;
@@ -319,36 +317,19 @@ public class SettlementGenerationService {
         }
 
         /**
-         * 명세 상태 · 반영 수량(2-2 ① 표). 취소는 항목의 취소 유형(없으면 하위주문의 것)으로 가른다 — 분실 처리만 배송 예외다.
-         * 반송 완료 하위주문은 전 항목이 배송 예외다(반송은 환불로 종결).
+         * 명세 상태 · 반영 수량(2-2 ① 표) — 판정은 {@link SettlementItemClassifier}(성과 관리와 공용)가 한다.
          */
         static Draft classify(SettlementSourceRow row) {
             Draft draft = new Draft(row);
-            long paid = draft.paidAmount();
-            boolean itemCancelled = row.itemStatus() == OrderProductStatus.CANCELLED
-                    || (row.groupStatus() == FulfillmentStatus.CANCELLED && row.itemStatus() != OrderProductStatus.RETURNED);
-            if (itemCancelled) {
-                OrderCancelType type = row.itemCancelType() != null ? row.itemCancelType() : row.groupCancelType();
-                if (type == OrderCancelType.LOST) {
-                    draft.status = SettlementItemStatus.DELIVERY_EXCEPTION;
-                    draft.exceptionPart = paid;
-                } else {
-                    draft.status = SettlementItemStatus.CANCELLED;
-                    draft.cancelPart = paid;
-                }
-            } else if (row.groupStatus() == FulfillmentStatus.RETURNING) {
-                draft.status = SettlementItemStatus.DELIVERY_EXCEPTION;
-                draft.exceptionPart = paid;
-            } else if (row.itemStatus() == OrderProductStatus.RETURNED) {
-                draft.status = SettlementItemStatus.RETURNED;
-                draft.returnPart = paid;
-            } else {
-                draft.returnPart = draft.unitPrice * draft.returnedQuantity;
-                draft.settledQuantity = draft.quantity - draft.returnedQuantity;
-                draft.status = draft.returnedQuantity > 0 ? SettlementItemStatus.PARTIAL_RETURNED
-                        : SettlementItemStatus.CONFIRMED;
-            }
-            draft.settledAmount = paid - draft.cancelPart - draft.returnPart - draft.exceptionPart;
+            SettlementItemClassifier.Classification c = SettlementItemClassifier.classify(row.itemStatus(),
+                    row.itemCancelType(), row.groupStatus(), row.groupCancelType(), row.price(), row.quantity(),
+                    row.returnedQuantity());
+            draft.status = c.status();
+            draft.settledQuantity = c.settledQuantity();
+            draft.cancelPart = c.cancelPart();
+            draft.returnPart = c.returnPart();
+            draft.exceptionPart = c.exceptionPart();
+            draft.settledAmount = c.settledAmount();
             return draft;
         }
 

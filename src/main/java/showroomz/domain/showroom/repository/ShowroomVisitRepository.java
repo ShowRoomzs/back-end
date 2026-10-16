@@ -54,4 +54,15 @@ public interface ShowroomVisitRepository extends JpaRepository<ShowroomVisit, Lo
     long countAttributedVisits(@Param("postId") Long postId,
                                @Param("from") LocalDateTime from,
                                @Param("to") LocalDateTime to);
+
+    /**
+     * 성과 유입(48 파트너 설계서 0-8 · 47 공통 결정 #4 · #8) — 공구 기간 방문 [visitor_key, user_id, source, visited_at] 시각순.
+     * 방문(명) · 사람당 첫 방문 소스 · 방문 시각 팔로워 판정은 호출자가 이 행에서 낸다.
+     */
+    @Query("SELECT v.visitorKey, u.id, v.source, v.visitedAt FROM ShowroomVisit v LEFT JOIN v.user u " +
+           "WHERE v.creator.id = :creatorId AND v.visitedAt >= :from AND v.visitedAt < :to " +
+           "ORDER BY v.visitedAt ASC, v.id ASC")
+    List<Object[]> findVisitsInWindow(@Param("creatorId") Long creatorId,
+                                      @Param("from") LocalDateTime from,
+                                      @Param("to") LocalDateTime to);
 }

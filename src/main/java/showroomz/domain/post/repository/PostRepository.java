@@ -1,7 +1,9 @@
 package showroomz.domain.post.repository;
 
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import showroomz.domain.post.entity.Post;
@@ -82,6 +84,20 @@ public interface PostRepository extends JpaRepository<Post, Long>, PostRepositor
     List<Post> findPurgeTargets(@Param("now") LocalDateTime now, Pageable pageable);
 
     Optional<Post> findByIdAndStatus(Long postId, PostStatus status);
+
+    /**
+     * 운영자 조치용 행 잠금 (54 설계 0-8).
+     *
+     * <p>운영자 둘이 같은 게시물에 「노출 중지」를 동시에 누르면 둘 다 게시중을 읽고 열린 조치가 두 행이 된다.
+     * MySQL은 {@code resolution IS NULL} 부분 유니크를 걸 수 없어 게시물 행을 잠근 뒤 상태를 판정한다.
+     */
+    /** 어드민 목록 한 페이지 — 쇼룸명(없으면 닉네임)을 함께 읽는다. 순서는 호출자가 맞춘다 */
+    @Query("SELECT p FROM Post p JOIN FETCH p.creator c JOIN FETCH c.user WHERE p.id IN :postIds")
+    List<Post> findAllWithCreatorByIdIn(@Param("postIds") List<Long> postIds);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Post p WHERE p.id = :postId")
+    Optional<Post> findByIdForUpdate(@Param("postId") Long postId);
 
     /**
      * C4 쇼룸 프로필의 "게시물 N" — 소비자에게 보이는 것만 센다(작성중·노출 중지·삭제 제외).

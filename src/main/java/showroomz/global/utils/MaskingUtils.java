@@ -21,6 +21,27 @@ public final class MaskingUtils {
         return trimmed.substring(0, trimmed.length() - 1) + "*";
     }
 
+    /**
+     * 가운데를 가린다 — 신고자 표기(§54-3 「한*준」). 신고 대상에게 신고자가 드러나지 않게 어드민에서도 가린다.
+     *
+     * <p>{@link #maskName}(끝 글자를 가린다 · C15-2 회원정보)과 규칙이 다르다: 한준 -> 한*, 한지준 -> 한*준,
+     * 박다은이 -> 박**이, 한 글자 -> *, 값이 없으면 null.
+     */
+    public static String maskNameMiddle(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        String trimmed = name.trim();
+        int length = trimmed.length();
+        if (length == 1) {
+            return "*";
+        }
+        if (length == 2) {
+            return trimmed.charAt(0) + "*";
+        }
+        return trimmed.charAt(0) + "*".repeat(length - 2) + trimmed.charAt(length - 1);
+    }
+
     /** 1998-04-12 -> 1998.04.**, 값이 없거나 형식이 다르면 null */
     public static String maskBirthday(String birthday) {
         if (birthday == null || birthday.isBlank()) {

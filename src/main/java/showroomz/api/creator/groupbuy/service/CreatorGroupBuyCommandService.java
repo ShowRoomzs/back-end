@@ -5,6 +5,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.creator.groupbuy.dto.CreatorExtensionRejectRequest;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.api.creator.groupbuy.dto.CreatorFulfillmentCheckRequest;
 import showroomz.api.creator.groupbuy.dto.CreatorGroupBuyDetailResponse;
 import showroomz.api.creator.groupbuy.dto.CreatorGroupBuyPostRequest;
@@ -79,6 +80,7 @@ public class CreatorGroupBuyCommandService {
     private final GroupBuyNotifier notifier;
     private final GroupBuySalesReader salesReader;
     private final GroupBuyFulfillmentService fulfillmentService;
+    private final CreatorSanctionGuard sanctionGuard;
 
     // ── C3 · C4 게시물 임시저장 · 등록하고 검토 요청 ────────────────────────────────
 
@@ -113,6 +115,8 @@ public class CreatorGroupBuyCommandService {
                                                     CreatorGroupBuyPostRequest request) {
         Locked locked = lockForPostWrite(creatorEmail, groupBuyId);
         requireWritable(locked);
+        // 정지 시 공구 게시물 제출 차단은 플래그(§55 B-11 미정 · 기본 꺼짐 · 53 설계서 4-2).
+        sanctionGuard.requireCanSubmitGroupBuyPost(locked.groupBuy().getCreator());
 
         String title = normalizeTitle(request.title());
         String content = normalizeContent(request.content());

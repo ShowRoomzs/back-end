@@ -13,6 +13,7 @@ import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.domain.order.repository.OrderRepository;
 import showroomz.domain.order.service.OrderFulfillmentService;
+import showroomz.domain.order.service.OrderPostAttributionService;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.OrderStatus;
 import showroomz.domain.payment.entity.Payment;
@@ -51,6 +52,7 @@ public class PaymentTransitions {
     private final OrderProperties orderProperties;
     private final PaymentAlerts alerts;
     private final OrderRefundTaskRepository refundTaskRepository;
+    private final OrderPostAttributionService postAttributionService;
 
     public enum PaidOutcome { PAID_NOW, ALREADY_MINE, NOT_MINE_ORDER_CLOSED, NOT_MINE_OTHER_PAYMENT }
 
@@ -85,6 +87,8 @@ public class PaymentTransitions {
                 cartRepository.deleteAllByIdInBatch(cartIds);
             }
             Order order = orderRepository.findById(orderId).orElseThrow();
+            // 성과 「게시물 → 주문」(49 스튜디오 성과 설계서 1-5) — 결제 시점의 라스트 터치를 하위주문에 한 번만 굳힌다.
+            postAttributionService.attributeOnPaid(orderId, order.getUser().getId(), paidAt);
             eventPublisher.publishEvent(new OrderPaidEvent(orderId, order.getOrderNumber(), paymentId,
                     order.getUser().getId(), paidAt));
             return PaidOutcome.PAID_NOW;

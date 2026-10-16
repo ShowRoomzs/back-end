@@ -597,7 +597,7 @@ class PostInsightServiceTest {
 
     private void givenOpenSuspension(LocalDateTime suspendedAt) {
         PostSuspension suspension = new PostSuspension(
-                publishedPost(me), PostSuspensionReason.AD_DISCLOSURE, null, "운영정책 제12조",
+                publishedPost(me), PostSuspensionReason.MISLEADING_INFO, null, "운영정책 제12조",
                 9L, suspendedAt, suspendedAt.plusDays(7));
         given(postSuspensionRepository.findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(POST_ID))
                 .willReturn(Optional.of(suspension));

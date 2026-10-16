@@ -48,6 +48,9 @@ class CreatorConnectionServiceTest {
     private CreatorRepository creatorRepository;
     @Mock
     private MessageThreadService messageThreadService;
+    /** 탈퇴 신청 심사 중 새 연결 수락 차단(53 설계서 4-2) — 기본 목은 통과다. */
+    @Mock
+    private showroomz.domain.member.creator.service.CreatorSanctionGuard sanctionGuard;
 
     @InjectMocks
     private CreatorConnectionService creatorConnectionService;

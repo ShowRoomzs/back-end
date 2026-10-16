@@ -196,4 +196,19 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     List<SettlementSourceRow> findSettlementSourceByGroupBuy(
             @Param("groupBuyId") Long groupBuyId,
             @Param("groupStatuses") Collection<showroomz.domain.order.type.FulfillmentStatus> groupStatuses);
+
+    /**
+     * 성과 원천(48 파트너 설계서 0-6 · 0-7) — 공구 하위주문(결제 완료 · 종결 여부 무관)의 항목 전부와 이행 시각 · 소비자 성별 · 생년월일.
+     * 분류는 성과 모듈이 정산과 같은 분류기로 한다.
+     */
+    @Query("SELECT new showroomz.domain.order.repository.PerformanceSourceRow("
+            + "op.id, o.id, u.id, u.gender, u.birthday, o.paidAt, g.id, p.productId, op.quantity, op.returnedQuantity, "
+            + "op.price, op.status, op.cancelType, g.fulfillmentStatus, g.cancelType, g.shipDueAt, g.shippedAt, "
+            + "g.deliveredAt, g.confirmedAt, g.returnCompletedAt, g.attributedPostId) "
+            + "FROM OrderProduct op JOIN op.order o JOIN o.user u JOIN op.deliveryGroup g "
+            + "JOIN op.variant v JOIN v.product p "
+            + "WHERE g.groupBuy.id = :groupBuyId AND o.paidAt IS NOT NULL "
+            + "AND g.fulfillmentStatus <> showroomz.domain.order.type.FulfillmentStatus.PENDING "
+            + "ORDER BY op.id ASC")
+    List<PerformanceSourceRow> findPerformanceSourceByGroupBuy(@Param("groupBuyId") Long groupBuyId);
 }

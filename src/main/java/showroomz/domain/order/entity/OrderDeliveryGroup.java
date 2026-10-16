@@ -195,6 +195,13 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "status_at_cancel", length = 30)
     private FulfillmentStatus statusAtCancel;
 
+    /**
+     * 결제 완료 시점의 라스트 터치 게시물(49 스튜디오 성과 설계서 1-5 · §24-7 24시간) — 성과 「게시물 → 주문」. FK 없음 · 통계 태그다.
+     * 다른 이행 컬럼처럼 {@code OrderDeliveryGroupRepository#attributePost} 조건부 UPDATE 로 한 번만 채운다.
+     */
+    @Column(name = "attributed_post_id")
+    private Long attributedPostId;
+
     @Builder
     public OrderDeliveryGroup(Order order, GroupBuy groupBuy, Market market, Integer productTotal, Integer deliveryFee,
                               Integer baseDeliveryFee, boolean freeShippingApplied, String marketName,

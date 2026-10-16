@@ -29,8 +29,8 @@ class UserPostReportIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get(REPORT_REASONS))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(PostReportReason.values().length))
-                .andExpect(jsonPath("$[0].code").value(PostReportReason.AD_DISCLOSURE.name()))
-                .andExpect(jsonPath("$[0].label").value(PostReportReason.AD_DISCLOSURE.getLabel()))
+                .andExpect(jsonPath("$[0].code").value(PostReportReason.MISLEADING_INFO.name()))
+                .andExpect(jsonPath("$[0].label").value(PostReportReason.MISLEADING_INFO.getLabel()))
                 .andExpect(jsonPath("$[0].detailRequired").value(false));
     }
 
@@ -41,7 +41,7 @@ class UserPostReportIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(post(REPORT_POST, 1L)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                { "reasonCode": "AD_DISCLOSURE" }
+                                { "reasonCode": "MISLEADING_INFO" }
                                 """))
                 .andExpect(status().isUnauthorized());
     }

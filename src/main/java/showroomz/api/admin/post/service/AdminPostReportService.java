@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.common.AdminOperatorResolver;
 import showroomz.api.admin.post.dto.AdminPostReportDto;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.post.entity.PostReport;
@@ -22,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 운영자 신고 대기열.
@@ -42,6 +44,7 @@ public class AdminPostReportService {
     private static final int CONTENT_PREVIEW_LENGTH = 40;
 
     private final PostReportRepository postReportRepository;
+    private final AdminOperatorResolver adminOperatorResolver;
 
     /**
      * @param postId null이면 전체 대기열, 값이 있으면 그 게시물에 걸린 신고만
@@ -53,8 +56,10 @@ public class AdminPostReportService {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
         Page<PostReport> page = findPage(postId, status, pageable);
         Map<Long, Long> pendingCounts = pendingCountsByPost(page.getContent());
+        Map<Long, String> operatorNames = adminOperatorResolver.namesOf(
+                page.getContent().stream().map(PostReport::getHandledBy).filter(Objects::nonNull).toList());
 
-        return new PageResponse<>(page.map(report -> toItem(report, pendingCounts)));
+        return new PageResponse<>(page.map(report -> toItem(report, pendingCounts, operatorNames)));
     }
 
     /**
@@ -100,7 +105,8 @@ public class AdminPostReportService {
         return counts;
     }
 
-    private static AdminPostReportDto.ReportItem toItem(PostReport report, Map<Long, Long> pendingCounts) {
+    private static AdminPostReportDto.ReportItem toItem(PostReport report, Map<Long, Long> pendingCounts,
+                                                        Map<Long, String> operatorNames) {
         Creator creator = report.getPost().getCreator();
         return AdminPostReportDto.ReportItem.builder()
                 .reportId(report.getId())
@@ -118,6 +124,9 @@ public class AdminPostReportService {
                 .reportedAt(report.getReportedAt())
                 .handledAt(report.getHandledAt())
                 .handledBy(report.getHandledBy())
+                .handledByName(report.getHandledBy() == null ? null : operatorNames.get(report.getHandledBy()))
+                .reporterUserId(report.getReporter() == null ? null : report.getReporter().getId())
+                .reporterMaskedName(AdminPostQueryService.maskReporter(report.getReporter()))
                 .build();
     }
 

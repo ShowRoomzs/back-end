@@ -29,6 +29,8 @@ public enum SettlementEventType {
     PAYOUT_DEFERRED("지급 연기 · 잔액 부족"),
     /** PG 셀러 등록 실패 · 본인인증 · KYC 대기로 수취자 행 보류(44 토스 설계서 4-3). */
     PAYOUT_BLOCKED("지급 보류"),
+    /** 계정 정지 해제로 브랜드 몫 지급 보류가 풀림 — 해제 다음 영업일 지급(52 설계서 6-2). */
+    PAYOUT_HOLD_RELEASED("지급 보류 해제"),
     /** 결과 조회에서 사람이 봐야 할 것 — PG 보류 · 지급액 불일치 · 지급 미실행(5-4 · 9-2). */
     PAYOUT_CHECK_REQUIRED("지급 확인 필요"),
     WITHHOLDING_RECEIPT_GENERATED("원천징수영수증 생성"),

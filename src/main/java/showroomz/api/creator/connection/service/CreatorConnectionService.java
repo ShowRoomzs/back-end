@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.api.creator.connection.dto.ConnectionCodeResponse;
 import showroomz.api.creator.connection.dto.ConnectionRequestItem;
 import showroomz.api.creator.connection.type.ConnectionRequestStatusFilter;
@@ -31,6 +32,7 @@ public class CreatorConnectionService {
     private final UserRepository userRepository;
     private final CreatorRepository creatorRepository;
     private final MessageThreadService messageThreadService;
+    private final CreatorSanctionGuard sanctionGuard;
 
     /**
      * §14-3 요청함 탭 — 받은 연결 요청 목록(브랜드가 발신 주체, §13-6).
@@ -67,6 +69,8 @@ public class CreatorConnectionService {
     @Transactional
     public void accept(String creatorEmail, Long connectionId) {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
+        // 탈퇴 신청 심사 중에는 새 연결 수락 차단(스튜디오 S7 · 53 설계서 4-2).
+        sanctionGuard.requireCanAcceptConnection(connection.getCreator());
         connection.markConnected();
         messageThreadService.activateThread(connection);
     }

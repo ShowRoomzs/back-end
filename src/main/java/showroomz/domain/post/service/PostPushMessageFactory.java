@@ -43,6 +43,8 @@ public class PostPushMessageFactory {
                     "게시물이 다시 노출돼요", "이의 신청이 승인되었어요.");
             case APPEAL_REJECTED -> creatorMessage(notificationLog, event,
                     "이의 신청이 반려되었어요", "원본을 내려받을 수 있는 기간을 확인해 주세요.");
+            case SUSPENSION_CANCELED -> creatorMessage(notificationLog, event,
+                    "게시물이 다시 노출돼요", "운영팀이 노출 중지 조치를 취소했어요.");
             case DELETED_BY_EXPIRE -> creatorMessage(notificationLog, event,
                     "게시물이 삭제되었어요", "이의 신청 기한이 지나 자동으로 삭제되었어요.");
             // 본인이 방금 한 조작이다 — 이력에는 남지만 알림으로 되돌려주지 않는다

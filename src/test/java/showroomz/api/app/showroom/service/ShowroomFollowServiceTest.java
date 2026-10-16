@@ -19,7 +19,10 @@ import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorFollow;
+import showroomz.domain.member.creator.entity.CreatorFollowEvent;
+import showroomz.domain.member.creator.repository.CreatorFollowEventRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
+import showroomz.domain.member.creator.type.FollowEventType;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.repository.PostRepository;
@@ -71,6 +74,8 @@ class ShowroomFollowServiceTest {
     private ConnectionRepository connectionRepository;
     @Mock
     private PostAttributionService postAttributionService;
+    @Mock
+    private CreatorFollowEventRepository followEventRepository;
 
     @InjectMocks
     private ShowroomFollowService showroomFollowService;
@@ -120,6 +125,34 @@ class ShowroomFollowServiceTest {
             showroomFollowService.followShowroom(USERNAME, SHOWROOM_ID);
 
             verify(creatorFollowRepository).save(any(CreatorFollow.class));
+        }
+
+        /** 49 스튜디오 성과 설계서 1-6 — 관계 행은 언팔로우 때 지워지므로 이력을 함께 남겨야 「그때 팔로워였나」를 셀 수 있다. */
+        @Test
+        @DisplayName("팔로우 · 취소는 이력을 한 행씩 남긴다 — 중복 팔로우 · 없는 취소는 남기지 않는다")
+        void followEventsAreRecorded() {
+            givenUser();
+            Creator creator = showroom(SHOWROOM_ID, "소연 뷰티");
+            given(creatorRepository.findById(SHOWROOM_ID)).willReturn(Optional.of(creator));
+            given(creatorFollowRepository.existsByUserAndCreator(user, creator)).willReturn(false);
+            given(postAttributionService.resolveAttributedPostId(anyString(), anyLong(), any())).willReturn(99L);
+
+            showroomFollowService.followShowroom(USERNAME, SHOWROOM_ID);
+            showroomFollowService.unfollowShowroom(USERNAME, SHOWROOM_ID);   // 관계 없음 → 이력 없음
+
+            ArgumentCaptor<CreatorFollowEvent> captor = ArgumentCaptor.forClass(CreatorFollowEvent.class);
+            verify(followEventRepository).save(captor.capture());
+            assertThat(captor.getValue().getEventType()).isEqualTo(FollowEventType.FOLLOW);
+            assertThat(captor.getValue().getUserId()).isEqualTo(7L);
+            assertThat(captor.getValue().getCreatorId()).isEqualTo(SHOWROOM_ID);
+            assertThat(captor.getValue().getAttributedPostId()).isEqualTo(99L);
+
+            given(creatorFollowRepository.existsByUserAndCreator(user, creator)).willReturn(true);
+            showroomFollowService.unfollowShowroom(USERNAME, SHOWROOM_ID);
+            showroomFollowService.followShowroom(USERNAME, SHOWROOM_ID);     // 이미 팔로우 → 이력 없음
+
+            verify(followEventRepository, org.mockito.Mockito.times(2)).save(captor.capture());
+            assertThat(captor.getValue().getEventType()).isEqualTo(FollowEventType.UNFOLLOW);
         }
 
         /** 앱이 낙관적 토글이라 같은 요청이 두 번 오는 일이 흔하다 — 행이 늘면 팔로워 수가 부풀고 목록이 중복된다. */

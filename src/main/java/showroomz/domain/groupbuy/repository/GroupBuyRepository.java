@@ -140,6 +140,12 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
     @Query("SELECT g.status, COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId GROUP BY g.status")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);
 
+    /** 판매 중(진행중 · 중단 예정) 공구 수를 인플루언서별로 — [creatorId, count]. 어드민 브랜드 상세 연결 인플루언서 행(52 설계서 2-4). */
+    @Query("SELECT g.creator.id, COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId "
+            + "AND g.status IN (showroomz.domain.groupbuy.type.GroupBuyStatus.IN_PROGRESS, "
+            + "    showroomz.domain.groupbuy.type.GroupBuyStatus.SUSPENSION_SCHEDULED) GROUP BY g.creator.id")
+    List<Object[]> countSellingByCreatorForMarket(@Param("marketId") Long marketId);
+
     /** GNB 배지 ① — 최소 물량 확인 대기(B1 「내 차례인 줄만 경고 톤」). */
     @Query("SELECT COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId "
             + "AND g.status = showroomz.domain.groupbuy.type.GroupBuyStatus.PREPARING "
