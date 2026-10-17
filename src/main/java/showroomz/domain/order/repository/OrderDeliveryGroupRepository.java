@@ -79,6 +79,10 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     List<OrderDeliveryGroup> findByOrderNumbers(@Param("marketId") Long marketId,
                                                 @Param("orderNumbers") Collection<String> orderNumbers);
 
+    /** 테스트 API 의 주문번호 조회 — 마켓 구분 없이 그 주문의 하위주문 전부. */
+    @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order o WHERE o.orderNumber = :orderNumber ORDER BY g.id ASC")
+    List<OrderDeliveryGroup> findByOrderNumber(@Param("orderNumber") String orderNumber);
+
     @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.market.id = :marketId "
             + "AND g.subOrderNumber IN :subOrderNumbers")
     List<OrderDeliveryGroup> findBySubOrderNumbers(@Param("marketId") Long marketId,
