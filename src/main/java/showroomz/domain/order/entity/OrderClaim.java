@@ -16,6 +16,7 @@ import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.DeliveryCarrier;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -209,6 +210,10 @@ public class OrderClaim {
     @Column(name = "opened_by_admin_id")
     private Long openedByAdminId;
 
+    /** 하자 인지일 — 운영자 개설 클레임의 법정 청약철회 기한(인지 + 30일) 기산점(V184 · 46 수정계획 3-2). 입력이 없으면 null. */
+    @Column(name = "defect_noticed_on")
+    private LocalDate defectNoticedOn;
+
     /** 반려 이의 — 앱 「이의 제기」로 쓴 가장 최근 1:1 문의(V176 · 기획 §38-8 B-12 자동 연결). 이의가 없으면 null. */
     @Column(name = "dispute_inquiry_id")
     private Long disputeInquiryId;
@@ -244,10 +249,11 @@ public class OrderClaim {
     }
 
     /** 운영자 개설 표시 — 신청 트랜잭션 안에서 저장 전에 단다. */
-    public void markOpenedByOperator(Long adminId, String reason) {
+    public void markOpenedByOperator(Long adminId, String reason, LocalDate defectNoticedOn) {
         this.openedBy = ClaimOpenedBy.OPERATOR;
         this.openedByAdminId = adminId;
         this.openReason = reason;
+        this.defectNoticedOn = defectNoticedOn;
     }
 
     /** 반려 이의 접수 — 소비자가 반려 보류 중에 「이의 제기」 문의를 썼다. 다시 쓰면 최근 문의로 바뀐다. */

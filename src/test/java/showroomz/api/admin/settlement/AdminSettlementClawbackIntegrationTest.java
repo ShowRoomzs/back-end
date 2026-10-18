@@ -199,7 +199,10 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
         adminGet(ADMIN_ORDERS + "/" + orderId).andExpect(jsonPath("$.groups[0].settlement.clawbacks").isEmpty());
         adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.state").value("SETTLED"))
                 .andExpect(jsonPath("$.settlement.clawback").doesNotExist())
-                .andExpect(jsonPath("$.settlement.stateLabel").value("정산 " + first.getSettlementNumber() + " 생성 후"));
+                .andExpect(jsonPath("$.settlement.stateLabel").value("정산 " + first.getSettlementNumber() + " 생성 후"))
+                // [46-5-1] M1 집행 재확인 — 차감 행은 아직 없지만 같은 식의 예정액을 미리 보인다.
+                .andExpect(jsonPath("$.settlement.expectedClawback.brandAmount").value(CREAM_BRAND))
+                .andExpect(jsonPath("$.settlement.expectedClawback.creatorAmount").value(CREAM_REWARD));
 
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", java.util.Map.of()).andExpect(jsonPath("$.outcome").value("DONE"));
 
@@ -218,7 +221,11 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
         adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.stateLabel").value("정산 후 · 차감 " + number))
                 .andExpect(jsonPath("$.settlement.clawback.clawbackNumber").value(number))
                 .andExpect(jsonPath("$.settlement.clawback.status").value("PENDING"))
-                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("차감 예정"));
+                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("차감 예정"))
+                // [46-5-1] 집행 뒤 — 측별 금액은 예정액과 같고, 예정액은 더 내리지 않는다.
+                .andExpect(jsonPath("$.settlement.clawback.brandAmount").value(CREAM_BRAND))
+                .andExpect(jsonPath("$.settlement.clawback.creatorAmount").value(CREAM_REWARD))
+                .andExpect(jsonPath("$.settlement.expectedClawback").doesNotExist());
     }
 
     @Test
@@ -236,6 +243,9 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
         adminGet(ADMIN_ORDERS + "/" + creamGroup.getOrder().getId())
                 .andExpect(jsonPath("$.groups[0].settlement.clawbacks.length()").value(1))
                 .andExpect(jsonPath("$.groups[0].settlement.clawbacks[0].side").value("BRAND"));
+        // [46-5-1] 06c 측별 금액 — 인플루언서 측 행이 없으면 null.
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.brandAmount").value(10_000))
+                .andExpect(jsonPath("$.settlement.clawback.creatorAmount").doesNotExist());
     }
 
     @Test

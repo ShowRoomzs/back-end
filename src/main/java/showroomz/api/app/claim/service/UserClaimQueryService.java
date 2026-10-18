@@ -137,7 +137,7 @@ public class UserClaimQueryService {
                         .filter(reason -> reason.isSelectableFor(type))
                         .map(reason -> UserClaimDto.FormReason.builder()
                                 .code(reason)
-                                .label(reason.getLabel())
+                                .label(reason.getAppLabel())
                                 .hint(hintOf(reason, type))
                                 .feeBearer(reason.getFeeBearer())
                                 .detailRequired(reason.isDetailRequired())
@@ -278,7 +278,7 @@ public class UserClaimQueryService {
                 .items(shown.stream()
                         .map(claim -> item(claim, claimId, rejectCharge, evidences, today)).toList())
                 .info(UserClaimDto.Info.builder()
-                        .reasonLabel(collection.getReasonCode().getLabel())
+                        .reasonLabel(collection.getReasonCode().getAppLabel())
                         .methodLabel(METHOD_LABEL)
                         .collectionInvoice(!collection.hasInvoice() ? null : new UserClaimDto.Invoice(
                                 collection.getCarrier(), collection.getCarrier().getLabel(),
@@ -472,6 +472,8 @@ public class UserClaimQueryService {
                 .state(state)
                 .amount(rejectCharge.getAmount())
                 .dueDate(state == ReshipFeeState.PAYABLE ? dueDate : null)
+                // 기한 경과(46 수정계획 7-3) — 목록 할 일 줄은 날짜를 빼는데 상세는 지난 날짜를 그대로 내려 「…까지 결제해 주세요」가 됐다.
+                .overdue(overdue)
                 .settledAt(rejectCharge.getSettledAt())
                 .methodLabel(state != ReshipFeeState.PAID || rejectCharge.getPaidPaymentId() == null ? null
                         : claimPaymentRepository.findById(rejectCharge.getPaidPaymentId())

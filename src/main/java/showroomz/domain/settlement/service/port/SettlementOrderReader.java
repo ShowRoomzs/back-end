@@ -52,11 +52,16 @@ public class SettlementOrderReader implements OrderSettlementReader {
             return Optional.empty();
         }
         // 한 환불 = 측별 2행. 06c 는 차감번호 하나로 보이므로 「덜 끝난 쪽」 상태를 대표로 쓴다(미회수 > 차감 예정 > 차감 반영).
-        ClawbackRef clawback = clawbackLedger.findByRefundTask(refundTaskId).stream()
+        List<SettlementClawbackLedger.ClawbackView> views = clawbackLedger.findByRefundTask(refundTaskId);
+        ClawbackRef clawback = views.stream()
                 .min(Comparator.comparingInt(SettlementOrderReader::severity))
                 .map(SettlementOrderReader::ref)
                 .orElse(null);
-        return Optional.of(new RefundSettlement(settlement.getId(), settlement.getSettlementNumber(), clawback));
+        // 차감 행은 집행 뒤에 생긴다 — 그 전(M1 집행 재확인)에는 같은 식의 예정액을 싣는다(46 수정계획 5-1).
+        SettlementClawbackLedger.ClawbackAmounts preview = views.isEmpty() ? clawbackLedger.preview(refundTaskId) : null;
+        return Optional.of(new RefundSettlement(settlement.getId(), settlement.getSettlementNumber(), clawback,
+                views.stream().map(SettlementOrderReader::ref).toList(),
+                preview == null ? null : new ExpectedClawback(preview.brandAmount(), preview.creatorAmount())));
     }
 
     private static ClawbackRef ref(SettlementClawbackLedger.ClawbackView view) {

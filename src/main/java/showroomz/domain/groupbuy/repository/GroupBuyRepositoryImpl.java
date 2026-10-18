@@ -144,9 +144,9 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
     // ── 어드민(32 설계) ──────────────────────────────────────────────────────
 
     @Override
-    public Page<GroupBuy> searchForAdmin(AdminGroupBuyTab tab, String pattern, AdminGroupBuySortType sort,
-                                         LocalDateTime now, Pageable pageable) {
-        BooleanBuilder where = adminFilter(tab, pattern, now);
+    public Page<GroupBuy> searchForAdmin(AdminGroupBuyTab tab, String pattern, Long marketId,
+                                         AdminGroupBuySortType sort, LocalDateTime now, Pageable pageable) {
+        BooleanBuilder where = adminFilter(tab, pattern, marketId, now);
 
         List<GroupBuy> content = queryFactory
                 .selectFrom(groupBuy)
@@ -171,17 +171,32 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
     }
 
     @Override
-    public List<Long> findOrderedIdsForAdmin(AdminGroupBuyTab tab, String pattern, AdminGroupBuySortType sort,
-                                             LocalDateTime now) {
+    public List<Long> findOrderedIdsForAdmin(AdminGroupBuyTab tab, String pattern, Long marketId,
+                                             AdminGroupBuySortType sort, LocalDateTime now) {
         return queryFactory
                 .select(groupBuy.id)
                 .from(groupBuy)
                 .join(groupBuy.contract, contract)
                 .join(groupBuy.market, market)
                 .join(groupBuy.creator, creator)
-                .where(adminFilter(tab, pattern, now))
+                .where(adminFilter(tab, pattern, marketId, now))
                 .orderBy(adminOrderOf(sort, now))
                 .fetch();
+    }
+
+    @Override
+    public List<CreatorOptionRow> findCreatorOptionsForAdmin(Long marketId) {
+        return queryFactory
+                .select(creator.id, creator.showroomName)
+                .distinct()
+                .from(groupBuy)
+                .join(groupBuy.creator, creator)
+                .where(marketId == null ? null : groupBuy.market.id.eq(marketId))
+                .orderBy(creator.showroomName.asc(), creator.id.asc())
+                .fetch()
+                .stream()
+                .map(row -> new CreatorOptionRow(row.get(creator.id), row.get(creator.showroomName)))
+                .toList();
     }
 
     @Override
@@ -263,8 +278,12 @@ public class GroupBuyRepositoryImpl implements GroupBuyRepositoryCustom {
         return count == null ? 0L : count;
     }
 
-    private static BooleanBuilder adminFilter(AdminGroupBuyTab tab, String pattern, LocalDateTime now) {
+    private static BooleanBuilder adminFilter(AdminGroupBuyTab tab, String pattern, Long marketId,
+                                              LocalDateTime now) {
         BooleanBuilder where = new BooleanBuilder().and(groupBuy.status.in(tab.getStatuses()));
+        if (marketId != null) {
+            where.and(market.id.eq(marketId));
+        }
         if (tab.isActionRequiredOnly()) {
             where.and(AdminGroupBuyQueuePredicate.any(groupBuy, now));
         }

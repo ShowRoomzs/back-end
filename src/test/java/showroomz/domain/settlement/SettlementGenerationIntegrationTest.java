@@ -307,7 +307,13 @@ class SettlementGenerationIntegrationTest extends SettlementTestSupport {
                         .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
                         .content(toJson(java.util.Map.of("carrier", "CJ", "trackingNumber", nextTrackingNumber()))))
                 .andExpect(status().isOk());
+        // [46-3-3] 06b B4 정산 반영 — 정산에 들어간 하위주문의 반품이고 검수 전이라 「통과 시 다음 정산에서 차감」.
+        adminGet("/v1/admin/claims/" + claimId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.settlement.settlementNumber").value(s.getSettlementNumber()))
+                .andExpect(jsonPath("$.settlement.deductOnPass").value(true))
+                .andExpect(jsonPath("$.legalDeadline.suppliedOn").isNotEmpty());
         passClaim(claimId);
+        adminGet("/v1/admin/claims/" + claimId).andExpect(jsonPath("$.settlement.deductOnPass").value(false));
 
         Long taskId = jdbc.queryForObject("SELECT refund_task_id FROM order_refund_task WHERE source = 'CLAIM_RETURN_PASSED' "
                 + "AND delivery_group_id = ?", Long.class, group.getId());

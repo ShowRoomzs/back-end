@@ -40,6 +40,10 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
 
     Optional<GroupBuy> findByContractId(Long contractId);
 
+    /** 어드민 주문 조회 — 하위주문의 공구명 · 인플루언서를 한 번에(46 수정계획 4-1 · 4-8). */
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.contract c JOIN FETCH g.creator cr WHERE g.id IN :ids")
+    List<GroupBuy> findAllWithContractAndCreator(@Param("ids") Collection<Long> ids);
+
     // ── 스튜디오(31 설계) — 모든 조회가 creator_id를 조건에 넣는다(0-4) ────────────────
 
     /** 스튜디오 상세 — 내 공구만. 계약·브랜드·인플루언서를 함께 올린다. */

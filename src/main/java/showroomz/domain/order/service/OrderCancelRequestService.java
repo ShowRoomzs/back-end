@@ -181,6 +181,27 @@ public class OrderCancelRequestService {
         return groupId;
     }
 
+    /**
+     * 소비자 철회(46 수정계획 7-1) — 브랜드 확인 전(PENDING)에만. 요청 단위로 거두고, PENDING 이 빠지므로 송장 잠금이 풀린다.
+     * 남의 주문 · 다른 주문의 요청은 있는지도 알리지 않는다(404). 다시 요청하는 것은 막지 않는다.
+     *
+     * @return 철회한 요청(갱신 전 적재본 — 상태는 호출자가 쓰지 않는다)
+     */
+    @Transactional
+    public OrderCancelRequest withdraw(Long userId, Long orderId, Long cancelRequestId, LocalDateTime now) {
+        OrderCancelRequest request = cancelRequestRepository.findWithGroup(cancelRequestId)
+                .filter(found -> found.getOrder().getId().equals(orderId) && found.getOrder().isOwnedBy(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
+        Long groupId = request.getDeliveryGroup().getId();
+        int itemCount = request.getItems().size();
+        if (cancelRequestRepository.withdraw(cancelRequestId, userId, now) != 1) {
+            throw new BusinessException(ErrorCode.CANCEL_REQUEST_ALREADY_DECIDED);
+        }
+        fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_WITHDRAWN,
+                FulfillmentActorType.CONSUMER, userId, "요청 " + itemCount + "건 철회 · 발송 재개", now);
+        return request;
+    }
+
     @Transactional(readOnly = true)
     public List<Long> findOverdueIds(LocalDateTime now, int limit) {
         return cancelRequestRepository.findOverdueIds(now, PageRequest.of(0, limit));

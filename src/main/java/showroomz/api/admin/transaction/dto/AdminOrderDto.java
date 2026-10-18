@@ -10,6 +10,8 @@ import jakarta.validation.constraints.Size;
 import showroomz.domain.order.type.AdminOrderSearchType;
 import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.AdminOrderTab;
+import showroomz.domain.order.type.ClaimChargeStatus;
+import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.ClaimReason;
@@ -24,6 +26,7 @@ import showroomz.domain.order.type.SellerCancelReason;
 import showroomz.domain.order.type.TrackingAlert;
 import showroomz.domain.payment.type.PaymentMethod;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -61,14 +64,34 @@ public final class AdminOrderDto {
             @Schema(nullable = true) String trackingAlertLabel,
             @Schema(description = "발송 기한 — 공구 진행 중이면 null", nullable = true) LocalDateTime shipDueAt,
             @Schema(description = "발송 기한 경과(발송 전 · 브랜드 귀책)") boolean shipOverdue,
-            @Schema(description = "검토 중 취소 요청") boolean cancelRequested
+            @Schema(description = "검토 중 취소 요청") boolean cancelRequested,
+            @Schema(description = "행 확장 항목 요약 — 첫 항목 상품명(1종이면 옵션까지) · 나머지는 「외 N종」", example = "데일리 선크림 외 1종")
+            String itemSummary,
+            @Schema(description = "항목 수량 합", example = "2") int itemQuantity,
+            @Schema(description = "하위주문 금액 = 상품 합계 + 배송비 — 한 주문의 합이 결제 금액이다", example = "24400") int amount,
+            @Schema(nullable = true) DeliveryCarrier carrier,
+            @Schema(example = "CJ대한통운", nullable = true) String carrierLabel,
+            @Schema(nullable = true) String trackingNumber,
+            @Schema(description = "공구명(계약 제목) — 목록 「공구명」 열. 공구 밖 하위주문이면 null", example = "데일리 선크림 공구", nullable = true)
+            String groupBuyTitle,
+            @Schema(description = "배송 이상 기준 시각 — 집화 확인 필요 = 송장 등록 · 추적 정지 = 마지막 추적 · 반송 중 = 반송 감지. 이상이 없으면 null",
+                    nullable = true) LocalDateTime issueSince,
+            @Schema(description = "배송 이상 경과 문구 — 「등록 후 26시간」 · 「8일 무갱신」 · 「감지 09.12」. 이상이 없으면 null",
+                    example = "8일 무갱신", nullable = true) String issueElapsedLabel
     ) {
     }
 
     @Schema(name = "AdminOrderSummaryResponse")
     public record SummaryResponse(
             @Schema(description = "탭 건수 — ALL · DELIVERY_ISSUE · CANCEL", example = "{\"ALL\": 120, \"DELIVERY_ISSUE\": 3, \"CANCEL\": 7}")
-            Map<String, Long> tabCounts
+            Map<String, Long> tabCounts,
+            @Schema(description = "상태 셀렉트 건수(전체 탭 기준) — 그 상태를 고르면 나오는 주문 수. 상태가 갈린 주문은 상태마다 세므로 합이 전체보다 클 수 있다",
+                    example = "{\"NEW\": 18, \"PREPARING\": 31, \"SHIPPING\": 44, \"RETURNING\": 1, \"DELIVERED\": 27, \"CONFIRMED\": 15, \"CANCELLED\": 7}")
+            Map<String, Long> statusCounts,
+            @Schema(description = "이상 유형 셀렉트 건수(배송 이상 탭 기준) — PICKUP_UNCONFIRMED · STALLED 는 `trackingAlert`, "
+                    + "RETURNING 은 `status=RETURNING` 으로 고른 건수와 같다",
+                    example = "{\"PICKUP_UNCONFIRMED\": 1, \"STALLED\": 2, \"RETURNING\": 1}")
+            Map<String, Long> deliveryIssueCounts
     ) {
     }
 
@@ -86,6 +109,12 @@ public final class AdminOrderDto {
             return new SearchParams(tab, null, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
                     searchType, keyword, null);
         }
+
+        /** 요약용 — 상태 셀렉트 하나를 고른 같은 조건. */
+        public SearchParams withStatus(FulfillmentStatus status) {
+            return new SearchParams(tab, status, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
+                    searchType, keyword, null);
+        }
     }
 
     // ------------------------------------------------------------------ 상세
@@ -100,7 +129,41 @@ public final class AdminOrderDto {
             Recipient recipient,
             @Schema(nullable = true) Payment payment,
             @Schema(description = "모달 헤더 「문의 N건」 — 이 주문을 가리키는 1:1 문의 수(37 설계서 8절 #11)", example = "1") long inquiryCount,
+            @Schema(description = "이 주문을 가리키는 1:1 문의 — 최신순. B3 수령일 이의의 「1:1 문의 #N」 링크용. `inquiryCount` 와 같은 집합")
+            List<Inquiry> inquiries,
+            @Schema(description = "① 추가 결제 — 클레임 재발송비(교환 선결제 · 반려 재발송비) 중 PG 결제가 붙은 것. 원래 결제와 PG 거래가 따로다")
+            List<AdditionalPayment> additionalPayments,
             List<GroupDetail> groups
+    ) {
+    }
+
+    @Schema(name = "AdminOrderInquiry")
+    public record Inquiry(
+            @Schema(example = "4518") Long inquiryId,
+            @Schema(example = "배송") String typeLabel,
+            LocalDateTime createdAt,
+            @Schema(description = "답변 등록 여부") boolean answered
+    ) {
+    }
+
+    @Schema(name = "AdminOrderAdditionalPayment", description = "클레임 결제 한 건 — 결제가 성립한 것만(결제 대기 · 실패는 없다)")
+    public record AdditionalPayment(
+            Long deliveryGroupId,
+            @Schema(description = "클레임 요청(박스)") Long collectionId,
+            @Schema(description = "그 요청의 첫 클레임 — 06b 상세 링크", example = "3015") Long claimId,
+            @Schema(example = "CLM-3015") String claimNumber,
+            Long chargeId,
+            ClaimChargeType chargeType,
+            @Schema(example = "교환 재발송비") String typeLabel,
+            @Schema(example = "3000") int amount,
+            @Schema(description = "청구 상태 — PAID 결제됨 · REFUNDED 결제 취소 등") ClaimChargeStatus status,
+            @Schema(example = "결제됨") String statusLabel,
+            String paymentId,
+            @Schema(description = "PG 거래번호", example = "kakaopay_b204f9c1", nullable = true) String pgTxId,
+            @Schema(example = "카카오페이") String methodLabel,
+            @Schema(nullable = true) LocalDateTime paidAt,
+            @Schema(description = "취소 가능 잔액 — 결제됐고 취소 전이면 결제액, 아니면 0(클레임 결제는 전액 취소만 한다)", example = "3000")
+            int cancellableAmount
     ) {
     }
 
@@ -125,7 +188,10 @@ public final class AdminOrderDto {
             @Schema(example = "신한카드") String methodLabel,
             Integer amount,
             @Schema(description = "부분 취소 누적액 — 환불 큐 집행이 올린다", example = "24900") Integer cancelledAmount,
-            LocalDateTime paidAt
+            LocalDateTime paidAt,
+            @Schema(description = "운영자 사유 환불 상한 = 취소 가능 잔액 − 아직 나가지 않은 환불(대기 · 집행 중 · 실패). "
+                    + "B5 다이얼로그의 「최대 N원」 — 넘기면 409 REFUND_AMOUNT_EXCEEDED", example = "0")
+            int operatorRefundableAmount
     ) {
     }
 
@@ -136,6 +202,10 @@ public final class AdminOrderDto {
             Long marketId,
             String brandName,
             @Schema(nullable = true) String groupBuyNumber,
+            @Schema(description = "공구 — 공구 밖 하위주문이면 null", nullable = true) Long groupBuyId,
+            @Schema(description = "공구명(계약 제목)", example = "데일리 선크림 공구", nullable = true) String groupBuyTitle,
+            @Schema(description = "공구를 연 인플루언서", nullable = true) Long creatorId,
+            @Schema(description = "인플루언서 쇼룸명", example = "소연_쇼룸", nullable = true) String creatorName,
             FulfillmentStatus status,
             String statusLabel,
             OrderBadgeTone statusTone,
@@ -185,14 +255,20 @@ public final class AdminOrderDto {
             @Schema(description = "이 주문에 적용된 발송 기한 N(영업일) — 주문 시점 값", example = "3") int shipDueBusinessDays,
             boolean shipOverdue,
             @Schema(description = "발송 기한 경과 자동 알림 횟수 — 독촉 버튼은 없다", example = "2") int overdueNoticeCount,
+            @Schema(description = "B4 「마지막 자동 알림」 시각 — 알림 전이면 null", nullable = true) LocalDateTime lastOverdueNoticeAt,
             @Schema(nullable = true) LocalDateTime prepareStartedAt,
             @Schema(nullable = true) LocalDateTime shippedAt,
             @Schema(nullable = true) DeliveryCarrier carrier,
             @Schema(nullable = true) String carrierLabel,
             @Schema(nullable = true) String trackingNumber,
+            @Schema(description = "송장 출처 — SELLER(브랜드 등록) · ADMIN(운영자 대행). 송장이 없으면 null", example = "SELLER", nullable = true)
+            String invoiceSource,
+            @Schema(example = "브랜드 등록", nullable = true) String invoiceSourceLabel,
             @Schema(nullable = true) TrackingAlert trackingAlert,
             @Schema(nullable = true) String trackingAlertLabel,
             @Schema(nullable = true) LocalDateTime lastTrackingAt,
+            @Schema(description = "마지막 스캔 문구 — 연동 업체 원문(파트너 주문 상세 우 레일과 같다). 스캔 전이면 null", example = "간선 상차",
+                    nullable = true) String lastTrackingLabel,
             @Schema(nullable = true) LocalDateTime returnDetectedAt,
             @Schema(nullable = true) LocalDateTime returnCompletedAt,
             @Schema(nullable = true) LocalDateTime deliveredAt,
@@ -308,7 +384,10 @@ public final class AdminOrderDto {
             @NotNull @Schema(description = "DAMAGED_OR_DEFECTIVE · WRONG_OR_LATE_DELIVERY 만", example = "DAMAGED_OR_DEFECTIVE")
             ClaimReason reasonCode,
             @NotBlank @Size(max = 1000) @Schema(description = "하자 내용 — 1:1 문의 요약") String detail,
-            @NotEmpty @Schema(description = "증빙 사진 URL — 1장 이상(문의에 첨부된 사진)") List<String> evidenceImageUrls
+            @NotEmpty @Schema(description = "증빙 사진 URL — 1장 이상(문의에 첨부된 사진)") List<String> evidenceImageUrls,
+            @Schema(description = "하자 인지일(선택) — 법정 청약철회 기한 「인지 + 30일」의 기산점. 배송완료일 이후 · 오늘 이전. "
+                    + "06b 상세 `legalDeadline` 에 나온다", example = "2026-09-17", nullable = true)
+            LocalDate defectNoticedOn
     ) {
     }
 

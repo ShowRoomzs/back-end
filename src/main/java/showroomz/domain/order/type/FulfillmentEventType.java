@@ -22,6 +22,8 @@ public enum FulfillmentEventType {
     CANCEL_REQUESTED("취소 요청"),
     CANCEL_REQUEST_APPROVED("취소 요청 승인 · 요청 항목 취소"),
     CANCEL_REQUEST_REJECTED("취소 요청 거부"),
+    /** 소비자 철회 — 브랜드 확인 전에 요청을 거뒀다. 발송 보류가 풀린다(46 수정계획 7-1). */
+    CANCEL_REQUEST_WITHDRAWN("취소 요청 철회"),
     CANCELLED_BY_CONSUMER("소비자 취소 · 준비 시작 전"),
     CANCELLED_BY_SELLER("브랜드 직권 취소"),
     /** 환불 큐 집행 완료 — PG 자동이면 actor SYSTEM, 운영자 집행이면 ADMIN(1009 기획 수정본 2-4). */

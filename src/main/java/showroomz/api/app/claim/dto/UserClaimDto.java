@@ -514,9 +514,13 @@ public class UserClaimDto {
         private ReshipFeeState state;
         @Schema(example = "3000", nullable = true)
         private Integer amount;
-        @Schema(description = "결제 기한 — PAYABLE 일 때. 「10.23(금)까지 결제해 주세요」", example = "2026-10-23", nullable = true)
+        @Schema(description = "결제 기한 — PAYABLE 일 때. 「10.23(금)까지 결제해 주세요」. 기한이 지나도 내린다 — `overdue` 를 먼저 본다",
+                example = "2026-10-23", nullable = true)
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
         private LocalDate dueDate;
+        @Schema(description = "결제 기한이 지났다(PAYABLE 일 때만 참) — 「…까지 결제해 주세요」 대신 기한 경과 문구를 그린다. "
+                + "기한이 지나도 결제는 된다. 보관 기한은 `storage`", example = "false")
+        private boolean overdue;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime settledAt;
         @Schema(description = "결제 수단 — PAID 일 때만. 「카카오페이」", example = "카카오페이", nullable = true)
