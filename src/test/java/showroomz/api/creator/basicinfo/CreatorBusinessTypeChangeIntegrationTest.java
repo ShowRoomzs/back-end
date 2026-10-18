@@ -44,7 +44,6 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
 
     @Autowired private CreatorAdminHistoryRepository adminHistories;
     @Autowired private ChangeRequestRepository brandChangeRequests;
-    @Autowired private BrandChangeRequestRepository brandChangeRequests;
     @Autowired private CreatorWithdrawalService withdrawalService;
 
     @Test

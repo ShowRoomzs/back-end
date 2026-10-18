@@ -36,7 +36,13 @@ public interface InquiryControllerDocs {
                     "**선택 값:**\n" +
                     "- `imageUrls`: 첨부 이미지 URL 리스트 (최대 5장)\n" +
                     "- `orderId`: 참조 주문 ID — **모든 유형에서 선택값**입니다. 주문 없이도 문의할 수 있습니다. " +
-                    "**본인 주문만** 연결할 수 있고, 남의 주문·없는 주문이면 403 `ORDER_ACCESS_DENIED`입니다(결제 대기·만료 주문도 연결 가능)\n\n" +
+                    "**본인 주문만** 연결할 수 있고, 남의 주문·없는 주문이면 403 `ORDER_ACCESS_DENIED`입니다(결제 대기·만료 주문도 연결 가능)\n" +
+                    "- `sanctionAppeal`: **계정 이용 정지 소명**(C20 1d) — 정지 안내 시트의 「1:1 문의로 이의 신청」 · 문의 유형 목록에 앱이 덧붙인 「계정 이용 정지」로 쓸 때만 `true`\n\n" +
+                    "**정지 소명(`sanctionAppeal: true`) 규칙**\n" +
+                    "- 이용 정지 중일 때만 — 아니면 409 `SANCTION_APPEAL_NOT_AVAILABLE`\n" +
+                    "- `type` 은 `ACCOUNT` · `orderId` · `claimId` 는 비운다 — 어기면 400\n" +
+                    "- 정지 1건당 **답변 전 소명은 1건** — 이미 있으면 409 `SANCTION_APPEAL_ALREADY_EXISTS`(기존 문의를 수정한다 · `GET /v1/user/account-status` 의 `pendingAppealInquiryId`)\n" +
+                    "- 접수된 소명은 어드민 소비자 상세의 소명 문의 · 처리 이력(「정지 소명 문의 접수」)에 잡힌다. 정지 중에도 1:1 문의는 막히지 않는다\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -128,7 +134,8 @@ public interface InquiryControllerDocs {
             @ApiResponse(
                     responseCode = "409",
                     description = "반려 이의(`claimId`) — 반려 보류 중이 아님(`CLAIM_STATE_CHANGED`) · 답변 전인 이의가 이미 있음"
-                            + "(`CLAIM_DISPUTE_ALREADY_EXISTS` — 기존 문의를 수정한다) - Status: 409 Conflict",
+                            + "(`CLAIM_DISPUTE_ALREADY_EXISTS` — 기존 문의를 수정한다) / 정지 소명(`sanctionAppeal`) — 정지 중이 아님"
+                            + "(`SANCTION_APPEAL_NOT_AVAILABLE`) · 답변 전 소명이 이미 있음(`SANCTION_APPEAL_ALREADY_EXISTS`) - Status: 409 Conflict",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -139,6 +146,20 @@ public interface InquiryControllerDocs {
                                                     "  \"code\": \"CLAIM_DISPUTE_ALREADY_EXISTS\",\n" +
                                                     "  \"message\": \"이미 접수된 이의가 있습니다. 답변 전에는 기존 문의를 수정해 주세요.\"\n" +
                                                     "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "정지 소명 — 정지 중 아님",
+                                            value = "{\n" +
+                                                    "  \"code\": \"SANCTION_APPEAL_NOT_AVAILABLE\",\n" +
+                                                    "  \"message\": \"이용 정지 중일 때만 정지에 대한 문의를 남길 수 있어요.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "정지 소명 — 중복",
+                                            value = "{\n" +
+                                                    "  \"code\": \"SANCTION_APPEAL_ALREADY_EXISTS\",\n" +
+                                                    "  \"message\": \"이미 접수된 정지 문의가 있어요. 답변 전에는 기존 문의를 수정해 주세요.\"\n" +
+                                                    "}"
                                     )
                             }
                     )
@@ -146,7 +167,8 @@ public interface InquiryControllerDocs {
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "1:1 문의 등록 요청 바디 — 반려 안내(C10-5)의 「이의 제기」면 `claimId` 를 함께 보낸다(유형 CANCEL_EXCHANGE_RETURN · "
-                    + "`orderId` 는 비워도 클레임의 주문으로 채운다). 본인 · 반려 보류 중 클레임만 받고, 아니면 400 · 404 · 409",
+                    + "`orderId` 는 비워도 클레임의 주문으로 채운다). 본인 · 반려 보류 중 클레임만 받고, 아니면 400 · 404 · 409. "
+                    + "정지 안내 시트(C20)의 「1:1 문의로 이의 신청」이면 `sanctionAppeal: true` · 유형 ACCOUNT · 주문 · 클레임 없이 보낸다",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -182,6 +204,14 @@ public interface InquiryControllerDocs {
                                             "    \"https://example.com/inquiries/img1.jpg\"\n" +
                                             "  ],\n" +
                                             "  \"claimId\": 3008\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "계정 이용 정지 소명",
+                                    value = "{\n" +
+                                            "  \"type\": \"ACCOUNT\",\n" +
+                                            "  \"content\": \"욕설을 한 적이 없습니다. 문의 내용을 다시 확인 부탁드립니다.\",\n" +
+                                            "  \"sanctionAppeal\": true\n" +
                                             "}"
                             )
                     }

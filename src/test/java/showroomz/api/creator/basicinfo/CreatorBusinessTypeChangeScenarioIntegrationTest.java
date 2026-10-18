@@ -17,16 +17,16 @@ import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.admin.changerequest.service.CreatorBusinessTypeChangeApplier;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.common.settlement.SettlementTestSupport;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.entity.ChangeRequestItem;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequesterType;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorAdminHistory;
 import showroomz.domain.member.creator.repository.CreatorAdminHistoryRepository;
 import showroomz.domain.member.creator.service.CreatorAdminHistoryRecorder;
-import showroomz.domain.member.creator.service.CreatorMemberNotifier;
+import showroomz.domain.member.common.service.MemberNotifier;
 import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.settlement.entity.Settlement;
@@ -76,11 +76,11 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
     private static final String EVIDENCE_URL = "https://cdn.showroomz.test/creator-document/evidence.pdf";
     private static final long TEN_MB = 10L * 1024 * 1024;
 
-    @Autowired private BrandChangeRequestRepository brandChangeRequests;
+    @Autowired private ChangeRequestRepository brandChangeRequests;
     @Autowired private CreatorAdminHistoryRepository adminHistories;
     @Autowired private SettlementTaxDocumentRepository taxDocuments;
 
-    @MockitoSpyBean private CreatorMemberNotifier notifier;
+    @MockitoSpyBean private MemberNotifier notifier;
     @MockitoSpyBean private CreatorBusinessTypeChangeApplier applier;
     @MockitoSpyBean private CreatorAdminHistoryRecorder historyRecorder;
 
@@ -253,7 +253,7 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
             postAs(REQUESTS + "/" + pending + "/cancel", creatorToken).andExpect(status().isNoContent());
             postAs(REQUESTS + "/" + pending + "/cancel", creatorToken).andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_NOT_PENDING"));
-            BrandChangeRequest canceled = request(pending);
+            ChangeRequest canceled = request(pending);
             assertThat(canceled.getProcessedAt()).isNotNull();
             assertThat(canceled.getProcessedBy()).isNull();
 
@@ -1040,14 +1040,14 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
         return node.isMissingNode() || node.isNull() ? null : node.asText();
     }
 
-    private BrandChangeRequest request(long requestId) {
+    private ChangeRequest request(long requestId) {
         return brandChangeRequests.findById(requestId).orElseThrow();
     }
 
     /** {@code fieldKey|current|requested|sortOrder} — 저장 순서대로. */
     private List<String> items(long requestId) {
         return inTransaction(() -> request(requestId).getItems().stream()
-                .sorted(java.util.Comparator.comparing(BrandChangeRequestItem::getSortOrder))
+                .sorted(java.util.Comparator.comparing(ChangeRequestItem::getSortOrder))
                 .map(i -> i.getFieldKey().name() + "|" + i.getCurrentValue() + "|" + i.getRequestedValue() + "|" + i.getSortOrder())
                 .toList());
     }

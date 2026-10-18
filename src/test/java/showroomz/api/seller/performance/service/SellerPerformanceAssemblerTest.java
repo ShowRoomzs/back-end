@@ -30,37 +30,37 @@ class SellerPerformanceAssemblerTest {
     @Test
     @DisplayName("ED-01 비율 — 소수 1자리 HALF_UP · 분모 0 이면 null")
     void percent() {
-        assertThat(SellerPerformanceAssembler.pct(2, 3)).isEqualByComparingTo("66.7");
-        assertThat(SellerPerformanceAssembler.pct(1, 8)).isEqualByComparingTo("12.5");
-        assertThat(SellerPerformanceAssembler.pct(1, 6)).isEqualByComparingTo("16.7");
-        assertThat(SellerPerformanceAssembler.pct(0, 4)).isEqualByComparingTo("0.0");
-        assertThat(SellerPerformanceAssembler.pct(3, 0)).isNull();
+        assertThat(SellerPerformanceNumbers.pct(2, 3)).isEqualByComparingTo("66.7");
+        assertThat(SellerPerformanceNumbers.pct(1, 8)).isEqualByComparingTo("12.5");
+        assertThat(SellerPerformanceNumbers.pct(1, 6)).isEqualByComparingTo("16.7");
+        assertThat(SellerPerformanceNumbers.pct(0, 4)).isEqualByComparingTo("0.0");
+        assertThat(SellerPerformanceNumbers.pct(3, 0)).isNull();
     }
 
     @Test
     @DisplayName("ED-02 ROAS — % 정수 HALF_UP(시안 D1 578 · D4 614 · F-MAIN 34) · 집행비 0 이면 null")
     void roas() {
-        assertThat(SellerPerformanceAssembler.roas(5_480_000, 948_000)).isEqualTo(578);
-        assertThat(SellerPerformanceAssembler.roas(5_480_000, 893_200)).isEqualTo(614);
-        assertThat(SellerPerformanceAssembler.roas(105_600, 312_192)).isEqualTo(34);
-        assertThat(SellerPerformanceAssembler.roas(105_600, 0)).isNull();
+        assertThat(SellerPerformanceNumbers.roas(5_480_000, 948_000)).isEqualTo(578);
+        assertThat(SellerPerformanceNumbers.roas(5_480_000, 893_200)).isEqualTo(614);
+        assertThat(SellerPerformanceNumbers.roas(105_600, 312_192)).isEqualTo(34);
+        assertThat(SellerPerformanceNumbers.roas(105_600, 0)).isNull();
     }
 
     @Test
     @DisplayName("ED-03 AOV · 획득 단가 — 원 단위 HALF_UP · 분모 0 null · 분자 0 은 0(측정된 0)")
     void division() {
-        assertThat(SellerPerformanceAssembler.div(78_400, 3)).isEqualTo(26_133);
-        assertThat(SellerPerformanceAssembler.div(312_192, 2)).isEqualTo(156_096);
-        assertThat(SellerPerformanceAssembler.div(105_600, 0)).isNull();
-        assertThat(SellerPerformanceAssembler.div(0, 2)).isZero();
+        assertThat(SellerPerformanceNumbers.div(78_400, 3)).isEqualTo(26_133);
+        assertThat(SellerPerformanceNumbers.div(312_192, 2)).isEqualTo(156_096);
+        assertThat(SellerPerformanceNumbers.div(105_600, 0)).isNull();
+        assertThat(SellerPerformanceNumbers.div(0, 2)).isZero();
     }
 
     @Test
     @DisplayName("ED-04 수익률 — 시안 D1 22.3 · D4 23.4 · 음수 수익도 소수 1자리")
     void profitRate() {
-        assertThat(SellerPerformanceAssembler.pct(1_224_200, 5_480_000)).isEqualByComparingTo("22.3");
-        assertThat(SellerPerformanceAssembler.pct(1_284_480, 5_480_000)).isEqualByComparingTo("23.4");
-        assertThat(SellerPerformanceAssembler.pct(-250_000, 105_600)).isEqualByComparingTo("-236.7");
+        assertThat(SellerPerformanceNumbers.pct(1_224_200, 5_480_000)).isEqualByComparingTo("22.3");
+        assertThat(SellerPerformanceNumbers.pct(1_284_480, 5_480_000)).isEqualByComparingTo("23.4");
+        assertThat(SellerPerformanceNumbers.pct(-250_000, 105_600)).isEqualByComparingTo("-236.7");
     }
 
     // ------------------------------------------------------------------ CS 연령 · 「기타」
@@ -97,7 +97,7 @@ class SellerPerformanceAssemblerTest {
         buyers.add(buyer("FEMALE", null));
         buyers.add(buyer("MALE", ""));
 
-        List<SellerPerformanceDto.AgeBand> bands = SellerPerformanceAssembler.ageBands(facts(buyers));
+        List<SellerPerformanceDto.AgeBand> bands = SellerPerformanceSections.ageBands(facts(buyers));
 
         assertThat(bands).extracting(SellerPerformanceDto.AgeBand::band)
                 .containsExactly("TWENTIES", "OTHER", "UNKNOWN");
@@ -126,15 +126,15 @@ class SellerPerformanceAssemblerTest {
         for (int i = 0; i < 5; i++) {
             buyers.add(buyer("MALE", "1985-01-10"));
         }
-        assertThat(SellerPerformanceAssembler.ageBands(facts(buyers))).extracting(SellerPerformanceDto.AgeBand::band)
+        assertThat(SellerPerformanceSections.ageBands(facts(buyers))).extracting(SellerPerformanceDto.AgeBand::band)
                 .containsExactly("FORTIES");
-        assertThat(SellerPerformanceAssembler.ageBands(facts(List.of()))).isEmpty();
+        assertThat(SellerPerformanceSections.ageBands(facts(List.of()))).isEmpty();
     }
 
     @Test
     @DisplayName("CS-09 성별 미확인 소비자는 나이를 알아도 「미확인」 행으로 간다(현재 동작 고정 · 시나리오 14절 #4)")
     void genderlessBuyerGoesToUnknown() {
-        List<SellerPerformanceDto.AgeBand> bands = SellerPerformanceAssembler.ageBands(
+        List<SellerPerformanceDto.AgeBand> bands = SellerPerformanceSections.ageBands(
                 facts(List.of(buyer(null, "1998-03-02"))));
         assertThat(bands).singleElement().satisfies(band -> {
             assertThat(band.band()).isEqualTo("UNKNOWN");

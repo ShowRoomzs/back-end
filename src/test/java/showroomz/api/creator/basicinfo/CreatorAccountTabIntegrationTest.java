@@ -21,7 +21,7 @@ import showroomz.domain.member.creator.service.CreatorWithdrawalEligibility;
 import showroomz.domain.member.creator.service.CreatorWithdrawalService;
 import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.member.creator.type.CreatorWithdrawalCondition;
-import showroomz.domain.member.creator.type.CreatorWithdrawalStatus;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -361,7 +361,7 @@ class CreatorAccountTabIntegrationTest extends SettlementTestSupport {
 
         long rejectedId = json(requestWithdrawal("다시 신청").andExpect(status().isCreated())).path("requestId").asLong();
         assertThat(rejectedId).isNotEqualTo(canceledId);
-        assertThat(withdrawalRequests.findById(canceledId).orElseThrow().getStatus()).isEqualTo(CreatorWithdrawalStatus.CANCELED);
+        assertThat(withdrawalRequests.findById(canceledId).orElseThrow().getStatus()).isEqualTo(MemberWithdrawalStatus.CANCELED);
         reject(rejectedId);
         creatorPost(BASE + "/withdrawal-requests/" + rejectedId + "/cancel").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWAL_NOT_PENDING"));

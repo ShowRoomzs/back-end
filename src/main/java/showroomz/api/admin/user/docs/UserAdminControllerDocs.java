@@ -215,14 +215,51 @@ public interface UserAdminControllerDocs {
                     "정지 기간은 없습니다(수동 해제). 대상은 소비자(USER) 계정뿐입니다 — 인플루언서는 인플루언서 상세에서 정지합니다.\n\n" +
                     "**권한:** ADMIN"
     )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = AdminUserDto.SuspendRequest.class),
+                    examples = {
+                            @ExampleObject(name = "정형 사유", value = "{\n  \"reason\": \"ABUSIVE_LANGUAGE\",\n  \"reasonDetail\": \"상품 문의 3건에 욕설 · 비방 반복\"\n}"),
+                            @ExampleObject(name = "기타(상세 필수)", value = "{\n  \"reason\": \"OTHER\",\n  \"reasonDetail\": \"타인 명의 계정 공유 정황 — 본인 확인 전까지 정지\"\n}")
+                    }))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "정지 완료 — 갱신된 상태 카드 + 처리 이력 최신 5건",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.StatusResult.class))),
-            @ApiResponse(responseCode = "400", description = "기타 사유 · 상세 누락",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.StatusResult.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"statusCard\": {\n" +
+                                    "    \"status\": \"SUSPENDED\",\n" +
+                                    "    \"sanction\": {\n" +
+                                    "      \"sanctionId\": 17,\n" +
+                                    "      \"reason\": \"ABUSIVE_LANGUAGE\",\n" +
+                                    "      \"reasonLabel\": \"욕설·비방\",\n" +
+                                    "      \"reasonDetail\": \"상품 문의 3건에 욕설 · 비방 반복\",\n" +
+                                    "      \"suspendedAt\": \"2026-10-10T14:20:00\",\n" +
+                                    "      \"suspendedByName\": \"김운영\",\n" +
+                                    "      \"appealInquiries\": []\n" +
+                                    "    },\n" +
+                                    "    \"actions\": { \"canSuspend\": false, \"canRelease\": true }\n" +
+                                    "  },\n" +
+                                    "  \"histories\": {\n" +
+                                    "    \"total\": 4,\n" +
+                                    "    \"content\": [\n" +
+                                    "      { \"historyId\": 52, \"eventType\": \"SUSPENDED\", \"label\": \"계정 정지\", \"tone\": \"DANGER\",\n" +
+                                    "        \"detail\": \"욕설·비방 — 상품 문의 3건에 욕설 · 비방 반복\", \"actorType\": \"ADMIN\", \"actorName\": \"김운영\",\n" +
+                                    "        \"refType\": \"SANCTION\", \"refId\": 17, \"occurredAt\": \"2026-10-10T14:20:00\" },\n" +
+                                    "      { \"historyId\": null, \"eventType\": \"SIGNED_UP\", \"label\": \"가입\", \"tone\": \"NEUTRAL\",\n" +
+                                    "        \"detail\": null, \"actorType\": \"CONSUMER\", \"actorName\": \"소비자 본인\",\n" +
+                                    "        \"refType\": null, \"refId\": null, \"occurredAt\": \"2026-02-01T10:00:00\" }\n" +
+                                    "    ]\n" +
+                                    "  }\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "400", description = "사유 누락 · 기타 사유 상세 누락 · 상세 500자 초과",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(value = "{\"code\": \"USER_SUSPEND_DETAIL_REQUIRED\", \"message\": \"기타 사유를 선택하면 상세 사유를 입력해야 합니다.\"}"))),
-            @ApiResponse(responseCode = "404", description = "소비자 아님 · 없음",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+                            examples = {
+                                    @ExampleObject(name = "기타 상세 누락", value = "{\"code\": \"USER_SUSPEND_DETAIL_REQUIRED\", \"message\": \"기타 사유를 선택하면 상세 사유를 입력해야 합니다.\"}"),
+                                    @ExampleObject(name = "사유 누락", value = "{\"code\": \"INVALID_INPUT\", \"message\": \"정지 사유를 선택해 주세요.\"}")
+                            })),
+            @ApiResponse(responseCode = "404", description = "소비자(USER) 아님 · 없음 — USER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}"))),
             @ApiResponse(responseCode = "409", description = "이미 정지(`USER_ALREADY_SUSPENDED`) · 탈퇴 회원(`USER_SANCTION_WITHDRAWN`)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = "{\"code\": \"USER_ALREADY_SUSPENDED\", \"message\": \"이미 정지된 회원입니다.\"}")))
@@ -240,13 +277,42 @@ public interface UserAdminControllerDocs {
                     "정지 이력과 사유는 그대로 보존됩니다. 사유 기록 없이 정지된 옛 회원도 해제할 수 있습니다.\n\n" +
                     "**권한:** ADMIN"
     )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = AdminUserDto.ReleaseRequest.class),
+                    examples = @ExampleObject(value = "{\n  \"reason\": \"RESOLVED\"\n}")))
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "해제 완료 — 갱신된 상태 카드 + 처리 이력 최신 5건",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.StatusResult.class))),
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.StatusResult.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"statusCard\": {\n" +
+                                    "    \"status\": \"NORMAL\",\n" +
+                                    "    \"sanction\": null,\n" +
+                                    "    \"actions\": { \"canSuspend\": true, \"canRelease\": false }\n" +
+                                    "  },\n" +
+                                    "  \"histories\": {\n" +
+                                    "    \"total\": 6,\n" +
+                                    "    \"content\": [\n" +
+                                    "      { \"historyId\": 58, \"eventType\": \"SUSPENSION_RELEASED\", \"label\": \"정지 해제\", \"tone\": \"INFO\",\n" +
+                                    "        \"detail\": \"소명 확인 완료\", \"actorType\": \"ADMIN\", \"actorName\": \"김운영\",\n" +
+                                    "        \"refType\": \"SANCTION\", \"refId\": 17, \"occurredAt\": \"2026-10-14T09:00:00\" },\n" +
+                                    "      { \"historyId\": null, \"eventType\": \"APPEAL_RECEIVED\", \"label\": \"정지 소명 문의 접수\", \"tone\": \"NEUTRAL\",\n" +
+                                    "        \"detail\": null, \"actorType\": \"CONSUMER\", \"actorName\": \"소비자 본인\",\n" +
+                                    "        \"refType\": \"INQUIRY\", \"refId\": 903, \"occurredAt\": \"2026-10-11T08:30:00\" }\n" +
+                                    "    ]\n" +
+                                    "  }\n" +
+                                    "}"))),
             @ApiResponse(responseCode = "400", description = "해제 사유 누락(`USER_RELEASE_REASON_REQUIRED`) · 소비자 해제 사유 아님",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_RELEASE_REASON_REQUIRED\", \"message\": \"해제 사유를 선택해 주세요.\"}"))),
+            @ApiResponse(responseCode = "404", description = "소비자(USER) 아님 · 없음 — USER_NOT_FOUND",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "정지 아님(`USER_NOT_SUSPENDED`) · 탈퇴 회원(`USER_SANCTION_WITHDRAWN`)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "정지 아님", value = "{\"code\": \"USER_NOT_SUSPENDED\", \"message\": \"정지 상태가 아닌 회원입니다.\"}"),
+                                    @ExampleObject(name = "탈퇴 회원", value = "{\"code\": \"USER_SANCTION_WITHDRAWN\", \"message\": \"탈퇴한 회원입니다. 조치할 수 없습니다.\"}")
+                            }))
     })
     ResponseEntity<AdminUserDto.StatusResult> release(
             @Parameter(description = "유저 ID", required = true, example = "1", in = ParameterIn.PATH) @PathVariable("userId") Long userId,
@@ -262,7 +328,25 @@ public interface UserAdminControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.HistoryPage.class)))
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.HistoryPage.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"total\": 3,\n" +
+                                    "  \"page\": 1,\n" +
+                                    "  \"size\": 20,\n" +
+                                    "  \"content\": [\n" +
+                                    "    { \"historyId\": 53, \"eventType\": \"MEMO_CREATED\", \"label\": \"관리자 메모 기입\", \"tone\": \"NEUTRAL\",\n" +
+                                    "      \"detail\": null, \"actorType\": \"ADMIN\", \"actorName\": \"김운영\", \"refType\": \"MEMO\", \"refId\": 3,\n" +
+                                    "      \"occurredAt\": \"2026-10-10T14:25:00\" },\n" +
+                                    "    { \"historyId\": 52, \"eventType\": \"SUSPENDED\", \"label\": \"계정 정지\", \"tone\": \"DANGER\",\n" +
+                                    "      \"detail\": \"욕설·비방 — 상품 문의 3건에 욕설 · 비방 반복\", \"actorType\": \"ADMIN\", \"actorName\": \"김운영\",\n" +
+                                    "      \"refType\": \"SANCTION\", \"refId\": 17, \"occurredAt\": \"2026-10-10T14:20:00\" },\n" +
+                                    "    { \"historyId\": null, \"eventType\": \"SIGNED_UP\", \"label\": \"가입\", \"tone\": \"NEUTRAL\",\n" +
+                                    "      \"detail\": null, \"actorType\": \"CONSUMER\", \"actorName\": \"소비자 본인\", \"refType\": null, \"refId\": null,\n" +
+                                    "      \"occurredAt\": \"2026-02-01T10:00:00\" }\n" +
+                                    "  ]\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "404", description = "회원 없음 — USER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<AdminUserDto.HistoryPage> getHistories(
             @Parameter(description = "유저 ID", required = true, example = "1", in = ParameterIn.PATH) @PathVariable("userId") Long userId,
@@ -278,7 +362,18 @@ public interface UserAdminControllerDocs {
     )
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.MemoPage.class)))
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.MemoPage.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"total\": 2,\n" +
+                                    "  \"content\": [\n" +
+                                    "    { \"memoId\": 3, \"authorName\": \"김운영\", \"content\": \"반품 사유 반복 — 기준 미달이라 정지하지 않음, 다음 반품 시 재검토\",\n" +
+                                    "      \"createdAt\": \"2026-10-10T14:25:00\", \"modifiedAt\": null, \"editable\": true },\n" +
+                                    "    { \"memoId\": 1, \"authorName\": \"이전 단일 메모(작성자 미기록)\", \"content\": \"VIP 고객 — 응대 시 유의\",\n" +
+                                    "      \"createdAt\": \"2026-03-02T09:00:00\", \"modifiedAt\": null, \"editable\": false }\n" +
+                                    "  ]\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "404", description = "회원 없음 — USER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<AdminUserDto.MemoPage> getMemos(
             @Parameter(description = "유저 ID", required = true, example = "1", in = ParameterIn.PATH) @PathVariable("userId") Long userId,
@@ -292,13 +387,29 @@ public interface UserAdminControllerDocs {
             description = "덮어쓰기가 아니라 누적입니다. 공백 제거 후 1 ~ 300자(서버 검증). 소비자에게 노출되지 않지만 개인정보 열람청구 시 제공 대상이 될 수 있습니다. 탈퇴 회원은 조회 전용(409).\n\n" +
                     "**권한:** ADMIN"
     )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = AdminUserDto.MemoRequest.class),
+                    examples = @ExampleObject(value = "{\n  \"content\": \"반품 사유 반복 — 기준 미달이라 정지하지 않음, 다음 반품 시 재검토\"\n}")))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "기입 성공",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.Memo.class))),
+            @ApiResponse(responseCode = "200", description = "기입 성공 — 처리 이력에 「관리자 메모 기입」이 남는다",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.Memo.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"memoId\": 3,\n" +
+                                    "  \"authorName\": \"김운영\",\n" +
+                                    "  \"content\": \"반품 사유 반복 — 기준 미달이라 정지하지 않음, 다음 반품 시 재검토\",\n" +
+                                    "  \"createdAt\": \"2026-10-10T14:25:00\",\n" +
+                                    "  \"modifiedAt\": null,\n" +
+                                    "  \"editable\": true\n" +
+                                    "}"))),
             @ApiResponse(responseCode = "400", description = "빈 내용 · 300자 초과",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"INVALID_INPUT\", \"message\": \"메모는 1자 이상 300자 이내로 입력해 주세요.\"}"))),
+            @ApiResponse(responseCode = "404", description = "회원 없음 — USER_NOT_FOUND",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "탈퇴 회원(`USER_SANCTION_WITHDRAWN`)",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_SANCTION_WITHDRAWN\", \"message\": \"탈퇴한 회원입니다. 조치할 수 없습니다.\"}")))
     })
     ResponseEntity<AdminUserDto.Memo> createMemo(
             @Parameter(description = "유저 ID", required = true, example = "1", in = ParameterIn.PATH) @PathVariable("userId") Long userId,
@@ -311,12 +422,33 @@ public interface UserAdminControllerDocs {
             description = "작성자 본인 · 작성 후 24시간 내에만 고칠 수 있습니다. 저장하면 `modifiedAt`이 채워집니다(「수정됨」).\n\n" +
                     "**권한:** ADMIN"
     )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = AdminUserDto.MemoRequest.class),
+                    examples = @ExampleObject(value = "{\n  \"content\": \"반품 사유 반복 — 3회째부터 정지 검토\"\n}")))
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "수정 성공",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.Memo.class))),
-            @ApiResponse(responseCode = "403", description = "작성자 아님(`USER_MEMO_NOT_AUTHOR`) · 24시간 경과(`USER_MEMO_EDIT_WINDOW_CLOSED`)",
+            @ApiResponse(responseCode = "200", description = "수정 성공 — `modifiedAt` 이 채워진다",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.Memo.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"memoId\": 3,\n" +
+                                    "  \"authorName\": \"김운영\",\n" +
+                                    "  \"content\": \"반품 사유 반복 — 3회째부터 정지 검토\",\n" +
+                                    "  \"createdAt\": \"2026-10-10T14:25:00\",\n" +
+                                    "  \"modifiedAt\": \"2026-10-10T16:02:00\",\n" +
+                                    "  \"editable\": true\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "400", description = "빈 내용 · 300자 초과",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "작성자 아님(`USER_MEMO_NOT_AUTHOR`) · 24시간 경과(`USER_MEMO_EDIT_WINDOW_CLOSED`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(name = "작성자 아님", value = "{\"code\": \"USER_MEMO_NOT_AUTHOR\", \"message\": \"작성자만 수정·삭제할 수 있습니다.\"}"),
+                                    @ExampleObject(name = "24시간 경과", value = "{\"code\": \"USER_MEMO_EDIT_WINDOW_CLOSED\", \"message\": \"작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다.\"}")
+                            })),
             @ApiResponse(responseCode = "404", description = "메모 없음(`USER_MEMO_NOT_FOUND`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_MEMO_NOT_FOUND\", \"message\": \"존재하지 않는 메모입니다.\"}"))),
+            @ApiResponse(responseCode = "409", description = "탈퇴 회원(`USER_SANCTION_WITHDRAWN`)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<AdminUserDto.Memo> updateMemo(
@@ -332,8 +464,12 @@ public interface UserAdminControllerDocs {
                     "**권한:** ADMIN"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "삭제 성공"),
-            @ApiResponse(responseCode = "403", description = "작성자 아님 · 24시간 경과",
+            @ApiResponse(responseCode = "204", description = "삭제 성공 — 목록에서 빠지고 처리 이력에 「관리자 메모 삭제」가 남는다"),
+            @ApiResponse(responseCode = "403", description = "작성자 아님(`USER_MEMO_NOT_AUTHOR`) · 24시간 경과(`USER_MEMO_EDIT_WINDOW_CLOSED`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "메모 없음(`USER_MEMO_NOT_FOUND`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "탈퇴 회원(`USER_SANCTION_WITHDRAWN`)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> deleteMemo(
