@@ -151,6 +151,70 @@ class SellerCompleteRegistrationIntegrationTest extends IntegrationTestSupport {
         assertThat(reloadMarket().getJejuSurcharge()).isZero();
     }
 
+    @Test
+    @DisplayName("[OV-06] 무료배송 기준금액 0 을 명시하면 0 으로 저장한다 — 브랜드가 고른 「항상 무료배송」이라 생략(null)과 구분된다")
+    void explicitZeroThresholdKept() throws Exception {
+        Map<String, Object> request = fullRequest();
+        request.put("freeShippingThreshold", 0);
+
+        complete(registerToken(), request).andExpect(status().isCreated());
+
+        assertThat(reloadMarket().getFreeShippingThreshold()).isZero();
+    }
+
+    @Test
+    @DisplayName("[OS-01] 가입 토큰이 없거나 위조면 401 — 온보딩이 끝나지 않고 배송 정책도 저장되지 않는다")
+    void registerTokenRequired() throws Exception {
+        Market before = reloadMarket();
+
+        mockMvc.perform(post(AUTH + "/complete-registration")
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(fullRequest())))
+                .andExpect(status().isUnauthorized());
+        complete("not-a-jwt", fullRequest()).andExpect(status().isUnauthorized());
+
+        assertThat(sellerRepository.findByEmail(brand.email()).orElseThrow().getIsNewMember()).isTrue();
+        // 픽스처가 넣어 둔 값(「김담당」 · 「1층 물류센터」) 그대로 — 요청 값(「4층 401호」 · 제주 5,000)이 들어가지 않았다.
+        Market market = reloadMarket();
+        assertThat(market.getShippingDetailAddress()).isEqualTo(before.getShippingDetailAddress()).isNotEqualTo("4층 401호");
+        assertThat(market.getJejuSurcharge()).isEqualTo(before.getJejuSurcharge()).isNotEqualTo(5000);
+        assertThat(market.getShippingLeadDays()).isEqualTo(before.getShippingLeadDays());
+    }
+
+    @Test
+    @DisplayName("[OS-02] 같은 가입 토큰으로 다시 완료하면 400 ALREADY_REGISTERED — 처음 값이 덮이지 않는다")
+    void completeTwiceRejected() throws Exception {
+        String token = registerToken();
+        complete(token, fullRequest()).andExpect(status().isCreated());
+
+        Map<String, Object> second = fullRequest();
+        second.put("jejuSurcharge", 9000);
+        second.put("shippingLeadDays", 7);
+        complete(token, second).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("ALREADY_REGISTERED"));
+
+        Market market = reloadMarket();
+        assertThat(market.getJejuSurcharge()).isEqualTo(5000);
+        assertThat(market.getShippingLeadDays()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("[OB-10 ③] 기본정보 배송 정책 — 제주 추가비 -1 은 400 · 저장값 불변")
+    void basicInfoDeliveryPolicyRejectsNegativeJeju() throws Exception {
+        complete(registerToken(), fullRequest()).andExpect(status().isCreated());
+
+        Map<String, Object> policy = new HashMap<>(Map.of(
+                "shippingLeadDays", 3, "defaultDeliveryFee", 3000, "jejuSurcharge", -1, "remoteAreaSurcharge", 5000));
+        mockMvc.perform(put("/v1/seller/basic-info/delivery-policy").header(HttpHeaders.AUTHORIZATION, sellerToken(brand.seller()))
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(policy)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.message").value("제주 추가비는 0 이상이어야 합니다."));
+
+        Market market = reloadMarket();
+        assertThat(market.getJejuSurcharge()).isEqualTo(5000);
+        assertThat(market.getRemoteAreaSurcharge()).isEqualTo(4000);
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private String registerToken() throws Exception {

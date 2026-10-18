@@ -557,10 +557,6 @@ final class CreatorGroupBuyDocsExamples {
             {"code": "GROUP_BUY_NOT_FOUND", "message": "존재하지 않는 공구입니다."}
             """;
 
-    static final String ERR_NOT_OWNED = """
-            {"code": "GROUP_BUY_NOT_OWNED_BY_CREATOR", "message": "존재하지 않는 공구입니다."}
-            """;
-
     static final String ERR_CREATOR_NOT_FOUND = """
             {"code": "CREATOR_NOT_FOUND", "message": "존재하지 않는 크리에이터입니다."}
             """;

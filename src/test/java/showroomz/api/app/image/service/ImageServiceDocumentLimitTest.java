@@ -3,15 +3,23 @@ package showroomz.api.app.image.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
+import showroomz.api.app.image.DTO.ImageUploadResponse;
 import showroomz.api.app.image.type.ImageType;
 import showroomz.global.config.properties.S3Properties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 /**
  * 스튜디오 온보딩(ui-studio-03 rev.3) 서류 업로드 — 통장 사본 · 사업자등록증은 최대 10MB · jpg, png, pdf. 화면이 먼저 막고 서버는 2차
@@ -59,6 +67,42 @@ class ImageServiceDocumentLimitTest {
         assertThatThrownBy(() -> imageService.uploadImage(file, ImageType.SIGNUP_DOCUMENT))
                 .isInstanceOf(BusinessException.class)
                 .hasMessage(ErrorCode.INVALID_FILE_EXTENSION.getMessage());
+    }
+
+    @Test
+    @DisplayName("[DU-01 · DU-02] jpg · jpeg · png · pdf(대문자 포함)와 정확히 10MB 는 올라간다")
+    void allowedCreatorDocumentsAreUploaded() {
+        S3Properties properties = mock(S3Properties.class);
+        when(properties.getBucket()).thenReturn("showroomz-test");
+        when(properties.getRegion()).thenReturn("ap-northeast-2");
+        when(properties.getCloudFrontDomain()).thenReturn("cdn.showroomz.test");
+        ImageService service = new ImageService(s3Client, properties);
+
+        for (String name : new String[]{"bankbook.jpg", "bankbook.jpeg", "bankbook.png", "license.pdf", "license.PDF"}) {
+            ImageUploadResponse response = service.uploadImage(file(name, 1024), ImageType.CREATOR_DOCUMENT);
+            assertThat(response.getImageUrl()).as(name).startsWith("https://cdn.showroomz.test/uploads/creator_document/");
+        }
+        ImageUploadResponse limit = service.uploadImage(file("bankbook.pdf", 10 * MB), ImageType.CREATOR_DOCUMENT);
+
+        assertThat(limit.getImageUrl()).endsWith(".pdf");
+        verify(s3Client, times(6)).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    }
+
+    @Test
+    @DisplayName("[DU-05] 빈 파일은 EMPTY_FILE · 확장자 없음 · 점으로 끝나는 이름은 화면 형식 문구")
+    void emptyOrExtensionlessCreatorDocumentsAreRejected() {
+        assertThatThrownBy(() -> imageService.uploadImage(file("bankbook.jpg", 0), ImageType.CREATOR_DOCUMENT))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode())
+                .isEqualTo(ErrorCode.EMPTY_FILE_EXCEPTION);
+
+        for (String name : new String[]{"bankbook", "bankbook."}) {
+            assertThatThrownBy(() -> imageService.uploadImage(file(name, 1024), ImageType.CREATOR_DOCUMENT))
+                    .as(name)
+                    .isInstanceOf(BusinessException.class)
+                    .hasMessage("jpg, png, pdf 파일만 업로드할 수 있습니다.");
+        }
+        verifyNoInteractions(s3Client);
     }
 
     private static MockMultipartFile file(String name, int size) {

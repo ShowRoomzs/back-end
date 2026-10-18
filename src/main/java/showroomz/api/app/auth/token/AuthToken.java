@@ -72,7 +72,8 @@ public class AuthToken {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-        } catch (SecurityException e) {
+        } catch (io.jsonwebtoken.security.SecurityException e) {
+            // 서명 불일치(SignatureException) — 와일드카드 import 로는 java.lang.SecurityException 으로 해석되어 잡히지 않았다.
             log.info("Invalid JWT signature.");
         } catch (MalformedJwtException e) {
             log.info("Invalid JWT token.");

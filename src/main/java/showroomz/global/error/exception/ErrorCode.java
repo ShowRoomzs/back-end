@@ -339,9 +339,8 @@ public enum ErrorCode {
     GROUP_BUY_THREAD_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "GROUP_BUY_THREAD_UNAVAILABLE", "지금은 스레드를 열 수 없습니다. 운영자에게 문의해 주세요."),
 
     // 쇼룸 스튜디오 공구 관리(31 설계 7절)
-    // 남의 공구는 403이 아니라 404다 — 공구번호가 추측 가능해 403은 「그 번호의 공구가 있다」를 알려준다(31 설계 0-4).
-    // 문구가 GROUP_BUY_NOT_FOUND와 같은 것이 의도다. 코드는 서버 로그에서만 구분하려고 나눈다.
-    GROUP_BUY_NOT_OWNED_BY_CREATOR(HttpStatus.NOT_FOUND, "GROUP_BUY_NOT_OWNED_BY_CREATOR", "존재하지 않는 공구입니다."),
+    // 남의 공구는 403이 아니라 404 GROUP_BUY_NOT_FOUND 다 — 공구번호가 추측 가능해 403이나 별도 코드는 「그 번호의 공구가 있다」를
+    // 알려준다(31 설계 0-4). 구분은 CreatorGroupBuyReader 의 서버 로그로만 한다.
     GROUP_BUY_POST_NOT_WRITABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_WRITABLE", "지금은 게시물을 작성할 수 없습니다."),
     GROUP_BUY_POST_UNDER_REVIEW(HttpStatus.CONFLICT, "GROUP_BUY_POST_UNDER_REVIEW", "검토 중에는 게시물을 수정할 수 없습니다."),
     GROUP_BUY_POST_NOT_EDITABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_EDITABLE", "지금 상태에서는 게시물을 수정할 수 없습니다."),
