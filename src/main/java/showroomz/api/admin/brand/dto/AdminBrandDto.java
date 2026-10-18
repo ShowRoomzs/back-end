@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.domain.member.brand.type.BrandSuspensionReason;
 import showroomz.domain.member.brand.type.BrandWithdrawalRejectReason;
 import showroomz.domain.member.brand.type.SanctionReleaseReason;
@@ -249,5 +250,10 @@ public final class AdminBrandDto {
 
     @Schema(name = "AdminBrandMemoRequest")
     public record MemoRequest(@NotBlank @Size(max = 300) String content) {
+    }
+
+    @Schema(description = "모달 셀렉트 사유 목록 — 정지 · 해제 · 탈퇴 반려. 인플루언서 상세와 같은 모양")
+    public record ReasonOptions(List<AdminReasonOption> suspensionReasons, List<AdminReasonOption> releaseReasons,
+                                List<AdminReasonOption> withdrawalRejectReasons) {
     }
 }

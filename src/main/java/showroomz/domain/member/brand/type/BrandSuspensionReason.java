@@ -2,6 +2,7 @@ package showroomz.domain.member.brand.type;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import showroomz.domain.member.common.type.SuspensionReasonType;
 
 /**
  * 브랜드 정지 사유 6종(§51-2 · M1). <b>지급 정지 여부는 사유가 정한다</b> — 운영자가 켜고 끄는 스위치가 아니다(§51-1). 돈과 무관한 사유로
@@ -9,7 +10,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Getter
 @RequiredArgsConstructor
-public enum BrandSuspensionReason {
+public enum BrandSuspensionReason implements SuspensionReasonType {
     SETTLEMENT_INFO_MISMATCH("정산 정보 불일치", true),
     BUSINESS_INFO_FALSIFIED("사업자 정보 허위 기재", true),
     PRODUCT_INFO_FALSIFIED("상품 정보 허위·과장", false),

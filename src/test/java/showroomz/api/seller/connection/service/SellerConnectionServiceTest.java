@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.connection.dto.ConnectRequest;
@@ -18,6 +19,7 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -49,6 +51,9 @@ class SellerConnectionServiceTest {
     private MarketRepository marketRepository;
     @Mock
     private CreatorRepository creatorRepository;
+
+    @Spy
+    private BrandSanctionGuard brandSanctionGuard = new BrandSanctionGuard();
 
     @InjectMocks
     private SellerConnectionService sellerConnectionService;

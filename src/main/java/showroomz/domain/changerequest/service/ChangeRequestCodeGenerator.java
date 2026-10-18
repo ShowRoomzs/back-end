@@ -2,7 +2,7 @@ package showroomz.domain.changerequest.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 
 import java.time.Year;
 
@@ -14,7 +14,7 @@ import java.time.Year;
 @RequiredArgsConstructor
 public class ChangeRequestCodeGenerator {
 
-    private final BrandChangeRequestRepository repository;
+    private final ChangeRequestRepository repository;
 
     public String next() {
         String prefix = "CHG-" + Year.now().getValue() + "-";

@@ -5,13 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.market.entity.Market;
-import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.member.brand.entity.BrandWithdrawalRequest;
 import showroomz.domain.member.brand.repository.BrandWithdrawalRequestRepository;
 import showroomz.domain.member.brand.type.BrandAdminEventType;
 import showroomz.domain.member.brand.type.BrandWithdrawalReason;
 import showroomz.domain.member.brand.type.BrandWithdrawalRejectReason;
-import showroomz.domain.member.brand.type.BrandWithdrawalStatus;
+import showroomz.domain.member.common.service.MemberNotifier;
+import showroomz.domain.member.common.service.MemberSanctionRules;
+import showroomz.domain.member.common.type.MemberType;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.global.error.exception.BusinessException;
@@ -22,7 +24,7 @@ import java.time.LocalDateTime;
 /**
  * 브랜드 탈퇴 — 신청 · 승인제(§51-5 · 52 설계서 4절). 회원 상태는 승인 전까지 <b>활성 그대로</b>다 — 신청은 상태가 아니라 처리할 건이다.
  *
- * <p>신청 · 취소는 파트너센터(짝 설계 · API 미작성)가 부를 도메인 진입점이고, 승인 · 반려는 어드민이 부른다. 신청 · 승인 모두
+ * <p>신청 · 취소는 파트너센터 계정 탭({@code SellerWithdrawalService})이, 승인 · 반려는 어드민이 부른다. 신청 · 승인 모두
  * {@link BrandWithdrawalEligibility} 같은 판정식을 쓴다 — 승인은 그 시점에 다시 판정한다.
  */
 @Slf4j
@@ -36,21 +38,21 @@ public class BrandWithdrawalService {
     private final BrandWithdrawalEligibility eligibility;
     private final BrandWithdrawalPurger purger;
     private final BrandAdminHistoryRecorder historyRecorder;
-    private final BrandMemberNotifier notifier;
+    private final MemberNotifier notifier;
 
     /** 신청(파트너) — 조건 4종이 전부 0 이어야 한다. 정지 중에도 신청할 수 있다(§51-5 · 조건은 그대로). */
     public BrandWithdrawalRequest request(Long marketId, BrandWithdrawalReason reason, String message, LocalDateTime now) {
         Market market = sanctionService.lockBrand(marketId);
-        if (market.getStatus() == MarketStatus.WITHDRAWN) {
+        if (market.isWithdrawn()) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWN);
         }
-        if (requestRepository.existsByMarketIdAndStatus(marketId, BrandWithdrawalStatus.PENDING)) {
+        if (requestRepository.existsByMarketIdAndStatus(marketId, MemberWithdrawalStatus.PENDING)) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWAL_ALREADY_PENDING);
         }
         eligibility.requireEligible(marketId);
         String requesterName = market.getSeller().getName();
         BrandWithdrawalRequest request = requestRepository.save(
-                BrandWithdrawalRequest.open(marketId, reason, normalize(message), requesterName, now));
+                BrandWithdrawalRequest.open(marketId, reason, MemberSanctionRules.trimToNull(message), requesterName, now));
         historyRecorder.byBrand(marketId, BrandAdminEventType.WITHDRAWAL_REQUESTED, request.getRequesterName(),
                 "사유: " + request.reasonLabel(), BrandAdminHistoryRecorder.REF_WITHDRAWAL, request.getId(), now);
         return request;
@@ -72,7 +74,7 @@ public class BrandWithdrawalService {
     public BrandWithdrawalRequest approve(Long marketId, Long requestId, Long operatorId, String operatorName,
                                           LocalDateTime now) {
         Market market = sanctionService.lockBrand(marketId);
-        if (market.getStatus() == MarketStatus.WITHDRAWN) {
+        if (market.isWithdrawn()) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWN);
         }
         BrandWithdrawalRequest request = lockPending(marketId, requestId);
@@ -82,11 +84,11 @@ public class BrandWithdrawalService {
         String recipient = seller.getEmail();
         request.approve(operatorId, operatorName, now);
         sanctionService.closeByWithdrawal(marketId, now);
-        market.setStatus(MarketStatus.WITHDRAWN);
+        market.markWithdrawn();
         purger.purge(seller, market, now);
         historyRecorder.byAdmin(marketId, BrandAdminEventType.WITHDRAWAL_APPROVED, operatorId, operatorName,
                 "사유: " + request.reasonLabel(), BrandAdminHistoryRecorder.REF_WITHDRAWAL, request.getId(), now);
-        AfterCommit.run(() -> notifier.withdrawalApproved(marketId, recipient));
+        AfterCommit.run(() -> notifier.withdrawalApproved(MemberType.BRAND, marketId, recipient));
         log.info("브랜드 탈퇴 승인 - marketId: {}, requestId: {}", marketId, requestId);
         return request;
     }
@@ -94,20 +96,15 @@ public class BrandWithdrawalService {
     /** 반려(어드민 M3) — 회원 상태는 건드리지 않는다(내내 활성). 브랜드는 즉시 재신청할 수 있다(새 행). */
     public BrandWithdrawalRequest reject(Long marketId, Long requestId, BrandWithdrawalRejectReason reason, String note,
                                          Long operatorId, String operatorName, LocalDateTime now) {
-        if (reason == null) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "반려 사유를 선택해 주세요.");
-        }
-        String normalized = normalize(note);
-        if (reason.isDetailRequired() && normalized == null) {
-            throw new BusinessException(ErrorCode.BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED);
-        }
+        String normalized = MemberSanctionRules.requireDetail(reason, note,
+                ErrorCode.BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED);
         sanctionService.lockBrand(marketId);
         BrandWithdrawalRequest request = lockPending(marketId, requestId);
         request.reject(reason, normalized, operatorId, operatorName, now);
         historyRecorder.byAdmin(marketId, BrandAdminEventType.WITHDRAWAL_REJECTED, operatorId, operatorName,
-                normalized == null ? reason.getLabel() : reason.getLabel() + " — " + normalized,
+                MemberSanctionRules.reasonText(reason, normalized),
                 BrandAdminHistoryRecorder.REF_WITHDRAWAL, request.getId(), now);
-        AfterCommit.run(() -> notifier.withdrawalRejected(marketId, reason.getLabel()));
+        AfterCommit.run(() -> notifier.withdrawalRejected(MemberType.BRAND, marketId, reason.getLabel()));
         return request;
     }
 
@@ -119,9 +116,5 @@ public class BrandWithdrawalService {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWAL_NOT_PENDING);
         }
         return request;
-    }
-
-    private static String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
     }
 }

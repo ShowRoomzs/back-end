@@ -4,8 +4,9 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.member.common.entity.AdminMemo;
+import showroomz.domain.member.common.service.AdminMemoPolicy;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 
 /**
@@ -18,10 +19,7 @@ import java.time.LocalDateTime;
 @Table(name = "brand_admin_memo")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class BrandAdminMemo {
-
-    public static final int MAX_LENGTH = 300;
-    public static final Duration EDIT_WINDOW = Duration.ofHours(24);
+public class BrandAdminMemo implements AdminMemo {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,7 +35,7 @@ public class BrandAdminMemo {
     @Column(name = "author_name", nullable = false, length = 64)
     private String authorName;
 
-    @Column(name = "content", nullable = false, length = MAX_LENGTH)
+    @Column(name = "content", nullable = false, length = AdminMemoPolicy.MAX_LENGTH)
     private String content;
 
     @Column(name = "created_at", nullable = false)
@@ -58,14 +56,6 @@ public class BrandAdminMemo {
         memo.content = content;
         memo.createdAt = now;
         return memo;
-    }
-
-    public boolean isAuthor(Long operatorId) {
-        return authorId.equals(operatorId);
-    }
-
-    public boolean isWithinEditWindow(LocalDateTime now) {
-        return !createdAt.plus(EDIT_WINDOW).isBefore(now);
     }
 
     public void edit(String content, LocalDateTime now) {

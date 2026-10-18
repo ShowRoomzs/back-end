@@ -12,16 +12,10 @@ import showroomz.api.admin.creator.service.AdminCreatorMemoService;
 import showroomz.api.admin.creator.service.AdminCreatorPrivacyService;
 import showroomz.api.admin.creator.service.AdminCreatorQueryService;
 import showroomz.api.app.auth.entity.UserPrincipal;
-import showroomz.domain.member.brand.type.SanctionReleaseReason;
-import showroomz.domain.member.creator.type.CreatorPrivacyAccessReason;
-import showroomz.domain.member.creator.type.CreatorSuspensionReason;
-import showroomz.domain.member.creator.type.CreatorWithdrawalRejectReason;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
-import java.util.Arrays;
-import java.util.List;
 
 @RestController
 @RequestMapping("/v1/admin/creators")
@@ -36,16 +30,7 @@ public class AdminCreatorController implements AdminCreatorControllerDocs {
     @Override
     @GetMapping("/reason-options")
     public ReasonOptions reasonOptions() {
-        List<Option> suspension = Arrays.stream(CreatorSuspensionReason.values())
-                .map(r -> new Option(r.name(), r.getLabel(), r.isDetailRequired(), r.isHoldsPayout())).toList();
-        List<Option> release = Arrays.stream(SanctionReleaseReason.values())
-                .filter(r -> r != SanctionReleaseReason.WITHDRAWN)
-                .map(r -> new Option(r.name(), r.getLabel(), false, null)).toList();
-        List<Option> reject = Arrays.stream(CreatorWithdrawalRejectReason.values())
-                .map(r -> new Option(r.name(), r.getLabel(), r.isDetailRequired(), null)).toList();
-        List<Option> unmask = Arrays.stream(CreatorPrivacyAccessReason.values())
-                .map(r -> new Option(r.name(), r.getLabel(), false, null)).toList();
-        return new ReasonOptions(suspension, release, reject, unmask);
+        return queries.reasonOptions();
     }
 
     @Override

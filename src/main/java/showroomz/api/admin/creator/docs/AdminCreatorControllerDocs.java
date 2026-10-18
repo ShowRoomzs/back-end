@@ -83,7 +83,7 @@ public interface AdminCreatorControllerDocs {
     Detail release(Long creatorId, ReleaseRequest request, @Parameter(hidden = true) UserPrincipal principal);
 
     @Operation(summary = "탈퇴 승인(M2)", description = """
-            조건(끝나지 않은 공구 · 계약 · 미정산)을 다시 판정해 하나라도 남으면 409 CREATOR_WITHDRAWAL_CONDITION_UNMET(건수는 메시지에)
+            조건(끝나지 않은 공구 · 계약 · 미정산)을 다시 판정해 하나라도 남으면 409 CREATOR_WITHDRAWAL_CONDITION_UNMET(응답 최상위 `unmet` 에 조건별 건수)
             — 반려로 처리한다. 승인하면 쇼룸 비공개 · 브랜드 연결 일괄 종료 · 본인확인 · 정산 정보 즉시 파기 · 스튜디오 자격 해지
             (소비자 계정 유지). 주민등록번호 · 사업자등록번호는 세무 보존(파기 시점은 법률 자문 대기). 되돌릴 수 없다.""")
     Detail approveWithdrawal(Long creatorId, Long requestId, @Parameter(hidden = true) UserPrincipal principal);

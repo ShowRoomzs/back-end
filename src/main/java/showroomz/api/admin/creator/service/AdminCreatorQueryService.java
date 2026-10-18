@@ -4,17 +4,22 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.common.AdminPrivilege;
-import showroomz.api.admin.creator.AdminCreatorMasker;
-import showroomz.api.admin.creator.AdminCreatorNumber;
+import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.MemberNumber;
 import showroomz.api.admin.creator.dto.AdminCreatorDto.*;
 import showroomz.api.admin.creator.repository.AdminCreatorQueryRepository;
+import showroomz.api.seller.auth.repository.SellerRepository;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.type.WithholdingType;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.history.type.DeviceType;
+import showroomz.domain.member.common.type.MemberType;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.member.creator.entity.CreatorPrivacyAccessLog;
@@ -26,12 +31,15 @@ import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.CreatorSanctionRepository;
 import showroomz.domain.member.creator.repository.CreatorSettlementAccountHistoryRepository;
 import showroomz.domain.member.creator.repository.CreatorWithdrawalRequestRepository;
+import showroomz.domain.member.creator.service.CreatorAdminHistoryReader;
 import showroomz.domain.member.creator.service.CreatorWithdrawalEligibility;
 import showroomz.domain.member.creator.type.CreatorApplicationStatus;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
+import showroomz.domain.member.creator.type.CreatorPrivacyAccessReason;
 import showroomz.domain.member.creator.type.CreatorStatus;
+import showroomz.domain.member.creator.type.CreatorSuspensionReason;
 import showroomz.domain.member.creator.type.CreatorWithdrawalCondition;
-import showroomz.domain.member.creator.type.CreatorWithdrawalStatus;
+import showroomz.domain.member.creator.type.CreatorWithdrawalRejectReason;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.repository.PostNotificationLogRepository;
 import showroomz.domain.settlement.adjustment.entity.SettlementAdjustment;
@@ -40,7 +48,6 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.type.SettlementPayee;
-import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -49,6 +56,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -77,13 +85,13 @@ public class AdminCreatorQueryService {
     private final CreatorFollowRepository follows;
     private final CreatorWithdrawalEligibility eligibility;
     private final AdminCreatorQueryRepository queries;
-    private final AdminCreatorHistoryReader historyReader;
+    private final CreatorAdminHistoryReader historyReader;
     private final AdminPrivilege privilege;
     private final SettlementPayoutRepository payouts;
     private final SettlementAdjustmentRepository adjustments;
     private final PostNotificationLogRepository postNotificationLogs;
     private final SellerRepository sellers;
-    private final showroomz.domain.changerequest.repository.BrandChangeRequestRepository changeRequests;
+    private final ChangeRequestRepository changeRequests;
 
     @Value("${showroomz.showroom.base-url:https://showroomz.kr/}")
     private String showroomBaseUrl;
@@ -115,7 +123,7 @@ public class AdminCreatorQueryService {
                 !creator.isWithdrawn(), creator.getInstagramUrl(), creator.getBusinessEmail(), creator.getCreatedAt(),
                 approvedAt, user.getLastLoginAt(), device);
 
-        return new Detail(creator.getId(), AdminCreatorNumber.format(creator.getId()), creator.getStatus(),
+        return new Detail(creator.getId(), MemberNumber.format(MemberType.CREATOR, creator.getId()), creator.getStatus(),
                 creator.getStatus().getLabel(), creator.getStatus().getTone(), basic,
                 identity(creator, user, unmasked, purged, now), unmask(creator, operatorId, session, purged, now),
                 business(creator, purged), settlementAccount(creator, purged),
@@ -127,13 +135,13 @@ public class AdminCreatorQueryService {
             return new Identity(true, false, null, null, null, null, null, null, null);
         }
         if (unmasked) {
-            return new Identity(false, true, creator.getRealName(), AdminCreatorMasker.formatBirthday(creator.getBirthday()),
-                    age(creator.getBirthday(), now.toLocalDate()), AdminCreatorMasker.formatPhone(creator.getPhoneNumber()),
+            return new Identity(false, true, creator.getRealName(), AdminMemberMasker.formatBirthday(creator.getBirthday()),
+                    age(creator.getBirthday(), now.toLocalDate()), AdminMemberMasker.formatPhone(creator.getPhoneNumber()),
                     null, user.getIdentityVerifiedAt(), null);
         }
-        return new Identity(false, false, AdminCreatorMasker.maskName(creator.getRealName()),
-                AdminCreatorMasker.maskBirthdayYearOnly(creator.getBirthday()), null,
-                AdminCreatorMasker.maskPhone(creator.getPhoneNumber()), null, user.getIdentityVerifiedAt(), null);
+        return new Identity(false, false, AdminMemberMasker.maskName(creator.getRealName()),
+                AdminMemberMasker.maskBirthdayYearOnly(creator.getBirthday()), null,
+                AdminMemberMasker.maskPhone(creator.getPhoneNumber()), null, user.getIdentityVerifiedAt(), null);
     }
 
     private Unmask unmask(Creator creator, Long operatorId, CreatorPrivacyAccessLog session, boolean purged,
@@ -175,14 +183,12 @@ public class AdminCreatorQueryService {
                 .map(h -> new AccountChange(h.getChangedAt(), h.getPreviousBankName(), h.getPreviousLast4()))
                 .orElse(null);
         // 53 설계서가 비워 둔 자리 — 열린 사업자 구분 변경 요청(§16-2a · 16 설계서 5-1).
-        PendingBusinessTypeChange pending = changeRequests
-                .findFirstByCreator_IdAndStatusOrderByRequestedAtDesc(creator.getId(),
-                        showroomz.domain.changerequest.type.ChangeRequestStatus.PENDING)
+        PendingBusinessTypeChange pending = changeRequests.findOpenForCreator(creator.getId())
                 .map(r -> new PendingBusinessTypeChange(r.getId(), r.getRequestCode(), r.getType().name(),
                         r.getRequestedAt()))
                 .orElse(null);
-        return new SettlementAccount(false, creator.getBankName(), AdminCreatorMasker.maskName(creator.getRealName()),
-                AdminCreatorMasker.maskAccountNumber(creator.getAccountNumber()), change, pending);
+        return new SettlementAccount(false, creator.getBankName(), AdminMemberMasker.maskName(creator.getRealName()),
+                AdminMemberMasker.maskAccountNumber(creator.getAccountNumber()), change, pending);
     }
 
     private Rail rail(Creator creator, Users user, LocalDateTime approvedAt, LocalDateTime now) {
@@ -195,7 +201,7 @@ public class AdminCreatorQueryService {
         }
         if (creator.isWithdrawn()) {
             CreatorWithdrawalRequest approved = withdrawalRequests
-                    .findFirstByCreatorIdAndStatusOrderByProcessedAtDesc(creator.getId(), CreatorWithdrawalStatus.APPROVED)
+                    .findFirstByCreatorIdAndStatusOrderByProcessedAtDesc(creator.getId(), MemberWithdrawalStatus.APPROVED)
                     .orElse(null);
             withdrawal = new Withdrawal(creator.getWithdrawnAt(), approved == null ? null : approved.getRequestedAt(),
                     approved == null ? null : approved.getProcessedByName());
@@ -205,12 +211,12 @@ public class AdminCreatorQueryService {
                 withdrawal);
 
         WithdrawalReview review = creator.isWithdrawn() ? null : withdrawalRequests
-                .findFirstByCreatorIdAndStatusOrderByRequestedAtDesc(creator.getId(), CreatorWithdrawalStatus.PENDING)
+                .findFirstByCreatorIdAndStatusOrderByRequestedAtDesc(creator.getId(), MemberWithdrawalStatus.PENDING)
                 .map(r -> review(r, now))
                 .orElse(null);
         List<OpenAdjustment> openAdjustments = creator.isWithdrawn() ? List.of()
                 : queries.findOpenAdjustments(creator.getId()).stream().map(AdminCreatorQueryService::adjustmentOf).toList();
-        List<HistoryItem> histories = historyReader.read(creator);
+        List<HistoryItem> histories = histories(creator);
         int railSize = review == null ? RAIL_HISTORY_SIZE : RAIL_HISTORY_SIZE_WITH_REVIEW;
         return new Rail(current, queries.findOperatorChannelThreadId(creator.getId()).orElse(null), openAdjustments,
                 review, histories.stream().limit(railSize).toList(), histories.size());
@@ -331,16 +337,36 @@ public class AdminCreatorQueryService {
         return new ConnectionList(content.size(), content);
     }
 
+    // ------------------------------------------------------------------ 모달 사유 목록
+
+    /** 정지 · 해제 · 탈퇴 반려 · 마스킹 해제 사유의 코드와 라벨 — 단일 소스(브랜드 상세와 같은 조립식). */
+    public ReasonOptions reasonOptions() {
+        return new ReasonOptions(
+                AdminReasonOption.suspension(CreatorSuspensionReason.values()),
+                AdminReasonOption.memberRelease(),
+                AdminReasonOption.of(CreatorWithdrawalRejectReason.values()),
+                Arrays.stream(CreatorPrivacyAccessReason.values())
+                        .map(r -> AdminReasonOption.label(r.name(), r.getLabel()))
+                        .toList());
+    }
+
     // ------------------------------------------------------------------ 3-6 처리 이력
 
     public HistoryPage histories(Long creatorId, int page, int size) {
         Creator creator = load(creatorId);
-        List<HistoryItem> all = historyReader.read(creator);
+        List<HistoryItem> all = histories(creator);
         int safeSize = Math.min(Math.max(size, 1), 100);
         int safePage = Math.max(page, 1);
         int from = Math.min((safePage - 1) * safeSize, all.size());
         int to = Math.min(from + safeSize, all.size());
         return new HistoryPage(all.size(), safePage, safeSize, all.subList(from, to));
+    }
+
+    private List<HistoryItem> histories(Creator creator) {
+        return historyReader.read(creator).stream()
+                .map(item -> new HistoryItem(item.historyId(), item.type(), item.type().getLabel(), item.type().getTone(),
+                        item.detail(), item.actorType(), item.actorName(), item.refType(), item.refId(), item.occurredAt()))
+                .toList();
     }
 
     // ------------------------------------------------------------------ 공통

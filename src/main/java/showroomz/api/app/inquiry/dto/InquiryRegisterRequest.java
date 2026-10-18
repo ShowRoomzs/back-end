@@ -35,4 +35,13 @@ public class InquiryRegisterRequest {
             + "본인 클레임이고 반려 보류 중이어야 하며, 문의 유형은 CANCEL_EXCHANGE_RETURN 이어야 한다. "
             + "orderId 를 비우면 클레임의 주문으로 채운다", example = "3008")
     private Long claimId;
+
+    @Schema(description = "계정 이용 정지 소명(선택) — 정지 안내 시트의 「1:1 문의로 이의 신청」(C20 1d)으로 쓸 때만 true. "
+            + "이용 정지 중일 때만 쓸 수 있고, 유형은 ACCOUNT · orderId · claimId 는 비워야 한다. 답변 전 소명 문의가 이미 있으면 409",
+            example = "true")
+    private Boolean sanctionAppeal;
+
+    public boolean isSanctionAppeal() {
+        return Boolean.TRUE.equals(sanctionAppeal);
+    }
 }

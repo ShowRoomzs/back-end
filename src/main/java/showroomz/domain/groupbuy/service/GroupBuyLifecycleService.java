@@ -12,6 +12,7 @@ import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.global.config.properties.GroupBuyProperties;
 
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 public class GroupBuyLifecycleService {
 
     private final GroupBuyRepository groupBuyRepository;
+    private final BrandSanctionGuard brandSanctionGuard;
     private final GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
     private final GroupBuyHistoryRecorder historyRecorder;
     private final ProductGroupBuyStatusSynchronizer productSynchronizer;
@@ -74,7 +76,7 @@ public class GroupBuyLifecycleService {
         }
         // 브랜드 정지 중에는 오픈 전 공구를 열지 않는다(§51-1 · 52 설계서 7절) — 예외가 아니라 건너뛴다(배치가 멈추면 안 된다).
         // 준비완료로 남아 있다가 해제 뒤 다음 틱에 열린다.
-        if (showroomz.domain.member.brand.service.BrandSanctionGuard.isSuspended(groupBuy.getMarket())) {
+        if (brandSanctionGuard.isSuspended(groupBuy.getMarket())) {
             return false;
         }
         if (groupBuyRepository.transition(groupBuyId, EnumSet.of(GroupBuyStatus.READY), GroupBuyStatus.IN_PROGRESS) != 1) {

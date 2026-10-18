@@ -3,6 +3,7 @@ package showroomz.api.admin.creator.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.FixedFeeTrigger;
@@ -290,11 +291,8 @@ public final class AdminCreatorDto {
     }
 
     @Schema(description = "모달 셀렉트의 단일 소스")
-    public record ReasonOptions(List<Option> suspensionReasons, List<Option> releaseReasons,
-                                List<Option> withdrawalRejectReasons, List<Option> privacyUnmaskReasons) {
-    }
-
-    public record Option(String code, String label, boolean detailRequired,
-                         @Schema(description = "정지 사유 — 리워드 지급 정지 여부") Boolean holdsPayout) {
+    public record ReasonOptions(List<AdminReasonOption> suspensionReasons, List<AdminReasonOption> releaseReasons,
+                                List<AdminReasonOption> withdrawalRejectReasons,
+                                List<AdminReasonOption> privacyUnmaskReasons) {
     }
 }

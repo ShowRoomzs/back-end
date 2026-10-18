@@ -181,27 +181,21 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "    showroomz.domain.settlement.type.PayoutStatus.PAID) AND p.requestedAt >= :since")
     long sumRecentForCreator(@Param("creatorId") Long creatorId, @Param("since") LocalDateTime since);
 
-    /** 브랜드의 PG 셀러 사유 보류 행 — {@code seller.changed} 승인이 즉시 푼다(4-3). */
-    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.market.id = :marketId "
-            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+    /**
+     * 한 회원 몫의 보류 행 중 주어진 사유 코드 — PG 셀러 사유는 {@code seller.changed} 승인이 즉시 푼다(4-3). 수취자 · 참조 id 로 고른다
+     * (브랜드 = {@code market_id} · 인플루언서 = {@code creator_id} · 정합 계획서 R2-1).
+     */
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "
+            + "AND p.payee = :payee AND ((p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND AND s.market.id = :refId) OR (p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR AND s.creator.id = :refId)) "
             + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED AND p.failCode IN :failCodes ORDER BY p.id ASC")
-    List<SettlementPayout> findBlockedForMarket(@Param("marketId") Long marketId, @Param("failCodes") Collection<String> failCodes);
+    List<SettlementPayout> findBlockedFor(@Param("payee") SettlementPayee payee, @Param("refId") Long refId,
+                                          @Param("failCodes") Collection<String> failCodes);
 
-    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
-            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
-            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED AND p.failCode IN :failCodes ORDER BY p.id ASC")
-    List<SettlementPayout> findBlockedForCreator(@Param("creatorId") Long creatorId, @Param("failCodes") Collection<String> failCodes);
-
-    /** 브랜드의 지급 예정 행 — 셀러가 KYC_REQUIRED 로 넘어가면 보류한다(4-3). */
-    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.market.id = :marketId "
-            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+    /** 한 회원 몫의 지급 예정 행 — 계정 정지 · 계좌 확인 · 셀러 대기(KYC_REQUIRED)가 보류로 옮긴다. */
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "
+            + "AND p.payee = :payee AND ((p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND AND s.market.id = :refId) OR (p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR AND s.creator.id = :refId)) "
             + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED ORDER BY p.id ASC")
-    List<SettlementPayout> findScheduledForMarket(@Param("marketId") Long marketId);
-
-    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
-            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
-            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED ORDER BY p.id ASC")
-    List<SettlementPayout> findScheduledForCreator(@Param("creatorId") Long creatorId);
+    List<SettlementPayout> findScheduledFor(@Param("payee") SettlementPayee payee, @Param("refId") Long refId);
 
     /** 참조 id 만 적는다(결과 모름 · 지시 중 통신 실패 뒤 복구) — 결과 조회 중 적는 메모(failCode)도 같은 자리. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -221,17 +215,20 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     int markPaidByPg(@Param("payoutId") Long payoutId, @Param("pgReference") String pgReference,
                      @Param("paidAt") LocalDateTime paidAt);
 
-    /** 파트너 등록 실패 — 확정된 행을 사유와 함께 보류(4-3). 예정일은 지운다(재판정이 다시 정한다). */
+    /**
+     * PG 셀러 사유 보류(4-3) — 확정된 행을 사유와 함께 보류. 예정일은 지운다(재판정이 다시 정한다). <b>영속성 컨텍스트를 비운다</b> — PG 호출
+     * 결과를 반영하는 짧은 트랜잭션 전용이다. 회원 사유(계정 정지 · 계좌 확인) 보류는 {@link #holdScheduled}를 쓴다({@code PayoutHoldTransitions}).
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
             + "p.dueDate = NULL, p.failCode = :failCode, p.failReason = :failReason "
             + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED")
-    int blockWithReason(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+    int blockForPartner(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
                         @Param("failReason") String failReason);
 
     /**
-     * 계정 정지 지급 보류(52 설계서 6-1) — {@link #blockWithReason}과 같은 전이지만 <b>영속성 컨텍스트를 비우지 않는다</b>. 정지 · 확정
-     * 트랜잭션이 붙들고 있는 마켓 · 정지 행이 준영속으로 떨어지면 그 뒤 변경이 저장되지 않는다.
+     * 회원 사유 지급 보류(계정 정지 · 계좌 확인 · 52 설계서 6-1) — {@link #blockForPartner}와 같은 전이지만 <b>영속성 컨텍스트를 비우지
+     * 않는다</b>. 정지 · 확정 트랜잭션이 붙들고 있는 마켓 · 정지 행이 준영속으로 떨어지면 그 뒤 변경이 저장되지 않는다.
      */
     @Modifying(flushAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
@@ -240,14 +237,17 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     int holdScheduled(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
                       @Param("failReason") String failReason);
 
-    /** 계정 정지 지급 보류 해제(52 설계서 6-2) — 그 사유로 보류된 행만 SCHEDULED(예정일)로. 영속성 컨텍스트는 비우지 않는다. */
+    /**
+     * 회원 사유 보류 해제(52 설계서 6-2 · 53 설계서 4-3) — 그 사유로 보류된 행을 SCHEDULED(예정일)로. {@code includeUncoded} 면 확정 때 정책
+     * 보류로 사유 없이 BLOCKED 가 된 행(인플루언서 몫)도 함께 올린다. 영속성 컨텍스트는 비우지 않는다.
+     */
     @Modifying(flushAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
             + "p.dueDate = :dueDate, p.failCode = NULL, p.failReason = NULL "
             + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
-            + "AND p.failCode = :failCode")
+            + "AND (p.failCode = :failCode OR (:includeUncoded = true AND p.failCode IS NULL))")
     int releaseHold(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
-                    @Param("dueDate") LocalDate dueDate);
+                    @Param("includeUncoded") boolean includeUncoded, @Param("dueDate") LocalDate dueDate);
 
     /** 이미 보류 중인 행의 사유 갱신(주민등록번호 보류에 파트너 사유를 덧붙일 때 · 재시도 실패 사유 변경). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -313,24 +313,16 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
     // ------------------------------------------------------------------ 인플루언서 계정 정지(53 설계서 4-3)
 
     /**
-     * 인플루언서 몫 보류 행 중 정지 해제가 다시 판정할 것 — 정지 사유 코드 행 + 확정 때 정책 보류로 사유 없이 BLOCKED 가 된 행.
+     * 회원 사유 해제가 다시 판정할 보류 행 — 그 사유 코드 행(+ {@code includeUncoded} 면 확정 때 정책 보류로 사유 없이 BLOCKED 가 된 행).
      * PG 셀러 사유 행은 셀러 재판정이 푼다(제외).
      */
-    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.creator.id = :creatorId "
-            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "
+            + "AND p.payee = :payee AND ((p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND AND s.market.id = :refId) OR (p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR AND s.creator.id = :refId)) "
             + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
-            + "AND (p.failCode IS NULL OR p.failCode = :suspendedCode) ORDER BY p.id ASC")
-    List<SettlementPayout> findCreatorRowsForSuspensionRelease(@Param("creatorId") Long creatorId,
-                                                               @Param("suspendedCode") String suspendedCode);
-
-    /** 정지 해제 — 그 행을 SCHEDULED(예정일)로. 영속성 컨텍스트는 비우지 않는다(해제 트랜잭션이 정지 행을 붙들고 있다). */
-    @Modifying(flushAutomatically = true)
-    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
-            + "p.dueDate = :dueDate, p.failCode = NULL, p.failReason = NULL "
-            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
-            + "AND (p.failCode IS NULL OR p.failCode = :suspendedCode)")
-    int releaseCreatorSuspension(@Param("payoutId") Long payoutId, @Param("suspendedCode") String suspendedCode,
-                                 @Param("dueDate") LocalDate dueDate);
+            + "AND (p.failCode = :failCode OR (:includeUncoded = true AND p.failCode IS NULL)) ORDER BY p.id ASC")
+    List<SettlementPayout> findRowsForRelease(@Param("payee") SettlementPayee payee, @Param("refId") Long refId,
+                                              @Param("failCode") String failCode,
+                                              @Param("includeUncoded") boolean includeUncoded);
 
     /**
      * 스튜디오 계좌 변경 모달(50 설계서 6-1) — 인플루언서 몫 지급 행의 상태별 [status, count, amount]. 예정 · 보류는 변경하면 확인이 끝날 때까지
@@ -344,10 +336,10 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "                 showroomz.domain.settlement.type.PayoutStatus.REQUESTED) GROUP BY p.status")
     List<Object[]> aggregateCreatorPendingPayouts(@Param("creatorId") Long creatorId);
 
-    /** 정지는 풀렸지만 다른 보류 사유(세금계산서 · 주민등록번호)가 남았다 — 정지 사유만 지우고 BLOCKED 로 둔다(기존 재판정이 푼다). */
+    /** 그 사유는 풀렸지만 다른 보류 사유(세금계산서 · 주민등록번호 · 다른 정지)가 남았다 — 그 사유 코드만 지우고 BLOCKED 로 둔다(재판정이 푼다). */
     @Modifying(flushAutomatically = true)
     @Query("UPDATE SettlementPayout p SET p.failCode = NULL, p.failReason = NULL "
             + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
-            + "AND p.failCode = :suspendedCode")
-    int clearCreatorSuspensionCode(@Param("payoutId") Long payoutId, @Param("suspendedCode") String suspendedCode);
+            + "AND p.failCode = :failCode")
+    int clearHoldCode(@Param("payoutId") Long payoutId, @Param("failCode") String failCode);
 }

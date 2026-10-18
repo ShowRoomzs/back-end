@@ -9,6 +9,8 @@ import showroomz.api.app.post.DTO.PostReportReasonItem;
 import showroomz.api.app.post.DTO.PostReportRequest;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostReport;
 import showroomz.domain.post.repository.PostReportRepository;
@@ -56,6 +58,7 @@ public class UserPostReportService {
     public void reportPost(String username, Long postId, PostReportRequest request) {
         Users reporter = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        UserSanctionGuard.requireNotSuspended(reporter, UserBlockedAction.POST_REPORT);
 
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));

@@ -45,6 +45,12 @@ public class AdminBrandController implements AdminBrandControllerDocs {
     }
 
     @Override
+    @GetMapping("/reason-options")
+    public AdminBrandDto.ReasonOptions reasonOptions() {
+        return queries.reasonOptions();
+    }
+
+    @Override
     @GetMapping("/{marketId}")
     public AdminBrandDto.Detail detail(@PathVariable Long marketId, @AuthenticationPrincipal UserPrincipal principal) {
         return queries.detail(marketId, operator(principal));

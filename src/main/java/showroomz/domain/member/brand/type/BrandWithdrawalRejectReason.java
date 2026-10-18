@@ -2,6 +2,7 @@ package showroomz.domain.member.brand.type;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import showroomz.domain.member.common.type.ReasonType;
 
 /**
  * 탈퇴 반려 사유(M3) — 신청 화면의 조건 축과 같다(§51-5 「무엇이 걸렸는지 회원이 바로 알아야 재신청이 성립한다」). 시안 5종에 체결 전
@@ -9,7 +10,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Getter
 @RequiredArgsConstructor
-public enum BrandWithdrawalRejectReason {
+public enum BrandWithdrawalRejectReason implements ReasonType {
     CLAIM_UNRESOLVED("반품·교환 처리 미완료"),
     UNSHIPPED_ORDERS("미배송 주문 잔존"),
     ACTIVE_GROUP_BUYS("진행중 공구 잔존"),

@@ -18,6 +18,8 @@ import showroomz.domain.member.creator.repository.CreatorFollowEventRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.service.PostAttributionService;
 import showroomz.global.dto.PageResponse;
@@ -55,6 +57,7 @@ public class ShowroomFollowService {
      */
     public void followShowroom(String username, Long showroomId) {
         Users user = getUser(username);
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.FOLLOW);
         Creator creator = getCreator(showroomId);
 
         if (!creatorFollowRepository.existsByUserAndCreator(user, creator)) {

@@ -1,7 +1,6 @@
 package showroomz.api.common.performance.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import showroomz.domain.performance.type.FigureState;
 
 /**
  * 성과 지표 값 하나(48 파트너 설계서 0-5) — 값 · 상태 · 원래 값 · 근거 문장. 어느 값이 어느 상태인지는 서버가 정한다.

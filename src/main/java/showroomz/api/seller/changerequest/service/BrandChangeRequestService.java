@@ -6,7 +6,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.global.utils.SettlementAccountMasker;
 import showroomz.api.seller.changerequest.dto.ChangeRequestBannerResponse;
 import showroomz.api.seller.changerequest.dto.ChangeRequestCreateResponse;
 import showroomz.api.seller.changerequest.dto.ChangeRequestFieldOption;
@@ -14,8 +13,8 @@ import showroomz.api.seller.changerequest.dto.ChangeRequestItemRequest;
 import showroomz.api.seller.changerequest.dto.CreateChangeRequestRequest;
 import showroomz.domain.bank.entity.Bank;
 import showroomz.domain.bank.repository.BankRepository;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.service.ChangeRequestCodeGenerator;
 import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;
 import showroomz.domain.changerequest.type.ChangeRequestField;
@@ -27,6 +26,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.SettlementAccountMasker;
 
 import java.util.List;
 import java.util.Set;
@@ -42,7 +42,7 @@ public class BrandChangeRequestService {
 
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
-    private final BrandChangeRequestRepository brandChangeRequestRepository;
+    private final ChangeRequestRepository changeRequestRepository;
     private final BankRepository bankRepository;
     private final ChangeRequestCodeGenerator codeGenerator;
 
@@ -62,7 +62,7 @@ public class BrandChangeRequestService {
     public ChangeRequestBannerResponse getBanner(String sellerEmail, ChangeRequestType type) {
         requireBrandType(type);
         Market market = getMyMarket(sellerEmail);
-        List<BrandChangeRequest> candidates = brandChangeRequestRepository.findBannerCandidates(
+        List<ChangeRequest> candidates = changeRequestRepository.findBannerCandidates(
                 market.getId(), type, ChangeRequestStatus.PENDING,
                 List.of(ChangeRequestStatus.APPROVED, ChangeRequestStatus.REJECTED), PageRequest.of(0, 1));
         if (candidates.isEmpty()) {
@@ -80,12 +80,12 @@ public class BrandChangeRequestService {
 
         validateCreateRequest(type, request);
 
-        if (brandChangeRequestRepository.findByMarket_IdAndTypeAndStatus(market.getId(), type, ChangeRequestStatus.PENDING).isPresent()) {
+        if (changeRequestRepository.findByMarket_IdAndTypeAndStatus(market.getId(), type, ChangeRequestStatus.PENDING).isPresent()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ALREADY_PENDING);
         }
 
         String requestCode = codeGenerator.next();
-        BrandChangeRequest changeRequest = BrandChangeRequest.create(
+        ChangeRequest changeRequest = ChangeRequest.create(
                 requestCode, market, type, request.getReason(), seller.getName(),
                 request.getEvidenceFileUrl(), request.getEvidenceFileName(), request.getEvidenceFileSize());
 
@@ -104,7 +104,7 @@ public class BrandChangeRequestService {
         }
 
         try {
-            brandChangeRequestRepository.save(changeRequest);
+            changeRequestRepository.save(changeRequest);
         } catch (DataIntegrityViolationException e) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ALREADY_PENDING);
         }
@@ -121,7 +121,7 @@ public class BrandChangeRequestService {
 
     @Transactional
     public void cancel(String sellerEmail, Long requestId) {
-        BrandChangeRequest changeRequest = getOwnedRequest(sellerEmail, requestId);
+        ChangeRequest changeRequest = getOwnedRequest(sellerEmail, requestId);
         if (!changeRequest.isPending()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
         }
@@ -130,16 +130,16 @@ public class BrandChangeRequestService {
 
     @Transactional
     public void acknowledge(String sellerEmail, Long requestId) {
-        BrandChangeRequest changeRequest = getOwnedRequest(sellerEmail, requestId);
+        ChangeRequest changeRequest = getOwnedRequest(sellerEmail, requestId);
         if (changeRequest.getStatus() != ChangeRequestStatus.APPROVED && changeRequest.getStatus() != ChangeRequestStatus.REJECTED) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
         changeRequest.acknowledge();
     }
 
-    private BrandChangeRequest getOwnedRequest(String sellerEmail, Long requestId) {
+    private ChangeRequest getOwnedRequest(String sellerEmail, Long requestId) {
         Market market = getMyMarket(sellerEmail);
-        BrandChangeRequest changeRequest = brandChangeRequestRepository.findById(requestId)
+        ChangeRequest changeRequest = changeRequestRepository.findById(requestId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_FOUND));
         // 인플루언서 요청(market 없음)은 브랜드 것이 아니다 — NPE(500)가 아니라 403(16 설계서 1-12).
         if (changeRequest.getMarket() == null || !changeRequest.getMarket().getId().equals(market.getId())) {
@@ -198,7 +198,7 @@ public class BrandChangeRequestService {
         return items.stream().filter(i -> i.getFieldKey() == field).findFirst().orElse(null);
     }
 
-    private ChangeRequestBannerResponse toBanner(BrandChangeRequest request) {
+    private ChangeRequestBannerResponse toBanner(ChangeRequest request) {
         List<String> changedFieldLabels = request.getItems().stream()
                 .sorted((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
                 .map(item -> item.getFieldKey().getLabel())
@@ -228,7 +228,7 @@ public class BrandChangeRequestService {
         return builder.build();
     }
 
-    private String resolveRejectReasonText(BrandChangeRequest request) {
+    private String resolveRejectReasonText(ChangeRequest request) {
         if (request.getStatus() != ChangeRequestStatus.REJECTED || request.getRejectReason() == null) {
             return null;
         }
@@ -239,10 +239,10 @@ public class BrandChangeRequestService {
         }
     }
 
-    private String findItemValue(BrandChangeRequest request, ChangeRequestField field) {
+    private String findItemValue(ChangeRequest request, ChangeRequestField field) {
         return request.getItems().stream()
                 .filter(i -> i.getFieldKey() == field)
-                .map(showroomz.domain.changerequest.entity.BrandChangeRequestItem::getRequestedValue)
+                .map(showroomz.domain.changerequest.entity.ChangeRequestItem::getRequestedValue)
                 .findFirst().orElse(null);
     }
 

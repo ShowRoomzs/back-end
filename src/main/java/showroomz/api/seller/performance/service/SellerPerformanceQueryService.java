@@ -16,12 +16,12 @@ import showroomz.domain.performance.repository.GroupBuyCostRepository;
 import showroomz.domain.performance.repository.PerformanceGroupBuyQueryRepository;
 import showroomz.domain.performance.service.GroupBuyPerformanceReader;
 import showroomz.domain.performance.service.PerformanceFacts;
-import showroomz.domain.performance.type.PerformanceSort;
+import showroomz.domain.performance.type.GroupBuyPerformanceSort;
 import showroomz.domain.performance.type.PerformanceStatus;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.repository.SettlementRepository;
-import showroomz.global.dto.PagingRequest;
 import showroomz.global.dto.PaginationInfo;
+import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -56,10 +56,10 @@ public class SellerPerformanceQueryService {
     // ------------------------------------------------------------------ 목록(3-2)
 
     public SellerPerformanceDto.ListPage getList(String sellerEmail, Set<PerformanceStatus> statuses, String keyword,
-                                                 PerformanceSort sort, PagingRequest paging) {
+                                                 GroupBuyPerformanceSort sort, PagingRequest paging) {
         Market market = accessGuard.resolve(sellerEmail).market();
         Page<GroupBuy> page = queryRepository.searchForMarket(market.getId(), statuses, keyword,
-                sort == null ? PerformanceSort.ENDED_DESC : sort, pageable(paging));
+                sort == null ? GroupBuyPerformanceSort.ENDED_DESC : sort, pageable(paging));
         Map<Long, PerformanceFacts> rows = reader.readRows(page.getContent());
         List<SellerPerformanceDto.ListItem> items = page.getContent().stream()
                 .map(groupBuy -> assembler.listItem(groupBuy, rows.get(groupBuy.getId()))).toList();

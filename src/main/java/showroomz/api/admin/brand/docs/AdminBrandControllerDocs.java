@@ -119,4 +119,8 @@ public interface AdminBrandControllerDocs {
 
     @Operation(summary = "연결 인플루언서 전체", description = "연결중 먼저(최근 연결순) → 연결 종료(최근 종료순). 행 클릭 → 인플루언서 상세.")
     AdminBrandDto.ConnectedCreatorPage connectedCreators(Long marketId, PagingRequest paging);
+
+    @Operation(summary = "모달 셀렉트 사유 목록",
+            description = "정지(지급 정지 여부 포함) · 정지 해제 · 탈퇴 반려 사유의 코드와 라벨 — enum 단일 소스. 인플루언서 상세의 같은 API 와 같은 모양입니다.")
+    AdminBrandDto.ReasonOptions reasonOptions();
 }

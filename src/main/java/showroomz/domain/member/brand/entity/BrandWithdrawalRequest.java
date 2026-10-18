@@ -6,7 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import showroomz.domain.member.brand.type.BrandWithdrawalReason;
 import showroomz.domain.member.brand.type.BrandWithdrawalRejectReason;
-import showroomz.domain.member.brand.type.BrandWithdrawalStatus;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 
 import java.time.LocalDateTime;
 
@@ -33,7 +33,7 @@ public class BrandWithdrawalRequest {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private BrandWithdrawalStatus status;
+    private MemberWithdrawalStatus status;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "reason", length = 40)
@@ -72,7 +72,7 @@ public class BrandWithdrawalRequest {
                                               String requesterName, LocalDateTime now) {
         BrandWithdrawalRequest request = new BrandWithdrawalRequest();
         request.marketId = marketId;
-        request.status = BrandWithdrawalStatus.PENDING;
+        request.status = MemberWithdrawalStatus.PENDING;
         request.reason = reason;
         request.message = message;
         request.requesterName = requesterName == null || requesterName.isBlank() ? "브랜드 담당자" : requesterName;
@@ -81,11 +81,11 @@ public class BrandWithdrawalRequest {
     }
 
     public boolean isPending() {
-        return status == BrandWithdrawalStatus.PENDING;
+        return status == MemberWithdrawalStatus.PENDING;
     }
 
     public void approve(Long operatorId, String operatorName, LocalDateTime now) {
-        this.status = BrandWithdrawalStatus.APPROVED;
+        this.status = MemberWithdrawalStatus.APPROVED;
         this.processedAt = now;
         this.processedBy = operatorId;
         this.processedByName = operatorName;
@@ -93,7 +93,7 @@ public class BrandWithdrawalRequest {
 
     public void reject(BrandWithdrawalRejectReason reason, String note, Long operatorId, String operatorName,
                        LocalDateTime now) {
-        this.status = BrandWithdrawalStatus.REJECTED;
+        this.status = MemberWithdrawalStatus.REJECTED;
         this.rejectReason = reason;
         this.rejectNote = note;
         this.processedAt = now;
@@ -102,7 +102,7 @@ public class BrandWithdrawalRequest {
     }
 
     public void cancel(LocalDateTime now) {
-        this.status = BrandWithdrawalStatus.CANCELED;
+        this.status = MemberWithdrawalStatus.CANCELED;
         this.canceledAt = now;
     }
 

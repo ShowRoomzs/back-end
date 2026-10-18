@@ -3,6 +3,9 @@ package showroomz.domain.settlement.type;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Optional;
+import java.util.Set;
+
 /**
  * 지급 보류 사유(44 어드민 설계서 5-4 · 44 토스 설계서 4-3 · 5-5). 앞 둘은 인플루언서 몫만 막고({@code PayoutBlockPolicy}), PG 셀러
  * 사유는 수취자 행의 {@code fail_code} 로 남아 지급 배치 앞단 · {@code seller.changed} 웹훅이 다시 판정한다.
@@ -46,25 +49,25 @@ public enum PayoutBlockReason {
     CREATOR_ACCOUNT_UNVERIFIED("정산 계좌 확인 중", "계좌 확인 후 지급");
 
     /** PG 셀러 사유 — 지급 배치 앞단이 다시 등록 · 상태 조회를 시도하는 코드. */
-    public static final java.util.Set<String> PARTNER_CODES = java.util.Set.of(PARTNER_NOT_READY.name(),
+    public static final Set<String> PARTNER_CODES = Set.of(PARTNER_NOT_READY.name(),
             ACCOUNT_HOLDER_MISMATCH.name(), COMPANY_NOT_IN_BUSINESS.name(), ACCOUNT_MISSING.name(), ACCOUNT_INVALID.name(),
             UNSUPPORTED_BANK.name(), IDENTITY_VERIFICATION_REQUIRED.name(), KYC_REQUIRED.name(),
             PAYOUT_CONTRACT_BLOCKED.name());
 
     /** 수취자 본인이 풀어야 하는 사유 — 운영자 알림 대신 수취자 알림(4-3). 재분배(M3) 대상이 아니다. */
-    public static final java.util.Set<String> PAYEE_ACTION_CODES = java.util.Set.of(IDENTITY_VERIFICATION_REQUIRED.name(),
+    public static final Set<String> PAYEE_ACTION_CODES = Set.of(IDENTITY_VERIFICATION_REQUIRED.name(),
             KYC_REQUIRED.name());
 
-    public static java.util.Optional<PayoutBlockReason> fromCode(String code) {
+    public static Optional<PayoutBlockReason> fromCode(String code) {
         if (code == null) {
-            return java.util.Optional.empty();
+            return Optional.empty();
         }
         for (PayoutBlockReason reason : values()) {
             if (reason.name().equals(code)) {
-                return java.util.Optional.of(reason);
+                return Optional.of(reason);
             }
         }
-        return java.util.Optional.empty();
+        return Optional.empty();
     }
 
     private final String label;

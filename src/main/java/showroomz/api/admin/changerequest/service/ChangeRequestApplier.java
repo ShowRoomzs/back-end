@@ -1,68 +1,28 @@
 package showroomz.api.admin.changerequest.service;
 
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.stereotype.Component;
-import showroomz.domain.settlement.service.SettlementPartnerSyncService;
-import showroomz.domain.settlement.service.AfterCommit;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
-import showroomz.domain.changerequest.type.ChangeRequestField;
-import showroomz.domain.changerequest.type.ChangeRequestType;
-import showroomz.domain.market.entity.Market;
-import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
+
+import java.time.LocalDateTime;
 
 /**
- * 승인된 변경 요청의 값을 {@link Seller}/{@link Market}에 반영한다(§16-4).
- * 전체 승인 또는 전체 반려뿐 — 부분 승인은 없다. 여기서는 필드 매핑만 다루고,
- * 브랜드명 중복 재검사·통장 사본 교체 등 승인 절차의 나머지는 호출부(AdminChangeRequestService)가 맡는다.
+ * 변경 요청 승인 반영 · 결과 통지의 요청자별 전략(§16-4 · 16 설계서 3-6 · 3-7 · 정합 계획서 R3-2). 전체 승인 또는 전체 반려뿐 — 부분 승인은
+ * 없다. 서비스가 상태 검사 · 승인/반려 기록 · 동시 처리 충돌을 맡고, 여기서는 회원 값 반영과 통지만 다룬다.
  */
-@Component
-public class ChangeRequestApplier {
+public interface ChangeRequestApplier {
 
-    private final ObjectProvider<SettlementPartnerSyncService> partnerSync;
+    ChangeRequesterType requesterType();
 
-    public ChangeRequestApplier(ObjectProvider<SettlementPartnerSyncService> partnerSync) {
-        this.partnerSync = partnerSync;
-    }
+    /**
+     * 승인 반영 — 요청 행의 값을 회원(셀러 · 마켓 / 인플루언서)에 옮긴다. 반영 전제(브랜드명 중복 · 탈퇴 · 방향)가 깨졌으면 예외다.
+     * 요청 행의 항목 · 암호문을 읽으므로 {@code request.approve} 보다 먼저 부른다.
+     */
+    void apply(ChangeRequest request, LocalDateTime now);
 
-    /** 브랜드 요청(M1 · M2)만 — 인플루언서 사업자 구분 변경은 {@link CreatorBusinessTypeChangeApplier}가 반영한다. */
-    public void apply(BrandChangeRequest request) {
-        if (request.isCreatorRequest()) {
-            throw new IllegalArgumentException("브랜드 요청이 아니다: " + request.getType());
-        }
-        Market market = request.getMarket();
-        Seller seller = market.getSeller();
-        for (BrandChangeRequestItem item : request.getItems()) {
-            applyField(item.getFieldKey(), item.getRequestedValue(), seller, market);
-        }
+    /** 승인 결과 통지 — 승인 · 충돌 확인(flush) 뒤에 부른다. */
+    void notifyApproved(ChangeRequest request);
 
-        // §7-2 M2 승인 시 통장 사본 교체 — 계좌가 바뀌었는데 옛 사본이 남으면 다음 정산 대조가 어긋난다.
-        if (request.getType() == ChangeRequestType.SETTLEMENT_ACCOUNT) {
-            seller.setBankbookImageUrl(request.getEvidenceFileUrl());
-            // PG 셀러 계좌도 즉시 맞춘다(토스 설계서 4-3) — 외부 호출은 커밋 뒤 · 실패해도 승인은 끝난다.
-            Long marketId = market.getId();
-            AfterCommit.run(() -> partnerSync.ifAvailable(sync -> sync.onBrandAccountChanged(marketId)));
-        }
-    }
-
-    private void applyField(ChangeRequestField field, String requestedValue, Seller seller, Market market) {
-        switch (field) {
-            case MARKET_NAME -> market.setMarketName(requestedValue);
-            case REPRESENTATIVE_NAME -> seller.setRepresentativeName(requestedValue);
-            case COMPANY_NAME -> seller.setCompanyName(requestedValue);
-            case BUSINESS_CONDITION -> seller.setBusinessCondition(requestedValue);
-            case BUSINESS_ADDRESS -> {
-                // 요청값 전체를 businessAddress에 넣고 detailAddress는 정규화(§A-1)
-                seller.setBusinessAddress(requestedValue);
-                seller.setDetailAddress(null);
-            }
-            case MAIL_ORDER_REG_NUMBER -> seller.setMailOrderRegNumber(requestedValue);
-            // BANK_CODE는 요청 접수 시점에 이미 은행명으로 변환해 저장했다(§1-3) — 그대로 대입한다.
-            case BANK_CODE -> seller.setBankName(requestedValue);
-            case ACCOUNT_NUMBER -> seller.setAccountNumber(requestedValue);
-            case ACCOUNT_HOLDER -> seller.setAccountHolder(requestedValue);
-            case CREATOR_BUSINESS_TYPE, CREATOR_BUSINESS_REG_NUMBER, CREATOR_RESIDENT_NUMBER ->
-                    throw new IllegalArgumentException("브랜드 요청에 인플루언서 항목: " + field);
-        }
-    }
+    /** 반려 결과 통지 — 반려 · 충돌 확인 뒤에 부른다. 사유 문장은 가공 없이 싣는다(§16-5). */
+    void notifyRejected(ChangeRequest request, ChangeRequestRejectReason reason, String detail);
 }

@@ -6,13 +6,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
+import showroomz.domain.member.common.service.MemberNotifier;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
-import showroomz.domain.member.creator.service.CreatorMemberNotifier;
 import showroomz.domain.member.creator.type.CreatorAccountVerificationStatus;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerResult;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerStatus;
 import showroomz.domain.settlement.type.PayoutBlockReason;
+import showroomz.domain.settlement.type.SettlementPayee;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,16 +42,16 @@ public class CreatorAccountVerificationService {
 
     private final SettlementPartnerSyncService partnerSync;
     private final CreatorRepository creatorRepository;
-    private final CreatorAccountPayoutHook payoutHook;
-    private final CreatorMemberNotifier notifier;
+    private final PayoutHoldTransitions payoutHolds;
+    private final MemberNotifier notifier;
     private final TransactionTemplate writeTransaction;
 
     public CreatorAccountVerificationService(SettlementPartnerSyncService partnerSync, CreatorRepository creatorRepository,
-                                             CreatorAccountPayoutHook payoutHook, CreatorMemberNotifier notifier,
+                                             PayoutHoldTransitions payoutHolds, MemberNotifier notifier,
                                              PlatformTransactionManager transactionManager) {
         this.partnerSync = partnerSync;
         this.creatorRepository = creatorRepository;
-        this.payoutHook = payoutHook;
+        this.payoutHolds = payoutHolds;
         this.notifier = notifier;
         this.writeTransaction = new TransactionTemplate(transactionManager);
         this.writeTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -97,7 +98,8 @@ public class CreatorAccountVerificationService {
         PartnerResult result = check.result();
         if (result.status() == PartnerStatus.APPROVED || result.status() == PartnerStatus.PENDING) {
             creator.markAccountVerified(now);
-            payoutHook.release(creatorId, now.toLocalDate(), now);
+            payoutHolds.release(SettlementPayee.CREATOR, creatorId, PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED,
+                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, now.toLocalDate(), now);
         } else if (result.failCode() != null && ACCOUNT_FAIL_CODES.contains(result.failCode())) {
             creator.markAccountFailed(result.failCode());
             notifier.accountVerificationFailed(creatorId, PayoutBlockReason.fromCode(result.failCode())

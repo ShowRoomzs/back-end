@@ -5,22 +5,16 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.member.brand.entity.BrandSanction;
 import showroomz.domain.member.brand.repository.BrandSanctionRepository;
-import showroomz.domain.settlement.port.BrandPayoutHoldReader;
 
 import java.util.Optional;
 
-/** 브랜드 정지 읽기 — 정산 포트 {@link BrandPayoutHoldReader}의 구현(52 설계서 6-3) · 파트너 기본정보의 정지 배너 재료. */
+/** 브랜드 정지 읽기 — 파트너 기본정보의 정지 배너 재료(52 설계서 7절). 지급 정지 판정은 정산 포트 {@code PayoutHoldReader}가 한다. */
 @Component
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class BrandSanctionReader implements BrandPayoutHoldReader {
+public class BrandSanctionReader {
 
     private final BrandSanctionRepository sanctionRepository;
-
-    @Override
-    public boolean isHeld(Long marketId) {
-        return marketId != null && sanctionRepository.existsOpenPayoutHold(marketId);
-    }
 
     public Optional<BrandSanction> openSanction(Long marketId) {
         return sanctionRepository.findByMarketIdAndReleasedAtIsNull(marketId);

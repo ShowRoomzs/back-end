@@ -6,9 +6,12 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.member.creator.repository.CreatorMemberQueryRepository;
 import showroomz.domain.member.creator.type.CreatorWithdrawalCondition;
+import showroomz.global.error.exception.ConditionUnmetException;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +44,28 @@ public class CreatorWithdrawalEligibility {
 
         public long count(CreatorWithdrawalCondition condition) {
             return counts.getOrDefault(condition, 0L);
+        }
+
+        /** 미충족 조건만 · 선언 순서 — 409 응답 최상위 {@code unmet}(브랜드 {@code BrandWithdrawalEligibility}와 같은 모양). */
+        public Map<String, Long> unmet() {
+            Map<String, Long> unmet = new LinkedHashMap<>();
+            counts.forEach((condition, count) -> {
+                if (count > 0) {
+                    unmet.put(condition.name(), count);
+                }
+            });
+            return unmet;
+        }
+
+        /**
+         * 미충족이면 409 {@code CREATOR_WITHDRAWAL_CONDITION_UNMET} — 응답 {@code {code, message, unmet}}. 메시지에는 건수 문장 뒤에
+         * {@code hint}(호출 화면의 안내 · 없으면 null)를 붙인다.
+         */
+        public void requireEligible(String hint) {
+            if (!eligible()) {
+                throw new ConditionUnmetException(ErrorCode.CREATOR_WITHDRAWAL_CONDITION_UNMET,
+                        "탈퇴 조건이 충족되지 않았습니다 — " + summary() + (hint == null ? "" : hint), unmet());
+            }
         }
 
         /** 409 메시지 — 「진행중 공구 1건 · 계약 0건 · 미정산 0건」. */

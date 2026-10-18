@@ -4,11 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import showroomz.api.admin.changerequest.dto.AdminChangeRequestDto;
-import showroomz.api.admin.creator.AdminCreatorMasker;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
+import showroomz.api.admin.common.AdminMemberMasker;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.entity.ChangeRequestItem;
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestType;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
 import showroomz.domain.contract.type.WithholdingType;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
@@ -29,7 +30,7 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class CreatorChangeRequestDetailAssembler {
+public class CreatorChangeRequestDetailAssembler implements ChangeRequestDetailAssembler {
 
     private static final String PAYOUT_INDIVIDUAL = "원천징수 3.3%";
     private static final String PAYOUT_BUSINESS = "세금계산서 · 리워드 + 부가세 10%";
@@ -37,25 +38,27 @@ public class CreatorChangeRequestDetailAssembler {
     private final SettlementRepository settlementRepository;
     private final PersonalDataCipher cipher;
 
-    public record Parts(List<AdminChangeRequestDto.DiffRow> diff, List<String> changedFieldLabels,
-                        AdminChangeRequestDto.Evidence evidence, List<AdminChangeRequestDto.ReferenceItem> referenceItems,
-                        AdminChangeRequestDto.HolderCheck holderCheck, List<AdminChangeRequestDto.CompareItem> compareItems,
-                        AdminChangeRequestDto.ApprovalImpact approvalImpact) {
+    @Override
+    public ChangeRequesterType requesterType() {
+        return ChangeRequesterType.CREATOR;
     }
 
-    public Parts assemble(BrandChangeRequest request, Creator creator) {
+    /** 변경 사유 입력란이 없어 reason 은 null 이 정상이다 · 요청자 이름 스냅샷도 없다(본인). */
+    @Override
+    public ChangeRequestDetailParts assemble(ChangeRequest request) {
+        Creator creator = request.getCreator();
         boolean pending = request.isPending();
         boolean toBusiness = request.getType() == ChangeRequestType.TO_BUSINESS;
-        String holder = pending ? creator.getRealName() : AdminCreatorMasker.maskName(creator.getRealName());
-        String birthday = pending ? creator.getBirthday() : AdminCreatorMasker.maskBirthdayYearOnly(creator.getBirthday());
-        BrandChangeRequestItem typeItem = item(request, ChangeRequestField.CREATOR_BUSINESS_TYPE);
+        String holder = pending ? creator.getRealName() : AdminMemberMasker.maskName(creator.getRealName());
+        String birthday = pending ? creator.getBirthday() : AdminMemberMasker.maskBirthdayYearOnly(creator.getBirthday());
+        ChangeRequestItem typeItem = item(request, ChangeRequestField.CREATOR_BUSINESS_TYPE);
         String account = account(creator);
 
         List<AdminChangeRequestDto.DiffRow> diff = new ArrayList<>();
         diff.add(row("CREATOR_BUSINESS_TYPE", "사업자 구분", businessTypeLabel(typeItem == null ? null : typeItem.getCurrentValue()),
                 businessTypeLabel(typeItem == null ? null : typeItem.getRequestedValue()), true, "REQUEST"));
         if (toBusiness) {
-            BrandChangeRequestItem brn = item(request, ChangeRequestField.CREATOR_BUSINESS_REG_NUMBER);
+            ChangeRequestItem brn = item(request, ChangeRequestField.CREATOR_BUSINESS_REG_NUMBER);
             diff.add(row("CREATOR_BUSINESS_REG_NUMBER", "사업자등록번호", brn == null ? null : brn.getCurrentValue(),
                     brn == null ? null : brn.getRequestedValue(), true, "REQUEST"));
             // 상호 · 대표자는 받지 않는다(§50-2) — 운영자가 등록증에서 읽는다.
@@ -63,7 +66,7 @@ public class CreatorChangeRequestDetailAssembler {
         } else {
             // 폐업일은 서버가 모른다 — 「폐업」까지만(16 설계서 3-4).
             diff.add(row("CREATOR_BUSINESS_REG_NUMBER", "사업자등록번호", creator.getBusinessRegistrationNumber(), "폐업", true, "DERIVED"));
-            BrandChangeRequestItem rrn = item(request, ChangeRequestField.CREATOR_RESIDENT_NUMBER);
+            ChangeRequestItem rrn = item(request, ChangeRequestField.CREATOR_RESIDENT_NUMBER);
             diff.add(row("CREATOR_RESIDENT_NUMBER", "주민등록번호", rrn == null ? null : rrn.getCurrentValue(),
                     rrn == null ? null : rrn.getRequestedValue(), true, "REQUEST"));
         }
@@ -73,7 +76,7 @@ public class CreatorChangeRequestDetailAssembler {
         diff.add(row("SETTLEMENT_ACCOUNT", "정산 계좌", account, null, false, "LIVE"));
 
         List<String> changedFieldLabels = request.getItems().stream()
-                .sorted(Comparator.comparing(BrandChangeRequestItem::getSortOrder))
+                .sorted(Comparator.comparing(ChangeRequestItem::getSortOrder))
                 .map(i -> i.getFieldKey().getLabel())
                 .toList();
 
@@ -88,7 +91,7 @@ public class CreatorChangeRequestDetailAssembler {
 
         List<AdminChangeRequestDto.ReferenceItem> references = new ArrayList<>();
         if (!toBusiness) {
-            BrandChangeRequestItem rrn = item(request, ChangeRequestField.CREATOR_RESIDENT_NUMBER);
+            ChangeRequestItem rrn = item(request, ChangeRequestField.CREATOR_RESIDENT_NUMBER);
             references.add(reference("주민등록번호", rrn == null ? null : rrn.getRequestedValue()));
         }
         references.add(reference("정산 계좌 예금주", holder));
@@ -102,7 +105,7 @@ public class CreatorChangeRequestDetailAssembler {
 
         List<AdminChangeRequestDto.CompareItem> compare = new ArrayList<>();
         if (toBusiness) {
-            BrandChangeRequestItem brn = item(request, ChangeRequestField.CREATOR_BUSINESS_REG_NUMBER);
+            ChangeRequestItem brn = item(request, ChangeRequestField.CREATOR_BUSINESS_REG_NUMBER);
             compare.add(compare("REPRESENTATIVE_NAME", "대표자명", holder, null));
             compare.add(compare("BUSINESS_REG_NUMBER", "사업자등록번호", brn == null ? null : brn.getRequestedValue(), null));
             compare.add(AdminChangeRequestDto.CompareItem.builder().key("OPENING_DATE").label("개업일")
@@ -133,7 +136,8 @@ public class CreatorChangeRequestDetailAssembler {
                 .accountHolderRuleAfter(ruleAfter)
                 .build() : null;
 
-        return new Parts(diff, changedFieldLabels, evidence, references, holderCheck, compare, impact);
+        return new ChangeRequestDetailParts(null, null, null, diff, changedFieldLabels, evidence, references, holderCheck,
+                compare, impact);
     }
 
     /**
@@ -166,7 +170,7 @@ public class CreatorChangeRequestDetailAssembler {
     }
 
     private static String account(Creator creator) {
-        String masked = AdminCreatorMasker.maskAccountNumber(creator.getAccountNumber());
+        String masked = AdminMemberMasker.maskAccountNumber(creator.getAccountNumber());
         if (creator.getBankName() == null) {
             return masked;
         }
@@ -204,7 +208,7 @@ public class CreatorChangeRequestDetailAssembler {
         return AdminChangeRequestDto.CompareItem.builder().key(key).label(label).value(value).serverCheck(serverCheck).build();
     }
 
-    private static BrandChangeRequestItem item(BrandChangeRequest request, ChangeRequestField field) {
+    private static ChangeRequestItem item(ChangeRequest request, ChangeRequestField field) {
         return request.getItems().stream().filter(i -> i.getFieldKey() == field).findFirst().orElse(null);
     }
 

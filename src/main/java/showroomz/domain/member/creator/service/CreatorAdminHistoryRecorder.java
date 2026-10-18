@@ -33,21 +33,29 @@ public class CreatorAdminHistoryRecorder {
     public CreatorAdminHistory byOperator(Long creatorId, CreatorAdminEventType eventType, Long operatorId,
                                           String operatorName, String detail, String refType, Long refId,
                                           LocalDateTime now) {
-        return histories.save(CreatorAdminHistory.of(creatorId, eventType, CreatorAdminActorType.ADMIN, operatorId,
-                operatorName, detail, refType, refId, now));
+        return save(creatorId, eventType, CreatorAdminActorType.ADMIN, operatorId, operatorName, detail, refType, refId,
+                now);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public CreatorAdminHistory byCreator(Long creatorId, CreatorAdminEventType eventType, String detail,
                                          String refType, Long refId, LocalDateTime now) {
-        return histories.save(CreatorAdminHistory.of(creatorId, eventType, CreatorAdminActorType.CREATOR, null, null,
-                detail, refType, refId, now));
+        return save(creatorId, eventType, CreatorAdminActorType.CREATOR, null, null, detail, refType, refId, now);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public CreatorAdminHistory bySystem(Long creatorId, CreatorAdminEventType eventType, String detail,
                                         String refType, Long refId, LocalDateTime now) {
-        return histories.save(CreatorAdminHistory.of(creatorId, eventType, CreatorAdminActorType.SYSTEM, null, null,
-                detail, refType, refId, now));
+        return save(creatorId, eventType, CreatorAdminActorType.SYSTEM, null, null, detail, refType, refId, now);
+    }
+
+    private CreatorAdminHistory save(Long creatorId, CreatorAdminEventType eventType, CreatorAdminActorType actorType,
+                                     Long actorId, String actorName, String detail, String refType, Long refId,
+                                     LocalDateTime now) {
+        if (!eventType.isStored()) {
+            throw new IllegalArgumentException("파생 이력은 저장하지 않는다: " + eventType);
+        }
+        return histories.save(CreatorAdminHistory.of(creatorId, eventType, actorType, actorId, actorName, detail, refType,
+                refId, now));
     }
 }

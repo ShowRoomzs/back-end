@@ -12,12 +12,13 @@ import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.performance.service.PerformanceFacts;
 import showroomz.domain.performance.type.PerformanceSource;
 import showroomz.domain.performance.type.PerformanceTone;
-import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader;
 import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader.AdjustmentSummary;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader;
 import showroomz.domain.settlement.adjustment.type.AdjustmentStatus;
 import showroomz.domain.settlement.adjustment.type.ProposalStatus;
 import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.global.utils.Percent;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -78,9 +79,9 @@ public class CreatorPerformanceDetailAssembler {
         CreatorPerformanceDto.DetailKpi kpi = new CreatorPerformanceDto.DetailKpi(totalMoney,
                 new CreatorPerformanceDto.AmountFigure(o.confirmedSalesAmount(),
                         "구매확정 %s건 기준".formatted(num(o.confirmedCount())), estimated),
-                new CreatorPerformanceDto.RateFigure(CreatorPerformanceRates.percent(o.confirmedCount(), t.visitorCount()),
+                new CreatorPerformanceDto.RateFigure(Percent.oneDecimal(o.confirmedCount(), t.visitorCount()),
                         "쇼룸 방문 %s명 대비 구매확정".formatted(num(t.visitorCount())), estimated),
-                new CreatorPerformanceDto.RateFigure(CreatorPerformanceRates.percent(repeat, buyers),
+                new CreatorPerformanceDto.RateFigure(Percent.oneDecimal(repeat, buyers),
                         "구매 소비자 %s명 중 %s명".formatted(num(buyers), num(repeat)), estimated),
                 new CreatorPerformanceDto.FollowerDelta(f.followers().delta(), f.followers().countAtEnd()),
                 CreatorPerformanceDistribution.genderRatio(female, male), estimated);
@@ -94,7 +95,7 @@ public class CreatorPerformanceDetailAssembler {
                 funnel(f, estimated),
                 sales(f, estimated, agreedDelta),
                 new CreatorPerformanceDto.Consumers(estimated, buyers, buyers - repeat, repeat, followerBuyers,
-                        CreatorPerformanceRates.percent(followerBuyers, buyers),
+                        Percent.oneDecimal(followerBuyers, buyers),
                         CreatorPerformanceDistribution.of(f.buyers().stream()
                                 .map(b -> new CreatorPerformanceDistribution.Person(b.gender(), b.birthday())).toList(),
                                 f.periodEnd().toLocalDate())),
@@ -148,13 +149,13 @@ public class CreatorPerformanceDetailAssembler {
         for (PerformanceSource source : PerformanceSource.values()) {
             long visitors = bySource == null ? 0 : bySource.getOrDefault(source, 0L);
             sources.add(new CreatorPerformanceDto.SourceItem(source.name(), source.getLabel(), visitors,
-                    CreatorPerformanceRates.percent(visitors, t.visitorCount())));
+                    Percent.oneDecimal(visitors, t.visitorCount())));
         }
         PerformanceFacts.PostFacts p = f.post();
         CreatorPerformanceDto.PostBlock post = p == null ? null : new CreatorPerformanceDto.PostBlock(p.postId(),
                 p.impressionCount(), p.uniqueViewerCount(), p.productViewCount(),
-                CreatorPerformanceRates.percent(p.productViewCount(), p.impressionCount()), p.orderCount(),
-                CreatorPerformanceRates.percent(p.orderCount(), p.productViewCount()), p.likeCount(), null);
+                Percent.oneDecimal(p.productViewCount(), p.impressionCount()), p.orderCount(),
+                Percent.oneDecimal(p.orderCount(), p.productViewCount()), p.likeCount(), null);
         return new CreatorPerformanceDto.Traffic(t.visitorCount(), sources, post);
     }
 
@@ -163,8 +164,8 @@ public class CreatorPerformanceDetailAssembler {
         long visitors = f.traffic().visitorCount();
         return new CreatorPerformanceDto.Funnel(visitors, o.orderCount(), Math.max(0, visitors - o.orderCount()),
                 o.confirmedCount(), o.cancelledCount(), o.returnedCount(), o.deliveryExceptionCount(),
-                CreatorPerformanceRates.percent(o.confirmedCount(), o.orderCount()),
-                CreatorPerformanceRates.percent(o.confirmedCount(), visitors), estimated);
+                Percent.oneDecimal(o.confirmedCount(), o.orderCount()),
+                Percent.oneDecimal(o.confirmedCount(), visitors), estimated);
     }
 
     private static CreatorPerformanceDto.Sales sales(PerformanceFacts f, boolean estimated, Long agreedDelta) {
@@ -185,12 +186,12 @@ public class CreatorPerformanceDetailAssembler {
         long followerViewers = f.post() == null ? 0 : f.post().followerViewerCount();
         long otherViewers = f.post() == null ? 0 : Math.max(0, f.post().uniqueViewerCount() - followerViewers);
         CreatorPerformanceDto.Side follower = new CreatorPerformanceDto.Side(followerVisitors, followerViewers,
-                o.orderFollowerCount(), CreatorPerformanceRates.percent(o.confirmedFollowerCount(), followerVisitors));
+                o.orderFollowerCount(), Percent.oneDecimal(o.confirmedFollowerCount(), followerVisitors));
         CreatorPerformanceDto.Side other = new CreatorPerformanceDto.Side(otherVisitors, otherViewers,
                 Math.max(0, o.orderCount() - o.orderFollowerCount()),
-                CreatorPerformanceRates.percent(Math.max(0, o.confirmedCount() - o.confirmedFollowerCount()), otherVisitors));
+                Percent.oneDecimal(Math.max(0, o.confirmedCount() - o.confirmedFollowerCount()), otherVisitors));
         return new CreatorPerformanceDto.Followers(follower, other, f.followers().countAtEnd(), f.followers().delta(),
-                CreatorPerformanceRates.percent(followerVisitors, t.visitorCount()), estimated);
+                Percent.oneDecimal(followerVisitors, t.visitorCount()), estimated);
     }
 
     private static CreatorPerformanceDto.Reward reward(PerformanceFacts f, RewardStage stage,

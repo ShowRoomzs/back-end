@@ -16,7 +16,7 @@ import showroomz.api.seller.performance.docs.SellerPerformanceControllerDocs;
 import showroomz.api.seller.performance.dto.SellerPerformanceDto;
 import showroomz.api.seller.performance.service.SellerPerformanceCostService;
 import showroomz.api.seller.performance.service.SellerPerformanceQueryService;
-import showroomz.domain.performance.type.PerformanceSort;
+import showroomz.domain.performance.type.GroupBuyPerformanceSort;
 import showroomz.domain.performance.type.PerformanceStatus;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -37,7 +37,7 @@ public class SellerPerformanceController implements SellerPerformanceControllerD
     public ResponseEntity<SellerPerformanceDto.ListPage> getList(
             @RequestParam(value = "status", required = false) Set<PerformanceStatus> status,
             @RequestParam(value = "keyword", required = false) String keyword,
-            @RequestParam(value = "sort", required = false) PerformanceSort sort,
+            @RequestParam(value = "sort", required = false) GroupBuyPerformanceSort sort,
             @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(queryService.getList(getCurrentSellerEmail(), status, keyword, sort, pagingRequest));
     }

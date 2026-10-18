@@ -19,7 +19,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.entity.QOrder;
 import showroomz.domain.order.entity.QOrderDeliveryGroup;
 import showroomz.domain.order.type.FulfillmentStatus;
-import showroomz.domain.performance.type.PerformanceSort;
+import showroomz.domain.performance.type.GroupBuyPerformanceSort;
 import showroomz.domain.performance.type.PerformanceStatus;
 import showroomz.domain.settlement.type.SettlementStatus;
 
@@ -50,7 +50,7 @@ public class PerformanceGroupBuyQueryRepository {
 
     /** 목록 한 페이지 — 계약 · 마켓 · 인플루언서를 함께 올린다. */
     public Page<GroupBuy> searchForMarket(Long marketId, Collection<PerformanceStatus> statuses, String keyword,
-                                          PerformanceSort sort, Pageable pageable) {
+                                          GroupBuyPerformanceSort sort, Pageable pageable) {
         BooleanBuilder where = where(marketId, statuses, keyword);
         List<GroupBuy> content = queryFactory.selectFrom(groupBuy)
                 .join(groupBuy.contract, contract).fetchJoin()
@@ -129,9 +129,9 @@ public class PerformanceGroupBuyQueryRepository {
         return Expressions.dateTimeTemplate(LocalDateTime.class, "coalesce({0}, {1})", groupBuy.endedAt, groupBuy.endAt);
     }
 
-    private static OrderSpecifier<?>[] order(PerformanceSort sort) {
+    private static OrderSpecifier<?>[] order(GroupBuyPerformanceSort sort) {
         OrderSpecifier<LocalDateTime> ended = new OrderSpecifier<>(Order.DESC, endOf());
-        if (sort == PerformanceSort.SALES_DESC) {
+        if (sort == GroupBuyPerformanceSort.SALES_DESC) {
             return new OrderSpecifier<?>[]{
                     new OrderSpecifier<>(Order.DESC, settlement.confirmedSalesAmount, OrderSpecifier.NullHandling.NullsLast),
                     ended, groupBuy.id.desc()};

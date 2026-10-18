@@ -1,10 +1,16 @@
 package showroomz.api.admin.user.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.type.UserAdminActorType;
+import showroomz.domain.member.user.type.UserAdminEventType;
+import showroomz.domain.member.user.type.UserReleaseReason;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.member.user.type.UserSuspensionReason;
 import showroomz.global.dto.PaginationInfo;
 
 import java.time.LocalDateTime;
@@ -12,14 +18,80 @@ import java.util.List;
 
 public class AdminUserDto {
 
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Schema(description = "유저 상태 변경 요청")
-    public static class UserStatusUpdateRequest {
-        @Schema(description = "변경할 상태 (NORMAL, SUSPENDED만 가능)", example = "SUSPENDED")
-        private UserStatus status;
+    // ------------------------------------------------------------------ 정지 · 해제(51-6 설계서 2절)
+
+    @Schema(description = "정지 요청(M1) — 「변경할 상태」 셀렉트는 없다(§25-4)")
+    public record SuspendRequest(
+            @NotNull @Schema(description = "정지 사유 6종", example = "ABUSIVE_LANGUAGE") UserSuspensionReason reason,
+            @Size(max = 500) @Schema(description = "상세 사유 — 기타(OTHER)일 때만 필수 · 앱에 노출되지 않는다") String reasonDetail) {
+    }
+
+    @Schema(description = "정지 해제 요청 — 사유 필수 · 상세 사유란 없음(§25-4)")
+    public record ReleaseRequest(
+            @Schema(description = "해제 사유 — RESOLVED(소명 확인 완료) · MISTAKE(오처리 정정) · TERM_ENDED(제재 기간 종료)",
+                    example = "RESOLVED") UserReleaseReason reason) {
+    }
+
+    @Schema(description = "현재 상태 카드 — 정지 상태에서는 사유 · 처리자 · 일시 · 상세 사유 · 소명 문의가 배지 아래 같은 카드에 모인다")
+    public record StatusCard(
+            @Schema(example = "SUSPENDED") UserStatus status,
+            @Schema(description = "열린 정지 — 없으면 null. 사유 기록 없이 정지된 옛 회원도 null") SanctionInfo sanction,
+            Actions actions) {
+    }
+
+    public record SanctionInfo(
+            Long sanctionId,
+            UserSuspensionReason reason,
+            @Schema(example = "욕설·비방") String reasonLabel,
+            @Schema(description = "상세 사유 — 어드민 전용") String reasonDetail,
+            LocalDateTime suspendedAt,
+            @Schema(example = "김운영") String suspendedByName,
+            @Schema(description = "이 정지의 소명 문의(최신순) — 해제 모달의 「소명 문의 번호 · 클릭 이동」") List<AppealInquiry> appealInquiries) {
+    }
+
+    public record AppealInquiry(Long inquiryId, boolean answered, LocalDateTime createdAt) {
+    }
+
+    @Schema(description = "버튼 노출 — 탈퇴 회원은 둘 다 false(운영자 액션 없음 · §25-5)")
+    public record Actions(boolean canSuspend, boolean canRelease) {
+    }
+
+    @Schema(description = "정지 · 해제 응답 — 갱신된 상태 카드와 처리 이력 최신 5건")
+    public record StatusResult(StatusCard statusCard, HistorySummary histories) {
+    }
+
+    // ------------------------------------------------------------------ 메모 · 처리 이력(51-6 설계서 7절)
+
+    public record Memo(Long memoId, String authorName, String content, LocalDateTime createdAt,
+                       LocalDateTime modifiedAt,
+                       @Schema(description = "작성자 본인 ∧ 24시간 이내 ∧ 탈퇴 아님") boolean editable) {
+    }
+
+    public record MemoPage(long total, List<Memo> content) {
+    }
+
+    public record MemoRequest(
+            @NotNull @Size(max = 300) @Schema(description = "300자 이내", example = "반품 사유 반복 — 기준 미달이라 정지하지 않음, 다음 반품 시 재검토")
+            String content) {
+    }
+
+    public record HistoryItem(
+            @Schema(description = "저장 이력 id — 파생 행(가입 · 탈퇴 · 재가입 · 소명 접수)은 null") Long historyId,
+            UserAdminEventType eventType,
+            String label,
+            String tone,
+            String detail,
+            UserAdminActorType actorType,
+            @Schema(example = "김운영") String actorName,
+            @Schema(description = "SANCTION · MEMO · INQUIRY") String refType,
+            Long refId,
+            LocalDateTime occurredAt) {
+    }
+
+    public record HistorySummary(long total, List<HistoryItem> content) {
+    }
+
+    public record HistoryPage(long total, int page, int size, List<HistoryItem> content) {
     }
 
     @Getter
@@ -101,19 +173,6 @@ public class AdminUserDto {
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    @Schema(description = "상태 변경 이력 응답")
-    public static class UserStatusHistoryDto {
-        @Schema(description = "변경 후 상태", example = "NORMAL")
-        private UserStatus status;
-
-        @Schema(description = "상태 변경 일시", example = "2024-01-01T10:00:00")
-        private LocalDateTime changedAt;
-    }
-
-    @Getter
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     @Schema(description = "유저 상세 정보 응답")
     public static class UserDetailResponse {
         @Schema(description = "유저 ID", example = "1")
@@ -146,8 +205,14 @@ public class AdminUserDto {
         @Schema(description = "프로필 사진 URL", example = "https://example.com/profile.jpg")
         private String profileImageUrl;
 
-        @Schema(description = "관리자 메모 (내부용)", example = "모니터링 대상")
-        private String adminMemo;
+        @Schema(description = "현재 상태 카드 — 정지 · 해제 버튼 · 열린 정지 · 소명 문의")
+        private StatusCard statusCard;
+
+        @Schema(description = "관리자 메모 최신 3건 + 전체 건수 — 전체는 GET /{userId}/memos")
+        private MemoPage memos;
+
+        @Schema(description = "처리 이력 최신 5건 + 전체 건수 — 전체는 GET /{userId}/histories")
+        private HistorySummary histories;
 
         @Schema(description = "누적 구매액 (더미값)", example = "1500000")
         private Long totalPurchaseAmount;
@@ -179,16 +244,15 @@ public class AdminUserDto {
         @Schema(description = "문의 내역 수", example = "2")
         private Long inquiryCount;
 
-        @Schema(description = "상태 변경 이력")
-        private List<UserStatusHistoryDto> statusHistory;
-
         public static UserDetailResponse of(
                 Users user,
                 Long wishlistCount,
                 Long followedShowroomCount,
                 Long reviewCount,
                 Long inquiryCount,
-                List<UserStatusHistoryDto> statusHistory) {
+                StatusCard statusCard,
+                MemoPage memos,
+                HistorySummary histories) {
 
             Long dummyTotalPurchaseAmount = 1500000L;
             Long dummyThisMonthPurchaseAmount = 300000L;
@@ -210,7 +274,9 @@ public class AdminUserDto {
                     .createdAt(user.getCreatedAt())
                     .marketingAgree(user.isMarketingAgree())
                     .profileImageUrl(user.getProfileImageUrl())
-                    .adminMemo(user.getAdminMemo())
+                    .statusCard(statusCard)
+                    .memos(memos)
+                    .histories(histories)
                     .totalPurchaseAmount(dummyTotalPurchaseAmount)
                     .thisMonthPurchaseAmount(dummyThisMonthPurchaseAmount)
                     .totalOrderCount(dummyTotalOrderCount)
@@ -221,7 +287,6 @@ public class AdminUserDto {
                     .followedShowroomCount(followedShowroomCount)
                     .writtenReviewCount(reviewCount)
                     .inquiryCount(inquiryCount)
-                    .statusHistory(statusHistory)
                     .build();
         }
     }

@@ -2,6 +2,7 @@ package showroomz.api.seller.performance.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import showroomz.api.common.performance.dto.FigureState;
 import showroomz.api.common.performance.dto.PerformanceFigure;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.seller.performance.dto.SellerPerformanceDto;
@@ -9,33 +10,43 @@ import showroomz.api.seller.settlement.service.SellerSettlementBlocks;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.service.GroupBuyFixedFeeText;
-import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.performance.entity.GroupBuyCost;
 import showroomz.domain.performance.entity.GroupBuyCostItem;
 import showroomz.domain.performance.service.PerformanceFacts;
-import showroomz.domain.performance.service.PerformanceFacts.BreakdownLine;
-import showroomz.domain.performance.type.FigureState;
-import showroomz.domain.performance.type.PerformanceAgeBand;
-import showroomz.domain.performance.type.PerformanceCancelKind;
-import showroomz.domain.performance.type.PerformanceExceptionKind;
-import showroomz.domain.performance.type.PerformanceSource;
 import showroomz.domain.performance.type.PerformanceStatus;
+import showroomz.domain.performance.vo.GenderSplit;
 import showroomz.domain.settlement.entity.Settlement;
-import showroomz.domain.settlement.service.SettlementCalculator;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.ToLongFunction;
+
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.acquisitionCost;
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.repeatCount;
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.reward;
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.roasFigure;
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.salesState;
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.spendOf;
+import static showroomz.api.seller.performance.service.SellerPerformanceMoney.totalSpend;
+import static showroomz.api.seller.performance.service.SellerPerformanceNumbers.div;
+import static showroomz.api.seller.performance.service.SellerPerformanceNumbers.pct;
+import static showroomz.api.seller.performance.service.SellerPerformanceNumbers.plain;
+import static showroomz.api.seller.performance.service.SellerPerformanceNumbers.roas;
+import static showroomz.api.seller.performance.service.SellerPerformanceNumbers.sum;
+import static showroomz.api.seller.performance.service.SellerPerformanceNumbers.zero;
+import static showroomz.api.seller.performance.service.SellerPerformanceSections.ageBands;
+import static showroomz.api.seller.performance.service.SellerPerformanceSections.breakdown;
+import static showroomz.api.seller.performance.service.SellerPerformanceSections.delivery;
+import static showroomz.api.seller.performance.service.SellerPerformanceSections.sales;
+import static showroomz.api.seller.performance.service.SellerPerformanceSections.traffic;
 
 /**
  * 파트너 성과 응답 조립(48 파트너 설계서 3절 · 5절) — {@link PerformanceFacts} 원천값에 <b>값 상태</b>(5절 표) · 산식 문장 · 원가를 입힌다.
+ * 돈 · 값 상태 규칙은 {@link SellerPerformanceMoney}, 사실 섹션은 {@link SellerPerformanceSections}, 수치 표기는
+ * {@link SellerPerformanceNumbers}에 나눠 두었다(정합 계획서 R4-4).
  *
  * <ul>
  *     <li>판매 · 소비자 값 — 집계 중이면 {@code PROJECTED}(예정), 정산이 있으면 {@code FINAL}.</li>
@@ -50,15 +61,8 @@ import java.util.function.ToLongFunction;
 @RequiredArgsConstructor
 public class SellerPerformanceAssembler {
 
-    /** 연령 구간 인원이 이보다 적으면 「기타」로 합산(§47-2 · 소규모 공구의 특정 개인 식별 방지). */
-    static final int MIN_BAND_SIZE = 5;
-    static final List<String> LIMITS = List.of(
-            "쇼룸 방문은 쇼룸 단위로 셉니다 — 같은 기간에 이 인플루언서의 다른 공구가 열려 있었다면 그 방문도 함께 셉니다.",
-            "유입 경로는 딥링크 파라미터와 앱 내부 리퍼러로만 판정합니다 — 어느 SNS에서 왔는지는 알 수 없습니다.",
-            "공유 수는 아직 집계하지 않습니다.");
-
     private final SellerSettlementBlocks settlementBlocks;
-    private final SettlementCalculator settlementCalculator;
+    private final SellerPerformanceMoney money;
 
     // ------------------------------------------------------------------ 목록 · 요약
 
@@ -77,7 +81,7 @@ public class SellerPerformanceAssembler {
                 PerformanceFigure.fin(f.traffic().visitorCount(), null),
                 PerformanceFigure.fin(pct(o.confirmedCount(), f.traffic().visitorCount()), null),
                 PerformanceFigure.fin(o.confirmedSalesAmount(), null),
-                payout(f),
+                money.payout(f),
                 PerformanceFigure.fin(o.confirmedQuantity(), null),
                 PerformanceFigure.fin(pct(o.confirmedCount(), o.orderCount()), null),
                 true);
@@ -117,7 +121,7 @@ public class SellerPerformanceAssembler {
             }
         }
         String scope = "지급 완료 %d건 합산".formatted(n);
-        BigDecimal femaleRatio = pct(female, female + male);
+        GenderSplit split = GenderSplit.of(female, male);
         return new SellerPerformanceDto.Summary(new SellerPerformanceDto.Population(PerformanceStatus.PAID, n),
                 PerformanceFigure.fin(sales, scope),
                 PerformanceFigure.fin(visitors, "%d건 누적 · 고유 방문".formatted(n)),
@@ -125,9 +129,8 @@ public class SellerPerformanceAssembler {
                 PerformanceFigure.fin(pct(confirmed, visitors),
                         "방문 %,d명 대비 구매확정 %,d건".formatted(visitors, confirmed)),
                 PerformanceFigure.fin(roas(roasSales, spend), "확정 거래액 ÷ 총 집행비 %,d원".formatted(spend)),
-                femaleRatio == null ? new SellerPerformanceDto.GenderRatio(null, null, scope)
-                        : new SellerPerformanceDto.GenderRatio(femaleRatio.setScale(0, RoundingMode.HALF_UP).intValue(),
-                        100 - femaleRatio.setScale(0, RoundingMode.HALF_UP).intValue(), scope),
+                split == null ? new SellerPerformanceDto.GenderRatio(null, null, scope)
+                        : new SellerPerformanceDto.GenderRatio(split.femalePercent(), split.malePercent(), scope),
                 PerformanceFigure.fin(pct(confirmed, orders), "주문 %,d건 중 %,d건 확정".formatted(orders, confirmed)),
                 PerformanceFigure.fin(pct(repeat, buyers), "구매확정 %,d명 중 재구매 %,d명".formatted(buyers, repeat)),
                 counts);
@@ -169,7 +172,7 @@ public class SellerPerformanceAssembler {
         return new SellerPerformanceDto.Kpi(
                 PerformanceFigure.of(o.confirmedSalesAmount(), sales,
                         "구매확정 %s%,d건 기준".formatted(f.projected() ? "예정 " : "", o.confirmedCount())),
-                payout(f),
+                money.payout(f),
                 PerformanceFigure.of(pct(o.confirmedCount(), visitors), sales,
                         "쇼룸 방문 %,d명 대비 구매확정".formatted(visitors)),
                 PerformanceFigure.of(pct(o.confirmedCount(), o.orderCount()), sales,
@@ -181,119 +184,6 @@ public class SellerPerformanceAssembler {
                 roasFigure(f),
                 PerformanceFigure.of(pct(repeatCount(f), f.buyers().size()), sales,
                         "구매확정 %,d명 중 재구매 %,d명".formatted(f.buyers().size(), repeatCount(f))));
-    }
-
-    private static SellerPerformanceDto.Traffic traffic(PerformanceFacts f) {
-        PerformanceFacts.Traffic t = f.traffic();
-        List<SellerPerformanceDto.Source> sources = new ArrayList<>();
-        for (PerformanceSource source : PerformanceSource.values()) {
-            long count = t.visitorsBySource().getOrDefault(source, 0L);
-            sources.add(new SellerPerformanceDto.Source(source.name(), source.getLabel(), count,
-                    pct(count, t.visitorCount())));
-        }
-        SellerPerformanceDto.Post post = null;
-        if (f.post() != null) {
-            PerformanceFacts.PostFacts p = f.post();
-            post = new SellerPerformanceDto.Post(p.postId(), p.impressionCount(), p.uniqueViewerCount(),
-                    PerformanceFigure.fin(p.productViewCount(), ratioText("조회 대비", p.productViewCount(), p.impressionCount())),
-                    PerformanceFigure.fin(p.orderCount(), ratioText("상세 대비", p.orderCount(), p.productViewCount())),
-                    p.likeCount(), PerformanceFigure.none(FigureState.NOT_AVAILABLE, "집계 준비 중"));
-        }
-        PerformanceFacts.Orders o = f.orders();
-        FigureState sales = salesState(f);
-        SellerPerformanceDto.Funnel funnel = new SellerPerformanceDto.Funnel(t.visitorCount(), o.orderCount(),
-                Math.max(0, t.visitorCount() - o.orderCount()), pct(o.orderCount(), t.visitorCount()),
-                o.shippedCount(), o.deliveredCount(), PerformanceFigure.of((long) o.confirmedCount(), sales, null),
-                pct(o.shippedCount(), o.orderCount()), pct(o.deliveredCount(), o.orderCount()),
-                pct(o.confirmedCount(), o.orderCount()), o.cancelledCount(), o.returnedCount(),
-                o.deliveryExceptionCount(),
-                PerformanceFigure.of(pct(o.confirmedCount(), t.visitorCount()), sales, "방문 대비 최종 구매전환율"));
-        return new SellerPerformanceDto.Traffic(t.visitorCount(), t.visitCount(), sources, post, funnel, LIMITS);
-    }
-
-    private static SellerPerformanceDto.Sales sales(PerformanceFacts f) {
-        FigureState state = salesState(f);
-        List<SellerPerformanceDto.ProductRow> rows = new ArrayList<>();
-        for (PerformanceFacts.ProductLine p : f.products()) {
-            rows.add(new SellerPerformanceDto.ProductRow(p.contractItemId(), p.productId(), p.productName(),
-                    p.rewardRate(), p.detailViewCount(), p.detailViewerCount(), p.orderCount(),
-                    PerformanceFigure.fin(pct(p.orderCount(), p.detailViewerCount()), null),
-                    PerformanceFigure.of(p.confirmedQuantity(), state, null),
-                    PerformanceFigure.of(p.confirmedAmount(), state, null),
-                    PerformanceFigure.of(pct(p.returnedQuantity(), p.confirmedQuantity()), state, null)));
-        }
-        long views = f.products().stream().mapToLong(PerformanceFacts.ProductLine::detailViewCount).sum();
-        long returned = f.products().stream().mapToLong(PerformanceFacts.ProductLine::returnedQuantity).sum();
-        long viewers = f.traffic().productViewerCount();
-        PerformanceFacts.Orders o = f.orders();
-        SellerPerformanceDto.ProductRow total = new SellerPerformanceDto.ProductRow(null, null, "합계", null, views,
-                viewers, o.orderCount(), PerformanceFigure.fin(pct(o.orderCount(), viewers), null),
-                PerformanceFigure.of(o.confirmedQuantity(), state, null),
-                PerformanceFigure.of(o.confirmedSalesAmount(), state, null),
-                PerformanceFigure.of(pct(returned, o.confirmedQuantity()), state,
-                        "공구 전체 반품률 %s%% · 반품 %,d건 ÷ 주문 %,d건".formatted(
-                                plain(pct(o.returnedCount(), o.orderCount())), o.returnedCount(), o.orderCount())));
-        return new SellerPerformanceDto.Sales(rows, total, highlights(f.products(), views));
-    }
-
-    private static SellerPerformanceDto.Highlights highlights(List<PerformanceFacts.ProductLine> products, long views) {
-        SellerPerformanceDto.Highlight mostViewed = products.stream().filter(p -> p.detailViewCount() > 0)
-                .max(Comparator.comparingLong(PerformanceFacts.ProductLine::detailViewCount))
-                .map(p -> new SellerPerformanceDto.Highlight(p.productName(), "상세 조회 %,d회 · 전체의 %s%%".formatted(
-                        p.detailViewCount(), plain(pct(p.detailViewCount(), views))))).orElse(null);
-        SellerPerformanceDto.Highlight bestConversion = products.stream().filter(p -> p.detailViewerCount() > 0)
-                .max(Comparator.comparing(p -> pct(p.orderCount(), p.detailViewerCount())))
-                .map(p -> new SellerPerformanceDto.Highlight(p.productName(), "조회자 %,d명 중 %,d건 · %s%%".formatted(
-                        p.detailViewerCount(), p.orderCount(), plain(pct(p.orderCount(), p.detailViewerCount())))))
-                .orElse(null);
-        SellerPerformanceDto.Highlight highestReturn = products.stream()
-                .filter(p -> p.returnedQuantity() > 0 && p.confirmedQuantity() > 0)
-                .max(Comparator.comparing(p -> pct(p.returnedQuantity(), p.confirmedQuantity())))
-                .map(p -> new SellerPerformanceDto.Highlight(p.productName(), "확정 %,d개 중 %,d개 · %s%%".formatted(
-                        p.confirmedQuantity(), p.returnedQuantity(),
-                        plain(pct(p.returnedQuantity(), p.confirmedQuantity()))))).orElse(null);
-        return new SellerPerformanceDto.Highlights(mostViewed, bestConversion, highestReturn);
-    }
-
-    private static SellerPerformanceDto.Delivery delivery(PerformanceFacts f) {
-        PerformanceFacts.Delivery d = f.delivery();
-        PerformanceFacts.Orders o = f.orders();
-        return new SellerPerformanceDto.Delivery(
-                PerformanceFigure.fin(pct(d.shippedOnTimeCount(), d.shipDueTrackedCount()),
-                        "발송 %,d건 중".formatted(d.shipDueTrackedCount())),
-                PerformanceFigure.fin(d.avgShipDays(), "결제완료 → 송장 등록"),
-                PerformanceFigure.of(pct(d.deliveryClaimCount(), o.orderCount()), salesState(f),
-                        "반송·분실 %,d건".formatted(d.deliveryClaimCount())),
-                PerformanceFigure.fin(d.avgInquiryHours(), "상품 문의 답변까지 · %,d건".formatted(d.answeredInquiryCount())));
-    }
-
-    private static SellerPerformanceDto.Breakdown breakdown(PerformanceFacts f) {
-        PerformanceFacts.Breakdown b = f.breakdown();
-        PerformanceFacts.Orders o = f.orders();
-        List<SellerPerformanceDto.BreakdownLine> cancel = new ArrayList<>();
-        b.cancel().forEach((kind, line) -> {
-            if (kind != PerformanceCancelKind.OTHER || line.amount() > 0 || line.groupCount() > 0) {
-                cancel.add(line(kind.name(), kind.getLabel(), line));
-            }
-        });
-        List<SellerPerformanceDto.BreakdownLine> returned = new ArrayList<>();
-        Map<ClaimReason, BreakdownLine> reasons = new EnumMap<>(ClaimReason.class);
-        reasons.putAll(b.returned());
-        reasons.forEach((reason, line) -> returned.add(line(reason.name(), reason.getLabel(), line)));
-        List<SellerPerformanceDto.BreakdownLine> exception = new ArrayList<>();
-        b.deliveryException().forEach((kind, line) -> {
-            if (kind != PerformanceExceptionKind.OPERATOR_REFUND || line.amount() > 0 || line.groupCount() > 0) {
-                exception.add(line(kind.name(), kind.getLabel(), line));
-            }
-        });
-        return new SellerPerformanceDto.Breakdown(
-                o.cancelledCount() + o.returnedCount() + o.deliveryExceptionCount(),
-                PerformanceFigure.of(b.deductionTotal(), salesState(f), null),
-                new SellerPerformanceDto.BreakdownGroup(o.cancelledCount(), amount(b.cancel()), cancel),
-                new SellerPerformanceDto.BreakdownGroup(o.returnedCount(), amount(b.returned()), returned),
-                new SellerPerformanceDto.BreakdownGroup(o.deliveryExceptionCount(), amount(b.deliveryException()),
-                        exception),
-                f.projected() && f.closure() != null ? f.closure().openReturnCount() : null);
     }
 
     private SellerPerformanceDto.Consumers consumers(PerformanceFacts f) {
@@ -312,57 +202,6 @@ public class SellerPerformanceAssembler {
                 new SellerPerformanceDto.Gender(female, male, buyers.size() - female - male, pct(female, female + male),
                         pct(male, female + male)),
                 ageBands(f));
-    }
-
-    /** 연령대 × 성별 — 구간 인원 5명 미만은 「기타」 한 행으로 합산 · 미확인은 별도 행. 비율 분모 = 구매확정 소비자 전체. */
-    static List<SellerPerformanceDto.AgeBand> ageBands(PerformanceFacts f) {
-        Map<PerformanceAgeBand, long[]> counts = new EnumMap<>(PerformanceAgeBand.class);
-        for (PerformanceAgeBand band : PerformanceAgeBand.values()) {
-            counts.put(band, new long[2]);
-        }
-        for (PerformanceFacts.Buyer buyer : f.buyers()) {
-            long[] c = counts.get(PerformanceAgeBand.of(buyer.birthday(), f.periodStart().toLocalDate()));
-            if ("FEMALE".equalsIgnoreCase(buyer.gender())) {
-                c[0]++;
-            } else if ("MALE".equalsIgnoreCase(buyer.gender())) {
-                c[1]++;
-            }
-        }
-        long total = f.buyers().size();
-        List<SellerPerformanceDto.AgeBand> bands = new ArrayList<>();
-        long[] other = new long[2];
-        boolean merged = false;
-        long[] unknown = counts.get(PerformanceAgeBand.UNKNOWN);
-        long unknownGenderless = total - counts.values().stream().mapToLong(c -> c[0] + c[1]).sum();
-        for (PerformanceAgeBand band : PerformanceAgeBand.values()) {
-            if (band == PerformanceAgeBand.UNKNOWN) {
-                continue;
-            }
-            long[] c = counts.get(band);
-            long size = c[0] + c[1];
-            if (size == 0) {
-                continue;
-            }
-            if (size < MIN_BAND_SIZE) {
-                other[0] += c[0];
-                other[1] += c[1];
-                merged = true;
-                continue;
-            }
-            bands.add(new SellerPerformanceDto.AgeBand(band.name(), band.getLabel(), c[0], c[1], size, pct(size, total),
-                    false));
-        }
-        if (merged) {
-            long size = other[0] + other[1];
-            bands.add(new SellerPerformanceDto.AgeBand("OTHER", "기타", other[0], other[1], size, pct(size, total), true));
-        }
-        long unknownSize = unknown[0] + unknown[1] + unknownGenderless;
-        if (unknownSize > 0) {
-            bands.add(new SellerPerformanceDto.AgeBand(PerformanceAgeBand.UNKNOWN.name(),
-                    PerformanceAgeBand.UNKNOWN.getLabel(), unknown[0], unknown[1], unknownSize, pct(unknownSize, total),
-                    false));
-        }
-        return bands;
     }
 
     private SellerPerformanceDto.Cost cost(PerformanceFacts f, GroupBuyCost cost) {
@@ -403,7 +242,7 @@ public class SellerPerformanceAssembler {
             Settlement s = f.settlement();
             long sales = f.orders().confirmedSalesAmount();
             long value = s.getBrandPayoutAmount() - total - f.fixedFeeAmount();
-            Long original = originalPayout(f) == null ? null : originalPayout(f) - total - f.fixedFeeAmount();
+            Long original = money.originalPayout(f) == null ? null : money.originalPayout(f) - total - f.fixedFeeAmount();
             String basis = "정산액 − 총 원가 − 고정 지급비";
             if (f.status() == PerformanceStatus.ADJUSTING) {
                 profit = new PerformanceFigure<>(null, FigureState.NEGOTIATING, value, "정산액 확정 후 산출");
@@ -426,108 +265,11 @@ public class SellerPerformanceAssembler {
         }
         PerformanceStatus status = f.status();
         return new SellerPerformanceDto.SettlementLink(s.getId(), status, status.getLabel(), status.getTone(),
-                settlementBlocks.breakdownOf(s), payout(f), s.getReviewDueAt(), s.getPayoutDueDate(), s.getPaidAt(),
+                settlementBlocks.breakdownOf(s), money.payout(f), s.getReviewDueAt(), s.getPayoutDueDate(), s.getPaidAt(),
                 settlementBlocks.adjustmentOf(s));
     }
 
-    // ------------------------------------------------------------------ 돈 · 상태(5절)
-
-    /** 판매 · 소비자 값 — 정산이 없으면 예정. */
-    private static FigureState salesState(PerformanceFacts f) {
-        return f.projected() ? FigureState.PROJECTED : FigureState.FINAL;
-    }
-
-    /** 합의가 반영돼 리워드가 바뀌었는가(D4) — 조정 협의 중은 아직 아니다. */
-    private static boolean agreed(PerformanceFacts f) {
-        Settlement s = f.settlement();
-        return s != null && f.status() != PerformanceStatus.ADJUSTING
-                && s.getOriginalRewardAmount() != s.getRewardAmount();
-    }
-
-    /** 합의 전 정산액 — 정산 계산기가 원래 리워드로 다시 낸다(수수료 · 부가세를 여기서 계산하지 않는다). */
-    private Long originalPayout(PerformanceFacts f) {
-        return agreed(f) ? settlementCalculator.preview(f.settlement(), f.settlement().getOriginalRewardAmount())
-                .brandPayoutAmount() : null;
-    }
-
-    private PerformanceFigure<Long> payout(PerformanceFacts f) {
-        Settlement s = f.settlement();
-        if (s == null) {
-            return PerformanceFigure.none(FigureState.PENDING_SETTLEMENT, "반품 처리가 끝나면 산출됩니다");
-        }
-        if (f.status() == PerformanceStatus.ADJUSTING) {
-            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, s.getBrandPayoutAmount(), "리워드 합의 후 확정");
-        }
-        Long original = originalPayout(f);
-        return new PerformanceFigure<>(s.getBrandPayoutAmount(), FigureState.FINAL, original,
-                original != null ? "합의 반영" : "PG·리워드·리워드 부가세 차감 후 실지급 · 정산 관리 기준");
-    }
-
-    private static PerformanceFigure<Long> reward(PerformanceFacts f) {
-        Settlement s = f.settlement();
-        if (s == null) {
-            return PerformanceFigure.of(f.orders().contractRewardAmount(), FigureState.PROJECTED, "상품별 리워드율 × 확정 수량");
-        }
-        if (f.status() == PerformanceStatus.ADJUSTING) {
-            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, s.getOriginalRewardAmount(), "조정 협의 중");
-        }
-        return new PerformanceFigure<>(s.getRewardAmount(), FigureState.FINAL,
-                agreed(f) ? s.getOriginalRewardAmount() : null, agreed(f) ? "합의 반영" : null);
-    }
-
-    private static PerformanceFigure<Long> totalSpend(PerformanceFacts f) {
-        Settlement s = f.settlement();
-        if (s == null) {
-            return PerformanceFigure.none(FigureState.PENDING_SETTLEMENT, "정산 후 확정");
-        }
-        long original = spendOf(f, s.getOriginalRewardAmount());
-        if (f.status() == PerformanceStatus.ADJUSTING) {
-            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, original, "합의 후 변동");
-        }
-        return new PerformanceFigure<>(spendOf(f, s.getRewardAmount()), FigureState.FINAL,
-                agreed(f) ? original : null, "고정 지급비 + 리워드");
-    }
-
-    private static PerformanceFigure<Long> roasFigure(PerformanceFacts f) {
-        Settlement s = f.settlement();
-        if (s == null) {
-            return PerformanceFigure.none(FigureState.PENDING_SETTLEMENT, "확정 거래액이 확정되면 산출됩니다");
-        }
-        long sales = f.orders().confirmedSalesAmount();
-        long originalSpend = spendOf(f, s.getOriginalRewardAmount());
-        if (f.status() == PerformanceStatus.ADJUSTING) {
-            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, roas(sales, originalSpend),
-                    "총 집행비가 리워드 합의로 바뀜");
-        }
-        long spend = spendOf(f, s.getRewardAmount());
-        return new PerformanceFigure<>(roas(sales, spend), FigureState.FINAL,
-                agreed(f) ? roas(sales, originalSpend) : null,
-                spend == 0 ? "고정 지급비 · 리워드가 모두 0원" : "확정 거래액 ÷ 총 집행비 %,d원".formatted(spend));
-    }
-
-    private static PerformanceFigure<Long> acquisitionCost(PerformanceFacts f, long newBuyers) {
-        Settlement s = f.settlement();
-        if (s == null) {
-            return PerformanceFigure.none(FigureState.PENDING_SETTLEMENT, "총 집행비가 확정되면 산출됩니다");
-        }
-        long originalSpend = spendOf(f, s.getOriginalRewardAmount());
-        if (f.status() == PerformanceStatus.ADJUSTING) {
-            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, div(originalSpend, newBuyers), "합의 후 확정");
-        }
-        long spend = spendOf(f, s.getRewardAmount());
-        return new PerformanceFigure<>(div(spend, newBuyers), FigureState.FINAL,
-                agreed(f) ? div(originalSpend, newBuyers) : null,
-                "총 집행비 %,d원 ÷ 신규 소비자 %,d명".formatted(spend, newBuyers));
-    }
-
-    /** 총 집행비 = 고정 지급비 + 리워드(0-11) — 리워드 부가세는 넣지 않는다(§55 B-3 잠정). */
-    private static long spendOf(PerformanceFacts f, long reward) {
-        return f.fixedFeeAmount() + reward;
-    }
-
-    private static long repeatCount(PerformanceFacts f) {
-        return f.buyers().stream().filter(PerformanceFacts.Buyer::repeatInBrand).count();
-    }
+    // ------------------------------------------------------------------ 표기
 
     private static String rewardRateLabel(PerformanceFacts f) {
         List<SettlementPartyViews.RewardRate> rates = f.products().stream().filter(p -> p.rewardRate() != null)
@@ -537,59 +279,6 @@ public class SellerPerformanceAssembler {
 
     private static SellerPerformanceDto.Influencer influencer(GroupBuy groupBuy) {
         return new SellerPerformanceDto.Influencer(groupBuy.getCreator().getId(), groupBuy.getCreator().getShowroomName());
-    }
-
-    // ------------------------------------------------------------------ 수치
-
-    /** % 값 · 소수 1자리 · 분모 0 이면 null. */
-    static BigDecimal pct(long numerator, long denominator) {
-        if (denominator <= 0) {
-            return null;
-        }
-        return BigDecimal.valueOf(numerator).multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(denominator), 1, RoundingMode.HALF_UP);
-    }
-
-    /** ROAS % 정수 · 집행비 0 이면 null(0-11). */
-    static Long roas(long sales, long spend) {
-        if (spend <= 0) {
-            return null;
-        }
-        return BigDecimal.valueOf(sales).multiply(BigDecimal.valueOf(100))
-                .divide(BigDecimal.valueOf(spend), 0, RoundingMode.HALF_UP).longValue();
-    }
-
-    static Long div(long numerator, long denominator) {
-        if (denominator <= 0) {
-            return null;
-        }
-        return BigDecimal.valueOf(numerator).divide(BigDecimal.valueOf(denominator), 0, RoundingMode.HALF_UP)
-                .longValue();
-    }
-
-    private static String ratioText(String prefix, long numerator, long denominator) {
-        BigDecimal ratio = pct(numerator, denominator);
-        return ratio == null ? null : "%s %s%%".formatted(prefix, plain(ratio));
-    }
-
-    private static String plain(BigDecimal value) {
-        return value == null ? "—" : value.toPlainString();
-    }
-
-    private static long zero(Long value) {
-        return value == null ? 0 : value;
-    }
-
-    private static <K> long amount(Map<K, BreakdownLine> lines) {
-        return lines.values().stream().mapToLong(BreakdownLine::amount).sum();
-    }
-
-    private static SellerPerformanceDto.BreakdownLine line(String key, String label, BreakdownLine line) {
-        return new SellerPerformanceDto.BreakdownLine(key, label, line.quantity(), line.amount(), line.groupCount());
-    }
-
-    private static long sum(Collection<PerformanceFacts> facts, ToLongFunction<PerformanceFacts> value) {
-        return facts.stream().mapToLong(value).sum();
     }
 
     /** 상태 칩 — 0 인 상태도 키가 있다. */

@@ -21,6 +21,8 @@ import showroomz.api.app.user.DTO.WithdrawalInfoResponse;
 import showroomz.api.app.user.docs.UserControllerDocs;
 import showroomz.api.app.user.service.UserService;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -108,6 +110,11 @@ public class UserController implements UserControllerDocs {
         // 2. 현재 사용자 정보 조회
         Users currentUser = userService.getUser(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 정지 판정이 닉네임 검증보다 먼저다 — 중복 닉네임 응답이 「이용 정지 중」보다 먼저 나가지 않게(51-6 설계서 4-1)
+        if (request.getNickname() != null || request.getProfileImageUrl() != null) {
+            UserSanctionGuard.requireNotSuspended(currentUser, UserBlockedAction.PROFILE_UPDATE);
+        }
 
         // 3. 입력값 검증 — 화면에서 바꿀 수 있는 값은 닉네임과 프로필 사진뿐이다
         List<ValidationErrorResponse.FieldError> fieldErrors = new ArrayList<>();

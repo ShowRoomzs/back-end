@@ -6,7 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.creator.profile.dto.MyShowroomResponse;
 import showroomz.api.creator.profile.dto.ShowroomNameResponse;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.entity.CreatorSanction;
 import showroomz.domain.member.creator.repository.CreatorRepository;
+import showroomz.domain.member.creator.service.CreatorSanctionReader;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -16,14 +18,12 @@ import showroomz.global.error.exception.ErrorCode;
 public class CreatorProfileService {
 
     private final CreatorRepository creatorRepository;
-    private final showroomz.domain.member.creator.repository.CreatorSanctionRepository sanctionRepository;
-    private final showroomz.domain.member.creator.repository.CreatorWithdrawalRequestRepository withdrawalRequestRepository;
+    private final CreatorSanctionReader sanctionReader;
 
     public MyShowroomResponse getMyShowroom(Long userId) {
         Creator creator = getMyCreator(userId);
-        var sanction = sanctionRepository.findByCreatorIdAndReleasedAtIsNull(creator.getId()).orElse(null);
-        boolean withdrawalPending = withdrawalRequestRepository.existsByCreatorIdAndStatus(creator.getId(),
-                showroomz.domain.member.creator.type.CreatorWithdrawalStatus.PENDING);
+        CreatorSanction sanction = sanctionReader.openSanction(creator.getId()).orElse(null);
+        boolean withdrawalPending = sanctionReader.hasPendingWithdrawal(creator.getId());
         return MyShowroomResponse.from(creator, new MyShowroomResponse.Sanction(creator.getStatus(),
                 sanction == null ? null : sanction.getReason().getLabel(),
                 sanction == null ? null : sanction.getSuspendedAt(),

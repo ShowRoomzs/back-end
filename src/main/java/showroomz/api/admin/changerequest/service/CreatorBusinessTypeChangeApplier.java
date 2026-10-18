@@ -2,11 +2,15 @@ package showroomz.api.admin.changerequest.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.entity.ChangeRequestItem;
 import showroomz.domain.changerequest.type.ChangeRequestField;
+import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
+import showroomz.domain.member.common.service.MemberNotifier;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
+import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -18,12 +22,19 @@ import java.time.LocalDateTime;
  */
 @Component
 @RequiredArgsConstructor
-public class CreatorBusinessTypeChangeApplier {
+public class CreatorBusinessTypeChangeApplier implements ChangeRequestApplier {
 
     private final CreatorRepository creatorRepository;
+    private final MemberNotifier notifier;
+
+    @Override
+    public ChangeRequesterType requesterType() {
+        return ChangeRequesterType.CREATOR;
+    }
 
     /** 요청 행의 암호문을 읽으므로 {@code request.approve} 보다 먼저 부른다. */
-    public Creator apply(BrandChangeRequest request, LocalDateTime now) {
+    @Override
+    public void apply(ChangeRequest request, LocalDateTime now) {
         Creator creator = creatorRepository.findForUpdate(request.getCreator().getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
         if (creator.isWithdrawn()) {
@@ -47,13 +58,34 @@ public class CreatorBusinessTypeChangeApplier {
         }
         // 예금주 규칙(50 설계서 1-4) — 예금주 = 본인 인증 실명이라 개인사업자(대표자 = 본인) · 비사업자 모두 유효하다. 상호 명의 계좌를 받기
         // 전(§55 B-9)에는 위반이 생기지 않으므로 「변경 필요(T10)」로 옮기지 않는다.
-        return creator;
+        // 처리 이력의 「사업자 구분 변경 승인」은 요청 행에서 파생한다(정합 계획서 R1-8). PG 셀러 재등록은 토스 답변 대기(구현 계획서 S6).
     }
 
-    private static String requestedValue(BrandChangeRequest request, ChangeRequestField field) {
+    /** 결과 알림(업무 이메일) — 커밋 뒤. */
+    @Override
+    public void notifyApproved(ChangeRequest request) {
+        Creator creator = request.getCreator();
+        Long creatorId = creator.getId();
+        String businessEmail = creator.getBusinessEmail();
+        String code = request.getRequestCode();
+        AfterCommit.run(() -> notifier.businessTypeChangeApproved(creatorId, businessEmail, code));
+    }
+
+    /** 즉시 재요청 가능 · 결과는 스튜디오 배너(T4a · T9a)와 업무 이메일 알림이 전한다(16 설계서 3-7). */
+    @Override
+    public void notifyRejected(ChangeRequest request, ChangeRequestRejectReason reason, String detail) {
+        Creator creator = request.getCreator();
+        Long creatorId = creator.getId();
+        String businessEmail = creator.getBusinessEmail();
+        String code = request.getRequestCode();
+        String label = reason.getDescription();
+        AfterCommit.run(() -> notifier.businessTypeChangeRejected(creatorId, businessEmail, code, label));
+    }
+
+    private static String requestedValue(ChangeRequest request, ChangeRequestField field) {
         return request.getItems().stream()
                 .filter(item -> item.getFieldKey() == field)
-                .map(BrandChangeRequestItem::getRequestedValue)
+                .map(ChangeRequestItem::getRequestedValue)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("요청 항목 없음: " + field));
     }

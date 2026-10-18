@@ -3,24 +3,29 @@ package showroomz.domain.member.brand.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.type.SellerStatus;
 import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
-import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.member.brand.entity.BrandSanction;
 import showroomz.domain.member.brand.repository.BrandSanctionRepository;
 import showroomz.domain.member.brand.type.BrandAdminEventType;
 import showroomz.domain.member.brand.type.BrandSuspensionReason;
 import showroomz.domain.member.brand.type.SanctionReleaseReason;
+import showroomz.domain.member.common.service.MemberNotifier;
+import showroomz.domain.member.common.service.MemberSanctionRules;
+import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.MessageThread;
-import showroomz.domain.message.service.MessageSanctionChannelGateway;
 import showroomz.domain.message.service.MessageSanctionChannelGateway.SanctionKind;
+import showroomz.domain.message.service.MessageSanctionChannelGateway;
 import showroomz.domain.settlement.service.AfterCommit;
-import showroomz.domain.settlement.service.SettlementSanctionHook;
+import showroomz.domain.settlement.service.PayoutHoldTransitions;
+import showroomz.domain.settlement.type.PayoutBlockReason;
+import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -41,33 +46,27 @@ public class BrandSanctionService {
     private final MarketRepository marketRepository;
     private final BrandSanctionRepository sanctionRepository;
     private final BrandAdminHistoryRecorder historyRecorder;
-    private final SettlementSanctionHook settlementHook;
+    private final PayoutHoldTransitions payoutHolds;
     private final OperatorChannelService operatorChannelService;
     private final MessageSanctionChannelGateway channelGateway;
-    private final BrandMemberNotifier notifier;
+    private final MemberNotifier notifier;
 
     public BrandSanction suspend(Long marketId, BrandSuspensionReason reason, String reasonDetail, Long operatorId,
                                  String operatorName, LocalDateTime now) {
-        if (reason == null) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정지 사유를 선택해 주세요.");
-        }
-        String detail = normalize(reasonDetail);
-        if (reason.isDetailRequired() && detail == null) {
-            throw new BusinessException(ErrorCode.BRAND_SUSPEND_DETAIL_REQUIRED);
-        }
+        String detail = MemberSanctionRules.requireDetail(reason, reasonDetail, ErrorCode.BRAND_SUSPEND_DETAIL_REQUIRED);
         Market market = lockBrand(marketId);
-        if (market.getStatus() == MarketStatus.WITHDRAWN) {
+        if (market.isWithdrawn()) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWN);
         }
-        if (market.getStatus() == MarketStatus.SUSPENDED || sanctionRepository.existsByMarketIdAndReleasedAtIsNull(marketId)) {
+        if (market.isSuspended() || sanctionRepository.existsByMarketIdAndReleasedAtIsNull(marketId)) {
             throw new BusinessException(ErrorCode.BRAND_ALREADY_SUSPENDED);
         }
 
         BrandSanction sanction = sanctionRepository.save(
                 BrandSanction.suspend(marketId, reason, detail, operatorId, operatorName, now));
-        market.setStatus(MarketStatus.SUSPENDED);
+        market.markSuspended();
         if (sanction.isPayoutHeld()) {
-            settlementHook.holdBrandPayouts(marketId, now);
+            payoutHolds.hold(SettlementPayee.BRAND, marketId, PayoutBlockReason.BRAND_SUSPENDED, now);
         }
         historyRecorder.byAdmin(marketId, BrandAdminEventType.SUSPENDED, operatorId, operatorName,
                 sanction.reasonText(), BrandAdminHistoryRecorder.REF_SANCTION, sanction.getId(), now);
@@ -75,7 +74,7 @@ public class BrandSanctionService {
         MessageThread channel = operatorChannelService.requireMarketChannel(market);
         sanction.recordSuspendCard(channelGateway.postSuspendedCard(channel, SanctionKind.BRAND, sanction.getId(),
                 sanction.reasonText(), now, operatorId));
-        AfterCommit.run(() -> notifier.suspended(marketId, reason.getLabel()));
+        AfterCommit.run(() -> notifier.suspended(MemberType.BRAND, marketId, reason.getLabel()));
         log.info("브랜드 정지 - marketId: {}, reason: {}, payoutHeld: {}", marketId, reason, sanction.isPayoutHeld());
         return sanction;
     }
@@ -86,22 +85,20 @@ public class BrandSanctionService {
      */
     public BrandSanction release(Long marketId, SanctionReleaseReason reason, String note, Long operatorId,
                                  String operatorName, LocalDateTime now) {
-        SanctionReleaseReason resolved = reason == null ? SanctionReleaseReason.RESOLVED : reason;
-        if (resolved == SanctionReleaseReason.WITHDRAWN) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "탈퇴 종결은 운영자가 고를 수 있는 해제 사유가 아닙니다.");
-        }
+        SanctionReleaseReason resolved = MemberSanctionRules.operatorReleaseReason(reason);
         Market market = lockBrand(marketId);
-        if (market.getStatus() != MarketStatus.SUSPENDED) {
-            throw new BusinessException(market.getStatus() == MarketStatus.WITHDRAWN
-                    ? ErrorCode.BRAND_WITHDRAWN : ErrorCode.BRAND_NOT_SUSPENDED);
+        if (!market.isSuspended()) {
+            throw new BusinessException(market.isWithdrawn() ? ErrorCode.BRAND_WITHDRAWN : ErrorCode.BRAND_NOT_SUSPENDED);
         }
+        String normalizedNote = MemberSanctionRules.trimToNull(note);
         BrandSanction sanction = sanctionRepository.findByMarketIdAndReleasedAtIsNull(marketId).orElse(null);
-        String text = releaseText(resolved, normalize(note));
-        market.setStatus(MarketStatus.ACTIVE);
+        String text = MemberSanctionRules.releaseText(resolved, normalizedNote);
+        market.markActive();
         if (sanction != null) {
-            sanction.release(resolved, normalize(note), operatorId, operatorName, now);
+            sanction.release(resolved, normalizedNote, operatorId, operatorName, now);
             if (sanction.isPayoutHeld()) {
-                settlementHook.releaseBrandPayouts(marketId, now.toLocalDate(), now);
+                payoutHolds.release(SettlementPayee.BRAND, marketId, PayoutBlockReason.BRAND_SUSPENDED,
+                        PayoutHoldTransitions.DueRule.NEXT_BUSINESS_DAY, now.toLocalDate(), now);
             }
             MessageThread channel = operatorChannelService.requireMarketChannel(market);
             sanction.recordReleaseCard(channelGateway.postReleasedCard(channel, SanctionKind.BRAND, sanction.getId(),
@@ -109,7 +106,7 @@ public class BrandSanctionService {
         }
         historyRecorder.byAdmin(marketId, BrandAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
                 BrandAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
-        AfterCommit.run(() -> notifier.released(marketId));
+        AfterCommit.run(() -> notifier.released(MemberType.BRAND, marketId));
         log.info("브랜드 정지 해제 - marketId: {}, reason: {}", marketId, resolved);
         return sanction;
     }
@@ -118,7 +115,7 @@ public class BrandSanctionService {
      * 탈퇴 승인이 열린 정지를 종결한다(52 설계서 4-3 ④) — 호출자 트랜잭션 · 마켓 잠금 안. 해제 카드 · 알림은 없다(해지된 계정이다).
      * 지급 정지 중이었다면 탈퇴 조건 ④가 이미 막았으므로 풀 지급도 없다.
      */
-    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.MANDATORY)
+    @Transactional(propagation = Propagation.MANDATORY)
     public void closeByWithdrawal(Long marketId, LocalDateTime now) {
         sanctionRepository.findByMarketIdAndReleasedAtIsNull(marketId).ifPresent(sanction -> {
             sanction.release(SanctionReleaseReason.WITHDRAWN, null, null, null, now);
@@ -139,11 +136,4 @@ public class BrandSanctionService {
         return market;
     }
 
-    private static String releaseText(SanctionReleaseReason reason, String note) {
-        return note == null ? reason.getLabel() : reason.getLabel() + " — " + note;
-    }
-
-    private static String normalize(String value) {
-        return value == null || value.isBlank() ? null : value.trim();
-    }
 }

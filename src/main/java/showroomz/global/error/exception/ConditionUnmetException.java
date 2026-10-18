@@ -19,4 +19,10 @@ public class ConditionUnmetException extends BusinessException {
         super(errorCode);
         this.unmet = Collections.unmodifiableMap(new LinkedHashMap<>(unmet));
     }
+
+    /** 메시지에 건수 문장을 함께 싣는다 — 응답 모양({@code code · message · unmet})은 같다. */
+    public ConditionUnmetException(ErrorCode errorCode, String message, Map<String, Long> unmet) {
+        super(errorCode, message);
+        this.unmet = Collections.unmodifiableMap(new LinkedHashMap<>(unmet));
+    }
 }

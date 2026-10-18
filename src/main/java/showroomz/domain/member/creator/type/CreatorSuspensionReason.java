@@ -2,6 +2,7 @@ package showroomz.domain.member.creator.type;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import showroomz.domain.member.common.type.SuspensionReasonType;
 
 /**
  * 인플루언서 정지 사유 6종(§51-2 · M1) — 브랜드 목록을 그대로 쓰지 않는다. <b>리워드 지급 정지는 사유가 정한다</b> — 정산 정보 불일치만
@@ -9,7 +10,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Getter
 @RequiredArgsConstructor
-public enum CreatorSuspensionReason {
+public enum CreatorSuspensionReason implements SuspensionReasonType {
     AD_DISCLOSURE_OMITTED_REPEATED("협찬 표기 누락 반복", false),
     AD_LAW_VIOLATION_REPEATED("표시광고법 위반 문구 반복", false),
     GROUP_BUY_NONPERFORMANCE("공구 진행 불이행", false),

@@ -235,16 +235,6 @@ public class AdminCreatorQueryRepository {
         return result;
     }
 
-    /** 탈퇴 승인의 연결 일괄 종료 대상 — 연결중 · 요청중(53 설계서 4-4 ⑤). */
-    public List<Connection> findOpenPairConnections(Long creatorId) {
-        return em.createQuery("SELECT c FROM Connection c WHERE c.creator.id = :creatorId AND c.type = :type "
-                        + "AND c.status IN :statuses", Connection.class)
-                .setParameter("creatorId", creatorId)
-                .setParameter("type", ConnectionType.PAIR)
-                .setParameter("statuses", Set.of(ConnectionStatus.CONNECTED, ConnectionStatus.REQUESTED))
-                .getResultList();
-    }
-
     private Map<Long, LocalDateTime> pairs(String jpql, Collection<Long> ids) {
         if (ids.isEmpty()) {
             return Map.of();

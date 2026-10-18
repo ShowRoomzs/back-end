@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.creator.basicinfo.dto.CreatorBasicInfoDto;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorWithdrawalRequest;
 import showroomz.domain.member.creator.repository.CreatorRepository;
@@ -12,7 +13,6 @@ import showroomz.domain.member.creator.repository.CreatorWithdrawalRequestReposi
 import showroomz.domain.member.creator.service.CreatorWithdrawalChecklist;
 import showroomz.domain.member.creator.service.CreatorWithdrawalEligibility;
 import showroomz.domain.member.creator.service.CreatorWithdrawalService;
-import showroomz.domain.member.creator.type.CreatorWithdrawalStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.MaskingUtils;
@@ -96,7 +96,7 @@ public class CreatorAccountTabService {
     private CreatorBasicInfoDto.Withdrawal withdrawal(Long creatorId) {
         List<CreatorWithdrawalChecklist.Condition> conditions = checklist.read(creatorId);
         Optional<CreatorWithdrawalRequest> pending = withdrawalRequests
-                .findFirstByCreatorIdAndStatusOrderByRequestedAtDesc(creatorId, CreatorWithdrawalStatus.PENDING);
+                .findFirstByCreatorIdAndStatusOrderByRequestedAtDesc(creatorId, MemberWithdrawalStatus.PENDING);
         Optional<CreatorWithdrawalRequest> rejected = pending.isPresent() ? Optional.empty()
                 : withdrawalRequests.findFirstByCreatorIdOrderByRequestedAtDescIdDesc(creatorId)
                         .filter(CreatorWithdrawalRequest::isUnacknowledgedRejection);

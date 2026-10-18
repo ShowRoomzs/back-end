@@ -2,6 +2,8 @@ package showroomz.api.creator.performance.service;
 
 import showroomz.api.creator.performance.dto.CreatorPerformanceDto;
 import showroomz.api.creator.showroom.service.Demographics;
+import showroomz.domain.performance.vo.GenderSplit;
+import showroomz.global.utils.Percent;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -58,7 +60,7 @@ public final class CreatorPerformanceDistribution {
         }
         long known = female + male;
         CreatorPerformanceDto.GenderSplit genders = new CreatorPerformanceDto.GenderSplit(
-                CreatorPerformanceRates.percent(female, known), CreatorPerformanceRates.percent(male, known),
+                Percent.oneDecimal(female, known), Percent.oneDecimal(male, known),
                 female, male, sample - known);
 
         List<CreatorPerformanceDto.AgeGroup> groups = new ArrayList<>();
@@ -84,18 +86,16 @@ public final class CreatorPerformanceDistribution {
 
     /** 성비 KPI — 미확인 제외 · 큰 쪽을 앞에. 아는 성별이 없으면 null. 반올림 합이 100 이 되게 한쪽을 나머지로 둔다. */
     public static CreatorPerformanceDto.GenderRatio genderRatio(long female, long male) {
-        long known = female + male;
-        if (known == 0) {
+        GenderSplit split = GenderSplit.of(female, male);
+        if (split == null) {
             return null;
         }
-        int femalePercent = (int) Math.round(female * 100.0 / known);
-        int malePercent = 100 - femalePercent;
-        return new CreatorPerformanceDto.GenderRatio(femalePercent >= malePercent ? "FEMALE" : "MALE",
-                femalePercent, malePercent);
+        return new CreatorPerformanceDto.GenderRatio(split.femaleFirst() ? "FEMALE" : "MALE", split.femalePercent(),
+                split.malePercent());
     }
 
     private static CreatorPerformanceDto.AgeGroup group(String label, long[] counts, long sample) {
-        return new CreatorPerformanceDto.AgeGroup(label, counts[0], CreatorPerformanceRates.percent(counts[0], sample),
-                CreatorPerformanceRates.percent(counts[1], sample), CreatorPerformanceRates.percent(counts[2], sample));
+        return new CreatorPerformanceDto.AgeGroup(label, counts[0], Percent.oneDecimal(counts[0], sample),
+                Percent.oneDecimal(counts[1], sample), Percent.oneDecimal(counts[2], sample));
     }
 }

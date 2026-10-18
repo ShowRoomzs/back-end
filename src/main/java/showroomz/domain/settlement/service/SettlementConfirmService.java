@@ -8,10 +8,9 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
-import showroomz.domain.settlement.port.BrandPayoutHoldReader;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
-import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementConfirmReason;
 import showroomz.domain.settlement.type.SettlementEventType;
@@ -45,12 +44,12 @@ public class SettlementConfirmService {
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementHistoryRecorder historyRecorder;
     private final PayoutBlockPolicy blockPolicy;
+    private final PayoutHoldTransitions holdTransitions;
     private final SettlementSchedule schedule;
     private final SettlementTaxDocumentHook taxDocumentHook;
     private final SettlementNotifier notifier;
     private final PersonalDataCipher cipher;
     private final SettlementPartnerSyncService partnerSync;
-    private final BrandPayoutHoldReader brandPayoutHoldReader;
 
     @Transactional(readOnly = true)
     public List<Long> findIdsToAutoConfirm(LocalDateTime now, int limit) {
@@ -124,16 +123,10 @@ public class SettlementConfirmService {
             }
         }
         // 계정 정지 · 지급 정지 사유면 브랜드 몫은 예정 대신 보류(§51-3 · 52 설계서 6-3). 계좌 고정은 위에서 이미 했다 — 해제되면 그 계좌로 나간다.
-        if (brandPayoutHoldReader.isHeld(settlement.getMarketId())) {
+        for (PayoutBlockReason brandReason : blockPolicy.brandBlockReasons(settlement)) {
             payoutRepository.findBySettlementIdAndPayee(settlementId, SettlementPayee.BRAND)
                     .filter(p -> p.getStatus() == PayoutStatus.SCHEDULED)
-                    .ifPresent(p -> {
-                        if (payoutRepository.blockWithReason(p.getId(), PayoutBlockReason.BRAND_SUSPENDED.name(),
-                                PayoutBlockReason.BRAND_SUSPENDED.getLabel()) == 1) {
-                            historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
-                                    "브랜드 몫 · " + PayoutBlockReason.BRAND_SUSPENDED.getLabel(), confirmedAt);
-                        }
-                    });
+                    .ifPresent(p -> holdTransitions.holdRow(p, brandReason, confirmedAt));
         }
         taxDocumentHook.onConfirmed(settlement, confirmedAt);
         historyRecorder.recordBySystem(settlementId, eventOf(reason), basis, confirmedAt);

@@ -10,6 +10,8 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.product.DTO.ProductDto;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.category.service.CategoryHierarchyService;
@@ -40,6 +42,7 @@ public class WishlistService {
     public void addWishlist(String username, Long productId) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.LIKE);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));

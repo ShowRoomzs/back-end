@@ -5,9 +5,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
-import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
+import showroomz.domain.member.seller.entity.Seller;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +103,31 @@ public class Market {
         this.seller = seller;
         this.marketName = marketName;
         this.csNumber = csNumber;
+    }
+
+    // ------------------------------------------------------------------ 회원 상태(52 설계서 0-2 · 정합 계획서 R1-6)
+
+    /** 정지 — 호출자가 마켓 행을 잠그고 활성임을 확인한 뒤 부른다. 사유 · 처리자는 {@code brand_sanction} 행이 든다. */
+    public void markSuspended() {
+        this.status = MarketStatus.SUSPENDED;
+    }
+
+    /** 정지 해제 — 호출자가 마켓 행을 잠그고 정지임을 확인한 뒤 부른다. */
+    public void markActive() {
+        this.status = MarketStatus.ACTIVE;
+    }
+
+    /** 탈퇴 승인 — 되돌릴 수 없다. 파기는 {@code BrandWithdrawalPurger}가 같은 트랜잭션에서 한다. */
+    public void markWithdrawn() {
+        this.status = MarketStatus.WITHDRAWN;
+    }
+
+    public boolean isSuspended() {
+        return status == MarketStatus.SUSPENDED;
+    }
+
+    public boolean isWithdrawn() {
+        return status == MarketStatus.WITHDRAWN;
     }
 
     /**

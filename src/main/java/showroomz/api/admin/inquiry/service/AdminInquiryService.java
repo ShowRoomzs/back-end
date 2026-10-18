@@ -92,13 +92,15 @@ public class AdminInquiryService {
                 .inquiryId(inquiry.getId())
                 .inquiryNumber(inquiryNumber(inquiry))
                 .type(inquiry.getType())
-                .typeName(inquiry.getType().getDescription())
+                .typeName(inquiry.typeName())
                 .status(inquiry.getStatus())
                 .slaExceeded(isSlaExceeded(inquiry, now))
                 .userId(user.getId())
                 .userName(writerName(user))
                 .orderId(inquiry.getOrderId())
                 .claimId(inquiry.getClaimId())
+                .sanctionAppeal(inquiry.isSanctionAppeal())
+                .sanctionId(inquiry.getSanctionId())
                 .createdAt(inquiry.getCreatedAt())
                 .answeredAt(inquiry.getAnsweredAt())
                 .elapsedText(elapsedText(inquiry, now))
@@ -137,7 +139,7 @@ public class AdminInquiryService {
         return AdminInquiryDto.ListItem.builder()
                 .inquiryId(inquiry.getId())
                 .type(inquiry.getType())
-                .typeName(inquiry.getType().getDescription())
+                .typeName(inquiry.typeName())
                 .content(inquiry.getContent())
                 .writerName(writerName(inquiry.getUser()))
                 .createdAt(inquiry.getCreatedAt())
@@ -145,6 +147,7 @@ public class AdminInquiryService {
                 .elapsedText(elapsedText(inquiry, now))
                 .slaExceeded(isSlaExceeded(inquiry, now))
                 .status(inquiry.getStatus())
+                .sanctionAppeal(inquiry.isSanctionAppeal())
                 .build();
     }
 

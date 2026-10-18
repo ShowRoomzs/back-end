@@ -14,7 +14,7 @@ public interface CreatorSanctionRepository extends JpaRepository<CreatorSanction
 
     boolean existsByCreatorIdAndReleasedAtIsNull(Long creatorId);
 
-    /** 리워드 지급 정지가 걸린 열린 정지가 있는가 — 정산 포트 {@code CreatorPayoutHoldReader}. */
+    /** 리워드 지급 정지가 걸린 열린 정지가 있는가 — 정산 포트 {@code PayoutHoldReader}. */
     @Query("SELECT COUNT(s) > 0 FROM CreatorSanction s WHERE s.creatorId = :creatorId AND s.releasedAt IS NULL "
             + "AND s.payoutHeld = true")
     boolean existsOpenPayoutHold(@Param("creatorId") Long creatorId);
