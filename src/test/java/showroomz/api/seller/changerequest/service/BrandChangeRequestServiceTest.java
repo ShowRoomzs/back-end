@@ -12,8 +12,8 @@ import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.changerequest.dto.ChangeRequestItemRequest;
 import showroomz.api.seller.changerequest.dto.CreateChangeRequestRequest;
 import showroomz.domain.bank.repository.BankRepository;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.service.ChangeRequestCodeGenerator;
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestType;
@@ -44,7 +44,7 @@ class BrandChangeRequestServiceTest {
     @Mock
     private MarketRepository marketRepository;
     @Mock
-    private BrandChangeRequestRepository brandChangeRequestRepository;
+    private ChangeRequestRepository changeRequestRepository;
     @Mock
     private BankRepository bankRepository;
     @Mock
@@ -86,7 +86,7 @@ class BrandChangeRequestServiceTest {
     @Test
     @DisplayName("이미 PENDING 요청이 있으면 중복 요청을 차단한다")
     void rejectsWhenPendingRequestAlreadyExists() {
-        given(brandChangeRequestRepository.findByMarket_IdAndTypeAndStatus(
+        given(changeRequestRepository.findByMarket_IdAndTypeAndStatus(
                 any(), any(), any())).willReturn(Optional.of(mockPendingRequest()));
 
         assertThatThrownBy(() -> brandChangeRequestService.create(SELLER_EMAIL, businessInfoRequest("이대표")))
@@ -98,7 +98,7 @@ class BrandChangeRequestServiceTest {
     @Test
     @DisplayName("요청값이 현재값과 같으면 400으로 거부한다")
     void rejectsWhenRequestedValueEqualsCurrentValue() {
-        given(brandChangeRequestRepository.findByMarket_IdAndTypeAndStatus(any(), any(), any()))
+        given(changeRequestRepository.findByMarket_IdAndTypeAndStatus(any(), any(), any()))
                 .willReturn(Optional.empty());
 
         assertThatThrownBy(() -> brandChangeRequestService.create(SELLER_EMAIL, businessInfoRequest("김대표")))
@@ -153,17 +153,17 @@ class BrandChangeRequestServiceTest {
     @Test
     @DisplayName("생성 시 current_value는 클라이언트 입력이 아니라 서버 스냅샷을 사용한다")
     void snapshotsCurrentValueFromServerState() {
-        given(brandChangeRequestRepository.findByMarket_IdAndTypeAndStatus(any(), any(), any()))
+        given(changeRequestRepository.findByMarket_IdAndTypeAndStatus(any(), any(), any()))
                 .willReturn(Optional.empty());
         // 요청 코드 채번은 ChangeRequestCodeGenerator(브랜드 · 인플루언서 공용)로 옮겼다 — 여기서는 목이 「CHG-2026-0001」을 준다.
-        given(brandChangeRequestRepository.save(any(BrandChangeRequest.class)))
+        given(changeRequestRepository.save(any(ChangeRequest.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));
 
         brandChangeRequestService.create(SELLER_EMAIL, businessInfoRequest("이대표"));
 
-        ArgumentCaptor<BrandChangeRequest> captor = ArgumentCaptor.forClass(BrandChangeRequest.class);
-        verify(brandChangeRequestRepository).save(captor.capture());
-        BrandChangeRequest saved = captor.getValue();
+        ArgumentCaptor<ChangeRequest> captor = ArgumentCaptor.forClass(ChangeRequest.class);
+        verify(changeRequestRepository).save(captor.capture());
+        ChangeRequest saved = captor.getValue();
         assertThat(saved.getItems()).hasSize(1);
         assertThat(saved.getItems().get(0).getCurrentValue()).isEqualTo("김대표");
         assertThat(saved.getItems().get(0).getRequestedValue()).isEqualTo("이대표");
@@ -193,8 +193,8 @@ class BrandChangeRequestServiceTest {
         return request;
     }
 
-    private BrandChangeRequest mockPendingRequest() {
-        return BrandChangeRequest.create("CHG-2026-0001", market, ChangeRequestType.BUSINESS_INFO,
+    private ChangeRequest mockPendingRequest() {
+        return ChangeRequest.create("CHG-2026-0001", market, ChangeRequestType.BUSINESS_INFO,
                 "사유", "김담당", "https://cdn.example.com/a.jpg", "a.jpg", 1024L);
     }
 }

@@ -23,7 +23,10 @@ import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.history.type.ConsentType;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
+import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.type.WithdrawalReason;
 import showroomz.domain.member.user.vo.RefundAccount;
@@ -47,6 +50,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final BankRepository bankRepository;
     private final CreatorFollowRepository creatorFollowRepository;
+    private final CreatorRepository creatorRepository;
     private final WithdrawalHistoryRepository withdrawalHistoryRepository;
     private final UserStatusHistoryRepository userStatusHistoryRepository;
     private final UserConsentHistoryRepository userConsentHistoryRepository;
@@ -122,6 +126,11 @@ public class UserService {
         // 탈퇴 회원 체크
         if (user.getStatus() == UserStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+        }
+
+        // 이용 정지 중에는 닉네임 · 프로필 사진을 바꿀 수 없다(C20 1f · C15-1)
+        if (request.getNickname() != null || request.getProfileImageUrl() != null) {
+            UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PROFILE_UPDATE);
         }
 
         // 닉네임 업데이트
@@ -278,14 +287,27 @@ public class UserService {
                 .map(r -> new WithdrawalInfoResponse.WithdrawalReasonOption(r.name(), r.getDescription()))
                 .toList();
 
+        boolean creatorReviewRequired = isUnwithdrawnCreator(user);
         return new WithdrawalInfoResponse(
-                ongoingOrderCount == 0,
+                ongoingOrderCount == 0 && !creatorReviewRequired,
                 ongoingOrderCount,
                 creatorFollowRepository.countByUser(user),
                 wishlistRepository.countByUser_Id(user.getId()),
                 cartRepository.countByUser(user),
-                reasons
+                reasons,
+                creatorReviewRequired
         );
+    }
+
+    /**
+     * 탈퇴하지 않은 인플루언서인가(활성 · 정지) — 인플루언서 탈퇴는 스튜디오 신청 → 운영자 승인이다(§51-5). 소비자 탈퇴로 빠져나가면
+     * {@code users.status}만 WITHDRAWN 이 되고 {@code creator.status}는 그대로라 미정산 · 진행 중 공구를 둔 채 활성으로 남는다
+     * (정합 계획서 E-2 · 50 설계서 Q7). 정지 중인 인플루언서도 막는다 — 정지를 피하려는 탈퇴 길을 두지 않는다(§51-3).
+     */
+    private boolean isUnwithdrawnCreator(Users user) {
+        return creatorRepository.findByUser_Id(user.getId())
+                .map(creator -> !creator.isWithdrawn())
+                .orElse(false);
     }
 
     /**
@@ -314,6 +336,11 @@ public class UserService {
         //    화면에서 이미 비활성이지만, 조회 후 주문이 생겼거나 API를 직접 호출한 경우를 여기서 거른다.
         if (orderProductRepository.countOngoingByUserId(user.getId(), FINISHED_ORDER_STATUSES) > 0) {
             throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER);
+        }
+
+        // 2-1. 인플루언서는 스튜디오에서 탈퇴를 신청해 운영자 승인을 받아야 한다 — 소비자 탈퇴로 심사를 우회하지 않는다.
+        if (isUnwithdrawnCreator(user)) {
+            throw new BusinessException(ErrorCode.USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW);
         }
 
         // 기존 상태 임시 저장 (히스토리 기록용)

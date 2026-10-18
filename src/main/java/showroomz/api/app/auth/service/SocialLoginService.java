@@ -10,6 +10,7 @@ import showroomz.api.app.auth.info.OAuth2UserInfoFactory;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.admin.social.service.SocialPolicyService;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionService;
 import showroomz.domain.member.user.type.UserStatus;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
@@ -48,6 +49,7 @@ public class SocialLoginService {
     private final UserRepository userRepository;
     private final RestTemplate restTemplate; // Bean 주입 권장
     private final SocialPolicyService socialPolicyService; // 주입 추가
+    private final UserSanctionService userSanctionService;
 
     // application.yml 등에 설정된 구글 클라이언트 ID (Android/iOS 등)
     // 예: spring.security.oauth2.client.registration.google.client-id 와 같은 경로의 값
@@ -93,9 +95,9 @@ public class SocialLoginService {
 
             // 탈퇴 회원(WITHDRAWN)인 경우 재가입(복구) 처리
             if (user.getStatus() == UserStatus.WITHDRAWN) {
-                // 1. 상태 복구: 탈퇴 -> 정상
-                user.updateStatus(UserStatus.NORMAL);
-                
+                // 1. 상태 복구: 탈퇴 -> 정상. 정지 중에 탈퇴했다면 정지로 되돌린다 — 탈퇴 · 재가입으로 정지가 풀리지 않는다(51-6 설계서 6절)
+                userSanctionService.restoreOnRejoin(user);
+
                 // 2. 재가입 프로세스 유도:
                 //    - Role을 GUEST로 변경하여 권한을 축소 (가입 미완료 상태로 전환)
                 //    - isNewMember를 true로 설정하여 프론트엔드가 가입 화면(약관/닉네임)을 띄우게 함

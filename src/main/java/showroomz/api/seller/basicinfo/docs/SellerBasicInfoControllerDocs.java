@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.seller.basicinfo.dto.SellerBasicInfoDto;
 
@@ -64,7 +65,15 @@ public interface SellerBasicInfoControllerDocs {
     })
     ResponseEntity<Void> updateDeliveryPolicy(@Valid @RequestBody SellerBasicInfoDto.UpdateDeliveryPolicyRequest request);
 
-    @Operation(summary = "계정 정보 조회", description = "로그인 이메일과 다음 변경 가능일을 내려준다.\n\n**권한:** SELLER")
+    @Operation(summary = "계정 정보 조회", description = """
+            로그인 이메일과 다음 변경 가능일, **탈퇴 블록**(`withdrawal`)을 내려준다.
+
+            탈퇴 블록 — `state` 가 AVAILABLE(신청 가능) · BLOCKED(조건 미충족) · PENDING(심사 중). 조건 4종(진행 중 · 준비 중 공구 ·
+            체결 전 계약 · 미종결 주문 · 진행 중 정산)은 상태와 무관하게 항상 내리고, 어드민 승인 직전 재검증과 같은 판정식이다.
+            가장 최근 신청이 반려였으면 `lastRejection` 에 사유 · 안내가 실린다(재신청은 바로 가능).
+
+            **권한:** SELLER
+            """)
     ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> getAccountInfo();
 
     @Operation(
@@ -89,4 +98,29 @@ public interface SellerBasicInfoControllerDocs {
             @ApiResponse(responseCode = "400", description = "월 1회 제한 초과 또는 이메일 중복")
     })
     ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> changeEmail(@Valid @RequestBody SellerBasicInfoDto.ChangeEmailRequest request);
+
+    @Operation(summary = "탈퇴 신청", description = """
+            브랜드는 즉시 탈퇴가 없다 — 신청 → 운영자 승인(§51-5). 승인 전까지 브랜드는 **활성 그대로**이고 정지 중에도 신청할 수 있다.
+            사유 · 남기실 말씀은 모두 선택이다(바디 생략 가능). 승인 시점에 조건을 다시 판정한다.
+
+            **권한:** SELLER
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "신청 접수 — requestId · requestedAt"),
+            @ApiResponse(responseCode = "400", description = "남기실 말씀 1000자 초과"),
+            @ApiResponse(responseCode = "409", description = """
+                    BRAND_WITHDRAWAL_CONDITION_UNMET — 응답 최상위 `unmet` 에 미충족 조건별 건수({"ACTIVE_GROUP_BUYS": 1}) ·
+                    BRAND_WITHDRAWAL_ALREADY_PENDING — 이미 심사 중인 신청이 있다 · BRAND_WITHDRAWN
+                    """)
+    })
+    ResponseEntity<SellerBasicInfoDto.WithdrawalRequestResponse> requestWithdrawal(
+            @Valid @RequestBody(required = false) SellerBasicInfoDto.WithdrawalRequestBody request);
+
+    @Operation(summary = "탈퇴 신청 취소", description = "운영자가 처리하기 전까지 브랜드가 직접 취소한다.\n\n**권한:** SELLER")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "취소 완료"),
+            @ApiResponse(responseCode = "404", description = "BRAND_WITHDRAWAL_NOT_FOUND — 내 마켓의 신청이 아니다"),
+            @ApiResponse(responseCode = "409", description = "BRAND_WITHDRAWAL_NOT_PENDING — 이미 처리 · 취소된 신청")
+    })
+    ResponseEntity<Void> cancelWithdrawal(@PathVariable Long requestId);
 }

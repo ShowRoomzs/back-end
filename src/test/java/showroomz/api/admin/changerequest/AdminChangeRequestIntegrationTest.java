@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
+import showroomz.domain.changerequest.entity.ChangeRequest;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
@@ -407,7 +407,7 @@ class AdminChangeRequestIntegrationTest extends IntegrationTestSupport {
             assertThat(seller.getBusinessAddress()).isEqualTo("서울특별시 성동구 성수이로 10, 3층");
             assertThat(seller.getDetailAddress()).isNull();
 
-            BrandChangeRequest approved = changeRequestRepository.findById(requestId).orElseThrow();
+            ChangeRequest approved = changeRequestRepository.findById(requestId).orElseThrow();
             assertThat(approved.getStatus()).isEqualTo(ChangeRequestStatus.APPROVED);
             assertThat(approved.getProcessedBy()).isEqualTo(operator.getId());
             assertThat(approved.getProcessedAt()).isNotNull();
@@ -509,7 +509,7 @@ class AdminChangeRequestIntegrationTest extends IntegrationTestSupport {
                     .andExpect(jsonPath("$.rejectReason").value("변경 사유 불충분"))
                     .andExpect(jsonPath("$.rejectReasonDetail").value(nullValue()));
 
-            BrandChangeRequest rejected = changeRequestRepository.findById(requestId).orElseThrow();
+            ChangeRequest rejected = changeRequestRepository.findById(requestId).orElseThrow();
             assertThat(rejected.getStatus()).isEqualTo(ChangeRequestStatus.REJECTED);
             // 저장은 enum name으로, 표시는 description으로 — 문구가 바뀌어도 데이터는 안전하다
             assertThat(rejected.getRejectReason()).isEqualTo("REASON_INSUFFICIENT");

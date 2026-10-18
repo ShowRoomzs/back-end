@@ -4,22 +4,25 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshToken;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.global.utils.SettlementAccountMasker;
 import showroomz.api.seller.basicinfo.dto.SellerBasicInfoDto;
 import showroomz.api.seller.changerequest.service.BrandChangeRequestService;
 import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;
 import showroomz.domain.changerequest.type.ChangeRequestType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.brand.entity.MarketShipLeadHistory;
+import showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository;
+import showroomz.domain.member.brand.service.BrandSanctionReader;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
+import showroomz.global.utils.SettlementAccountMasker;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -39,8 +42,9 @@ public class SellerBasicInfoService {
     private final MailService mailService;
     private final PasswordEncoder passwordEncoder;
     private final SellerRefreshTokenRepository sellerRefreshTokenRepository;
-    private final showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository shipLeadHistoryRepository;
-    private final showroomz.domain.member.brand.service.BrandSanctionReader brandSanctionReader;
+    private final MarketShipLeadHistoryRepository shipLeadHistoryRepository;
+    private final BrandSanctionReader brandSanctionReader;
+    private final SellerWithdrawalService withdrawalService;
 
     public SellerBasicInfoDto.BusinessInfoResponse getBusinessInfo(String sellerEmail) {
         Market market = getMyMarket(sellerEmail);
@@ -153,7 +157,7 @@ public class SellerBasicInfoService {
         Integer previousDays = market.getShippingLeadDays();
         Integer newDays = request.getShippingLeadDays();
         if (newDays != null && !newDays.equals(previousDays)) {
-            shipLeadHistoryRepository.save(showroomz.domain.member.brand.entity.MarketShipLeadHistory.of(
+            shipLeadHistoryRepository.save(MarketShipLeadHistory.of(
                     market.getId(), previousDays, newDays, LocalDateTime.now()));
         }
         market.setShippingLeadDays(request.getShippingLeadDays());
@@ -233,6 +237,9 @@ public class SellerBasicInfoService {
                 .emailChangeable(changeable)
                 .lastEmailChangedAt(emailChangedAt)
                 .nextEmailChangeableAt(emailChangedAt != null ? nextChangeableAt : null)
+                .withdrawal(marketRepository.findBySeller(seller)
+                        .map(market -> withdrawalService.read(market))
+                        .orElse(null))
                 .build();
     }
 

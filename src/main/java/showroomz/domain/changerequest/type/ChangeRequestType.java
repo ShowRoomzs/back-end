@@ -43,6 +43,14 @@ public enum ChangeRequestType {
         return targetBusinessType == CreatorBusinessType.BUSINESS ? CreatorBusinessType.INDIVIDUAL : CreatorBusinessType.BUSINESS;
     }
 
+    /** 「비사업자 → 개인사업자」 — 처리 이력 · 어드민 상세의 방향 표기. 브랜드 유형은 null. */
+    public String directionLabel() {
+        if (targetBusinessType == null) {
+            return null;
+        }
+        return sourceBusinessType().getDescription() + " → " + targetBusinessType.getDescription();
+    }
+
     /** 인플루언서 사업자 구분 변경 — 목표 구분으로 유형을 정한다. */
     public static ChangeRequestType toward(CreatorBusinessType target) {
         return target == CreatorBusinessType.BUSINESS ? TO_BUSINESS : TO_INDIVIDUAL;

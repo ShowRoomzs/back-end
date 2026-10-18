@@ -12,7 +12,6 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostAppeal;
 import showroomz.domain.post.entity.PostImage;
-import showroomz.domain.post.entity.PostReport;
 import showroomz.domain.post.entity.PostSuspension;
 import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
@@ -20,6 +19,7 @@ import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
+import showroomz.domain.post.service.PostReportTransitions;
 import showroomz.domain.post.type.PostAppealStatus;
 import showroomz.domain.post.type.PostDeleteReason;
 import showroomz.domain.post.type.PostMonitoringStatus;
@@ -68,6 +68,7 @@ public class AdminPostService {
     private final PostProperties postProperties;
     private final PostAppealReviewDue appealReviewDue;
     private final AdminOperatorResolver adminOperatorResolver;
+    private final PostReportTransitions reportTransitions;
 
     // ------------------------------------------------------------------ 코드 · 목록
 
@@ -133,7 +134,7 @@ public class AdminPostService {
 
         // 이 게시물에 걸려 있던 신고를 한꺼번에 닫는다. 신고 하나하나를 따로 처리하게 하면 같은
         // 게시물에 스무 건이 걸렸을 때 스무 번을 눌러야 하고, 그 사이 대기열이 조치가 끝난 건으로 찬다.
-        int accepted = handlePendingReports(postId, operatorId, now, true);
+        int accepted = reportTransitions.closePending(postId, operatorId, now, true);
 
         // 통지 문구를 지금 굳힌다 — 게시물이 파기된 뒤에는 사유 · 근거를 다시 만들어 낼 수 없다(§24-6)
         postNotificationService.notify(post, PostNotificationEvent.SUSPENDED,
@@ -173,7 +174,7 @@ public class AdminPostService {
             throw new BusinessException(ErrorCode.POST_REPORT_NOTHING_TO_CLOSE);
         }
 
-        int dismissed = handlePendingReports(postId, operatorId, LocalDateTime.now(), false);
+        int dismissed = reportTransitions.closePending(postId, operatorId, LocalDateTime.now(), false);
         if (dismissed == 0) {
             throw new BusinessException(ErrorCode.POST_REPORT_NOTHING_TO_CLOSE);
         }
@@ -331,22 +332,6 @@ public class AdminPostService {
         if (!post.isGeneral()) {
             throw new BusinessException(ErrorCode.POST_NOT_EDITABLE, "공구 게시물은 공구 관리에서 숨김 처리해 주세요.");
         }
-    }
-
-    /**
-     * @param accept true면 조치로 이어짐(노출 중지), false면 반려(신고 종결)
-     * @return 닫은 신고 수
-     */
-    private int handlePendingReports(Long postId, Long operatorId, LocalDateTime now, boolean accept) {
-        List<PostReport> pending = postReportRepository.findByPost_IdAndStatus(postId, PostReportStatus.PENDING);
-        for (PostReport report : pending) {
-            if (accept) {
-                report.accept(operatorId, now);
-            } else {
-                report.dismiss(operatorId, now);
-            }
-        }
-        return pending.size();
     }
 
     private PostAppeal lockPendingAppeal(Long appealId) {

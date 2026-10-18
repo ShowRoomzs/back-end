@@ -12,11 +12,10 @@ import showroomz.api.admin.post.dto.AdminPostReportDto;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.post.entity.PostReport;
 import showroomz.domain.post.repository.PostReportRepository;
+import showroomz.domain.post.service.PostReportTransitions;
 import showroomz.domain.post.type.PostReportStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
-import showroomz.global.error.exception.BusinessException;
-import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -45,6 +44,7 @@ public class AdminPostReportService {
 
     private final PostReportRepository postReportRepository;
     private final AdminOperatorResolver adminOperatorResolver;
+    private final PostReportTransitions reportTransitions;
 
     /**
      * @param postId null이면 전체 대기열, 값이 있으면 그 게시물에 걸린 신고만
@@ -71,12 +71,7 @@ public class AdminPostReportService {
      */
     @Transactional
     public void dismiss(Long operatorId, Long reportId) {
-        PostReport report = postReportRepository.findById(reportId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.POST_REPORT_NOT_FOUND));
-        if (!report.isPending()) {
-            throw new BusinessException(ErrorCode.POST_REPORT_ALREADY_HANDLED);
-        }
-        report.dismiss(operatorId, LocalDateTime.now());
+        reportTransitions.dismiss(reportId, operatorId, LocalDateTime.now());
     }
 
     // ------------------------------------------------------------------ 내부

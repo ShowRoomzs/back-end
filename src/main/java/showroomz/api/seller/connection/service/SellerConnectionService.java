@@ -15,6 +15,7 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -30,6 +31,7 @@ import showroomz.global.error.exception.ErrorCode;
 public class SellerConnectionService {
 
     private final ConnectionRepository connectionRepository;
+    private final BrandSanctionGuard brandSanctionGuard;
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
     private final CreatorRepository creatorRepository;
@@ -84,7 +86,7 @@ public class SellerConnectionService {
     public ConnectResponse requestConnection(String sellerEmail, ConnectRequest request) {
         Market market = getMyMarket(sellerEmail);
         // 정지 중에는 새 연결을 요청하지 않는다(§51-1 · 52 설계서 7절).
-        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+        brandSanctionGuard.requireNotSuspended(market,
                 showroomz.domain.member.brand.type.BrandBlockedAction.CONNECTION_REQUEST);
         Creator target = resolveTarget(request);
 

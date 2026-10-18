@@ -20,6 +20,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.Percent;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -127,11 +128,11 @@ public class CreatorPerformanceQueryService {
         long female = 0;
         long male = 0;
         for (PerformanceFacts f : settled) {
-            conversions.add(CreatorPerformanceRates.percent(f.orders().confirmedCount(), f.traffic().visitorCount()));
+            conversions.add(Percent.oneDecimal(f.orders().confirmedCount(), f.traffic().visitorCount()));
             long buyers = f.buyers().size();
-            repeats.add(CreatorPerformanceRates.percent(
+            repeats.add(Percent.oneDecimal(
                     f.buyers().stream().filter(PerformanceFacts.Buyer::repeatWithCreator).count(), buyers));
-            followerBuyers.add(CreatorPerformanceRates.percent(
+            followerBuyers.add(Percent.oneDecimal(
                     f.buyers().stream().filter(PerformanceFacts.Buyer::followerAtPurchase).count(), buyers));
             if (f.post() != null) {
                 impressions += f.post().impressionCount();
@@ -146,8 +147,8 @@ public class CreatorPerformanceQueryService {
             }
         }
         return new CreatorPerformanceDto.Kpi(totalReward, totalReward / n, n,
-                CreatorPerformanceRates.average(conversions), CreatorPerformanceRates.average(repeats),
-                CreatorPerformanceRates.average(followerBuyers), withPost == 0 ? null : impressions / withPost,
+                Percent.average(conversions), Percent.average(repeats),
+                Percent.average(followerBuyers), withPost == 0 ? null : impressions / withPost,
                 CreatorPerformanceDistribution.genderRatio(female, male));
     }
 
@@ -176,7 +177,7 @@ public class CreatorPerformanceQueryService {
                 f.periodStart(), f.periodEnd(), status, status.getLabel(), status.getTone(),
                 salesFinal ? f.orders().confirmedSalesAmount() : null,
                 salesFinal ? f.orders().confirmedQuantity() : null,
-                salesFinal ? CreatorPerformanceRates.percent(f.orders().confirmedCount(), f.traffic().visitorCount()) : null,
+                salesFinal ? Percent.oneDecimal(f.orders().confirmedCount(), f.traffic().visitorCount()) : null,
                 stage, stage == RewardStage.CONFIRMED ? myReward(f) : null);
     }
 

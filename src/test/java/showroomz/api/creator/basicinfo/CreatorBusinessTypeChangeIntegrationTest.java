@@ -8,8 +8,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.common.settlement.SettlementTestSupport;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorAdminHistoryRepository;
@@ -43,6 +43,7 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
     private static final String RESIDENT = "950812-2345678";
 
     @Autowired private CreatorAdminHistoryRepository adminHistories;
+    @Autowired private ChangeRequestRepository brandChangeRequests;
     @Autowired private BrandChangeRequestRepository brandChangeRequests;
     @Autowired private CreatorWithdrawalService withdrawalService;
 
@@ -105,7 +106,7 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
         assertThat(response).doesNotContain("2345678");
         long requestId = idOf(response);
 
-        BrandChangeRequest stored = request(requestId);
+        ChangeRequest stored = request(requestId);
         assertThat(stored.getResidentNumberEnc()).isNotNull().doesNotContain("2345678");
         assertThat(personalDataCipher.decrypt(stored.getResidentNumberEnc())).isEqualTo("9508122345678");
         assertThat(inTransaction(() -> request(requestId).getItems().stream()
@@ -498,7 +499,7 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
         }
     }
 
-    private BrandChangeRequest request(long requestId) {
+    private ChangeRequest request(long requestId) {
         return brandChangeRequests.findById(requestId).orElseThrow();
     }
 
@@ -506,8 +507,16 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
         return creatorRepository.findById(creator.getId()).orElseThrow();
     }
 
-    private List<CreatorAdminEventType> events() {
-        return adminHistories.findByCreatorIdOrderByCreatedAtDescIdDesc(creator.getId()).stream()
-                .map(h -> h.getEventType()).toList();
+    /**
+     * 어드민 처리 이력 API 가 보여 주는 사건 — 사업자 구분 변경 승인 · 반려는 요청 행에서 파생되고 저장되지 않는다(정합 계획서 R1-8). 저장 이력에
+     * 변경 요청 행이 새로 생기지 않는 것도 함께 본다(같은 사건이 두 줄이 되지 않게).
+     */
+    private List<CreatorAdminEventType> events() throws Exception {
+        assertThat(adminHistories.findByCreatorIdOrderByCreatedAtDescIdDesc(creator.getId()))
+                .noneMatch(h -> "CHANGE_REQUEST".equals(h.getRefType()));
+        List<CreatorAdminEventType> types = new java.util.ArrayList<>();
+        json(adminGet("/v1/admin/creators/" + creator.getId() + "/histories?page=1&size=100"))
+                .path("content").forEach(item -> types.add(CreatorAdminEventType.valueOf(item.path("eventType").asText())));
+        return types;
     }
 }

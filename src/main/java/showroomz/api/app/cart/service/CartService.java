@@ -24,6 +24,8 @@ import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductOption;
 import showroomz.domain.product.entity.ProductVariant;
@@ -117,6 +119,7 @@ public class CartService {
 
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.CART_ADD);
 
         for (CartDto.AddCartRequest request : requests) {
             if (request == null) {

@@ -29,8 +29,8 @@ import showroomz.domain.settlement.type.SettlementActorType;
 import showroomz.domain.settlement.type.SettlementEventType;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
-import showroomz.global.error.exception.BusinessException;
 import showroomz.global.config.properties.SettlementProperties;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.PersonalDataCipher;
@@ -68,12 +68,11 @@ public class SettlementPayoutTransitions {
     private final GroupBuyRepository groupBuyRepository;
     private final GroupBuyCommandService groupBuyCommandService;
     private final PayoutBlockPolicy blockPolicy;
+    private final PayoutHoldTransitions holdTransitions;
     private final BankRepository bankRepository;
     private final SettlementPartnerGateway partnerGateway;
     private final SettlementProperties properties;
     private final BusinessCalendar businessCalendar;
-    private final showroomz.domain.settlement.port.BrandPayoutHoldReader brandPayoutHoldReader;
-    private final showroomz.domain.settlement.port.CreatorPayoutHoldReader creatorPayoutHoldReader;
 
     /** 지급 계좌 — 스냅샷의 원천(회원 정보 · 브랜드는 확정 시점 · 그 밖은 지시 시점). 플랫폼은 내부 계정이다. */
     public record Account(String bankName, String accountNumber, String holder) {
@@ -109,8 +108,8 @@ public class SettlementPayoutTransitions {
                 : creatorEntity.getPgPartnerId();
         String brandRawStatus = seller == null ? null : seller.getPgPartnerStatus();
         String creatorRawStatus = creatorEntity == null ? null : creatorEntity.getPgPartnerStatus();
-        boolean brandHeld = brandPayoutHoldReader.isHeld(marketId);
-        boolean creatorHeld = creatorId != null && creatorPayoutHoldReader.isHeld(creatorId);
+        boolean brandHeld = blockPolicy.isBrandBlocked(settlement);
+        boolean creatorHeld = blockPolicy.isCreatorSuspended(creatorId);
 
         List<PayoutLine> lines = new ArrayList<>();
         for (SettlementPayout payout : payoutRepository.findBySettlementId(settlementId)) {
@@ -125,20 +124,12 @@ public class SettlementPayoutTransitions {
             }
             // 계정 정지 · 지급 정지(52 설계서 6-3) — 정지 직후 배치 · 확정과의 경합 틈새를 이 재판정이 닫는다. 해제가 다시 예정으로 올린다.
             if (payout.getPayee() == SettlementPayee.BRAND && brandHeld) {
-                if (payoutRepository.blockWithReason(payout.getId(), PayoutBlockReason.BRAND_SUSPENDED.name(),
-                        PayoutBlockReason.BRAND_SUSPENDED.getLabel()) == 1) {
-                    historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
-                            "브랜드 몫 · " + PayoutBlockReason.BRAND_SUSPENDED.getLabel(), now);
-                }
+                holdTransitions.holdRow(payout, PayoutBlockReason.BRAND_SUSPENDED, now);
                 continue;
             }
             // 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 세금계산서 확인 · 주민번호 등록으로 예정에 올라온 행도 여기서 막는다.
             if (payout.getPayee() == SettlementPayee.CREATOR && creatorHeld) {
-                if (payoutRepository.blockWithReason(payout.getId(), PayoutBlockReason.CREATOR_SUSPENDED.name(),
-                        PayoutBlockReason.CREATOR_SUSPENDED.getLabel()) == 1) {
-                    historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
-                            "인플루언서 몫 · " + PayoutBlockReason.CREATOR_SUSPENDED.getLabel(), now);
-                }
+                holdTransitions.holdRow(payout, PayoutBlockReason.CREATOR_SUSPENDED, now);
                 continue;
             }
             // 재분배(M3)가 고른 계좌(현재 회원 정보 · 지난 지시 그대로)가 스냅샷으로 남아 있으면 그것으로 지시한다.
@@ -164,7 +155,7 @@ public class SettlementPayoutTransitions {
             if (rawStatus != null && partnerGateway.isLimited(rawStatus)
                     && exceedsWeeklyLimit(payout.getPayee(), marketId, creatorId, payout.getAmount(), now)) {
                 String code = PayoutBlockReason.KYC_REQUIRED.name();
-                if (payoutRepository.blockWithReason(payout.getId(), code, "주당 한도 초과 예상 — KYC 완료 후 지급") == 1) {
+                if (payoutRepository.blockForPartner(payout.getId(), code, "주당 한도 초과 예상 — KYC 완료 후 지급") == 1) {
                     historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
                             payout.getPayee().getLabel() + " · " + PayoutBlockReason.KYC_REQUIRED.getLabel() + " · 주당 한도 초과 예상", now);
                     notifier.payoutCheckRequired(settlementId, payout.getPayee(), code);
@@ -372,7 +363,7 @@ public class SettlementPayoutTransitions {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void blockScheduled(Long settlementId, Long payoutId, SettlementPayee payee, String code, String reason,
                                LocalDateTime now) {
-        if (payoutRepository.blockWithReason(payoutId, code, reason) == 1) {
+        if (payoutRepository.blockForPartner(payoutId, code, reason) == 1) {
             historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED, "%s · %s · %s".formatted(
                     payee.getLabel(), PayoutBlockReason.fromCode(code).map(PayoutBlockReason::getLabel).orElse(code), reason), now);
             notifier.partnerVerificationRequired(settlementId, payee, code);

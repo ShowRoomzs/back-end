@@ -5,8 +5,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequestType;
 import showroomz.domain.history.entity.SellerApplicationHistory;
@@ -43,7 +43,7 @@ public class BrandAdminHistoryReader {
 
     private final BrandAdminHistoryRepository historyRepository;
     private final SellerApplicationHistoryRepository applicationHistoryRepository;
-    private final BrandChangeRequestRepository changeRequestRepository;
+    private final ChangeRequestRepository changeRequestRepository;
     private final SellerRepository sellerRepository;
 
     public record Item(BrandAdminEventType type, BrandAdminActorType actorType, String actorName, String detail,
@@ -63,7 +63,7 @@ public class BrandAdminHistoryReader {
                 .findBySellerIdOrderByCreatedAtAsc(seller.getId()).stream()
                 .filter(h -> h.getNewStatus() == SellerStatus.APPROVED)
                 .toList();
-        List<BrandChangeRequest> requests = changeRequestRepository.findByMarket_IdOrderByRequestedAtDesc(market.getId());
+        List<ChangeRequest> requests = changeRequestRepository.findByMarket_IdOrderByRequestedAtDesc(market.getId());
 
         Set<Long> operatorIds = new HashSet<>();
         approvals.forEach(h -> operatorIds.add(h.getProcessedBy()));
@@ -79,7 +79,7 @@ public class BrandAdminHistoryReader {
                     names.getOrDefault(approval.getProcessedBy(), DEFAULT_OPERATOR), null, null, null,
                     approval.getCreatedAt()));
         }
-        for (BrandChangeRequest request : requests) {
+        for (ChangeRequest request : requests) {
             if (request.getStatus() == ChangeRequestStatus.CANCELED) {
                 continue;
             }

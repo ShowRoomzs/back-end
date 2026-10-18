@@ -16,7 +16,7 @@ public interface BrandSanctionRepository extends JpaRepository<BrandSanction, Lo
 
     boolean existsByMarketIdAndReleasedAtIsNull(Long marketId);
 
-    /** 지급 정지가 걸린 열린 정지가 있는가 — 정산 포트 {@code BrandPayoutHoldReader}. */
+    /** 지급 정지가 걸린 열린 정지가 있는가 — 정산 포트 {@code PayoutHoldReader}. */
     @Query("SELECT COUNT(s) > 0 FROM BrandSanction s WHERE s.marketId = :marketId AND s.releasedAt IS NULL "
             + "AND s.payoutHeld = true")
     boolean existsOpenPayoutHold(@Param("marketId") Long marketId);

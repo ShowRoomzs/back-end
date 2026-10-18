@@ -4,10 +4,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,12 +20,16 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import showroomz.api.admin.user.docs.UserAdminControllerDocs;
 import showroomz.api.admin.user.dto.AdminUserDto;
-import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
+import showroomz.api.admin.user.service.AdminUserCommandService;
+import showroomz.api.admin.user.service.AdminUserMemoService;
 import showroomz.api.admin.user.service.AdminUserService;
 import showroomz.api.admin.user.type.AdminUserSort;
 import showroomz.api.admin.user.type.AdminUserTab;
 import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 @RestController
 @RequestMapping("/v1/admin/users")
@@ -30,6 +37,8 @@ import showroomz.global.dto.PagingRequest;
 public class UserAdminController implements UserAdminControllerDocs {
 
     private final AdminUserService adminUserService;
+    private final AdminUserCommandService commandService;
+    private final AdminUserMemoService memoService;
 
     @Override
     @GetMapping
@@ -50,30 +59,81 @@ public class UserAdminController implements UserAdminControllerDocs {
     @Override
     @GetMapping("/{userId}")
     public ResponseEntity<AdminUserDto.UserDetailResponse> getUserDetail(
-            @PathVariable("userId") Long userId) {
-        AdminUserDto.UserDetailResponse response = adminUserService.getUserDetail(userId);
-        return ResponseEntity.ok(response);
+            @PathVariable("userId") Long userId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(adminUserService.getUserDetail(userId, operator(principal)));
     }
 
     @Override
-    @PatchMapping("/{userId}/memo")
-    public ResponseEntity<Void> updateAdminMemo(
+    @PostMapping("/{userId}/suspend")
+    public ResponseEntity<AdminUserDto.StatusResult> suspend(
             @PathVariable("userId") Long userId,
-            @Valid @RequestBody AdminUserMemoUpdateRequest request) {
-
-        adminUserService.updateAdminMemo(userId, request);
-
-        return ResponseEntity.noContent().build();
+            @Valid @RequestBody AdminUserDto.SuspendRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(commandService.suspend(userId, operator(principal), request));
     }
 
     @Override
-    @PatchMapping("/{userId}/status")
-    public ResponseEntity<Void> updateUserStatus(
+    @PostMapping("/{userId}/release")
+    public ResponseEntity<AdminUserDto.StatusResult> release(
             @PathVariable("userId") Long userId,
-            @RequestBody AdminUserDto.UserStatusUpdateRequest request) {
+            @RequestBody(required = false) AdminUserDto.ReleaseRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(commandService.release(userId, operator(principal), request));
+    }
 
-        adminUserService.updateUserStatus(userId, request);
+    @Override
+    @GetMapping("/{userId}/histories")
+    public ResponseEntity<AdminUserDto.HistoryPage> getHistories(
+            @PathVariable("userId") Long userId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return ResponseEntity.ok(adminUserService.getHistories(userId, page, size));
+    }
 
+    @Override
+    @GetMapping("/{userId}/memos")
+    public ResponseEntity<AdminUserDto.MemoPage> getMemos(
+            @PathVariable("userId") Long userId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(memoService.list(userId, operator(principal), page, size));
+    }
+
+    @Override
+    @PostMapping("/{userId}/memos")
+    public ResponseEntity<AdminUserDto.Memo> createMemo(
+            @PathVariable("userId") Long userId,
+            @Valid @RequestBody AdminUserDto.MemoRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(memoService.create(userId, operator(principal), request.content()));
+    }
+
+    @Override
+    @PatchMapping("/{userId}/memos/{memoId}")
+    public ResponseEntity<AdminUserDto.Memo> updateMemo(
+            @PathVariable("userId") Long userId,
+            @PathVariable("memoId") Long memoId,
+            @Valid @RequestBody AdminUserDto.MemoRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(memoService.update(userId, memoId, operator(principal), request.content()));
+    }
+
+    @Override
+    @DeleteMapping("/{userId}/memos/{memoId}")
+    public ResponseEntity<Void> deleteMemo(
+            @PathVariable("userId") Long userId,
+            @PathVariable("memoId") Long memoId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        memoService.delete(userId, memoId, operator(principal));
         return ResponseEntity.noContent().build();
+    }
+
+    private static Long operator(UserPrincipal principal) {
+        if (principal == null || principal.getUserId() == null) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
+        }
+        return principal.getUserId();
     }
 }

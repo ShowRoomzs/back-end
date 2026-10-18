@@ -1,6 +1,7 @@
 package showroomz.api.creator.performance.service;
 
 import showroomz.api.creator.performance.dto.CreatorPerformanceDto;
+import showroomz.global.utils.Percent;
 
 import java.text.NumberFormat;
 import java.util.Comparator;
@@ -36,7 +37,7 @@ public final class CreatorPerformanceHighlights {
                 .max(Comparator.comparingDouble(r -> (double) r.orders() / r.detailViews()))
                 .map(r -> new CreatorPerformanceDto.Highlight(r.productId(), r.productName(),
                         "조회 %s회 중 %s건 · %s%%".formatted(number(r.detailViews()), number(r.orders()),
-                                CreatorPerformanceRates.percent(r.orders(), r.detailViews()))))
+                                Percent.oneDecimal(r.orders(), r.detailViews()))))
                 .orElse(null);
 
         String rewardBase = estimated ? "판매 리워드 예정액" : "계약 기준 판매 리워드";
@@ -56,6 +57,7 @@ public final class CreatorPerformanceHighlights {
     }
 
     private static long wholePercent(long part, long total) {
-        return total <= 0 ? 0 : Math.round(part * 100.0 / total);
+        Long percent = Percent.whole(part, total);
+        return percent == null ? 0 : percent;
     }
 }

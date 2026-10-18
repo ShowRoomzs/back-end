@@ -48,6 +48,8 @@ class SellerBasicInfoServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private SellerRefreshTokenRepository sellerRefreshTokenRepository;
+    @Mock
+    private SellerWithdrawalService sellerWithdrawalService;
 
     @InjectMocks
     private SellerBasicInfoService sellerBasicInfoService;

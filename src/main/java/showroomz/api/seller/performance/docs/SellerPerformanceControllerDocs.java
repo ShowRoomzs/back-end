@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.performance.dto.SellerPerformanceDto;
-import showroomz.domain.performance.type.PerformanceSort;
+import showroomz.domain.performance.type.GroupBuyPerformanceSort;
 import showroomz.domain.performance.type.PerformanceStatus;
 import showroomz.global.dto.PagingRequest;
 
@@ -67,7 +67,7 @@ public interface SellerPerformanceControllerDocs {
     ResponseEntity<SellerPerformanceDto.ListPage> getList(
             @Parameter(description = "상태 필터(복수)", example = "PAID") Set<PerformanceStatus> status,
             @Parameter(description = "공구명 · 인플루언서 쇼룸명 부분 일치", example = "앰플") String keyword,
-            @Parameter(description = "정렬 — ENDED_DESC(기본) · SALES_DESC", example = "ENDED_DESC") PerformanceSort sort,
+            @Parameter(description = "정렬 — ENDED_DESC(기본) · SALES_DESC", example = "ENDED_DESC") GroupBuyPerformanceSort sort,
             PagingRequest pagingRequest);
 
     @Operation(summary = "성과 요약 (KPI 8 · 상태 칩)",

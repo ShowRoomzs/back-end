@@ -19,6 +19,8 @@ import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
@@ -94,6 +96,7 @@ public class CheckoutService {
     @Transactional(readOnly = true)
     public OrderDto.CheckoutResponse checkout(Long userId, OrderDto.CheckoutRequest request) {
         Users user = requireUser(userId);
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PURCHASE);
         LocalDateTime now = LocalDateTime.now();
         Prepared prepared = prepare(user, request.getCartItemIds(), request.getDirect(), now);
 
@@ -118,6 +121,7 @@ public class CheckoutService {
     @Transactional
     public CreatedOrder createOrderTx(Long userId, OrderDto.CreateOrderRequest request, LocalDateTime now) {
         Users user = requireUser(userId);
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PURCHASE);
         PaymentChoice choice = requirePaymentChoice(request.getPayment());
         Prepared prepared = prepare(user, request.getCartItemIds(), request.getDirect(), now);
         DeliveryAddress address = resolveAddress(user, request.getDeliveryAddressId(), true);
@@ -189,6 +193,8 @@ public class CheckoutService {
         Order order = orderRepository.findForUpdate(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         requireOwner(order, userId);
+        // 새 결제창을 여는 일이라 정지 중엔 막는다 — 이미 열린 결제창의 승인(complete)은 막지 않는다(51-6 설계서 4-1).
+        UserSanctionGuard.requireNotSuspended(requireUser(userId), UserBlockedAction.PURCHASE);
         if (order.getStatus() == OrderStatus.PAID) {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_IN_PROGRESS);
         }

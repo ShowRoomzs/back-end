@@ -1,5 +1,6 @@
 package showroomz.api.admin.creator;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -7,9 +8,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.user.DTO.WithdrawalInfoResponse;
+import showroomz.api.app.user.DTO.WithdrawalRequest;
+import showroomz.api.app.user.service.UserService;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorWithdrawalRequest;
 import showroomz.domain.member.creator.repository.CreatorAdminHistoryRepository;
@@ -19,7 +24,6 @@ import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.domain.member.creator.service.CreatorWithdrawalService;
 import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.member.creator.type.CreatorStatus;
-import showroomz.domain.member.creator.type.CreatorWithdrawalStatus;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.message.type.MessageCardType;
@@ -72,6 +76,7 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
     @Autowired private CreatorWithdrawalRequestRepository withdrawalRequests;
     @Autowired private CreatorWithdrawalService withdrawalService;
     @Autowired private CreatorSanctionGuard sanctionGuard;
+    @Autowired private UserService userService;
 
     private Seller otherOperator;
     private String otherAdminToken;
@@ -303,9 +308,12 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.rail.withdrawalReview.conditions.unfinishedGroupBuys").value(1));
         adminPost(approve, Map.of()).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWAL_CONDITION_UNMET"))
-                .andExpect(jsonPath("$.message").value(containsString("끝나지 않은 공구 1건")));
+                .andExpect(jsonPath("$.message").value(containsString("끝나지 않은 공구 1건")))
+                // 브랜드와 같은 응답 모양 — 미충족 조건만 unmet 에(정합 계획서 R0-4).
+                .andExpect(jsonPath("$.unmet.UNFINISHED_GROUP_BUYS").value(1))
+                .andExpect(jsonPath("$.unmet.UNSETTLED").doesNotExist());
         assertThat(withdrawalRequests.findById(request.getId()).orElseThrow().getStatus())
-                .isEqualTo(CreatorWithdrawalStatus.PENDING);
+                .isEqualTo(MemberWithdrawalStatus.PENDING);
 
         moveTo(groupBuy.getId(), GroupBuyStatus.ENDED);
         adminPost(approve, Map.of()).andExpect(status().isOk())
@@ -362,7 +370,7 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andExpect(jsonPath("$.rail.withdrawalReview").value(nullValue()));
         assertThat(withdrawalRequests.findById(request.getId()).orElseThrow().getStatus())
-                .isEqualTo(CreatorWithdrawalStatus.REJECTED);
+                .isEqualTo(MemberWithdrawalStatus.REJECTED);
         sanctionGuard.requireCanAcceptConnection(creatorRepository.findById(creator.getId()).orElseThrow());
         assertThat(events()).containsExactly(CreatorAdminEventType.WITHDRAWAL_REJECTED,
                 CreatorAdminEventType.WITHDRAWAL_REQUESTED);
@@ -403,6 +411,27 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.suspensionReasons.length()").value(6))
                 .andExpect(jsonPath("$.releaseReasons.length()").value(2))
                 .andExpect(jsonPath("$.privacyUnmaskReasons.length()").value(4));
+    }
+
+    // ------------------------------------------------------------------ CR-08 소비자 앱 탈퇴 우회 차단(정합 계획서 R0-2)
+
+    @Test
+    @DisplayName("CR-08 소비자 앱 탈퇴 — 활성 · 정지 인플루언서는 409 · 탈퇴 정보 creatorReviewRequired · 소비자 계정 그대로")
+    void consumerWithdrawalBlockedForCreator() throws Exception {
+        String username = creator.getUser().getUsername();
+        WithdrawalRequest request = new ObjectMapper().readValue("{\"agreeConsent\":true}", WithdrawalRequest.class);
+
+        WithdrawalInfoResponse info = userService.getWithdrawalInfo(username);
+        assertThat(info.isCreatorReviewRequired()).isTrue();
+        assertThat(info.isWithdrawable()).isFalse();
+        assertThatThrownBy(() -> userService.withdrawUser(username, request))
+                .extracting("errorCode").isEqualTo(ErrorCode.USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW);
+
+        // 정지 중에도 막는다 — 정지를 피하려는 탈퇴 길을 두지 않는다(§51-3).
+        adminPost(base + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT")).andExpect(status().isOk());
+        assertThatThrownBy(() -> userService.withdrawUser(username, request))
+                .extracting("errorCode").isEqualTo(ErrorCode.USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW);
+        assertThat(userStatus()).isEqualTo(UserStatus.NORMAL);
     }
 
     // ------------------------------------------------------------------ 보조

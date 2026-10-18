@@ -9,7 +9,6 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.entity.SettlementTaxDocument;
-import showroomz.domain.settlement.port.CreatorPayoutHoldReader;
 import showroomz.domain.settlement.port.SettlementTaxDocumentStorage;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
@@ -56,7 +55,7 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
     private final SettlementNotifier notifier;
     private final SettlementProperties properties;
     private final BusinessCalendar calendar;
-    private final CreatorPayoutHoldReader creatorPayoutHoldReader;
+    private final PayoutBlockPolicy blockPolicy;
 
     public record Attachment(String fileName, byte[] bytes) {
     }
@@ -194,7 +193,7 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
         LocalDate dueDate = calendar.addBusinessDays(now.toLocalDate(), properties.getPayoutBusinessDays());
         // 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 확인은 남기되 보류는 유지한다. 정지 해제가 다시 판정해 올린다.
         Long creatorId = settlementRepository.findById(settlementId).map(Settlement::getCreatorId).orElse(null);
-        if (creatorId != null && creatorPayoutHoldReader.isHeld(creatorId)) {
+        if (blockPolicy.isCreatorSuspended(creatorId)) {
             historyRecorder.record(settlementId, SettlementEventType.TAX_INVOICE_VERIFIED, SettlementActorType.ADMIN,
                     operatorId, "승인번호 확인 · 계정 정지 중 — 정지 해제 후 지급", now);
             AfterCommit.run(() -> notifier.taxInvoiceVerified(settlementId));

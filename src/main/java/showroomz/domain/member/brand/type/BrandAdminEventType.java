@@ -2,6 +2,7 @@ package showroomz.domain.member.brand.type;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import showroomz.domain.member.common.type.AdminHistoryEventType;
 
 /**
  * 브랜드 처리 이력(52 설계서 0-6). 앞 9종은 {@code brand_admin_history}에 저장하고, 뒤 5종은 다른 테이블의 사실(가입 · 입점 승인 ·
@@ -9,7 +10,7 @@ import lombok.RequiredArgsConstructor;
  */
 @Getter
 @RequiredArgsConstructor
-public enum BrandAdminEventType {
+public enum BrandAdminEventType implements AdminHistoryEventType {
     SUSPENDED("정지", "DANGER", true),
     SUSPENSION_RELEASED("정지 해제", "SUCCESS", true),
     WITHDRAWAL_REQUESTED("탈퇴 신청 접수", "WARNING", true),

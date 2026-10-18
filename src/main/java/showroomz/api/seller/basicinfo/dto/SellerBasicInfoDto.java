@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -11,6 +12,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.api.seller.changerequest.dto.ChangeRequestBannerResponse;
 import showroomz.domain.market.type.MarketStatus;
+import showroomz.domain.member.brand.type.BrandWithdrawalReason;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -159,6 +161,99 @@ public class SellerBasicInfoDto {
         private boolean emailChangeable;
         private LocalDateTime lastEmailChangedAt;
         private LocalDateTime nextEmailChangeableAt;
+        @Schema(description = "탈퇴 블록 — 신청 · 승인제(§51-5). 마켓이 없는 계정은 null", nullable = true)
+        private Withdrawal withdrawal;
+    }
+
+    // ------------------------------------------------------------------ 탈퇴 신청(§51-5 · 52 설계서 4절 · 정합 계획서 R0-1)
+
+    @Getter
+    @Builder
+    @Schema(description = "탈퇴 블록 — 조건 행은 상태와 무관하게 항상 내린다. 판정식은 어드민 승인 재검증과 같다")
+    public static class Withdrawal {
+        @Schema(description = "AVAILABLE(신청 가능) · BLOCKED(조건 미충족) · PENDING(심사 중)", example = "BLOCKED")
+        private String state;
+        @Schema(example = "3")
+        private int satisfiedCount;
+        @Schema(example = "4")
+        private int totalCount;
+        private List<WithdrawalCondition> conditions;
+        @Schema(description = "PENDING 일 때만", nullable = true)
+        private PendingWithdrawal pendingRequest;
+        @Schema(description = "가장 최근 신청이 반려였을 때만 — 즉시 재신청할 수 있다", nullable = true)
+        private WithdrawalRejection lastRejection;
+        @Schema(description = "신청 사유 선택지 — 선택하지 않으면 reason 을 비운다")
+        private List<ReasonOption> reasonOptions;
+    }
+
+    @Getter
+    @Builder
+    public static class WithdrawalCondition {
+        @Schema(example = "ACTIVE_GROUP_BUYS")
+        private String code;
+        @Schema(example = "진행 중 · 준비 중 공구")
+        private String label;
+        @Schema(example = "1")
+        private long count;
+        private boolean satisfied;
+    }
+
+    @Getter
+    @Builder
+    public static class PendingWithdrawal {
+        private Long requestId;
+        private LocalDateTime requestedAt;
+        @Schema(example = "OTHER_CHANNEL_FOCUS", nullable = true)
+        private String reason;
+        @Schema(example = "다른 채널 집중")
+        private String reasonLabel;
+        @Schema(nullable = true)
+        private String message;
+        @Schema(description = "신청 시점 담당자명 스냅샷", example = "김담당")
+        private String requesterName;
+        @Schema(description = "신청자 — 현재 로그인 이메일(대기 중에는 바뀌지 않는다)", example = "brand@example.com")
+        private String requesterEmail;
+    }
+
+    @Getter
+    @Builder
+    public static class WithdrawalRejection {
+        private Long requestId;
+        private LocalDateTime rejectedAt;
+        @Schema(example = "CLAIM_UNRESOLVED")
+        private String reasonCode;
+        @Schema(example = "반품·교환 처리 미완료")
+        private String reasonLabel;
+        @Schema(description = "운영자가 남긴 안내", nullable = true)
+        private String note;
+    }
+
+    @Getter
+    @Builder
+    public static class ReasonOption {
+        private String code;
+        private String label;
+    }
+
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "탈퇴 신청 — 사유 · 남기실 말씀 모두 선택")
+    public static class WithdrawalRequestBody {
+        @Schema(description = "BrandWithdrawalReason — 선택하지 않으면 null", example = "OTHER_CHANNEL_FOCUS", nullable = true)
+        private BrandWithdrawalReason reason;
+
+        @Size(max = 1000, message = "남기실 말씀은 1000자 이내로 입력해 주세요.")
+        @Schema(description = "남기실 말씀 — 1000자 이내", nullable = true)
+        private String message;
+    }
+
+    @Getter
+    @Builder
+    public static class WithdrawalRequestResponse {
+        private Long requestId;
+        private LocalDateTime requestedAt;
     }
 
     @Getter

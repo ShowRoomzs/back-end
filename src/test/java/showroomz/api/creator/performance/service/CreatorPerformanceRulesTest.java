@@ -7,6 +7,7 @@ import showroomz.api.creator.performance.type.CreatorPerformanceStatus;
 import showroomz.api.creator.performance.type.RewardStage;
 import showroomz.domain.performance.type.PerformanceStatus;
 import showroomz.domain.performance.type.PerformanceTone;
+import showroomz.global.utils.Percent;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -105,10 +106,10 @@ class CreatorPerformanceRulesTest {
     @Test
     @DisplayName("비율 — 분모 0 은 null(잰 적 없음) · 평균은 값 있는 공구만의 산술평균")
     void rates() {
-        assertThat(CreatorPerformanceRates.percent(291, 5010)).isEqualTo(5.8);
-        assertThat(CreatorPerformanceRates.percent(0, 0)).isNull();
-        assertThat(CreatorPerformanceRates.average(Arrays.asList(5.8, null, 5.0))).isEqualTo(5.4);
-        assertThat(CreatorPerformanceRates.average(Arrays.asList(null, null))).isNull();
+        assertThat(Percent.oneDecimal(291, 5010)).isEqualTo(5.8);
+        assertThat(Percent.oneDecimal(0, 0)).isNull();
+        assertThat(Percent.average(Arrays.asList(5.8, null, 5.0))).isEqualTo(5.4);
+        assertThat(Percent.average(Arrays.asList(null, null))).isNull();
     }
 
     private static List<CreatorPerformanceDistribution.Person> people(String gender, String birthday, int n) {

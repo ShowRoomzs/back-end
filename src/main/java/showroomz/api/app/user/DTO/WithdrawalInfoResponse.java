@@ -34,6 +34,10 @@ public class WithdrawalInfoResponse {
     @Schema(description = "C15-3 1단계에 노출할 탈퇴 이유 목록")
     private List<WithdrawalReasonOption> reasons;
 
+    @Schema(description = "인플루언서 계정 — true 면 소비자 탈퇴가 막힌다. 쇼룸 스튜디오 기본정보에서 탈퇴를 신청해 승인받아야 한다(§51-5)",
+            example = "false")
+    private boolean creatorReviewRequired;
+
     @Getter
     @AllArgsConstructor
     @Schema(description = "탈퇴 이유 선택지")

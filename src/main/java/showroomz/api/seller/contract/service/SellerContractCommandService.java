@@ -5,7 +5,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
-import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
 import showroomz.api.seller.contract.dto.ContractDuplicateResponse;
@@ -24,10 +23,10 @@ import showroomz.domain.contract.event.ContractReviewRequestedEvent;
 import showroomz.domain.contract.repository.ContractClauseVersionRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
-import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.service.ContractHistoryRecorder;
 import showroomz.domain.contract.service.ContractNotifier;
 import showroomz.domain.contract.service.ContractNumberGenerator;
+import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractClauseVersionStatus;
 import showroomz.domain.contract.type.ContractEventType;
@@ -35,7 +34,9 @@ import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.ContractViolation;
 import showroomz.domain.contract.type.ContractViolationCode;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
@@ -71,6 +72,7 @@ import java.util.stream.Collectors;
 public class SellerContractCommandService {
 
     private final ContractAccessGuard accessGuard;
+    private final BrandSanctionGuard brandSanctionGuard;
     private final ContractValidator contractValidator;
     private final ContractDetailAssembler detailAssembler;
     private final ContractRepository contractRepository;
@@ -92,7 +94,7 @@ public class SellerContractCommandService {
     public ContractCreateResponse create(String sellerEmail, ContractCreateRequest request) {
         Market market = accessGuard.resolveMarket(sellerEmail);
         // 브랜드 정지 중에는 새 계약을 시작하지 않는다(§51-1 · 52 설계서 7절) — 작성중 계약의 수정 · 삭제는 그대로다.
-        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+        brandSanctionGuard.requireNotSuspended(market,
                 showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Creator creator = null;
@@ -187,7 +189,7 @@ public class SellerContractCommandService {
         Market market = accessGuard.resolveMarket(sellerEmail);
         Contract contract = accessGuard.loadOwned(contractId, market);
         requireEditable(contract);
-        showroomz.domain.member.brand.service.BrandSanctionGuard.requireNotSuspended(market,
+        brandSanctionGuard.requireNotSuspended(market,
                 showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_REVIEW_REQUEST);
         // 정지 · 탈퇴 심사 중인 인플루언서에게는 새 계약을 보내지 않는다(§51-1 · S7 · 53 설계서 4-2).
         creatorSanctionGuard.requireCanReceiveContract(contract.getCreator());

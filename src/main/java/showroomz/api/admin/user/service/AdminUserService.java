@@ -7,16 +7,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.admin.user.AdminMemberNumber;
-import showroomz.api.admin.user.AdminUserMasker;
+import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.user.dto.AdminUserDto;
-import showroomz.api.admin.user.dto.AdminUserMemoUpdateRequest;
 import showroomz.api.admin.user.repository.AdminUserQueryRepository;
 import showroomz.api.admin.user.type.AdminUserSort;
 import showroomz.api.admin.user.type.AdminUserTab;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.user.repository.UserRepository;
-import showroomz.domain.history.entity.UserStatusHistory;
-import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryExposureStatus;
@@ -32,12 +29,14 @@ import showroomz.global.error.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminUserService {
+
+    private static final int DETAIL_MEMO_LIMIT = 3;
+    private static final int DETAIL_HISTORY_LIMIT = 5;
 
     private final UserRepository userRepository;
     private final AdminUserQueryRepository adminUserQueryRepository;
@@ -46,7 +45,9 @@ public class AdminUserService {
     private final ReviewRepository reviewRepository;
     private final ProductInquiryRepository productInquiryRepository;
     private final OneToOneInquiryRepository oneToOneInquiryRepository;
-    private final UserStatusHistoryRepository userStatusHistoryRepository;
+    private final AdminUserStatusCardAssembler statusCardAssembler;
+    private final AdminUserMemoService memoService;
+    private final AdminUserHistoryReader historyReader;
 
     /**
      * 소비자 목록 (§25-3).
@@ -83,8 +84,8 @@ public class AdminUserService {
                 .userId(row.userId())
                 .memberNo(AdminMemberNumber.format(row.userId()))
                 .nickname(row.nickname())
-                .maskedName(AdminUserMasker.maskName(row.name()))
-                .maskedPhone(AdminUserMasker.maskPhoneNumber(row.phoneNumber()))
+                .maskedName(AdminMemberMasker.maskName(row.name()))
+                .maskedPhone(AdminMemberMasker.maskPhone(row.phoneNumber()))
                 .providerType(row.providerType())
                 .joinedAt(row.joinedAt())
                 .orderCount(row.orderCount())
@@ -118,9 +119,10 @@ public class AdminUserService {
     }
 
     /**
-     * 유저 상세 정보 조회
+     * 유저 상세 정보 조회 — 현재 상태 카드 · 메모 최신 3건 · 처리 이력 최신 5건을 함께 싣는다(51-6 설계서 2-3). 메모의 {@code editable}은
+     * 요청 운영자 기준이다.
      */
-    public AdminUserDto.UserDetailResponse getUserDetail(Long userId) {
+    public AdminUserDto.UserDetailResponse getUserDetail(Long userId, Long operatorId) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -131,65 +133,29 @@ public class AdminUserService {
         long oneToOneInquiryCount = oneToOneInquiryRepository.countByUser_Id(userId);
         long inquiryCount = productInquiryCount + oneToOneInquiryCount;
 
-        List<AdminUserDto.UserStatusHistoryDto> statusHistory = userStatusHistoryRepository
-                .findByUser_IdOrderByCreatedAtDesc(userId)
-                .stream()
-                .map(history -> AdminUserDto.UserStatusHistoryDto.builder()
-                        .status(history.getNewStatus())
-                        .changedAt(history.getCreatedAt())
-                        .build())
-                .collect(Collectors.toList());
-
         return AdminUserDto.UserDetailResponse.of(
                 user,
                 wishlistCount,
                 followedShowroomCount,
                 reviewCount,
                 inquiryCount,
-                statusHistory
+                statusCardAssembler.statusCard(user),
+                memoService.latest(user, operatorId, DETAIL_MEMO_LIMIT),
+                historyReader.summary(user, DETAIL_HISTORY_LIMIT)
         );
     }
 
-    @Transactional
-    public void updateAdminMemo(Long userId, AdminUserMemoUpdateRequest request) {
+    /** 처리 이력 전체(51-6 설계서 7-2) — 원천 넷을 메모리에서 합친 뒤 자른다. */
+    public AdminUserDto.HistoryPage getHistories(Long userId, int page, int size) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        user.updateAdminMemo(request.getAdminMemo());
-    }
-
-    /**
-     * 유저 상태 변경 (정지 및 활성화)
-     */
-    @Transactional // 쓰기 작업을 위해 클래스 레벨의 readOnly = true 설정을 덮어씀
-    public void updateUserStatus(Long userId, AdminUserDto.UserStatusUpdateRequest request) {
-        Users user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
-
-        UserStatus newStatus = request.getStatus();
-
-        // 바꾸기 전에 붙잡아 둔다 — updateStatus 뒤에 읽으면 새 상태가 나와 전이 기록이 무의미해진다.
-        UserStatus previousStatus = user.getStatus();
-
-        // 이전 상태와 새 상태가 동일하다면 변경 불필요
-        if (newStatus == previousStatus) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "이미 해당 상태로 설정되어 있습니다.");
-        }
-
-
-        // 요구사항: 변경 가능한 상태를 정지 상태(SUSPENDED)와 활성 상태(NORMAL)로만 제한
-        if (newStatus != UserStatus.NORMAL && newStatus != UserStatus.SUSPENDED) {
-            throw new IllegalArgumentException("유저 상태는 NORMAL(활성) 또는 SUSPENDED(정지)로만 변경할 수 있습니다.");
-        }
-
-        user.updateStatus(newStatus);
-
-        // 유저 상태 변경 히스토리 저장 — 어디서 어디로 갔는지가 이력의 내용이다.
-        userStatusHistoryRepository.save(UserStatusHistory.builder()
-        .user(user)
-        .previousStatus(previousStatus)
-        .newStatus(newStatus)
-        .reason("")
-        .build());
+        List<AdminUserDto.HistoryItem> all = historyReader.read(user);
+        int safePage = Math.max(page, 1);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        List<AdminUserDto.HistoryItem> content = all.stream()
+                .skip((long) (safePage - 1) * safeSize)
+                .limit(safeSize)
+                .toList();
+        return new AdminUserDto.HistoryPage(all.size(), safePage, safeSize, content);
     }
 }

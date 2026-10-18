@@ -58,6 +58,8 @@ public enum ErrorCode {
     // C15-4 탈퇴 확인 — 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다
     WITHDRAWAL_BLOCKED_BY_ORDER(HttpStatus.CONFLICT, "WITHDRAWAL_BLOCKED_BY_ORDER", "진행 중인 주문이 있어 지금은 탈퇴할 수 없습니다."),
     WITHDRAWAL_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "WITHDRAWAL_CONSENT_REQUIRED", "계정과 활동 기록이 삭제되는 데 동의해야 합니다."),
+    // 인플루언서는 스튜디오 탈퇴 신청 → 운영자 승인(§51-5) — 소비자 탈퇴로 심사를 우회하지 않는다(정합 계획서 E-2)
+    USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW(HttpStatus.CONFLICT, "USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW", "인플루언서 계정은 쇼룸 스튜디오 기본정보에서 탈퇴를 신청해 주세요."),
     // C15-2 회원정보 변경 — 재인증은 가입 시 동의와 별개의 새 수집 행위라 매번 다시 동의를 받는다
     IDENTITY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "IDENTITY_CONSENT_REQUIRED", "본인확인을 위한 개인정보 수집·이용에 동의해야 합니다."),
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
@@ -500,6 +502,19 @@ public enum ErrorCode {
     CREATOR_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "CREATOR_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
     CREATOR_PRIVACY_UNMASK_FORBIDDEN(HttpStatus.FORBIDDEN, "CREATOR_PRIVACY_UNMASK_FORBIDDEN", "마스킹 해제 권한이 없습니다."),
     CREATOR_PRIVACY_UNMASK_NOT_AVAILABLE(HttpStatus.CONFLICT, "CREATOR_PRIVACY_UNMASK_NOT_AVAILABLE", "파기된 정보는 해제할 수 없습니다."),
+
+    // 소비자 계정 이용 정지(C20) · 어드민 소비자 제재 · 메모(51-6 설계서 9-3)
+    USER_SUSPENDED(HttpStatus.CONFLICT, "USER_SUSPENDED", "이용 정지 중에는 이용할 수 없는 기능이에요."),
+    USER_ALREADY_SUSPENDED(HttpStatus.CONFLICT, "USER_ALREADY_SUSPENDED", "이미 정지된 회원입니다."),
+    USER_NOT_SUSPENDED(HttpStatus.CONFLICT, "USER_NOT_SUSPENDED", "정지 상태가 아닌 회원입니다."),
+    USER_SANCTION_WITHDRAWN(HttpStatus.CONFLICT, "USER_SANCTION_WITHDRAWN", "탈퇴한 회원입니다. 조치할 수 없습니다."),
+    USER_SUSPEND_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_SUSPEND_DETAIL_REQUIRED", "기타 사유를 선택하면 상세 사유를 입력해야 합니다."),
+    USER_RELEASE_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "USER_RELEASE_REASON_REQUIRED", "해제 사유를 선택해 주세요."),
+    USER_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
+    USER_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "USER_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
+    USER_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "USER_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+    SANCTION_APPEAL_NOT_AVAILABLE(HttpStatus.CONFLICT, "SANCTION_APPEAL_NOT_AVAILABLE", "이용 정지 중일 때만 정지에 대한 문의를 남길 수 있어요."),
+    SANCTION_APPEAL_ALREADY_EXISTS(HttpStatus.CONFLICT, "SANCTION_APPEAL_ALREADY_EXISTS", "이미 접수된 정지 문의가 있어요. 답변 전에는 기존 문의를 수정해 주세요."),
 
     // 정산 조정 협의(44 정산조정 이슈스레드 설계서 8-1)
     SETTLEMENT_ADJUSTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_ADJUSTMENT_NOT_FOUND", "정산 조정 협의를 찾을 수 없습니다."),

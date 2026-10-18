@@ -3,6 +3,9 @@ package showroomz.domain.member.creator.repository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Repository;
+import showroomz.domain.connection.entity.Connection;
+import showroomz.domain.connection.type.ConnectionStatus;
+import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.settlement.type.SettlementStatus;
@@ -111,5 +114,15 @@ public class CreatorMemberQueryRepository {
                 .setParameter("creatorId", creatorId)
                 .setParameter("paid", SettlementStatus.PAID)
                 .getSingleResult();
+    }
+
+    /** 탈퇴 승인의 연결 일괄 종료 대상 — 연결중 · 요청중(53 설계서 4-4 ⑤). */
+    public List<Connection> findOpenPairConnections(Long creatorId) {
+        return em.createQuery("SELECT c FROM Connection c WHERE c.creator.id = :creatorId AND c.type = :type "
+                        + "AND c.status IN :statuses", Connection.class)
+                .setParameter("creatorId", creatorId)
+                .setParameter("type", ConnectionType.PAIR)
+                .setParameter("statuses", Set.of(ConnectionStatus.CONNECTED, ConnectionStatus.REQUESTED))
+                .getResultList();
     }
 }

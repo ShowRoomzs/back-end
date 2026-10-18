@@ -17,13 +17,13 @@ import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
-import showroomz.domain.settlement.port.SettlementPartnerGateway;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.Account;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.Business;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.Contact;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerProfile;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerResult;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerStatus;
+import showroomz.domain.settlement.port.SettlementPartnerGateway;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.type.PayoutBlockReason;
@@ -224,9 +224,8 @@ public class SettlementPartnerSyncService {
         PartnerStatus status = gateway.statusOf(rawStatus);
         LocalDate today = now.toLocalDate();
         if (status == PartnerStatus.APPROVED) {
-            List<SettlementPayout> blocked = readTransaction.execute(tx -> linked.payee() == SettlementPayee.BRAND
-                    ? payoutRepository.findBlockedForMarket(linked.refId(), PayoutBlockReason.PARTNER_CODES)
-                    : payoutRepository.findBlockedForCreator(linked.refId(), PayoutBlockReason.PARTNER_CODES));
+            List<SettlementPayout> blocked = readTransaction.execute(tx ->
+                    payoutRepository.findBlockedFor(linked.payee(), linked.refId(), PayoutBlockReason.PARTNER_CODES));
             for (SettlementPayout payout : blocked) {
                 if (transitions.releasePartnerBlocked(payout.getSettlementId(), payout.getId(), payout.getPayee(), today)) {
                     log.info("PG 셀러 승인 — 보류 해제 - payoutId: {}", payout.getId());
@@ -234,9 +233,8 @@ public class SettlementPartnerSyncService {
             }
         } else if (status == PartnerStatus.PENDING) {
             String code = gateway.blockCodeOf(rawStatus);
-            List<SettlementPayout> scheduled = readTransaction.execute(tx -> linked.payee() == SettlementPayee.BRAND
-                    ? payoutRepository.findScheduledForMarket(linked.refId())
-                    : payoutRepository.findScheduledForCreator(linked.refId()));
+            List<SettlementPayout> scheduled = readTransaction.execute(tx ->
+                    payoutRepository.findScheduledFor(linked.payee(), linked.refId()));
             for (SettlementPayout payout : scheduled) {
                 transitions.blockScheduled(payout.getSettlementId(), payout.getId(), payout.getPayee(), code,
                         "PG 셀러 상태 " + rawStatus, now);
@@ -342,7 +340,7 @@ public class SettlementPartnerSyncService {
             }
             boolean changed;
             if (payout.getStatus() == PayoutStatus.SCHEDULED) {
-                changed = payoutRepository.blockWithReason(payout.getId(), code, reason) == 1;
+                changed = payoutRepository.blockForPartner(payout.getId(), code, reason) == 1;
             } else if (payout.getStatus() == PayoutStatus.BLOCKED && !code.equals(payout.getFailCode())) {
                 // 이미 다른 사유(주민등록번호)로 보류 중 — 셀러 사유를 덧붙인다(재판정이 둘 다 본다).
                 changed = payoutRepository.updateBlockReason(payout.getId(), code, reason) == 1;

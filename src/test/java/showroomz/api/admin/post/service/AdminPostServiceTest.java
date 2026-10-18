@@ -24,6 +24,7 @@ import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
+import showroomz.domain.post.service.PostReportTransitions;
 import showroomz.domain.post.type.PostDeleteReason;
 import showroomz.domain.post.type.PostMonitoringStatus;
 import showroomz.domain.post.type.PostNotificationEvent;
@@ -92,7 +93,7 @@ class AdminPostServiceTest {
         PostAppealReviewDue reviewDue = new PostAppealReviewDue(new BusinessCalendar(new String[0]), postProperties);
         adminPostService = new AdminPostService(postRepository, postImageRepository, postSuspensionRepository,
                 postAppealRepository, postReportRepository, postNotificationService, postProperties, reviewDue,
-                adminOperatorResolver);
+                adminOperatorResolver, new PostReportTransitions(postReportRepository));
 
         given(postSuspensionRepository.save(any(PostSuspension.class)))
                 .willAnswer(invocation -> invocation.getArgument(0));

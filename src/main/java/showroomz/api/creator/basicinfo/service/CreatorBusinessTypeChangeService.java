@@ -5,8 +5,8 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.creator.basicinfo.dto.CreatorBasicInfoDto;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.service.ChangeRequestCodeGenerator;
 import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;
 import showroomz.domain.changerequest.type.ChangeRequestField;
@@ -19,8 +19,6 @@ import showroomz.domain.member.creator.type.ResidentRegistrationNumber;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.PersonalDataCipher;
-
-import java.util.List;
 
 /**
  * 스튜디오 사업자 구분 변경 요청(T4 ~ T10 · 50 설계서 7절) — 어드민 변경 요청 큐(§16-2a)에 인플루언서 행을 넣는 생산자다. 처리(승인 · 반려)는
@@ -36,7 +34,7 @@ public class CreatorBusinessTypeChangeService {
     private static final long EVIDENCE_MAX_BYTES = 10L * 1024 * 1024;
 
     private final CreatorRepository creatorRepository;
-    private final BrandChangeRequestRepository changeRequestRepository;
+    private final ChangeRequestRepository changeRequestRepository;
     private final ChangeRequestCodeGenerator codeGenerator;
     private final PersonalDataCipher cipher;
 
@@ -73,13 +71,12 @@ public class CreatorBusinessTypeChangeService {
         if (body.getEvidenceFileSize() > EVIDENCE_MAX_BYTES) {
             throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, "파일 크기가 10MB를 초과했습니다. 10MB 이하의 파일을 선택해 주세요.");
         }
-        if (changeRequestRepository.findFirstByCreator_IdAndStatusOrderByRequestedAtDesc(creator.getId(),
-                ChangeRequestStatus.PENDING).isPresent()) {
+        if (changeRequestRepository.findOpenForCreator(creator.getId()).isPresent()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ALREADY_PENDING);
         }
 
         ChangeRequestType type = ChangeRequestType.toward(target);
-        BrandChangeRequest request = BrandChangeRequest.createForCreator(codeGenerator.next(), creator, type,
+        ChangeRequest request = ChangeRequest.createForCreator(codeGenerator.next(), creator, type,
                 body.getEvidenceFileUrl(), body.getEvidenceFileName(), body.getEvidenceFileSize());
         // 현재 값은 서버 스냅샷 · 사업자 구분은 코드로 저장한다(라벨은 조회 시).
         request.addItem(ChangeRequestField.CREATOR_BUSINESS_TYPE,
@@ -96,9 +93,9 @@ public class CreatorBusinessTypeChangeService {
         }
 
         // 새 요청이 닫지 않은 옛 결과 배너(승인 · 반려)를 대신한다 — 새로 냈다는 것 자체가 읽었다는 뜻이다.
-        changeRequestRepository.findByCreator_IdAndStatusInAndResultAcknowledgedAtIsNull(creator.getId(),
-                        List.of(ChangeRequestStatus.APPROVED, ChangeRequestStatus.REJECTED))
-                .forEach(BrandChangeRequest::acknowledge);
+        changeRequestRepository.findProcessedForCreator(creator.getId()).stream()
+                .filter(r -> r.getResultAcknowledgedAt() == null)
+                .forEach(ChangeRequest::acknowledge);
 
         try {
             changeRequestRepository.saveAndFlush(request);
@@ -117,7 +114,7 @@ public class CreatorBusinessTypeChangeService {
     /** 확인 대기 중 직접 취소(T4 · T9) — 정산은 기존 구분으로 계속되므로 아무 영향이 없다. 주민번호 암호문은 즉시 비워진다. */
     @Transactional
     public void cancel(Long userId, Long requestId) {
-        BrandChangeRequest request = ownedRequest(userId, requestId);
+        ChangeRequest request = ownedRequest(userId, requestId);
         if (!request.isPending()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
         }
@@ -127,7 +124,7 @@ public class CreatorBusinessTypeChangeService {
     /** 결과 배너 닫기(T4a · T5 · T9a · T10) — 브랜드 확인과 같은 규칙. */
     @Transactional
     public void acknowledge(Long userId, Long requestId) {
-        BrandChangeRequest request = ownedRequest(userId, requestId);
+        ChangeRequest request = ownedRequest(userId, requestId);
         if (request.getStatus() != ChangeRequestStatus.APPROVED && request.getStatus() != ChangeRequestStatus.REJECTED) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "처리가 끝난 요청만 확인할 수 있습니다.");
         }
@@ -136,10 +133,10 @@ public class CreatorBusinessTypeChangeService {
         }
     }
 
-    private BrandChangeRequest ownedRequest(Long userId, Long requestId) {
+    private ChangeRequest ownedRequest(Long userId, Long requestId) {
         Creator creator = creatorRepository.findByUser_Id(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_NOT_FOUND));
-        BrandChangeRequest request = changeRequestRepository.findById(requestId)
+        ChangeRequest request = changeRequestRepository.findById(requestId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_FOUND));
         if (request.getCreator() == null || !request.getCreator().getId().equals(creator.getId())) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ACCESS_DENIED);

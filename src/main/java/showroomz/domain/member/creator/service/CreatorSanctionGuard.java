@@ -1,13 +1,13 @@
 package showroomz.domain.member.creator.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorWithdrawalRequestRepository;
 import showroomz.domain.member.creator.type.CreatorBlockedAction;
 import showroomz.domain.member.creator.type.CreatorStatus;
-import showroomz.domain.member.creator.type.CreatorWithdrawalStatus;
+import showroomz.global.config.properties.MemberProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -29,9 +29,8 @@ public class CreatorSanctionGuard {
 
     private final CreatorWithdrawalRequestRepository withdrawalRequests;
 
-    /** 정지 시 공구 게시물 제출까지 막을지(§55 B-11) — 켜면 정지된 인플루언서의 준비완료 공구가 게시물 게이트에서 막힌다. */
-    @Value("${member.sanction.block-group-buy-post:false}")
-    private boolean blockGroupBuyPost;
+    /** 정지 시 공구 게시물 제출까지 막을지(§55 B-11) — {@code member.sanction.block-group-buy-post}. */
+    private final MemberProperties memberProperties;
 
     public void requireCanPublishPost(Creator creator) {
         if (creator.getStatus() == CreatorStatus.SUSPENDED) {
@@ -40,7 +39,7 @@ public class CreatorSanctionGuard {
     }
 
     public void requireCanSubmitGroupBuyPost(Creator creator) {
-        if (blockGroupBuyPost && creator.getStatus() == CreatorStatus.SUSPENDED) {
+        if (memberProperties.getSanction().isBlockGroupBuyPost() && creator.getStatus() == CreatorStatus.SUSPENDED) {
             throw suspended(CreatorBlockedAction.GROUP_BUY_POST_SUBMIT);
         }
     }
@@ -69,7 +68,7 @@ public class CreatorSanctionGuard {
     }
 
     private boolean hasPendingWithdrawal(Creator creator) {
-        return withdrawalRequests.existsByCreatorIdAndStatus(creator.getId(), CreatorWithdrawalStatus.PENDING);
+        return withdrawalRequests.existsByCreatorIdAndStatus(creator.getId(), MemberWithdrawalStatus.PENDING);
     }
 
     private static BusinessException suspended(CreatorBlockedAction action) {

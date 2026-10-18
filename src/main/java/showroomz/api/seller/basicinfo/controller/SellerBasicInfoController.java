@@ -2,6 +2,7 @@ package showroomz.api.seller.basicinfo.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.seller.basicinfo.docs.SellerBasicInfoControllerDocs;
 import showroomz.api.seller.basicinfo.dto.SellerBasicInfoDto;
 import showroomz.api.seller.basicinfo.service.SellerBasicInfoService;
+import showroomz.api.seller.basicinfo.service.SellerWithdrawalService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -18,6 +20,7 @@ import showroomz.global.error.exception.ErrorCode;
 public class SellerBasicInfoController implements SellerBasicInfoControllerDocs {
 
     private final SellerBasicInfoService sellerBasicInfoService;
+    private final SellerWithdrawalService sellerWithdrawalService;
 
     @Override
     @GetMapping("/business")
@@ -82,6 +85,20 @@ public class SellerBasicInfoController implements SellerBasicInfoControllerDocs 
     @PatchMapping("/account/email")
     public ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> changeEmail(@Valid @RequestBody SellerBasicInfoDto.ChangeEmailRequest request) {
         return ResponseEntity.ok(sellerBasicInfoService.changeEmail(getCurrentSellerEmail(), request));
+    }
+
+    @Override
+    @PostMapping("/withdrawal-requests")
+    public ResponseEntity<SellerBasicInfoDto.WithdrawalRequestResponse> requestWithdrawal(
+            @Valid @RequestBody(required = false) SellerBasicInfoDto.WithdrawalRequestBody request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(sellerWithdrawalService.request(getCurrentSellerEmail(), request));
+    }
+
+    @Override
+    @PostMapping("/withdrawal-requests/{requestId}/cancel")
+    public ResponseEntity<Void> cancelWithdrawal(@PathVariable Long requestId) {
+        sellerWithdrawalService.cancel(getCurrentSellerEmail(), requestId);
+        return ResponseEntity.noContent().build();
     }
 
     private String getCurrentSellerEmail() {

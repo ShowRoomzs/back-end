@@ -9,16 +9,17 @@ import showroomz.domain.bank.repository.BankRepository;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.service.CreatorSettlementAccountRecorder;
-import showroomz.domain.member.creator.type.CreatorAdminActorType;
 import showroomz.domain.member.creator.type.CreatorAccountVerificationStatus;
+import showroomz.domain.member.creator.type.CreatorAdminActorType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.member.creator.type.ResidentRegistrationNumber;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.service.AfterCommit;
-import showroomz.domain.settlement.service.CreatorAccountPayoutHook;
 import showroomz.domain.settlement.service.CreatorAccountVerificationService;
+import showroomz.domain.settlement.service.PayoutHoldTransitions;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
+import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -40,7 +41,7 @@ public class CreatorSettlementInfoService {
     private final BankRepository bankRepository;
     private final SettlementPayoutRepository payoutRepository;
     private final CreatorSettlementAccountRecorder accountRecorder;
-    private final CreatorAccountPayoutHook accountPayoutHook;
+    private final PayoutHoldTransitions payoutHolds;
     private final CreatorAccountVerificationService accountVerification;
 
     @Transactional(readOnly = true)
@@ -94,7 +95,7 @@ public class CreatorSettlementInfoService {
                 creatorId, now);
         creator.changeSettlementAccount(bank.getName(), request.getAccountNumber(), request.getBankbookImageUrl(),
                 request.getBankbookFileName(), now);
-        accountPayoutHook.hold(creatorId, now);
+        payoutHolds.hold(SettlementPayee.CREATOR, creatorId, PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED, now);
         AfterCommit.run(() -> accountVerification.verify(creatorId));
         return toResponse(creator);
     }

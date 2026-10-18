@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.common.AdminOperatorResolver;
 import showroomz.api.admin.creator.dto.AdminCreatorDto.Memo;
 import showroomz.api.admin.creator.dto.AdminCreatorDto.MemoPage;
+import showroomz.domain.member.common.service.AdminMemoPolicy;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorAdminMemo;
 import showroomz.domain.member.creator.repository.CreatorAdminMemoRepository;
@@ -49,7 +50,7 @@ public class AdminCreatorMemoService {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWN);
         }
         LocalDateTime now = LocalDateTime.now();
-        CreatorAdminMemo memo = memos.save(CreatorAdminMemo.write(creatorId, operatorId, operatorName, validate(content), now));
+        CreatorAdminMemo memo = memos.save(CreatorAdminMemo.write(creatorId, operatorId, operatorName, AdminMemoPolicy.normalize(content), now));
         history.byOperator(creatorId, CreatorAdminEventType.MEMO_CREATED, operatorId, operatorName, null,
                 CreatorAdminHistoryRecorder.REF_MEMO, memo.getId(), now);
         return toDto(memo, operatorId, now);
@@ -59,7 +60,7 @@ public class AdminCreatorMemoService {
         String operatorName = operators.operatorName(operatorId);
         LocalDateTime now = LocalDateTime.now();
         CreatorAdminMemo memo = editable(creatorId, memoId, operatorId, now);
-        memo.edit(validate(content), now);
+        memo.edit(AdminMemoPolicy.normalize(content), now);
         history.byOperator(creatorId, CreatorAdminEventType.MEMO_UPDATED, operatorId, operatorName, null,
                 CreatorAdminHistoryRecorder.REF_MEMO, memoId, now);
         return toDto(memo, operatorId, now);
@@ -81,21 +82,9 @@ public class AdminCreatorMemoService {
         }
         CreatorAdminMemo memo = memos.findByIdAndCreatorIdAndDeletedAtIsNull(memoId, creatorId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CREATOR_MEMO_NOT_FOUND));
-        if (!memo.isAuthor(operatorId)) {
-            throw new BusinessException(ErrorCode.CREATOR_MEMO_NOT_AUTHOR);
-        }
-        if (!memo.isWithinEditWindow(now)) {
-            throw new BusinessException(ErrorCode.CREATOR_MEMO_EDIT_WINDOW_CLOSED);
-        }
+        AdminMemoPolicy.requireEditable(memo, operatorId, now, ErrorCode.CREATOR_MEMO_NOT_AUTHOR,
+                ErrorCode.CREATOR_MEMO_EDIT_WINDOW_CLOSED);
         return memo;
-    }
-
-    private static String validate(String content) {
-        String value = content == null ? "" : content.strip();
-        if (value.isEmpty() || value.length() > CreatorAdminMemo.MAX_LENGTH) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "메모는 1자 이상 300자 이내로 입력해 주세요.");
-        }
-        return value;
     }
 
     private Creator load(Long creatorId) {

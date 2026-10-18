@@ -7,17 +7,16 @@ import showroomz.api.creator.post.DTO.PostInsightDto;
 import showroomz.api.creator.showroom.service.Demographics;
 import showroomz.api.creator.showroom.type.StatsPeriod;
 import showroomz.domain.member.creator.entity.Creator;
-import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostSuspension;
 import showroomz.domain.post.repository.PostImpressionRepository;
-import showroomz.domain.post.repository.PostLikeRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
-import showroomz.domain.showroom.repository.ShowroomVisitRepository;
+import showroomz.domain.post.service.PostMetricsService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.Percent;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -48,11 +47,9 @@ public class PostInsightService {
 
     private final PostRepository postRepository;
     private final PostImpressionRepository postImpressionRepository;
-    private final PostLikeRepository postLikeRepository;
     private final PostSuspensionRepository postSuspensionRepository;
-    private final ShowroomVisitRepository showroomVisitRepository;
-    private final CreatorFollowRepository creatorFollowRepository;
     private final CreatorRepository creatorRepository;
+    private final PostMetricsService postMetricsService;
 
     public PostInsightDto.PostInsightResponse getInsights(Long userId, Long postId, StatsPeriod period) {
         Creator creator = creatorRepository.findByUser_Id(userId)
@@ -74,10 +71,11 @@ public class PostInsightService {
         LocalDateTime to = truncated ? suspendedAt : now;
         LocalDateTime from = period.startOf(to);
 
-        long impressions = postImpressionRepository.countByPostIdInPeriod(postId, from, to);
-        long likes = postLikeRepository.countByPostIdInPeriod(postId, from, to);
-        long visits = showroomVisitRepository.countAttributedVisits(postId, from, to);
-        long follows = creatorFollowRepository.countAttributedFollows(postId, from, to);
+        // 지표 5종은 어드민 모니터링과 같은 집계 한 곳에서 낸다(정합 계획서 R5-1) — 두 화면 숫자가 코드로 같다.
+        PostMetricsService.PostMetrics metrics = postMetricsService.measure(postId, from, to);
+        long impressions = metrics.impressions();
+        long visits = metrics.showroomVisits();
+        long follows = metrics.follows();
 
         return PostInsightDto.PostInsightResponse.builder()
                 .postId(postId)
@@ -88,14 +86,14 @@ public class PostInsightService {
                 .truncatedBySuspension(truncated)
                 .reaction(PostInsightDto.ReactionStats.builder()
                         .impressions(impressions)
-                        .likes(likes)
-                        .likeRate(rateOf(likes, impressions))
+                        .likes(metrics.likes())
+                        .likeRate(metrics.likeRate())
                         .build())
                 .behavior(PostInsightDto.BehaviorStats.builder()
                         .showroomVisits(visits)
-                        .visitRate(rateOf(visits, impressions))
+                        .visitRate(Percent.oneDecimal(visits, impressions))
                         .follows(follows)
-                        .followRate(rateOf(follows, impressions))
+                        .followRate(Percent.oneDecimal(follows, impressions))
                         .followCountMayDecrease(true)
                         .build())
                 .viewers(buildViewerStats(postId, from, to))
@@ -146,10 +144,5 @@ public class PostInsightService {
         return postSuspensionRepository.findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(postId)
                 .map(PostSuspension::getSuspendedAt)
                 .orElse(null);
-    }
-
-    /** 분모가 0이면 {@code null}이다 — 0%로 표시하면 "반응이 없었다"로 읽히지만 사실은 "잰 적이 없다"다 */
-    private static Double rateOf(long value, long total) {
-        return total == 0 ? null : Demographics.round(value * 100.0 / total);
     }
 }

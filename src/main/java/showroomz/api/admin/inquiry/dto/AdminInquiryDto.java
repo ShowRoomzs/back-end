@@ -42,6 +42,9 @@ public class AdminInquiryDto {
         private boolean slaExceeded;
         @Schema(description = "상태", example = "WAITING")
         private InquiryStatus status;
+        @Schema(description = "계정 이용 정지 소명 문의 — true 면 typeName 이 「계정 이용 정지」다. 유형 탭 집계는 계정(ACCOUNT)에 들어간다",
+                example = "false")
+        private boolean sanctionAppeal;
     }
 
     @Getter
@@ -136,6 +139,11 @@ public class AdminInquiryDto {
         @Schema(description = "반려 이의 대상 클레임 ID — 앱 「이의 제기」로 쓴 문의만, 아니면 null. 반품·교환 상세(06b)로 가는 링크용",
                 example = "3008")
         private Long claimId;
+        @Schema(description = "계정 이용 정지 소명 문의 — 앱 정지 안내 시트의 「1:1 문의로 이의 신청」으로 쓴 문의. "
+                + "정지 해제는 소비자 상세(userId)에서만 한다", example = "false")
+        private boolean sanctionAppeal;
+        @Schema(description = "소명 대상 정지 id — 소명 문의만, 아니면 null", example = "12")
+        private Long sanctionId;
         @Schema(description = "접수일시", example = "2026-07-16T10:12:00")
         private LocalDateTime createdAt;
         @Schema(description = "답변일시 — 미답변이면 null")

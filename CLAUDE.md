@@ -11,6 +11,8 @@ Showroomz 백엔드 (Spring Boot / Gradle / Java).
 - `showroomz.api.<역할>.<기능>.{controller, docs, dto|DTO, service}` — 역할은 `admin` / `seller` / `creator` / `app`(유저) / `common` / `test`
 - `showroomz.domain.<도메인>.{entity, repository, type}`
 - `showroomz.global.*` — 설정, 공통 DTO, 예외
+- 목록 탭 · 정렬 같은 enum 은 **도메인 리포지토리가 파라미터로 받으면 `domain.*.type`**, 응답 · 서비스에서만 쓰면 `api.*.type` 에 둔다.
+- 회원 관리(브랜드 · 인플루언서) 공통 규칙 · 타입은 `domain.member.common`(메모 정책 · 조치 입력 규칙 · 알림 포트 · 지급 보류 포트 구현), 어드민 표기(회원번호 · 마스킹 · 사유 목록)는 `api.admin.common` 에 있다. 회원 유형별로 다시 만들지 않는다.
 
 Swagger 문서는 **컨트롤러가 `XxxControllerDocs` 인터페이스를 implements** 하는 구조다. `@Tag`, `@Operation`, `@ApiResponse` 등 문서 어노테이션은 docs 인터페이스에 두고, 컨트롤러에는 매핑만 둔다.
 

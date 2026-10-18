@@ -143,7 +143,8 @@ class CreatorAccountTabIntegrationTest extends SettlementTestSupport {
     @DisplayName("[AC-06 · AC-07] 탈퇴 요청 → 대기(S7) · 중복 409 · 취소 → 다시 가능 · 조건 미충족 409 · 사유 공백 400")
     void requestAndCancel() throws Exception {
         requestWithdrawal("활동 중단").andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWAL_CONDITION_UNMET"));
+                .andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWAL_CONDITION_UNMET"))
+                .andExpect(jsonPath("$.unmet.UNFINISHED_GROUP_BUYS").value(1));
         moveTo(groupBuy.getId(), GroupBuyStatus.ENDED);
         requestWithdrawal("  ").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWAL_REASON_REQUIRED"));

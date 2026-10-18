@@ -7,17 +7,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import showroomz.api.admin.brand.AdminBrandMasker;
-import showroomz.api.admin.brand.AdminBrandNumber;
 import showroomz.api.admin.brand.dto.AdminBrandDto;
 import showroomz.api.admin.brand.type.AdminBrandSort;
 import showroomz.api.admin.brand.type.AdminBrandTab;
+import showroomz.api.admin.common.AdminMemberMasker;
+import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.MemberNumber;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
-import showroomz.domain.changerequest.type.ChangeRequestStatus;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;
+import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.connection.type.ConnectionType;
@@ -39,7 +40,10 @@ import showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository;
 import showroomz.domain.member.brand.service.BrandAdminHistoryReader;
 import showroomz.domain.member.brand.type.BrandMemberStatus;
 import showroomz.domain.member.brand.type.BrandPendingChip;
-import showroomz.domain.member.brand.type.BrandWithdrawalStatus;
+import showroomz.domain.member.brand.type.BrandSuspensionReason;
+import showroomz.domain.member.brand.type.BrandWithdrawalRejectReason;
+import showroomz.domain.member.common.type.MemberType;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageThreadRepository;
@@ -47,9 +51,9 @@ import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
+import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimTab;
-import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.product.repository.ProductRepository;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
@@ -92,7 +96,7 @@ public class AdminBrandQueryService {
     private final BrandAdminMemoRepository memoRepository;
     private final MarketShipLeadHistoryRepository shipLeadHistoryRepository;
     private final BrandAdminHistoryReader historyReader;
-    private final BrandChangeRequestRepository changeRequestRepository;
+    private final ChangeRequestRepository changeRequestRepository;
     private final ConnectionRepository connectionRepository;
     private final MessageThreadRepository threadRepository;
     private final MessageThreadService messageThreadService;
@@ -105,6 +109,14 @@ public class AdminBrandQueryService {
     private final SettlementRepository settlementRepository;
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementTaxDocumentRepository taxDocumentRepository;
+
+    /** 모달 셀렉트 사유 목록(정합 계획서 R1-9) — enum 단일 소스. 인플루언서 상세와 같은 조립식이다. */
+    public AdminBrandDto.ReasonOptions reasonOptions() {
+        return new AdminBrandDto.ReasonOptions(
+                AdminReasonOption.suspension(BrandSuspensionReason.values()),
+                AdminReasonOption.memberRelease(),
+                AdminReasonOption.of(BrandWithdrawalRejectReason.values()));
+    }
 
     // ------------------------------------------------------------------ 목록
 
@@ -125,7 +137,7 @@ public class AdminBrandQueryService {
             Seller s = m.getSeller();
             BrandMemberStatus status = BrandMemberStatus.of(m.getStatus());
             boolean withdrawn = status == BrandMemberStatus.WITHDRAWN;
-            return new AdminBrandDto.ListItem(m.getId(), AdminBrandNumber.format(m.getId()), m.getMarketName(),
+            return new AdminBrandDto.ListItem(m.getId(), MemberNumber.format(MemberType.BRAND, m.getId()), m.getMarketName(),
                     withdrawn ? null : s.getName(), withdrawn ? null : s.getBusinessType(), status.name(),
                     status.getLabel(), pendingIds.contains(m.getId()), s.getCreatedAt(), s.getLastLoginAt());
         }).toList();
@@ -149,8 +161,8 @@ public class AdminBrandQueryService {
             if (keyword == null || keyword.isBlank()) {
                 return new Keyword(null, null, false);
             }
-            if (AdminBrandNumber.looksLikeBrandNumber(keyword)) {
-                Long id = AdminBrandNumber.parseOrNull(keyword);
+            if (MemberNumber.looksLike(MemberType.BRAND, keyword)) {
+                Long id = MemberNumber.parseOrNull(MemberType.BRAND, keyword);
                 return new Keyword(id, null, id == null);
             }
             return new Keyword(null, keyword.trim(), false);
@@ -166,7 +178,7 @@ public class AdminBrandQueryService {
         boolean purged = status == BrandMemberStatus.WITHDRAWN;
         Optional<BrandWithdrawalRequest> pending = purged ? Optional.empty()
                 : withdrawalRepository.findFirstByMarketIdAndStatusOrderByRequestedAtDesc(marketId,
-                BrandWithdrawalStatus.PENDING);
+                MemberWithdrawalStatus.PENDING);
         Optional<MessageThread> thread = operatorThread(market);
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime approvedAt = historyReader.approvedAt(seller);
@@ -179,7 +191,7 @@ public class AdminBrandQueryService {
                 purged ? null : seller.getBusinessRegistrationNumber(), seller.getMailOrderRegNumber(),
                 ChangeRequestFieldResolver.combineAddress(seller.getBusinessAddress(), seller.getDetailAddress()));
         AdminBrandDto.SettlementInfo settlementInfo = new AdminBrandDto.SettlementInfo(seller.getBankName(),
-                seller.getAccountHolder(), AdminBrandMasker.maskAccountNumber(seller.getAccountNumber()),
+                seller.getAccountHolder(), AdminMemberMasker.maskAccountNumber(seller.getAccountNumber()),
                 seller.getTaxEmail(), purged ? List.of() : pendingChangeRequests(marketId));
 
         Long threadId = thread.map(MessageThread::getId).orElse(null);
@@ -194,7 +206,7 @@ public class AdminBrandQueryService {
                 latestMemo.getContent().stream().map(m -> toMemo(m, operatorId, purged, now)).toList(),
                 latestMemo.getTotalElements());
 
-        return new AdminBrandDto.Detail(marketId, AdminBrandNumber.format(marketId), market.getMarketName(),
+        return new AdminBrandDto.Detail(marketId, MemberNumber.format(MemberType.BRAND, marketId), market.getMarketName(),
                 status.name(), status.getLabel(), pending.isPresent(), purged,
                 new AdminBrandDto.Navigation(marketRepository.findPreviousBrandMemberId(marketId),
                         marketRepository.findNextBrandMemberId(marketId)),
@@ -217,7 +229,7 @@ public class AdminBrandQueryService {
         boolean purged = market.getStatus() == MarketStatus.WITHDRAWN;
         Optional<BrandWithdrawalRequest> pending = purged ? Optional.empty()
                 : withdrawalRepository.findFirstByMarketIdAndStatusOrderByRequestedAtDesc(marketId,
-                BrandWithdrawalStatus.PENDING);
+                MemberWithdrawalStatus.PENDING);
         LocalDateTime now = LocalDateTime.now();
         return new AdminBrandDto.Rail(
                 currentStatus(market, historyReader.approvedAt(market.getSeller()), thread.map(MessageThread::getId).orElse(null)),
@@ -274,7 +286,7 @@ public class AdminBrandQueryService {
     private List<AdminBrandDto.PendingChangeRequest> pendingChangeRequests(Long marketId) {
         return changeRequestRepository.findByMarket_IdAndStatusOrderByRequestedAtAsc(marketId, ChangeRequestStatus.PENDING)
                 .stream()
-                .map((BrandChangeRequest r) -> new AdminBrandDto.PendingChangeRequest(r.getId(), r.getRequestCode(),
+                .map((ChangeRequest r) -> new AdminBrandDto.PendingChangeRequest(r.getId(), r.getRequestCode(),
                         r.getType().name(), BrandAdminHistoryReader.typeLabel(r.getType()), r.getRequestedAt()))
                 .toList();
     }
@@ -372,14 +384,14 @@ public class AdminBrandQueryService {
         }
         if (status == BrandMemberStatus.WITHDRAWN) {
             withdrawal = withdrawalRepository.findFirstByMarketIdAndStatusOrderByProcessedAtDesc(marketId,
-                            BrandWithdrawalStatus.APPROVED)
+                            MemberWithdrawalStatus.APPROVED)
                     .map(r -> new AdminBrandDto.Withdrawal(r.getRequestedAt(),
                             r.getReason() == null ? null : r.getReason().name(), r.reasonLabel(), r.getMessage(),
                             r.getProcessedAt(), r.getProcessedByName()))
                     .orElse(null);
         }
         boolean pending = status != BrandMemberStatus.WITHDRAWN
-                && withdrawalRepository.existsByMarketIdAndStatus(marketId, BrandWithdrawalStatus.PENDING);
+                && withdrawalRepository.existsByMarketIdAndStatus(marketId, MemberWithdrawalStatus.PENDING);
         AdminBrandDto.Actions actions = new AdminBrandDto.Actions(status == BrandMemberStatus.ACTIVE,
                 status == BrandMemberStatus.SUSPENDED, pending);
         return new AdminBrandDto.CurrentStatus(marketId, status.name(), status.getLabel(), status.getTone(),
@@ -453,7 +465,7 @@ public class AdminBrandQueryService {
     }
 
     private static AdminBrandDto.Memo toMemo(BrandAdminMemo memo, Long operatorId, boolean purged, LocalDateTime now) {
-        boolean editable = !purged && operatorId != null && memo.isAuthor(operatorId) && memo.isWithinEditWindow(now);
+        boolean editable = !purged && memo.isEditableBy(operatorId, now);
         return new AdminBrandDto.Memo(memo.getId(), memo.getAuthorName(), memo.getContent(), memo.getCreatedAt(),
                 memo.getModifiedAt(), editable);
     }

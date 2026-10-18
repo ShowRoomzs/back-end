@@ -4,8 +4,8 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.type.CreatorWithdrawalRejectReason;
-import showroomz.domain.member.creator.type.CreatorWithdrawalStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -32,7 +32,7 @@ public class CreatorWithdrawalRequest {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
-    private CreatorWithdrawalStatus status;
+    private MemberWithdrawalStatus status;
 
     @Column(name = "reason_text", nullable = false, length = 500)
     private String reasonText;
@@ -84,7 +84,7 @@ public class CreatorWithdrawalRequest {
                                                    LocalDate dueDate) {
         CreatorWithdrawalRequest request = new CreatorWithdrawalRequest();
         request.creatorId = creatorId;
-        request.status = CreatorWithdrawalStatus.PENDING;
+        request.status = MemberWithdrawalStatus.PENDING;
         request.reasonText = reasonText;
         request.requestedAt = now;
         request.dueDate = dueDate;
@@ -92,12 +92,12 @@ public class CreatorWithdrawalRequest {
     }
 
     public boolean isPending() {
-        return status == CreatorWithdrawalStatus.PENDING;
+        return status == MemberWithdrawalStatus.PENDING;
     }
 
     public void approve(Long operatorId, String operatorName, int groupBuys, int contracts, int unsettled,
                         LocalDateTime now) {
-        this.status = CreatorWithdrawalStatus.APPROVED;
+        this.status = MemberWithdrawalStatus.APPROVED;
         this.processedAt = now;
         this.processedBy = operatorId;
         this.processedByName = operatorName;
@@ -108,7 +108,7 @@ public class CreatorWithdrawalRequest {
 
     public void reject(CreatorWithdrawalRejectReason reason, String note, Long operatorId, String operatorName,
                        LocalDateTime now) {
-        this.status = CreatorWithdrawalStatus.REJECTED;
+        this.status = MemberWithdrawalStatus.REJECTED;
         this.rejectReason = reason;
         this.rejectNote = note;
         this.processedAt = now;
@@ -117,12 +117,12 @@ public class CreatorWithdrawalRequest {
     }
 
     public void cancel(LocalDateTime now) {
-        this.status = CreatorWithdrawalStatus.CANCELED;
+        this.status = MemberWithdrawalStatus.CANCELED;
         this.canceledAt = now;
     }
 
     public boolean isRejected() {
-        return status == CreatorWithdrawalStatus.REJECTED;
+        return status == MemberWithdrawalStatus.REJECTED;
     }
 
     /** 반려됐고 인플루언서가 아직 [확인]을 누르지 않았다 — 계정 탭 S8 배너. */
