@@ -124,6 +124,15 @@ public class OrderController implements OrderControllerDocs {
     }
 
     @Override
+    @PostMapping("/{orderId}/cancel-requests/{cancelRequestId}/withdraw")
+    public ResponseEntity<UserCancelDto.WithdrawResponse> withdrawCancelRequest(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("orderId") Long orderId,
+            @PathVariable("cancelRequestId") Long cancelRequestId) {
+        return ResponseEntity.ok(userCancelService.withdraw(principal.getUserId(), orderId, cancelRequestId));
+    }
+
+    @Override
     @GetMapping("/{orderId}/items/{orderProductId}/cancel")
     public ResponseEntity<UserCancelDto.DetailResponse> getCancelDetail(@AuthenticationPrincipal UserPrincipal principal,
                                                                        @PathVariable("orderId") Long orderId,

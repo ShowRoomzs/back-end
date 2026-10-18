@@ -23,8 +23,14 @@ public interface SettlementClawbackLedger {
     /** 환불 큐 행이 만든 차감 행(측별 2행) — 06c 「정산」. */
     List<ClawbackView> findByRefundTask(Long refundTaskId);
 
+    /** 집행 전 차감 예정액 — 차감 발생과 같은 식(06c M1 · 46 수정계획 5-1). 차감이 생기지 않을 환불이면 null. */
+    ClawbackAmounts preview(Long refundTaskId);
+
     record Pending(long brandAmount, long rewardAmount) {
         public static final Pending NONE = new Pending(0, 0);
+    }
+
+    record ClawbackAmounts(long brandAmount, long creatorAmount) {
     }
 
     record ClawbackView(String clawbackNumber, String side, String status, String statusLabel, long amount) {

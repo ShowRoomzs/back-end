@@ -78,11 +78,11 @@ public class AdminGroupBuyQueryService {
      * 목록(A1~A3). 행마다 게시물 상태·조치 여부가 필요하다 — 페이지의 공구 id로 <b>테이블당 IN 쿼리 1번씩</b> 모은다.
      * 조치 여부는 배지와 같은 판정식({@code AdminGroupBuyQueuePredicate})을 쿼리로 태운다.
      */
-    public PageResponse<AdminGroupBuyListItem> getGroupBuys(AdminGroupBuyTab tab, String keyword,
+    public PageResponse<AdminGroupBuyListItem> getGroupBuys(AdminGroupBuyTab tab, String keyword, Long marketId,
                                                             AdminGroupBuySortType sort, PagingRequest pagingRequest) {
         LocalDateTime now = LocalDateTime.now();
         Pageable pageable = PageRequest.of(Math.max(pagingRequest.getPage() - 1, 0), pagingRequest.getSize());
-        Page<GroupBuy> page = groupBuyRepository.searchForAdmin(tabOrAll(tab), patternOf(keyword),
+        Page<GroupBuy> page = groupBuyRepository.searchForAdmin(tabOrAll(tab), patternOf(keyword), marketId,
                 sortOrDefault(sort), now, pageable);
         List<GroupBuy> groupBuys = page.getContent();
         if (groupBuys.isEmpty()) {
@@ -172,20 +172,28 @@ public class AdminGroupBuyQueryService {
         return new AdminGroupBuySummaryResponse.SettlementWatch(watching, overdue, nearest);
     }
 
-    /** 상세. 목록 조건(tab · keyword · sort)이 오면 같은 정렬로 앞뒤 1건씩 이웃을 고른다. */
+    /** 상세. 목록 조건(tab · keyword · marketId · sort)이 오면 같은 정렬로 앞뒤 1건씩 이웃을 고른다. */
     public AdminGroupBuyDetailResponse getGroupBuy(Long groupBuyId, AdminGroupBuyTab tab, String keyword,
-                                                   AdminGroupBuySortType sort) {
+                                                   Long marketId, AdminGroupBuySortType sort) {
         GroupBuy groupBuy = access.read(groupBuyId);
-        return detailAssembler.assemble(groupBuy, navigation(groupBuyId, tab, keyword, sort));
+        return detailAssembler.assemble(groupBuy, navigation(groupBuyId, tab, keyword, marketId, sort));
+    }
+
+    /** 인플루언서 셀렉트(46 수정계획 2-3) — 공구를 연 인플루언서만. 페이지 없음. */
+    public List<AdminGroupBuyDto.CreatorOption> getCreatorOptions(Long marketId) {
+        return groupBuyRepository.findCreatorOptionsForAdmin(marketId).stream()
+                .map(row -> new AdminGroupBuyDto.CreatorOption(row.creatorId(), row.showroomName()))
+                .toList();
     }
 
     private AdminGroupBuyDetailResponse.Navigation navigation(Long groupBuyId, AdminGroupBuyTab tab, String keyword,
-                                                              AdminGroupBuySortType sort) {
-        boolean hasListContext = tab != null || sort != null || (keyword != null && !keyword.isBlank());
+                                                              Long marketId, AdminGroupBuySortType sort) {
+        boolean hasListContext = tab != null || sort != null || marketId != null
+                || (keyword != null && !keyword.isBlank());
         if (!hasListContext) {
             return new AdminGroupBuyDetailResponse.Navigation(null, null);
         }
-        List<Long> ids = groupBuyRepository.findOrderedIdsForAdmin(tabOrAll(tab), patternOf(keyword),
+        List<Long> ids = groupBuyRepository.findOrderedIdsForAdmin(tabOrAll(tab), patternOf(keyword), marketId,
                 sortOrDefault(sort), LocalDateTime.now());
         int index = ids.indexOf(groupBuyId);
         if (index < 0) {

@@ -36,9 +36,10 @@ public class AdminGroupBuyController implements AdminGroupBuyControllerDocs {
     public ResponseEntity<PageResponse<AdminGroupBuyListItem>> getGroupBuys(
             @RequestParam(value = "tab", required = false) AdminGroupBuyTab tab,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "marketId", required = false) Long marketId,
             @RequestParam(value = "sort", required = false) AdminGroupBuySortType sort,
             @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(queryService.getGroupBuys(tab, keyword, sort, pagingRequest));
+        return ResponseEntity.ok(queryService.getGroupBuys(tab, keyword, marketId, sort, pagingRequest));
     }
 
     @Override
@@ -48,13 +49,21 @@ public class AdminGroupBuyController implements AdminGroupBuyControllerDocs {
     }
 
     @Override
+    @GetMapping("/creators")
+    public ResponseEntity<List<AdminGroupBuyDto.CreatorOption>> getCreatorOptions(
+            @RequestParam(value = "marketId", required = false) Long marketId) {
+        return ResponseEntity.ok(queryService.getCreatorOptions(marketId));
+    }
+
+    @Override
     @GetMapping("/{groupBuyId}")
     public ResponseEntity<AdminGroupBuyDetailResponse> getGroupBuy(
             @PathVariable Long groupBuyId,
             @RequestParam(value = "tab", required = false) AdminGroupBuyTab tab,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "marketId", required = false) Long marketId,
             @RequestParam(value = "sort", required = false) AdminGroupBuySortType sort) {
-        return ResponseEntity.ok(queryService.getGroupBuy(groupBuyId, tab, keyword, sort));
+        return ResponseEntity.ok(queryService.getGroupBuy(groupBuyId, tab, keyword, marketId, sort));
     }
 
     @Override

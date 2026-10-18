@@ -8,6 +8,7 @@ import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry, Long> {
 
@@ -15,6 +16,9 @@ public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry
 
     /** 어드민 주문 상세 「문의 N건」 — 이 주문을 가리키는 1:1 문의(37 설계서 8절 #11). */
     long countByOrderId(Long orderId);
+
+    /** 어드민 주문 상세 B3 「1:1 문의 #N」 — {@link #countByOrderId}와 같은 집합, 최신순(46 수정계획 4-5). */
+    List<OneToOneInquiry> findByOrderIdOrderByIdDesc(Long orderId);
 
     /** 문의 내역 탭 건수 — 상태별 (C12 [답변 대기만] 필터·탭 배지) */
     long countByUser_IdAndStatus(Long userId, InquiryStatus status);

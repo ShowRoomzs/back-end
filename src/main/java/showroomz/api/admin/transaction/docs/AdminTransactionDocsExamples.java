@@ -25,13 +25,19 @@ final class AdminTransactionDocsExamples {
                       "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "brandName": "데일리랩",
                       "status": "PREPARING", "statusLabel": "상품준비중", "statusTone": "INFO",
                       "trackingAlert": null, "trackingAlertLabel": null,
-                      "shipDueAt": "2026-10-07T23:59:59", "shipOverdue": true, "cancelRequested": false
+                      "shipDueAt": "2026-10-07T23:59:59", "shipOverdue": true, "cancelRequested": false,
+                      "itemSummary": "데일리 선크림 50ml", "itemQuantity": 1, "amount": 30200,
+                      "carrier": null, "carrierLabel": null, "trackingNumber": null, "groupBuyTitle": "데일리 선크림 공구",
+                      "issueSince": null, "issueElapsedLabel": null
                     },
                     {
                       "deliveryGroupId": 1025, "subOrderNumber": "20261003-000123-02", "brandName": "글로우코스",
                       "status": "SHIPPING", "statusLabel": "배송중", "statusTone": "INFO",
                       "trackingAlert": null, "trackingAlertLabel": null,
-                      "shipDueAt": "2026-10-08T23:59:59", "shipOverdue": false, "cancelRequested": false
+                      "shipDueAt": "2026-10-08T23:59:59", "shipOverdue": false, "cancelRequested": false,
+                      "itemSummary": "수분 세럼 30ml", "itemQuantity": 1, "amount": 24600,
+                      "carrier": "CJ", "carrierLabel": "CJ대한통운", "trackingNumber": "640012345678", "groupBuyTitle": "수분 세럼 공구",
+                      "issueSince": null, "issueElapsedLabel": null
                     }
                   ],
                   "attentionCount": 1
@@ -44,7 +50,10 @@ final class AdminTransactionDocsExamples {
                       "deliveryGroupId": 1019, "subOrderNumber": "20261002-000098-01", "brandName": "데일리랩",
                       "status": "DELIVERED", "statusLabel": "배송완료", "statusTone": "SUCCESS",
                       "trackingAlert": null, "trackingAlertLabel": null,
-                      "shipDueAt": "2026-10-07T23:59:59", "shipOverdue": false, "cancelRequested": false
+                      "shipDueAt": "2026-10-07T23:59:59", "shipOverdue": false, "cancelRequested": false,
+                      "itemSummary": "데일리 선크림 외 1종", "itemQuantity": 2, "amount": 27200,
+                      "carrier": "CJ", "carrierLabel": "CJ대한통운", "trackingNumber": "640012340099", "groupBuyTitle": "데일리 선크림 공구",
+                      "issueSince": null, "issueElapsedLabel": null
                     }
                   ],
                   "attentionCount": 0
@@ -65,7 +74,10 @@ final class AdminTransactionDocsExamples {
                       "deliveryGroupId": 960, "subOrderNumber": "20260905-000311-01", "brandName": "오브제뷰티",
                       "status": "SHIPPING", "statusLabel": "배송중", "statusTone": "INFO",
                       "trackingAlert": "STALLED", "trackingAlertLabel": "추적 정지",
-                      "shipDueAt": "2026-09-10T23:59:59", "shipOverdue": false, "cancelRequested": false
+                      "shipDueAt": "2026-09-10T23:59:59", "shipOverdue": false, "cancelRequested": false,
+                      "itemSummary": "톤업 쿠션 21호", "itemQuantity": 1, "amount": 31900,
+                      "carrier": "HANJIN", "carrierLabel": "한진택배", "trackingNumber": "512398760099", "groupBuyTitle": "톤업 쿠션 공구",
+                      "issueSince": "2026-10-02T07:40:00", "issueElapsedLabel": "8일 무갱신"
                     }
                   ],
                   "attentionCount": 1
@@ -83,7 +95,11 @@ final class AdminTransactionDocsExamples {
             """;
 
     static final String ORDER_SUMMARY = """
-            {"tabCounts": {"ALL": 120, "DELIVERY_ISSUE": 3, "CANCEL": 7}}
+            {
+              "tabCounts": {"ALL": 120, "DELIVERY_ISSUE": 3, "CANCEL": 7},
+              "statusCounts": {"NEW": 14, "PREPARING": 26, "SHIPPING": 38, "RETURNING": 1, "DELIVERED": 22, "CONFIRMED": 17, "CANCELLED": 6},
+              "deliveryIssueCounts": {"PICKUP_UNCONFIRMED": 1, "STALLED": 1, "RETURNING": 1}
+            }
             """;
 
     // ── 06a 주문 상세 — 조각 ─────────────────────────────────────────────────
@@ -101,18 +117,34 @@ final class AdminTransactionDocsExamples {
     private static final String O_PAY = """
               "payment": {
                 "paymentId": "pay_20261003_5012", "status": "PAID", "methodLabel": "신한카드",
-                "amount": 54800, "cancelledAmount": 0, "paidAt": "2026-10-03T10:12:00"
+                "amount": 54800, "cancelledAmount": 0, "paidAt": "2026-10-03T10:12:00", "operatorRefundableAmount": 54800
               },
               "inquiryCount": 1,
+              "inquiries": [{"inquiryId": 4518, "typeLabel": "배송", "createdAt": "2026-10-09T10:42:00", "answered": false}],
+              "additionalPayments": [],
               "groups": [
             """;
 
     private static final String O_PAY_REFUNDED = """
               "payment": {
                 "paymentId": "pay_20261003_5012", "status": "PAID", "methodLabel": "신한카드",
-                "amount": 54800, "cancelledAmount": 30200, "paidAt": "2026-10-03T10:12:00"
+                "amount": 54800, "cancelledAmount": 30200, "paidAt": "2026-10-03T10:12:00", "operatorRefundableAmount": 24600
               },
               "inquiryCount": 1,
+              "inquiries": [{"inquiryId": 4518, "typeLabel": "배송", "createdAt": "2026-10-09T10:42:00", "answered": false}],
+              "additionalPayments": [],
+              "groups": [
+            """;
+
+    /** 구매확정 예시 — 대기 중인 운영자 사유 환불 27,200원이 편입 상한을 깎는다. */
+    private static final String O_PAY_OUTSTANDING = """
+              "payment": {
+                "paymentId": "pay_20261003_5012", "status": "PAID", "methodLabel": "신한카드",
+                "amount": 54800, "cancelledAmount": 0, "paidAt": "2026-10-03T10:12:00", "operatorRefundableAmount": 27600
+              },
+              "inquiryCount": 1,
+              "inquiries": [{"inquiryId": 4518, "typeLabel": "배송", "createdAt": "2026-10-09T10:42:00", "answered": false}],
+              "additionalPayments": [],
               "groups": [
             """;
 
@@ -129,12 +161,13 @@ final class AdminTransactionDocsExamples {
     private static final String G_OVERDUE = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "PREPARING", "statusLabel": "상품준비중", "statusTone": "INFO",
                   "shipping": {
-                    "shipDueAt": "2026-10-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": true, "overdueNoticeCount": 3,
+                    "shipDueAt": "2026-10-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": true, "overdueNoticeCount": 3, "lastOverdueNoticeAt": "2026-10-09T15:00:00",
                     "prepareStartedAt": "2026-10-04T09:30:00", "shippedAt": null, "carrier": null, "carrierLabel": null,
-                    "trackingNumber": null, "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": null,
+                    "trackingNumber": null, "invoiceSource": null, "invoiceSourceLabel": null, "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": null, "lastTrackingLabel": null,
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": null, "deliveredSourceLabel": null
                   },
                   "purchaseConfirm": null, "cancel": null, "cancelRequest": null,
@@ -160,12 +193,13 @@ final class AdminTransactionDocsExamples {
     private static final String G_SHIPPING = """
                 {
                   "deliveryGroupId": 1025, "subOrderNumber": "20261003-000123-02", "marketId": 22, "brandName": "글로우코스",
-                  "groupBuyNumber": "GB-2610-015",
+                  "groupBuyNumber": "GB-2610-015", "groupBuyId": 315, "groupBuyTitle": "수분 세럼 공구",
+                  "creatorId": 3044, "creatorName": "하린_뷰티랩",
                   "status": "SHIPPING", "statusLabel": "배송중", "statusTone": "INFO",
                   "shipping": {
-                    "shipDueAt": "2026-10-08T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0,
+                    "shipDueAt": "2026-10-08T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0, "lastOverdueNoticeAt": null,
                     "prepareStartedAt": "2026-10-05T10:00:00", "shippedAt": "2026-10-06T16:20:00", "carrier": "CJ", "carrierLabel": "CJ대한통운",
-                    "trackingNumber": "640012345678", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": "2026-10-09T22:10:00",
+                    "trackingNumber": "640012345678", "invoiceSource": "SELLER", "invoiceSourceLabel": "브랜드 등록", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": "2026-10-09T22:10:00", "lastTrackingLabel": "간선 상차",
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": null, "deliveredSourceLabel": null
                   },
                   "purchaseConfirm": null, "cancel": null, "cancelRequest": null,
@@ -192,13 +226,14 @@ final class AdminTransactionDocsExamples {
     private static final String G_STALLED = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "SHIPPING", "statusLabel": "배송중", "statusTone": "INFO",
                   "shipping": {
-                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0,
+                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0, "lastOverdueNoticeAt": null,
                     "prepareStartedAt": "2026-09-04T09:30:00", "shippedAt": "2026-09-05T15:00:00", "carrier": "HANJIN", "carrierLabel": "한진택배",
-                    "trackingNumber": "512398760012", "trackingAlert": "STALLED", "trackingAlertLabel": "추적 정지",
-                    "lastTrackingAt": "2026-09-08T07:40:00",
+                    "trackingNumber": "512398760012", "invoiceSource": "SELLER", "invoiceSourceLabel": "브랜드 등록", "trackingAlert": "STALLED", "trackingAlertLabel": "추적 정지",
+                    "lastTrackingAt": "2026-09-08T07:40:00", "lastTrackingLabel": "간선 상차",
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": null, "deliveredSourceLabel": null
                   },
                   "purchaseConfirm": null, "cancel": null, "cancelRequest": null,
@@ -224,12 +259,13 @@ final class AdminTransactionDocsExamples {
     private static final String G_CONFIRMED = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "CONFIRMED", "statusLabel": "구매확정", "statusTone": "SUCCESS",
                   "shipping": {
-                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0,
+                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0, "lastOverdueNoticeAt": null,
                     "prepareStartedAt": "2026-09-04T09:30:00", "shippedAt": "2026-09-05T15:00:00", "carrier": "CJ", "carrierLabel": "CJ대한통운",
-                    "trackingNumber": "640012340001", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": "2026-09-07T13:10:00",
+                    "trackingNumber": "640012340001", "invoiceSource": "SELLER", "invoiceSourceLabel": "브랜드 등록", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": "2026-09-07T13:10:00", "lastTrackingLabel": "배달완료",
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": "2026-09-07T13:10:00", "deliveredSourceLabel": "자동 확인"
                   },
                   "purchaseConfirm": {"paused": false, "remainingDays": 0, "dueAt": null, "confirmedAt": "2026-09-14T13:10:00"},
@@ -265,13 +301,14 @@ final class AdminTransactionDocsExamples {
     private static final String G_LOST = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "CANCELLED", "statusLabel": "취소", "statusTone": "NEUTRAL",
                   "shipping": {
-                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0,
+                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0, "lastOverdueNoticeAt": null,
                     "prepareStartedAt": "2026-09-04T09:30:00", "shippedAt": "2026-09-05T15:00:00", "carrier": "HANJIN", "carrierLabel": "한진택배",
-                    "trackingNumber": "512398760012", "trackingAlert": null, "trackingAlertLabel": null,
-                    "lastTrackingAt": "2026-09-08T07:40:00",
+                    "trackingNumber": "512398760012", "invoiceSource": "SELLER", "invoiceSourceLabel": "브랜드 등록", "trackingAlert": null, "trackingAlertLabel": null,
+                    "lastTrackingAt": "2026-09-08T07:40:00", "lastTrackingLabel": "간선 상차",
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": null, "deliveredSourceLabel": null
                   },
                   "purchaseConfirm": null,
@@ -305,12 +342,13 @@ final class AdminTransactionDocsExamples {
     private static final String G_DELIVERED_HEAD = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "DELIVERED", "statusLabel": "배송완료", "statusTone": "SUCCESS",
                   "shipping": {
-                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0,
+                    "shipDueAt": "2026-09-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 0, "lastOverdueNoticeAt": null,
                     "prepareStartedAt": "2026-09-04T09:30:00", "shippedAt": "2026-10-06T15:00:00", "carrier": "CJ", "carrierLabel": "CJ대한통운",
-                    "trackingNumber": "640012340001", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": "2026-10-07T09:10:00",
+                    "trackingNumber": "640012340001", "invoiceSource": "SELLER", "invoiceSourceLabel": "브랜드 등록", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": "2026-10-07T09:10:00", "lastTrackingLabel": "배달완료",
                     "returnDetectedAt": null, "returnCompletedAt": null,
             """;
 
@@ -359,12 +397,13 @@ final class AdminTransactionDocsExamples {
     private static final String G_SHIPPED_BY_ADMIN = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "SHIPPING", "statusLabel": "배송중", "statusTone": "INFO",
                   "shipping": {
-                    "shipDueAt": "2026-10-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 3,
+                    "shipDueAt": "2026-10-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 3, "lastOverdueNoticeAt": "2026-10-09T15:00:00",
                     "prepareStartedAt": "2026-10-04T09:30:00", "shippedAt": "2026-10-10T11:00:00", "carrier": "CJ", "carrierLabel": "CJ대한통운",
-                    "trackingNumber": "640012345690", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": null,
+                    "trackingNumber": "640012345690", "invoiceSource": "ADMIN", "invoiceSourceLabel": "운영자 대행", "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": null, "lastTrackingLabel": null,
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": null, "deliveredSourceLabel": null
                   },
                   "purchaseConfirm": null, "cancel": null, "cancelRequest": null,
@@ -391,12 +430,13 @@ final class AdminTransactionDocsExamples {
     private static final String G_CANCELLED_BY_ADMIN = """
                 {
                   "deliveryGroupId": 1024, "subOrderNumber": "20261003-000123-01", "marketId": 17, "brandName": "데일리랩",
-                  "groupBuyNumber": "GB-2610-012",
+                  "groupBuyNumber": "GB-2610-012", "groupBuyId": 312, "groupBuyTitle": "데일리 선크림 공구",
+                  "creatorId": 3021, "creatorName": "소연_쇼룸",
                   "status": "CANCELLED", "statusLabel": "취소", "statusTone": "NEUTRAL",
                   "shipping": {
-                    "shipDueAt": "2026-10-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 3,
+                    "shipDueAt": "2026-10-07T23:59:59", "shipDueBusinessDays": 3, "shipOverdue": false, "overdueNoticeCount": 3, "lastOverdueNoticeAt": "2026-10-09T15:00:00",
                     "prepareStartedAt": "2026-10-04T09:30:00", "shippedAt": null, "carrier": null, "carrierLabel": null,
-                    "trackingNumber": null, "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": null,
+                    "trackingNumber": null, "invoiceSource": null, "invoiceSourceLabel": null, "trackingAlert": null, "trackingAlertLabel": null, "lastTrackingAt": null, "lastTrackingLabel": null,
                     "returnDetectedAt": null, "returnCompletedAt": null, "deliveredAt": null, "deliveredSourceLabel": null
                   },
                   "purchaseConfirm": null,
@@ -430,7 +470,7 @@ final class AdminTransactionDocsExamples {
 
     static final String ORDER_DETAIL_OVERDUE = O_HEAD + O_PAY + G_OVERDUE + "," + G_SHIPPING + O_TAIL;
     static final String ORDER_DETAIL_STALLED = O_HEAD + O_PAY + G_STALLED + O_TAIL;
-    static final String ORDER_DETAIL_CONFIRMED = O_HEAD + O_PAY + G_CONFIRMED + O_TAIL;
+    static final String ORDER_DETAIL_CONFIRMED = O_HEAD + O_PAY_OUTSTANDING + G_CONFIRMED + O_TAIL;
     static final String ORDER_AFTER_LOST = O_HEAD + O_PAY_REFUNDED + G_LOST + O_TAIL;
     static final String ORDER_AFTER_MARK_DELIVERED = O_HEAD + O_PAY + G_MARK_DELIVERED + O_TAIL;
     static final String ORDER_AFTER_CORRECT = O_HEAD + O_PAY + G_CORRECTED + O_TAIL;
@@ -477,7 +517,8 @@ final class AdminTransactionDocsExamples {
               "items": [{"orderProductId": 70211, "quantity": 1}],
               "reasonCode": "DAMAGED_OR_DEFECTIVE",
               "detail": "구매확정 후 개봉하니 용기 펌프 파손 · 내용물 누출(1:1 문의 #4531)",
-              "evidenceImageUrls": ["https://cdn.example.com/inquiries/4531/1.jpg", "https://cdn.example.com/inquiries/4531/2.jpg"]
+              "evidenceImageUrls": ["https://cdn.example.com/inquiries/4531/1.jpg", "https://cdn.example.com/inquiries/4531/2.jpg"],
+              "defectNoticedOn": "2026-10-08"
             }
             """;
 
@@ -509,7 +550,7 @@ final class AdminTransactionDocsExamples {
                     "orderSummary": "1개 항목 중 1개 신청"
                   },
                   "brandName": "데일리랩", "feeBearer": "SELLER", "feeBearerLabel": "브랜드 귀책",
-                  "faultChangedToSeller": false, "disputeOpen": false, "disputedAt": null
+                  "faultChangedToSeller": false, "disputeOpen": false, "disputedAt": null, "elapsedBusinessDays": 6
                 },
                 {
                   "claim": {
@@ -536,7 +577,7 @@ final class AdminTransactionDocsExamples {
                     "orderSummary": "1개 항목 중 1개 신청"
                   },
                   "brandName": "글로우코스", "feeBearer": "CONSUMER", "feeBearerLabel": "소비자 귀책",
-                  "faultChangedToSeller": false, "disputeOpen": true, "disputedAt": "2026-10-03T19:12:00"
+                  "faultChangedToSeller": false, "disputeOpen": true, "disputedAt": "2026-10-03T19:12:00", "elapsedBusinessDays": 7
                 }
               ],
               "pageInfo": {"currentPage": 1, "totalPages": 1, "totalResults": 2, "limit": 20, "hasNext": false}
@@ -584,6 +625,7 @@ final class AdminTransactionDocsExamples {
                 "actions": {"canConfirmReceipt": false, "canPass": false, "canReject": false, "canRegisterReshipment": false,
                             "canUpdateReshipment": false}
               },
+              "orderId": 4950, "deliveryGroupId": 988,
               "brandName": "글로우코스", "feeBearer": "CONSUMER", "feeBearerLabel": "소비자 귀책",
               "canAcceptDispute": true, "disputeRefundAmount": 24600,
               "canRefundUnanswered": false, "unansweredRefundAmount": null,
@@ -593,7 +635,9 @@ final class AdminTransactionDocsExamples {
                 "createdAt": "2026-10-03T19:12:00", "answered": false, "answeredAt": null
               },
               "inspectNotice": {"count": 0, "lastAt": null},
-              "inspectOverdueBusinessDays": null
+              "inspectOverdueBusinessDays": null,
+              "legalDeadline": null,
+              "settlement": null
             }
             """;
 
@@ -622,12 +666,15 @@ final class AdminTransactionDocsExamples {
                 "actions": {"canConfirmReceipt": false, "canPass": true, "canReject": true, "canRegisterReshipment": false,
                             "canUpdateReshipment": false}
               },
+              "orderId": 4990, "deliveryGroupId": 1002,
               "brandName": "데일리랩", "feeBearer": "SELLER", "feeBearerLabel": "브랜드 귀책",
               "canAcceptDispute": false, "disputeRefundAmount": null,
               "canRefundUnanswered": true, "unansweredRefundAmount": 27200,
               "dispute": null,
               "inspectNotice": {"count": 3, "lastAt": "2026-10-09T15:00:00"},
-              "inspectOverdueBusinessDays": 3
+              "inspectOverdueBusinessDays": 3,
+              "legalDeadline": null,
+              "settlement": null
             }
             """;
 
@@ -747,8 +794,9 @@ final class AdminTransactionDocsExamples {
                 {"chargeId": 311, "type": "REJECT_RESHIP", "typeLabel": "반려 재발송비", "amount": 3000, "status": "VOID", "statusLabel": "소멸",
                  "note": "재발송비 결제 요청은 인용 시 취소됨", "claimPaymentId": null, "claimPaymentStatus": null}
               ],
-              "settlement": {"state": "BEFORE_SETTLEMENT", "stateLabel": "정산 전 · 정산 생성 시 반영", "settlementNumber": null, "clawback": null},
-              "status": "PENDING", "statusLabel": "집행 대기", "attempt": 0, "autoMaxAttempts": 2,
+              "settlement": {"state": "BEFORE_SETTLEMENT", "stateLabel": "정산 전 · 정산 생성 시 반영", "settlementNumber": null,
+                             "clawback": null, "expectedClawback": null},
+              "status": "PENDING", "statusLabel": "집행 대기", "attempt": 0, "autoMaxAttempts": 2, "autoRetry": null,
               "failure": null, "execution": null,
               "executable": true, "voidable": false, "manuallyCompletable": true,
               "history": [
@@ -772,8 +820,11 @@ final class AdminTransactionDocsExamples {
                          "partial": true, "paymentStatus": "PAID"},
               "additionalPayments": [],
               "settlement": {"state": "SETTLED", "stateLabel": "정산 후 · 차감 CLW-0003", "settlementNumber": "STL-2609-011",
-                             "clawback": {"clawbackNumber": "CLW-0003", "status": "PENDING", "statusLabel": "차감 예정"}},
+                             "clawback": {"clawbackNumber": "CLW-0003", "status": "PENDING", "statusLabel": "차감 예정",
+                                          "brandAmount": 16464, "creatorAmount": 1940},
+                             "expectedClawback": null},
               "status": "FAILED", "statusLabel": "환불 실패", "attempt": 2, "autoMaxAttempts": 2,
+              "autoRetry": {"count": 1, "lastAt": "2026-10-08T09:12:00", "exhausted": true},
               "failure": {
                 "message": "카드사 응답 지연", "code": "PG_TIMEOUT", "at": "2026-10-08T09:12:00",
                 "attempts": [

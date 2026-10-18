@@ -39,7 +39,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class UserCancelService {
 
-    static final String NOTICE_AUTO_APPROVE = "브랜드가 1영업일(주말·공휴일 제외) 안에 확인하지 않으면 자동으로 취소돼요";
+    static final String NOTICE_AUTO_APPROVE = "브랜드가 1영업일(주말·공휴일 제외) 안에 확인하지 않으면 자동으로 취소돼요. "
+            + "확인 전까지는 요청을 철회할 수 있어요";
     static final String NOTICE_SHIPMENT_HOLD = "취소 요청이 처리될 때까지 이 주문의 상품은 발송되지 않아요";
     static final String NOTICE_REJECTED = "브랜드가 취소 요청을 거부해 상품이 발송돼요. 받은 뒤 반품을 신청할 수 있어요";
 
@@ -57,6 +58,20 @@ public class UserCancelService {
         return toRequestDetail(created.getOrder(), created);
     }
 
+    /** 취소 요청 철회(46 수정계획 7-1) — 브랜드 확인 전만. 그 요청의 항목 전부가 함께 돌아간다. */
+    @Transactional
+    public UserCancelDto.WithdrawResponse withdraw(Long userId, Long orderId, Long cancelRequestId) {
+        LocalDateTime now = LocalDateTime.now();
+        OrderCancelRequest withdrawn = cancelRequestService.withdraw(userId, orderId, cancelRequestId, now);
+        return UserCancelDto.WithdrawResponse.builder()
+                .orderId(orderId)
+                .cancelRequestId(cancelRequestId)
+                .deliveryGroupId(withdrawn.getDeliveryGroup().getId())
+                .orderProductIds(withdrawn.getItems().stream().map(item -> item.getOrderProduct().getId()).toList())
+                .withdrawnAt(now)
+                .build();
+    }
+
     @Transactional(readOnly = true)
     public UserCancelDto.DetailResponse getDetail(Long userId, Long orderId, Long orderProductId) {
         Order order = orderRepository.findById(orderId)
@@ -65,9 +80,11 @@ public class UserCancelService {
         OrderProduct product = orderProductRepository.findById(orderProductId)
                 .filter(found -> found.getOrder().getId().equals(orderId))
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_PRODUCT_NOT_FOUND));
-        // 요청 경로 — 그 항목이 들어간 가장 최근 요청(검토 중 · 승인 · 거부). 소비자 전액 취소로 닫힌 요청(VOIDED)은 건너뛴다.
+        // 요청 경로 — 그 항목이 들어간 가장 최근 요청(검토 중 · 승인 · 거부). 소비자 전액 취소로 닫힌 요청(VOIDED)과 소비자가
+        // 거둔 요청(WITHDRAWN)은 건너뛴다 — 둘 다 취소 내역이 아니다.
         OrderCancelRequest request = cancelRequestRepository.findByOrderProductIdLatestFirst(orderProductId).stream()
-                .filter(found -> found.getStatus() != CancelRequestStatus.VOIDED)
+                .filter(found -> found.getStatus() != CancelRequestStatus.VOIDED
+                        && found.getStatus() != CancelRequestStatus.WITHDRAWN)
                 .findFirst().orElse(null);
         if (request != null && (product.getCancelType() == null
                 || product.getCancelType() == OrderCancelType.REQUEST_APPROVED)) {
@@ -109,11 +126,13 @@ public class UserCancelService {
                 .cancelRequestId(request.getId())
                 .kind(UserCancelDto.Kind.REQUEST)
                 .phase(phase)
+                // 앱 문구는 시안(C10 1c · 1d)을 따른다(46 수정계획 7-4) — 파트너의 「거부」와 소비자 화면의 「반려」가 다르다.
                 .phaseLabel(switch (phase) {
-                    case REVIEWING -> "확인 중";
-                    case REJECTED -> "취소 요청 거부";
+                    case REVIEWING -> "취소 요청 · 브랜드 확인 중";
+                    case REJECTED -> "취소 반려";
                     case CANCELLED -> "취소 완료";
                 })
+                .withdrawable(phase == UserCancelDto.Phase.REVIEWING)
                 .autoApproved(request.isAutoApproved())
                 .notices(notices)
                 .requestedAt(request.getRequestedAt())

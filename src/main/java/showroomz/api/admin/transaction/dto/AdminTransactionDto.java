@@ -16,6 +16,7 @@ import showroomz.domain.order.type.RefundTaskOrigin;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.List;
@@ -38,7 +39,10 @@ public final class AdminTransactionDto {
             @Schema(example = "소비자 귀책") String feeBearerLabel,
             @Schema(description = "검수에서 브랜드 귀책으로 인정됐다") boolean faultChangedToSeller,
             @Schema(description = "목록 보조줄 「소비자 이의 접수」 — 반려 보류 중이고 걸린 이의 문의가 답변 전") boolean disputeOpen,
-            @Schema(description = "가장 최근 이의 접수 시각 — 이의가 없었으면 null", nullable = true) LocalDateTime disputedAt
+            @Schema(description = "가장 최근 이의 접수 시각 — 이의가 없었으면 null", nullable = true) LocalDateTime disputedAt,
+            @Schema(description = "「경과」 열 — 현재 단계 진입부터의 영업일(기산일 불산입 · 주말·공휴일 제외). 「입고 3영업일」의 앞말은 "
+                    + "FE 가 `claim.stage` · `claim.reshipReason` 으로 고른다. 파트너 `claim.elapsedDays`(달력일)는 그대로다", example = "3")
+            int elapsedBusinessDays
     ) {
     }
 
@@ -59,6 +63,8 @@ public final class AdminTransactionDto {
     @Schema(name = "AdminClaimDetailResponse")
     public record ClaimDetail(
             SellerClaimDetailResponse claim,
+            @Schema(description = "주문 — 「주문 상세 열기」(`GET /v1/admin/orders/{orderId}`)", example = "5012") Long orderId,
+            @Schema(description = "하위주문", example = "1024") Long deliveryGroupId,
             String brandName,
             ClaimFeeBearer feeBearer,
             String feeBearerLabel,
@@ -72,7 +78,34 @@ public final class AdminTransactionDto {
             @Schema(description = "B1 레일 「자동 알림 N회」 — 검수 기한 경과 자동 알림(영업일 10 · 15시 · 하루 1회)")
             InspectNotice inspectNotice,
             @Schema(description = "「검수 기한 N영업일 초과」 — 입고 · 검수 대기이고 기한이 지났을 때만. 그 밖은 null",
-                    example = "3", nullable = true) Integer inspectOverdueBusinessDays
+                    example = "3", nullable = true) Integer inspectOverdueBusinessDays,
+            @Schema(description = "B4 법정 청약철회 기한 — 운영자가 대신 연 클레임(B6)만. 그 밖은 null", nullable = true)
+            LegalDeadline legalDeadline,
+            @Schema(description = "B4 정산 반영 — 그 하위주문이 들어간 정산. 정산 생성 전이면 null(「정산 전 · 생성 시 반영」)", nullable = true)
+            ClaimSettlement settlement
+    ) {
+    }
+
+    @Schema(name = "AdminClaimLegalDeadline", description = "전자상거래법 제17조③ — 공급받은 날부터 3개월 · 그 사실을 안 날부터 30일 중 이른 날")
+    public record LegalDeadline(
+            @Schema(description = "공급일 — 하위주문 배송완료일", example = "2026-08-27") LocalDate suppliedOn,
+            @Schema(description = "공급일 + 3개월", example = "2026-11-27") LocalDate supplyDeadline,
+            @Schema(description = "하자 인지일 — B6 개설 때 운영자 입력(선택). 없으면 null", example = "2026-09-17", nullable = true)
+            LocalDate noticedOn,
+            @Schema(description = "인지일 + 30일 — 인지일이 없으면 null", example = "2026-10-17", nullable = true) LocalDate noticeDeadline,
+            @Schema(description = "적용 기한 — 둘 중 이른 날(인지일이 없으면 공급 기준)", example = "2026-10-17") LocalDate appliedDeadline
+    ) {
+    }
+
+    @Schema(name = "AdminClaimSettlement")
+    public record ClaimSettlement(
+            @Schema(example = "STL-2610-004") String settlementNumber,
+            @Schema(description = "정산 상태 — REVIEWING · ADJUSTING · PAYOUT_SCHEDULED · PAID · PAYOUT_FAILED", example = "PAYOUT_SCHEDULED")
+            String status,
+            @Schema(example = "지급 예정") String statusLabel,
+            @Schema(description = "정산 확정 시각 — 확정 전 null", nullable = true) LocalDateTime confirmedAt,
+            @Schema(description = "검수 통과 시 다음 정산에서 차감(브랜드 수취액 · 리워드) — 반품이고 검수 판정 전일 때만 참. 교환 · 반려는 환불이 없어 차감도 없다")
+            boolean deductOnPass
     ) {
     }
 
@@ -260,12 +293,23 @@ public final class AdminTransactionDto {
             String statusLabel,
             int attempt,
             @Schema(description = "자동 시도 상한(최초 포함) — 운영자 사유는 자동 재시도하지 않는다", example = "2") int autoMaxAttempts,
+            @Schema(description = "M2 「자동 재시도 N회 · 실패 · 시각」 — PG 자동 환불만. 운영자 사유 환불 · 아직 실패가 없으면 null", nullable = true)
+            RefundAutoRetry autoRetry,
             @Schema(description = "실패 — 실패 상태일 때만", nullable = true) RefundFailure failure,
             @Schema(description = "집행 결과 — 완료일 때만", nullable = true) RefundExecution execution,
             boolean executable,
             @Schema(description = "[철회] 가능 — 집행 전 운영자 사유 환불(반려 이의 인용 제외)") boolean voidable,
             @Schema(description = "[수동 완료 기록] 가능 — 대기 · 실패") boolean manuallyCompletable,
             @Schema(description = "이 환불 건의 이력 — 오래된순") List<RefundHistory> history
+    ) {
+    }
+
+    @Schema(name = "AdminRefundAutoRetry")
+    public record RefundAutoRetry(
+            @Schema(description = "자동 재시도 횟수 — 시스템 실패 수 − 1(최초 자동 집행은 재시도로 세지 않는다)", example = "1") int count,
+            @Schema(description = "마지막 시스템 실패 시각") LocalDateTime lastAt,
+            @Schema(description = "자동 시도가 상한(`autoMaxAttempts`)에 닿았다 — 실패 탭에 올라온 이유. 거짓이면 배치가 다시 시도한다")
+            boolean exhausted
     ) {
     }
 
@@ -334,7 +378,10 @@ public final class AdminTransactionDto {
             @Schema(description = "그 하위주문이 들어간 정산 — 정산 전 null", nullable = true, example = "STL-2610-004")
             String settlementNumber,
             @Schema(description = "이 환불로 생긴 차감(측별 2행 중 덜 끝난 쪽 상태) — 없으면 null", nullable = true)
-            RefundClawback clawback
+            RefundClawback clawback,
+            @Schema(description = "M1 집행 재확인 「클로백(다음 정산 차감)」 예정액 — 정산 생성 후 ∧ 차감 대상(운영자 사유 · 운영자 개설 반품 통과) ∧ "
+                    + "아직 차감 행이 없을 때만. 집행하면 같은 식으로 `clawback` 이 생긴다", nullable = true)
+            ExpectedClawback expectedClawback
     ) {
     }
 
@@ -342,7 +389,16 @@ public final class AdminTransactionDto {
     public record RefundClawback(
             @Schema(example = "CLW-0003") String clawbackNumber,
             @Schema(description = "PENDING · APPLIED · UNRECOVERABLE", example = "PENDING") String status,
-            @Schema(example = "차감 예정") String statusLabel
+            @Schema(example = "차감 예정") String statusLabel,
+            @Schema(description = "브랜드 측 차감액 — 그 측 행이 없으면 null", example = "24208", nullable = true) Long brandAmount,
+            @Schema(description = "인플루언서 측 차감액 — 그 측 행이 없으면 null", example = "2720", nullable = true) Long creatorAmount
+    ) {
+    }
+
+    @Schema(name = "AdminRefundExpectedClawback", description = "INFLUENCER = 단위 리워드 × 환불 수량 · BRAND = 환불액 − INFLUENCER − floor(INFLUENCER × 리워드 부가세율)")
+    public record ExpectedClawback(
+            @Schema(example = "24208") long brandAmount,
+            @Schema(example = "2720") long creatorAmount
     ) {
     }
 

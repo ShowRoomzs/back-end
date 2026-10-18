@@ -56,6 +56,9 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
     private static final Set<RefundTaskSource> SOURCES = EnumSet.of(RefundTaskSource.OPERATOR_REASON,
             RefundTaskSource.CLAIM_RETURN_PASSED);
     private static final String CLAIM_RETURN_PASSED_LABEL = "반품 통과(운영자 개설)";
+    /** 예정액을 보일 환불 — 아직 돈이 나가지 않은 것(대기 · 집행 중 · 실패). */
+    private static final Set<RefundTaskStatus> PREVIEWABLE = EnumSet.of(RefundTaskStatus.PENDING,
+            RefundTaskStatus.EXECUTING, RefundTaskStatus.FAILED);
 
     private final SettlementClawbackRepository clawbackRepository;
     private final SettlementItemRepository itemRepository;
@@ -102,16 +105,14 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
         if (task == null || task.getStatus() != RefundTaskStatus.DONE || !isClawbackSource(task.getSource())) {
             return List.of();
         }
-        Target target = task.getSourceId() != null ? claimTarget(task) : groupTarget(task);
-        if (target == null || target.refundAmount() <= 0) {
+        Split split = split(task);
+        if (split == null) {
             return List.of();
         }
-        Settlement origin = settlementRepository.findById(target.settlementId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
-        long creatorAmount = target.creatorAmount();
-        long creatorVat = BigDecimal.valueOf(creatorAmount).multiply(origin.getRewardVatRate())
-                .setScale(0, RoundingMode.DOWN).longValue();
-        long brandAmount = Math.max(0, target.refundAmount() - creatorAmount - creatorVat);
+        Target target = split.target();
+        Settlement origin = split.origin();
+        long creatorAmount = split.creatorAmount();
+        long brandAmount = split.brandAmount();
         String number = numberGenerator.nextClawbackNumber();
         String reason = task.getReasonCode() == null || task.getSource() == RefundTaskSource.CLAIM_RETURN_PASSED
                 ? null : task.getReasonCode().name();
@@ -140,6 +141,45 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
         log.info("정산 차감 발생 - {} · refundTaskId: {} · 브랜드 {} · 인플루언서 {}", number, refundTaskId, brandAmount,
                 creatorAmount);
         return created;
+    }
+
+    /**
+     * 06c M1 「클로백(다음 정산 차감)」 예정액(46 수정계획 5-1) — 집행 전에 {@link #register}와 <b>같은 식</b>으로 계산만 한다. 차감 대상
+     * 출처가 아니거나 · 이미 끝난 환불(완료 · 철회)이거나 · 이미 차감 행이 있거나 · 정산 항목이 없으면 null.
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public ClawbackAmounts preview(Long refundTaskId) {
+        if (clawbackRepository.existsByRefundTaskId(refundTaskId)) {
+            return null;
+        }
+        OrderRefundTask task = refundTaskRepository.findById(refundTaskId).orElse(null);
+        if (task == null || !PREVIEWABLE.contains(task.getStatus()) || !isClawbackSource(task.getSource())) {
+            return null;
+        }
+        Split split = split(task);
+        return split == null ? null : new ClawbackAmounts(split.brandAmount(), split.creatorAmount());
+    }
+
+    /**
+     * 측별 차감액 — CREATOR = 단위 리워드 × 환불 수량, BRAND = 환불 상품 금액분 − CREATOR − floor(CREATOR × 리워드 부가세율).
+     * 정산 항목이 없거나 환불분이 0이면 null.
+     */
+    private Split split(OrderRefundTask task) {
+        Target target = task.getSourceId() != null ? claimTarget(task) : groupTarget(task);
+        if (target == null || target.refundAmount() <= 0) {
+            return null;
+        }
+        Settlement origin = settlementRepository.findById(target.settlementId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+        long creatorAmount = target.creatorAmount();
+        long creatorVat = BigDecimal.valueOf(creatorAmount).multiply(origin.getRewardVatRate())
+                .setScale(0, RoundingMode.DOWN).longValue();
+        long brandAmount = Math.max(0, target.refundAmount() - creatorAmount - creatorVat);
+        return new Split(target, origin, brandAmount, creatorAmount);
+    }
+
+    private record Split(Target target, Settlement origin, long brandAmount, long creatorAmount) {
     }
 
     private record Target(Long settlementId, Long orderId, Long deliveryGroupId, Long orderProductId,

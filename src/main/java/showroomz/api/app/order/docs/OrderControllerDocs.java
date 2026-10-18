@@ -328,13 +328,41 @@ public interface OrderControllerDocs {
                                                               Long orderId, UserCancelDto.CreateRequest request);
 
     @Operation(
+            summary = "취소 요청 철회 (C10 1c)",
+            description = """
+                    브랜드가 확인하기 전의 취소 요청을 거둔다 — 취소 상세의 `withdrawable` 이 true 일 때 [취소 요청 철회]를 그린다.
+
+                    - **요청 단위다** — 그 요청에 담긴 항목이 함께 결제완료(상품준비중)로 돌아간다
+                    - 발송 보류가 풀린다 — 브랜드가 다시 송장을 등록할 수 있다
+                    - 철회 뒤 다시 요청할 수 있다(검토 중 요청이 없으면 낼 수 있다는 조건 그대로)
+                    - 브랜드 승인 · 거부 · 자동 승인과 동시에 들어오면 한쪽만 성공한다 — 진 쪽은 409
+
+                    **권한:** USER (본인 주문만)
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "철회 완료 — 앱은 주문 상세를 다시 읽는다",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserCancelDto.WithdrawResponse.class))),
+            @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND — 남의 주문 · 다른 주문의 요청 · 없는 요청",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 승인 · 거부 · 자동 승인 · 철회됐다",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<UserCancelDto.WithdrawResponse> withdrawCancelRequest(
+            @Parameter(hidden = true) UserPrincipal principal,
+            @Parameter(description = "주문 ID", example = "1147") Long orderId,
+            @Parameter(description = "취소 요청 ID — 취소 상세 `cancelRequestId`", example = "77") Long cancelRequestId);
+
+    @Operation(
             summary = "취소 상세 (C10 1c · 1d)",
             description = """
                     주문 항목의 [취소 상세] — 그 항목이 어떤 경로로 취소됐는지에 따라 같은 화면이 다른 값을 그린다.
 
                     - `kind` — `REQUEST`(취소 요청) · `CONSUMER_CANCEL`(준비 시작 전 직접 취소) · `SELLER_CANCEL`(브랜드 판매 취소)
                     - `phase` — `REVIEWING`(확인 중 · `respondDueAt` 까지 확인하지 않으면 자동 취소) · `CANCELLED` · `REJECTED`(거부 — 상품 발송)
-                    - `notices` — 상단 안내 문구(서버 문장 그대로). 확인 중이면 자동 취소 · 발송 보류 안내 두 줄
+                    - `phaseLabel` — 시안 문구 그대로: 「취소 요청 · 브랜드 확인 중」 · 「취소 반려」 · 「취소 완료」 · 「판매 취소」
+                    - `withdrawable` — 확인 중인 취소 요청만 true. [취소 요청 철회] → `POST /{orderId}/cancel-requests/{cancelRequestId}/withdraw`
+                    - `notices` — 상단 안내 문구(서버 문장 그대로). 확인 중이면 자동 취소(+ 철회 가능) · 발송 보류 안내 두 줄
+                    - 철회한 요청은 취소 내역이 아니다 — 그 항목에는 [취소 상세]가 붙지 않는다
                     - `autoApproved` — 브랜드가 응답 기한 안에 확인하지 않아 자동으로 취소됐다
                     - `refund` — 취소 완료일 때만. 환불은 **PG 가 자동으로 처리**한다 — `PROCESSING`(환불 처리 중) · `DONE`(환불 완료)
                     - 「쿠폰·적립금 반환」 문구는 없다(결제에 쿠폰·적립금이 없다)

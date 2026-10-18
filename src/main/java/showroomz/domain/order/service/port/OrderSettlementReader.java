@@ -30,6 +30,15 @@ public interface OrderSettlementReader {
     record ClawbackRef(String clawbackNumber, String side, String status, String statusLabel, long amount) {
     }
 
-    record RefundSettlement(Long settlementId, String settlementNumber, ClawbackRef clawback) {
+    /**
+     * @param clawback         대표 차감 — 측별 2행 중 덜 끝난 쪽(미회수 > 차감 예정 > 차감 반영). 없으면 null
+     * @param clawbacks        그 환불이 만든 차감 행 전부(측별) — 없으면 빈 목록
+     * @param expectedClawback 집행 전 차감 예정액(06c M1) — 차감 행이 이미 있거나 차감이 생기지 않을 환불이면 null
+     */
+    record RefundSettlement(Long settlementId, String settlementNumber, ClawbackRef clawback,
+                            List<ClawbackRef> clawbacks, ExpectedClawback expectedClawback) {
+    }
+
+    record ExpectedClawback(long brandAmount, long creatorAmount) {
     }
 }

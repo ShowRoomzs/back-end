@@ -9,7 +9,6 @@ import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
-import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.service.OrderClaimService;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.domain.order.type.FulfillmentActorType;
@@ -19,8 +18,6 @@ import showroomz.domain.order.type.OrderCancelType;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.SellerCancelReason;
-import showroomz.domain.payment.entity.Payment;
-import showroomz.domain.payment.repository.PaymentRepository;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
@@ -41,13 +38,12 @@ public class AdminOrderCommandService {
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderProductRepository orderProductRepository;
     private final OrderCancelRequestRepository cancelRequestRepository;
-    private final OrderRefundTaskRepository refundTaskRepository;
-    private final PaymentRepository paymentRepository;
     private final OrderFulfillmentService fulfillmentService;
     private final OrderClaimService claimService;
     private final AdminOrderQueryService queryService;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
     private final StalledPolicy stalledPolicy;
+    private final OperatorRefundLimit refundLimit;
     private final DeliveryTrackerPort tracker;
 
     /** B3 배송완료일 정정 — 소비자 수령일 이의. 「직권 배송완료」는 없다. 구매확정 기산점도 같은 만큼 옮긴다. */
@@ -179,7 +175,8 @@ public class AdminOrderCommandService {
         OrderClaimService.RequestResult result = claimService.openDefectClaimByOperator(adminId, deliveryGroupId,
                 request.items().stream()
                         .map(item -> new OrderClaimService.Item(item.orderProductId(), item.quantity())).toList(),
-                request.reasonCode(), request.detail(), request.evidenceImageUrls(), LocalDateTime.now());
+                request.reasonCode(), request.detail(), request.evidenceImageUrls(), request.defectNoticedOn(),
+                LocalDateTime.now());
         return new AdminOrderDto.DefectClaimResponse(result.collectionId(), result.claimIds());
     }
 
@@ -234,18 +231,15 @@ public class AdminOrderCommandService {
         return queryService.getOrder(orderId);
     }
 
-    /** 운영자 사유 환불의 상한 — 결제의 취소 가능 잔액 − 아직 나가지 않은 환불. */
+    /** 운영자 사유 환불의 상한 — 결제의 취소 가능 잔액 − 아직 나가지 않은 환불. 상세의 버튼과 같은 식이다. */
     void checkRefundable(OrderDeliveryGroup group, int amount) {
-        String paymentId = group.getOrder().getPaidPaymentId();
-        if (paymentId == null) {
+        Integer available = refundLimit.available(group.getOrder());
+        if (available == null) {
             return; // 결제 밖 주문 — 운영자가 수동 기록한다.
         }
-        Payment payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.PAYMENT_NOT_FOUND));
-        long available = payment.cancellableAmount() - refundTaskRepository.sumOutstandingByPayment(paymentId);
         if (amount > available) {
             throw new BusinessException(ErrorCode.REFUND_AMOUNT_EXCEEDED,
-                    "환불액이 취소 가능 잔액(" + String.format("%,d", Math.max(0, available)) + "원)보다 큽니다.");
+                    "환불액이 취소 가능 잔액(" + String.format("%,d", available) + "원)보다 큽니다.");
         }
     }
 
