@@ -1,5 +1,6 @@
 package showroomz.api.creator.contract.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.api.creator.contract.type.CreatorFixedFeePaymentState;
 import showroomz.api.creator.contract.type.CreatorSettlementTiming;
@@ -89,7 +90,13 @@ public record CreatorContractDetailResponse(
         @Schema(description = "이력 — 화이트리스트 7종만(설계서 6-4). 필터는 쿼리 단계에서 걸린다")
         List<HistoryEntry> history,
 
-        Navigation navigation
+        Navigation navigation,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold,
+
+        @Schema(description = "서명 기한이 멈춰 있는가 — 당사자 정지 보류 중(정지 중 멈춤 · 해제 후 남은 기한부터)")
+        boolean signatureDeadlinePaused
 ) {
 
     @Schema(description = "계약을 보낸 브랜드")

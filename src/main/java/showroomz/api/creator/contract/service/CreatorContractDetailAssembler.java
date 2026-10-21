@@ -1,5 +1,6 @@
 package showroomz.api.creator.contract.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -83,7 +84,9 @@ public class CreatorContractDetailAssembler {
                 documents,
                 permissions(contract, threadId, connected, documents),
                 history(contract, connection),
-                navigation);
+                navigation,
+                SanctionHoldView.forCreator(contract),
+                SanctionHoldView.deadlinePaused(contract));
     }
 
     private CreatorContractDetailResponse.Brand brand(Contract contract, Long threadId, boolean connected) {

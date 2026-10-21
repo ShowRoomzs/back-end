@@ -28,13 +28,19 @@ public class ConnectionRequestItem {
     @Schema(description = "요청 시각 — 화면에서 상대 시간(\"2일 전\")으로 변환해 표시", example = "2026-08-06T14:22:10")
     private final LocalDateTime requestedAt;
 
+    @Schema(description = "지금 수락할 수 있는 요청인가 — false 면 [수락] 비활성 + 「현재 수락할 수 없는 요청」(요청 브랜드 정지 · "
+            + "ui-studio-13 rev.1 · 1017 설계서 8-6). 상대의 정지 사실은 내리지 않는다 · [거절]은 그대로", example = "true")
+    private final boolean acceptable;
+
     public ConnectionRequestItem(Long connectionId, Long marketId, String marketName,
-                                  String marketImageUrl, ConnectionStatus status, LocalDateTime requestedAt) {
+                                  String marketImageUrl, ConnectionStatus status, LocalDateTime requestedAt,
+                                  boolean acceptable) {
         this.connectionId = connectionId;
         this.marketId = marketId;
         this.marketName = marketName;
         this.marketImageUrl = marketImageUrl;
         this.status = status;
         this.requestedAt = requestedAt;
+        this.acceptable = acceptable;
     }
 }

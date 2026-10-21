@@ -219,8 +219,11 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
                 .isInstanceOf(BusinessException.class).extracting("errorCode").isEqualTo(ErrorCode.CREATOR_SUSPENDED);
         assertThatThrownBy(() -> sanctionGuard.requireCanReceiveContract(suspended))
                 .extracting("errorCode").isEqualTo(ErrorCode.CREATOR_COUNTERPARTY_SUSPENDED);
-        sanctionGuard.requireCanSubmitGroupBuyPost(suspended);   // 플래그 기본 꺼짐(§55 B-11)
-        sanctionGuard.requireCanAcceptConnection(suspended);     // 정지는 연결 수락을 막지 않는다
+        // ui-studio-13 rev.1 확정(1017 설계서 8-2) — 공구 게시물 등록(플래그 기본 켬) · 새 연결 수락도 정지 중 막는다.
+        assertThatThrownBy(() -> sanctionGuard.requireCanSubmitGroupBuyPost(suspended))
+                .extracting("errorCode").isEqualTo(ErrorCode.CREATOR_SUSPENDED);
+        assertThatThrownBy(() -> sanctionGuard.requireCanAcceptConnection(suspended))
+                .extracting("errorCode").isEqualTo(ErrorCode.CREATOR_SUSPENDED);
 
         adminPost(base + "/release", Map.of("note", "시정 확인")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("ACTIVE"))

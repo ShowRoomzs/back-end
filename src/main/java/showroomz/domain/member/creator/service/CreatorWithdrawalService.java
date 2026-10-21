@@ -1,5 +1,6 @@
 package showroomz.domain.member.creator.service;
 
+import showroomz.domain.member.creator.type.CreatorBlockedAction;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -51,6 +52,7 @@ public class CreatorWithdrawalService {
     private final CreatorMemberQueryRepository queries;
     private final MessageThreadRepository threads;
     private final MemberNotifier notifier;
+    private final CreatorSanctionGuard sanctionGuard;
 
     @Transactional
     public CreatorWithdrawalRequest request(Long creatorId, String reasonText, LocalDateTime now) {
@@ -59,6 +61,8 @@ public class CreatorWithdrawalService {
         if (creator.isWithdrawn()) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWN);
         }
+        // 정지 중 탈퇴는 제재를 피하는 출구가 된다(ui-studio-13 S7 · 1017 설계서 8-2). 브랜드는 [근거 대기]라 지금처럼 허용한다.
+        sanctionGuard.requireNotSuspended(creator, CreatorBlockedAction.WITHDRAWAL_REQUEST);
         String reason = reasonText == null ? "" : reasonText.strip();
         if (reason.isEmpty()) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWAL_REASON_REQUIRED);

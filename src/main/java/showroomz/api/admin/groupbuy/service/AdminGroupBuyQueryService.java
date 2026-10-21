@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -110,7 +111,8 @@ public class AdminGroupBuyQueryService {
                             groupBuy.getEndAt(),
                             postStatus, postStatus.getLabel(), postStatus.getTone(),
                             status, status.getLabel(), status.getTone(),
-                            actionRequired.contains(groupBuy.getId()));
+                            actionRequired.contains(groupBuy.getId()),
+                SanctionHoldView.forAdmin(groupBuy));
                 })
                 .toList();
         return PageResponse.of(new PageImpl<>(content, pageable, page.getTotalElements()));

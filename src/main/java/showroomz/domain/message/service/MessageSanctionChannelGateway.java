@@ -32,21 +32,23 @@ public class MessageSanctionChannelGateway {
     /** 「계정 정지」 카드 — 사유 문장(라벨 + 상세) · 정지 시각. @return 카드 message id */
     @Transactional
     public Long postSuspendedCard(MessageThread operatorChannel, SanctionKind kind, Long sanctionId,
-                                  String reasonText, LocalDateTime suspendedAt, Long operatorId) {
+                                  String reasonText, LocalDateTime suspendedAt, Long operatorId,
+                                  MessageCardPayload.Sanction snapshot) {
         Message card = messageThreadService.postSystemCard(operatorChannel, ParticipantType.ADMIN, operatorId,
                 key(kind, sanctionId, "suspended"), MessageCardType.ACCOUNT_SUSPENDED, MessageRefType.MEMBER_SANCTION,
-                sanctionId, MessageCardPayload.sanction(reasonText, suspendedAt, operatorId)).message();
+                sanctionId, MessageCardPayload.sanction(reasonText, suspendedAt, operatorId, snapshot)).message();
         return card.getId();
     }
 
     /** 「정지 해제」 카드 — 해제 사유 · 해제 시각. @return 카드 message id */
     @Transactional
     public Long postReleasedCard(MessageThread operatorChannel, SanctionKind kind, Long sanctionId,
-                                 String releaseText, LocalDateTime releasedAt, Long operatorId) {
+                                 String releaseText, LocalDateTime releasedAt, Long operatorId,
+                                 MessageCardPayload.Sanction snapshot) {
         Message card = messageThreadService.postSystemCard(operatorChannel, ParticipantType.ADMIN, operatorId,
                 key(kind, sanctionId, "released"), MessageCardType.ACCOUNT_SUSPENSION_RELEASED,
                 MessageRefType.MEMBER_SANCTION, sanctionId,
-                MessageCardPayload.sanction(releaseText, releasedAt, operatorId)).message();
+                MessageCardPayload.sanction(releaseText, releasedAt, operatorId, snapshot)).message();
         return card.getId();
     }
 

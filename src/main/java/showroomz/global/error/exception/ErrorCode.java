@@ -489,6 +489,10 @@ public enum ErrorCode {
     CREATOR_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중에는 이용할 수 없는 기능입니다."),
     CREATOR_COUNTERPARTY_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_COUNTERPARTY_SUSPENDED", "이용이 정지된 인플루언서에게는 서명 요청을 보낼 수 없습니다."),
     CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중인 인플루언서에게는 서명 요청을 보낼 수 없습니다."),
+    // 1017 설계서 8-3 · 8-6 — 당사자 정지 보류 · 상대 정지
+    BRAND_COUNTERPARTY_SUSPENDED(HttpStatus.CONFLICT, "BRAND_COUNTERPARTY_SUSPENDED", "현재 수락할 수 없는 요청입니다."),
+    CONTRACT_HELD_BY_SANCTION(HttpStatus.CONFLICT, "CONTRACT_HELD_BY_SANCTION", "계정 정지 중인 당사자가 있어 계약을 진행할 수 없습니다. 정지가 해제되면 이어서 처리해 주세요."),
+    GROUP_BUY_HELD_BY_SANCTION(HttpStatus.CONFLICT, "GROUP_BUY_HELD_BY_SANCTION", "계정 정지 중인 당사자가 있어 오픈을 승인할 수 없습니다. 정지가 해제되면 이어서 처리해 주세요."),
     CREATOR_WITHDRAWAL_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_WITHDRAWAL_NOT_FOUND", "존재하지 않는 탈퇴 신청입니다."),
     CREATOR_WITHDRAWAL_NOT_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_NOT_PENDING", "이미 처리된 탈퇴 신청입니다."),
     CREATOR_WITHDRAWAL_ALREADY_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_ALREADY_PENDING", "처리 중인 탈퇴 신청이 있습니다."),

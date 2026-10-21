@@ -101,14 +101,15 @@ public class AdminMessageAssembler {
                     adjustment.respondedAt(), null, null, adjustment.resultLabel(), false);
             return new Card(view.cardType(), view.title(), view.tone(), view.contractId(), view.contractNumber(),
                     view.groupBuyTitle(), new CardDetail(null, null, null, null, null, null, null,
-                    MessageCardResponse.AdjustmentDetail.of(adjustment.snapshot())), action);
+                    MessageCardResponse.AdjustmentDetail.of(adjustment.snapshot()), null), action);
         }
         boolean resend = view.cardType() == MessageCardType.CONTRACT_RESEND_REQUEST;
         CardDetail detail = resend
                 ? new CardDetail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null,
-                        null)
+                        null, null)
                 : new CardDetail(null, null, null, view.reasonLabel(), view.processedAt(),
-                        nameOf(view.processedBy(), operatorNames), true, null);
+                        nameOf(view.processedBy(), operatorNames), true, null,
+                        MessageCardResponse.SanctionDetail.of(view.sanction()));
         CardAction action = view.actionState() == null ? null
                 : new CardAction(MessageCardResponse.RESEND_NOTICE, view.actionState(),
                         view.actionState() == MessageCardActionState.PENDING,

@@ -1,5 +1,6 @@
 package showroomz.api.seller.settlement.dto;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
@@ -44,7 +45,8 @@ public final class SellerSettlementDto {
             @Schema(description = "REVIEWING · ADJUSTING · PAYOUT_SCHEDULED · PAID — 분배 실패는 PAID 로 접힌다") SettlementStatus status,
             String statusLabel,
             SettlementTone statusTone,
-            @Schema(description = "「지급(예정)일」 열 — 브랜드 행 기준") Schedule schedule
+            @Schema(description = "「지급(예정)일」 열 — 브랜드 행 기준") Schedule schedule,
+            @Schema(description = "내 지급 행 보류 이유(정지 · 세금계산서 등) — 상태는 「지급 예정」 그대로 · 보류가 아니면 null", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -96,7 +98,8 @@ public final class SellerSettlementDto {
             ClaimShipping claimShipping,
             @Schema(description = "명세 미리보기 5건 — 주문번호 내림차순") List<Item> items,
             long itemTotalCount,
-            Actions actions
+            Actions actions,
+            @Schema(description = "내 지급 행 보류 이유 — 「지급 정지 · 계정 정지 중 — 정지가 풀리면 다음 영업일에 지급」(S5)", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -168,7 +171,8 @@ public final class SellerSettlementDto {
             @Schema(description = "수취자 상태 — 남의 행의 분배 실패는 SCHEDULED 로 접는다 · 브랜드 행 실패만 FAILED") PayoutStatus status,
             @Schema(example = "지급 예정") String statusLabel,
             @Schema(nullable = true) LocalDate dueDate,
-            @Schema(nullable = true) LocalDateTime paidAt
+            @Schema(nullable = true) LocalDateTime paidAt,
+            @Schema(description = "[내 행] 보류 이유 — 「지급 정지 · 해제 다음 영업일 지급」", nullable = true) PayoutHoldView hold
     ) {
     }
 

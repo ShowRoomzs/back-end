@@ -46,7 +46,27 @@ public record MessageCardResponse(
             String reasonLabel,
             @Schema(description = "[직권 취소] 처리 시각", example = "2026-08-14T10:40:00") LocalDateTime processedAt,
             @Schema(description = "[직권 취소] 양측 통지 여부", example = "true") Boolean notifiedBothParties,
-            @Schema(description = "[정산 조정] 카드의 사실 — 정산 조정 카드에만") AdjustmentDetail adjustment) {
+            @Schema(description = "[정산 조정] 카드의 사실 — 정산 조정 카드에만") AdjustmentDetail adjustment,
+            @Schema(description = "[계정 정지 · 해제] 사유 코드 · 라벨 · 상세 · 지급 정지 여부 — 1017 이후 카드에만(옛 카드는 reasonLabel 한 줄)")
+            SanctionDetail sanction) {
+    }
+
+    /**
+     * 계정 정지 · 해제 카드의 사실(ui-partner-15 S7 · ui-studio-13 S8). 차단 · 계속 이용 목록은 {@code memberType}별 고정 문구라 FE 가 든다.
+     * 정산 줄 — {@code payoutHeld = true} 「정산은 확정까지 진행되며, 정지가 풀리면 다음 영업일에 지급됩니다」 · false 「이번 사유는 지급에 영향이 없습니다」.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SanctionDetail(
+            @Schema(description = "BRAND · CREATOR", example = "BRAND") String memberType,
+            @Schema(description = "정지 사유 코드(정지 카드) · 해제 사유 코드(해제 카드)", example = "SETTLEMENT_INFO_MISMATCH") String reasonCode,
+            @Schema(example = "정산 정보 불일치") String reasonLabel,
+            @Schema(description = "상세 사유 · 해제 메모 — 운영자가 적은 경우만") String reasonDetail,
+            @Schema(description = "[정지 카드] 지급 정지 사유인가") Boolean payoutHeld) {
+
+        public static SanctionDetail of(MessageCardPayload.Sanction s) {
+            return s == null ? null
+                    : new SanctionDetail(s.memberType(), s.reasonCode(), s.reasonLabel(), s.reasonDetail(), s.payoutHeld());
+        }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -115,12 +135,13 @@ public record MessageCardResponse(
                     && respondableProposalId.equals(adjustment.proposalId()));
             return new MessageCardResponse(view.cardType(), view.title(), view.tone(), view.contractId(),
                     view.contractNumber(), view.groupBuyTitle(),
-                    new Detail(null, null, null, null, null, null, AdjustmentDetail.of(adjustment.snapshot())), action);
+                    new Detail(null, null, null, null, null, null, AdjustmentDetail.of(adjustment.snapshot()), null), action);
         }
         boolean resend = view.cardType() == MessageCardType.CONTRACT_RESEND_REQUEST;
         Detail detail = resend
-                ? new Detail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null)
-                : new Detail(null, null, null, view.reasonLabel(), view.processedAt(), true, null);
+                ? new Detail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null, null)
+                : new Detail(null, null, null, view.reasonLabel(), view.processedAt(), true, null,
+                        SanctionDetail.of(view.sanction()));
         Action action = view.actionState() == null ? null
                 : new Action(RESEND_NOTICE, view.actionState(), view.doneAt(), null, false);
         return new MessageCardResponse(view.cardType(), view.title(), view.tone(), view.contractId(),

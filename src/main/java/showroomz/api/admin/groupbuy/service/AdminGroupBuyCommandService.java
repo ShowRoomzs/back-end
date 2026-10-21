@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.service;
 
+import showroomz.domain.contract.service.ContractSanctionHoldService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -90,6 +91,11 @@ public class AdminGroupBuyCommandService {
         GroupBuyActor admin = admin(operatorId);
         if (!permissionPolicy.canDecideOpen(locked.facts())) {
             throw new BusinessException(ErrorCode.GROUP_BUY_OPEN_REVIEW_NOT_PENDING);
+        }
+        // 당사자 정지 중에는 오픈을 승인하지 않는다 — 게시물은 승인대기 그대로 「승인 보류」(1017 설계서 8-3).
+        if (ContractSanctionHoldService.isMarketSuspended(locked.groupBuy().getMarket())
+                || ContractSanctionHoldService.isCreatorSuspended(locked.groupBuy().getCreator())) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_HELD_BY_SANCTION);
         }
         LocalDateTime now = LocalDateTime.now();
         GroupBuy groupBuy = locked.groupBuy();

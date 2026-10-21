@@ -270,7 +270,8 @@ public final class AdminThreadDto {
             @Schema(description = "[직권 취소] 처리 시각") LocalDateTime processedAt,
             @Schema(description = "[직권 취소] 처리 운영자 — 어드민에만 내려간다", example = "김운영") String processedByName,
             @Schema(description = "[직권 취소] 양측 통지 여부") Boolean notifiedBothParties,
-            @Schema(description = "[정산 조정] 카드의 사실 — 파트너센터 · 스튜디오와 같은 스냅샷") MessageCardResponse.AdjustmentDetail adjustment) {
+            @Schema(description = "[정산 조정] 카드의 사실 — 파트너센터 · 스튜디오와 같은 스냅샷") MessageCardResponse.AdjustmentDetail adjustment,
+            @Schema(description = "[계정 정지 · 해제] 사유 · 상세 · 지급 정지 — 당사자 화면과 같은 스냅샷") MessageCardResponse.SanctionDetail sanction) {
     }
 
     public record CardAction(

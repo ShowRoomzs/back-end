@@ -1,5 +1,6 @@
 package showroomz.api.seller.settlement.service;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -95,7 +96,8 @@ public class SellerSettlementQueryService {
                 s.getContract().getTitle(), influencer(s), s.getPeriodStartAt(), s.getPeriodEndAt(),
                 s.getConfirmedSalesAmount(), s.getPgFeeAmount() + s.getPlatformFeeAmount(), s.getRewardAmount(),
                 s.getRewardVatAmount(), s.getBrandPayoutAmount(), status, status.getLabel(), status.getTone(),
-                schedule(s, brand));
+                schedule(s, brand),
+                PayoutHoldView.of(brand, properties.getPayoutBusinessDays()));
     }
 
     /** 「지급(예정)일」 — 브랜드 행 기준. 사업자 인플루언서 건은 인플루언서 행과 날짜가 다르지만 브랜드는 자기 행만 본다. */
@@ -180,7 +182,8 @@ public class SellerSettlementQueryService {
                 preview.getContent().stream().map(SellerSettlementQueryService::item).toList(),
                 preview.getTotalElements(),
                 new SellerSettlementDto.Actions(canRequest, blocks.canRespond(adjustment), confirmed,
-                        taxDocuments != null && taxDocuments.stream().anyMatch(SellerSettlementDto.TaxDocument::downloadable)));
+                        taxDocuments != null && taxDocuments.stream().anyMatch(SellerSettlementDto.TaxDocument::downloadable)),
+                PayoutHoldView.of(brand, properties.getPayoutBusinessDays()));
     }
 
     /** 3자 분배 — 브랜드 첫 행. 남의 행의 분배 실패는 「지급 예정」으로 접는다 · 브랜드 행 실패만 「지급 확인 중」(0-4 · §46 A-4). */
@@ -209,7 +212,8 @@ public class SellerSettlementQueryService {
                     };
                     return new SellerSettlementDto.Payout(payee, label, payout.getAmount(), note, shown,
                             statusLabel(s, payee, shown), payout.getDueDate(),
-                            payout.getStatus() == PayoutStatus.PAID ? payout.getPaidAt() : null);
+                            payout.getStatus() == PayoutStatus.PAID ? payout.getPaidAt() : null,
+                            mine ? PayoutHoldView.of(payout, properties.getPayoutBusinessDays()) : null);
                 }).toList();
     }
 

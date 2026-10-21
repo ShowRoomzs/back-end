@@ -12,6 +12,7 @@ import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractCancelRequestChannel;
 import showroomz.domain.contract.type.ContractCancelRequester;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.contract.type.SanctionHoldParty;
 import showroomz.domain.contract.type.FixedFeeTrigger;
 import showroomz.domain.contract.type.SecondaryUsePeriodType;
 import showroomz.domain.market.entity.Market;
@@ -215,6 +216,17 @@ public class Contract extends BaseTimeEntity {
      */
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    /**
+     * 당사자 정지로 보류가 시작된 시각(1017 설계서 8-4) — 이 동안 운영자는 검토 · 체결을 진행하지 않고(409), {@code SIGNING} 계약의
+     * 서명 기한이 멈춘다. 보류가 끝나면 멈춘 만큼 기한을 뒤로 민다. 값은 bulk UPDATE 로만 바꾼다(버전을 올리지 않는다).
+     */
+    @Column(name = "sanction_hold_since")
+    private LocalDateTime sanctionHoldSince;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sanction_hold_party", length = 16)
+    private SanctionHoldParty sanctionHoldParty;
 
     @Version
     @Column(name = "version", nullable = false)
@@ -441,5 +453,10 @@ public class Contract extends BaseTimeEntity {
 
     private static int nullToZero(Integer value) {
         return value == null ? 0 : value;
+    }
+
+    /** 당사자 정지로 보류 중인가 — 서명 기한이 멈춰 있고 운영자 검토 · 체결이 막힌다. */
+    public boolean isHeldBySanction() {
+        return sanctionHoldSince != null;
     }
 }

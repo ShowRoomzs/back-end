@@ -19,8 +19,9 @@ public class MemberProperties {
     @Setter
     public static class Sanction {
         /**
-         * 인플루언서 정지 시 공구 게시물 제출까지 막을지(§55 B-11) — 켜면 정지된 인플루언서의 준비완료 공구가 게시물 게이트에서 막힌다. 기본 꺼짐.
+         * 인플루언서 정지 시 공구 게시물 등록(검토 요청)까지 막을지(§55 B-11) — ui-studio-13 rev.1 이 「등록 차단 · 작성 · 임시저장 허용」으로
+         * 확정했다(1017 설계서 8-2). 끌 수 있게 플래그는 남긴다.
          */
-        private boolean blockGroupBuyPost = false;
+        private boolean blockGroupBuyPost = true;
     }
 }

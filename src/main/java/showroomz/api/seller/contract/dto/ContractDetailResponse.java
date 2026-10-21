@@ -1,5 +1,6 @@
 package showroomz.api.seller.contract.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractDocumentType;
@@ -67,7 +68,13 @@ public record ContractDetailResponse(
         @Schema(description = "체결 시 생성된 공구. 체결 전에는 내부 값이 null") GroupBuy groupBuy,
         @Schema(description = "현재 상태에서 받을 수 있는 문서. 없으면 빈 배열") List<Document> documents,
         @Schema(description = "현재 브랜드가 사용할 수 있는 버튼 판정") Permissions permissions,
-        @Schema(description = "계약 변경 이력. 없으면 빈 배열") List<HistoryEntry> history
+        @Schema(description = "계약 변경 이력. 없으면 빈 배열") List<HistoryEntry> history,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold,
+
+        @Schema(description = "서명 기한이 멈춰 있는가 — 당사자 정지 보류 중(정지 중 멈춤 · 해제 후 남은 기한부터)")
+        boolean signatureDeadlinePaused
 ) {
 
     @Schema(description = "계약 상대")

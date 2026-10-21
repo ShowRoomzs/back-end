@@ -1,5 +1,6 @@
 package showroomz.api.admin.contract.service;
 
+import showroomz.domain.contract.service.ContractSanctionHoldService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,11 +30,14 @@ public class AdminContractCommandService {
     private final ContractNotifier notifier;
     private final GroupBuyFactory groupBuyFactory;
     private final CreatorSanctionGuard creatorSanctionGuard;
+    private final ContractSanctionHoldService sanctionHolds;
 
     public ProcessResponse approve(Long id, Long operator, ApproveRequest request) {
         String name = access.operatorName(operator);
         Contract c = access.lock(id);
         requireReview(c);
+        // 정지 중인 브랜드의 계약은 운영자가 검토를 진행하지 않는다 — 「검토 보류 · 계정 정지」(ui-partner-15 S4 · 1017 설계서 8-3).
+        if (ContractSanctionHoldService.isMarketSuspended(c.getMarket())) fail(ErrorCode.CONTRACT_HELD_BY_SANCTION);
         // 검토 통과 = 서명 요청 발송 — 정지 · 탈퇴 심사 중인 인플루언서면 보내지 않는다(53 설계서 4-2).
         creatorSanctionGuard.requireCanReceiveContract(c.getCreator());
         if (!Boolean.TRUE.equals(request.recipientsRegistered()) || !Boolean.TRUE.equals(request.documentUploaded())
@@ -101,6 +105,8 @@ public class AdminContractCommandService {
         String name = access.operatorName(operator);
         Contract c = access.lock(id);
         if (c.getStatus() != ContractStatus.CONCLUSION_PENDING || c.getBrandSignedAt() == null || c.getCreatorSignedAt() == null) fail(ErrorCode.CONTRACT_STATUS_CONFLICT);
+        // 막는 지점은 체결이다 — 서명은 모두싸인이 받아 막을 수 없다. 어느 당사자든 정지면 체결(= 공구 생성)을 하지 않는다(8-3).
+        sanctionHolds.requireNoPartySuspended(c);
         Set<ContractDocumentType> types = new HashSet<>();
         documents.findByContractIdInTypeOrder(id).forEach(d -> types.add(d.getDocumentType()));
         if (!types.containsAll(List.of(ContractDocumentType.SIGNED_PDF, ContractDocumentType.AUDIT_TRAIL))) {
@@ -126,6 +132,8 @@ public class AdminContractCommandService {
         if (!Boolean.TRUE.equals(request.dashboardRechecked())) fail(ErrorCode.CONTRACT_CHECKLIST_REQUIRED);
         LocalDateTime now = LocalDateTime.now();
         if (c.getSignatureDeadlineAt() == null || !c.getSignatureDeadlineAt().isBefore(now)) fail(ErrorCode.CONTRACT_EXPIRE_NOT_DUE);
+        // 보류 중에는 서명 기한이 멈춰 있다 — 기한이 지난 것처럼 보여도 만료시키지 않는다(8-4).
+        if (c.isHeldBySanction()) fail(ErrorCode.CONTRACT_EXPIRE_NOT_DUE);
         transition(c, ContractStatus.EXPIRED);
         c.expire(now);
         record(c, operator, name, ContractEventType.EXPIRED, null, now);

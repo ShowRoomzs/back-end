@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.contract.type.FixedFeeTrigger;
 import showroomz.domain.groupbuy.type.AdminSuspensionKind;
@@ -50,7 +51,10 @@ public record AdminGroupBuyDetailResponse(
         @Schema(description = "중단 · 조기 마감 종결", nullable = true) Closure closure,
         Permissions permissions,
         @Schema(description = "처리 이력 — 최신순. 전량 + 게시물 수정 합성 행") List<HistoryEntry> history,
-        Navigation navigation
+        Navigation navigation,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 
     public record Summary(

@@ -118,6 +118,9 @@ public class SellerContractCommandService {
         Contract contract = accessGuard.loadOwned(contractId, market);
 
         requireEditable(contract);
+        // 정지 중 초안은 열람 · 삭제만 — 작성 · 수정 · 임시저장을 막는다(ui-partner-15 S4a · 1017 설계서 8-1).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_UPDATE);
 
         // 버전 검사와 증가를 조건부 UPDATE 하나로 한다(설계서 3-3·3-4). 읽어서 비교만 하면
         // ① 동시 요청 둘이 같은 버전을 보고 나란히 통과하고 ② 항목만 바꾼 저장은 계약 행을
@@ -280,6 +283,9 @@ public class SellerContractCommandService {
         if (contract.getStatus() != ContractStatus.SIGNING) {
             throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
         }
+        // 정지 중에는 체결로 가는 재발송도 요청하지 않는다(ui-partner-15 S4b).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_RESEND_REQUEST);
         // 내가 이미 서명했으면 다시 받을 안내가 없다(§26-B4a) — 상대의 안내를 브랜드가 대신
         // 요청하는 경로는 시안에 없다. 스튜디오의 [서명 안내 다시 받기]와 같은 판정이다.
         if (contract.getBrandSignedAt() != null) {
@@ -348,6 +354,9 @@ public class SellerContractCommandService {
         if (!ContractStatus.DUPLICABLE.contains(source.getStatus())) {
             throw new BusinessException(ErrorCode.CONTRACT_NOT_DUPLICABLE);
         }
+        // 복제도 새 계약의 시작이다 — create 와 같은 가드(이 경로가 가드를 우회하지 않게 · 1017 설계서 8-1).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Contract copy = Contract.createDraft(market, source.getCreator(), source.getConnection());
         copy.updateTerms(

@@ -1,5 +1,6 @@
 package showroomz.api.admin.contract.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
@@ -101,7 +102,8 @@ public final class AdminContractDto {
                            LocalDateTime startAt, LocalDateTime endAt, LocalDateTime reviewRequestedAt,
                            @Schema(description = "계약 상태", example = "REVIEW_PENDING") ContractStatus status,
                            @Schema(description = "화면 표시용 상태명", example = "검토 대기") String statusLabel,
-                           @Schema(description = "상태 배지 색", example = "INFO") ContractStatusTone statusTone) {}
+                           @Schema(description = "상태 배지 색", example = "INFO") ContractStatusTone statusTone,
+            @Schema(description = "정지 보류 — 당사자 정지면 운영자가 검토 · 체결을 진행하지 않는다(1017 설계서 8-4)", nullable = true) SanctionHoldView sanctionHold) {}
     @Schema(description = "검색 조건과 무관한 관리자 계약 현황")
     public record Summary(
             @Schema(description = "조치 큐별 건수: REVIEW·CONCLUSION·EXPIRY·RESEND") Map<AdminContractQueue, Long> queues,
@@ -117,7 +119,9 @@ public final class AdminContractDto {
                           String email) {}
     public record ContractInfo(Long contractId, String contractNumber, String title, ContractStatus status,
                                String statusLabel, ContractStatusTone statusTone, LocalDateTime startAt,
-                               LocalDateTime endAt, Integer days, Brand brand, Creator creator, Long threadId) {}
+                               LocalDateTime endAt, Integer days, Brand brand, Creator creator, Long threadId,
+            @Schema(description = "정지 보류 — party 가 정지 당사자", nullable = true) SanctionHoldView sanctionHold,
+            @Schema(description = "서명 기한이 멈춰 있는가") boolean signatureDeadlinePaused) {}
     public record Stepper(LocalDateTime reviewApprovedAt, String reviewApprovedActorName,
                           LocalDateTime signatureRequestedAt, int signedCount, LocalDateTime concludedAt,
                           String concludedActorName) {}

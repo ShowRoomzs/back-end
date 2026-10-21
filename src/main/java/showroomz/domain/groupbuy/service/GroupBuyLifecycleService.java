@@ -1,5 +1,6 @@
 package showroomz.domain.groupbuy.service;
 
+import showroomz.domain.contract.service.ContractSanctionHoldService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -74,9 +75,11 @@ public class GroupBuyLifecycleService {
         if (groupBuy == null || groupBuy.getStatus() != GroupBuyStatus.READY || groupBuy.getStartAt().isAfter(now)) {
             return false;
         }
-        // 브랜드 정지 중에는 오픈 전 공구를 열지 않는다(§51-1 · 52 설계서 7절) — 예외가 아니라 건너뛴다(배치가 멈추면 안 된다).
-        // 준비완료로 남아 있다가 해제 뒤 다음 틱에 열린다.
-        if (brandSanctionGuard.isSuspended(groupBuy.getMarket())) {
+        // 당사자(브랜드 · 인플루언서) 정지 중에는 오픈 전 공구를 열지 않는다 — 규칙은 대칭이다(§51-1 · ui-partner-15 R2 ·
+        // ui-studio-13 R2 · 1017 설계서 8-3). 예외가 아니라 건너뛴다(배치가 멈추면 안 된다). 준비완료로 남아 있다가 해제 뒤 다음
+        // 틱에 열린다. 이력은 남기지 않는다 — 공구 이력은 상대에게도 보이고 상대의 정지 사실은 노출하지 않는다(보류 표시는 조립 시 파생).
+        if (brandSanctionGuard.isSuspended(groupBuy.getMarket())
+                || ContractSanctionHoldService.isCreatorSuspended(groupBuy.getCreator())) {
             return false;
         }
         if (groupBuyRepository.transition(groupBuyId, EnumSet.of(GroupBuyStatus.READY), GroupBuyStatus.IN_PROGRESS) != 1) {

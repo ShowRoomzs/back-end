@@ -1,5 +1,6 @@
 package showroomz.api.creator.settlement.dto;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
@@ -47,7 +48,8 @@ public final class CreatorSettlementDto {
             String statusLabel,
             SettlementTone statusTone,
             @Schema(description = "내 행의 지급 예정일 · 지급일 — 확인 중 · 협의 · 보류 · 실패면 null", nullable = true) LocalDate payoutDate,
-            @Schema(description = "SCHEDULED(「09.09 예정」) · PAID(「09.02」)", nullable = true) String payoutDateKind
+            @Schema(description = "SCHEDULED(「09.09 예정」) · PAID(「09.02」)", nullable = true) String payoutDateKind,
+            @Schema(description = "내 지급 행 보류 이유 — 상태는 「지급 예정」 그대로 · 보조 배지 「지급 정지 · 계정 정지」(S6). 보류가 아니면 null", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -100,7 +102,8 @@ public final class CreatorSettlementDto {
             Long settlementId, String settlementNumber, Long groupBuyId, String groupBuyTitle, String brandName,
             Long marketId, LocalDateTime periodStartAt, LocalDateTime periodEndAt,
             SettlementStatus status, String statusLabel, SettlementTone statusTone,
-            CreatorBusinessType creatorBusinessType, boolean taxInvoiceRequired
+            CreatorBusinessType creatorBusinessType, boolean taxInvoiceRequired,
+            @Schema(description = "내 지급 행 보류 이유 — 지급 예정일 「정지 해제 다음 영업일 · 원래 09.09」", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -179,7 +182,8 @@ public final class CreatorSettlementDto {
             @Schema(nullable = true) String note,
             @Schema(description = "내 행 실패만 FAILED(「지급 확인 중」) · 브랜드 행 실패는 SCHEDULED(「지급 예정」)로 접힌다") PayoutStatus status,
             @Schema(example = "10.12 지급 예정") String statusLabel,
-            @Schema(nullable = true) LocalDate date
+            @Schema(nullable = true) LocalDate date,
+            @Schema(description = "[내 행] 보류 이유", nullable = true) PayoutHoldView hold
     ) {
     }
 

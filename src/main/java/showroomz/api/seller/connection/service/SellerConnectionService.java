@@ -66,7 +66,8 @@ public class SellerConnectionService {
                         creator.getShowroomName(),
                         creator.getFollowerCount(),
                         creator.getUser() == null ? null : creator.getUser().getProfileImageUrl(),
-                        activeStatusOf(market, creator)))
+                        activeStatusOf(market, creator),
+                        creator.getStatus() != showroomz.domain.member.creator.type.CreatorStatus.SUSPENDED))
                 .orElseGet(ConnectionCodeCheckResponse::notFound);
     }
 
@@ -92,6 +93,10 @@ public class SellerConnectionService {
 
         if (!isConnectable(target)) {
             throw new BusinessException(ErrorCode.CONNECTION_TARGET_NOT_CONNECTABLE);
+        }
+        // 정지된 쇼룸에는 새 연결을 요청하지 않는다 — 정지 사실은 알리지 않는다(ui-partner-15 rev.2 · 1017 설계서 8-6).
+        if (target.getStatus() == showroomz.domain.member.creator.type.CreatorStatus.SUSPENDED) {
+            throw new BusinessException(ErrorCode.CREATOR_COUNTERPARTY_SUSPENDED, "현재 연결 요청을 받을 수 없는 쇼룸입니다.");
         }
 
         Connection connection = connectionRepository

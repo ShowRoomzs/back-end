@@ -1,5 +1,6 @@
 package showroomz.api.seller.contract.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +65,9 @@ public class ContractDetailAssembler {
                 groupBuy(contract),
                 documents(contract),
                 permissions(contract),
-                history(contract));
+                history(contract),
+                SanctionHoldView.forBrand(contract),
+                SanctionHoldView.deadlinePaused(contract));
     }
 
     /**

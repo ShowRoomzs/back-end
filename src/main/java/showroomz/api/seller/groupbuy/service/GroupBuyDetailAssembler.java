@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -98,7 +99,8 @@ public class GroupBuyDetailAssembler {
                 afterEnd(groupBuy, facts),
                 permissionPolicy.evaluate(facts, pairThreadId != null, now),
                 history(history),
-                navigation == null ? new Navigation(null, null) : navigation);
+                navigation == null ? new Navigation(null, null) : navigation,
+                SanctionHoldView.forBrand(groupBuy));
     }
 
     private Summary summary(GroupBuy groupBuy, Contract contract) {

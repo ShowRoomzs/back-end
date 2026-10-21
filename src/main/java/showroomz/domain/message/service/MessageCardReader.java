@@ -58,7 +58,8 @@ public class MessageCardReader {
                            String requesterType, String requesterName, LocalDateTime requestedAt,
                            String reasonLabel, LocalDateTime processedAt, Long processedBy,
                            MessageCardActionState actionState, LocalDateTime doneAt, Long doneBy,
-                           Long noticeMessageId, AdjustmentCard adjustment) {
+                           Long noticeMessageId, AdjustmentCard adjustment,
+                           MessageCardPayload.Sanction sanction) {
     }
 
     /**
@@ -128,7 +129,7 @@ public class MessageCardReader {
             // 결과 카드는 종결이다 — 조치가 남지 않는다.
             return new CardView(type, type.getTitle(), MessageCardTone.NEUTRAL,
                     p.contractId(), p.contractNumber(), p.groupBuyTitle(), null, null, null,
-                    p.reasonLabel(), p.processedAt(), p.operatorId(), null, null, null, null, null);
+                    p.reasonLabel(), p.processedAt(), p.operatorId(), null, null, null, null, null, p.sanction());
         }
         MessageCardActionState state = actionState(resend);
         return new CardView(type, type.getTitle(),
@@ -138,7 +139,7 @@ public class MessageCardReader {
                 state,
                 resend == null ? null : resend.getHandledAt(),
                 resend == null ? null : resend.getHandledBy(),
-                resend == null ? null : resend.getNoticeMessageId(), null);
+                resend == null ? null : resend.getNoticeMessageId(), null, null);
     }
 
     /**
@@ -174,7 +175,7 @@ public class MessageCardReader {
                 proposal == null || proposal.getResponderType() == null ? null : proposal.getResponderType().name(),
                 proposal == null ? null : proposal.getRespondedAt(), state, resultLabel);
         return new CardView(type, type.getTitle(), MessageCardTone.NEUTRAL, p.contractId(), p.contractNumber(),
-                p.groupBuyTitle(), null, null, null, null, null, null, null, null, null, null, view);
+                p.groupBuyTitle(), null, null, null, null, null, null, null, null, null, null, view, null);
     }
 
     /**

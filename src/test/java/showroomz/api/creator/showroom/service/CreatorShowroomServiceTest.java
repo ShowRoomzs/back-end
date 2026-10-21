@@ -1,5 +1,6 @@
 package showroomz.api.creator.showroom.service;
 
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,10 @@ class CreatorShowroomServiceTest {
 
     @Mock
     private CreatorRepository creatorRepository;
+
+    /** 정지 중 쇼룸명 변경 차단(1017 설계서 8-2) — 이 테스트는 정상 계정이라 가드는 통과한다. */
+    @Mock
+    private CreatorSanctionGuard sanctionGuard;
 
     @InjectMocks
     private CreatorShowroomService creatorShowroomService;

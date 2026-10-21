@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
@@ -50,6 +51,9 @@ public record CreatorGroupBuyListItem(
 
         @Schema(description = "내 조치 필요 — GNB 배지·목록 헤더와 같은 판정식. 게시물 작성·재등록(준비중) · 숨김 게시물 수정 · "
                 + "연장 응답(종료 전) · 이행 확인(종료 · 내 확인 전) 중 하나라도 해당", example = "true")
-        boolean actionRequired
+        boolean actionRequired,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 }

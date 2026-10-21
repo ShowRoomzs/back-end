@@ -1,5 +1,6 @@
 package showroomz.api.creator.settlement.service;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -114,7 +115,8 @@ public class CreatorSettlementQueryService {
                     SettlementPartyViews.rewardRateLabel(rates.get(s.getId())), s.getRewardAmount(),
                     s.getRewardClawbackAmount(), s.getWithholdingAmount(), s.getCreatorVatAmount(),
                     s.getCreatorPayoutAmount(), status, status.getLabel(), status.getTone(), payoutDate,
-                    payoutDateKind);
+                    payoutDateKind,
+                    PayoutHoldView.of(mine, properties.getPayoutBusinessDays()));
         }).toList(), page);
     }
 
@@ -202,7 +204,8 @@ public class CreatorSettlementQueryService {
                 new CreatorSettlementDto.SettlementHeader(s.getId(), s.getSettlementNumber(), s.getGroupBuyId(),
                         s.getContract().getTitle(), s.getMarket().getMarketName(), s.getMarketId(),
                         s.getPeriodStartAt(), s.getPeriodEndAt(), status, status.getLabel(), status.getTone(),
-                        s.getCreatorBusinessType(), s.isBusinessCreator()),
+                        s.getCreatorBusinessType(), s.isBusinessCreator(),
+                        PayoutHoldView.of(mine, properties.getPayoutBusinessDays())),
                 new CreatorSettlementDto.Timeline(s.getCreatedAt(), s.getOrdersClosedAt(), s.getReviewDueAt(),
                         s.getConfirmedAt(), s.getConfirmReason(),
                         s.getConfirmReason() == null ? null : s.getConfirmReason().getLabel(), payoutDueDate,
@@ -255,7 +258,8 @@ public class CreatorSettlementQueryService {
                     LocalDate date = shown == PayoutStatus.PAID && payout.getPaidAt() != null
                             ? payout.getPaidAt().toLocalDate() : payout.getDueDate();
                     return new CreatorSettlementDto.PayoutRow(payee, payee.getLabel(), name, payout.getAmount(), note,
-                            shown, statusLabel(s, payee, shown, date), date);
+                            shown, statusLabel(s, payee, shown, date), date,
+                            mine ? PayoutHoldView.of(payout, properties.getPayoutBusinessDays()) : null);
                 }).toList();
     }
 

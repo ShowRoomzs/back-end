@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy.service;
 
+import showroomz.domain.member.creator.type.CreatorBlockedAction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -225,6 +226,8 @@ public class CreatorGroupBuyCommandService {
         GroupBuyFacts facts = factsLoader.load(groupBuy);
         LocalDateTime now = LocalDateTime.now();
         GroupBuyExtensionRequest extension = requireRespondable(facts, now);
+        // 정지 중 연장 수락은 막는다 — 판매 기간을 늘리는 일이다. 연장 거절 · 중단 요청은 허용(ui-studio-13 S4a).
+        sanctionGuard.requireNotSuspended(creator, CreatorBlockedAction.GROUP_BUY_EXTENSION_ACCEPT);
 
         if (extensionRequestRepository.respond(extension.getId(), ExtensionRequestStatus.ACCEPTED,
                 GroupBuyActorType.CREATOR, null, null, now) != 1) {

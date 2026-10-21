@@ -28,7 +28,8 @@ public record MessageCardPayload(
         String reasonLabel,
         LocalDateTime processedAt,
         Long operatorId,
-        Adjustment adjustment) {
+        Adjustment adjustment,
+        Sanction sanction) {
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -67,13 +68,13 @@ public record MessageCardPayload(
                                                    String requesterType, String requesterName,
                                                    LocalDateTime requestedAt) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, requesterType, requesterName,
-                requestedAt, null, null, null, null);
+                requestedAt, null, null, null, null, null);
     }
 
     public static MessageCardPayload adminCanceled(Long contractId, String contractNumber, String groupBuyTitle,
                                                    String reasonLabel, LocalDateTime processedAt, Long operatorId) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, null, null, null,
-                reasonLabel, processedAt, operatorId, null);
+                reasonLabel, processedAt, operatorId, null, null);
     }
 
     /**
@@ -81,13 +82,35 @@ public record MessageCardPayload(
      * 계약 필드는 비어 있다.
      */
     public static MessageCardPayload sanction(String reasonLabel, LocalDateTime processedAt, Long operatorId) {
-        return new MessageCardPayload(null, null, null, null, null, null, reasonLabel, processedAt, operatorId, null);
+        return new MessageCardPayload(null, null, null, null, null, null, reasonLabel, processedAt, operatorId, null, null);
+    }
+
+    /**
+     * 계정 정지 · 해제 카드(1017 설계서 8-9) — 기존 한 문장({@code reasonLabel})에 더해 사유 코드 · 라벨 · 상세 · 지급 정지 여부를 나눠 담는다.
+     * 카드가 「사유 · 상세 사유 · 차단 · 계속 이용 · 정산 줄 · 바로가기」를 그린다(ui-partner-15 S7 · ui-studio-13 S8). 차단 · 계속 이용
+     * 목록은 회원 유형별 고정 문구라 FE 가 {@code memberType}으로 고른다. 옛 카드는 이 필드가 없어 한 줄로 읽힌다.
+     */
+    public static MessageCardPayload sanction(String reasonText, LocalDateTime processedAt, Long operatorId,
+                                              Sanction sanction) {
+        return new MessageCardPayload(null, null, null, null, null, null, reasonText, processedAt, operatorId, null,
+                sanction);
+    }
+
+    /**
+     * @param memberType    BRAND · CREATOR
+     * @param reasonCode    정지 사유 코드(정지 카드) · 해제 사유 코드(해제 카드)
+     * @param reasonDetail  운영자가 적은 상세 · 해제 메모 — 없으면 null
+     * @param payoutHeld    정지 카드 — 지급 정지 사유인가(정산 줄 문구가 갈린다)
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Sanction(String memberType, String reasonCode, String reasonLabel, String reasonDetail,
+                           Boolean payoutHeld) {
     }
 
     public static MessageCardPayload settlementAdjustment(Long contractId, String contractNumber, String groupBuyTitle,
                                                           Adjustment adjustment) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, null, null, null, null, null, null,
-                adjustment);
+                adjustment, null);
     }
 
     public String toJson() {
@@ -111,6 +134,6 @@ public record MessageCardPayload(
     }
 
     private static MessageCardPayload empty() {
-        return new MessageCardPayload(null, null, null, null, null, null, null, null, null, null);
+        return new MessageCardPayload(null, null, null, null, null, null, null, null, null, null, null);
     }
 }

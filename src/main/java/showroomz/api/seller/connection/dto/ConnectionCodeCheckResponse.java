@@ -30,24 +30,30 @@ public class ConnectionCodeCheckResponse {
             example = "CONNECTED", nullable = true)
     private final ConnectionStatus connectionStatus;
 
+    @Schema(description = "지금 연결을 요청할 수 있는가 — false 면 [요청 보내기] 비활성 + 「현재 연결 요청을 받을 수 없는 쇼룸」(1017 설계서 8-6)",
+            example = "true")
+    private final boolean connectable;
+
     private ConnectionCodeCheckResponse(boolean found, Long creatorId, String showroomName,
                                         Integer followerCount, String profileImageUrl,
-                                        ConnectionStatus connectionStatus) {
+                                        ConnectionStatus connectionStatus, boolean connectable) {
         this.found = found;
         this.creatorId = creatorId;
         this.showroomName = showroomName;
         this.followerCount = followerCount;
         this.profileImageUrl = profileImageUrl;
         this.connectionStatus = connectionStatus;
+        this.connectable = connectable;
     }
 
     public static ConnectionCodeCheckResponse found(Long creatorId, String showroomName, Integer followerCount,
-                                                    String profileImageUrl, ConnectionStatus connectionStatus) {
+                                                    String profileImageUrl, ConnectionStatus connectionStatus,
+                                                    boolean connectable) {
         return new ConnectionCodeCheckResponse(true, creatorId, showroomName, followerCount,
-                profileImageUrl, connectionStatus);
+                profileImageUrl, connectionStatus, connectable);
     }
 
     public static ConnectionCodeCheckResponse notFound() {
-        return new ConnectionCodeCheckResponse(false, null, null, null, null, null);
+        return new ConnectionCodeCheckResponse(false, null, null, null, null, null, false);
     }
 }

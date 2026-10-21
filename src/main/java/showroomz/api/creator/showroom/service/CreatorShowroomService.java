@@ -1,5 +1,7 @@
 package showroomz.api.creator.showroom.service;
 
+import showroomz.domain.member.creator.type.CreatorBlockedAction;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -31,6 +33,7 @@ public class CreatorShowroomService {
     private static final String REQUIRED_URL_SCHEME = "https";
 
     private final CreatorRepository creatorRepository;
+    private final CreatorSanctionGuard sanctionGuard;
 
     @Value("${app.base-url:https://showroomz.shop}")
     private String baseUrl;
@@ -58,6 +61,11 @@ public class CreatorShowroomService {
         String instagramUrl = trimToNull(request.getInstagramUrl());
         String profileImageUrl = trimToNull(request.getProfileImageUrl());
 
+        // 쇼룸명만 정지 중 막는다 — 이름이 바뀌면 정지된 계정을 다른 계정으로 오인한다. 소개 · 이미지는 정지 사유를 고치는 수단이라
+        // 허용한다(ui-studio-13 S7). 이름을 그대로 두고 저장하는 것은 변경이 아니다.
+        if (showroomName != null && !showroomName.equals(creator.getShowroomName())) {
+            sanctionGuard.requireNotSuspended(creator, CreatorBlockedAction.SHOWROOM_NAME_CHANGE);
+        }
         validateShowroomName(creator, showroomName);
         validateIntroduction(introduction);
         validateInstagramUrl(instagramUrl);

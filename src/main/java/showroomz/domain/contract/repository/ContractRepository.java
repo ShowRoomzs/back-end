@@ -236,4 +236,56 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     @Query("UPDATE Contract c SET c.creatorViewedAt = :now "
             + "WHERE c.id = :contractId AND c.creatorViewedAt IS NULL")
     int markCreatorViewed(@Param("contractId") Long contractId, @Param("now") LocalDateTime now);
+
+    // ── 당사자 정지 보류(1017 설계서 8-4) — bulk UPDATE 라 버전을 올리지 않는다. 영속성 컨텍스트는 비우지 않는다(정지 서비스가 같은
+    //    트랜잭션에서 정지 행 · 마켓을 계속 고친다).
+
+    /** 그 브랜드의 진행 중 계약 중 아직 보류가 아닌 것 — 보류 시작. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldSince = :now, c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BRAND "
+            + "WHERE c.market.id = :marketId AND c.status IN :statuses AND c.deletedAt IS NULL AND c.sanctionHoldSince IS NULL")
+    int holdForMarket(@Param("marketId") Long marketId, @Param("statuses") Collection<ContractStatus> statuses,
+                      @Param("now") LocalDateTime now);
+
+    /** 이미 인플루언서 정지로 보류 중인 계약 — 양측 보류로 넓힌다(시작 시각은 그대로 — 먼저 멈춘 시각부터 멈춰 있다). */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BOTH "
+            + "WHERE c.market.id = :marketId AND c.status IN :statuses AND c.deletedAt IS NULL "
+            + "AND c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.CREATOR")
+    int widenHoldForMarket(@Param("marketId") Long marketId, @Param("statuses") Collection<ContractStatus> statuses);
+
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldSince = :now, c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.CREATOR "
+            + "WHERE c.creator.id = :creatorId AND c.status IN :statuses AND c.deletedAt IS NULL AND c.sanctionHoldSince IS NULL")
+    int holdForCreator(@Param("creatorId") Long creatorId, @Param("statuses") Collection<ContractStatus> statuses,
+                       @Param("now") LocalDateTime now);
+
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BOTH "
+            + "WHERE c.creator.id = :creatorId AND c.status IN :statuses AND c.deletedAt IS NULL "
+            + "AND c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BRAND")
+    int widenHoldForCreator(@Param("creatorId") Long creatorId, @Param("statuses") Collection<ContractStatus> statuses);
+
+    /** 해제 대상 — 그 브랜드 몫 보류가 걸린 계약(상태 무관 — 보류 중 거절 · 취소된 계약도 표시를 지운다). */
+    @Query("SELECT c FROM Contract c WHERE c.market.id = :marketId AND c.sanctionHoldSince IS NOT NULL "
+            + "AND c.sanctionHoldParty IN (showroomz.domain.contract.type.SanctionHoldParty.BRAND, "
+            + "showroomz.domain.contract.type.SanctionHoldParty.BOTH)")
+    List<Contract> findHeldForMarket(@Param("marketId") Long marketId);
+
+    @Query("SELECT c FROM Contract c WHERE c.creator.id = :creatorId AND c.sanctionHoldSince IS NOT NULL "
+            + "AND c.sanctionHoldParty IN (showroomz.domain.contract.type.SanctionHoldParty.CREATOR, "
+            + "showroomz.domain.contract.type.SanctionHoldParty.BOTH)")
+    List<Contract> findHeldForCreator(@Param("creatorId") Long creatorId);
+
+    /** 보류 종료 — 남은 당사자가 없으면 기한을 민 값으로 바꾸고 표시를 지운다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldSince = NULL, c.sanctionHoldParty = NULL, c.signatureDeadlineAt = :deadline "
+            + "WHERE c.id = :contractId")
+    int endHold(@Param("contractId") Long contractId, @Param("deadline") LocalDateTime deadline);
+
+    /** 한쪽만 풀렸다 — 남은 당사자로 줄인다(기한은 계속 멈춰 있다). */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldParty = :party WHERE c.id = :contractId")
+    int narrowHold(@Param("contractId") Long contractId,
+                   @Param("party") showroomz.domain.contract.type.SanctionHoldParty party);
 }

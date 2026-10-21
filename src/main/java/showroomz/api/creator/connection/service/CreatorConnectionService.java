@@ -54,7 +54,8 @@ public class CreatorConnectionService {
                         c.getMarket().getMarketName(),
                         c.getMarket().getMarketImageUrl(),
                         c.getStatus(),
-                        c.getRequestedAt()));
+                        c.getRequestedAt(),
+                        !c.getMarket().isSuspended()));
         return PageResponse.of(page);
     }
 
@@ -71,6 +72,10 @@ public class CreatorConnectionService {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
         // 탈퇴 신청 심사 중에는 새 연결 수락 차단(스튜디오 S7 · 53 설계서 4-2).
         sanctionGuard.requireCanAcceptConnection(connection.getCreator());
+        // 요청한 브랜드가 정지 중이면 수락하지 않는다 — 상대 사정은 밝히지 않는다(ui-studio-13 rev.1 · 1017 설계서 8-6).
+        if (connection.getMarket().isSuspended()) {
+            throw new BusinessException(ErrorCode.BRAND_COUNTERPARTY_SUSPENDED);
+        }
         connection.markConnected();
         messageThreadService.activateThread(connection);
     }
@@ -81,6 +86,7 @@ public class CreatorConnectionService {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
         connection.markRejected();
     }
+
 
     public ConnectionCodeResponse getMyConnectionCode(String creatorEmail) {
         Creator creator = getMyCreator(creatorEmail);

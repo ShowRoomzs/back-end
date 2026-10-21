@@ -1,5 +1,6 @@
 package showroomz.api.admin.contract.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -43,7 +44,8 @@ public class AdminContractQueryService {
                 new ListItem(c.getId(), c.getContractNumber(), c.getTitle(), c.getMarket().getMarketName(),
                         c.getCreator() == null ? null : c.getCreator().getShowroomName(), itemCounts.getOrDefault(c.getId(), 0),
                         c.getGroupBuyStartAt(), c.getGroupBuyEndAt(), c.getReviewRequestedAt(), c.getStatus(),
-                        c.getStatus().getLabel(), c.getStatus().getTone())));
+                        c.getStatus().getLabel(), c.getStatus().getTone(),
+                        SanctionHoldView.forAdmin(c))));
     }
 
     public Summary summary() {
@@ -96,7 +98,8 @@ public class AdminContractQueryService {
                 new Brand(c.getMarket().getId(), c.getMarket().getMarketName(), "/admin/brands/" + c.getMarket().getId(),
                         c.getMarket().getSeller() == null ? null : c.getMarket().getSeller().getEmail()),
                 c.getCreator() == null ? null : new Creator(c.getCreator().getId(), c.getCreator().getShowroomName(),
-                        "/admin/creators/" + c.getCreator().getId(), c.getCreator().getBusinessEmail()), threadId),
+                        "/admin/creators/" + c.getCreator().getId(), c.getCreator().getBusinessEmail()), threadId,
+                SanctionHoldView.forAdmin(c), SanctionHoldView.deadlinePaused(c)),
                 new Stepper(c.getReviewApprovedAt(), actor(history, ContractEventType.REVIEW_APPROVED), c.getSignatureRequestedAt(),
                         (c.getBrandSignedAt() == null ? 0 : 1) + (c.getCreatorSignedAt() == null ? 0 : 1), c.getConcludedAt(), actor(history, ContractEventType.CONCLUDED)),
                 new Review(c.getReviewRequestedAt(), (minutes / 1440) + "일 " + (minutes % 1440 / 60) + "시간", c.getReviewApprovedAt(), c.getReviewRejectedAt(), shared.review().rejectReason()),

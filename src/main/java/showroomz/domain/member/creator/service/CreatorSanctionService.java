@@ -19,6 +19,8 @@ import showroomz.domain.member.creator.type.CreatorStatus;
 import showroomz.domain.member.creator.type.CreatorSuspensionReason;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.service.MessageSanctionChannelGateway.SanctionKind;
+import showroomz.domain.member.common.service.MemberSanctionHooks;
+import showroomz.domain.message.entity.MessageCardPayload;
 import showroomz.domain.message.service.MessageSanctionChannelGateway;
 import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.domain.settlement.service.PayoutHoldTransitions;
@@ -50,6 +52,7 @@ public class CreatorSanctionService {
     private final OperatorChannelService operatorChannels;
     private final MessageSanctionChannelGateway sanctionCards;
     private final MemberNotifier notifier;
+    private final MemberSanctionHooks hooks;
 
     public CreatorSanction suspend(Long creatorId, CreatorSuspensionReason reason, String reasonDetail, Long operatorId,
                                    String operatorName, LocalDateTime now) {
@@ -75,7 +78,9 @@ public class CreatorSanctionService {
                 CreatorAdminHistoryRecorder.REF_SANCTION, sanction.getId(), now);
         MessageThread channel = operatorChannels.requireCreatorChannel(creator);
         sanction.recordSuspendCard(sanctionCards.postSuspendedCard(channel, SanctionKind.CREATOR, sanction.getId(),
-                sanction.reasonText(), now, operatorId));
+                sanction.reasonText(), now, operatorId, new MessageCardPayload.Sanction(MemberType.CREATOR.name(),
+                        reason.name(), reason.getLabel(), detail, sanction.isPayoutHeld())));
+        hooks.onSuspended(MemberType.CREATOR, creatorId, now);
         String reasonLabel = reason.getLabel();
         AfterCommit.run(() -> notifier.suspended(MemberType.CREATOR, creatorId, reasonLabel));
         log.info("인플루언서 정지 - creatorId: {}, reason: {}, payoutHeld: {}", creatorId, reason, sanction.isPayoutHeld());
@@ -109,8 +114,10 @@ public class CreatorSanctionService {
             }
             MessageThread channel = operatorChannels.requireCreatorChannel(creator);
             sanction.recordReleaseCard(sanctionCards.postReleasedCard(channel, SanctionKind.CREATOR, sanction.getId(),
-                    text, now, operatorId));
+                    text, now, operatorId, new MessageCardPayload.Sanction(MemberType.CREATOR.name(), resolved.name(),
+                            resolved.getLabel(), normalizedNote, null)));
         }
+        hooks.onReleased(MemberType.CREATOR, creatorId, now);
         history.byOperator(creatorId, CreatorAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
                 CreatorAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
         AfterCommit.run(() -> notifier.released(MemberType.CREATOR, creatorId));

@@ -19,6 +19,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.brand.service.BrandSanctionGuard;
+import showroomz.domain.member.brand.type.BrandBlockedAction;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.product.entity.*;
@@ -1046,6 +1047,12 @@ public class ProductService {
         }
         if (next == previous) {
             return;
+        }
+        // 미진열 → 진열 복귀는 정지 중 막는다 — 사실상 새 상품을 내놓는 일이다(ui-partner-15 S2c · 1017 설계서 8-1).
+        // 진열 → 미진열 · 품절 · 재고 · 일반 수정은 그대로다.
+        if (next == ProductDisplayStatus.DISPLAY
+                && (previous == ProductDisplayStatus.HIDDEN || previous == ProductDisplayStatus.HIDE_REQUEST)) {
+            brandSanctionGuard.requireNotSuspended(product.getMarket(), BrandBlockedAction.PRODUCT_REDISPLAY);
         }
         product.setDisplayStatus(next);
         if (next == ProductDisplayStatus.HIDDEN) {

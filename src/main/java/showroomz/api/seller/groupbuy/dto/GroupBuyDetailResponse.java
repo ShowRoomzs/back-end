@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.contract.type.FixedFeeTrigger;
 import showroomz.domain.groupbuy.type.AdminSuspensionKind;
@@ -61,7 +62,10 @@ public record GroupBuyDetailResponse(
         @Schema(description = "버튼 노출 판정 — 항상") Permissions permissions,
         @Schema(description = "이력 — 최신순(발생 시각 내림차순)") List<HistoryEntry> history,
         @Schema(description = "목록 이웃 — 목록 조건(tab·keyword·sort)이 쿼리로 오지 않으면 둘 다 null. 실행 API 응답에서는 항상 둘 다 null")
-        Navigation navigation
+        Navigation navigation,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 
     public record Summary(

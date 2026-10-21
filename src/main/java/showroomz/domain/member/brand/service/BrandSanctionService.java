@@ -21,6 +21,8 @@ import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.service.MessageSanctionChannelGateway.SanctionKind;
+import showroomz.domain.member.common.service.MemberSanctionHooks;
+import showroomz.domain.message.entity.MessageCardPayload;
 import showroomz.domain.message.service.MessageSanctionChannelGateway;
 import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.domain.settlement.service.PayoutHoldTransitions;
@@ -50,6 +52,7 @@ public class BrandSanctionService {
     private final OperatorChannelService operatorChannelService;
     private final MessageSanctionChannelGateway channelGateway;
     private final MemberNotifier notifier;
+    private final MemberSanctionHooks hooks;
 
     public BrandSanction suspend(Long marketId, BrandSuspensionReason reason, String reasonDetail, Long operatorId,
                                  String operatorName, LocalDateTime now) {
@@ -73,7 +76,9 @@ public class BrandSanctionService {
 
         MessageThread channel = operatorChannelService.requireMarketChannel(market);
         sanction.recordSuspendCard(channelGateway.postSuspendedCard(channel, SanctionKind.BRAND, sanction.getId(),
-                sanction.reasonText(), now, operatorId));
+                sanction.reasonText(), now, operatorId, new MessageCardPayload.Sanction(MemberType.BRAND.name(),
+                        reason.name(), reason.getLabel(), detail, sanction.isPayoutHeld())));
+        hooks.onSuspended(MemberType.BRAND, marketId, now);
         AfterCommit.run(() -> notifier.suspended(MemberType.BRAND, marketId, reason.getLabel()));
         log.info("브랜드 정지 - marketId: {}, reason: {}, payoutHeld: {}", marketId, reason, sanction.isPayoutHeld());
         return sanction;
@@ -102,8 +107,10 @@ public class BrandSanctionService {
             }
             MessageThread channel = operatorChannelService.requireMarketChannel(market);
             sanction.recordReleaseCard(channelGateway.postReleasedCard(channel, SanctionKind.BRAND, sanction.getId(),
-                    text, now, operatorId));
+                    text, now, operatorId, new MessageCardPayload.Sanction(MemberType.BRAND.name(), resolved.name(),
+                            resolved.getLabel(), normalizedNote, null)));
         }
+        hooks.onReleased(MemberType.BRAND, marketId, now);
         historyRecorder.byAdmin(marketId, BrandAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
                 BrandAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
         AfterCommit.run(() -> notifier.released(MemberType.BRAND, marketId));

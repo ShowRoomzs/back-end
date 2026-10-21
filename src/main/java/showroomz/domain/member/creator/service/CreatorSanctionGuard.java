@@ -16,8 +16,8 @@ import showroomz.global.error.exception.ErrorCode;
  * 거절한다. 「새로 벌이는 일만 차단」 — 진행 중 공구 운영 · 소통 스레드 · 정산 조회 · 기존 게시물 수정 · 삭제 · 로그인은 막지 않는다.
  *
  * <ul>
- *   <li>정지: 새 게시물 게시 · 계약 서명(서명 요청이 나가는 순간 — 브랜드의 검토 요청 · 운영자의 검토 통과) · 공구 게시물 제출(플래그 ·
- *   §55 B-11 미정이라 기본 꺼짐)</li>
+ *   <li>정지: 새 게시물 게시 · 새 연결 수락 · 공구 게시물 등록(플래그 · 기본 켬) · 연장 수락 · 탈퇴 요청 · 쇼룸명 변경 ·
+ *   서명 안내 재발송 · 서명 요청 수신(브랜드의 검토 요청 · 운영자의 검토 통과)</li>
  *   <li>탈퇴 심사 중(스튜디오 S7): 새 연결 수락 · 계약 서명</li>
  * </ul>
  *
@@ -61,9 +61,19 @@ public class CreatorSanctionGuard {
     }
 
     public void requireCanAcceptConnection(Creator creator) {
+        if (creator.getStatus() == CreatorStatus.SUSPENDED) {
+            throw suspended(CreatorBlockedAction.CONNECTION_ACCEPT);
+        }
         if (hasPendingWithdrawal(creator)) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWAL_PENDING,
                     "탈퇴 신청 심사 중에는 " + CreatorBlockedAction.CONNECTION_ACCEPT.getPhrase() + " 수 없습니다.");
+        }
+    }
+
+    /** 정지 중 막히는 그 밖의 행위(ui-studio-13) — 연장 수락 · 탈퇴 요청 · 쇼룸명 변경 · 서명 안내 재발송. */
+    public void requireNotSuspended(Creator creator, CreatorBlockedAction action) {
+        if (creator != null && creator.getStatus() == CreatorStatus.SUSPENDED) {
+            throw suspended(action);
         }
     }
 
