@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C11 알림 — 목록 · 빈 상태</span></div>
+<p class="dv-tsub">C1 홈 상단 종 아이콘에서만 들어옵니다. 단일 목록 + 날짜 구분이고, 알림을 탭하면 읽음 처리됩니다(눌러 보세요). [상태]로 기기 알림 꺼짐 · 광고 수신 미동의 상태를 확인할 수 있습니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>알림 목록</div>
+<div style="display:flex;flex-wrap:wrap;align-items:center;gap:5px"><span style="font:600 11px/1 Pretendard,sans-serif;color:rgba(0,0,0,.45);margin-right:3px">상태</span>
+<sc-for list="{{ stSw }}" as="w" hint-placeholder-count="3"><span onClick="{{ w.pick }}" style="padding:6px 10px;border-radius:100px;cursor:pointer;background:{{ w.bg }};color:{{ w.color }};border:1px solid {{ w.border }};font:{{ w.font }}">{{ w.label }}</span></sc-for>
+</div>
+<div class="dv-card">
+<div data-screen-label="C11 알림 목록" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">알림</span>
+</div>
+</div>
+
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+
+<sc-if value="{{ osOff }}" hint-placeholder-val="{{ false }}">
+<div style="margin:12px 14px 0;padding:12px 13px;border-radius:8px;background:#F7F7F8;display:flex;align-items:center;gap:10px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="miter" style="display:block;flex:none"><path d="M6 9.6a6 6 0 0 1 12 0v4.9l1.6 3H4.4l1.6-3z"></path><path d="M9.8 20.4h4.4"></path><path d="M4 4l16 16"></path></svg>
+<span style="flex:1;min-width:0;font:400 12.5px/1.55 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">기기 알림이 꺼져 있어 주문 · 배송 소식을 놓칠 수 있어요</span>
+<span style="flex:none;padding:12px 0;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">설정 열기</span>
+</div>
+</sc-if>
+<sc-if value="{{ adOff }}" hint-placeholder-val="{{ false }}">
+<div style="margin:12px 14px 0;padding:12px 13px;border-radius:8px;background:#F7F7F8;display:flex;align-items:center;gap:10px">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="1.5" stroke-linejoin="miter" style="display:block;flex:none"><path d="M4 4.5h16l1.4 4.2a3 3 0 0 1-5.8 1 3 3 0 0 1-5.6 0 3 3 0 0 1-5.8-1z"></path><path d="M5 10.8V20h14v-9.2"></path></svg>
+<span style="flex:1;min-width:0;font:400 12.5px/1.55 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">팔로우한 쇼룸의 새 공구 알림은 광고성 정보 수신에 동의해야 받을 수 있어요</span>
+<span style="flex:none;padding:12px 0;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">동의하기</span>
+</div>
+</sc-if>
+
+<sc-for list="{{ groups }}" as="g" hint-placeholder-count="3">
+<div style="padding:18px 14px 4px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">{{ g.label }}</div>
+<sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+<div onClick="{{ n.tap }}" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;cursor:pointer" style-active="background:#F7F7F8">
+<sc-if value="{{ n.isThumb }}" hint-placeholder-val="{{ true }}"><div style="width:44px;height:44px;border-radius:4px;flex:none;background:{{ n.thumb }}"></div></sc-if>
+<sc-if value="{{ n.isAvatar }}" hint-placeholder-val="{{ false }}"><div style="width:44px;height:44px;border-radius:50%;flex:none;box-sizing:border-box;border:{{ n.ring }};padding:{{ n.ringPad }}"><div style="width:100%;height:100%;border-radius:50%;background:{{ n.thumb }}"></div></div></sc-if>
+<sc-if value="{{ n.isQna }}" hint-placeholder-val="{{ false }}"><div style="width:44px;height:44px;border-radius:50%;flex:none;background:#F4F4F5;display:flex;align-items:center;justify-content:center"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 4.5c4.4 0 8 2.9 8 6.6s-3.6 6.6-8 6.6c-.9 0-1.8-.1-2.6-.3L5.2 19.5l1-3.4C4.8 14.9 4 13.1 4 11.1c0-3.7 3.6-6.6 8-6.6z"></path><path d="M8.6 11.2h.01"></path><path d="M12 11.2h.01"></path><path d="M15.4 11.2h.01"></path></svg></div></sc-if>
+<sc-if value="{{ n.isDoc }}" hint-placeholder-val="{{ false }}"><div style="width:44px;height:44px;border-radius:50%;flex:none;background:#F4F4F5;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#737373" stroke-width="1.6" stroke-linejoin="miter" style="display:block"><path d="M6 4.5h9l3.5 3.5v11.5h-12.5z"></path><path d="M9 12.5h6"></path><path d="M9 16h4"></path></svg></div></sc-if>
+<div style="flex:1;min-width:0;padding-top:1px">
+<div style="font:400 14px/1.5 Pretendard,sans-serif;color:#0F0F0F;text-wrap:pretty">{{ n.a }}<b style="font-weight:600">{{ n.b }}</b>{{ n.c }}</div>
+<sc-if value="{{ n.hasTodo }}" hint-placeholder-val="{{ false }}"><div style="margin-top:4px;font:600 12.5px/1.4 Pretendard,sans-serif;color:#CF3D61">{{ n.todo }}</div></sc-if>
+<div style="margin-top:5px;display:flex;align-items:center;gap:4px;font:400 12px/1 Pretendard,sans-serif;color:#737373"><sc-if value="{{ n.ad }}" hint-placeholder-val="{{ false }}"><span>광고</span><span>·</span></sc-if><span>{{ n.time }}</span></div>
+</div>
+<div style="flex:none;width:7px;height:7px;border-radius:50%;margin-top:8px;background:{{ n.dot }}"></div>
+</div>
+</sc-for>
+</sc-for>
+
+<div style="padding:22px 14px 30px;font:400 12px/1.7 Pretendard,sans-serif;color:#737373;text-align:center">최근 90일 알림까지 보여드려요</div>
+
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>단일 목록 + 날짜 구분</b> — 오늘 · 최근 7일 · 이전으로 나누고 90일까지 보관합니다. 필터는 두지 않았습니다.<br><br><b>앞 이미지 3종</b> — 주문·배송·반품은 <b>상품 썸네일</b>(R4), 쇼룸 소식은 <b>아바타</b>(진행 중 공구가 있으면 로즈 링 — C2·C4와 같은 규칙), 문의 답변·약관 같은 계정·서비스 알림은 <b>회색 아이콘</b>입니다. 문장에서 대상(상품명·쇼룸명·금액)만 굵게 둡니다.<br><br><b>할 일 알림</b> — 회수 송장 등록 · 재발송비 결제처럼 사용자가 해야 할 일이 있으면 주문 내역과 같은 <b>로즈 한 줄 + 기한</b>을 붙입니다.<br><br><b>광고성 알림</b> — 팔로우 쇼룸 새 공구 · 새 게시물 · 공구 마감 임박 · 혜택은 시간 앞에 "광고"를 붙입니다. 푸시에서는 제목 앞 (광고)와 수신거부 방법(마이 &gt; 설정 &gt; 알림)이 함께 들어갑니다. 같은 쇼룸의 새 게시물은 하루치를 묶어 "새 게시물 3개"로 보냅니다.<br><br><b>읽음</b> — 알림을 탭하면 로즈 점이 사라지고 해당 화면으로 이동합니다. 목록에 들어오면 종 아이콘의 숫자 배지만 초기화됩니다. 이동할 대상이 삭제됐으면 §07 토스트로 알립니다.<br><br><b>[상태]</b> — <b>기기 알림 꺼짐</b>: 상단에 회색 안내 + [설정 열기](OS 알림 설정). <b>광고 수신 미동의</b>: 광고성 알림 행이 빠지고 상단에 동의 안내 + [동의하기](C15 알림 설정).</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>빈 상태</div>
+<div class="dv-card">
+<div data-screen-label="C11 알림 빈 상태" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden">
+
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif">
+<span>9:41</span>
+<div style="display:flex;align-items:center;gap:5px">
+<svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg>
+<svg width="16" height="11" viewBox="0 0 16 11" fill="none" stroke="#0F0F0F" stroke-width="1.6" stroke-linecap="round"><path d="M1 3.6a10 10 0 0 1 14 0"></path><path d="M3.6 6.4a6.3 6.3 0 0 1 8.8 0"></path><circle cx="8" cy="9.4" r="1.1" fill="#0F0F0F" stroke="none"></circle></svg>
+<svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6z" fill="rgba(0,0,0,.3)"></path></svg>
+</div>
+</div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px">
+<div style="display:flex;padding:11px;cursor:pointer" style-active="opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M15 5l-7 7 7 7"></path></svg></div>
+<span style="font:600 16px/1 Pretendard,sans-serif;letter-spacing:-.3px">알림</span>
+</div>
+</div>
+
+<div style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 40px 90px">
+<svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#D8D8DA" stroke-width="1.2" stroke-linejoin="miter" style="display:block"><path d="M6 9.6a6 6 0 0 1 12 0v4.9l1.6 3H4.4l1.6-3z"></path><path d="M9.8 20.4h4.4"></path></svg>
+<div style="margin-top:18px;font:600 15.5px/1.5 Pretendard,sans-serif;text-align:center">아직 받은 알림이 없어요</div>
+<div style="margin-top:7px;font:400 13px/1.7 Pretendard,sans-serif;color:#737373;text-align:center;text-wrap:pretty">주문 · 배송 소식과 팔로우한 쇼룸의<br>새 공구를 여기서 알려드려요</div>
+</div>
+
+</div>
+</div>
+<p class="dv-note"><b>빈 상태</b> — 가입 직후이거나 90일 안에 받은 알림이 없을 때입니다. C4 · C14 빈 상태와 같은 규격(회색 아이콘 50 + 15.5/600 + 13/1.7)이고, 버튼은 두지 않습니다. 알림은 사용자가 만들 수 있는 게 아니라 기다리는 것이라 이동할 곳이 없습니다.<br><br><b>비로그인</b> — 종 아이콘을 누르면 C0 로그인으로 보내고 로그인 후 이 화면으로 돌아옵니다(화면 없음). <b>이용 정지 계정</b>도 목록 열람은 허용합니다(C20 허용 범위에 추가 필요).</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { st: '기본', read: {} };
+
+  renderVals(){
+    const ST = this.state.st;
+    const R = this.state.read;
+    const G = [
+      { label:'오늘', items:[
+        { id:'n1', kind:'avatar', ring:true, thumb:'linear-gradient(140deg,#F4D9DF,#E6C3CD)', a:'', b:'제니의 뷰티룸', c:'에 새 공구가 열렸어요 · 시카 리페어 앰플 외 2개', ad:true, time:'10분 전', unread:true },
+        { id:'n2', kind:'thumb', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)', a:'주문하신 ', b:'시카 리페어 앰플 30ml', c:'이 발송되었어요', time:'1시간 전', unread:true },
+        { id:'n3', kind:'thumb', thumb:'linear-gradient(135deg,#EFE7DC,#DCCFBE)', a:'반품할 ', b:'수분 진정 마스크 10매', c:'의 회수 송장을 등록해 주세요', todo:'회수 송장 등록 필요 · 10.11까지', time:'3시간 전', unread:true }
+      ]},
+      { label:'최근 7일', items:[
+        { id:'n4', kind:'qna', a:'문의하신 내용에 ', b:'답변', c:'이 등록됐어요', time:'2일 전' },
+        { id:'n5', kind:'thumb', thumb:'linear-gradient(135deg,#F1E7EA,#DCCCD3)', a:'장바구니에 담은 ', b:'진정 토너 패드 60매', c:' 공구가 내일 마감돼요', ad:true, time:'3일 전' },
+        { id:'n6', kind:'thumb', thumb:'linear-gradient(135deg,#E7ECE8,#CCD6CF)', a:'반품 검수가 끝나 ', b:'11,000원', c:' 환불이 진행돼요', time:'5일 전' },
+        { id:'n7', kind:'thumb', thumb:'linear-gradient(135deg,#E4E8EF,#CBD2DD)', a:'취소 요청이 ', b:'반려', c:'되었어요 · 주문은 그대로 배송돼요', time:'6일 전' }
+      ]},
+      { label:'이전', items:[
+        { id:'n8', kind:'avatar', ring:false, thumb:'linear-gradient(140deg,#E7EAEC,#D4D9DD)', a:'', b:'미아 스킨노트', c:'에 새 게시물 3개가 올라왔어요', ad:true, time:'10.01' },
+        { id:'n9', kind:'thumb', thumb:'linear-gradient(135deg,#EFEBE7,#D9D2CB)', a:'', b:'내일 자동으로 구매확정', c:'돼요 · 반품 · 교환은 오늘까지 신청할 수 있어요', time:'09.28' },
+        { id:'n10', kind:'doc', a:'', b:'개인정보 처리방침', c:'이 11.01부터 바뀌어요', time:'09.25' }
+      ]}
+    ];
+    const showAd = ST !== '광고 수신 미동의';
+    const groups = G.map(g => ({
+      label: g.label,
+      items: g.items.filter(n => showAd || !n.ad).map(n => {
+        const unread = !!n.unread && !R[n.id];
+        return {
+          a: n.a, b: n.b, c: n.c, time: n.time, ad: !!n.ad,
+          hasTodo: !!n.todo, todo: n.todo || '',
+          isThumb: n.kind === 'thumb', isAvatar: n.kind === 'avatar', isQna: n.kind === 'qna', isDoc: n.kind === 'doc',
+          thumb: n.thumb || 'none',
+          ring: n.ring ? '1.5px solid #F2456E' : '0',
+          ringPad: n.ring ? '2.5px' : '0',
+          dot: unread ? '#F2456E' : 'transparent',
+          tap: () => this.setState(s => ({ read: { ...s.read, [n.id]: true } }))
+        };
+      })
+    })).filter(g => g.items.length);
+    return {
+      stSw: ['기본', '기기 알림 꺼짐', '광고 수신 미동의'].map(k => ({ label: k, pick: () => this.setState({ st: k }), bg: ST === k ? '#1a1a1a' : '#fff', color: ST === k ? '#fff' : 'rgba(0,0,0,.6)', border: ST === k ? '#1a1a1a' : 'rgba(0,0,0,.15)', font: (ST === k ? '600' : '500') + ' 11px/1 Pretendard,sans-serif' })),
+      osOff: ST === '기기 알림 꺼짐',
+      adOff: ST === '광고 수신 미동의',
+      groups
+    };
+  }
+}
+</script>
+</body>
+</html>
