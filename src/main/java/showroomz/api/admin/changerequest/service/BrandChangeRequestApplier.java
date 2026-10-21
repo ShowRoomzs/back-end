@@ -1,5 +1,10 @@
 package showroomz.api.admin.changerequest.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import showroomz.api.seller.auth.type.SellerStatus;
@@ -31,12 +36,15 @@ public class BrandChangeRequestApplier implements ChangeRequestApplier {
     private final ObjectProvider<SettlementPartnerSyncService> partnerSync;
     private final MarketRepository marketRepository;
     private final MailService mailService;
+    private final NotificationPublisher notificationPublisher;
 
     public BrandChangeRequestApplier(ObjectProvider<SettlementPartnerSyncService> partnerSync,
-                                     MarketRepository marketRepository, MailService mailService) {
+                                     MarketRepository marketRepository, MailService mailService,
+                                     NotificationPublisher notificationPublisher) {
         this.partnerSync = partnerSync;
         this.marketRepository = marketRepository;
         this.mailService = mailService;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Override
@@ -77,12 +85,24 @@ public class BrandChangeRequestApplier implements ChangeRequestApplier {
     public void notifyApproved(ChangeRequest request) {
         mailService.sendChangeRequestApprovedEmail(request.getMarket().getSeller().getEmail(), request.getRequestCode(),
                 String.join(", ", request.changedFieldLabels()), request.getProcessedAt());
+        notifyBrand(request, NotificationType.CHANGE_REQUEST_APPROVED,
+                "변경 요청(" + request.getRequestCode() + ")이 승인되었습니다 · " + String.join(", ", request.changedFieldLabels()));
+    }
+
+    /** 파트너 알림 「기본정보 › 해당 탭」(16 알림 표) — 탭 키는 요청 유형이다. */
+    private void notifyBrand(ChangeRequest request, NotificationType type, String sentence) {
+        notificationPublisher.publish(NotificationCommand.toSeller(request.getMarket().getId(), type)
+                .actorType(NotificationActorType.OPERATOR).title(sentence)
+                .targetType(NotificationTargetType.BASIC_INFO_TAB).targetId(request.getId())
+                .targetSub(request.getType() == null ? null : request.getType().name()).build());
     }
 
     @Override
     public void notifyRejected(ChangeRequest request, ChangeRequestRejectReason reason, String detail) {
         mailService.sendChangeRequestRejectedEmail(request.getMarket().getSeller().getEmail(), request.getRequestCode(),
                 request.getProcessedAt(), reason.getDescription(), detail);
+        notifyBrand(request, NotificationType.CHANGE_REQUEST_REJECTED,
+                "변경 요청(" + request.getRequestCode() + ")이 반려되었습니다 · 사유: " + reason.getDescription());
     }
 
     private void applyField(ChangeRequestField field, String requestedValue, Seller seller, Market market) {

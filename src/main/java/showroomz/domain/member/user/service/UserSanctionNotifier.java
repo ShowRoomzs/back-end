@@ -1,5 +1,12 @@
 package showroomz.domain.member.user.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationImageKind;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,24 +44,47 @@ public class UserSanctionNotifier {
     private final PushSender pushSender;
     private final TransactionTemplate newTransaction;
 
+    private final NotificationPublisher notificationPublisher;
+
+    /** 푸시만 검증하는 단위 테스트용 — 알림함 행은 쓰지 않는다. */
     public UserSanctionNotifier(DeviceTokenRepository deviceTokenRepository, DeviceTokenService deviceTokenService,
                                 PushSender pushSender, PlatformTransactionManager transactionManager) {
+        this(deviceTokenRepository, deviceTokenService, pushSender, transactionManager, null);
+    }
+
+    @Autowired
+    public UserSanctionNotifier(DeviceTokenRepository deviceTokenRepository, DeviceTokenService deviceTokenService,
+                                PushSender pushSender, PlatformTransactionManager transactionManager,
+                                NotificationPublisher notificationPublisher) {
         this.deviceTokenRepository = deviceTokenRepository;
         this.deviceTokenService = deviceTokenService;
         this.pushSender = pushSender;
+        this.notificationPublisher = notificationPublisher;
         this.newTransaction = new TransactionTemplate(transactionManager);
         this.newTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
     public void suspended(Long userId, String appReasonLabel) {
+        inbox(userId, NotificationType.USER_ACCOUNT_SUSPENDED, "계정 이용이 정지되었어요 · 사유: " + appReasonLabel);
         send(userId, "SUSPENDED", PushMessage.of("계정 이용이 정지되었어요",
                 "사유: " + appReasonLabel + " · 진행 중인 주문은 그대로 이용할 수 있어요", null,
                 "type", DATA_TYPE, "event", "SUSPENDED"));
     }
 
     public void released(Long userId) {
+        inbox(userId, NotificationType.USER_ACCOUNT_RELEASED, "계정 이용 정지가 해제되었어요");
         send(userId, "RELEASED", PushMessage.of("계정 이용 정지가 해제되었어요", "지금부터 모든 기능을 다시 이용할 수 있어요", null,
                 "type", DATA_TYPE, "event", "RELEASED"));
+    }
+
+    /** 알림함(C11) 행 — 푸시는 위에서 계정 상태 표식으로 따로 보낸다(앱이 상태를 다시 읽는다). */
+    private void inbox(Long userId, NotificationType type, String title) {
+        if (notificationPublisher == null) {
+            return;
+        }
+        notificationPublisher.publish(NotificationCommand.toUser(userId, type).actorType(NotificationActorType.OPERATOR)
+                .title(title).imageKind(NotificationImageKind.ICON)
+                .targetType(NotificationTargetType.ACCOUNT_STATUS).skipPush(true).build());
     }
 
     private void send(Long userId, String event, PushMessage message) {

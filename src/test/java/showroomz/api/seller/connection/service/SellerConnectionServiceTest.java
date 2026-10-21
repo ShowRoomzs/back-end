@@ -1,5 +1,6 @@
 package showroomz.api.seller.connection.service;
 
+import showroomz.domain.notification.service.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -42,6 +43,10 @@ import static org.mockito.Mockito.verify;
 class SellerConnectionServiceTest {
 
     private static final String SELLER_EMAIL = "brand@showroomz.co.kr";
+
+    /** 1017 알림함 — 발생 지점이 알림을 낸다(내용 검증은 통합 테스트). */
+    @Mock
+    private NotificationPublisher notificationPublisher;
 
     @Mock
     private ConnectionRepository connectionRepository;

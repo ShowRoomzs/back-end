@@ -94,6 +94,9 @@ public class AdminContractCommandService {
         // 입력한 운영자와 변경 내역은 아래 SIGNATURE_UPDATED가 따로 기록한다.
         if (brandNewlySigned) history.recordBySeller(c, ContractEventType.BRAND_SIGNED, null, request.brandSignedAt());
         if (creatorNewlySigned) history.recordByCreator(c, ContractEventType.CREATOR_SIGNED, null, request.creatorSignedAt());
+        // 상대가 서명했다는 알림 — 파트너 「서명 완료」 · 스튜디오 「이제 내 서명만 남았어요」(1017 설계서 1-4 · 1-5).
+        if (brandNewlySigned) notifier.notifyCounterparty(c, "BRAND_SIGNED");
+        if (creatorNewlySigned) notifier.notifySeller(c, "CREATOR_SIGNED");
         if (bothNewlyConfirmed) record(c, operator, name, ContractEventType.BOTH_SIGNED_CONFIRMED, null, now);
         record(c, operator, name, ContractEventType.SIGNATURE_UPDATED,
                 changes.isEmpty() ? "변경 없음 · 기준 시각만 갱신" : String.join(" / ", changes), now);
@@ -175,6 +178,7 @@ public class AdminContractCommandService {
         if (c.getStatus() != ContractStatus.SIGNING) fail(ErrorCode.CONTRACT_STATUS_CONFLICT);
         LocalDateTime now = LocalDateTime.now();
         int handled = resends.handleAll(id, operator, now);
+        notifier.notifyBothParties(c, "RESEND_HANDLED");
         record(c, operator, name, ContractEventType.RESEND_HANDLED, "서명 안내 재발송 · 요청 " + handled + "건 처리", now);
         return response(c);
     }

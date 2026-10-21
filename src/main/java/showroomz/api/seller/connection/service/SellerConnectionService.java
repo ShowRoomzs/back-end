@@ -1,5 +1,10 @@
 package showroomz.api.seller.connection.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -30,6 +35,7 @@ import showroomz.global.error.exception.ErrorCode;
 @Transactional(readOnly = true)
 public class SellerConnectionService {
 
+    private final NotificationPublisher notificationPublisher;
     private final ConnectionRepository connectionRepository;
     private final BrandSanctionGuard brandSanctionGuard;
     private final SellerRepository sellerRepository;
@@ -112,6 +118,12 @@ public class SellerConnectionService {
                 })
                 .orElseGet(() -> connectionRepository.save(Connection.requestPair(market, target)));
 
+        // 스튜디오 알림 「퓨어랩이 연결을 요청했어요」(14 H1a) — 연결 요청함으로 간다.
+        notificationPublisher.publish(NotificationCommand.toCreator(target.getId(), NotificationType.CONNECTION_REQUESTED)
+                .actorType(NotificationActorType.BRAND).actorName(market.getMarketName())
+                .title(market.getMarketName() + "이 연결을 요청했어요 · 수락하면 브랜드가 계약을 보낼 수 있어요")
+                .emphasis(market.getMarketName())
+                .targetType(NotificationTargetType.CONNECTION_REQUESTS).targetId(connection.getId()).build());
         return new ConnectResponse(connection.getId(), connection.getStatus());
     }
 

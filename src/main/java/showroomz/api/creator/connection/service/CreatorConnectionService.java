@@ -1,5 +1,11 @@
 package showroomz.api.creator.connection.service;
 
+import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -28,6 +34,7 @@ import showroomz.global.utils.ConnectionCodeGenerator;
 @Transactional(readOnly = true)
 public class CreatorConnectionService {
 
+    private final NotificationPublisher notificationPublisher;
     private final ConnectionRepository connectionRepository;
     private final UserRepository userRepository;
     private final CreatorRepository creatorRepository;
@@ -77,7 +84,8 @@ public class CreatorConnectionService {
             throw new BusinessException(ErrorCode.BRAND_COUNTERPARTY_SUSPENDED);
         }
         connection.markConnected();
-        messageThreadService.activateThread(connection);
+        MessageThread thread = messageThreadService.activateThread(connection);
+        notifyBrand(connection, NotificationType.CONNECTION_ACCEPTED, "연결 요청을 수락했습니다", thread.getId());
     }
 
     /** §14-4 거절 — 해제(거절) 상태로 전이. */
@@ -85,8 +93,16 @@ public class CreatorConnectionService {
     public void reject(String creatorEmail, Long connectionId) {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
         connection.markRejected();
+        notifyBrand(connection, NotificationType.CONNECTION_REJECTED, "연결 요청을 거절했습니다", null);
     }
 
+    /** 파트너 알림 「연결·소통 › 해당 인플루언서 스레드」(16 알림 표). */
+    private void notifyBrand(Connection connection, NotificationType type, String sentence, Long threadId) {
+        String showroom = connection.getCreator().getShowroomName();
+        notificationPublisher.publish(NotificationCommand.toSeller(connection.getMarket().getId(), type)
+                .actorType(NotificationActorType.CREATOR).actorName(showroom).title(sentence)
+                .targetType(NotificationTargetType.THREAD).targetId(threadId).build());
+    }
 
     public ConnectionCodeResponse getMyConnectionCode(String creatorEmail) {
         Creator creator = getMyCreator(creatorEmail);

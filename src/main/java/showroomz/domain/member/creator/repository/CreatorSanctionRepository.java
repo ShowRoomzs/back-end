@@ -12,6 +12,9 @@ public interface CreatorSanctionRepository extends JpaRepository<CreatorSanction
     /** 열린 정지 — 인플루언서당 최대 1건. */
     Optional<CreatorSanction> findByCreatorIdAndReleasedAtIsNull(Long creatorId);
 
+    /** 가장 최근 정지 — 알림이 정지 · 해제 카드 위치를 찾는다. */
+    Optional<CreatorSanction> findFirstByCreatorIdOrderBySuspendedAtDesc(Long creatorId);
+
     boolean existsByCreatorIdAndReleasedAtIsNull(Long creatorId);
 
     /** 리워드 지급 정지가 걸린 열린 정지가 있는가 — 정산 포트 {@code PayoutHoldReader}. */

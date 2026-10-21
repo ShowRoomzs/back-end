@@ -57,6 +57,8 @@ import java.lang.annotation.Target;
                 "sentry.enabled=false",
                 // 공구 수명주기 스케줄러는 매분 돈다 — 테스트 중간에 오픈·종료가 끼어들지 않게 끄고 서비스를 직접 부른다.
                 "groupbuy.scheduler-enabled=false",
+                // 알림 배치(지연 푸시 · 보관 · D-1 안내) — 서비스를 직접 부른다(1017 설계서 1-6).
+                "notification.scheduler-enabled=false",
                 // 결제 — 포트원 대신 FakePaymentGateway(시나리오 지정 더블). 만료·수렴·대사·지표 스케줄러는 끄고 서비스를 직접 부른다
                 // (선행 수정 계획서 3-6). 웹훅 시크릿은 서명 테스트용 고정값이다(whsec_ + base64).
                 "portone.enabled=false",

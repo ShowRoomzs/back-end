@@ -1,5 +1,11 @@
 package showroomz.api.seller.inquiry.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationImageKind;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -42,6 +48,7 @@ import java.util.Map;
 @Transactional
 public class SellerInquiryService {
 
+    private final NotificationPublisher notificationPublisher;
     private final ProductInquiryRepository productInquiryRepository;
     private final ProductInquiryHistoryRepository productInquiryHistoryRepository;
     private final SellerRepository sellerRepository;
@@ -125,6 +132,18 @@ public class SellerInquiryService {
         inquiry.registerAnswer(answerContent.trim());
         productInquiryHistoryRepository.save(
                 new ProductInquiryHistory(inquiry, ProductInquiryHistoryType.ANSWERED, null));
+        // 소비자 알림 「문의하신 내용에 답변이 등록됐어요」(C11) — 상품 문의 상세로 간다.
+        if (inquiry.getUser() != null) {
+            String product = inquiry.getProduct() == null ? null : inquiry.getProduct().getName();
+            notificationPublisher.publish(NotificationCommand.toUser(inquiry.getUser().getId(), NotificationType.INQUIRY_ANSWERED)
+                    .actorType(NotificationActorType.BRAND)
+                    .actorName(inquiry.getProduct() == null || inquiry.getProduct().getMarket() == null ? null
+                            : inquiry.getProduct().getMarket().getMarketName())
+                    .title(product == null ? "문의하신 내용에 답변이 등록됐어요" : product + " 문의에 답변이 등록됐어요")
+                    .emphasis(product == null ? "답변" : product)
+                    .imageKind(NotificationImageKind.ICON)
+                    .targetType(NotificationTargetType.INQUIRY).targetId(inquiry.getId()).targetSub("PRODUCT").build());
+        }
     }
 
     /**

@@ -62,7 +62,8 @@ class AdminChangeRequestServiceTest {
                 // PG 파트너 동기화 빈 없음 — 승인 뒤 훅은 ifAvailable 로 조용히 건너뛴다. 인플루언서 전략은 통합 테스트가 본다.
                 List.of(new BrandChangeRequestApplier(new org.springframework.beans.factory.support.DefaultListableBeanFactory()
                         .getBeanProvider(showroomz.domain.settlement.service.SettlementPartnerSyncService.class),
-                        marketRepository, mailService)));
+                        marketRepository, mailService,
+                        org.mockito.Mockito.mock(showroomz.domain.notification.service.NotificationPublisher.class))));
     }
 
     private ChangeRequest pendingBusinessInfoRequest(String requestedName) {

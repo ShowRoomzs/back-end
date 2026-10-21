@@ -1,5 +1,7 @@
 package showroomz.domain.groupbuy.service;
 
+import showroomz.domain.settlement.service.AfterCommit;
+import showroomz.domain.notification.service.FollowerNotificationService;
 import showroomz.domain.contract.service.ContractSanctionHoldService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class GroupBuyLifecycleService {
 
+    private final FollowerNotificationService followerNotifications;
     private final GroupBuyRepository groupBuyRepository;
     private final BrandSanctionGuard brandSanctionGuard;
     private final GroupBuyFulfillmentCheckRepository fulfillmentCheckRepository;
@@ -91,6 +94,8 @@ public class GroupBuyLifecycleService {
         postExposure.sync(groupBuy, now);
         productSynchronizer.resync(groupBuy);
         notifier.notifyBothParties(groupBuy, "OPENED");
+        // 팔로워 「{쇼룸}에 새 공구가 열렸어요」(광고성 · C11 · C15) — 커밋 뒤 팔로워별로 쓴다.
+        AfterCommit.run(() -> followerNotifications.notifyGroupBuyOpened(groupBuyId));
         return true;
     }
 

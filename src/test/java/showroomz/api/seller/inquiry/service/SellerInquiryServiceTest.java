@@ -1,5 +1,6 @@
 package showroomz.api.seller.inquiry.service;
 
+import showroomz.domain.notification.service.NotificationPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -63,6 +64,10 @@ class SellerInquiryServiceTest {
     private static final long MY_MARKET_ID = 20L;
     private static final long OTHER_MARKET_ID = 21L;
     private static final long INQUIRY_ID = 55L;
+
+    /** 1017 알림함 — 발생 지점이 알림을 낸다(내용 검증은 통합 테스트). */
+    @Mock
+    private NotificationPublisher notificationPublisher;
 
     @Mock
     private ProductInquiryRepository productInquiryRepository;

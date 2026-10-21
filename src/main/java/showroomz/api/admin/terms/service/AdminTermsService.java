@@ -1,5 +1,8 @@
 package showroomz.api.admin.terms.service;
 
+import showroomz.domain.terms.type.TermsTarget;
+import showroomz.domain.settlement.service.AfterCommit;
+import showroomz.domain.notification.service.NotificationBroadcastService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -67,6 +70,7 @@ public class AdminTermsService {
     private final TermsDocumentRepository termsDocumentRepository;
     private final TermsVersionRepository termsVersionRepository;
     private final SellerRepository sellerRepository;
+    private final NotificationBroadcastService notificationBroadcast;
 
     /** 문서 등록(신규) — 첫 버전은 v1.0 고정이다 (기획 §21-5) */
     @Transactional
@@ -124,6 +128,13 @@ public class AdminTermsService {
                 .registeredBy(operatorId)
                 .build());
 
+        // 소비자 대상 문서의 개정이면 전 소비자 알림함에 공지한다(C11 · 1017 설계서 1-3) — 첫 버전은 개정이 아니다.
+        if (!versions.isEmpty() && (document.getTarget() == TermsTarget.ALL || document.getTarget() == TermsTarget.USER)) {
+            Long docId = document.getId();
+            String name = document.getName();
+            java.time.LocalDate effective = request.getEffectiveDate();
+            AfterCommit.run(() -> notificationBroadcast.termsChanged(docId, name, effective));
+        }
         return version.getId();
     }
 

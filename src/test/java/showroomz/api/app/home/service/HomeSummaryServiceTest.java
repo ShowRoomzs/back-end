@@ -9,6 +9,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.home.dto.HomeSummaryResponse;
+import showroomz.api.app.notification.service.UserNotificationService;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.cart.repository.CartRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
@@ -42,6 +43,8 @@ class HomeSummaryServiceTest {
     private CartRepository cartRepository;
     @Mock
     private CreatorFollowRepository creatorFollowRepository;
+    @Mock
+    private UserNotificationService userNotificationService;
 
     @InjectMocks
     private HomeSummaryService homeSummaryService;
@@ -60,11 +63,13 @@ class HomeSummaryServiceTest {
         Users user = givenUser();
         given(cartRepository.countByUser(user)).willReturn(3L);
         given(creatorFollowRepository.countByUser(user)).willReturn(12L);
+        given(userNotificationService.badgeCount(user)).willReturn(4L);
 
         HomeSummaryResponse response = homeSummaryService.getSummary(USERNAME);
 
         assertThat(response.getCartCount()).isEqualTo(3L);
         assertThat(response.getFollowingCount()).isEqualTo(12L);
+        assertThat(response.getNotificationBadgeCount()).isEqualTo(4L);
     }
 
     @Test

@@ -62,6 +62,7 @@ public class OrderFulfillmentService {
     private final OrderProperties orderProperties;
     private final ShipDuePolicy shipDuePolicy;
     private final ApplicationEventPublisher eventPublisher;
+    private final OrderNotificationService orderNotifications;
     private final showroomz.domain.payment.repository.PaymentRepository paymentRepository;
 
     // ------------------------------------------------------------------ 이력
@@ -78,6 +79,8 @@ public class OrderFulfillmentService {
                 .detail(detail)
                 .occurredAt(occurredAt)
                 .build());
+        // 알림함(1017 설계서 1-3 · 1-4) — 이력이 쌓이는 같은 지점이라 빠지는 전이가 없다. 알림은 커밋 뒤에 쓰인다.
+        orderNotifications.onFulfillment(deliveryGroupId, eventType, actorType);
     }
 
     // ------------------------------------------------------------------ PAID 훅(설계서 5-1)

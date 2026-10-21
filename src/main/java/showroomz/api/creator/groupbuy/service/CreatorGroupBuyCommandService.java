@@ -138,6 +138,7 @@ public class CreatorGroupBuyCommandService {
         historyRecorder.recordByCreator(locked.groupBuy(), GroupBuyEventType.POST_SUBMITTED,
                 resubmission ? "재등록" : null, null, now);
         notifier.notifyAdmin(locked.groupBuy(), "POST_SUBMITTED");
+        notifier.notifySeller(locked.groupBuy(), "POST_SUBMITTED");
         return detailAssembler.assemble(locked.groupBuy(), null);
     }
 

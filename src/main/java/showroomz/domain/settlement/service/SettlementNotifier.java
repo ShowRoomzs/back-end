@@ -1,5 +1,15 @@
 package showroomz.domain.settlement.service;
 
+import java.time.format.DateTimeFormatter;
+import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
+import org.springframework.transaction.annotation.Transactional;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import showroomz.domain.settlement.type.SettlementPayee;
@@ -14,23 +24,60 @@ import java.time.LocalDate;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SettlementNotifier {
+
+    private static final DateTimeFormatter MD = DateTimeFormatter.ofPattern("MM.dd");
+
+    private final SettlementRepository settlementRepository;
+    private final NotificationPublisher publisher;
 
     // ------------------------------------------------------------------ 정산
 
     /** 생성 — 양측 「{MM.DD} 23:59까지 확인 · 조정 요청 가능」. */
+    @Transactional(readOnly = true)
     public void settlementGenerated(Long settlementId) {
         stub("BOTH", "SETTLEMENT_GENERATED", settlementId);
+        load(settlementId, s -> {
+            String due = s.getReviewDueAt() == null ? "" : " · " + s.getReviewDueAt().format(MD) + " 23:59까지 확인할 수 있습니다";
+            toBrand(s, NotificationType.SETTLEMENT_CREATED, NotificationActorType.SYSTEM, null,
+                    "「" + title(s) + "」 정산이 생성되었습니다" + due);
+            toCreator(s, NotificationType.SETTLEMENT_CREATED, NotificationActorType.PLATFORM, null,
+                    title(s) + " 공구 정산이 생성됐어요" + (s.getReviewDueAt() == null ? ""
+                            : " · " + s.getReviewDueAt().format(MD) + "까지 확인할 수 있어요"));
+        });
     }
 
     /** 확정 — 양측 지급 예정일 · 사업자 「세금계산서 발행 요청」. */
+    @Transactional(readOnly = true)
     public void settlementConfirmed(Long settlementId) {
         stub("BOTH", "SETTLEMENT_CONFIRMED", settlementId);
+        load(settlementId, s -> {
+            toBrand(s, NotificationType.SETTLEMENT_CONFIRMED, NotificationActorType.SYSTEM, null,
+                    "「" + title(s) + "」 정산이 확정되었습니다 — 지급 예정 %,d원".formatted(s.getBrandPayoutAmount()));
+            toCreator(s, NotificationType.SETTLEMENT_CONFIRMED, NotificationActorType.PLATFORM, null,
+                    title(s) + " 공구 정산이 확정됐어요 · 지급 예정 %,d원".formatted(s.getCreatorPayoutAmount()));
+            if (s.isBusinessCreator()) {
+                // 사업자 — 세금계산서를 발행해 승인번호를 입력해야 지급된다(스튜디오 H4 「지급 대기」).
+                toCreator(s, NotificationType.TAX_INVOICE_NEEDED, NotificationActorType.PLATFORM, null,
+                        title(s) + " 공구 세금계산서를 발행해 주세요 · 승인번호를 입력하면 지급돼요");
+            }
+        });
     }
 
     /** 수취자 몫 지급 완료 — 수취자별. */
+    @Transactional(readOnly = true)
     public void settlementPaid(Long settlementId, SettlementPayee payee) {
         stub(payee.name(), "SETTLEMENT_PAID", settlementId);
+        load(settlementId, s -> {
+            if (payee == SettlementPayee.BRAND) {
+                toBrand(s, NotificationType.SETTLEMENT_PAID, NotificationActorType.SYSTEM, null,
+                        "「" + title(s) + "」 정산 %,d원이 지급되었습니다".formatted(s.getBrandPayoutAmount()));
+            } else if (payee == SettlementPayee.CREATOR) {
+                toCreator(s, NotificationType.REWARD_PAID, NotificationActorType.PLATFORM, null,
+                        title(s) + " 공구 리워드 %,d원이 지급됐어요".formatted(s.getCreatorPayoutAmount()));
+            }
+        });
     }
 
     /** 분배 실패 — 운영자(재분배 M3). */
@@ -76,46 +123,133 @@ public class SettlementNotifier {
         stub("ADMIN", "TAX_INVOICE_SUBMITTED", settlementId);
     }
 
+    @Transactional(readOnly = true)
     public void taxInvoiceVerified(Long settlementId) {
         stub("CREATOR", "TAX_INVOICE_VERIFIED", settlementId);
+        load(settlementId, s -> toCreator(s, NotificationType.TAX_INVOICE_VERIFIED, NotificationActorType.PLATFORM,
+                null, title(s) + " 공구 세금계산서가 확인됐어요 · 지급 예정일에 입금돼요"));
     }
 
+    @Transactional(readOnly = true)
     public void taxInvoiceRejected(Long settlementId) {
         stub("CREATOR", "TAX_INVOICE_REJECTED", settlementId);
+        load(settlementId, s -> toCreator(s, NotificationType.TAX_INVOICE_REJECTED, NotificationActorType.OPERATOR,
+                null, title(s) + " 공구 세금계산서 승인번호가 반려됐어요 · 다시 입력해 주세요"));
     }
 
     /** 차감 발생 — 해당 측 「다음 정산에서 {amount}원이 차감됩니다」(§41-7 사전 고지). */
+    @Transactional(readOnly = true)
     public void clawbackRegistered(Long originSettlementId, String clawbackNumber) {
         stub("BOTH", "CLAWBACK_REGISTERED:" + clawbackNumber, originSettlementId);
+        load(originSettlementId, s -> {
+            toBrand(s, NotificationType.CLAWBACK_APPLIED, NotificationActorType.SYSTEM, null,
+                    "「" + title(s) + "」 구매확정 후 환불이 생겨 다음 정산에서 차감됩니다");
+            toCreator(s, NotificationType.CLAWBACK_APPLIED, NotificationActorType.PLATFORM, null,
+                    title(s) + " 공구에서 구매확정 후 환불이 생겨 다음 정산 리워드에서 차감돼요");
+        });
     }
 
     // ------------------------------------------------------------------ 조정 협의(이슈 스레드 설계서 8-2)
 
+    @Transactional(readOnly = true)
     public void adjustmentRequested(Long settlementId, String to) {
         stub(to, "ADJUSTMENT_REQUESTED", settlementId);
+        load(settlementId, s -> {
+            if ("SELLER".equals(to) || "BRAND".equals(to)) {
+                toBrand(s, NotificationType.ADJUSTMENT_REQUESTED, NotificationActorType.CREATOR, s.getCreator().getShowroomName(),
+                        "「" + title(s) + "」 정산 조정을 요청했습니다 — 내 응답이 필요합니다");
+            } else {
+                toCreator(s, NotificationType.ADJUSTMENT_REQUESTED, NotificationActorType.BRAND, s.getMarket().getMarketName(),
+                        title(s) + " 공구 정산 조정을 요청했어요 · 응답해 주세요");
+            }
+        });
     }
 
+    @Transactional(readOnly = true)
     public void adjustmentCountered(Long settlementId, String to) {
         stub(to, "ADJUSTMENT_COUNTERED", settlementId);
+        load(settlementId, s -> {
+            if ("SELLER".equals(to) || "BRAND".equals(to)) {
+                toBrand(s, NotificationType.ADJUSTMENT_COUNTERED, NotificationActorType.CREATOR, s.getCreator().getShowroomName(),
+                        "「" + title(s) + "」 정산 조정에 다른 금액을 제안했습니다");
+            } else {
+                toCreator(s, NotificationType.ADJUSTMENT_COUNTERED, NotificationActorType.BRAND, s.getMarket().getMarketName(),
+                        title(s) + " 공구 정산 조정에 다른 금액을 제안했어요");
+            }
+        });
     }
 
+    @Transactional(readOnly = true)
     public void adjustmentRejected(Long settlementId, String to) {
         stub(to, "ADJUSTMENT_REJECTED", settlementId);
+        load(settlementId, s -> {
+            if ("SELLER".equals(to) || "BRAND".equals(to)) {
+                toBrand(s, NotificationType.ADJUSTMENT_REJECTED, NotificationActorType.CREATOR, s.getCreator().getShowroomName(),
+                        "「" + title(s) + "」 정산 조정 제안에 반대했습니다");
+            } else {
+                toCreator(s, NotificationType.ADJUSTMENT_REJECTED, NotificationActorType.BRAND, s.getMarket().getMarketName(),
+                        title(s) + " 공구 정산 조정 제안에 반대했어요");
+            }
+        });
     }
 
+    @Transactional(readOnly = true)
     public void adjustmentAgreed(Long settlementId) {
         stub("BOTH", "ADJUSTMENT_AGREED", settlementId);
+        load(settlementId, s -> {
+            toBrand(s, NotificationType.ADJUSTMENT_AGREED, NotificationActorType.SYSTEM, null, "「" + title(s) + "」 정산 조정이 합의되었습니다");
+            toCreator(s, NotificationType.ADJUSTMENT_AGREED, NotificationActorType.PLATFORM, null, title(s) + " 공구 정산 조정이 합의됐어요");
+        });
     }
 
+    @Transactional(readOnly = true)
     public void adjustmentDeadlineD1(Long settlementId) {
         stub("BOTH", "ADJUSTMENT_DEADLINE_D1", settlementId);
+        load(settlementId, s -> {
+            toBrand(s, NotificationType.ADJUSTMENT_DEADLINE_D1, NotificationActorType.SYSTEM, null, "「" + title(s) + "」 정산 조정 합의 기한이 내일입니다");
+            toCreator(s, NotificationType.ADJUSTMENT_DEADLINE_D1, NotificationActorType.PLATFORM, null, title(s) + " 공구 정산 조정 합의 기한이 내일이에요");
+        });
     }
 
+    @Transactional(readOnly = true)
     public void adjustmentExpired(Long settlementId) {
         stub("BOTH", "ADJUSTMENT_EXPIRED", settlementId);
+        load(settlementId, s -> {
+            toBrand(s, NotificationType.ADJUSTMENT_EXPIRED, NotificationActorType.SYSTEM, null, "「" + title(s) + "」 정산 조정 합의 기한이 지나 원래 금액으로 확정되었습니다");
+            toCreator(s, NotificationType.ADJUSTMENT_EXPIRED, NotificationActorType.PLATFORM, null, title(s) + " 공구 정산 조정 합의 기한이 지나 원래 금액으로 확정됐어요");
+        });
     }
 
     private static void stub(String to, String event, Long settlementId) {
         log.info("[settlement-notify:stub] to={} event={} settlementId={}", to, event, settlementId);
+    }
+
+    // ------------------------------------------------------------------ 알림함(1017 설계서 1-4 · 1-5)
+
+    private void load(Long settlementId, java.util.function.Consumer<Settlement> action) {
+        try {
+            settlementRepository.findById(settlementId).ifPresent(action);
+        } catch (RuntimeException e) {
+            log.warn("정산 알림 조립 실패 - settlementId: {}", settlementId, e);
+        }
+    }
+
+    private void toBrand(Settlement s, NotificationType type, NotificationActorType actor, String actorName, String title) {
+        publisher.publish(NotificationCommand.toSeller(s.getMarketId(), type).actorType(actor).actorName(actorName)
+                .title(title).targetType(target(type)).targetId(s.getId()).build());
+    }
+
+    private void toCreator(Settlement s, NotificationType type, NotificationActorType actor, String actorName, String title) {
+        publisher.publish(NotificationCommand.toCreator(s.getCreatorId(), type).actorType(actor).actorName(actorName)
+                .title(title).targetType(target(type)).targetId(s.getId()).build());
+    }
+
+    private static NotificationTargetType target(NotificationType type) {
+        return type.name().startsWith("ADJUSTMENT_") ? NotificationTargetType.ADJUSTMENT : NotificationTargetType.SETTLEMENT;
+    }
+
+    private static String title(Settlement s) {
+        String title = s.getContract() == null ? null : s.getContract().getTitle();
+        return title == null || title.isBlank() ? s.getSettlementNumber() : title;
     }
 }

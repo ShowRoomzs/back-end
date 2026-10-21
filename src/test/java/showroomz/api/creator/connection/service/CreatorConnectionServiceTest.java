@@ -1,5 +1,7 @@
 package showroomz.api.creator.connection.service;
 
+import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.notification.service.NotificationPublisher;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +41,10 @@ class CreatorConnectionServiceTest {
 
     private static final String CREATOR_EMAIL = "soyeon@showroomz.co.kr";
     private static final long CREATOR_ID = 12L;
+
+    /** 1017 알림함 — 발생 지점이 알림을 낸다(내용 검증은 통합 테스트). */
+    @Mock
+    private NotificationPublisher notificationPublisher;
 
     @Mock
     private ConnectionRepository connectionRepository;
@@ -165,6 +171,7 @@ class CreatorConnectionServiceTest {
         Connection connection = requestedPair();
         givenAuthenticatedCreator();
         given(connectionRepository.findById(1L)).willReturn(Optional.of(connection));
+        given(messageThreadService.activateThread(connection)).willReturn(MessageThread.openFor(connection));
 
         creatorConnectionService.accept(CREATOR_EMAIL, 1L);
 

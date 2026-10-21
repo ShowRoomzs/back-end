@@ -1,5 +1,11 @@
 package showroomz.api.admin.inquiry.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationImageKind;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -41,6 +47,7 @@ public class AdminInquiryService {
     private final OneToOneInquiryRepository inquiryRepository;
     /** 답변 기한 — 시안(어드민 00 · 21) 24시간. 홈 「기한 초과」와 같은 값이다(1017 설계서 6-0 ⑤). */
     private final AdminProperties adminProperties;
+    private final NotificationPublisher notificationPublisher;
     private final AdminInquiryQueryRepository inquiryQueryRepository;
     private final SellerRepository sellerRepository;
 
@@ -125,6 +132,11 @@ public class AdminInquiryService {
         }
 
         inquiry.registerAnswer(request.getContent().trim(), operatorId);
+        // 소비자 알림 「문의하신 내용에 답변이 등록됐어요」(C11) — 1:1 문의 상세로 간다.
+        notificationPublisher.publish(NotificationCommand.toUser(inquiry.getUser().getId(), NotificationType.INQUIRY_ANSWERED)
+                .actorType(NotificationActorType.OPERATOR).title("문의하신 내용에 답변이 등록됐어요").emphasis("답변")
+                .imageKind(NotificationImageKind.ICON)
+                .targetType(NotificationTargetType.INQUIRY).targetId(inquiry.getId()).targetSub("ONE_TO_ONE").build());
 
         return AdminInquiryDto.AnswerResponse.builder()
                 .inquiryId(inquiry.getId())

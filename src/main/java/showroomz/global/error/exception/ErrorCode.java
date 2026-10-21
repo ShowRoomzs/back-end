@@ -146,6 +146,8 @@ public enum ErrorCode {
     INQUIRY_DELETE_NOT_REQUESTED(HttpStatus.BAD_REQUEST, "INQUIRY_DELETE_NOT_REQUESTED", "삭제 요청이 없는 문의입니다."),
     INQUIRY_DELETE_REASON_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "기타(직접 입력) 사유는 상세 설명이 필요합니다."),
     INQUIRY_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_DELETED", "이미 삭제된 문의입니다."),
+    // 1017 알림함
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_NOT_FOUND", "존재하지 않는 알림입니다."),
 
     /* 12. 쿠폰 (Coupon)
      */

@@ -85,6 +85,7 @@ public class GroupBuyTerminator {
         if (extensionRequestRepository.expirePending(id, now) > 0) {
             extensionRequestRepository.findByGroupBuyId(id).ifPresent(extension -> extension.applyExpired(now));
             historyRecorder.recordBySystem(groupBuy, GroupBuyEventType.EXTENSION_EXPIRED, null, t.endedAt());
+            notifier.notifySeller(groupBuy, "EXTENSION_EXPIRED");
         }
         // 검토 중 요청 → LAPSED. 빠뜨리면 조치 큐가 0이 되지 않는다.
         changeRequestRepository.findByGroupBuyIdOrderByRequestedAtDescIdDesc(id).stream()

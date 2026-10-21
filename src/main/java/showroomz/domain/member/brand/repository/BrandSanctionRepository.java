@@ -14,6 +14,9 @@ public interface BrandSanctionRepository extends JpaRepository<BrandSanction, Lo
     /** 열린 정지 — 마켓당 최대 1건(52 설계서 1-2). */
     Optional<BrandSanction> findByMarketIdAndReleasedAtIsNull(Long marketId);
 
+    /** 가장 최근 정지 — 알림이 정지 · 해제 카드 위치를 찾는다. */
+    Optional<BrandSanction> findFirstByMarketIdOrderBySuspendedAtDesc(Long marketId);
+
     boolean existsByMarketIdAndReleasedAtIsNull(Long marketId);
 
     /** 지급 정지가 걸린 열린 정지가 있는가 — 정산 포트 {@code PayoutHoldReader}. */
