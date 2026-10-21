@@ -548,4 +548,15 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "          AND t.source = showroomz.domain.order.type.RefundTaskSource.RETURN_COMPLETED "
             + "          AND t.status = showroomz.domain.order.type.RefundTaskStatus.DONE))))")
     long countUnclosedByMarket(@Param("marketId") Long marketId);
+
+    /**
+     * 파트너 홈 달력 「발송 기한」(1017 설계서 4-3) — [공구 id, 발송기한]. 기한은 공구 종료 사건에서 일괄 계산되므로 공구당 1~2개다.
+     * 결제된 하위주문 중 취소되지 않은 것만 본다.
+     */
+    @Query("SELECT DISTINCT g.groupBuy.id, g.shipDueAt FROM OrderDeliveryGroup g WHERE g.market.id = :marketId "
+            + "AND g.order.paidAt IS NOT NULL AND g.groupBuy IS NOT NULL "
+            + "AND g.fulfillmentStatus <> showroomz.domain.order.type.FulfillmentStatus.CANCELLED "
+            + "AND g.shipDueAt >= :from AND g.shipDueAt < :to")
+    List<Object[]> findShipDueForMarket(@Param("marketId") Long marketId, @Param("from") LocalDateTime from,
+                                        @Param("to") LocalDateTime to);
 }

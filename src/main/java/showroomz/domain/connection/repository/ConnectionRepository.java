@@ -130,4 +130,10 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "AND c.status IN (showroomz.domain.connection.type.ConnectionStatus.CONNECTED, " +
            "                 showroomz.domain.connection.type.ConnectionStatus.DISCONNECTED)")
     Page<Connection> findPairsForAdminByMarket(@Param("marketId") Long marketId, Pageable pageable);
+
+    /** 파트너 홈 첫 공구 가이드 H3a 「○○와 연결되었습니다」(1017 설계서 4-1) — 가장 최근에 연결된 쇼룸부터. */
+    @Query("SELECT c FROM Connection c JOIN FETCH c.creator WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.market.id = :marketId AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED " +
+           "ORDER BY c.respondedAt DESC, c.id DESC")
+    List<Connection> findLatestConnectedPairsByMarket(@Param("marketId") Long marketId, Pageable pageable);
 }

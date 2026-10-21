@@ -153,6 +153,11 @@ public class SellerClaimQueryService {
                 tabCounts, typeCounts);
     }
 
+    /** 검수 기한 경과만 — 파트너 홈 「입고·검수 지연」(1017 설계서 4-1). KPI {@code overdue} 는 회수 대기 방치를 합산한다. */
+    public long countInspectOverdue(Long marketId) {
+        return claimRepository.countInspectOverdueByMarket(marketId, LocalDateTime.now());
+    }
+
     public SellerClaimDetailResponse getClaim(String sellerEmail, Long claimId) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         OrderClaim claim = claimRepository.findOwned(claimId, scope.market().getId())

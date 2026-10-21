@@ -19,6 +19,9 @@ public record SellerOrderSearchCondition(
         LocalDateTime to,
         OrderSearchType searchType,
         String keyword,
-        OrderSortType sort
+        OrderSortType sort,
+        /** 발송 기한 경과만(1017 설계서 4-1 · 홈 「발송 기한 경과」 진입) — 신규 · 상품준비중이고 {@code ship_due_at < now}. */
+        boolean shipOverdueOnly,
+        LocalDateTime now
 ) {
 }

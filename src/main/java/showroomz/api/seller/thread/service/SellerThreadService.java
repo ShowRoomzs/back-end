@@ -96,12 +96,14 @@ public class SellerThreadService {
 
     /** GNB 배지용 — 폴링 대상(§0)이라 스레드 수와 무관하게 쿼리 2회로 고정한다. */
     public ThreadSummaryResponse getSummary(String sellerEmail) {
-        Market market = getMyMarket(sellerEmail);
+        return new ThreadSummaryResponse(countUnread(getMyMarket(sellerEmail)));
+    }
+
+    /** 안 읽은 메시지 합 — 파트너 GNB 배지 API(1017 설계서 4-7)도 이 값을 쓴다. */
+    public long countUnread(Market market) {
         List<Long> threadIds = messageThreadRepository
                 .findOpenThreadIdsForMarket(market, ThreadStatus.OPEN);
-
-        long total = messageThreadService.sumUnread(threadIds, ParticipantType.SELLER, market.getId());
-        return new ThreadSummaryResponse(total);
+        return messageThreadService.sumUnread(threadIds, ParticipantType.SELLER, market.getId());
     }
 
     /** §3-4 커서 페이징 — size+1개를 조회해 hasNext를 판정한다(별도 count 쿼리 없이). */

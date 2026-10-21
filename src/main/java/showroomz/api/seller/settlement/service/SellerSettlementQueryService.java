@@ -17,6 +17,7 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.repository.OrderClaimCollectionRepository;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimType;
+import showroomz.domain.settlement.adjustment.repository.SettlementAdjustmentRepository;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementItem;
 import showroomz.domain.settlement.entity.SettlementPayout;
@@ -70,6 +71,7 @@ public class SellerSettlementQueryService {
     private final SellerSettlementBlocks blocks;
     private final SettlementTaxDocumentRepository taxDocumentRepository;
     private final SettlementTaxDocumentService taxDocumentService;
+    private final SettlementAdjustmentRepository adjustmentRepository;
 
     // ------------------------------------------------------------------ 목록(2-2)
 
@@ -118,7 +120,11 @@ public class SellerSettlementQueryService {
     // ------------------------------------------------------------------ 요약(2-3)
 
     public SellerSettlementDto.Summary getSummary(String sellerEmail) {
-        Market market = accessGuard.resolveMarket(sellerEmail);
+        return summarize(accessGuard.resolveMarket(sellerEmail));
+    }
+
+    /** 요약 — 파트너 홈 정산 카드(1017 설계서 4-1)도 같은 값을 쓴다. */
+    public SellerSettlementDto.Summary summarize(Market market) {
         LocalDateTime now = LocalDateTime.now();
         Map<SettlementStatus, Long> counts = SettlementPartyViews.partyStatusCounts(
                 settlementRepository.countByStatusForMarket(market.getId()));
@@ -150,7 +156,12 @@ public class SellerSettlementQueryService {
                 new SettlementPartyDto.StatusCounts(counts.get(SettlementStatus.REVIEWING),
                         counts.get(SettlementStatus.ADJUSTING), counts.get(SettlementStatus.PAYOUT_SCHEDULED),
                         counts.get(SettlementStatus.PAID)),
-                reviewing);
+                reviewing, countAdjustmentMyTurn(market.getId()));
+    }
+
+    /** 조정 협의 「내 응답 필요」 — 최신 제안이 응답 대기이고 제안자가 인플루언서인 열린 협의(1017 설계서 4-1 · 4-7). */
+    public long countAdjustmentMyTurn(Long marketId) {
+        return adjustmentRepository.countSellerTurn(marketId);
     }
 
     // ------------------------------------------------------------------ 상세(2-4)

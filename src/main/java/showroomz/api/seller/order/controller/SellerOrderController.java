@@ -58,9 +58,10 @@ public class SellerOrderController implements SellerOrderControllerDocs {
             @RequestParam(value = "searchType", required = false) OrderSearchType searchType,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "sort", required = false) OrderSortType sort,
+            @RequestParam(value = "shipOverdue", defaultValue = "false") boolean shipOverdue,
             @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(queryService.getOrders(getCurrentSellerEmail(), tab, dateBasis, from, to, searchType,
-                keyword, sort, pagingRequest));
+                keyword, sort, shipOverdue, pagingRequest));
     }
 
     @Override

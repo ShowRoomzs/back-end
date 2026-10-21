@@ -184,10 +184,14 @@ public class SellerGroupBuyQueryService {
             tabCounts.put(tab.name(), tab.getStatuses().stream().mapToLong(s -> byStatus.getOrDefault(s, 0L)).sum());
         }
 
-        long actionRequired = groupBuyRepository.countStockConfirmationPending(marketId)
-                + adminSuspensionRepository.countAppealable(marketId, LocalDateTime.now());
+        return new GroupBuySummaryResponse(tabCounts, countActionRequired(marketId));
+    }
+
+    /** GNB 배지 — 최소 물량 확인 대기 + 소명 가능한 운영자 중단. 파트너 GNB 배지 API(1017 설계서 4-7)도 이 값을 쓴다. */
+    public long countActionRequired(Long marketId) {
         // 이행 확인 대기는 세지 않는다 — 이행 확인 폐기(2026-10-06).
-        return new GroupBuySummaryResponse(tabCounts, actionRequired);
+        return groupBuyRepository.countStockConfirmationPending(marketId)
+                + adminSuspensionRepository.countAppealable(marketId, LocalDateTime.now());
     }
 
     /**

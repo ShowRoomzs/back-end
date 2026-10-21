@@ -55,6 +55,12 @@ public class SellerInquiryService {
     private final MarketRepository marketRepository;
     private final SellerInquiryQueryRepository sellerInquiryQueryRepository;
 
+    /** 답변 대기(노출 정상) — 목록의 {@code waitingCount}와 같은 수. 파트너 홈 · GNB 배지(1017 설계서 4-1 · 4-7). */
+    @Transactional(readOnly = true)
+    public long countWaiting(Long marketId) {
+        return sellerInquiryQueryRepository.countByStatus(marketId).get(SellerInquiryStatusFilter.WAITING);
+    }
+
     @Transactional(readOnly = true)
     public SellerInquiryListResponse getMarketInquiries(
             String sellerEmail,

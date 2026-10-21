@@ -9,6 +9,7 @@ import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.seller.entity.Seller;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -99,6 +100,10 @@ public class Market {
     @Column(name = "exchange_fee", nullable = false)
     private Integer exchangeFee = 6000;
 
+    /** 파트너 홈 첫 공구 가이드 숨김 시각(1017 설계서 4-4) — null 이면 보인다. 첫 공구가 오픈되면 숨김과 무관하게 사라진다. */
+    @Column(name = "home_guide_hidden_at")
+    private LocalDateTime homeGuideHiddenAt;
+
     public Market(Seller seller, String marketName, String csNumber) {
         this.seller = seller;
         this.marketName = marketName;
@@ -148,6 +153,11 @@ public class Market {
 
     public void clearSnsLinks() {
         this.snsLinks.clear();
+    }
+
+    /** 홈 가이드 숨김 — 다시 켜는 UI 는 없지만 {@code false} 도 받는다(null 로 되돌림). */
+    public void updateHomeGuideHidden(boolean hidden, LocalDateTime now) {
+        this.homeGuideHiddenAt = hidden ? now : null;
     }
 
     public void updateAdminMemo(String adminMemo) {

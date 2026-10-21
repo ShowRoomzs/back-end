@@ -1,5 +1,6 @@
 package showroomz.domain.contract.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -288,4 +289,25 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     @Query("UPDATE Contract c SET c.sanctionHoldParty = :party WHERE c.id = :contractId")
     int narrowHold(@Param("contractId") Long contractId,
                    @Param("party") showroomz.domain.contract.type.SanctionHoldParty party);
+
+    /** 파트너 홈 「내 서명 필요」(1017 설계서 4-1) — 상대만 서명을 마친 서명 진행중. {@link #countActionRequired}의 서명 쪽 절반. */
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING "
+            + "AND c.creatorSignedAt IS NOT NULL AND c.brandSignedAt IS NULL")
+    long countSigningAwaitingBrand(@Param("marketId") Long marketId);
+
+    /** 파트너 홈 「계약 진행」(1017 설계서 4-1) — 체결 전 진행 상태 · 공구 시작일 순. 상대 쇼룸을 함께 읽는다. */
+    @Query("SELECT c FROM Contract c JOIN FETCH c.creator WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "AND c.status IN :statuses ORDER BY c.groupBuyStartAt ASC, c.id ASC")
+    List<Contract> findInProgressForMarket(@Param("marketId") Long marketId,
+                                           @Param("statuses") Collection<ContractStatus> statuses,
+                                           Pageable pageable);
+
+    /** 파트너 홈 달력 「서명 기한」(1017 설계서 4-3) — 서명 진행중 · 정지 보류 아님(보류 중이면 기한이 멈춰 있다). */
+    @Query("SELECT c FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING AND c.sanctionHoldSince IS NULL "
+            + "AND c.signatureDeadlineAt >= :from AND c.signatureDeadlineAt < :to "
+            + "ORDER BY c.signatureDeadlineAt ASC, c.id ASC")
+    List<Contract> findSignatureDeadlinesForMarket(@Param("marketId") Long marketId, @Param("from") LocalDateTime from,
+                                                   @Param("to") LocalDateTime to);
 }

@@ -211,4 +211,32 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
             + "AND g.fulfillmentStatus <> showroomz.domain.order.type.FulfillmentStatus.PENDING "
             + "ORDER BY op.id ASC")
     List<PerformanceSourceRow> findPerformanceSourceByGroupBuy(@Param("groupBuyId") Long groupBuyId);
+
+    // ── 1017 홈 실시간(설계서 4-2 · 5-2) ──────────────────────────────────────
+
+    /**
+     * 결제 기준 줄 — [주문 id, 결제 시각, 금액(판매가 × 수량)]. <b>취소 전 포함</b>(결제된 순간을 센다 · 파트너 홈 실시간).
+     * 확정 성과(취소 · 반품 반영)는 성과 관리 몫이다. 오늘 · 어제 같은 시각 · 시간대 버킷은 호출자가 나눈다.
+     */
+    @Query("SELECT o.id, o.paidAt, op.price * op.quantity FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.paidAt IS NOT NULL AND o.paidAt >= :from AND o.paidAt < :to")
+    List<Object[]> findPaidLines(@Param("groupBuyId") Long groupBuyId, @Param("from") LocalDateTime from,
+                                 @Param("to") LocalDateTime to);
+
+    /** 결제 기준 누적 — [주문 수, 금액, 수량]. {@link #findPaidLines}와 같은 정의(취소 전 포함)의 합계판. */
+    @Query("SELECT COUNT(DISTINCT o.id), COALESCE(SUM(op.price * op.quantity), 0), COALESCE(SUM(op.quantity), 0) "
+            + "FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.paidAt IS NOT NULL AND o.paidAt >= :from AND o.paidAt < :to")
+    List<Object[]> sumPaid(@Param("groupBuyId") Long groupBuyId, @Param("from") LocalDateTime from,
+                           @Param("to") LocalDateTime to);
+
+    /** 취소 · 반품 반영 판매 실적의 기간판 — [주문 수, 금액]. 스튜디오 실시간 띠 「오늘 +」(공구 관리 잠정 실적과 같은 정의). */
+    @Query("SELECT COUNT(DISTINCT op.order.id), COALESCE(SUM(op.price * (op.quantity - op.returnedQuantity)), 0) "
+            + "FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses AND o.paidAt >= :since "
+            + "AND op.status NOT IN (showroomz.domain.order.type.OrderProductStatus.CANCELLED, "
+            + "showroomz.domain.order.type.OrderProductStatus.RETURNED)")
+    List<Object[]> sumSalesByGroupBuySince(@Param("groupBuyId") Long groupBuyId,
+                                           @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses,
+                                           @Param("since") LocalDateTime since);
 }

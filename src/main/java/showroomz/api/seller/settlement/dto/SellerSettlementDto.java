@@ -70,7 +70,9 @@ public final class SellerSettlementDto {
             @Schema(description = "가장 임박한 확인 마감", nullable = true) LocalDateTime reviewingDueAt,
             long adjustingCount,
             SettlementPartyDto.StatusCounts statusCounts,
-            @Schema(description = "GNB 배지 = 요청 가능 창이 열린 정산 확인 중 — 조정 협의 「내 응답 필요」는 연결·소통 배지가 센다") long attentionCount
+            @Schema(description = "GNB 배지 = 요청 가능 창이 열린 정산 확인 중 — 조정 협의 「내 응답 필요」는 연결·소통 배지가 센다") long attentionCount,
+            @Schema(description = "조정 협의 「내 응답 필요」 — 인플루언서가 보낸 제안이 응답 대기인 열린 협의 수(홈 정산 카드 · `GET /v1/seller/badges` 의 settlements)",
+                    example = "1") long adjustmentMyTurnCount
     ) {
     }
 

@@ -24,7 +24,10 @@ public record SellerOrderSummaryResponse(
             @Schema(description = "입고 확인 — 반품·교환의 검수 단계(브랜드 도착 · 입고 확인 후 검수 대기) 클레임 건수", example = "4")
             long incomingCheck,
             @Schema(description = "재발송·교환 — 재발송 송장을 기다리는(재발송 대기) 클레임 건수. 교환 새 상품 + 거절 반송", example = "2")
-            long reshipExchange
+            long reshipExchange,
+            @Schema(description = "발송 기한 경과 — 신규 · 상품준비중 중 발송기한이 지난 건(취소 요청 건 포함). 준비 시작 · 송장 등록 칸에 이미 든 건이라 "
+                    + "따로 더하지 않는다. 0이면 경고 톤을 뺀다 · 진입 `tab=ALL&shipOverdue=true`", example = "1")
+            long shipOverdue
     ) {
     }
 }

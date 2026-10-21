@@ -62,7 +62,8 @@ final class SellerSettlementDocsExamples {
               "reviewingDueAt": null,
               "adjustingCount": 1,
               "statusCounts": {"REVIEWING": 0, "ADJUSTING": 1, "PAYOUT_SCHEDULED": 2, "PAID": 3},
-              "attentionCount": 0
+              "attentionCount": 0,
+              "adjustmentMyTurnCount": 1
             }
             """;
 
@@ -76,7 +77,8 @@ final class SellerSettlementDocsExamples {
               "reviewingDueAt": "2026-10-13T23:59:59",
               "adjustingCount": 0,
               "statusCounts": {"REVIEWING": 1, "ADJUSTING": 0, "PAYOUT_SCHEDULED": 0, "PAID": 0},
-              "attentionCount": 1
+              "attentionCount": 1,
+              "adjustmentMyTurnCount": 0
             }
             """;
 

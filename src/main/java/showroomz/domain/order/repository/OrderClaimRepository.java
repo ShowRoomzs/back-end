@@ -407,4 +407,9 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     @Query("SELECT COUNT(c) FROM OrderClaim c WHERE c.deliveryGroup.groupBuy.id = :groupBuyId "
             + "AND c.type = showroomz.domain.order.type.ClaimType.RETURN AND c.result IS NULL")
     long countOpenReturnsForGroupBuy(@Param("groupBuyId") Long groupBuyId);
+
+    /** 파트너 홈 「입고·검수 지연」(1017 설계서 4-1) — 마켓의 검수 기한 경과만(회수 지연은 따로). */
+    @Query("SELECT COUNT(c) FROM OrderClaim c WHERE c.marketId = :marketId "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now")
+    long countInspectOverdueByMarket(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
 }

@@ -107,6 +107,9 @@ public interface SellerOrderControllerDocs {
             @Parameter(description = "정렬 — OLDEST_FIRST(작업 큐 기본) · LATEST_FIRST(조회 탭 기본) · SHIP_DUE_ASC(발송기한 빠른순)",
                     example = "OLDEST_FIRST")
             @RequestParam(required = false) OrderSortType sort,
+            @Parameter(description = "발송 기한 경과만 — 신규 · 상품준비중 중 발송기한이 지난 건(홈 「발송 기한 경과」 진입 · `tab=ALL&shipOverdue=true`)",
+                    example = "false")
+            @RequestParam(required = false) boolean shipOverdue,
             @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
@@ -124,6 +127,8 @@ public interface SellerOrderControllerDocs {
                     - `incomingCheck` · `reshipExchange`는 반품·교환 **클레임(항목) 건수**다 — 하위주문 수가 아니다.
                       `incomingCheck` = 검수 단계(브랜드 도착 + 입고 확인 후 검수 대기), `reshipExchange` = 재발송 대기.
                       각각 `GET /v1/seller/claims/summary` 의 `tabCounts.INSPECTION` · `tabCounts.RESHIP` 과 같은 수다.
+                    - `shipOverdue` = 신규 · 상품준비중 중 발송기한이 지난 건(취소 요청 건 포함) — 위 칸들에 이미 든 건이라 따로 더하지 않는다.
+                      목록 진입은 `tab=ALL&shipOverdue=true`(파트너 홈 「발송 기한 경과」).
                     - 「배송완료 처리」 칸은 없다 — 자동 전환이라 상시 대기 항목이 아니다.
                     """)
     @ApiResponses({
@@ -136,7 +141,8 @@ public interface SellerOrderControllerDocs {
                                         "invoiceRegister": 7,
                                         "deliveryIssue": 3,
                                         "incomingCheck": 4,
-                                        "reshipExchange": 2
+                                        "reshipExchange": 2,
+                                        "shipOverdue": 1
                                       },
                                       "tabCounts": {
                                         "ALL": 128, "NEW": 12, "PREPARING": 7, "CANCEL_REQUESTED": 2, "SHIPPING": 21,
