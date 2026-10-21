@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.service.AuthService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
@@ -53,6 +54,7 @@ public class CreatorAuthService {
     private final AuthTokenProvider tokenProvider;
     private final PersonalDataCipher personalDataCipher;
     private final OperatorChannelService operatorChannelService;
+    private final UserRefreshTokenRepository userRefreshTokenRepository;
 
     @Transactional
     public TokenResponse socialLogin(HttpServletRequest request, SocialLoginRequest socialLoginRequest) {
@@ -325,5 +327,18 @@ public class CreatorAuthService {
         if (creatorRepository.existsByShowroomName(showroomName)) {
             throw new BusinessException(ErrorCode.DUPLICATE_SHOWROOM_NAME);
         }
+    }
+
+    /**
+     * 스튜디오 로그아웃(1017 설계서 5-4) — 이 세션의 refresh token 만 폐기한다. 인플루언서 로그인도 소비자 계정 refresh token 을 쓰므로
+     * {@code /v1/user/auth/logout} 과 같은 저장소다. <b>앱 기기 푸시 토큰은 건드리지 않는다</b> — 스튜디오(웹)에서 로그아웃했다고
+     * 소비자 앱 알림이 끊기면 안 된다. 토큰이 없거나 이미 폐기된 경우에도 성공으로 본다(멱등).
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN_LOGOUT);
+        }
+        userRefreshTokenRepository.deleteByRefreshToken(refreshToken);
     }
 }

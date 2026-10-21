@@ -17,6 +17,7 @@ import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PaginationInfo;
+import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -34,12 +35,12 @@ import java.util.Map;
 public class AdminInquiryService {
 
     /** SLA 초과 기준 — 경과 3일 (§17-6) */
-    private static final long SLA_DAYS = 3;
-
     private static final DateTimeFormatter INQUIRY_NUMBER_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final String UNKNOWN_OPERATOR = "운영자";
 
     private final OneToOneInquiryRepository inquiryRepository;
+    /** 답변 기한 — 시안(어드민 00 · 21) 24시간. 홈 「기한 초과」와 같은 값이다(1017 설계서 6-0 ⑤). */
+    private final AdminProperties adminProperties;
     private final AdminInquiryQueryRepository inquiryQueryRepository;
     private final SellerRepository sellerRepository;
 
@@ -216,7 +217,8 @@ public class AdminInquiryService {
         if (inquiry.isAnswered()) {
             return false;
         }
-        return Duration.between(inquiry.getCreatedAt(), now).compareTo(Duration.ofDays(SLA_DAYS)) > 0;
+        return Duration.between(inquiry.getCreatedAt(), now)
+                .compareTo(Duration.ofHours(adminProperties.getInquirySlaHours())) > 0;
     }
 
     /** INQ-YYYYMMDD-NNN — NNN은 접수 일자 내 순번 (§17-3) */

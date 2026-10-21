@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
+import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
@@ -368,4 +369,22 @@ public interface CreatorAuthControllerDocs {
     ResponseEntity<TokenResponse> completeRegistration(
             HttpServletRequest request,
             @Valid @RequestBody CreatorCompleteRegistrationRequest registrationRequest);
+
+    @Operation(
+            summary = "로그아웃(쇼룸 스튜디오)",
+            description = """
+                    탑바 [로그아웃](ui-studio-14) — 확인 모달 없이 바로 로그인 화면으로 갑니다. 요청한 refresh token 만 폐기합니다.
+
+                    소비자 앱의 기기 푸시 토큰은 건드리지 않습니다(같은 사람이 앱에서는 로그인 상태일 수 있다). 이미 폐기된 토큰도 204 입니다.
+
+                    **권한:** CREATOR"""
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "로그아웃 완료"),
+            @ApiResponse(responseCode = "400", description = "refresh token 누락",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"MISSING_REFRESH_TOKEN_LOGOUT\"}")))
+    })
+    @SecurityRequirement(name = "Authorization")
+    ResponseEntity<Void> logout(@RequestBody RefreshTokenRequest refreshRequest);
 }
