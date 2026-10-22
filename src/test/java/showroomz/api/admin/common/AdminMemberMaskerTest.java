@@ -72,4 +72,20 @@ class AdminMemberMaskerTest {
         assertThat(AdminMemberMasker.maskAccountNumber(null)).isNull();
         assertThat(AdminMemberMasker.maskAccountNumber(" ")).isNull();
     }
+
+    @Test
+    @DisplayName("[53/DT-09] 경계 — 자릿수가 모자란 값은 null · 해제 표기는 자릿수가 다르면 원문(값을 지어내지 않는다)")
+    void boundaries() {
+        assertThat(AdminMemberMasker.maskName("  김지민 ")).isEqualTo("김*민");
+        assertThat(AdminMemberMasker.maskPhone("01012")).isNull();
+        assertThat(AdminMemberMasker.maskBirthdayYearOnly("199")).isNull();
+        assertThat(AdminMemberMasker.maskBirthdayYearOnly("19940602")).isEqualTo("1994.**.**");
+
+        assertThat(AdminMemberMasker.formatBirthday("19940602")).isEqualTo("1994.06.02");
+        assertThat(AdminMemberMasker.formatBirthday("1994-6-2")).isEqualTo("1994-6-2");
+        assertThat(AdminMemberMasker.formatPhone("01033918842")).isEqualTo("010-3391-8842");
+        assertThat(AdminMemberMasker.formatPhone("0212345678")).isEqualTo("021-234-5678");
+        assertThat(AdminMemberMasker.formatPhone("010-3391-8842")).isEqualTo("010-3391-8842");
+        assertThat(AdminMemberMasker.formatPhone(null)).isNull();
+    }
 }

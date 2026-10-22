@@ -10,6 +10,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import showroomz.api.seller.auth.DTO.SellerCompleteRegistrationRequest;
 
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -103,6 +104,76 @@ class SellerCompleteRegistrationRequestValidationTest {
     @DisplayName("무료배송 기준금액은 선택값이다 — 비우면 무료배송 없음")
     void freeShippingThresholdOptional() {
         assertThat(validator.validateProperty(new SellerCompleteRegistrationRequest(), "freeShippingThreshold")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("[OB-06] 기본 배송비 -1 은 「기본 배송비는 0 이상이어야 합니다.」 · 0 은 통과")
+    void defaultDeliveryFeeNotNegative() {
+        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
+        request.setDefaultDeliveryFee(-1);
+        assertThat(messages(validator.validateProperty(request, "defaultDeliveryFee")))
+                .containsExactly("기본 배송비는 0 이상이어야 합니다.");
+
+        request.setDefaultDeliveryFee(0);
+        assertThat(validator.validateProperty(request, "defaultDeliveryFee")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("[OV-01] 도서산간 추가비 · 무료배송 기준금액 음수는 각자의 문구로 거부한다")
+    void surchargeAndThresholdNotNegative() {
+        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
+        request.setRemoteAreaSurcharge(-1);
+        request.setFreeShippingThreshold(-1);
+
+        assertThat(messages(validator.validateProperty(request, "remoteAreaSurcharge")))
+                .containsExactly("도서산간 추가비는 0 이상이어야 합니다.");
+        assertThat(messages(validator.validateProperty(request, "freeShippingThreshold")))
+                .containsExactly("무료배송 기준금액은 0 이상이어야 합니다.");
+    }
+
+    @Test
+    @DisplayName("[OV-03] 수취인 이름 — 한글 · 영문 · 공백만 · 이모지 · 특수문자는 거부 · 공백만이면 「입력해 주세요」")
+    void recipientName() {
+        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
+        for (String valid : List.of("김담당", "Kim Dam", "김 Dam")) {
+            request.setRecipientName(valid);
+            assertThat(validator.validateProperty(request, "recipientName")).as(valid).isEmpty();
+        }
+        for (String invalid : List.of("김담당😀", "김담당!", "김담당1")) {
+            request.setRecipientName(invalid);
+            assertThat(messages(validator.validateProperty(request, "recipientName"))).as(invalid)
+                    .containsExactly("수취인 이름은 한글·영문·공백만 입력할 수 있습니다.");
+        }
+        request.setRecipientName("   ");
+        assertThat(messages(validator.validateProperty(request, "recipientName")))
+                .containsExactly("수취인 이름을 입력해 주세요.");
+    }
+
+    @Test
+    @DisplayName("[OV-04] 수취인 연락처 — 010/011/016~019 · 10~11자리 · 하이픈 포함만 통과(§6-3 · 담당자 연락처와 다른 규칙)")
+    void recipientContact() {
+        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
+        for (String valid : List.of("010-1234-5678", "011-123-4567", "016-1234-5678", "019-123-4567")) {
+            request.setContact(valid);
+            assertThat(validator.validateProperty(request, "contact")).as(valid).isEmpty();
+        }
+        for (String invalid : List.of("012-1234-5678", "01012345678", "010-12", "010-1234-56789", "02-123-4567")) {
+            request.setContact(invalid);
+            assertThat(messages(validator.validateProperty(request, "contact"))).as(invalid)
+                    .containsExactly("올바른 휴대폰 번호 형식으로 입력해 주세요. (예: 010-1234-5678)");
+        }
+        request.setContact(null);
+        assertThat(messages(validator.validateProperty(request, "contact")))
+                .containsExactly("수취인 연락처를 입력해 주세요.");
+    }
+
+    @Test
+    @DisplayName("[OV-05] 주소 · 상세 주소를 빼면 각자의 문구")
+    void addressRequired() {
+        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
+
+        assertThat(messages(validator.validateProperty(request, "address"))).containsExactly("주소를 검색해 입력해 주세요.");
+        assertThat(messages(validator.validateProperty(request, "detailAddress"))).containsExactly("상세 주소를 입력해 주세요.");
     }
 
     private static Set<String> messages(Set<ConstraintViolation<SellerCompleteRegistrationRequest>> violations) {

@@ -134,7 +134,9 @@ public interface UserClaimControllerDocs {
                     - `refund`(반품) — 요청 단위. `confirmed` 가 거짓이면 「환불 예정 금액」, 참이면 「환불 금액」.
                       `rejectedAmount` 는 반려돼 환불에서 빠진 상품 금액이다(없으면 null) · 전체 반려면 `amount = 0`
                     - `reshipFee` — 반려된 항목이 있을 때만. `WAITING` 이면 같은 박스의 나머지 검수가 끝나지 않아 결제 여부가
-                      아직 정해지지 않은 것이다(블록을 열지 않는다)
+                      아직 정해지지 않은 것이다(블록을 열지 않는다). `overdue` 가 참이면 결제 기한(`dueDate`)이 지났다 —
+                      「…까지 결제해 주세요」 대신 기한 경과 문구를 그린다(결제는 여전히 된다 · 보관 기한은 `storage`)
+                    - 반품 사유 `reasonLabel` 은 앱 문구다(「상품 파손 · 불량」 · 「오배송」) — 파트너 화면 라벨과 다를 수 있다
                     - 지금 내려가는 버튼은 `WITHDRAW` · `REGISTER_COLLECTION_INVOICE` · `INQUIRY` 다. 회수 조회 · 배송 조회 버튼은
                       그 API 가 생기는 배포에서 켠다
 

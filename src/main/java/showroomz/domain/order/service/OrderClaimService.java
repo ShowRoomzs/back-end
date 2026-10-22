@@ -56,6 +56,7 @@ import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -300,7 +301,7 @@ public class OrderClaimService {
     @Transactional
     public RequestResult openDefectClaimByOperator(Long adminId, Long deliveryGroupId, List<Item> items,
                                                    ClaimReason reason, String detail, List<String> evidenceUrls,
-                                                   LocalDateTime now) {
+                                                   LocalDate defectNoticedOn, LocalDateTime now) {
         if (items == null || items.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "반품할 상품을 선택해 주세요.");
         }
@@ -321,6 +322,11 @@ public class OrderClaimService {
         }
         if (group.getDeliveredAt() == null || group.getDeliveredAt().plusMonths(DEFECT_CLAIM_MONTHS).isBefore(now)) {
             throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE, "배송완료 후 3개월이 지나 열 수 없습니다.");
+        }
+        // 하자 인지일(46 수정계획 3-2) — 표시용 기산점이다. 30일 기한으로 개설을 막지 않는다(법무 판단 대기).
+        if (defectNoticedOn != null && (defectNoticedOn.isBefore(group.getDeliveredAt().toLocalDate())
+                || defectNoticedOn.isAfter(now.toLocalDate()))) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "하자 인지일은 배송완료일 이후 · 오늘 이전이어야 합니다.");
         }
         Set<Long> ids = new HashSet<>();
         for (Item item : items) {
@@ -391,7 +397,7 @@ public class OrderClaimService {
                     .requestedAt(now)
                     .collectDueAt(collectDueAt)
                     .build();
-            claim.markOpenedByOperator(adminId, "구매확정 후 하자");
+            claim.markOpenedByOperator(adminId, "구매확정 후 하자", defectNoticedOn);
             claimRepository.save(claim);
             claimIds.add(claim.getId());
             for (int i = 0; i < evidences.size(); i++) {

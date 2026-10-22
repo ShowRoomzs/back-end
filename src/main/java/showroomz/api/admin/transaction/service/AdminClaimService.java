@@ -17,6 +17,8 @@ import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.service.OrderClaimService;
+import showroomz.domain.order.service.port.OrderSettlementReader;
+import showroomz.domain.order.type.ClaimOpenedBy;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimSort;
@@ -31,6 +33,7 @@ import showroomz.global.utils.BusinessCalendar;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +49,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminClaimService {
 
+    /** 법정 청약철회 기한 — 공급받은 날부터 3개월 · 그 사실을 안 날부터 30일(전자상거래법 제17조③). */
+    private static final int LEGAL_SUPPLY_MONTHS = 3;
+    private static final int LEGAL_NOTICE_DAYS = 30;
+    private static final Set<ClaimStatus> BEFORE_INSPECTION = EnumSet.of(ClaimStatus.REQUESTED, ClaimStatus.COLLECTING,
+            ClaimStatus.ARRIVED, ClaimStatus.RECEIVED);
+
     private final SellerClaimQueryService claimQueryService;
     private final OrderClaimRepository claimRepository;
     private final OrderClaimService claimService;
@@ -53,6 +62,7 @@ public class AdminClaimService {
     private final ClaimPaymentService claimPaymentService;
     private final BusinessCalendar businessCalendar;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
+    private final OrderSettlementReader settlementReader;
 
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.ClaimListItem> getClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
@@ -68,13 +78,17 @@ public class AdminClaimService {
         Map<Long, OneToOneInquiry> disputes = inquiryRepository.findAllById(claims.values().stream()
                         .map(OrderClaim::getDisputeInquiryId).filter(Objects::nonNull).toList()).stream()
                 .collect(Collectors.toMap(OneToOneInquiry::getId, Function.identity()));
+        LocalDate today = LocalDate.now();
         List<AdminTransactionDto.ClaimListItem> rows = page.getContent().stream().map(row -> {
             OrderClaim claim = claims.get(row.claimId());
             return new AdminTransactionDto.ClaimListItem(row, claim == null ? null : claim.getDeliveryGroup().getMarketName(),
                     claim == null ? null : claim.getFeeBearer(), claim == null ? null : feeBearerLabel(claim.getFeeBearer()),
                     claim != null && claim.isFaultChangedToSeller(),
                     claim != null && isDisputeOpen(claim, disputes.get(claim.getDisputeInquiryId())),
-                    claim == null ? null : claim.getDisputedAt());
+                    claim == null ? null : claim.getDisputedAt(),
+                    // 「경과」 영업일(46 수정계획 3-1) — 파트너 elapsedDays 와 같은 기준점 · 같은 영업일 함수(검수 기한 초과와 같다).
+                    row.stageEnteredAt() == null ? 0
+                            : businessCalendar.businessDaysBetween(row.stageEnteredAt().toLocalDate(), today));
         }).toList();
         // 같은 쪽수 정보로 다시 싼다 — 행만 어드민 열을 더한 것으로 바꾼다.
         return new PageResponse<>(rows, new PageImpl<>(rows, PageRequest.of(Math.max(page.getPageInfo().getCurrentPage() - 1, 0),
@@ -100,12 +114,42 @@ public class AdminClaimService {
                 && claim.getInspectDueAt().isBefore(now)
                 ? businessCalendar.businessDaysBetween(claim.getInspectDueAt().toLocalDate(), now.toLocalDate()) : null;
         boolean unanswered = claimService.isInspectionUnanswered(claim, now);
-        return new AdminTransactionDto.ClaimDetail(detail, claim.getDeliveryGroup().getMarketName(), claim.getFeeBearer(),
+        return new AdminTransactionDto.ClaimDetail(detail, claim.getOrderId(), claim.getDeliveryGroup().getId(),
+                claim.getDeliveryGroup().getMarketName(), claim.getFeeBearer(),
                 feeBearerLabel(claim.getFeeBearer()), acceptable,
                 acceptable ? claimService.previewDisputeRefund(claimId) : null,
                 unanswered, unanswered ? claimService.previewUnansweredRefund(claimId, now) : null, dispute,
                 new AdminTransactionDto.InspectNotice(claim.getInspectNoticeCount(), claim.getLastInspectNoticeAt()),
-                inspectOverdue);
+                inspectOverdue, legalDeadline(claim),
+                settlementReader.readByDeliveryGroup(claim.getDeliveryGroup().getId())
+                        .map(s -> new AdminTransactionDto.ClaimSettlement(s.settlementNumber(), s.status(),
+                                s.statusLabel(), s.confirmedAt(), isDeductedOnPass(claim)))
+                        .orElse(null));
+    }
+
+    /**
+     * B4 법정 청약철회 기한(46 수정계획 3-2 · 전자상거래법 제17조③) — 운영자가 대신 연 클레임만. 공급일 + 3개월과 하자 인지일 + 30일
+     * 중 이른 날. 인지일은 B6 개설 때 운영자가 넣는 선택값이라 없으면 공급 기준만 쓴다.
+     */
+    static AdminTransactionDto.LegalDeadline legalDeadline(OrderClaim claim) {
+        if (claim.getOpenedBy() != ClaimOpenedBy.OPERATOR || claim.getDeliveryGroup().getDeliveredAt() == null) {
+            return null;
+        }
+        LocalDate supplied = claim.getDeliveryGroup().getDeliveredAt().toLocalDate();
+        LocalDate supplyDeadline = supplied.plusMonths(LEGAL_SUPPLY_MONTHS);
+        LocalDate noticed = claim.getDefectNoticedOn();
+        LocalDate noticeDeadline = noticed == null ? null : noticed.plusDays(LEGAL_NOTICE_DAYS);
+        LocalDate applied = noticeDeadline != null && noticeDeadline.isBefore(supplyDeadline) ? noticeDeadline
+                : supplyDeadline;
+        return new AdminTransactionDto.LegalDeadline(supplied, supplyDeadline, noticed, noticeDeadline, applied);
+    }
+
+    /**
+     * 「통과 시 다음 정산에서 차감」 — 반품이고 아직 검수 판정 전이다. 통과하면 반품 환불이 집행되고, 이미 정산에 들어간 항목이라
+     * 차감(SettlementClawbackService)이 생긴다. 교환 · 반려는 환불이 없어 차감도 없다.
+     */
+    private static boolean isDeductedOnPass(OrderClaim claim) {
+        return claim.getType() == ClaimType.RETURN && BEFORE_INSPECTION.contains(claim.getStatus());
     }
 
     /** 미처리 이의 — 반려 보류 중이고 걸린 문의가 답변 전. 요약 {@code countOpenDisputes}와 같은 식이다. */

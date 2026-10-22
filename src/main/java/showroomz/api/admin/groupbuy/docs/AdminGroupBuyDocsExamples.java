@@ -118,6 +118,13 @@ final class AdminGroupBuyDocsExamples {
             }
             """;
 
+    static final String CREATOR_OPTIONS = """
+            [
+              {"creatorId": 12, "showroomName": "소연_쇼룸"},
+              {"creatorId": 31, "showroomName": "하린_뷰티랩"}
+            ]
+            """;
+
     static final String SUMMARY = """
             {
               "queues": {"OPEN_REVIEW": 1, "SUSPEND_REQUEST": 0, "EARLY_CLOSE_REQUEST": 1, "APPEAL_REVIEW": 1},

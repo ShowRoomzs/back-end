@@ -64,6 +64,9 @@ public interface AdminGroupBuyControllerDocs {
 
                     **검색 `keyword`** — 공구명 · 공구번호 · 브랜드명 · 쇼룸명 부분 일치.
 
+                    **브랜드 `marketId`** — 그 브랜드의 공구만. 주문 조회 「브랜드 → 공구」 셀렉트가 쓴다 — `tab` 없이(전 상태) ·
+                    `size=100`으로 한 번에 받는다. 상세의 이전·다음도 같은 값을 받는다.
+
                     **페이징** — `page`(1부터, 기본 1) · `size`(기본 20).
 
                     **응답 행**
@@ -85,9 +88,29 @@ public interface AdminGroupBuyControllerDocs {
     ResponseEntity<PageResponse<AdminGroupBuyListItem>> getGroupBuys(
             @Parameter(description = "탭 — 기본 ALL", example = "ACTION_REQUIRED") @RequestParam(required = false) AdminGroupBuyTab tab,
             @Parameter(description = "공구명 · 공구번호 · 브랜드명 · 쇼룸명 검색", example = "글로우랩") @RequestParam(required = false) String keyword,
+            @Parameter(description = "브랜드(마켓) ID — 그 브랜드의 공구만", example = "7") @RequestParam(required = false) Long marketId,
             @Parameter(description = "정렬 — ACTION_REQUIRED_FIRST(기본) / CREATED_DESC / END_AT_ASC", example = "ACTION_REQUIRED_FIRST")
             @RequestParam(required = false) AdminGroupBuySortType sort,
             @ModelAttribute PagingRequest pagingRequest);
+
+    @Operation(
+            summary = "인플루언서 선택 목록",
+            description = """
+                    주문 조회(06a) 상세 조건의 인플루언서 셀렉트. 고른 `creatorId`를 `GET /v1/admin/orders?creatorId=`로 보낸다.
+
+                    **권한:** ADMIN
+
+                    - **공구를 1건 이상 연 인플루언서만** 내린다(공구 상태 무관). 주문 필터가 공구의 인플루언서로 거르므로
+                      공구가 없는 인플루언서는 골라도 항상 0건이다.
+                    - `marketId`를 주면 그 브랜드와 공구를 연 인플루언서만. 시안은 인플루언서를 브랜드에 종속시키지 않았다 — 기본은 없이 부른다.
+                    - 쇼룸명순 · 페이지 없음. 이름은 공구 목록 `creatorName`과 같은 쇼룸명이다.
+                    """)
+    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = AdminGroupBuyDto.CreatorOption.class)),
+                    examples = @ExampleObject(value = CREATOR_OPTIONS))))
+    ResponseEntity<List<AdminGroupBuyDto.CreatorOption>> getCreatorOptions(
+            @Parameter(description = "브랜드(마켓) ID — 그 브랜드와 공구를 연 인플루언서만", example = "7")
+            @RequestParam(required = false) Long marketId);
 
     @Operation(
             summary = "조치 큐 · 탭 카운트 · 최단 기한 · 정산 지연 감시",
@@ -190,6 +213,7 @@ public interface AdminGroupBuyControllerDocs {
             @Parameter(description = "공구 ID", example = "41") @PathVariable Long groupBuyId,
             @Parameter(description = "목록 탭 — 이전·다음 계산용", example = "ACTION_REQUIRED") @RequestParam(required = false) AdminGroupBuyTab tab,
             @Parameter(description = "목록 검색어 — 이전·다음 계산용") @RequestParam(required = false) String keyword,
+            @Parameter(description = "목록 브랜드 — 이전·다음 계산용", example = "7") @RequestParam(required = false) Long marketId,
             @Parameter(description = "목록 정렬 — 이전·다음 계산용", example = "ACTION_REQUIRED_FIRST") @RequestParam(required = false) AdminGroupBuySortType sort);
 
     @Operation(

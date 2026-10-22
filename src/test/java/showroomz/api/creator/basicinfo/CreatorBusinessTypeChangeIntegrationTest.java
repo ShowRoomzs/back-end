@@ -13,9 +13,13 @@ import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorAdminHistoryRepository;
+import showroomz.domain.member.creator.service.CreatorWithdrawalService;
+import showroomz.domain.member.creator.type.CreatorAccountVerificationStatus;
 import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.type.PayoutStatus;
+import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 
 import java.util.HashMap;
@@ -40,6 +44,7 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
 
     @Autowired private CreatorAdminHistoryRepository adminHistories;
     @Autowired private ChangeRequestRepository brandChangeRequests;
+    @Autowired private CreatorWithdrawalService withdrawalService;
 
     @Test
     @DisplayName("[BT-01 · BT-09] 사업자 전환 요청 — 큐 행(요청자 = 인플루언서 · 쇼룸명) · 배지 합산 · 쇼룸명 검색 · 스튜디오 배너 · 인플루언서 상세 연계")
@@ -286,7 +291,168 @@ class CreatorBusinessTypeChangeIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_ACCESS_DENIED"));
     }
 
+    // ------------------------------------------------------------------ 시나리오 보완(50 테스트 시나리오 14-2) — 스튜디오 접수
+    // 접수 경계 · 취소 · 확인 거절 · 요청 코드 순번은 CreatorBusinessTypeChangeScenarioIntegrationTest(06-16 시나리오)가 본다.
+
+    @Test
+    @DisplayName("[BX-04 · BX-05] 증빙 크기 없음 400 · 파일명 공백 400 / 열린 요청이 있어도 형식 오류가 먼저(400) — 열린 요청 검사(409)는 마지막")
+    void evidenceRulesAndValidationOrder() throws Exception {
+        Map<String, Object> blankName = businessBody();
+        blankName.put("evidenceFileName", " ");
+        create(blankName).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("CHANGE_REQUEST_EVIDENCE_REQUIRED"));
+        Map<String, Object> noSize = businessBody();
+        noSize.remove("evidenceFileSize");
+        create(noSize).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("CHANGE_REQUEST_EVIDENCE_REQUIRED"));
+
+        create(businessBody()).andExpect(status().isCreated());
+        toBusiness("1234567890").andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        create(noSize).andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("CHANGE_REQUEST_EVIDENCE_REQUIRED"));
+        toBusiness("214-37-55120").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_ALREADY_PENDING"));
+    }
+
+    @Test
+    @DisplayName("[BX-06] 계좌 확인 중 · 확인 실패 · 정지 · 탈퇴 심사 중에도 접수한다(버튼은 모든 상태에서 같은 자리)")
+    void requestAllowedInEveryState() throws Exception {
+        moveTo(groupBuy.getId(), showroomz.domain.groupbuy.type.GroupBuyStatus.ENDED);
+        List<Runnable> states = List.of(
+                () -> jdbc.update("UPDATE creator SET account_verification_status = 'VERIFYING' WHERE creator_id = ?", creator.getId()),
+                () -> jdbc.update("UPDATE creator SET account_verification_status = 'FAILED' WHERE creator_id = ?", creator.getId()),
+                () -> jdbc.update("UPDATE creator SET status = 'SUSPENDED' WHERE creator_id = ?", creator.getId()),
+                () -> withdrawalService.request(creator.getId(), "활동 중단", java.time.LocalDateTime.now()));
+        for (Runnable state : states) {
+            state.run();
+            long requestId = idOf(toBusiness("214-37-55120").andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+            studioPost(STUDIO + "/business-type-change-requests/" + requestId + "/cancel").andExpect(status().isNoContent());
+        }
+    }
+
+    // ------------------------------------------------------------------ 시나리오 보완 — 어드민 처리 → 스튜디오 반영
+
+    @Test
+    @DisplayName("[BT-05 정산] 사업자 전환 승인 — 승인 전 생성된 비사업자 정산은 그 구분 그대로 · 확정해도 주민번호 사유로 막히지 않는다")
+    void approvalKeepsExistingSettlementSnapshot() throws Exception {
+        registerCreatorAccount();
+        registerCreatorResidentNumber();
+        Settlement before = seedSettlement("가을 공구", 1_000_000, SettlementStatus.REVIEWING);
+        long requestId = idOf(toBusiness("214-37-55120").andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+
+        adminPost(QUEUE + "/" + requestId + "/approve", Map.of()).andExpect(status().isOk());
+        Settlement confirmed = confirm(before);
+
+        assertThat(confirmed.getCreatorBusinessType()).isEqualTo(CreatorBusinessType.INDIVIDUAL);
+        assertThat(payout(before.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        creatorGet(STUDIO + "/settlement")
+                .andExpect(jsonPath("$.residentNumber").doesNotExist())
+                .andExpect(jsonPath("$.taxInvoiceRecipient").exists())
+                .andExpect(jsonPath("$.business.license.fileSize").value(1_258_291));
+    }
+
+    @Test
+    @DisplayName("[BT-06 정산 · T10] 비사업자 전환 승인 — 승인 전 확정된 사업자 정산은 세금계산서 사유 보류 유지 · 계좌 확인 상태는 그대로 · 배너 승인")
+    void approvalToIndividualKeepsBusinessHold() throws Exception {
+        registerCreatorAccount();
+        makeBusinessCreator();
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFIED' WHERE creator_id = ?", creator.getId());
+        Settlement before = seedSettlement("가을 공구", 1_000_000, SettlementStatus.REVIEWING);
+        jdbc.update("UPDATE settlement SET creator_business_type = 'BUSINESS' WHERE settlement_id = ?", before.getId());
+        confirm(before);
+        assertThat(payout(before.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        // 확정이 PG 셀러를 연결한다 — 셀러 연결 인플루언서의 승인은 S6(재등록) 전까지 임시 가드가 막으므로 연결만 걷어 낸다.
+        jdbc.update("UPDATE creator SET pg_partner_id = NULL WHERE creator_id = ?", creator.getId());
+        long requestId = idOf(toIndividual(RESIDENT).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+
+        adminPost(QUEUE + "/" + requestId + "/approve", Map.of()).andExpect(status().isOk());
+        payoutService.releaseBlocked(java.time.LocalDate.now());
+
+        assertThat(payout(before.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(reloadCreator().getAccountVerificationStatus()).isEqualTo(CreatorAccountVerificationStatus.VERIFIED);
+        creatorGet(STUDIO + "/settlement")
+                .andExpect(jsonPath("$.businessType.value").value("INDIVIDUAL"))
+                .andExpect(jsonPath("$.residentNumber.masked").value("950812-*******"))
+                .andExpect(jsonPath("$.residentNumber.registeredAt").isNotEmpty())
+                .andExpect(jsonPath("$.business").doesNotExist())
+                .andExpect(jsonPath("$.businessTypeChange.type").value("TO_INDIVIDUAL"))
+                .andExpect(jsonPath("$.businessTypeChange.status").value("APPROVED"))
+                .andExpect(jsonPath("$.account.verification.status").value("VERIFIED"))
+                .andExpect(jsonPath("$.actions.businessTypeChange").value("REQUEST_TO_BUSINESS"));
+    }
+
+    @Test
+    @DisplayName("[BA-01 · BA-02] 탈퇴 회원 승인 409(요청 대기 유지) · 정지 회원 승인은 허용")
+    void approveWithdrawnAndSuspended() throws Exception {
+        long requestId = idOf(toBusiness("214-37-55120").andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+
+        jdbc.update("UPDATE creator SET status = 'WITHDRAWN' WHERE creator_id = ?", creator.getId());
+        adminPost(QUEUE + "/" + requestId + "/approve", Map.of()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWN"));
+        assertThat(request(requestId).getStatus()).isEqualTo(ChangeRequestStatus.PENDING);
+        assertThat(reloadCreator().getBusinessType()).isEqualTo(CreatorBusinessType.INDIVIDUAL);
+
+        jdbc.update("UPDATE creator SET status = 'SUSPENDED' WHERE creator_id = ?", creator.getId());
+        adminPost(QUEUE + "/" + requestId + "/approve", Map.of()).andExpect(status().isOk());
+        assertThat(reloadCreator().getBusinessType()).isEqualTo(CreatorBusinessType.BUSINESS);
+    }
+
+    @Test
+    @DisplayName("[BA-03 · BA-04 · BA-05] 기타 사유 — 상세 501자 400 · 500자는 배너에 그대로 / 비사업자 전환 사유 6종 / 처리된 건 재반려 400")
+    void otherReasonAndReasonList() throws Exception {
+        makeBusinessCreator();
+        long requestId = idOf(toIndividual(RESIDENT).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        adminGet(QUEUE + "/reject-reasons?type=TO_INDIVIDUAL").andExpect(jsonPath("$.length()").value(6));
+
+        String reject = QUEUE + "/" + requestId + "/reject";
+        adminPost(reject, Map.of("reasonType", "OTHER", "reasonDetail", "가".repeat(501))).andExpect(status().isBadRequest());
+        String detail = "폐업사실증명원 발급일이 요청일 이후입니다. " + "가".repeat(470);
+        adminPost(reject, Map.of("reasonType", "OTHER", "reasonDetail", detail)).andExpect(status().isOk());
+
+        creatorGet(STUDIO + "/settlement")
+                .andExpect(jsonPath("$.businessTypeChange.status").value("REJECTED"))
+                .andExpect(jsonPath("$.businessTypeChange.rejectReason.code").value("OTHER"))
+                .andExpect(jsonPath("$.businessTypeChange.rejectReason.label").value("기타"))
+                .andExpect(jsonPath("$.businessTypeChange.rejectReasonDetail").value(detail));
+        assertThat(request(requestId).getResidentNumberEnc()).isNull();
+
+        adminPost(reject, Map.of("reasonType", "LICENSE_UNREADABLE")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_NOT_PENDING"));
+        adminPost(QUEUE + "/" + requestId + "/approve", Map.of()).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_NOT_PENDING"));
+        assertThat(events()).containsOnlyOnce(CreatorAdminEventType.BUSINESS_TYPE_CHANGE_REJECTED);
+    }
+
+    @Test
+    @DisplayName("[BA-08 · BX-08] 승인 배너를 닫지 않고 반대 방향 요청 — 옛 배너 자동 확인 · 다시 승인되면 확정일은 가장 최근 승인 · 주민번호는 새 요청 값")
+    void oppositeDirectionAfterApproval() throws Exception {
+        registerCreatorResidentNumber();
+        long toBusinessId = idOf(toBusiness("214-37-55120").andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        adminPost(QUEUE + "/" + toBusinessId + "/approve", Map.of()).andExpect(status().isOk());
+        java.time.LocalDateTime firstApproval = request(toBusinessId).getProcessedAt();
+
+        long toIndividualId = idOf(toIndividual(RESIDENT).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        assertThat(request(toBusinessId).getResultAcknowledgedAt()).isNotNull();
+        creatorGet(STUDIO + "/settlement").andExpect(jsonPath("$.businessTypeChange.requestId").value(toIndividualId));
+
+        adminPost(QUEUE + "/" + toIndividualId + "/approve", Map.of()).andExpect(status().isOk());
+
+        Creator converted = reloadCreator();
+        assertThat(converted.getBusinessType()).isEqualTo(CreatorBusinessType.INDIVIDUAL);
+        assertThat(personalDataCipher.decrypt(converted.getResidentRegistrationNumberEnc())).isEqualTo("9508122345678");
+        assertThat(converted.getBusinessRegistrationNumber()).isEqualTo("214-37-55120");
+        java.time.LocalDateTime secondApproval = request(toIndividualId).getProcessedAt();
+        assertThat(secondApproval).isAfterOrEqualTo(firstApproval);
+        // 응답 시각은 초 단위 + 'Z' 표기다.
+        String confirmedAt = json(creatorGet(STUDIO + "/settlement")).at("/businessType/confirmedAt").asText();
+        assertThat(java.time.LocalDateTime.parse(confirmedAt.replace("Z", "")))
+                .isEqualTo(secondApproval.truncatedTo(java.time.temporal.ChronoUnit.SECONDS));
+    }
+
     // ------------------------------------------------------------------ helpers
+
+    private Map<String, Object> businessBody() {
+        Map<String, Object> body = body("BUSINESS");
+        body.put("businessRegistrationNumber", "214-37-55120");
+        return body;
+    }
 
     private void makeBusinessCreator() {
         makeCreatorBusiness();

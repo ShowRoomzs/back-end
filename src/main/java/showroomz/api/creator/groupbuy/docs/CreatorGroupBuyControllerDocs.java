@@ -215,12 +215,10 @@ public interface CreatorGroupBuyControllerDocs {
             @ApiResponse(responseCode = "400", description = "INVALID_INPUT — `tab` · `sort`에 정의되지 않은 값",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_INVALID_INPUT))),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · GROUP_BUY_NOT_OWNED_BY_CREATOR — 남의 공구(문구 동일) · "
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구(응답으로는 구분하지 않는다) · "
                     + "USER_NOT_FOUND · CREATOR_NOT_FOUND",
-                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
-                            @ExampleObject(name = "없는 공구", value = ERR_NOT_FOUND),
-                            @ExampleObject(name = "남의 공구", value = ERR_NOT_OWNED)
-                    }))
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_NOT_FOUND)))
     })
     ResponseEntity<CreatorGroupBuyDetailResponse> getGroupBuy(
             @Parameter(description = "공구 id", example = "41") @PathVariable Long groupBuyId,
@@ -266,7 +264,7 @@ public interface CreatorGroupBuyControllerDocs {
                             @ExampleObject(name = "길이 초과", value = ERR_POST_TOO_LONG),
                             @ExampleObject(name = "바디 없음", value = ERR_INVALID_INPUT)
                     })),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_POST_UNDER_REVIEW — 승인대기(제출 후 검토 중) · "
@@ -326,7 +324,7 @@ public interface CreatorGroupBuyControllerDocs {
                             @ExampleObject(name = "필수 누락", value = ERR_POST_REQUIRED_FIELD),
                             @ExampleObject(name = "길이 초과", value = ERR_POST_TOO_LONG)
                     })),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_POST_UNDER_REVIEW — 이미 제출해 검토 중 · "
@@ -381,7 +379,7 @@ public interface CreatorGroupBuyControllerDocs {
                             @ExampleObject(name = "필수 누락", value = ERR_POST_REQUIRED_FIELD),
                             @ExampleObject(name = "길이 초과", value = ERR_POST_TOO_LONG)
                     })),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_POST_UNDER_REVIEW — 승인대기 · "
@@ -431,7 +429,7 @@ public interface CreatorGroupBuyControllerDocs {
             @ApiResponse(responseCode = "200", description = "수락 완료 — 갱신된 상세(`extension.status = ACCEPTED` · `timeline.endAt` 변경)",
                     content = @Content(schema = @Schema(implementation = CreatorGroupBuyDetailResponse.class),
                             examples = @ExampleObject(name = "종료일 08.20 → 08.27", value = ACCEPT_EXTENSION_RESULT))),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_EXTENSION_NOT_PENDING — 응답할 연장 요청 없음(이미 응답·만료) · "
@@ -481,7 +479,7 @@ public interface CreatorGroupBuyControllerDocs {
                                     {"code": "INVALID_INPUT", "message": "크기가 0에서 1000 사이여야 합니다"}
                                     """)
                     })),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_EXTENSION_NOT_PENDING · GROUP_BUY_EXTENSION_RESPONSE_CLOSED · "
@@ -560,7 +558,7 @@ public interface CreatorGroupBuyControllerDocs {
                                     """),
                             @ExampleObject(name = "미정의 reasonCode", value = ERR_INVALID_INPUT)
                     })),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_REQUEST_ALREADY_PENDING — 검토 중인 중단·조기 마감 요청 있음(요청자 무관) · "
@@ -625,7 +623,7 @@ public interface CreatorGroupBuyControllerDocs {
                                     {"code": "INVALID_INPUT", "message": "널이어서는 안됩니다"}
                                     """)
                     })),
-            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND · GROUP_BUY_NOT_OWNED_BY_CREATOR",
+            @ApiResponse(responseCode = "404", description = "GROUP_BUY_NOT_FOUND — 없는 공구 · 남의 공구",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "GROUP_BUY_FULFILLMENT_ALREADY_CHECKED — 이미 확인함 · "

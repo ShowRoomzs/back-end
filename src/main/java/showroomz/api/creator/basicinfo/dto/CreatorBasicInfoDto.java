@@ -77,10 +77,11 @@ public class CreatorBasicInfoDto {
         private String code;
         @Schema(example = "끝나지 않은 공구")
         private String label;
-        @Schema(example = "2")
+        @Schema(description = "남은 건수 — 0 이면 충족", example = "2")
         private long count;
+        @Schema(description = "count == 0", example = "false")
         private boolean satisfied;
-        @Schema(example = "주문이 모두 종결되어야 합니다")
+        @Schema(description = "해소 방법 안내 문구", example = "주문이 모두 종결되어야 합니다")
         private String resolution;
         @Schema(description = "상태별 건수 — 0 건 키는 내리지 않는다")
         private List<ConditionBreakdown> breakdown;
@@ -99,18 +100,25 @@ public class CreatorBasicInfoDto {
 
     @Getter
     @Builder
+    @Schema(description = "승인 대기 중인 탈퇴 신청(S7)")
     public static class PendingWithdrawal {
+        @Schema(description = "탈퇴 신청 ID — 취소 API 경로 값", example = "41")
         private Long requestId;
+        @Schema(description = "신청 시각", example = "2026-10-14T10:20:00")
         private LocalDateTime requestedAt;
+        @Schema(description = "신청 사유(입력한 그대로)", example = "활동 중단")
         private String reasonText;
-        @Schema(description = "승인 처리 기한(안내) — 무응답 자동 승인 없음")
+        @Schema(description = "승인 처리 기한(안내 · 신청일 + 5영업일) — 무응답 자동 승인 없음", example = "2026-10-21")
         private LocalDate dueDate;
     }
 
     @Getter
     @Builder
+    @Schema(description = "반려 안내(S8) — [확인] 전까지 내린다")
     public static class WithdrawalRejection {
+        @Schema(description = "탈퇴 신청 ID — 반려 확인 API 경로 값", example = "41")
         private Long requestId;
+        @Schema(description = "반려 시각", example = "2026-10-16T15:02:00")
         private LocalDateTime rejectedAt;
         @Schema(example = "SETTLEMENT_IN_PROGRESS")
         private String reasonCode;
@@ -152,9 +160,13 @@ public class CreatorBasicInfoDto {
 
     @Getter
     @Builder
+    @Schema(description = "탈퇴 승인 요청 접수 결과")
     public static class WithdrawalRequestResponse {
+        @Schema(description = "탈퇴 신청 ID", example = "41")
         private Long requestId;
+        @Schema(description = "신청 시각", example = "2026-10-14T10:20:00")
         private LocalDateTime requestedAt;
+        @Schema(description = "승인 처리 기한(안내 · 신청일 + 5영업일)", example = "2026-10-21")
         private LocalDate dueDate;
     }
 
@@ -200,8 +212,9 @@ public class CreatorBasicInfoDto {
     @Getter
     @Builder
     public static class BusinessInfo {
-        @Schema(example = "123-45-67890")
+        @Schema(description = "사업자등록번호", example = "123-45-67890")
         private String registrationNumber;
+        @Schema(description = "사업자등록증 — 최근 승인된 구분 변경의 증빙, 없으면 온보딩 등록증")
         private DocumentFile license;
     }
 
@@ -209,9 +222,13 @@ public class CreatorBasicInfoDto {
     @Builder
     @Schema(description = "제출 서류 — 파일명 · 크기 · 제출일은 모르면 null(온보딩분)")
     public static class DocumentFile {
+        @Schema(description = "파일 URL", example = "https://cdn…/creator-document/9f2c.jpg")
         private String url;
+        @Schema(description = "원본 파일명 — 온보딩분은 null", example = "통장사본_신한은행.jpg", nullable = true)
         private String fileName;
+        @Schema(description = "바이트 — 온보딩분은 null", example = "482113", nullable = true)
         private Long fileSize;
+        @Schema(description = "제출 시각 — 온보딩분은 null", example = "2026-10-15T11:00:00", nullable = true)
         private LocalDateTime submittedAt;
     }
 
@@ -219,10 +236,15 @@ public class CreatorBasicInfoDto {
     @Builder
     @Schema(description = "세금계산서 공급받는자(SHOWROOMZ) — 정산 관리의 공급받는자 블록과 같은 값")
     public static class TaxInvoiceRecipient {
+        @Schema(description = "상호")
         private String businessName;
+        @Schema(description = "사업자등록번호")
         private String registrationNumber;
+        @Schema(description = "대표자")
         private String representative;
+        @Schema(description = "사업장 주소")
         private String address;
+        @Schema(description = "세금계산서 수신 이메일")
         private String taxEmail;
     }
 
@@ -237,7 +259,9 @@ public class CreatorBasicInfoDto {
         private String holderName;
         @Schema(description = "REAL_NAME(비사업자) · REAL_NAME_OR_COMPANY(사업자) — 안내 문구용", example = "REAL_NAME")
         private String holderRule;
+        @Schema(description = "통장 사본")
         private DocumentFile bankbook;
+        @Schema(description = "실명 확인 상태")
         private AccountVerification verification;
     }
 
@@ -246,10 +270,11 @@ public class CreatorBasicInfoDto {
     public static class AccountVerification {
         @Schema(description = "UNVERIFIED · VERIFYING · VERIFIED · FAILED · CHANGE_REQUIRED", example = "VERIFIED")
         private String status;
-        @Schema(example = "실명 확인 완료")
+        @Schema(description = "상태 라벨", example = "실명 확인 완료")
         private String label;
-        @Schema(example = "SUCCESS")
+        @Schema(description = "배지 톤 — NEUTRAL · INFO · SUCCESS · WARNING", example = "SUCCESS")
         private String tone;
+        @Schema(description = "확인 완료 시각 — VERIFIED 일 때만", example = "2026-07-02T10:15:00", nullable = true)
         private LocalDateTime verifiedAt;
         @Schema(description = "FAILED 일 때만 — 「예금주 불일치」 등", nullable = true)
         private String failReason;
@@ -259,6 +284,7 @@ public class CreatorBasicInfoDto {
     @Builder
     @Schema(description = "사업자 구분 변경 요청 배너(T4 · T4a · T5 · T9 · T9a · T10)")
     public static class BusinessTypeChangeBanner {
+        @Schema(description = "변경 요청 ID — 취소 · 닫기 API 경로 값", example = "31")
         private Long requestId;
         @Schema(example = "CHG-2026-0031")
         private String requestCode;
@@ -266,16 +292,19 @@ public class CreatorBasicInfoDto {
         private String type;
         @Schema(description = "PENDING · APPROVED · REJECTED", example = "PENDING")
         private String status;
+        @Schema(description = "요청 시각", example = "2026-10-16T09:12:00")
         private LocalDateTime requestedAt;
+        @Schema(description = "승인 · 반려 시각 — PENDING 이면 null", nullable = true)
         private LocalDateTime processedAt;
         @Schema(description = "TO_BUSINESS 요청 값", nullable = true)
         private String businessRegistrationNumber;
         @Schema(description = "TO_INDIVIDUAL 요청 값(마스킹)", nullable = true)
         private String maskedResidentNumber;
+        @Schema(description = "제출한 증빙 — TO_BUSINESS 사업자등록증 · TO_INDIVIDUAL 폐업사실증명원")
         private DocumentFile evidence;
         @Schema(description = "REJECTED 일 때만", nullable = true)
         private RejectReason rejectReason;
-        @Schema(nullable = true)
+        @Schema(description = "반려 상세 사유 — 기타(OTHER)일 때 운영자가 입력", nullable = true)
         private String rejectReasonDetail;
         @Schema(description = "승인 후 예금주 규칙 위반 — 상호 명의 계좌를 받기 전(§55 B-9)에는 항상 false")
         private boolean accountChangeRequiredOnApproval;
@@ -283,8 +312,11 @@ public class CreatorBasicInfoDto {
 
     @Getter
     @Builder
+    @Schema(description = "정형 반려 사유")
     public static class RejectReason {
+        @Schema(example = "CLOSURE_NOT_CONFIRMED")
         private String code;
+        @Schema(example = "폐업 사실이 확인되지 않음 (비사업자 전환)")
         private String label;
     }
 
@@ -398,7 +430,9 @@ public class CreatorBasicInfoDto {
 
     @Getter
     @Builder
+    @Schema(description = "사업자 구분 변경 요청 접수 결과")
     public static class BusinessTypeChangeCreated {
+        @Schema(description = "변경 요청 ID", example = "31")
         private Long requestId;
         @Schema(example = "CHG-2026-0031")
         private String requestCode;
@@ -406,14 +440,17 @@ public class CreatorBasicInfoDto {
         private String type;
         @Schema(example = "PENDING")
         private String status;
+        @Schema(description = "요청 시각", example = "2026-10-16T09:12:00")
         private LocalDateTime requestedAt;
     }
 
     @Getter
     @Builder
+    @Schema(description = "정산 정보 탭 버튼 상태")
     public static class SettlementActions {
         @Schema(description = "REQUEST_TO_BUSINESS · REQUEST_TO_INDIVIDUAL · CANCEL — 모든 상태에서 같은 자리", example = "REQUEST_TO_BUSINESS")
         private String businessTypeChange;
+        @Schema(description = "[계좌 변경] 버튼 활성 — 현재는 항상 true", example = "true")
         private boolean accountChange;
     }
 }

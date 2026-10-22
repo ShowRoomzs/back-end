@@ -25,7 +25,7 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
     // ── 0-4 가시성 ───────────────────────────────────────────────────────
 
     @Test
-    @DisplayName("남의 공구는 403이 아니라 404 — 없는 공구와 문구가 같고 코드만 갈린다")
+    @DisplayName("남의 공구는 403이 아니라 404 — 없는 공구와 코드 · 문구가 같다(존재를 드러내지 않는다)")
     void othersGroupBuyIsNotFound() throws Exception {
         Creator other = createCreator("다른_쇼룸", "other");
         connect(brand, other);
@@ -33,14 +33,14 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
         GroupBuy others = seed(brand, other, "남의 공구", startAt, startAt.plusDays(7));
 
         String notOwned = studioDetail(others.getId()).andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("GROUP_BUY_NOT_OWNED_BY_CREATOR"))
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_NOT_FOUND"))
                 .andReturn().getResponse().getContentAsString();
         String missing = studioDetail(999_999L).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_NOT_FOUND"))
                 .andReturn().getResponse().getContentAsString();
 
-        org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(notOwned).get("message"))
-                .isEqualTo(objectMapper.readTree(missing).get("message"));
+        org.assertj.core.api.Assertions.assertThat(objectMapper.readTree(notOwned))
+                .isEqualTo(objectMapper.readTree(missing));
         // 실행 API도 같은 판정을 통과한다.
         saveDraft(others.getId(), Map.of("title", "가로채기")).andExpect(status().isNotFound());
         studioList(null).andExpect(jsonPath("$.content").isEmpty());

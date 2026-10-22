@@ -81,6 +81,10 @@ class RefundRetrySchedulerIntegrationTest extends ClaimTestSupport {
         execute(byOperator).andExpect(jsonPath("$.outcome").value("FAILED"));
         assertThat(task(pgAuto)).containsEntry("status", "FAILED").containsEntry("attempt", 1);
         assertThat(task(byOperator)).containsEntry("status", "FAILED").containsEntry("attempt", 1);
+        // [46-5-2] M2 「자동 재시도」 — 최초 자동 집행만 실패했으면 재시도 0회 · 배치가 아직 다시 집는다. 운영자 사유는 null.
+        adminGet(ADMIN_REFUNDS + "/" + pgAuto).andExpect(jsonPath("$.autoRetry.count").value(0))
+                .andExpect(jsonPath("$.autoRetry.exhausted").value(false));
+        adminGet(ADMIN_REFUNDS + "/" + byOperator).andExpect(jsonPath("$.autoRetry").doesNotExist());
         backdateModified(11, pgAuto, byOperator);
         int pgCallsBefore = callsOf(pgPayment);
         int operatorCallsBefore = callsOf(operatorPayment);
@@ -102,7 +106,11 @@ class RefundRetrySchedulerIntegrationTest extends ClaimTestSupport {
         assertThat(callsOf(pgPayment)).isEqualTo(pgCallsBefore + 1);
         assertThat(task(pgAuto)).containsEntry("attempt", 2);
         adminGet(ADMIN_REFUNDS + "/" + pgAuto).andExpect(jsonPath("$.autoMaxAttempts").value(2))
-                .andExpect(jsonPath("$.attempt").value(2));
+                .andExpect(jsonPath("$.attempt").value(2))
+                // [46-5-2] 「자동 재시도 1회 · 실패 · 시각」 — 상한에 닿아 배치는 더 집지 않는다.
+                .andExpect(jsonPath("$.autoRetry.count").value(1))
+                .andExpect(jsonPath("$.autoRetry.exhausted").value(true))
+                .andExpect(jsonPath("$.autoRetry.lastAt").isNotEmpty());
 
         // 운영자 M2 재시도(R-08 과 이어짐) — 3회째로 집행된다.
         fake.willAnswerCancel(pgPayment, PortOneCancelResult.Outcome.SUCCEEDED);

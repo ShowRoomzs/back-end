@@ -78,6 +78,26 @@ class ShowroomAddressGeneratorTest {
     }
 
     @Test
+    @DisplayName("[RI-04 ⑥] 32자 핸들에 꼬리표가 붙으면 앞을 잘라 32자를 넘지 않는다")
+    void suffixKeepsHandleWithinCap() {
+        String base = "a".repeat(32);
+
+        String handle = ShowroomAddressGenerator.generateUnique(base, Set.of(base)::contains);
+
+        assertThat(handle).hasSize(32).isEqualTo("a".repeat(30) + "_2");
+    }
+
+    @Test
+    @DisplayName("[RI-04 ⑧] 숫자 꼬리표 _2 ~ _50 이 모두 쓰이면 익명 핸들로 넘어간다")
+    void exhaustedSuffixesFallBackToRandomHandle() {
+        java.util.function.Predicate<String> taken = handle -> handle.startsWith("beauty_soyeon");
+
+        String handle = ShowroomAddressGenerator.generateUnique("beauty.soyeon", taken);
+
+        assertThat(handle).startsWith("sr").hasSize(10).matches("sr[a-km-z2-9]{8}");
+    }
+
+    @Test
     @DisplayName("구분자만 남는 값도 빈 핸들을 만들지 않는다")
     void separatorOnlyValueDoesNotProduceEmptyHandle() {
         String handle = ShowroomAddressGenerator.generateUnique("  ._-  ", NOTHING_TAKEN);

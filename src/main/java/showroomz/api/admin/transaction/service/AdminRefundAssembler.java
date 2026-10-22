@@ -66,6 +66,8 @@ public class AdminRefundAssembler {
             ClaimEventType.REFUND_EXECUTED);
     private static final String ORIGINAL = "ORIGINAL";
     private static final String ADDITIONAL = "ADDITIONAL";
+    private static final String BRAND = "BRAND";
+    private static final String CREATOR = "CREATOR";
 
     private final PaymentRepository paymentRepository;
     private final PaymentCancelRepository paymentCancelRepository;
@@ -162,8 +164,27 @@ public class AdminRefundAssembler {
                 task.getOrigin(), task.getOrigin().getLabel(), reason, target, additional,
                 settlement(task),
                 task.getStatus(), statusLabel(task.getStatus()), task.getAttempt(),
-                orderProperties.getRefundAutoMaxAttempts(), failure, execution, executable(task), task.isVoidable(),
-                task.isExecutable(), history);
+                orderProperties.getRefundAutoMaxAttempts(), autoRetry(task, groupHistory), failure, execution,
+                executable(task), task.isVoidable(), task.isExecutable(), history);
+    }
+
+    /**
+     * M2 「자동 재시도 N회 · 실패 · 시각」(46 수정계획 5-2) — PG 자동 환불의 시스템 실패 이력에서 센다. 최초 자동 집행은 재시도가
+     * 아니다. 상한 판정은 재시도 배치와 같은 식({@code attempt < 상한}이면 배치가 다시 집는다).
+     */
+    private AdminTransactionDto.RefundAutoRetry autoRetry(OrderRefundTask task, List<OrderFulfillmentHistory> groupHistory) {
+        if (task.getOrigin() != RefundTaskOrigin.PG_AUTO) {
+            return null;
+        }
+        List<LocalDateTime> failures = groupHistory.stream()
+                .filter(h -> h.getEventType() == FulfillmentEventType.REFUND_FAILED
+                        && h.getActorType() == FulfillmentActorType.SYSTEM)
+                .map(OrderFulfillmentHistory::getOccurredAt).toList();
+        if (failures.isEmpty()) {
+            return null;
+        }
+        return new AdminTransactionDto.RefundAutoRetry(failures.size() - 1, failures.get(failures.size() - 1),
+                task.getAttempt() >= orderProperties.getRefundAutoMaxAttempts());
     }
 
     /** 06c 「정산」 — 정산 생성 전이면 생성 때 반영되고, 생성 후면 이 환불이 만든 차감 행을 보인다(44 어드민 설계서 6-1). */
@@ -174,9 +195,18 @@ public class AdminRefundAssembler {
                                 : "정산 후 · 차감 " + s.clawback().clawbackNumber(),
                         s.settlementNumber(),
                         s.clawback() == null ? null : new AdminTransactionDto.RefundClawback(
-                                s.clawback().clawbackNumber(), s.clawback().status(), s.clawback().statusLabel())))
+                                s.clawback().clawbackNumber(), s.clawback().status(), s.clawback().statusLabel(),
+                                sideAmount(s.clawbacks(), BRAND), sideAmount(s.clawbacks(), CREATOR)),
+                        s.expectedClawback() == null ? null : new AdminTransactionDto.ExpectedClawback(
+                                s.expectedClawback().brandAmount(), s.expectedClawback().creatorAmount())))
                 .orElseGet(() -> new AdminTransactionDto.RefundSettlement("BEFORE_SETTLEMENT",
-                        "정산 전 · 정산 생성 시 반영", null, null));
+                        "정산 전 · 정산 생성 시 반영", null, null, null));
+    }
+
+    /** 측별 차감액 — 그 측 행이 없으면(금액 0이라 만들지 않았으면) null. 이월로 행이 나뉘어도 합친다. */
+    private static Long sideAmount(List<OrderSettlementReader.ClawbackRef> clawbacks, String side) {
+        List<OrderSettlementReader.ClawbackRef> rows = clawbacks.stream().filter(c -> side.equals(c.side())).toList();
+        return rows.isEmpty() ? null : rows.stream().mapToLong(OrderSettlementReader.ClawbackRef::amount).sum();
     }
 
     // ------------------------------------------------------------------ 행

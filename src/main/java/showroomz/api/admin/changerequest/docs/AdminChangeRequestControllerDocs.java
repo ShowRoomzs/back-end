@@ -23,7 +23,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Change Request", description = "어드민 브랜드 회원정보 변경 요청 검토·승인·반려 API (§16)")
+@Tag(name = "Admin - Change Request", description = "어드민 회원정보 변경 요청 검토·승인·반려 API (§16 · rev.7) — 브랜드(사업자 정보 · 정산 계좌) + 인플루언서(사업자 구분 변경)")
 public interface AdminChangeRequestControllerDocs {
 
     @Operation(
@@ -53,6 +53,7 @@ public interface AdminChangeRequestControllerDocs {
                                             "    {\n" +
                                             "      \"requestId\": 12,\n" +
                                             "      \"requestCode\": \"CHG-2026-0001\",\n" +
+                                            "      \"requester\": { \"type\": \"BRAND\", \"id\": 7, \"name\": \"코코브라운\" },\n" +
                                             "      \"brandName\": \"코코브라운\",\n" +
                                             "      \"type\": \"BUSINESS_INFO\",\n" +
                                             "      \"requestedAt\": \"2026-08-07T10:00:00\",\n" +
@@ -62,8 +63,21 @@ public interface AdminChangeRequestControllerDocs {
                                             "      \"status\": \"PENDING\"\n" +
                                             "    },\n" +
                                             "    {\n" +
+                                            "      \"requestId\": 31,\n" +
+                                            "      \"requestCode\": \"CHG-2026-0031\",\n" +
+                                            "      \"requester\": { \"type\": \"CREATOR\", \"id\": 31, \"name\": \"예린 뷰티\" },\n" +
+                                            "      \"brandName\": null,\n" +
+                                            "      \"type\": \"TO_BUSINESS\",\n" +
+                                            "      \"requestedAt\": \"2026-08-08T15:00:00\",\n" +
+                                            "      \"processedAt\": null,\n" +
+                                            "      \"elapsedText\": \"1일 1h\",\n" +
+                                            "      \"slaExceeded\": false,\n" +
+                                            "      \"status\": \"PENDING\"\n" +
+                                            "    },\n" +
+                                            "    {\n" +
                                             "      \"requestId\": 15,\n" +
                                             "      \"requestCode\": \"CHG-2026-0004\",\n" +
+                                            "      \"requester\": { \"type\": \"BRAND\", \"id\": 9, \"name\": \"데일리코스\" },\n" +
                                             "      \"brandName\": \"데일리코스\",\n" +
                                             "      \"type\": \"SETTLEMENT_ACCOUNT\",\n" +
                                             "      \"requestedAt\": \"2026-08-09T09:00:00\",\n" +
@@ -76,16 +90,16 @@ public interface AdminChangeRequestControllerDocs {
                                             "  \"pageInfo\": {\n" +
                                             "    \"currentPage\": 1,\n" +
                                             "    \"totalPages\": 1,\n" +
-                                            "    \"totalResults\": 2,\n" +
+                                            "    \"totalResults\": 3,\n" +
                                             "    \"limit\": 20,\n" +
                                             "    \"hasNext\": false\n" +
                                             "  },\n" +
                                             "  \"statusCounts\": {\n" +
-                                            "    \"pending\": 2,\n" +
+                                            "    \"pending\": 3,\n" +
                                             "    \"approved\": 10,\n" +
                                             "    \"rejected\": 3,\n" +
                                             "    \"canceled\": 1,\n" +
-                                            "    \"all\": 16\n" +
+                                            "    \"all\": 17\n" +
                                             "  }\n" +
                                             "}"
                             )
@@ -95,7 +109,7 @@ public interface AdminChangeRequestControllerDocs {
     ResponseEntity<AdminChangeRequestDto.ListResponse> getList(
             @Parameter(description = "탭 — PENDING(기본) / APPROVED / REJECTED / ALL", example = "PENDING")
             @RequestParam(value = "status", defaultValue = "PENDING") AdminChangeRequestStatusFilter status,
-            @Parameter(description = "브랜드명 검색어 — 비우면 전체", example = "코코")
+            @Parameter(description = "브랜드명 · 쇼룸명 검색어(부분 일치) — 비우면 전체", example = "코코")
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest);
 
@@ -152,12 +166,23 @@ public interface AdminChangeRequestControllerDocs {
                                             "  { \"code\": \"BANKBOOK_UNREADABLE\", \"label\": \"통장 사본 판독 불가\", \"detailRequired\": false },\n" +
                                             "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
                                             "]"
+                            ),
+                            @ExampleObject(
+                                    name = "사업자 구분 변경(TO_BUSINESS · TO_INDIVIDUAL)",
+                                    value = "[\n" +
+                                            "  { \"code\": \"LICENSE_UNREADABLE\", \"label\": \"사업자등록증 판독 불가 (흐림·잘림)\", \"detailRequired\": false },\n" +
+                                            "  { \"code\": \"LICENSE_OWNER_NAME_MISMATCH\", \"label\": \"등록증의 대표자명이 본인 실명과 다름\", \"detailRequired\": false },\n" +
+                                            "  { \"code\": \"BUSINESS_NUMBER_MISMATCH\", \"label\": \"사업자등록번호가 등록증과 다름\", \"detailRequired\": false },\n" +
+                                            "  { \"code\": \"BUSINESS_SUSPENDED_OR_CLOSED\", \"label\": \"휴업 · 폐업 상태의 사업자\", \"detailRequired\": false },\n" +
+                                            "  { \"code\": \"CLOSURE_NOT_CONFIRMED\", \"label\": \"폐업 사실이 확인되지 않음 (비사업자 전환)\", \"detailRequired\": false },\n" +
+                                            "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
+                                            "]"
                             )
                     }
             )
     )
     ResponseEntity<List<AdminChangeRequestDto.RejectReasonOption>> getRejectReasons(
-            @Parameter(description = "요청 유형 — BUSINESS_INFO / SETTLEMENT_ACCOUNT", required = true, example = "BUSINESS_INFO")
+            @Parameter(description = "요청 유형 — BUSINESS_INFO / SETTLEMENT_ACCOUNT / TO_BUSINESS / TO_INDIVIDUAL", required = true, example = "BUSINESS_INFO")
             @RequestParam("type") ChangeRequestType type);
 
     @Operation(
@@ -180,11 +205,12 @@ public interface AdminChangeRequestControllerDocs {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = AdminChangeRequestDto.DetailResponse.class),
-                            examples = @ExampleObject(
+                            examples = {@ExampleObject(
                                     name = "사업자 정보 PENDING",
                                     value = "{\n" +
                                             "  \"requestId\": 12,\n" +
                                             "  \"requestCode\": \"CHG-2026-0001\",\n" +
+                                            "  \"requester\": { \"type\": \"BRAND\", \"id\": 7, \"name\": \"코코브라운\" },\n" +
                                             "  \"brandName\": \"코코브라운\",\n" +
                                             "  \"marketId\": 7,\n" +
                                             "  \"type\": \"BUSINESS_INFO\",\n" +
@@ -216,13 +242,102 @@ public interface AdminChangeRequestControllerDocs {
                                             "  },\n" +
                                             "  \"referenceItems\": [],\n" +
                                             "  \"holderCheck\": null,\n" +
+                                            "  \"compareItems\": null,\n" +
+                                            "  \"approvalImpact\": null,\n" +
                                             "  \"history\": [\n" +
-                                            "    { \"event\": \"REQUESTED\", \"occurredAt\": \"2026-08-07T10:00:00\", \"actorLabel\": \"김담당\" }\n" +
+                                            "    { \"event\": \"REQUESTED\", \"occurredAt\": \"2026-08-07T10:00:00\", \"actorLabel\": \"브랜드 파트너센터\" }\n" +
                                             "  ],\n" +
                                             "  \"prevRequestId\": null,\n" +
+                                            "  \"nextRequestId\": 31\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "인플루언서 사업자 전환(TO_BUSINESS) PENDING — C3a",
+                                    value = "{\n" +
+                                            "  \"requestId\": 31,\n" +
+                                            "  \"requestCode\": \"CHG-2026-0031\",\n" +
+                                            "  \"requester\": { \"type\": \"CREATOR\", \"id\": 31, \"name\": \"예린 뷰티\" },\n" +
+                                            "  \"brandName\": null,\n" +
+                                            "  \"marketId\": null,\n" +
+                                            "  \"type\": \"TO_BUSINESS\",\n" +
+                                            "  \"status\": \"PENDING\",\n" +
+                                            "  \"slaExceeded\": false,\n" +
+                                            "  \"requestedAt\": \"2026-08-08T15:00:00\",\n" +
+                                            "  \"processedAt\": null,\n" +
+                                            "  \"requesterName\": null,\n" +
+                                            "  \"elapsedText\": \"1일 1h\",\n" +
+                                            "  \"reason\": null,\n" +
+                                            "  \"diff\": [\n" +
+                                            "    { \"fieldKey\": \"CREATOR_BUSINESS_TYPE\", \"label\": \"사업자 구분\", \"currentValue\": \"개인 (비사업자)\", \"requestedValue\": \"개인사업자\", \"changed\": true, \"locked\": false, \"source\": \"REQUEST\" },\n" +
+                                            "    { \"fieldKey\": \"CREATOR_BUSINESS_REG_NUMBER\", \"label\": \"사업자등록번호\", \"currentValue\": null, \"requestedValue\": \"123-45-67890\", \"changed\": true, \"locked\": false, \"source\": \"REQUEST\" },\n" +
+                                            "    { \"fieldKey\": \"LICENSE_COMPANY_REPRESENTATIVE\", \"label\": \"상호 · 대표자 (등록증)\", \"currentValue\": null, \"requestedValue\": null, \"changed\": false, \"locked\": false, \"source\": \"DOCUMENT\" },\n" +
+                                            "    { \"fieldKey\": \"PAYOUT_METHOD\", \"label\": \"지급 방식\", \"currentValue\": \"원천징수 3.3%\", \"requestedValue\": \"세금계산서 · 리워드 + 부가세 10%\", \"changed\": true, \"locked\": false, \"source\": \"DERIVED\" },\n" +
+                                            "    { \"fieldKey\": \"ACCOUNT_HOLDER\", \"label\": \"정산 계좌 예금주\", \"currentValue\": \"오예린\", \"requestedValue\": null, \"changed\": false, \"locked\": false, \"source\": \"CHECK\" },\n" +
+                                            "    { \"fieldKey\": \"SETTLEMENT_ACCOUNT\", \"label\": \"정산 계좌\", \"currentValue\": \"신한은행 110***4567\", \"requestedValue\": null, \"changed\": false, \"locked\": false, \"source\": \"LIVE\" }\n" +
+                                            "  ],\n" +
+                                            "  \"changedFieldLabels\": [\"사업자 구분\", \"사업자등록번호\"],\n" +
+                                            "  \"evidence\": {\n" +
+                                            "    \"documentLabel\": \"사업자등록증\",\n" +
+                                            "    \"fileName\": \"사업자등록증_예린뷰티.pdf\",\n" +
+                                            "    \"fileSizeBytes\": 1258291,\n" +
+                                            "    \"extension\": \"pdf\",\n" +
+                                            "    \"fileUrl\": \"https://cdn…/creator-document/license.pdf\",\n" +
+                                            "    \"uploadedAt\": \"2026-08-08T15:00:00\"\n" +
+                                            "  },\n" +
+                                            "  \"referenceItems\": [ { \"label\": \"정산 계좌 예금주\", \"value\": \"오예린\" } ],\n" +
+                                            "  \"holderCheck\": { \"currentHolder\": \"오예린\", \"rule\": \"REPRESENTATIVE_NAME\", \"requestedHolder\": null, \"companyName\": null, \"mismatch\": false },\n" +
+                                            "  \"compareItems\": [\n" +
+                                            "    { \"key\": \"REPRESENTATIVE_NAME\", \"label\": \"대표자명\", \"value\": \"오예린\", \"mustBeBefore\": null, \"serverCheck\": null },\n" +
+                                            "    { \"key\": \"BUSINESS_REG_NUMBER\", \"label\": \"사업자등록번호\", \"value\": \"123-45-67890\", \"mustBeBefore\": null, \"serverCheck\": null },\n" +
+                                            "    { \"key\": \"OPENING_DATE\", \"label\": \"개업일\", \"value\": null, \"mustBeBefore\": \"2026-08-08T15:00:00\", \"serverCheck\": null }\n" +
+                                            "  ],\n" +
+                                            "  \"approvalImpact\": {\n" +
+                                            "    \"appliesFrom\": \"NEXT_SETTLEMENT\",\n" +
+                                            "    \"payoutMethodBefore\": \"WITHHOLDING_3_3\",\n" +
+                                            "    \"payoutMethodAfter\": \"TAX_INVOICE\",\n" +
+                                            "    \"retainedSettlements\": [ { \"settlementId\": 1021, \"settlementNumber\": \"STL-2609-016\", \"status\": \"REVIEWING\" } ],\n" +
+                                            "    \"accountChangeRequired\": false,\n" +
+                                            "    \"accountHolderRuleAfter\": \"REPRESENTATIVE_NAME\"\n" +
+                                            "  },\n" +
+                                            "  \"history\": [\n" +
+                                            "    { \"event\": \"REQUESTED\", \"occurredAt\": \"2026-08-08T15:00:00\", \"actorLabel\": \"쇼룸 스튜디오\" }\n" +
+                                            "  ],\n" +
+                                            "  \"prevRequestId\": 12,\n" +
                                             "  \"nextRequestId\": 15\n" +
                                             "}"
-                            )
+                            ),
+                            @ExampleObject(
+                                    name = "인플루언서 비사업자 전환(TO_INDIVIDUAL) PENDING — C3b",
+                                    value = "{\n" +
+                                            "  \"requestId\": 35,\n" +
+                                            "  \"requestCode\": \"CHG-2026-0035\",\n" +
+                                            "  \"requester\": { \"type\": \"CREATOR\", \"id\": 44, \"name\": \"지민 스타일\" },\n" +
+                                            "  \"type\": \"TO_INDIVIDUAL\",\n" +
+                                            "  \"status\": \"PENDING\",\n" +
+                                            "  \"requesterName\": null,\n" +
+                                            "  \"reason\": null,\n" +
+                                            "  \"diff\": [\n" +
+                                            "    { \"fieldKey\": \"CREATOR_BUSINESS_TYPE\", \"label\": \"사업자 구분\", \"currentValue\": \"개인사업자\", \"requestedValue\": \"개인 (비사업자)\", \"changed\": true, \"locked\": false, \"source\": \"REQUEST\" },\n" +
+                                            "    { \"fieldKey\": \"CREATOR_BUSINESS_REG_NUMBER\", \"label\": \"사업자등록번호\", \"currentValue\": \"123-45-67890\", \"requestedValue\": \"폐업\", \"changed\": true, \"locked\": false, \"source\": \"DERIVED\" },\n" +
+                                            "    { \"fieldKey\": \"CREATOR_RESIDENT_NUMBER\", \"label\": \"주민등록번호\", \"currentValue\": null, \"requestedValue\": \"950812-*******\", \"changed\": true, \"locked\": false, \"source\": \"REQUEST\" },\n" +
+                                            "    { \"fieldKey\": \"PAYOUT_METHOD\", \"label\": \"지급 방식\", \"currentValue\": \"세금계산서 · 리워드 + 부가세 10%\", \"requestedValue\": \"원천징수 3.3%\", \"changed\": true, \"locked\": false, \"source\": \"DERIVED\" },\n" +
+                                            "    { \"fieldKey\": \"ACCOUNT_HOLDER\", \"label\": \"정산 계좌 예금주\", \"currentValue\": \"김지민\", \"requestedValue\": null, \"changed\": false, \"locked\": false, \"source\": \"CHECK\" },\n" +
+                                            "    { \"fieldKey\": \"SETTLEMENT_ACCOUNT\", \"label\": \"정산 계좌\", \"currentValue\": \"국민은행 604***-**-2218\", \"requestedValue\": null, \"changed\": false, \"locked\": false, \"source\": \"LIVE\" }\n" +
+                                            "  ],\n" +
+                                            "  \"changedFieldLabels\": [\"사업자 구분\", \"주민등록번호\"],\n" +
+                                            "  \"evidence\": { \"documentLabel\": \"폐업사실증명원\", \"fileName\": \"폐업사실증명원.pdf\", \"fileSizeBytes\": 302144, \"extension\": \"pdf\", \"fileUrl\": \"https://cdn…/creator-document/closure.pdf\", \"uploadedAt\": \"2026-08-09T10:00:00\" },\n" +
+                                            "  \"referenceItems\": [ { \"label\": \"주민등록번호\", \"value\": \"950812-*******\" }, { \"label\": \"정산 계좌 예금주\", \"value\": \"김지민\" } ],\n" +
+                                            "  \"holderCheck\": { \"currentHolder\": \"김지민\", \"rule\": \"REAL_NAME\", \"requestedHolder\": null, \"companyName\": null, \"mismatch\": false },\n" +
+                                            "  \"compareItems\": [\n" +
+                                            "    { \"key\": \"REPRESENTATIVE_NAME\", \"label\": \"대표자 성명\", \"value\": \"김지민\", \"mustBeBefore\": null, \"serverCheck\": null },\n" +
+                                            "    { \"key\": \"BIRTHDAY\", \"label\": \"생년월일\", \"value\": \"1995-08-12\", \"mustBeBefore\": null, \"serverCheck\": \"MATCH\" },\n" +
+                                            "    { \"key\": \"BUSINESS_REG_NUMBER\", \"label\": \"사업자등록번호\", \"value\": \"123-45-67890\", \"mustBeBefore\": null, \"serverCheck\": null },\n" +
+                                            "    { \"key\": \"CLOSURE_DATE\", \"label\": \"폐업일\", \"value\": null, \"mustBeBefore\": \"2026-08-09T10:00:00\", \"serverCheck\": null }\n" +
+                                            "  ],\n" +
+                                            "  \"approvalImpact\": { \"appliesFrom\": \"NEXT_SETTLEMENT\", \"payoutMethodBefore\": \"TAX_INVOICE\", \"payoutMethodAfter\": \"WITHHOLDING_3_3\", \"retainedSettlements\": [], \"accountChangeRequired\": false, \"accountHolderRuleAfter\": \"REAL_NAME\" },\n" +
+                                            "  \"history\": [ { \"event\": \"REQUESTED\", \"occurredAt\": \"2026-08-09T10:00:00\", \"actorLabel\": \"쇼룸 스튜디오\" } ]\n" +
+                                            "}"
+                            )}
                     )
             ),
             @ApiResponse(
@@ -271,6 +386,7 @@ public interface AdminChangeRequestControllerDocs {
                                     value = "{\n" +
                                             "  \"requestId\": 12,\n" +
                                             "  \"requestCode\": \"CHG-2026-0001\",\n" +
+                                            "  \"requester\": { \"type\": \"BRAND\", \"id\": 7, \"name\": \"코코브라운\" },\n" +
                                             "  \"brandName\": \"코코브라운\",\n" +
                                             "  \"type\": \"BUSINESS_INFO\",\n" +
                                             "  \"status\": \"APPROVED\",\n" +
@@ -319,6 +435,37 @@ public interface AdminChangeRequestControllerDocs {
                                             "}"
                             )
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "인플루언서 건만 — 탈퇴 회원 / 접수 뒤 구분이 바뀜 / PG 재등록 준비 전",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "탈퇴 회원",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CREATOR_WITHDRAWN\",\n" +
+                                                    "  \"message\": \"탈퇴한 인플루언서입니다. 조치할 수 없습니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "구분 불일치",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH\",\n" +
+                                                    "  \"message\": \"현재 사업자 구분에서는 요청할 수 없습니다. 새로고침 후 다시 시도해 주세요.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "PG 재등록 대기",
+                                            value = "{\n" +
+                                                    "  \"code\": \"CHANGE_REQUEST_PG_RESYNC_PENDING\",\n" +
+                                                    "  \"message\": \"PG 셀러가 연결된 인플루언서의 사업자 구분 변경은 PG 재등록 절차가 준비된 뒤 승인할 수 있습니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
     ResponseEntity<AdminChangeRequestDto.ProcessResponse> approve(
@@ -330,7 +477,9 @@ public interface AdminChangeRequestControllerDocs {
             description = "검토 대기 요청을 반려한다.\n\n" +
                     "- `reasonType`이 요청 유형에 맞지 않으면 400(`CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH`)\n" +
                     "- `OTHER` 선택 시에만 `reasonDetail` 필수(`CHANGE_REQUEST_REJECT_DETAIL_REQUIRED`)\n" +
-                    "- 정형 사유 문구는 브랜드 배너·통지 메일에 그대로 노출된다\n\n" +
+                    "- 정형 사유 문구는 브랜드 배너·통지 메일에 그대로 노출된다\n" +
+                    "- **인플루언서 건** — 사유는 `GET /reject-reasons?type=TO_BUSINESS`(C8b 6종). 정형 사유 · 상세가 스튜디오 정산 정보 탭 배너(T4a · T9a)에 " +
+                    "그대로 실린다. 주민등록번호 원문(TO_INDIVIDUAL)은 반려 즉시 지운다. 반려 뒤 인플루언서는 바로 다시 요청할 수 있다\n\n" +
                     "**권한:** ADMIN"
     )
     @RequestBody(
@@ -343,6 +492,13 @@ public interface AdminChangeRequestControllerDocs {
                                     name = "정형 사유",
                                     value = "{\n" +
                                             "  \"reasonType\": \"REASON_INSUFFICIENT\",\n" +
+                                            "  \"reasonDetail\": null\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "인플루언서 — 등록증 대표자명 불일치",
+                                    value = "{\n" +
+                                            "  \"reasonType\": \"LICENSE_OWNER_NAME_MISMATCH\",\n" +
                                             "  \"reasonDetail\": null\n" +
                                             "}"
                             ),
@@ -368,6 +524,7 @@ public interface AdminChangeRequestControllerDocs {
                                     value = "{\n" +
                                             "  \"requestId\": 12,\n" +
                                             "  \"requestCode\": \"CHG-2026-0001\",\n" +
+                                            "  \"requester\": { \"type\": \"BRAND\", \"id\": 7, \"name\": \"코코브라운\" },\n" +
                                             "  \"brandName\": \"코코브라운\",\n" +
                                             "  \"type\": \"BUSINESS_INFO\",\n" +
                                             "  \"status\": \"REJECTED\",\n" +

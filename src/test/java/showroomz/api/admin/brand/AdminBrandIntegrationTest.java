@@ -248,7 +248,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("BD-11 · BD-12 탈퇴 승인 — 심사 중 정지 가능 · 승인 시 WITHDRAWN · 파기 · 로그인 차단 · 정지 종결 · 배송 정책 보존 · 이력 중립")
+    @DisplayName("BD-11 · BD-12 · BD-15 탈퇴 승인 — 심사 중 정지 가능 · 승인 시 WITHDRAWN · 파기 · 로그인 차단 · 정지 종결 · 배송 정책 보존 · 이력 중립 · 탈퇴 상세")
     void approveWithdrawal() throws Exception {
         BrandFixture.Brand clean = fixture.createBrand("clean@showroomz.test", "클린브랜드");
         String cleanBase = BRANDS + "/" + clean.marketId();
@@ -333,7 +333,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("BD-15 파트너센터 탈퇴 신청 API — 조건 미충족 409(unmet) · 계정 탭 BLOCKED · 신청 → PENDING · 취소 → AVAILABLE · 재신청 → 어드민 반려 → lastRejection")
+    @DisplayName("WP-01 파트너센터 탈퇴 신청 API —조건 미충족 409(unmet) · 계정 탭 BLOCKED · 신청 → PENDING · 취소 → AVAILABLE · 재신청 → 어드민 반려 → lastRejection")
     void partnerWithdrawalRequest() throws Exception {
         // 진행 중 공구가 있는 시드 브랜드 — 신청은 409 · 계정 탭은 BLOCKED.
         mockMvc.perform(post("/v1/seller/basic-info/withdrawal-requests").header(HttpHeaders.AUTHORIZATION, brandToken))
@@ -400,7 +400,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("BD-18 모달 사유 목록 — 정지 6종(지급 정지 2종) · 해제 2종(탈퇴 종결 제외) · 반려 6종 · 인플루언서 상세와 같은 모양")
+    @DisplayName("RO-01 모달 사유 목록 —정지 6종(지급 정지 2종) · 해제 2종(탈퇴 종결 제외) · 반려 6종 · 인플루언서 상세와 같은 모양")
     void reasonOptions() throws Exception {
         adminGet(BRANDS + "/reason-options").andExpect(status().isOk())
                 .andExpect(jsonPath("$.suspensionReasons.length()").value(6))

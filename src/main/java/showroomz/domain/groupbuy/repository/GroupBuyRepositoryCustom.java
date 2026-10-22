@@ -45,14 +45,23 @@ public interface GroupBuyRepositoryCustom {
     /**
      * 어드민 목록. 검색은 공구명 · 공구번호 · 브랜드명 · 쇼룸명 — 양측을 다 찾는다(32 설계 2-5).
      *
-     * @param pattern {@code %keyword%} 또는 null
+     * @param pattern  {@code %keyword%} 또는 null
+     * @param marketId 브랜드 — 주문 조회 「브랜드 → 공구」 셀렉트(46 수정계획 2-2). null 이면 전체
      */
-    Page<GroupBuy> searchForAdmin(AdminGroupBuyTab tab, String pattern, AdminGroupBuySortType sort,
+    Page<GroupBuy> searchForAdmin(AdminGroupBuyTab tab, String pattern, Long marketId, AdminGroupBuySortType sort,
                                   LocalDateTime now, Pageable pageable);
 
     /** 목록과 <b>같은 조건·같은 정렬</b>의 id 전체 — 상세의 이웃(이전·다음). */
-    List<Long> findOrderedIdsForAdmin(AdminGroupBuyTab tab, String pattern, AdminGroupBuySortType sort,
+    List<Long> findOrderedIdsForAdmin(AdminGroupBuyTab tab, String pattern, Long marketId, AdminGroupBuySortType sort,
                                       LocalDateTime now);
+
+    /**
+     * 공구를 1건 이상 연 인플루언서(공구 상태 무관) — 주문 조회 인플루언서 셀렉트(46 수정계획 2-3). 주문 필터가
+     * {@code groupBuy.creator}로 거르므로 공구가 없는 인플루언서는 골라도 0건이라 싣지 않는다. 쇼룸명순.
+     *
+     * @param marketId 그 브랜드와 공구를 연 인플루언서만 — null 이면 전체
+     */
+    List<CreatorOptionRow> findCreatorOptionsForAdmin(Long marketId);
 
     /** 큐 1종의 건수 — 요약·GNB 배지. 검색어와 무관하다(28 설계 0-5). */
     long countAdminQueue(AdminGroupBuyQueue queue, LocalDateTime now);
@@ -74,5 +83,9 @@ public interface GroupBuyRepositoryCustom {
 
     /** 요약의 기한 행 — 없으면 메서드가 null을 돌려준다. */
     record DeadlineRow(Long groupBuyId, String title, LocalDateTime at) {
+    }
+
+    /** 인플루언서 셀렉트 한 줄. */
+    record CreatorOptionRow(Long creatorId, String showroomName) {
     }
 }

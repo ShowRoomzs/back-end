@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 /**
- * 반품·교환 사유(35 설계서 1-5) — 소비자 앱과 파트너센터가 같은 라벨을 받는다.
+ * 반품·교환 사유(35 설계서 1-5) — 파트너센터 · 어드민 · 이력은 {@code label}, 소비자 앱은 {@link #getAppLabel()}(시안 문구)을 받는다.
  * 취소 요청의 {@code CancelRequestReason}과 값이 겹치지만 합치지 않는다 — 취소에는 부담 주체가 없다.
  *
  * <p>{@code consumerSelectable} — 앱 시안의 선택지에 「사이즈가 맞지 않음」은 없다. 파트너 목록 필터에는 남는다.
@@ -29,6 +29,18 @@ public enum ClaimReason {
     private final boolean consumerSelectable;
     /** 반품 화면에만 나오는 사유 — 교환에는 「기타」가 없다(시안 C10-3 1b). */
     private final boolean returnOnly;
+
+    /**
+     * 소비자 앱 문구 — 시안 C10-3 · C10-5(46 수정계획 7-4). 파트너 라벨은 운영 용어라 그대로 둔다. 「오배송」에는 배송 지연이
+     * 빠지지만 enum 은 그대로다 — 지연 반품을 앱 선택지에 둘지는 기획 확인 대기다.
+     */
+    public String getAppLabel() {
+        return switch (this) {
+            case DAMAGED_OR_DEFECTIVE -> "상품 파손 · 불량";
+            case WRONG_OR_LATE_DELIVERY -> "오배송";
+            default -> label;
+        };
+    }
 
     /** 이 유형의 요청에서 소비자가 고를 수 있는가. */
     public boolean isSelectableFor(ClaimType type) {

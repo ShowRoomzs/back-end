@@ -69,6 +69,10 @@ public interface AdminOrderControllerDocs {
             - `attentionCount` — 운영자가 볼 것이 있는 하위주문 수(배송 이상 · 발송 기한 경과 · 검토 중 취소 요청). 0 이면 표시를 뺍니다.
             - `groups[].shipOverdue` — 발송 전인데 발송 기한이 지났다(브랜드 귀책). `shipDueAt`이 null 이면 공구 진행 중이라 기한이 아직 없습니다.
             - `groups[].statusTone` — 배지 색(`NEUTRAL` · `INFO` · `WARNING` · `SUCCESS` · `DANGER`). 상태 문구는 `statusLabel`을 그대로 씁니다.
+            - 행 확장 줄 — `itemSummary`(「데일리 선크림 외 1종」) · `itemQuantity`(수량 합) · `amount`(상품 합계 + 배송비 — 한 주문의 합이
+              `totalAmount`) · `carrierLabel` · `trackingNumber`. 「공구명」 열은 `groups[].groupBuyTitle`(여러 브랜드면 첫 하위주문 것).
+            - 「배송 이상」 열 — `trackingAlertLabel` + 경과 `issueElapsedLabel`(「등록 후 26시간」 · 「8일 무갱신」 · 「감지 09.12」). 기준 시각은 `issueSince`.
+            - 「브랜드 → 공구」 셀렉트는 `GET /v1/admin/group-buys?marketId=&size=100`, 인플루언서 셀렉트는 `GET /v1/admin/group-buys/creators`.
             - 툴바 「처리 지연 N건」은 이 응답에 없습니다 — `GET /v1/admin/order-exceptions/summary`의 `tabCounts.DELAY`.
             """)
     @ApiResponses({
@@ -112,6 +116,10 @@ public interface AdminOrderControllerDocs {
             **권한:** ADMIN
 
             - `tabCounts` — `ALL` · `DELIVERY_ISSUE` · `CANCEL` 세 키가 항상 있습니다(0건 포함).
+            - `statusCounts` — 상태 셀렉트 옆 숫자(전체 탭 기준). `PENDING`을 뺀 상태 키가 항상 있습니다. 각 값은 **그 상태를 고르면
+              나오는 주문 수**라, 하위주문 상태가 갈린 주문은 상태마다 세어 합이 `ALL`보다 클 수 있습니다.
+            - `deliveryIssueCounts` — 배송 이상 탭의 이상 유형 셀렉트 숫자. `PICKUP_UNCONFIRMED` · `STALLED`는 `trackingAlert`로,
+              `RETURNING`(반송 중)은 `status=RETURNING`으로 고른 건수와 같습니다.
             - 목록 조건을 바꿀 때마다 같은 값으로 함께 호출합니다.
             """)
     @ApiResponses({
@@ -139,15 +147,20 @@ public interface AdminOrderControllerDocs {
             **권한:** ADMIN · 열람 시 운영자 ID · 주문 ID 가 서버 로그에 남습니다(개인정보 열람 기록 — 수취인 연락처 · 주소를 가리지 않고 내리는 대신).
 
             **머리**
-            - `payment` — 결제가 없으면 null. `cancelledAmount`는 PG 부분 취소 누적액(환불 큐 집행 · 수동 완료 기록이 올린다)
-            - `inquiryCount` — 헤더 「문의 N건」. 이 주문을 가리키는 1:1 문의 수
+            - `payment` — 결제가 없으면 null. `cancelledAmount`는 PG 부분 취소 누적액(환불 큐 집행 · 수동 완료 기록이 올린다).
+              `operatorRefundableAmount` = 취소 가능 잔액 − 아직 나가지 않은 환불 — B5 편입 상한(넘으면 409)
+            - `inquiryCount` · `inquiries[]` — 헤더 「문의 N건」과 그 문의 목록(최신순). B3 수령일 이의의 「1:1 문의 #N」 링크
+            - `additionalPayments[]` — ① 「추가 결제」 줄. 클레임 재발송비(교환 선결제 · 반려 재발송비) 중 PG 결제가 붙은 것 · 06b 링크 `claimId`
 
             **하위주문 블록 `groups[]`**
 
             | 필드 | 내용 |
             |---|---|
             | `shipping.shipDueAt` | 발송 기한 = 공구 마감 + `shipDueBusinessDays`영업일(**주문 시점 N** · 주말 · 공휴일 제외). 공구 진행 중이면 null |
-            | `shipping.shipOverdue` · `overdueNoticeCount` | 발송 기한 경과 · **시스템 자동 알림** 횟수(독촉 버튼은 없다) |
+            | `groupBuyTitle` · `creatorName` | ② 「글로우 크림 공구 · 인플루언서 소연_쇼룸」 — 공구 밖 하위주문이면 null |
+            | `shipping.shipOverdue` · `overdueNoticeCount` · `lastOverdueNoticeAt` | 발송 기한 경과 · **시스템 자동 알림** 횟수 · 마지막 알림 시각(독촉 버튼은 없다) |
+            | `shipping.invoiceSourceLabel` | 송장 출처 — 「브랜드 등록」 · 「운영자 대행」(마지막 송장 등록 · 수정 이력의 행위자) |
+            | `shipping.lastTrackingLabel` | 마지막 스캔 문구(「간선 상차」) — 연동 업체 원문 · 스캔 전이면 null |
             | `shipping.trackingAlert` | `PICKUP_UNCONFIRMED` 집화 확인 필요 · `STALLED` 추적 정지 · null |
             | `shipping.deliveredSourceLabel` | 배송완료 출처 — 「자동 확인」 · 「운영자 정정」 · 「운영자 처리 · 추적 정지」 |
             | `purchaseConfirm` | 배송완료 뒤에만. 반품·교환 진행 중이면 `paused = true` · `dueAt = null` |
@@ -166,7 +179,7 @@ public interface AdminOrderControllerDocs {
             | `canCorrectDeliveredAt` | B3 배송완료일 정정 | 배송완료 |
             | `canRegisterShipment` | B4 대행 송장 등록 | 상품준비중 ∧ 발송 기한 경과 ∧ 자동 알림 3회 무응답 ∧ 검토 중 취소 요청 없음 |
             | `canCancel` | B4 · B5 대행 직권 취소 | 신규 · 상품준비중 ∧ 검토 중 취소 요청 없음. **사유가 `DEFECT`가 아니면 대행 조건을 서버가 다시 본다**(미충족 409) |
-            | `canEnqueueRefund` | B5 운영자 사유 환불 편입 | 배송중 · 배송완료 · 구매확정(반송 중 제외) |
+            | `canEnqueueRefund` | B5 운영자 사유 환불 편입 | 배송중 · 배송완료 · 구매확정(반송 중 제외) ∧ `payment.operatorRefundableAmount` > 0(결제가 없는 주문은 상한 없음) |
             | `canOpenDefectClaim` | B6 하자 반품 대신 열기 | 구매확정(또는 배송완료) ∧ 배송완료 3개월 안 |
             | `canMarkLost` · `canMarkDelivered` | 추적 정지 종결 — 분실 / 배송완료 | 배송중 ∧ 추적 정지 ∧ 마지막 추적(없으면 발송) + 28일 경과 |
             """)

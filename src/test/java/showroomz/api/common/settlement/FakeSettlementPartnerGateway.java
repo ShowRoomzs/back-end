@@ -30,6 +30,7 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
     private final Map<SettlementPayee, PartnerResult> scripted = new EnumMap<>(SettlementPayee.class);
     private final List<PartnerProfile> calls = new ArrayList<>();
     private String env = "TEST";
+    private Runnable beforeNextEnsure;
 
     @Override
     public String env() {
@@ -39,6 +40,11 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
     @Override
     public synchronized PartnerResult ensure(PartnerProfile profile) {
         calls.add(profile);
+        Runnable hook = beforeNextEnsure;
+        beforeNextEnsure = null;
+        if (hook != null) {
+            hook.run();
+        }
         PartnerResult script = scripted.get(profile.payee());
         if (script != null) {
             return script.hasExternalId() || script.status() == PartnerStatus.FAILED ? script
@@ -94,6 +100,14 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
         scripted.remove(payee);
     }
 
+    /**
+     * 다음 {@link #ensure} 한 번이 PG 를 부르는 동안 끼어들 일 — PG 응답을 기다리는 사이 회원 정보가 또 바뀌는 경합 · PG 호출 예외를 재현한다.
+     * 한 번 쓰면 사라진다.
+     */
+    public synchronized void beforeNextEnsure(Runnable hook) {
+        beforeNextEnsure = hook;
+    }
+
     public synchronized List<PartnerProfile> calls() {
         return List.copyOf(calls);
     }
@@ -106,5 +120,6 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
         scripted.clear();
         calls.clear();
         env = "TEST";
+        beforeNextEnsure = null;
     }
 }

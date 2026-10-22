@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.common.AdminOperatorResolver;
@@ -88,7 +89,8 @@ public class AdminPostService {
     }
 
     public PageResponse<AdminPostDto.AppealItem> getAppeals(PostAppealStatus status, PagingRequest pagingRequest) {
-        Pageable pageable = pagingRequest.toPageable();
+        // 정렬 키가 submitted_at이라 PagingRequest의 기본 정렬(createdAt — 이의 신청에는 없는 속성)을 쓰지 않는다
+        Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
         Page<PostAppeal> page = status == null
                 ? postAppealRepository.findAllByOrderBySubmittedAtDesc(pageable)
                 // 심사 대기는 오래 기다린 순으로 본다 — 기한이 걸린 절차라 순서가 곧 형평이다

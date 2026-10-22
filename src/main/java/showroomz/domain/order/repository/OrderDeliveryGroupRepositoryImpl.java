@@ -7,6 +7,7 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.DateTimeExpression;
 import com.querydsl.core.types.dsl.DateTimePath;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
@@ -23,10 +24,13 @@ import showroomz.domain.order.type.CancelRequestStatus;
 import showroomz.domain.order.type.AdminOrderSearchType;
 import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.FulfillmentStatus;
+import showroomz.domain.order.type.TrackingAlert;
 import showroomz.domain.payment.entity.QPayment;
 
 import java.time.LocalDateTime;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 파트너센터 주문 목록(34 설계서 4-1). 탭·조회 기준 5종·검색 4타입·정렬이 전부 동적이라 QueryDSL 로 간다.
@@ -117,6 +121,30 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         Long total = queryFactory.select(o.id.countDistinct()).from(g).join(g.order, o)
                 .where(adminWhere(condition, g, o)).fetchOne();
         return total == null ? 0L : total;
+    }
+
+    @Override
+    public Map<FulfillmentStatus, Long> countOrdersByStatusForAdmin(AdminOrderSearchCondition condition) {
+        QOrderDeliveryGroup g = QOrderDeliveryGroup.orderDeliveryGroup;
+        QOrder o = QOrder.order;
+        NumberExpression<Long> orders = o.id.countDistinct();
+        Map<FulfillmentStatus, Long> counts = new EnumMap<>(FulfillmentStatus.class);
+        queryFactory.select(g.fulfillmentStatus, orders).from(g).join(g.order, o)
+                .where(adminWhere(condition, g, o)).groupBy(g.fulfillmentStatus).fetch()
+                .forEach(row -> counts.put(row.get(g.fulfillmentStatus), row.get(orders)));
+        return counts;
+    }
+
+    @Override
+    public Map<TrackingAlert, Long> countOrdersByTrackingAlertForAdmin(AdminOrderSearchCondition condition) {
+        QOrderDeliveryGroup g = QOrderDeliveryGroup.orderDeliveryGroup;
+        QOrder o = QOrder.order;
+        NumberExpression<Long> orders = o.id.countDistinct();
+        Map<TrackingAlert, Long> counts = new EnumMap<>(TrackingAlert.class);
+        queryFactory.select(g.trackingAlert, orders).from(g).join(g.order, o)
+                .where(adminWhere(condition, g, o), g.trackingAlert.isNotNull()).groupBy(g.trackingAlert).fetch()
+                .forEach(row -> counts.put(row.get(g.trackingAlert), row.get(orders)));
+        return counts;
     }
 
     private BooleanBuilder adminWhere(AdminOrderSearchCondition condition, QOrderDeliveryGroup g, QOrder o) {

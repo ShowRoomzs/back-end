@@ -74,12 +74,15 @@ public final class UserCancelDto {
         private Long cancelRequestId;
         private Kind kind;
         private Phase phase;
-        @Schema(example = "확인 중")
+        @Schema(description = "상태 라벨 — 확인 중 「취소 요청 · 브랜드 확인 중」 · 거부 「취소 반려」 · 완료 「취소 완료」 · 직권 「판매 취소」",
+                example = "취소 요청 · 브랜드 확인 중")
         private String phaseLabel;
+        @Schema(description = "[취소 요청 철회] 노출 — 브랜드 확인 중인 취소 요청만. `POST /v1/user/orders/{orderId}/cancel-requests/{cancelRequestId}/withdraw`")
+        private boolean withdrawable;
         @Schema(description = "자동 승인으로 취소됐다(브랜드가 응답 기한 안에 확인하지 않았다)")
         private boolean autoApproved;
         @Schema(description = "상단 안내 문구 — 없으면 빈 목록",
-                example = "[\"브랜드가 1영업일(주말·공휴일 제외) 안에 확인하지 않으면 자동으로 취소돼요\"]")
+                example = "[\"브랜드가 1영업일(주말·공휴일 제외) 안에 확인하지 않으면 자동으로 취소돼요. 확인 전까지는 요청을 철회할 수 있어요\"]")
         private List<String> notices;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime requestedAt;
@@ -98,6 +101,22 @@ public final class UserCancelDto {
         private List<Item> items;
         @Schema(description = "환불 — 거부 · 확인 중이면 null", nullable = true)
         private Refund refund;
+    }
+
+    @Getter
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "취소 요청 철회 결과 — 그 요청의 항목이 결제완료(상품준비중)로 돌아간다. 앱은 주문 상세를 다시 읽는다")
+    public static class WithdrawResponse {
+        private Long orderId;
+        private Long cancelRequestId;
+        @Schema(description = "하위주문 — 발송 보류가 풀린 곳", example = "911")
+        private Long deliveryGroupId;
+        @Schema(description = "철회한 항목", example = "[3301]")
+        private List<Long> orderProductIds;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime withdrawnAt;
     }
 
     @Getter

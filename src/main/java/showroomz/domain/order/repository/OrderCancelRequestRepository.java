@@ -88,6 +88,17 @@ public interface OrderCancelRequestRepository extends JpaRepository<OrderCancelR
     @Query("SELECT r.status FROM OrderCancelRequest r WHERE r.id = :id")
     Optional<showroomz.domain.order.type.CancelRequestStatus> findStatus(@Param("id") Long id);
 
+    /**
+     * 소비자 철회(46 수정계획 7-1) — 검토 중이고 요청자 본인일 때만. 0행 = 그사이 브랜드 승인 · 거부 · 자동 승인으로 결정됐다(같은 행을
+     * PENDING 조건으로 다투므로 한쪽만 이긴다).
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderCancelRequest r SET r.status = showroomz.domain.order.type.CancelRequestStatus.WITHDRAWN, "
+            + "r.decidedAt = :now "
+            + "WHERE r.id = :id AND r.requestedBy = :userId "
+            + "AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING")
+    int withdraw(@Param("id") Long id, @Param("userId") Long userId, @Param("now") LocalDateTime now);
+
     /** 소비자 전액 취소 수렴(설계서 5-2) — 그 주문에 걸린 검토 중 요청을 시스템이 닫는다(결정자 없음). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderCancelRequest r SET r.status = showroomz.domain.order.type.CancelRequestStatus.VOIDED, "

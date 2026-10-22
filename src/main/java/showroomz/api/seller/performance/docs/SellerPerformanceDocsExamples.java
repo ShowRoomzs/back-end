@@ -65,6 +65,21 @@ final class SellerPerformanceDocsExamples {
             }
             """;
 
+    static final String SUMMARY_EMPTY = """
+            {
+              "population": {"status": "PAID", "count": 0},
+              "confirmedSales": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "visitors": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "avgAov": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "avgConversionRate": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "avgRoas": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "genderRatio": {"female": null, "male": null, "basis": "집계된 공구 없음"},
+              "avgConfirmRate": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "avgRepurchaseRate": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
+              "statusCounts": {"AGGREGATING": 2, "REVIEWING": 0, "ADJUSTING": 0, "PAYOUT_SCHEDULED": 0, "PAID": 0}
+            }
+            """;
+
     static final String DETAIL = """
             {
               "groupBuyId": 55, "groupBuyTitle": "수분 앰플 공구",
@@ -116,6 +131,61 @@ final class SellerPerformanceDocsExamples {
             }
             """;
 
+    static final String DETAIL_AGGREGATING = """
+            {
+              "groupBuyId": 61, "groupBuyTitle": "데일리 선크림 공구",
+              "influencer": {"creatorId": 12, "showroomName": "데일리뷰티랩"}, "connectionId": 40,
+              "periodStart": "2026-08-01T10:00:00", "periodEnd": "2026-08-07T23:59:00",
+              "status": "AGGREGATING", "statusLabel": "집계 중", "statusTone": "NEUTRAL",
+              "aggregating": {"unclosedCount": 4, "openReturnCount": 3,
+                "unclosedStages": [{"stage": "RETURNING", "label": "반송중", "count": 3}, {"stage": "SHIPPING", "label": "배송중", "count": 1}]},
+              "contract": {"contractId": 74, "fixedFeeAmount": 300000, "fixedFeeTriggerLabel": "공구 게시물 등록 후",
+                "fixedFeeText": "고정 지급비 300,000원 · 지급 시점: 공구 게시물 등록 후 · 브랜드 직접 지급", "rewardRateLabel": "10%",
+                "reward": {"value": 612000, "state": "PROJECTED", "basis": "상품별 리워드율 × 확정 수량"},
+                "totalSpend": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "정산 후 확정"}, "periodDays": 7},
+              "kpi": {
+                "confirmedSales": {"value": 6120000, "state": "PROJECTED", "basis": "구매확정 예정 318건 기준"},
+                "payout": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "반품 처리가 끝나면 산출됩니다"},
+                "conversionRate": {"value": 6.4, "state": "PROJECTED", "basis": "쇼룸 방문 4,980명 대비 구매확정"},
+                "roas": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "확정 거래액이 확정되면 산출됩니다"}
+              },
+              "breakdown": {"pendingReturnCount": 3},
+              "consumers": {"estimated": true,
+                "acquisitionCost": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "총 집행비가 확정되면 산출됩니다"}},
+              "cost": {"editable": false, "lockedReason": "AGGREGATING",
+                "totalCost": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "확정 수량이 확정되면 산출됩니다"},
+                "profit": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "정산액이 확정되면 산출됩니다"},
+                "profitRate": {"value": null, "state": "PENDING_SETTLEMENT", "basis": "정산액이 확정되면 산출됩니다"}},
+              "settlement": null
+            }
+            """;
+
+    static final String DETAIL_ADJUSTING = """
+            {
+              "groupBuyId": 58, "groupBuyTitle": "수분 토너 공구",
+              "influencer": {"creatorId": 9, "showroomName": "뷰티로그"}, "connectionId": 37,
+              "periodStart": "2026-07-25T10:00:00", "periodEnd": "2026-07-31T23:59:00",
+              "status": "ADJUSTING", "statusLabel": "조정 협의", "statusTone": "WARNING", "aggregating": null,
+              "contract": {"contractId": 71, "fixedFeeAmount": null, "fixedFeeTriggerLabel": null, "fixedFeeText": null, "rewardRateLabel": "10%",
+                "reward": {"value": null, "state": "NEGOTIATING", "original": 294000, "basis": "조정 협의 중"},
+                "totalSpend": {"value": null, "state": "NEGOTIATING", "original": 294000, "basis": "합의 후 변동"}, "periodDays": 7},
+              "kpi": {
+                "confirmedSales": {"value": 2940000, "state": "FINAL", "basis": "구매확정 152건 기준"},
+                "payout": {"value": null, "state": "NEGOTIATING", "original": 2531340, "basis": "리워드 합의 후 확정"},
+                "roas": {"value": null, "state": "NEGOTIATING", "original": 1000, "basis": "총 집행비가 리워드 합의로 바뀜"}
+              },
+              "cost": {"editable": true, "lockedReason": null,
+                "profit": {"value": null, "state": "NEGOTIATING", "original": 812340, "basis": "정산액 확정 후 산출"},
+                "profitRate": {"value": null, "state": "NEGOTIATING", "original": 27.6, "basis": "정산액 확정 후 산출"}},
+              "settlement": {"settlementId": 29, "status": "ADJUSTING", "statusLabel": "조정 협의", "statusTone": "WARNING",
+                "payout": {"value": null, "state": "NEGOTIATING", "original": 2531340, "basis": "리워드 합의 후 확정"},
+                "reviewDueAt": "2026-08-07T23:59:59", "payoutDueDate": null, "paidAt": null,
+                "adjustment": {"adjustmentId": 12, "threadId": 140, "status": "OPEN", "statusLabel": "협의 중", "requesterType": "CREATOR",
+                  "deadlineAt": "2026-08-21T23:59:59", "remainingBusinessDays": 6, "originalRewardAmount": 294000,
+                  "myLatestAmount": null, "counterpartLatestAmount": 330000, "turn": "MY_TURN", "turnLabel": "내 응답 필요"}}
+            }
+            """;
+
     static final String COST_REQUEST = """
             {
               "items": [{"contractItemId": 81, "unitCost": 7200}, {"contractItemId": 82, "unitCost": 5100}],
@@ -133,6 +203,10 @@ final class SellerPerformanceDocsExamples {
 
     static final String ERR_COST_ITEM_MISMATCH = """
             {"code": "PERFORMANCE_COST_ITEM_MISMATCH", "message": "계약 상품 목록과 원가 항목이 일치하지 않습니다."}
+            """;
+
+    static final String ERR_COST_AMOUNT = """
+            {"code": "INVALID_INPUT", "message": "부자재비은(는) 0원 이상 10억 원 이하로 입력해 주세요."}
             """;
 
     static final String ERR_INVALID_INPUT = """

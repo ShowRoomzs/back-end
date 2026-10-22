@@ -156,4 +156,11 @@ public final class AdminGroupBuyDto {
 
     public record AttachmentUrlResponse(Long attachmentId, String url, String fileName, long expiresInSeconds) {
     }
+
+    @Schema(name = "AdminGroupBuyCreatorOption", description = "주문 조회 인플루언서 셀렉트 한 줄 — `creatorId`를 주문 목록 `creatorId`로 보낸다")
+    public record CreatorOption(
+            @Schema(example = "12") Long creatorId,
+            @Schema(description = "쇼룸명 — 공구 목록 `creatorName`과 같은 값", example = "소연_쇼룸", nullable = true) String showroomName
+    ) {
+    }
 }

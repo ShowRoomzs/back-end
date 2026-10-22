@@ -77,12 +77,16 @@ public interface SellerPerformanceControllerDocs {
                     **권한:** SELLER
 
                     평균은 공구 평균이 아니라 **합산 비율**(Σ분자 ÷ Σ분모)입니다 — 평균 전환율 = Σ구매확정 ÷ Σ방문 · 평균 ROAS = Σ확정 거래액 ÷ Σ총 집행비(집행비 0원 공구 제외).
-                    지급 완료 공구가 없으면 지표는 전부 `value = null`(「—」 · 0원은 실적처럼 읽힌다) · `statusCounts` 는 실제 수.
+                    평균 AOV = Σ확정 거래액 ÷ Σ확정 주문 · 평균 구매확정률 = Σ구매확정 ÷ Σ주문 · 평균 재구매율 = Σ재구매 ÷ Σ구매확정 소비자.
+                    지급 완료에는 분배 실패 건도 포함됩니다.
+
+                    지급 완료 공구가 없으면(`population.count = 0`) 지표는 전부 `value = null`(「—」 · 0원은 실적처럼 읽힌다) · `statusCounts` 는 실제 수(다섯 키 항상 있음).
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "KPI · 상태 칩",
-                    content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Summary.class),
-                            examples = @ExampleObject(value = SUMMARY))),
+                    content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Summary.class), examples = {
+                            @ExampleObject(name = "L1", summary = "지급 완료 2건 합산", value = SUMMARY),
+                            @ExampleObject(name = "L2", summary = "지급 완료 공구 없음", value = SUMMARY_EMPTY)})),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
             @ApiResponse(responseCode = "403", description = "판매자 권한 없음",
@@ -104,6 +108,11 @@ public interface SellerPerformanceControllerDocs {
                     | `PAID` + 합의 반영(D4) | 배지는 D1 과 같다 · 리워드에 걸린 값이 `FINAL` + `original`(원래 값) |
                     | 원가 미입력(D1-C) | `cost.items[].unitCost = null` · `totalCost · profit · profitRate` 의 `value = null` + basis 「개당 원가를 입력하면 수익이 계산됩니다」 |
 
+                    - 방문 · 유입 경로 · 게시물 · 좋아요 · 주문 · 발송 · 팔로워 비중은 줄지 않는 값이라 **어느 상태에서나 `FINAL`** 입니다.
+                    - 게시물 공유(`traffic.post.shareCount`)만 원천 로그가 없어 항상 `NOT_AVAILABLE`(「집계 준비 중」)입니다.
+                    - `traffic.limits[]` 는 커버리지 한계 고지 문장입니다(쇼룸 단위 방문 · SNS 출처 미상 · 공유 미집계) — 그대로 표시합니다.
+                    - 재구매는 **이 브랜드**의 이전 공구 기준입니다(스튜디오 성과는 같은 인플루언서 기준이라 같은 공구라도 값이 다를 수 있다).
+
                     정산 연결 `settlement.breakdown` 은 정산 관리(13) 분해 그대로입니다 — 이 화면은 돈을 계산하지 않습니다.
                     응답 버튼(동의 · 제안 · 반대)은 없습니다 — 조정 협의 응답은 이슈 스레드(`settlement.adjustment.threadId`)에서만 합니다.
                     원가(`cost`)는 이 응답에만 있고 인플루언서 · 운영자 API 에는 없습니다.
@@ -111,8 +120,10 @@ public interface SellerPerformanceControllerDocs {
                     """ + FIGURE)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "공구 성과",
-                    content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Detail.class),
-                            examples = @ExampleObject(summary = "D1 지급 완료 · 원가 입력 완료(일부 생략)", value = DETAIL))),
+                    content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Detail.class), examples = {
+                            @ExampleObject(name = "D1", summary = "지급 완료 · 원가 입력 완료(일부 생략)", value = DETAIL),
+                            @ExampleObject(name = "D2", summary = "집계 중 — 예정 · 정산 후 확정 · 원가 잠금(일부 블록 생략)", value = DETAIL_AGGREGATING),
+                            @ExampleObject(name = "D3", summary = "조정 협의 — 리워드에 걸린 값만 협의 중(일부 블록 생략)", value = DETAIL_ADJUSTING)})),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
             @ApiResponse(responseCode = "403", description = "판매자 권한 없음",
@@ -128,19 +139,28 @@ public interface SellerPerformanceControllerDocs {
 
                     **권한:** SELLER
 
-                    - `items` — 계약 상품 **전부**를 정확히 한 번씩(`contractItemId` · `unitCost`). 미입력은 `unitCost: null`. 빠지거나 다른 공구의 항목이면 400 `PERFORMANCE_COST_ITEM_MISMATCH`.
-                    - 공구 전체 비용 4종(부자재비 · 배송비 · 반품 폐기 손실 · 기타) — 각 `null` 허용.
-                    - 금액은 0 이상 10억 이하 정수(400 `INVALID_INPUT`). 전부 `null` 이면 「입력 안 함」으로 되돌린다.
-                    - **집계 중(정산 전)에는 저장할 수 없다** — 409 `PERFORMANCE_COST_LOCKED`(확정 수량이 바뀌면 소계도 달라진다).
+                    - `items` — 계약 상품 **전부**를 정확히 한 번씩(`contractItemId` · `unitCost`). 키는 상세 `cost.items[].contractItemId`. 미입력은 `unitCost: null`.
+                      빠지거나 · 중복이거나 · 다른 공구의 항목이면 400 `PERFORMANCE_COST_ITEM_MISMATCH`.
+                    - 공구 전체 비용 4종(`packagingCost` 부자재비 · `shippingCost` 배송비 · `returnDisposalCost` 반품 폐기 손실 · `etcCost` 기타) — 각 `null` 허용.
+                    - 금액은 0 이상 10억 이하 정수(원) — 밖이면 400 `INVALID_INPUT`(메시지에 항목 이름). 전부 `null` 이면 「입력 안 함」으로 되돌린다(행은 지우지 않는다).
+                    - **집계 중(정산 전)에는 저장할 수 없다** — 409 `PERFORMANCE_COST_LOCKED`(확정 수량이 바뀌면 소계도 달라진다). 정산 확인 중 · 조정 협의 · 지급 예정 · 지급 완료는 저장 가능.
                     - 인플루언서 리워드 · PG · 플랫폼 수수료는 정산액에서 이미 빠졌고 고정 지급비는 수익 계산에 자동 반영된다 — 다시 넣지 않는다.
+                    - 저장하는 값은 개당 원가 · 4종뿐입니다. 소계 · 총 원가 · 수익 · 수익률은 조회 때 계산합니다(응답 `cost`). 이력은 남기지 않습니다.
+
+                    **검사 순서:** 소유 · 모집단(404) → 집계 중(409) → `items` 항목 · 개당 원가 범위(400 · 한 줄씩) → 4종 금액 범위(400)
                     """)
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "저장 뒤 상세",
-                    content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Detail.class))),
+            @ApiResponse(responseCode = "200", description = "저장 뒤 상세 — `cost.updatedAt` 갱신 · `totalCost` · `profit` · `profitRate` 재계산",
+                    content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Detail.class),
+                            examples = @ExampleObject(summary = "D1-D 원가 입력 완료(일부 생략)", value = DETAIL))),
             @ApiResponse(responseCode = "400", description = "항목 불일치(`PERFORMANCE_COST_ITEM_MISMATCH`) · 금액 범위(`INVALID_INPUT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
                             @ExampleObject(name = "항목 불일치", value = ERR_COST_ITEM_MISMATCH),
-                            @ExampleObject(name = "금액 범위", value = ERR_INVALID_INPUT)})),
+                            @ExampleObject(name = "금액 범위", value = ERR_COST_AMOUNT)})),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
+            @ApiResponse(responseCode = "403", description = "판매자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_FORBIDDEN))),
             @ApiResponse(responseCode = "404", description = "남의 공구 · 없음 · 모집단 밖 (`GROUP_BUY_NOT_FOUND`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_NOT_FOUND))),
             @ApiResponse(responseCode = "409", description = "집계 중 (`PERFORMANCE_COST_LOCKED`)",
