@@ -1,8 +1,10 @@
 package showroomz.global.delivery.tracker.sweettracker;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
+import showroomz.global.health.IntegrationHealthRegistry;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.delivery.tracker.DeliveryTrackerBlockedException;
@@ -49,10 +51,19 @@ public class SweetTrackerDeliveryTracker implements DeliveryTrackerPort {
 
     private final SweetTrackerClient client;
     private final DeliveryTrackerProperties properties;
+    private final IntegrationHealthRegistry healthRegistry;
 
     public SweetTrackerDeliveryTracker(SweetTrackerClient client, DeliveryTrackerProperties properties) {
+        this(client, properties, new IntegrationHealthRegistry());
+    }
+
+    /** 호출 성공 · 실패 · 키 차단을 연동 상태에 남긴다(어드민 홈 「배송 추적」 배지 · 1017 설계서 6-3). */
+    @Autowired
+    public SweetTrackerDeliveryTracker(SweetTrackerClient client, DeliveryTrackerProperties properties,
+                                       IntegrationHealthRegistry healthRegistry) {
         this.client = client;
         this.properties = properties;
+        this.healthRegistry = healthRegistry;
         List<String> unmapped = Arrays.stream(DeliveryCarrier.values())
                 .filter(carrier -> carrier.getTrackerCode() == null)
                 .map(DeliveryCarrier::getLabel)
@@ -107,6 +118,7 @@ public class SweetTrackerDeliveryTracker implements DeliveryTrackerPort {
         }
         if (ERROR_KEY_USAGE_EXCEEDED.equals(code) || ERROR_KEY_NOT_FOUND.equals(code)
                 || ERROR_KEY_EXPIRED.equals(code)) {
+            healthRegistry.recordTrackingBlocked(LocalDateTime.now(), "조회 차단(" + code + ")");
             throw new DeliveryTrackerBlockedException("스마트택배 조회 차단 - code: " + code + ", msg: " + response.msg());
         }
         // 105(같은 송장 일 한도) · 106(조회 에러) — 판정하지 않고 다음 회차에 맡긴다.
@@ -117,9 +129,17 @@ public class SweetTrackerDeliveryTracker implements DeliveryTrackerPort {
     /** 통신 오류·해석 불가 응답은 empty — 키는 폼 본문으로만 나가므로 예외 메시지에 섞이지 않는다. */
     private Optional<SweetTrackerTrackingResponse> call(DeliveryCarrier carrier, String trackingNumber) {
         try {
-            return Optional.ofNullable(client.trackingInfo(carrier.getTrackerCode(), trackingNumber));
+            Optional<SweetTrackerTrackingResponse> response =
+                    Optional.ofNullable(client.trackingInfo(carrier.getTrackerCode(), trackingNumber));
+            if (response.isPresent()) {
+                healthRegistry.recordTrackingSuccess(LocalDateTime.now());
+            } else {
+                healthRegistry.recordTrackingFailure(LocalDateTime.now(), "빈 응답");
+            }
+            return response;
         } catch (RuntimeException e) {
             log.warn("스마트택배 조회 실패 - carrier: {}, cause: {}", carrier, e.toString());
+            healthRegistry.recordTrackingFailure(LocalDateTime.now(), "조회 실패");
             return Optional.empty();
         }
     }

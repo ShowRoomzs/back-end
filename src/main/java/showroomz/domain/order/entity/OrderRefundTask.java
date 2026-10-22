@@ -106,6 +106,10 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Column(name = "executed_at")
     private LocalDateTime executedAt;
 
+    /** 마지막 실패 시각(1017 설계서 6-1 · V208) — 어드민 홈 「환불 실패」 경과 · 운영 지표 「환불 실패」. 재시도가 성공해도 남는다. */
+    @Column(name = "failed_at")
+    private LocalDateTime failedAt;
+
     /** 집행한 운영자 — PG 자동 집행은 null. */
     @Column(name = "executed_by")
     private Long executedBy;
@@ -193,6 +197,7 @@ public class OrderRefundTask extends BaseTimeEntity {
     /** 실패 — 운영자 문장과 PG 응답 코드(있으면). */
     public void markFailed(String error, String errorCode) {
         this.status = RefundTaskStatus.FAILED;
+        this.failedAt = LocalDateTime.now();
         this.lastError = error != null && error.length() > 500 ? error.substring(0, 500) : error;
         this.lastErrorCode = errorCode != null && errorCode.length() > 50 ? errorCode.substring(0, 50) : errorCode;
     }

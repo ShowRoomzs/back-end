@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.delivery.tracker.sweettracker.SweetTrackerClient;
+import showroomz.global.health.IntegrationHealthRegistry;
 import showroomz.global.delivery.tracker.sweettracker.SweetTrackerDeliveryTracker;
 import showroomz.global.delivery.tracker.sweettracker.SweetTrackerUsageMonitor;
 import showroomz.global.scheduler.OrderDeliveryTrackingScheduler;
@@ -32,7 +33,7 @@ class DeliveryTrackerWiringTest {
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withUserConfiguration(PropertiesConfig.class, NoopDeliveryTracker.class, SweetTrackerClient.class,
                     SweetTrackerDeliveryTracker.class, SweetTrackerUsageMonitor.class,
-                    OrderDeliveryTrackingScheduler.class)
+                    OrderDeliveryTrackingScheduler.class, IntegrationHealthRegistry.class)
             .withBean(OrderFulfillmentService.class, () -> mock(OrderFulfillmentService.class));
 
     @Test

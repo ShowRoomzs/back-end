@@ -361,13 +361,20 @@ public class OrderFulfillmentService {
     @Transactional
     public void applyTracking(OrderDeliveryGroup target, Optional<TrackSnapshot> result, LocalDateTime now,
                               int pickupAlertHours, int stallAlertDays) {
+        applyTracking(target, result, now, pickupAlertHours, stallAlertDays, true);
+    }
+
+    /** @param judgeAlerts false 면 배송 이상(집화 확인 필요 · 추적 정지)을 새로 판정하지 않는다 — 추적 연동 장애 중(1017 설계서 6-3) */
+    @Transactional
+    public void applyTracking(OrderDeliveryGroup target, Optional<TrackSnapshot> result, LocalDateTime now,
+                              int pickupAlertHours, int stallAlertDays, boolean judgeAlerts) {
         Long id = target.getId();
         // 폴링 당시의 송장 — 전이 WHERE 에 넣어 그사이 송장이 수정됐으면 0행이 된다(N11).
         DeliveryCarrier carrier = target.getCarrier();
         String trackingNumber = target.getTrackingNumber();
         if (result.isEmpty() || result.get().lastEventAt() == null) {
             // 이벤트 없음 — 집화 스캔 전에는 데이터가 없는 게 정상. 24시간이 지나야 1단 경고다(§34-6).
-            if (target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
+            if (judgeAlerts && target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
                     && target.getLastTrackingAt() == null
                     && target.getShippedAt() != null
                     && !target.getShippedAt().plusHours(pickupAlertHours).isAfter(now)
@@ -411,7 +418,9 @@ public class OrderFulfillmentService {
         // 2단 — 집화 후 N일 갱신 없음. 1단과 달리 이벤트가 있던 송장이다.
         if (target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
                 && !snapshot.lastEventAt().plusDays(stallAlertDays).isAfter(now)) {
-            if (deliveryGroupRepository.setTrackingAlert(id, carrier, trackingNumber, TrackingAlert.STALLED) == 1) {
+            // 판정을 멈춘 동안에도 기존 배지는 그대로 둔다(아래 「재개 — 해제」로 내려가지 않는다).
+            if (judgeAlerts
+                    && deliveryGroupRepository.setTrackingAlert(id, carrier, trackingNumber, TrackingAlert.STALLED) == 1) {
                 appendHistory(id, FulfillmentEventType.TRACKING_STALLED, FulfillmentActorType.TRACKER, null, null, now);
             }
             return;

@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.global.health.IntegrationHealthRegistry;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionKind;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionTab;
@@ -57,6 +58,7 @@ public class AdminOrderExceptionService {
     private final OrderProperties orderProperties;
     private final DeliveryTrackerProperties trackerProperties;
     private final StalledPolicy stalledPolicy;
+    private final IntegrationHealthRegistry healthRegistry;
 
     public AdminOrderExceptionDto.ExceptionPage getExceptions(ExceptionTab tab, ExceptionKind kind, String keyword,
                                                               PagingRequest paging) {
@@ -143,12 +145,14 @@ public class AdminOrderExceptionService {
         List<Row> rows = new ArrayList<>();
         List<OrderDeliveryGroup> groups = deliveryGroupRepository.findDeliveryExceptionsForAdmin(cap);
         warnIfCapped(ExceptionKind.TRACKING_STALLED, groups.size());
+        // 추적 연동 장애 중에는 「추적 정지」가 장애 때문일 수 있다 — 판정과 함께 집계에서도 뺀다(1017 설계서 6-3 · 어드민 홈 배너).
+        boolean trackingDegraded = healthRegistry.isTrackingDegraded(now);
         for (OrderDeliveryGroup group : groups) {
             if (group.getFulfillmentStatus() == FulfillmentStatus.RETURNING) {
                 rows.add(new Row(ExceptionKind.RETURNING, group, null, null, group.getReturnDetectedAt(), false));
             } else if (group.getTrackingAlert() == TrackingAlert.PICKUP_UNCONFIRMED) {
                 rows.add(new Row(ExceptionKind.PICKUP_UNCONFIRMED, group, null, null, group.getShippedAt(), false));
-            } else if (group.getTrackingAlert() == TrackingAlert.STALLED) {
+            } else if (group.getTrackingAlert() == TrackingAlert.STALLED && !trackingDegraded) {
                 // 종결 조건(41 보고 3번) — N일 경과면 운영자가 분실 · 배송완료를 판정할 수 있다(조건 표시만 · 06a 레일에서 고른다).
                 rows.add(new Row(ExceptionKind.TRACKING_STALLED, group, null, null,
                         group.getLastTrackingAt() != null ? group.getLastTrackingAt() : group.getShippedAt(),
