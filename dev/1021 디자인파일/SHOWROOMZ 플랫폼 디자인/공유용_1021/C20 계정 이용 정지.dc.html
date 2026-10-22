@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+.noscroll{scrollbar-width:none;-ms-overflow-style:none}.noscroll::-webkit-scrollbar{display:none;width:0;height:0}
+.dv-turn{padding:40px 44px 32px;scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#1a1a1a;color:#fff;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Pretendard,sans-serif;color:#1a1a1a}
+.dv-tsub{margin:0 0 22px;font:400 12px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.5);max-width:760px}
+.dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:9px;width:390px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#1a1a1a;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.55)}
+.dv-card{border-radius:30px;box-shadow:0 12px 40px rgba(0,0,0,.13);overflow:hidden}
+.dv-note{margin:2px 0 0;font:400 11.5px/1.7 Pretendard,sans-serif;color:rgba(0,0,0,.52)}
+.dv-note b{color:rgba(0,0,0,.78);font-weight:600}
+@keyframes szFade{from{opacity:0}to{opacity:1}}
+@keyframes szSheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+@keyframes szPop{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+@keyframes szToastIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes szDrop{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes szHeartPop{0%{transform:scale(1)}30%{transform:scale(1.28)}60%{transform:scale(.92)}100%{transform:scale(1)}}
+*{-webkit-tap-highlight-color:transparent}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">C20 계정 이용 정지 — 상태 스냅샷</span></div>
+<p class="dv-tsub">운영자가 계정을 정지하면 <b>로그인은 그대로 허용하고 기능만 제한</b>합니다. 차단 기능은 숨기지 않고 비활성 + 안내 한 줄로 두고, 이의 제기는 1:1 문의로만 받습니다. 각 화면의 [자세히]는 정지 안내 시트(1c)로 연결됩니다.</p>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>C1 홈 · 정지 상태</div>
+<div class="dv-card">
+<div data-screen-label="C20 홈 정지" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif"><span>9:41</span><div style="display:flex;align-items:center;gap:5px"><svg width="17" height="11" viewBox="0 0 17 11" fill="#0F0F0F"><rect x="0" y="7" width="3" height="4" rx="1"></rect><rect x="4.5" y="5" width="3" height="6" rx="1"></rect><rect x="9" y="2.5" width="3" height="8.5" rx="1"></rect><rect x="13.5" y="0" width="3" height="11" rx="1"></rect></svg><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect></svg></div></div>
+<div style="display:flex;align-items:center;gap:14px;padding:2px 16px 12px">
+<div style="flex:1;display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:8px;background:#F4F4F5"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="2" stroke-linecap="square" style="display:block"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.6-3.6"></path></svg><span style="font:400 14px/1 Pretendard,sans-serif;color:#8E8E8E">쇼룸 이름 또는 아이디로 검색</span></div>
+<svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.6"><path d="M4.4 7.5h15.2l-1.1 12.3H5.5z"></path><path d="M8.8 10V6.6a3.2 3.2 0 0 1 6.4 0V10"></path></svg>
+</div>
+</div>
+<div style="flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;box-sizing:border-box;background:#FDECEC">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5" stroke-width="1.7"></circle><path d="M12 7.8v5"></path><path d="M12 16v.2"></path></svg>
+<span style="flex:1;min-width:0;font:500 12.5px/1.45 Pretendard,sans-serif;color:#B42318;text-wrap:pretty">계정 이용이 정지되었어요 · 사유: 운영정책 위반</span>
+<span onClick="{{ goSheet }}" style="flex:none;padding:12px 0 12px 8px;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#B42318;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">자세히</span>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:14px 0 16px">
+<div style="display:flex;align-items:center;gap:10px;padding:0 14px 10px">
+<div style="width:36px;height:36px;border-radius:50%;flex:none;border:1.5px solid #F2456E;padding:2px;box-sizing:border-box"><div style="width:100%;height:100%;border-radius:50%;background:linear-gradient(140deg,#F4D9DF,#E6C3CD)"></div></div>
+<div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px"><span style="min-width:0;font:600 13.5px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">제니의 뷰티룸</span><span style="flex:none;font:400 13px/1.3 Pretendard,sans-serif;color:#8E8E8E">· 2시간</span></div>
+<svg width="20" height="20" viewBox="0 0 24 24" fill="#0F0F0F"><circle cx="5.5" cy="12" r="1.6"></circle><circle cx="12" cy="12" r="1.6"></circle><circle cx="18.5" cy="12" r="1.6"></circle></svg>
+</div>
+<div style="aspect-ratio:4/5;background:linear-gradient(150deg,#EFEAE6,#DCD4CD 55%,#E7DFE2)"></div>
+<div style="padding:12px 14px 0;display:flex;align-items:center">
+<div onClick="{{ tapHeart }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;padding:10px 8px;margin:-10px -8px" style-active="opacity:.4">
+<svg width="25" height="25" viewBox="0 0 24 24" stroke="#0F0F0F" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="display:block"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg>
+<span style="display:block;font:600 13.5px/1 Pretendard,sans-serif;transform:translateY(1px)">24</span>
+</div>
+</div>
+<div style="padding:9px 14px 0;font:400 13.5px/1.55 Pretendard,sans-serif">여름 끝 무너진 장벽, 3주면 돌아옵니다 <span style="color:#8E8E8E">더 보기</span></div>
+</div>
+</div>
+<sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+<div style="position:absolute;left:14px;right:14px;bottom:96px;z-index:5;display:flex;align-items:center;gap:10px;padding:13px 15px;border-radius:8px;background:#0F0F0F;animation:szToastIn .22s cubic-bezier(.2,0,0,1) both">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF9DB5" stroke-width="2" stroke-linecap="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5"></circle><path d="M12 8v5"></path><path d="M12 15.6v.1"></path></svg>
+<span style="flex:1;min-width:0;font:500 13px/1.4 Pretendard,sans-serif;color:#fff">이용 정지 중에는 좋아요를 누를 수 없어요</span>
+</div>
+</sc-if>
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:9px 0 0;background:#fff">
+<div style="display:flex">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#0F0F0F"><svg width="25" height="25" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10.6 12 4.2l8 6.4V19a1.4 1.4 0 0 1-1.4 1.4h-3.9v-5.9h-5.4v5.9H5.4A1.4 1.4 0 0 1 4 19z"></path></svg><span style="font:600 10px/1 Pretendard,sans-serif">홈</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="9" cy="8" r="3.4"></circle><path d="M3.5 19.5c0-3 2.5-5.4 5.5-5.4s5.5 2.4 5.5 5.4"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">팔로잉</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 20.6c-.35 0-.7-.12-.96-.37C7.4 16.9 3.6 13.5 3.6 9.9c0-2.7 2.1-4.8 4.7-4.8 1.4 0 2.7.6 3.7 1.7 1-1.1 2.3-1.7 3.7-1.7 2.6 0 4.7 2.1 4.7 4.8 0 3.6-3.8 7-7.44 10.33-.26.25-.61.37-.96.37z"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">좋아요</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:#9E9E9E"><svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg><span style="font:500 10px/1 Pretendard,sans-serif">마이</span></div>
+</div>
+<div style="height:24px;display:flex;align-items:center;justify-content:center"><div style="width:140px;height:5px;border-radius:3px;background:#0F0F0F"></div></div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>2026.10.19 · 결정 노트 v0.2 반영</b> — 기-01 【잠정】 명칭 "계정 이용 정지" 유지. 기-02 【잠정】 정지 안내 시트에 정지 기간 · 자동 해제일(값 [정책값 미정]) · "이의 신청 기한: 통지 후 3영업일 이상" 표시. 기-03 정지 중에도 탈퇴 가능 — 시트의 "할 수 있는 것"에 회원 탈퇴를 명시.<br><br><b>상단 배너</b> — 모든 탭의 헤더 바로 아래에 고정, 닫기 없음. 위험 톤 배경 #FDECEC + 잉크 #B42318(대비 5.6:1). <b>로즈를 쓰지 않습니다</b> — 로즈는 공구·권장 액션 신호라 정지와 섞이면 의미가 무너집니다. 사유는 운영자가 고른 정형 사유 그대로, 상세 사유는 노출하지 않습니다. 하트처럼 안내 줄을 붙일 자리가 없는 아이콘은 <b>눌렀을 때 토스트</b>로 알립니다(하트를 눌러 보세요). 피드 열람·기존 좋아요 취소는 평소와 같습니다.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>C7 상품 상세 · 구매 · 문의 비활성</div>
+<div class="dv-card">
+<div data-screen-label="C20 상품 상세 정지" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif"><span>9:41</span><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect></svg></div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px"><div style="display:flex;padding:11px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:600 16px/1 Pretendard,sans-serif">상품</span></div>
+</div>
+<div style="flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;box-sizing:border-box;background:#FDECEC">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5" stroke-width="1.7"></circle><path d="M12 7.8v5"></path><path d="M12 16v.2"></path></svg>
+<span style="flex:1;min-width:0;font:500 12.5px/1.45 Pretendard,sans-serif;color:#B42318">계정 이용이 정지되었어요 · 사유: 운영정책 위반</span>
+<span onClick="{{ goSheet }}" style="flex:none;padding:12px 0 12px 8px;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#B42318;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">자세히</span>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="aspect-ratio:1/1;background:linear-gradient(140deg,#EFEBE7,#DCD4CB 60%,#E6DEDA)"></div>
+<div style="padding:16px 14px 0">
+<div style="font:600 13px/1.3 Pretendard,sans-serif;color:#3C3C3C">라보에이치</div>
+<div style="margin-top:8px;font:600 17px/1.45 Pretendard,sans-serif;letter-spacing:-.3px">시카 리페어 앰플 30ml 리필 2개 세트 기획</div>
+<div style="margin-top:12px;font:400 13px/1 Pretendard,sans-serif;color:#B5B5B5;text-decoration:line-through">38,000</div>
+<div style="margin-top:6px;display:flex;align-items:baseline;gap:8px"><span style="font:700 17px/1 Pretendard,sans-serif;color:#F2456E">34%</span><span style="font:800 24px/1 Pretendard,sans-serif;letter-spacing:-.8px">24,900원</span></div>
+</div>
+<div style="height:5px;background:#F7F7F8;margin-top:20px"></div>
+<div style="padding:18px 14px 0;display:flex;align-items:center;gap:7px"><span style="flex:1;font:700 15px/1 Pretendard,sans-serif">상품 문의 <span style="color:#737373">12</span></span><span style="font:600 12.5px/1 Pretendard,sans-serif;color:#B5B5B5">문의하기</span></div>
+<div style="padding:8px 14px 0;font:400 12px/1.5 Pretendard,sans-serif;color:#737373">이용 정지 중에는 문의할 수 없어요 · 목록은 볼 수 있어요</div>
+<div style="padding:14px 14px 20px;border-bottom:.5px solid #F0F0F0;font:400 14px/1.5 Pretendard,sans-serif;color:#0F0F0F">민감성인데 아침에도 써도 괜찮을까요?</div>
+</div>
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:10px 14px 26px;background:#fff">
+<div style="display:flex;align-items:center;justify-content:center;gap:6px;padding:0 0 10px;font:400 12px/1.5 Pretendard,sans-serif;color:#737373">이용 정지 중에는 구매할 수 없어요<span onClick="{{ goSheet }}" style="padding:12px 0;margin:-12px 0;font-weight:600;color:#3C3C3C;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">자세히</span></div>
+<div style="height:52px;border-radius:8px;background:#F4F4F5;display:flex;align-items:center;justify-content:center;font:600 15.5px/1 Pretendard,sans-serif;color:#B5B5B5">구매하기</div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>숨기지 않고 비활성</b> — [구매하기]는 자리를 지키되 회색 비활성(§02 비활성 버튼 규격)이고, 바로 위에 <b>안내 한 줄 + [자세히]</b>가 붙습니다. 버튼을 감추면 "왜 살 수 없지?"를 알 수 없어 문의가 늘어납니다. [문의하기]도 같은 규칙 — 회색 + 안내 한 줄, 문의 목록 열람은 허용합니다. 옵션 시트의 [장바구니]·[바로 구매]도 같은 비활성 처리입니다. 안내 줄의 [자세히]는 잉크(#3C3C3C) — 이 줄은 배너와 달리 차분한 보조 정보입니다.</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>정지 안내 시트</div>
+<div class="dv-card">
+<div data-screen-label="C20 정지 안내 시트" style="width:390px;height:844px;display:flex;flex-direction:column;background:rgba(0,0,0,.45);font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:8px 8px 0 0;padding:8px 0 24px;animation:szSheetUp .28s cubic-bezier(.2,.8,.2,1) both">
+<div style="width:36px;height:4px;border-radius:100px;background:#DEDEE0;margin:0 auto 18px"></div>
+<div style="padding:0 20px">
+<div style="display:flex;align-items:center;gap:8px"><span style="flex:none;padding:4px 8px;border-radius:8px;background:#FDECEC;color:#B42318;font:600 11px/1 Pretendard,sans-serif">이용 정지</span></div>
+<div style="margin-top:10px;font:700 18px/1.4 Pretendard,sans-serif;letter-spacing:-.4px">이용이 정지된 계정이에요</div>
+<div style="margin-top:14px;display:grid;gap:6px">
+<div style="display:flex;gap:14px"><span style="flex:none;width:62px;font:400 13px/1.6 Pretendard,sans-serif;color:#737373">정지 사유</span><span style="flex:1;min-width:0;font:600 13px/1.6 Pretendard,sans-serif">운영정책 위반</span></div>
+<div style="display:flex;gap:14px"><span style="flex:none;width:62px;font:400 13px/1.6 Pretendard,sans-serif;color:#737373">정지 일시</span><span style="flex:1;min-width:0;font:400 13px/1.6 Pretendard,sans-serif">2026-10-10 14:20</span></div>
+<div style="display:flex;gap:14px"><span style="flex:none;width:62px;font:400 13px/1.6 Pretendard,sans-serif;color:#737373">정지 기간</span><span style="flex:1;min-width:0;font:400 13px/1.6 Pretendard,sans-serif;text-wrap:pretty">N일 [정책값 미정]</span></div>
+<div style="display:flex;gap:14px"><span style="flex:none;width:62px;font:400 13px/1.6 Pretendard,sans-serif;color:#737373">자동 해제</span><span style="flex:1;min-width:0;font:400 13px/1.6 Pretendard,sans-serif;text-wrap:pretty">2026-MM-DD [정책값 미정] · 기간이 끝나면 자동으로 해제돼요</span></div>
+</div>
+</div>
+<div style="margin:18px 20px 0;padding:14px;border-radius:8px;background:#F7F7F8">
+<div style="font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">할 수 없는 것</div>
+<div style="margin-top:8px;font:400 13px/1.7 Pretendard,sans-serif;color:#3C3C3C">상품 구매 · 상품 문의 · 팔로우 · 좋아요 · 게시물 신고</div>
+<div style="margin-top:14px;font:600 12.5px/1 Pretendard,sans-serif;color:#3C3C3C">할 수 있는 것</div>
+<div style="margin-top:8px;font:400 13px/1.7 Pretendard,sans-serif;color:#3C3C3C;text-wrap:pretty">진행 중인 주문의 배송 조회 · 취소 · 구매확정 · 반품 · 교환, 1:1 문의, 회원 탈퇴</div>
+</div>
+<div style="padding:12px 20px 0;font:400 12px/1.65 Pretendard,sans-serif;color:#737373;text-wrap:pretty">이의 신청 기한: 통지 후 3영업일 이상(10.14(수)까지) · 1:1 문의로 알려주세요. 확인 후 답변드려요.</div>
+<div style="padding:18px 20px 0;display:flex;gap:8px">
+<div style="flex:1;height:52px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#3C3C3C;cursor:pointer" style-active="background:#F7F7F8">닫기</div>
+<div style="flex:1.6;height:52px;border-radius:8px;background:#F2456E;display:flex;align-items:center;justify-content:center;font:600 15px/1 Pretendard,sans-serif;color:#fff;cursor:pointer" style-active="opacity:.75">1:1 문의로 이의 신청</div>
+</div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>진입</b> — 배너·안내 줄의 [자세히], 그리고 <b>정지 후 첫 로그인 직후 1회 자동</b>. 정지 사유·일시 → 할 수 없는 것 / 할 수 있는 것을 한 블록으로 나란히 둬, 무엇이 막혔는지보다 <b>무엇은 여전히 되는지</b>(진행 중 주문의 배송·반품 권리)를 함께 확인시킵니다. [1:1 문의로 이의 신청]은 C12 작성 화면으로 가며 문의 유형 「계정 이용 정지」가 미리 선택됩니다(<a class="dv-oid" href="#1d">1d</a>). 별도 이의 신청 화면은 없습니다. 오른쪽이 권장 액션이라는 시트·모달 규칙에 맞춰 이의 신청을 오른쪽 로즈 채움으로 두었습니다.</p>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>C12 1:1 문의 · 「계정 이용 정지」 선택됨</div>
+<div class="dv-card">
+<div data-screen-label="C20 문의 작성 정지" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif"><span>9:41</span><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect></svg></div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px"><div style="display:flex;padding:11px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:600 16px/1 Pretendard,sans-serif">1:1 문의</span></div>
+</div>
+<div style="flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;box-sizing:border-box;background:#FDECEC">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5" stroke-width="1.7"></circle><path d="M12 7.8v5"></path><path d="M12 16v.2"></path></svg>
+<span style="flex:1;min-width:0;font:500 12.5px/1.45 Pretendard,sans-serif;color:#B42318">계정 이용이 정지되었어요 · 사유: 운영정책 위반</span>
+<span onClick="{{ goSheet }}" style="flex:none;padding:12px 0 12px 8px;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#B42318;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">자세히</span>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:20px 14px 4px">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">문의 유형</div>
+<div style="margin-top:9px;height:48px;border:1px solid #E3E3E5;border-radius:8px;display:flex;align-items:center;justify-content:space-between;padding:0 13px"><span style="font:400 15px/1 Pretendard,sans-serif;color:#0F0F0F">계정 이용 정지</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"></path></svg></div>
+</div>
+<div style="padding:16px 14px 4px">
+<div style="display:flex;align-items:baseline;justify-content:space-between"><span style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">문의 내용</span><span style="font:400 12px/1 Pretendard,sans-serif;color:#737373">0/1000</span></div>
+<div style="margin-top:9px;min-height:150px;border:1px solid #E3E3E5;border-radius:8px;padding:13px;box-sizing:border-box;font:400 14px/1.7 Pretendard,sans-serif;color:#B5B5B5;text-wrap:pretty">정지에 대해 확인이 필요한 내용을 적어주세요.</div>
+</div>
+<div style="padding:16px 14px 4px">
+<div style="font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">사진 첨부 <span style="font-weight:400;color:#737373">(선택 · 최대 5장)</span></div>
+<div style="margin-top:10px;width:72px;height:72px;border-radius:8px;border:1px dashed #DCDCDE;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#8E8E8E" stroke-width="1.7" stroke-linecap="round"><path d="M12 6.5v11"></path><path d="M6.5 12h11"></path></svg><span style="font:400 10.5px/1 Pretendard,sans-serif;color:#8E8E8E">0/5</span></div>
+</div>
+</div>
+<div style="flex:none;border-top:.5px solid #EFEFEF;padding:12px 14px 26px;background:#fff">
+<div style="height:52px;border-radius:8px;background:#F4F4F5;display:flex;align-items:center;justify-content:center;font:600 15.5px/1 Pretendard,sans-serif;color:#B5B5B5">문의 등록</div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>유형 프리셀렉트</b> — 정지 안내 시트에서 들어오면 문의 유형이 「계정 이용 정지」로 채워진 상태입니다. 이 유형은 <b>정지 상태일 때만</b> 유형 목록에 나타나고, 정지가 아니면 숨깁니다(C12 유형 시트 규칙). 관련 주문 칸은 정지 문의와 무관하므로 이 유형에서는 노출하지 않습니다. 내용이 비면 [문의 등록]은 비활성만 — 에러 문구는 띄우지 않습니다.</p>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>C10-1 주문 상세 · 허용 범위 대조</div>
+<div class="dv-card">
+<div data-screen-label="C20 주문 상세 정지" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none;border-bottom:.5px solid #EFEFEF">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif"><span>9:41</span><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect></svg></div>
+<div style="height:46px;display:flex;align-items:center;padding:0 2px"><div style="display:flex;padding:11px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"></path></svg></div><span style="font:600 16px/1 Pretendard,sans-serif">주문 상세</span></div>
+</div>
+<div style="flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;box-sizing:border-box;background:#FDECEC">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5" stroke-width="1.7"></circle><path d="M12 7.8v5"></path><path d="M12 16v.2"></path></svg>
+<span style="flex:1;min-width:0;font:500 12.5px/1.45 Pretendard,sans-serif;color:#B42318">계정 이용이 정지되었어요 · 사유: 운영정책 위반</span>
+<span onClick="{{ goSheet }}" style="flex:none;padding:12px 0 12px 8px;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#B42318;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">자세히</span>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:22px 14px 18px">
+<div style="font:700 19px/1.3 Pretendard,sans-serif;letter-spacing:-.4px">26.09.23(수) 10:20</div>
+<div style="margin-top:7px;font:400 12.5px/1.4 Pretendard,sans-serif;color:#737373">주문번호 20260923-1020</div>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="padding:18px 14px 0;font:600 12.5px/1.3 Pretendard,sans-serif">배송완료 <span style="color:#737373">· 10.07 구매확정 예정</span></div>
+<div style="display:flex;gap:12px;align-items:center;padding:12px 14px 0">
+<div style="width:72px;height:72px;border-radius:4px;background:linear-gradient(135deg,#EFE7DC,#DCCFBE);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="font:600 12px/1.3 Pretendard,sans-serif;color:#3C3C3C">하루 코스메틱</div>
+<div style="margin-top:3px;font:400 13.5px/1.4 Pretendard,sans-serif;color:#2E2E2E">수분 진정 마스크 10매</div>
+<div style="margin-top:3px;font:400 12px/1.4 Pretendard,sans-serif;color:#737373">단품 / 1개</div>
+<div style="margin-top:5px;font:700 14px/1 Pretendard,sans-serif">14,000원</div>
+</div>
+</div>
+<div style="padding:14px 14px 0;display:flex;gap:7px">
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">배송 조회</div>
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">반품 · 교환</div>
+<div style="flex:1;height:44px;border:1px solid #E3E3E5;border-radius:8px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 13px/1 Pretendard,sans-serif;color:#3C3C3C">구매확정</div>
+</div>
+<div style="height:5px;background:#F7F7F8;margin-top:22px"></div>
+<div style="padding:18px 14px 26px;font:400 12.5px/1.7 Pretendard,sans-serif;color:#737373;text-wrap:pretty">이미 결제한 주문은 이용 정지와 관계없이 배송 조회 · 취소 · 구매확정 · 반품 · 교환을 그대로 할 수 있어요.</div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>대조 프레임</b> — 배너는 그대로 있지만 주문 화면의 모든 버튼이 <b>평소와 똑같이 활성</b>입니다. 정지가 로그인을 막지 않는 이유가 여기 있습니다 — 이미 결제한 주문의 청약철회·반품 권리는 정지로 제한할 수 없습니다. C10 · C10-1~C10-5 전체(취소 요청 · 회수 송장 입력 · 회수 조회 · 철회 · 반려 재발송비 결제 포함)와 C13 배송지 관리가 같은 규칙입니다. 하단 회색 한 줄로 이 사실을 명시해, 배너를 본 사용자가 주문까지 막혔다고 오해하지 않게 했습니다.</p>
+</div>
+
+<div class="dv-opt" id="1f">
+<div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>마이 · 정지 배지</div>
+<div class="dv-card">
+<div data-screen-label="C20 마이 정지" style="width:390px;height:844px;display:flex;flex-direction:column;background:#fff;font-family:Pretendard,sans-serif;color:#0F0F0F;overflow:hidden;position:relative">
+<div style="flex:none">
+<div style="height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font:600 15px/1 Pretendard,sans-serif"><span>9:41</span><svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="rgba(0,0,0,.3)"></rect><rect x="2" y="2" width="16" height="8" rx="2" fill="#0F0F0F"></rect></svg></div>
+<div style="display:flex;align-items:center;padding:2px 16px 12px"><span style="flex:1;font:700 18px/1 Pretendard,sans-serif;letter-spacing:-.5px">마이</span><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#0F0F0F" stroke-width="1.6"><circle cx="12" cy="12" r="3"></circle><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6"></path></svg></div>
+</div>
+<div style="flex:none;display:flex;align-items:center;gap:10px;min-height:44px;padding:8px 14px;box-sizing:border-box;background:#FDECEC">
+<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="2" stroke-linecap="round" style="display:block;flex:none"><circle cx="12" cy="12" r="8.5" stroke-width="1.7"></circle><path d="M12 7.8v5"></path><path d="M12 16v.2"></path></svg>
+<span style="flex:1;min-width:0;font:500 12.5px/1.45 Pretendard,sans-serif;color:#B42318">계정 이용이 정지되었어요 · 사유: 운영정책 위반</span>
+<span onClick="{{ goSheet }}" style="flex:none;padding:12px 0 12px 8px;margin:-12px 0;font:600 12.5px/1 Pretendard,sans-serif;color:#B42318;text-decoration:underline;text-underline-offset:3px;cursor:pointer;white-space:nowrap">자세히</span>
+</div>
+<div class="noscroll" style="flex:1;min-height:0;overflow-y:auto">
+<div style="padding:20px 14px;display:flex;align-items:center;gap:14px">
+<div style="width:50px;height:50px;border-radius:50%;background:linear-gradient(140deg,#E7EAEC,#D4D9DD);flex:none"></div>
+<div style="flex:1;min-width:0">
+<div style="display:flex;align-items:center;gap:7px;min-width:0"><span style="font:600 14px/1.3 Pretendard,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">수민초록</span><span style="flex:none;padding:4px 8px;border-radius:8px;background:#FDECEC;color:#B42318;font:600 11px/1 Pretendard,sans-serif">이용 정지</span></div>
+<div style="margin-top:6px;display:flex"><span style="padding:3px 7px;border-radius:8px;background:#F4F4F5;font:600 10.5px/1 Pretendard,sans-serif;color:#737373">User</span></div>
+</div>
+</div>
+<div style="height:5px;background:#F7F7F8"></div>
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">쇼핑 정보</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px"><span style="font:500 15px/1 Pretendard,sans-serif">주문 내역</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px"><span style="font:500 15px/1 Pretendard,sans-serif">배송지 관리</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="height:5px;background:#F7F7F8;margin-top:6px"></div>
+<div style="padding:18px 14px 6px;font:600 12px/1 Pretendard,sans-serif;color:#8E8E8E">고객 지원</div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px"><span style="font:500 15px/1 Pretendard,sans-serif">1:1 문의</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+<div style="display:flex;align-items:center;justify-content:space-between;padding:15px 14px"><span style="font:500 15px/1 Pretendard,sans-serif">고객센터</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"></path></svg></div>
+</div>
+</div>
+</div>
+<p class="dv-note"><b>배지</b> — 닉네임 옆에 위험 톤 배지 「이용 정지」(배너와 같은 #FDECEC / #B42318). User·Influencer 칩과 줄을 나눠, 등급 표시와 상태 표시가 섞이지 않게 했습니다. 마이 메뉴는 전부 평소와 같고, 설정의 닉네임·프로필 사진 변경(C15-1)만 비활성 + 안내 줄입니다.<br><br><b>정지 해제</b> — 배너·비활성·배지가 즉시 사라지고 알림 「계정 이용 정지가 해제되었어요」, 다음 앱 진입 때 §07 토스트 1회.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { toast: false };
+  renderVals(){
+    return {
+      goSheet: () => { const el = document.getElementById('1c'); if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - 16, behavior: 'smooth' }); },
+      toast: this.state.toast,
+      tapHeart: () => {
+        this.setState({ toast: true });
+        clearTimeout(this.t);
+        this.t = setTimeout(() => this.setState({ toast: false }), 2000);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

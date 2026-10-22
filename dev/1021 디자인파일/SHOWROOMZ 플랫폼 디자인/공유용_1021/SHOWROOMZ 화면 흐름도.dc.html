@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<style>
+body{margin:0;background:#f0eee9;font-family:Pretendard,-apple-system,sans-serif}
+a{color:#CF3D61}a:hover{color:#A93353}
+</style>
+</helmet>
+<div style="position:relative;width:{{ bw }}px;height:{{ bh }}px;font-family:Pretendard,sans-serif;color:#0F0F0F">
+
+<div style="position:absolute;left:40px;top:34px;right:40px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap">
+<span style="font:700 22px/1 Pretendard,sans-serif;letter-spacing:-.5px">SHOWROOMZ 화면 흐름도</span>
+<span style="font:400 12.5px/1.6 Pretendard,sans-serif;color:rgba(0,0,0,.55)">화면 {{ nScreens }}개 · 상태 {{ nStates }}개 — 상태 줄을 누르면 그 화면 파일의 해당 프레임으로, 점선 아래 → 줄을 누르면 이동할 화면으로 갑니다. 로즈 선은 대표 구매 흐름입니다.</span>
+</div>
+
+<sc-for list="{{ lanes }}" as="l" hint-placeholder-count="7">
+<div style="position:absolute;left:{{ l.x }}px;top:100px;width:{{ l.w }}px">
+<div style="font:700 13px/1 Pretendard,sans-serif">{{ l.title }}</div>
+<div style="margin-top:6px;font:400 11.5px/1.3 Pretendard,sans-serif;color:rgba(0,0,0,.5)">{{ l.sub }}</div>
+</div>
+</sc-for>
+
+<sc-for list="{{ edges }}" as="e" hint-placeholder-count="9">
+<svg width="{{ bw }}" height="{{ bh }}" style="position:absolute;left:0;top:0;pointer-events:none;overflow:visible"><path d="{{ e.d }}" fill="none" stroke="#F2456E" stroke-width="1.75" stroke-linecap="round"></path><polygon points="{{ e.arrow }}" fill="#F2456E"></polygon></svg>
+</sc-for>
+
+<sc-for list="{{ nodes }}" as="n" hint-placeholder-count="12">
+<div style="position:absolute;left:{{ n.x }}px;top:{{ n.y }}px;width:{{ W }}px;height:{{ n.h }}px;box-sizing:border-box;background:#fff;border:1px solid {{ n.border }};border-radius:8px;overflow:hidden;z-index:1">
+<a href="{{ n.href }}" style="display:flex;align-items:center;gap:8px;height:47px;padding:0 12px;border-bottom:1px solid #F2F2F4;text-decoration:none;color:#0F0F0F" style-hover="background:#FAFAFA">
+<span style="flex:none;padding:3px 6px;border-radius:5px;background:{{ n.codeBg }};color:{{ n.codeColor }};font:600 10.5px/1 ui-monospace,Menlo,monospace">{{ n.code }}</span>
+<span style="flex:1;min-width:0;font:600 13.5px/1.2 Pretendard,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.name }}</span>
+<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#C7C7C7" stroke-width="3" stroke-linecap="round" stroke-linejoin="miter" style="display:block;flex:none"><path d="M9.5 8H16v6.5"></path><path d="M8.4 15.6L16 8"></path></svg>
+</a>
+<sc-if value="{{ n.hasStates }}" hint-placeholder-val="{{ true }}">
+<div style="padding:8px 8px 6px;display:grid;gap:2px">
+<sc-for list="{{ n.states }}" as="s" hint-placeholder-count="2">
+<a href="{{ s.href }}" style="display:flex;align-items:center;gap:8px;height:22px;padding:0 6px;border-radius:6px;text-decoration:none;color:#3C3C3C" style-hover="background:#F7F7F8"><span style="flex:none;width:18px;font:600 10px/1 ui-monospace,Menlo,monospace;color:#8E8E8E">{{ s.id }}</span><span style="flex:1;min-width:0;font:400 12px/1.2 Pretendard,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.label }}</span></a>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{ n.hasGo }}" hint-placeholder-val="{{ false }}">
+<div style="border-top:1px dashed #E6E6E8;padding:8px;display:grid;gap:2px">
+<sc-for list="{{ n.goList }}" as="g" hint-placeholder-count="2">
+<a href="{{ g.href }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 6px;border-radius:6px;text-decoration:none;color:#737373" style-hover="background:#F7F7F8"><span style="flex:1;min-width:0;font:400 11.5px/1.2 Pretendard,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.label }}</span><span style="flex:none;font:400 11px/1 Pretendard,sans-serif;color:#C7C7C7">→</span><span style="flex:none;max-width:52%;font:600 11.5px/1.2 Pretendard,sans-serif;color:#0F0F0F;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.target }}</span></a>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</sc-for>
+
+<sc-for list="{{ edges }}" as="e" hint-placeholder-count="9">
+<div style="position:absolute;left:{{ e.lx }}px;top:{{ e.ly }}px;transform:translate(-50%,-50%);padding:3px 7px;border-radius:100px;background:#fff;border:1px solid #F7B3C4;font:600 10.5px/1 Pretendard,sans-serif;color:#CF3D61;white-space:nowrap;z-index:2">{{ e.label }}</div>
+</sc-for>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  renderVals(){
+    const W = 232, GAP = 20, LX = 300, X0 = 40, Y0 = 150;
+    const LANES = [
+      ['진입', '스플래시 · 로그인 · 가입'],
+      ['탐색', '하단 탭 · 검색 · 알림'],
+      ['콘텐츠', '쇼룸 · 공구 게시물 · 신고'],
+      ['구매', '상품 · 장바구니 · 결제'],
+      ['주문 · 클레임', '배송 · 취소 · 반품 · 교환'],
+      ['마이 · 계정', '설정 · 배송지 · 이용 정지'],
+      ['고객 지원', '문의 · 고객센터 · 공지']
+    ];
+    const N = [
+      { id:'c19', lane:0, code:'C19', name:'스플래시', file:'C19 스플래시', st:[['1a','런치 스크린']], go:[['로그인 안 됨','c0'],['로그인됨','c1']] },
+      { id:'c0', lane:0, code:'C0', name:'로그인 · 회원가입', file:'C0 로그인, 회원가입', st:[['1a','소셜 로그인'],['1b','본인인증 (PASS)'],['1c','회원가입'],['1d','만 14세 미만 차단'],['1e','PASS 실패 · 타임아웃']], go:[['가입 완료','c1'],['약관 보기','c18']] },
+      { id:'c1', lane:1, code:'C1', name:'홈', file:'C1 홈 - 확정', st:[['7c','홈 피드'],['7d','팔로잉 0 · 발견 피드']], go:[['검색창','c14'],['알림','c11'],['장바구니','c8'],['쇼룸명 · 프로필','c4'],['게시물 더 보기','c5'],['상품 행','c7'],['⋯ 신고','c18'],['하단 탭 팔로잉','c2'],['하단 탭 좋아요','c3'],['하단 탭 마이','cmy']] },
+      { id:'c2', lane:1, code:'C2', name:'팔로잉', file:'C2 팔로잉', st:[['1a','기본'],['1b','빈 상태'],['1c','비로그인']], go:[['쇼룸 행','c4'],['쇼룸 검색하기','c14'],['로그인하기','c0']] },
+      { id:'c3', lane:1, code:'C3', name:'좋아요', file:'C3 좋아요', st:[['1a','기본'],['1b','비로그인']], go:[['게시물','c5'],['상품 행','c7'],['로그인하기','c0']] },
+      { id:'c14', lane:1, code:'C14', name:'쇼룸 검색', file:'C14 쇼룸 검색', st:[['1a','입력 전'],['1d','최근 검색 없음'],['1b','결과 있음'],['1c','결과 없음']], go:[['쇼룸 행','c4']] },
+      { id:'c11', lane:1, code:'C11', name:'알림', file:'C11 알림', st:[['1a','알림 목록'],['1b','빈 상태']], go:[['주문 · 배송 알림','c101'],['공구 알림','c5'],['문의 답변','c12l'],['알림 설정','c15']] },
+      { id:'c4', lane:2, code:'C4', name:'쇼룸', file:'C4 쇼룸', st:[['1a','쇼룸'],['1b','빈 쇼룸'],['1c','진행 중 공구 없음']], go:[['게시물','c5'],['상품 행','c7'],['신고','c18']] },
+      { id:'c5', lane:2, code:'C5', name:'공구 게시물', file:'C5 공구 게시물', st:[['1a','공구 게시물']], go:[['상품 행','c7'],['쇼룸명','c4'],['⋯ 신고','c18']] },
+      { id:'c18', lane:2, code:'C18', name:'문서 · 신고', file:'C18 문서 · 신고', st:[['1a','문서 뷰어'],['1b','게시물 신고 사유']], go:[] },
+      { id:'c7', lane:3, code:'C7', name:'상품 상세', file:'C7 상품 상세', st:[['1a','상품 상세 · 옵션 시트']], go:[['바로 구매','c9'],['장바구니 담기 · 보기','c8'],['문의 · 전체 보기','c71'],['쇼룸 칩','c4']] },
+      { id:'c71', lane:3, code:'C7-1', name:'상품 문의', file:'C7-1 상품 문의', st:[['1b','문의 전체'],['1a','문의 작성']], go:[] },
+      { id:'c8', lane:3, code:'C8', name:'장바구니', file:'C8 장바구니', st:[['1a','장바구니 · 옵션 변경']], go:[['주문하기','c9'],['추천 상품','c7']] },
+      { id:'c9', lane:3, code:'C9', name:'결제', file:'C9 결제', st:[['1a','배송지 · 결제 수단']], go:[['결제 완료','c10'],['배송지 변경','c13']] },
+      { id:'c10', lane:4, code:'C10', name:'주문 내역 · 취소', file:'C10 주문 내역', st:[['1a','주문 내역'],['1b','주문 취소 · 결제완료'],['1c','취소 요청 · 상품준비중'],['1d','취소 상세']], go:[['주문 상세','c101'],['배송 조회','c102'],['반품 · 교환','c101']] },
+      { id:'c101', lane:4, code:'C10-1', name:'주문 상세', file:'C10-1 주문 상세', st:[['1a','결제완료'],['1b','상품준비중'],['1c','배송중'],['1d','배송완료'],['1e','구매확정']], go:[['반품 · 교환','c103'],['배송 조회','c102'],['배송지 변경','c13'],['하자 문의','c12w']] },
+      { id:'c102', lane:4, code:'C10-2', name:'배송 조회', file:'C10-2 배송 조회', st:[['1a','배송완료'],['1b','배송중'],['1c','송장 미등록']], go:[] },
+      { id:'c103', lane:4, code:'C10-3', name:'반품 · 교환 요청', file:'C10-3 반품 · 교환 요청', st:[['1a','반품 요청'],['1b','교환 요청']], go:[['요청 접수','c105']] },
+      { id:'c105', lane:4, code:'C10-5', name:'반품 · 교환 상세', file:'C10-5 반품 · 교환 상세', st:[['1b','반품 상세'],['1c','교환 상세']], go:[['회수 조회','c104'],['재발송 배송 조회','c102'],['반려 이의 · 1:1 문의','c12w']] },
+      { id:'c104', lane:4, code:'C10-4', name:'회수 조회', file:'C10-4 회수 조회', st:[['1a','정상'],['1b','조회되지 않음']], go:[] },
+      { id:'cmy', lane:5, code:'마이', name:'마이', file:'C 마이', st:[['1a','로그인 상태'],['1b','로그인 전']], go:[['주문 내역','c10'],['배송지 관리','c13'],['설정','c15'],['문의 내역','c12l'],['고객센터','c16'],['공지사항','c17'],['약관 · 정책','c18'],['로그인하기','c0']] },
+      { id:'c15', lane:5, code:'C15', name:'설정', file:'C15 설정', st:[['1a','설정'],['1b','닉네임 변경'],['1c','회원정보'],['1d','탈퇴 · 이유 선택'],['1e','탈퇴 · 확인']], go:[] },
+      { id:'c13', lane:5, code:'C13', name:'배송지 관리', file:'C13 배송지 관리', st:[['1a','배송지 목록'],['1b','배송지 추가'],['1s','배송지 선택']], go:[] },
+      { id:'c20', lane:5, code:'C20', name:'계정 이용 정지', file:'C20 계정 이용 정지', st:[['1a','홈 · 배너'],['1b','상품 상세 · 비활성'],['1c','정지 안내 시트'],['1d','1:1 문의 · 정지 유형'],['1e','주문 상세 · 허용 대조'],['1f','마이 · 배지']], go:[['이의 신청','c12w']] },
+      { id:'c12l', lane:6, code:'C12', name:'문의 내역', file:'C12 문의 내역', st:[['1a','문의 내역'],['1b','문의 상세']], go:[['1:1 문의하기','c12w']] },
+      { id:'c12w', lane:6, code:'C12', name:'1:1 문의 작성', file:'C12 1대1 문의', st:[['1a','문의 작성']], go:[] },
+      { id:'c16', lane:6, code:'C16', name:'고객센터', file:'C16 고객센터', st:[['1a','FAQ']], go:[['1:1 문의하기','c12w']] },
+      { id:'c17', lane:6, code:'C17', name:'공지사항', file:'C17 공지사항', st:[['1a','공지 목록']], go:[] },
+      { id:'cds', lane:6, code:'DS', name:'디자인 시스템', file:'Showroomz 디자인 시스템', st:[], go:[] }
+    ];
+    const PATH = [['c19','c0','첫 실행'],['c0','c1','가입 완료'],['c1','c5','게시물'],['c5','c7','상품 행'],['c7','c9','바로 구매'],['c9','c10','결제 완료'],['c10','c101','주문 상세'],['c101','c103','반품 · 교환'],['c103','c105','요청 접수']];
+    const onPath = new Set(PATH.flatMap(p => [p[0], p[1]]));
+    const href = (file, id) => encodeURI(file + '.dc.html') + (id ? '#' + id : '');
+    const byId = {};
+    const colY = LANES.map(() => Y0);
+    const nodes = N.map(n => {
+      const sN = n.st.length, gN = n.go.length;
+      const h = 48 + (sN ? 14 + sN * 24 - 2 : 0) + (gN ? 17 + gN * 24 - 2 : 0);
+      const x = X0 + n.lane * LX, y = colY[n.lane];
+      colY[n.lane] += h + GAP;
+      const p = onPath.has(n.id);
+      const o = { id: n.id, lane: n.lane, code: n.code, name: n.name, x, y, h, go: n.go,
+        href: href(n.file, ''),
+        border: p ? '#F2456E' : '#E6E6E8',
+        codeBg: p ? '#FEF4F6' : '#F4F4F5',
+        codeColor: p ? '#CF3D61' : '#737373',
+        hasStates: sN > 0, hasGo: gN > 0,
+        states: n.st.map(s => ({ id: s[0], label: s[1], href: href(n.file, s[0]) })) };
+      byId[n.id] = o;
+      return o;
+    });
+    nodes.forEach(o => {
+      o.goList = o.go.map(g => {
+        const t = byId[g[1]];
+        return { label: g[0], target: t ? (t.code === t.name ? t.name : t.code + ' ' + t.name) : g[1], href: t ? t.href : '#' };
+      });
+    });
+    const pt = p => p[0].toFixed(1) + ',' + p[1].toFixed(1);
+    const edges = PATH.map(([a, b, label]) => {
+      const A = byId[a], B = byId[b];
+      const cross = B.lane > A.lane;
+      const ay = A.y + (cross ? 14 : 24), by = B.y + (cross ? 24 : 34);
+      let P0, P1, P2, P3;
+      if (cross) { P0 = [A.x + W, ay]; P1 = [A.x + W + 48, ay]; P2 = [B.x - 48, by]; P3 = [B.x, by]; }
+      else { P0 = [A.x + W, ay]; P1 = [A.x + W + 46, ay]; P2 = [B.x + W + 46, by]; P3 = [B.x + W, by]; }
+      const T = cross ? 0.72 : 0.5, U = 1 - T;
+      const bz = i => U * U * U * P0[i] + 3 * U * U * T * P1[i] + 3 * U * T * T * P2[i] + T * T * T * P3[i];
+      let ux = P3[0] - P2[0], uy = P3[1] - P2[1];
+      const len = Math.hypot(ux, uy) || 1; ux /= len; uy /= len;
+      const bc = [P3[0] - 8 * ux, P3[1] - 8 * uy], nx = -uy, ny = ux;
+      return {
+        label,
+        d: 'M' + pt(P0) + ' C' + pt(P1) + ' ' + pt(P2) + ' ' + pt(P3),
+        arrow: pt(P3) + ' ' + pt([bc[0] + 4.5 * nx, bc[1] + 4.5 * ny]) + ' ' + pt([bc[0] - 4.5 * nx, bc[1] - 4.5 * ny]),
+        lx: Math.round(bz(0)),
+        ly: Math.round(bz(1))
+      };
+    });
+    const lanes = LANES.map((l, i) => ({ title: l[0], sub: l[1], x: X0 + i * LX, w: W }));
+    return {
+      nodes, edges, lanes, W,
+      bw: X0 * 2 + (LANES.length - 1) * LX + W,
+      bh: Math.max(...colY) + 40,
+      nScreens: N.length - 1,
+      nStates: N.reduce((s, n) => s + n.st.length, 0)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>ui-studio-01-login — 쇼룸 스튜디오 로그인 (디자인 시안 rev.2)</title>
+<style>
+:root{
+  --n-50:#FAFAFB; --n-100:#F1F2F4; --n-200:#E4E5E9; --n-300:#C7C9D1;
+  --n-400:#A8ACB4; --n-500:#7B7F89; --n-600:#5B5F68; --n-700:#3A3D45; --n-900:#1A1B1F;
+  --accent-500:#3B5BDB;
+  --info-bg:#E9EAF6; --info-text:#3B5BDB;
+  --warning-bg:#F3E7D2; --warning-text:#8F6620;
+  --danger-bg:#FBE6E6; --danger-text:#B23434;
+  --fs-h1:20px; --fs-h2:16px; --fs-h3:13px; --fs-body:13px; --fs-caption:12px; --fs-micro:11px;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:20px; --sp-6:24px;
+  --r-sm:6px; --r-md:8px; --r-pill:10px;
+  --shadow-popover:0 8px 24px rgba(26,27,31,0.12), 0 2px 6px rgba(26,27,31,0.08);
+  --logo-dark:#1A1B1F;
+  /* Auth 전용 — [확정] 주 액션 검정: 로그인·가입 화면 공통 예외 */
+  --auth-action:#1A1B1F; --auth-action-hover:#3A3D45;
+  --auth-control-h:48px; --auth-card-w:400px;
+}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Malgun Gothic','맑은 고딕','Apple SD Gothic Neo',sans-serif;
+  margin:0; padding:32px; background:var(--n-200); color:var(--n-900); font-size:var(--fs-body); line-height:1.6;}
+.doc-head{max-width:1440px;margin:0 auto 24px;}
+.doc-head h1{font-size:var(--fs-h1);font-weight:600;margin:0 0 4px;}
+.doc-head .meta{font-size:var(--fs-caption);color:var(--n-600);margin:0;}
+.rule{font-size:var(--fs-micro);color:var(--n-600);background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-sm);padding:10px 12px;margin-top:12px;line-height:1.8;}
+.rule b{color:var(--n-900);} .rule code{font-family:ui-monospace,monospace;background:var(--n-100);padding:1px 5px;border-radius:4px;}
+.rule table{border-collapse:collapse;margin:8px 0;width:100%;}
+.rule th,.rule td{border:1px solid var(--n-200);padding:5px 8px;text-align:left;font-size:var(--fs-micro);vertical-align:top;}
+.rule th{background:var(--n-50);font-weight:600;color:var(--n-900);white-space:nowrap;}
+.state{max-width:1440px;margin:0 auto 32px;}
+.state-bar{display:flex;align-items:center;gap:8px;padding:0 0 8px;flex-wrap:wrap;}
+.state-id{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 5px;
+  background:var(--n-900);color:#fff;border-radius:var(--r-sm);font-size:var(--fs-micro);font-weight:600;}
+.state-label{font-size:var(--fs-h3);font-weight:600;}
+.state-spec{font-size:var(--fs-micro);color:var(--n-600);} .state-spec b{color:var(--n-900);}
+.stage{position:relative;width:1440px;height:1024px;background:#fff;border:1px solid var(--n-300);
+  border-radius:var(--r-md);overflow:hidden;}
+.stage-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+
+.auth-card{width:var(--auth-card-w);background:transparent;padding:var(--sp-6) 0 var(--sp-5);}
+.auth-head{text-align:center;margin-bottom:var(--sp-6);}
+.wordmark{display:block;margin:0 auto;}
+.auth-sub{font-size:var(--fs-caption);color:var(--n-500);margin-top:8px;}
+.auth-guide{font-size:var(--fs-caption);color:var(--n-600);text-align:center;margin:0 0 var(--sp-5);line-height:1.7;}
+.auth-guide b{color:var(--n-900);}
+
+/* 소셜 버튼 */
+.social{display:flex;flex-direction:column;gap:10px;margin-bottom:var(--sp-5);}
+.sbtn{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;height:var(--auth-control-h);border-radius:var(--r-sm);font-family:inherit;
+  font-size:14px;font-weight:600;letter-spacing:-.1px;cursor:pointer;border:1px solid transparent;
+  box-shadow:0 1px 2px rgba(26,27,31,0.06);}
+.sbtn .si{position:absolute;left:16px;width:20px;height:20px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sbtn-kakao{background:#FEE500;color:#191919;}
+.sbtn-naver{background:#03C75A;color:#fff;}
+.sbtn-apple{background:#000;color:#fff;border-color:#000;}
+.sbtn-google{background:#fff;color:#1F1F1F;border-color:var(--n-300);}
+.sbtn:hover{filter:brightness(0.96);}
+.sbtn-google:hover{background:var(--n-50);}
+
+.auth-note{font-size:var(--fs-caption);color:var(--n-500);text-align:center;margin:var(--sp-4) 0 0;line-height:1.7;}
+
+/* 모달(로그인 상태 분기) */
+.overlay{position:absolute;inset:0;background:rgba(26,27,31,.4);display:flex;align-items:center;justify-content:center;}
+.modal-alert{width:360px;background:#fff;border-radius:var(--r-md);box-shadow:var(--shadow-popover);
+  padding:var(--sp-6) var(--sp-5) var(--sp-5);text-align:center;}
+.mic{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:20px;margin:0 auto 14px;}
+.mic-info{background:var(--info-bg);color:var(--info-text);}
+.mic-danger{background:var(--danger-bg);color:var(--danger-text);}
+.mic-neutral{background:var(--n-100);color:var(--n-600);}
+.mt{font-size:var(--fs-h2);font-weight:600;margin-bottom:8px;}
+.md{font-size:var(--fs-caption);color:var(--n-600);line-height:1.7;margin:0 0 var(--sp-5);}
+.md b{color:var(--n-900);}
+.mf{display:flex;gap:8px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;flex:1;height:40px;
+  border-radius:var(--r-sm);font-family:inherit;font-size:var(--fs-body);font-weight:500;cursor:pointer;}
+.btn-primary{background:var(--auth-action);color:#fff;border:1px solid var(--auth-action);}
+.btn-primary:hover{background:var(--auth-action-hover);border-color:var(--auth-action-hover);}
+.btn-line{background:#fff;color:var(--n-700);border:1px solid var(--n-300);}
+.btn-line:hover{background:var(--n-100);}
+.tag-tbd{font-size:10px;color:var(--n-500);background:var(--n-100);border-radius:4px;padding:1px 6px;font-weight:500;white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><path id="sz-wm" d="M69 200Q54 200 43 196.5Q32 193 24.5 188.0Q17 183 12.5 178.0Q8 173 6 170Q1 164 0 159.5Q-1 155 1.5 150.0Q4 145 10 140Q16 135 21 134.5Q26 134 31 137.0Q36 140 41 146Q47 154 53.5 157.0Q60 160 68 160Q77 160 83.5 158.0Q90 156 93 151.0Q96 146 96 138Q96 132 91.5 128.5Q87 125 79.5 122.0Q72 119 62.5 116.5Q53 114 44 110Q38 108 32 104.5Q26 101 20.5 97.0Q15 93 11.5 87.0Q8 81 6 73.5Q4 66 4 57Q4 40 12 27.5Q20 15 34 7.5Q48 0 67 0Q80 0 89 2.0Q98 4 104.5 7.5Q111 11 114.5 13.5Q118 16 120 18Q128 25 128.5 30.5Q129 36 123 45Q116 54 109 55.5Q102 57 93 51Q90 48 86.5 45.5Q83 43 78.5 41.5Q74 40 67 40Q62 40 58.5 41.0Q55 42 52 44.5Q49 47 47.5 50.0Q46 53 46 57Q46 63 50 67.0Q54 71 61 73.5Q68 76 77 78.0Q86 80 95 83Q103 86 111 90.0Q119 94 125 100.0Q131 106 135 115.0Q139 124 139 138Q139 154 132.5 166.0Q126 178 115.5 185.5Q105 193 92.5 196.5Q80 200 69 200ZM310 197Q300 197 295.5 194.0Q291 191 290 186.0Q289 181 289 176V24Q289 19 290 14.0Q291 9 295.5 6.0Q300 3 310 3Q320 3 324.5 6.0Q329 9 330 14.0Q331 19 331 24V176Q331 181 330 186.0Q329 191 324.5 194.0Q320 197 310 197ZM192 197Q182 197 177.5 194.0Q173 191 172 186.0Q171 181 171 176V24Q171 19 172 14.0Q173 9 177.5 6.0Q182 3 192 3Q203 3 207 6.0Q211 9 212 14.0Q213 19 213 24V176Q213 181 212 186.0Q211 191 206.5 194.0Q202 197 192 197ZM206 118V81H293V118ZM459 200Q439 200 421 192.5Q403 185 390 171.5Q377 158 369.5 140.0Q362 122 362 102Q362 81 369 62.5Q376 44 389 30.5Q402 17 419.5 9.0Q437 1 456 1Q476 1 494 8.5Q512 16 525 30.0Q538 44 545.5 62.0Q553 80 553 101Q553 121 545.5 139.0Q538 157 525 170.5Q512 184 495 192.0Q478 200 459 200ZM457 158Q468 158 478 153.5Q488 149 495.5 141.5Q503 134 507 123.5Q511 113 511 101Q511 89 506.5 78.5Q502 68 495 60.0Q488 52 478 47.5Q468 43 457 43Q446 43 436.5 47.5Q427 52 420 60.0Q413 68 408.5 78.5Q404 89 404 101Q404 113 408.5 123.0Q413 133 420 141.0Q427 149 436.5 153.5Q446 158 457 158ZM652 197Q645 197 640.5 194.0Q636 191 634.5 187.5Q633 184 632 183L580 31Q576 19 578.5 13.5Q581 8 593 4Q601 2 606 2.0Q611 2 614 5.5Q617 9 620 17L654 120L683 19Q684 16 686 12.5Q688 9 692 6.0Q696 3 704 3Q712 3 716.5 6.0Q721 9 722.5 12.5Q724 16 725 18L755 121L789 18Q791 10 794.5 6.0Q798 2 803 1.5Q808 1 816 4Q824 7 827.5 10.5Q831 14 831 18.5Q831 23 829 31L777 183Q776 184 774.5 187.5Q773 191 769 194.0Q765 197 757 197Q749 197 744.5 193.5Q740 190 738.5 186.5Q737 183 736 181L704 78L672 181Q672 183 670 186.5Q668 190 664 193.5Q660 197 652 197ZM885 197Q875 197 870.5 194.0Q866 191 865 186.0Q864 181 864 176V24Q864 19 865 14.0Q866 9 870.5 6.0Q875 3 885 3H943Q955 3 966.5 7.0Q978 11 988 20.0Q998 29 1004.5 41.5Q1011 54 1011 72Q1011 83 1007.5 94.0Q1004 105 997 114.0Q990 123 979.5 129.5Q969 136 956 139H906V176Q906 181 905 186.0Q904 191 899.5 194.0Q895 197 885 197ZM1002 192Q992 199 986 197.5Q980 196 973 187L924 117L972 111L1008 162Q1012 169 1013.5 173.5Q1015 178 1012.5 182.0Q1010 186 1002 192ZM906 98H945Q949 98 953 96.0Q957 94 960.5 91.0Q964 88 966 83.0Q968 78 968 71Q968 63 965 57.5Q962 52 956 48.5Q950 45 943 45H906ZM1136 200Q1116 200 1098.5 192.5Q1081 185 1068 171.5Q1055 158 1047 140.0Q1039 122 1039 102Q1039 81 1046.5 62.5Q1054 44 1067 30.5Q1080 17 1097 9.0Q1114 1 1134 1Q1154 1 1171.5 8.5Q1189 16 1202 30.0Q1215 44 1223 62.0Q1231 80 1231 101Q1231 121 1223.5 139.0Q1216 157 1203 170.5Q1190 184 1173 192.0Q1156 200 1136 200ZM1135 158Q1146 158 1155.5 153.5Q1165 149 1172.5 141.5Q1180 134 1184 123.5Q1188 113 1188 101Q1188 89 1184 78.5Q1180 68 1172.5 60.0Q1165 52 1155.5 47.5Q1146 43 1135 43Q1124 43 1114.5 47.5Q1105 52 1097.5 60.0Q1090 68 1085.5 78.5Q1081 89 1081 101Q1081 113 1085.5 123.0Q1090 133 1097.5 141.0Q1105 149 1114.5 153.5Q1124 158 1135 158ZM1351 200Q1331 200 1313.5 192.5Q1296 185 1283 171.5Q1270 158 1262.5 140.0Q1255 122 1255 102Q1255 81 1262 62.5Q1269 44 1282 30.5Q1295 17 1312.5 9.0Q1330 1 1349 1Q1369 1 1387 8.5Q1405 16 1418 30.0Q1431 44 1438.5 62.0Q1446 80 1446 101Q1446 121 1438.5 139.0Q1431 157 1418 170.5Q1405 184 1388 192.0Q1371 200 1351 200ZM1350 158Q1361 158 1371 153.5Q1381 149 1388 141.5Q1395 134 1399 123.5Q1403 113 1403 101Q1403 89 1399 78.5Q1395 68 1387.5 60.0Q1380 52 1370.5 47.5Q1361 43 1350 43Q1339 43 1329.5 47.5Q1320 52 1312.5 60.0Q1305 68 1301 78.5Q1297 89 1297 101Q1297 113 1301 123.0Q1305 133 1312.5 141.0Q1320 149 1329.5 153.5Q1339 158 1350 158ZM1497 197Q1487 197 1483 194.0Q1479 191 1477.5 186.0Q1476 181 1476 176V24Q1476 19 1477.5 14.0Q1479 9 1483.5 6.0Q1488 3 1498 3Q1505 3 1508.5 4.0Q1512 5 1513.5 6.5Q1515 8 1517 10L1580 94H1576L1638 10Q1641 7 1643 5.5Q1645 4 1648.5 3.5Q1652 3 1658 3Q1668 3 1672.5 6.0Q1677 9 1678.5 14.0Q1680 19 1680 24V176Q1680 182 1678.5 186.5Q1677 191 1672.5 194.0Q1668 197 1658 197Q1648 197 1643.5 194.0Q1639 191 1638 186.0Q1637 181 1637 176V77L1596 135Q1595 137 1593 139.0Q1591 141 1587.5 143.0Q1584 145 1578 145Q1572 145 1568.5 143.0Q1565 141 1563 139.0Q1561 137 1560 135L1518 77V176Q1518 182 1517 186.5Q1516 191 1512 194.0Q1508 197 1497 197ZM1731 198Q1722 198 1716 192.0Q1710 186 1710 176Q1710 173 1711 170.5Q1712 168 1713 166L1799 44H1732Q1727 44 1722 43.5Q1717 43 1713.5 38.5Q1710 34 1710 24Q1710 14 1713 9.5Q1716 5 1721 4.0Q1726 3 1731 3H1839Q1848 3 1854 9.0Q1860 15 1860 24Q1860 28 1859 31.0Q1858 34 1856 36L1771 157H1843Q1848 157 1853 158.0Q1858 159 1860.5 163.0Q1863 167 1863 177Q1863 187 1860 191.5Q1857 196 1852.5 197.0Q1848 198 1842 198Z"/></defs></svg>
+
+<div class="doc-head">
+  <h1>쇼룸 스튜디오 로그인 <span style="color:var(--n-400);font-weight:400;">ui-studio-01-login · rev.2</span></h1>
+  <p class="meta">근거: wf-studio-01-가입온보딩 F0·F0-1 · 토큰: SHOWROOMZ_웹_디자인시스템_v1.1 · 1440×1024 · 상태 5종</p>
+  <div class="rule">
+    <b>파트너센터 로그인(`ui-partner-01-login.html`)과의 관계</b> — 공통 <code>.auth-card</code>(400px) 셸 재사용. 파트너센터는 이메일·비밀번호 폼, 이 화면은 <b>소셜 로그인 전용</b>이라 폼 슬롯만 통째로 교체.<br>
+    <b>[신규제안 · 확인 필요] 소셜 제공자 4종으로 확정</b>
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>제공자</td><td>카카오 · 네이버 · Apple · <b>Google</b></td><td>대표님 확인: 소비자 앱은 iOS=Apple, Android=Google로 실제 4개 제공자 체계. 와이어프레임(F0)의 "소셜 3종"·"소비자 앱과 동일 제공자" 원칙은 <b>유지하되 3→4로 갱신</b> 필요</td></tr>
+      <tr><td>영향 범위</td><td><code>wf-consumer-04-계정기타.html</code> C0 화면도 Google 버튼 없음 — 동일 반영 필요</td><td>소비자 앱 쪽은 이번 작업 범위 밖. 별도로 패치 필요 — §7 미결 항목 참고</td></tr>
+      <tr><td>버튼 순서</td><td>카카오 → 네이버 → Apple → Google</td><td>와이어 기존 순서(카카오·네이버·Apple) 유지 + Google을 마지막에 추가</td></tr>
+      <tr><td>버튼 색상</td><td>각 제공자 공식 브랜드 색상 그대로 사용 (카카오 <code>#FEE500</code> · 네이버 <code>#03C75A</code> · Apple 검정 · Google 흰 배경+회색 보더)</td><td>§9 인디고 단일 액센트 원칙과 별개 — 소셜 로그인 버튼은 각 사 브랜드 가이드라인을 따르는 게 업계 표준이라 예외로 둔다</td></tr>
+      <tr><td>아이콘</td><td>이모지·텍스트 placeholder(💬, 빈 아이콘, 대문자 G) → <b>실제 벡터 아이콘으로 교체</b> (카카오 말풍선, Apple 실루엣, Google 4색 G)</td><td>[신규제안 반영] 아이콘이 없거나 텍스트로만 표기되면 완성도가 떨어져 보임 · 텍스트 대비도 함께 개선(카카오 텍스트 <code>#191919</code>로 강화)</td></tr>
+      <tr><td>워드마크 색상</td><td><code>--logo-dark</code>(검정) → <b>브랜드 로즈레드 <code>#F2456E</code></b></td><td>[신규제안 반영] 대표님 확인 — 로그인·가입·온보딩 등 다른 인증 화면은 검정 유지, <b>이 화면만 의도적으로 예외</b></td></tr>
+    </table>
+    <b class="warn">[rev.2 · 2026.10.19 · 결정 노트 v0.2 반영 · 기-36]</b> 반려 시 신청자에게는 <b>정형 사유만</b> 알리고, 운영자가 적은 <b>상세 사유는 내부용</b>(어드민 심사 기록)으로 둔다.
+<table>
+<tr><th>항목</th><th>내용</th><th>근거</th></tr>
+<tr><td>노출 범위</td><td>로그인 반려 모달(C) · 반려 통지 메일(C2) 모두 <b>정형 사유 1개 · 반려일 · 재신청 가능일</b>만</td><td>상세 사유를 보여주면 심사 기준이 노출돼 우회 신청에 쓰이고, 문구 하나하나가 분쟁 대상이 된다</td></tr>
+<tr><td>상세 사유</td><td>어드민 심사 화면에만 저장 · 신청자 화면 · 메일 · 알림 어디에도 노출하지 않음</td><td>기-36</td></tr>
+<tr><td>정형 사유 목록</td><td><b>채널 실적 확인 불가 · 본인 인증 정보 불일치 · 채널 운영 기준 미충족 · 기타</b> (4종 · 2026.10.19 어드민과 일치)</td><td>목록 정본은 어드민 입점 심사 화면 · 「기타」를 고르면 신청자에게는 「기타」만 보이고 운영자 메모는 내부용</td></tr>
+<tr><td>통지 메일</td><td>신규 C2 — 모달과 같은 문구 · 발신 주소 <span class="tag-tbd">[임시 — 도메인 확정 후 교체]</span></td><td>신청 완료 화면(02 H)의 「심사 결과는 업무 이메일로 안내」 약속</td></tr>
+</table>
+<b>승인 상태별 분기 (F0-1)</b> — 모달 3종 + 반려 통지 메일(C2). <b>승인완료는 모달 없이 바로 진입</b>(정보입력대기→온보딩 강제, 활성→홈 대시보드)이라 이 화면엔 없음.<br>
+    <b>[결정 변경 · 반려 재신청]</b> 와이어프레임 원안("같은 신청서 수정 후 즉시 재제출")을 <b>폐기</b>하고 아래로 확정:
+    <table>
+      <tr><th>항목</th><th>내용</th><th>근거</th></tr>
+      <tr><td>반려 처리</td><td>신청 1건 자체를 <b>폐기</b>(수정·재제출 불가)</td><td>수정 재제출 플로우는 구현 복잡도만 높이고 실익이 적다고 판단</td></tr>
+      <tr><td>재신청 대기</td><td><b>반려일로부터 14일</b> 경과 후에만 재신청 가능</td><td>[신규제안 반영] 무분별한 즉시 재신청 방지</td></tr>
+      <tr><td>재신청 방식</td><td>기존 신청서 수정이 아니라 <b>완전히 새 신청서</b> 작성(F1부터 재시작)</td><td>브랜드(파트너센터) rev.7의 "계정 폐기 → 처음부터 회원가입" 패턴과 동일한 방향</td></tr>
+      <tr><td>파트너센터(브랜드)와의 관계</td><td>브랜드는 <b>쿨다운 없이</b> 즉시 재가입 허용(계정 폐기 후 처음부터), 스튜디오만 <b>14일 쿨다운 추가</b></td><td>[확인] 대표님 확인 — 두 화면이 굳이 동일할 필요 없음. 브랜드 쪽 "즉시 재제출" 문구는 이미 rev.7에서 폐기된 상태였음(프로젝트에 저장된 파일이 rev.6 구버전이라 실제 반영 안 돼 있었음 — 최신 파일은 업로드본 기준)</td></tr>
+    </table>
+    <b class="warn">[결정 변경 · 신청 진입 경로]</b> 하단 "아직 신청 전이신가요? 스튜디오 신청하기" 링크 <b>삭제</b>. 와이어프레임 F0 원안은 로그인 화면에서도 신청 진입을 허용했으나(§ 결정·신청 진입 경로), 이번 결정으로 <b>로그인 화면 자체에는 신청 진입로를 두지 않는다.</b> 신청 이력이 없는 사용자는 F0-1 D(신청 이력 없음 모달)의 [신청하기] 버튼으로만 진입 — 로그인 시도 후에만 안내받는 구조로 변경.
+  </div>
+</div>
+
+<!-- ============ A. 기본 ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">A</span><span class="state-label">기본</span>
+  <span class="state-spec">전체 페이지(모달 아님) · 소셜 버튼 4종 · 신청 이력 없는 상태에서도 동일 화면(로그인 시도 후 F0-1 D로 분기)</span></div>
+  <div class="stage"><div class="stage-inner"><div class="auth-card">
+    <div class="auth-head">
+      <svg class="wordmark" viewBox="0 0 1863.4 200" width="186.3" height="20" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="#F2456E"/></svg>
+      <div class="auth-sub">쇼룸 스튜디오</div>
+    </div>
+    <p class="auth-guide">인플루언서 전용 작업 공간입니다.<br><b>소비자 계정</b>으로 로그인해 주세요.</p>
+    <div class="social">
+      <button type="button" class="sbtn sbtn-kakao"><span class="si"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#191919" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.9 5.36 4.76 6.8-.16.6-.98 3.57-1.02 3.8 0 0-.02.17.09.24.11.06.24.02.24.02.32-.05 3.7-2.42 4.29-2.84.53.08 1.08.12 1.64.12 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg></span>카카오로 로그인</button>
+      <button type="button" class="sbtn sbtn-naver"><span class="si" style="font-family:Arial,sans-serif;font-weight:800;font-size:15px;color:#fff;">N</span>네이버로 로그인</button>
+      <button type="button" class="sbtn sbtn-apple"><span class="si"><svg viewBox="0 0 24 24" width="17" height="17"><path fill="#fff" d="M16.365 1.43c0 1.14-.462 2.24-1.21 3.05-.822.9-2.17 1.6-3.29 1.51-.14-1.11.42-2.27 1.19-3.03.86-.86 2.33-1.5 3.31-1.53zm4.365 17.13c-.61 1.35-.9 1.96-1.68 3.15-1.09 1.66-2.63 3.73-4.53 3.75-1.69.02-2.12-1.1-4.41-1.09-2.29.01-2.76 1.11-4.45 1.09-1.9-.02-3.36-1.88-4.45-3.54C-1.07 17.94.03 11.28 3.62 8.42c1.88-1.5 3.94-1.62 5.34-.72 1 .64 1.83.68 2.79.02 1.6-1.1 3.7-1.05 5.36.06-.13.08-3.2 1.87-3.17 5.55.03 4.4 3.86 5.86 3.9 5.88-.03.09-.61 2.09-2.11 3.32z"/></svg></span>Apple로 로그인</button>
+      <button type="button" class="sbtn sbtn-google"><span class="si"><svg viewBox="0 0 18 18" width="18" height="18">
+<path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/>
+<path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.98v2.33A9 9 0 0 0 9 18z"/>
+<path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.98a9 9 0 0 0 0 8.08l2.98-2.33z"/>
+<path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.96l2.98 2.33C4.67 5.16 6.66 3.58 9 3.58z"/>
+</svg></span>Google로 로그인</button>
+    </div>
+    <p class="auth-note">쇼룸 스튜디오 신청 후 <b>승인이 완료된 사용자</b>만 이용할 수 있습니다.</p>
+  </div></div></div>
+</section>
+
+<!-- ============ B. 심사중 (모달) ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">B</span><span class="state-label">심사중 (모달)</span>
+  <span class="state-spec">소셜 로그인 성공 후 신청 상태 = 심사대기일 때 노출 · 배경은 A와 동일, 오버레이만 추가</span></div>
+  <div class="stage">
+    <div class="stage-inner"><div class="auth-card">
+      <div class="auth-head">
+        <svg class="wordmark" viewBox="0 0 1863.4 200" width="186.3" height="20" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="#F2456E"/></svg>
+        <div class="auth-sub">쇼룸 스튜디오</div>
+      </div>
+      <p class="auth-guide">인플루언서 전용 작업 공간입니다.<br><b>소비자 계정</b>으로 로그인해 주세요.</p>
+      <div class="social">
+        <button type="button" class="sbtn sbtn-kakao"><span class="si"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#191919" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.9 5.36 4.76 6.8-.16.6-.98 3.57-1.02 3.8 0 0-.02.17.09.24.11.06.24.02.24.02.32-.05 3.7-2.42 4.29-2.84.53.08 1.08.12 1.64.12 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg></span>카카오로 로그인</button>
+        <button type="button" class="sbtn sbtn-naver"><span class="si" style="font-family:Arial,sans-serif;font-weight:800;font-size:15px;color:#fff;">N</span>네이버로 로그인</button>
+        <button type="button" class="sbtn sbtn-apple"><span class="si"><svg viewBox="0 0 24 24" width="17" height="17"><path fill="#fff" d="M16.365 1.43c0 1.14-.462 2.24-1.21 3.05-.822.9-2.17 1.6-3.29 1.51-.14-1.11.42-2.27 1.19-3.03.86-.86 2.33-1.5 3.31-1.53zm4.365 17.13c-.61 1.35-.9 1.96-1.68 3.15-1.09 1.66-2.63 3.73-4.53 3.75-1.69.02-2.12-1.1-4.41-1.09-2.29.01-2.76 1.11-4.45 1.09-1.9-.02-3.36-1.88-4.45-3.54C-1.07 17.94.03 11.28 3.62 8.42c1.88-1.5 3.94-1.62 5.34-.72 1 .64 1.83.68 2.79.02 1.6-1.1 3.7-1.05 5.36.06-.13.08-3.2 1.87-3.17 5.55.03 4.4 3.86 5.86 3.9 5.88-.03.09-.61 2.09-2.11 3.32z"/></svg></span>Apple로 로그인</button>
+        <button type="button" class="sbtn sbtn-google"><span class="si"><svg viewBox="0 0 18 18" width="18" height="18">
+<path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/>
+<path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.98v2.33A9 9 0 0 0 9 18z"/>
+<path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.98a9 9 0 0 0 0 8.08l2.98-2.33z"/>
+<path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.96l2.98 2.33C4.67 5.16 6.66 3.58 9 3.58z"/>
+</svg></span>Google로 로그인</button>
+      </div>
+    </div></div>
+    <div class="overlay">
+      <div class="modal-alert">
+        <div class="mic mic-info"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.6"/><path d="M12 8v4.3l3 1.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+        <div class="mt">심사 중입니다</div>
+        <p class="md">신청 내용을 검토하고 있습니다.<br>영업일 기준 3~7일 이내<br>이메일로 결과를 안내해 드립니다.</p>
+        <div class="mf" style="justify-content:center;"><button type="button" class="btn btn-primary" style="flex:none;padding:0 32px;">확인</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ C. 반려 (모달) ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">C</span><span class="state-label">반려 (모달)</span>
+  <span class="state-spec">신청 1건 폐기 · 수정 재제출 없음 · 반려일로부터 14일 후 완전히 새 신청서로만 재신청 가능 · 버튼 1개(확인) · <b>기-36</b> 사유는 <b>정형 사유 1개만</b> 보여준다 — 운영자가 적은 상세 사유는 신청자에게 노출하지 않는다(내부용)</span></div>
+  <div class="stage">
+    <div class="stage-inner"><div class="auth-card">
+      <div class="auth-head">
+        <svg class="wordmark" viewBox="0 0 1863.4 200" width="186.3" height="20" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="#F2456E"/></svg>
+        <div class="auth-sub">쇼룸 스튜디오</div>
+      </div>
+      <p class="auth-guide">인플루언서 전용 작업 공간입니다.<br><b>소비자 계정</b>으로 로그인해 주세요.</p>
+      <div class="social">
+        <button type="button" class="sbtn sbtn-kakao"><span class="si"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#191919" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.9 5.36 4.76 6.8-.16.6-.98 3.57-1.02 3.8 0 0-.02.17.09.24.11.06.24.02.24.02.32-.05 3.7-2.42 4.29-2.84.53.08 1.08.12 1.64.12 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg></span>카카오로 로그인</button>
+        <button type="button" class="sbtn sbtn-naver"><span class="si" style="font-family:Arial,sans-serif;font-weight:800;font-size:15px;color:#fff;">N</span>네이버로 로그인</button>
+        <button type="button" class="sbtn sbtn-apple"><span class="si"><svg viewBox="0 0 24 24" width="17" height="17"><path fill="#fff" d="M16.365 1.43c0 1.14-.462 2.24-1.21 3.05-.822.9-2.17 1.6-3.29 1.51-.14-1.11.42-2.27 1.19-3.03.86-.86 2.33-1.5 3.31-1.53zm4.365 17.13c-.61 1.35-.9 1.96-1.68 3.15-1.09 1.66-2.63 3.73-4.53 3.75-1.69.02-2.12-1.1-4.41-1.09-2.29.01-2.76 1.11-4.45 1.09-1.9-.02-3.36-1.88-4.45-3.54C-1.07 17.94.03 11.28 3.62 8.42c1.88-1.5 3.94-1.62 5.34-.72 1 .64 1.83.68 2.79.02 1.6-1.1 3.7-1.05 5.36.06-.13.08-3.2 1.87-3.17 5.55.03 4.4 3.86 5.86 3.9 5.88-.03.09-.61 2.09-2.11 3.32z"/></svg></span>Apple로 로그인</button>
+        <button type="button" class="sbtn sbtn-google"><span class="si"><svg viewBox="0 0 18 18" width="18" height="18">
+<path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/>
+<path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.98v2.33A9 9 0 0 0 9 18z"/>
+<path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.98a9 9 0 0 0 0 8.08l2.98-2.33z"/>
+<path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.96l2.98 2.33C4.67 5.16 6.66 3.58 9 3.58z"/>
+</svg></span>Google로 로그인</button>
+      </div>
+    </div></div>
+    <div class="overlay">
+      <div class="modal-alert">
+        <div class="mic mic-danger">!</div>
+        <div class="mt">신청이 반려되었습니다</div>
+        <p class="md"><b>반려 사유:</b> 채널 실적 확인 불가<br>이번 신청 건은 종료되었으며, <b>반려일로부터 14일 후</b><br>새로운 신청서를 다시 제출할 수 있습니다.</p>
+        <p class="md" style="margin-top:-12px;color:var(--n-500);">재신청 가능일: 2026-08-01</p>
+        <div class="mf" style="justify-content:center;"><button type="button" class="btn btn-primary" style="flex:none;padding:0 32px;">확인</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ C2. 반려 통지 메일 ============ -->
+<section class="state">
+<div class="state-bar"><span class="state-id">C2</span><span class="state-label">반려 통지 (업무 이메일)</span>
+<span class="state-spec"><b>기-36</b> 신청 완료 화면이 「심사 결과는 업무 이메일로 안내」라고 약속하므로 통지 내용을 화면과 같은 기준으로 고정한다 — <b>정형 사유 · 재신청 가능일 · 재신청 방법</b> 세 가지만 담고 <b>상세 사유는 넣지 않는다</b> · 로그인 모달(C)과 문구를 맞춰 두 경로의 내용이 갈리지 않게 한다</span></div>
+<div class="stage">
+<div class="stage-inner">
+<div style="width:560px;background:#fff;border:1px solid var(--n-200);border-radius:var(--r-md);overflow:hidden;">
+<div style="padding:14px 20px;border-bottom:1px solid var(--n-200);background:var(--n-50);font-size:var(--fs-micro);color:var(--n-600);line-height:1.8;">
+<div><b style="color:var(--n-900);">제목</b> [SHOWROOMZ] 쇼룸 스튜디오 신청 결과 안내</div>
+<div><b style="color:var(--n-900);">보낸 사람</b> SHOWROOMZ &lt;no-reply@showroomz.kr&gt; <span class="tag-tbd">[임시 — 도메인 확정 후 교체]</span></div>
+<div><b style="color:var(--n-900);">받는 사람</b> 신청서에 입력한 업무 이메일</div>
+</div>
+<div style="padding:22px 20px;font-size:var(--fs-body);color:var(--n-700);line-height:1.8;">
+<p style="margin:0 0 12px;">안녕하세요, <b style="color:var(--n-900);">뷰티_소연</b>님.</p>
+<p style="margin:0 0 16px;">신청해 주신 쇼룸 스튜디오 이용 신청이 <b style="color:var(--n-900);">반려</b>되었습니다.</p>
+<div style="border:1px solid var(--n-200);border-radius:var(--r-sm);padding:12px 14px;margin-bottom:16px;font-size:var(--fs-caption);">
+<div style="display:flex;gap:12px;padding:3px 0;"><span style="width:96px;color:var(--n-500);flex-shrink:0;">반려 사유</span><b style="color:var(--n-900);">채널 실적 확인 불가</b></div>
+<div style="display:flex;gap:12px;padding:3px 0;"><span style="width:96px;color:var(--n-500);flex-shrink:0;">반려일</span><span class="tnum">2026-07-18</span></div>
+<div style="display:flex;gap:12px;padding:3px 0;"><span style="width:96px;color:var(--n-500);flex-shrink:0;">재신청 가능일</span><span class="tnum">2026-08-01</span></div>
+</div>
+<p style="margin:0 0 6px;">이번 신청 건은 종료되었습니다. 재신청 가능일 이후 쇼룸 스튜디오에 로그인하면 <b style="color:var(--n-900);">새 신청서</b>를 작성할 수 있습니다.</p>
+<p style="margin:0;color:var(--n-500);font-size:var(--fs-caption);">본 메일은 발신 전용입니다.</p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ============ D. 신청 이력 없음 (모달) ============ -->
+<section class="state">
+  <div class="state-bar"><span class="state-id">D</span><span class="state-label">신청 이력 없음 (모달)</span>
+  <span class="state-spec">최초 소셜 로그인인데 스튜디오 신청 이력이 없는 경우 · [신청하기] → F1 신청 Step1로 이동</span></div>
+  <div class="stage">
+    <div class="stage-inner"><div class="auth-card">
+      <div class="auth-head">
+        <svg class="wordmark" viewBox="0 0 1863.4 200" width="186.3" height="20" role="img" aria-label="SHOWROOMZ"><use href="#sz-wm" fill="#F2456E"/></svg>
+        <div class="auth-sub">쇼룸 스튜디오</div>
+      </div>
+      <p class="auth-guide">인플루언서 전용 작업 공간입니다.<br><b>소비자 계정</b>으로 로그인해 주세요.</p>
+      <div class="social">
+        <button type="button" class="sbtn sbtn-kakao"><span class="si"><svg viewBox="0 0 24 24" width="18" height="18"><path fill="#191919" d="M12 3C6.48 3 2 6.58 2 11c0 2.85 1.9 5.36 4.76 6.8-.16.6-.98 3.57-1.02 3.8 0 0-.02.17.09.24.11.06.24.02.24.02.32-.05 3.7-2.42 4.29-2.84.53.08 1.08.12 1.64.12 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/></svg></span>카카오로 로그인</button>
+        <button type="button" class="sbtn sbtn-naver"><span class="si" style="font-family:Arial,sans-serif;font-weight:800;font-size:15px;color:#fff;">N</span>네이버로 로그인</button>
+        <button type="button" class="sbtn sbtn-apple"><span class="si"><svg viewBox="0 0 24 24" width="17" height="17"><path fill="#fff" d="M16.365 1.43c0 1.14-.462 2.24-1.21 3.05-.822.9-2.17 1.6-3.29 1.51-.14-1.11.42-2.27 1.19-3.03.86-.86 2.33-1.5 3.31-1.53zm4.365 17.13c-.61 1.35-.9 1.96-1.68 3.15-1.09 1.66-2.63 3.73-4.53 3.75-1.69.02-2.12-1.1-4.41-1.09-2.29.01-2.76 1.11-4.45 1.09-1.9-.02-3.36-1.88-4.45-3.54C-1.07 17.94.03 11.28 3.62 8.42c1.88-1.5 3.94-1.62 5.34-.72 1 .64 1.83.68 2.79.02 1.6-1.1 3.7-1.05 5.36.06-.13.08-3.2 1.87-3.17 5.55.03 4.4 3.86 5.86 3.9 5.88-.03.09-.61 2.09-2.11 3.32z"/></svg></span>Apple로 로그인</button>
+        <button type="button" class="sbtn sbtn-google"><span class="si"><svg viewBox="0 0 18 18" width="18" height="18">
+<path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.91c1.7-1.57 2.69-3.88 2.69-6.62z"/>
+<path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.91-2.26c-.81.54-1.84.86-3.05.86-2.34 0-4.33-1.58-5.04-3.71H.98v2.33A9 9 0 0 0 9 18z"/>
+<path fill="#FBBC05" d="M3.96 10.71a5.4 5.4 0 0 1 0-3.42V4.96H.98a9 9 0 0 0 0 8.08l2.98-2.33z"/>
+<path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .98 4.96l2.98 2.33C4.67 5.16 6.66 3.58 9 3.58z"/>
+</svg></span>Google로 로그인</button>
+      </div>
+    </div></div>
+    <div class="overlay">
+      <div class="modal-alert">
+        <div class="mic mic-neutral"><svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M4 13h4.2l1.5 2.2h4.6L15.8 13H20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.8 5.6A1 1 0 0 1 6.77 5h10.46a1 1 0 0 1 .97.6L20 12.6V18a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-5.4l1.8-7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></div>
+        <div class="mt">신청 이력이 없습니다</div>
+        <p class="md">쇼룸 스튜디오는 승인된<br>인플루언서만 이용할 수 있습니다.<br>먼저 신청을 진행해 주세요.</p>
+        <div class="mf"><button type="button" class="btn btn-line">닫기</button><button type="button" class="btn btn-primary">신청하기</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
