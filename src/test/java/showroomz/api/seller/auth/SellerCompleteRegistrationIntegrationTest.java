@@ -54,8 +54,6 @@ class SellerCompleteRegistrationIntegrationTest extends IntegrationTestSupport {
         assertThat(market.getShippingLeadDays()).isEqualTo(3);
         assertThat(market.getFreeShippingThreshold()).isEqualTo(50000);
         assertThat(market.getDefaultDeliveryFee()).isEqualTo(3000);
-        assertThat(market.getReturnFee()).isEqualTo(3000);
-        assertThat(market.getExchangeFee()).isEqualTo(6000);
         assertThat(sellerRepository.findByEmail(brand.email()).orElseThrow().getIsNewMember()).isFalse();
 
         mockMvc.perform(get("/v1/seller/basic-info/delivery-policy")
@@ -104,17 +102,14 @@ class SellerCompleteRegistrationIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("[OB-08] 반품비 · 교환비 생략 — 201 · 3,000 / 6,000 저장")
-    void claimFeesOmitted() throws Exception {
+    @DisplayName("[OB-08] 반품비 · 교환비 입력 폐기(1021 기-18) — 구 FE 가 보내도 무시하고 201")
+    void claimFeesIgnored() throws Exception {
         Map<String, Object> request = fullRequest();
-        request.remove("returnFee");
-        request.remove("exchangeFee");
+        request.put("returnFee", 3000);
+        request.put("exchangeFee", 6000);
 
         complete(registerToken(), request).andExpect(status().isCreated());
-
-        Market market = reloadMarket();
-        assertThat(market.getReturnFee()).isEqualTo(3000);
-        assertThat(market.getExchangeFee()).isEqualTo(6000);
+        assertThat(reloadMarket().getDefaultDeliveryFee()).isEqualTo(3000);
     }
 
     @Test
@@ -249,8 +244,6 @@ class SellerCompleteRegistrationIntegrationTest extends IntegrationTestSupport {
         request.put("jejuSurcharge", 5000);
         request.put("remoteAreaSurcharge", 4000);
         request.put("shippingLeadDays", 3);
-        request.put("returnFee", 3000);
-        request.put("exchangeFee", 6000);
         return request;
     }
 

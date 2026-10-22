@@ -190,7 +190,7 @@ public class CreatorSettlementQueryService {
         if (confirmed && mine != null) {
             if (mine.getStatus() == PayoutStatus.BLOCKED) {
                 payoutDueNote = s.isBusinessCreator()
-                        ? blocks.businessBlockedNote(s, properties.getPayoutBusinessDays()) : "주민등록번호 등록 후 지급";
+                        ? blocks.businessBlockedNote(s, properties.getPayoutBusinessDays()) : "보류 사유 해소 후 지급";
             } else {
                 payoutDueDate = mine.getDueDate();
                 payoutDueNote = views.payoutBasis(s.getId());
@@ -276,7 +276,7 @@ public class CreatorSettlementQueryService {
             case WAITING -> "확인 기간 후 지급";
             case HELD -> "보류 중";
             case BLOCKED -> payee == SettlementPayee.CREATOR && s.isBusinessCreator()
-                    ? blocks.businessBlockedLabel(s) : "주민등록번호 등록 필요";
+                    ? blocks.businessBlockedLabel(s) : "지급 보류";
             case SCHEDULED, REQUESTED -> day + "지급 예정";
             case PAID -> day + "지급 완료";
             case FAILED -> "지급 확인 중";

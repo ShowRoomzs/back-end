@@ -158,12 +158,20 @@ public class CreatorGroupBuyCommandService {
             throw new BusinessException(ErrorCode.GROUP_BUY_POST_NOT_EDITABLE);
         }
 
+        GroupBuyPost post = locked.post();
         String title = normalizeTitle(request.title());
+        // 진행 중에는 본문만 고친다(1021 기-08) — 제목을 비워 보내면 지금 제목을 쓰고, 바꿔 보내면 400.
+        if (GroupBuyPostPolicy.isTitleLocked(post, locked.groupBuy())) {
+            if (title == null) {
+                title = post.getTitle();
+            } else if (!title.equals(post.getTitle())) {
+                throw new BusinessException(ErrorCode.GROUP_BUY_POST_TITLE_LOCKED);
+            }
+        }
         String content = normalizeContent(request.content());
         GroupBuyPostPolicy.validateRequired(title, content);
 
         LocalDateTime now = LocalDateTime.now();
-        GroupBuyPost post = locked.post();
         post.rewrite(title, content, now);
         postPolicies.of(post.getPost()).validateEditable(post.getPost());
         post.markEdited(now);

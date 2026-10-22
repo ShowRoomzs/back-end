@@ -214,7 +214,7 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
         seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, true);
 
         detail(groupBuy.getId())
-                .andExpect(jsonPath("$.post.status").value("HIDDEN"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"))
                 .andExpect(jsonPath("$.post.hiddenReason.code").value("AD_DISCLOSURE"))
                 .andExpect(jsonPath("$.post.hiddenDays").value(0));
         action(groupBuy.getId(), "extension-request", Map.of("extensionDays", 3))

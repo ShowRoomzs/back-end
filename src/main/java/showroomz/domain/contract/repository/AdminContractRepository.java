@@ -18,6 +18,7 @@ public class AdminContractRepository {
     private final JPAQueryFactory queries;
     private static final QContract c = QContract.contract;
     private static final QContractResendRequest r = QContractResendRequest.contractResendRequest;
+    private static final QContractTerminationRequest t = QContractTerminationRequest.contractTerminationRequest;
 
     public Page<Contract> search(AdminContractTab tab, AdminContractQueue queue, String keyword,
                                  AdminContractSort sort, Pageable page, LocalDateTime now) {
@@ -62,9 +63,12 @@ public class AdminContractRepository {
                 // 미처리 요청은 처리할 방법이 없으므로 큐에 남기지 않는다.
                 case RESEND -> where.and(c.status.eq(ContractStatus.SIGNING)).and(JPAExpressions.selectOne().from(r)
                         .where(r.contract.eq(c), r.handledAt.isNull()).exists());
+                // 해지 요청(1021 설계서 1-4) — 처리 대기 요청이 있는 계약. 오픈 · 종결로 요청이 닫히면 큐에서 빠진다.
+                case TERMINATION -> where.and(JPAExpressions.selectOne().from(t)
+                        .where(t.contract.eq(c), t.status.eq(ContractTerminationRequestStatus.PENDING)).exists());
             }
         } else if (tab == AdminContractTab.CLOSED) {
-            where.and(c.status.in(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED));
+            where.and(c.status.in(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED, ContractStatus.TERMINATED));
         } else if (tab != null && tab != AdminContractTab.ALL) {
             where.and(c.status.eq(ContractStatus.valueOf(tab.name())));
         }

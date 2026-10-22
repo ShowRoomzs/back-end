@@ -13,6 +13,11 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum ContractCloseReasonCode {
+    /** 어드민 01 C6(1021 기-06) 선택지 — 당사자 요청 2 · 내용 오류 · 기타. */
+    PARTY_RENEGOTIATION("당사자 요청 — 조건 재협의 필요"),
+    PARTY_CANNOT_PROCEED("당사자 요청 — 공구 진행 불가"),
+    CONTENT_ERROR_AFTER_REVIEW("계약 내용 오류 — 검토 통과 후 발견"),
+    /** 이하 4종은 1021 이전 선택지 — 저장된 행 표시 · 구 FE 호환으로 남긴다. */
     CONDITION_REVIEW("조건 재검토 필요"),
     OUT_OF_STOCK("상품 재고 부족"),
     SCHEDULE_CHANGE("공구 일정 변경"),

@@ -51,6 +51,7 @@ public class ClaimPaymentService {
     private static final int BATCH_LIMIT = 200;
     private static final String EXCHANGE_ORDER_NAME = "교환 재발송 배송비";
     private static final String REJECT_ORDER_NAME = "반려 상품 재발송 배송비";
+    private static final String OVERTURN_ORDER_NAME = "교환 재발송 배송비 · 착불 운임";
 
     private final OrderClaimPaymentRepository paymentRepository;
     private final OrderClaimChargeRepository chargeRepository;
@@ -115,7 +116,11 @@ public class ClaimPaymentService {
             OrderClaimPayment payment = paymentRepository.save(OrderClaimPayment.ready(chargeId, collection.getId(),
                     userId, attempt, method, cardIssuer, provider, charge.getAmount(), channelKey, now));
             return new Opened(payment.getPaymentId(), charge.getAmount(), channelKey, method, cardIssuer, provider,
-                    charge.getType() == ClaimChargeType.EXCHANGE_RESHIP ? EXCHANGE_ORDER_NAME : REJECT_ORDER_NAME,
+                    switch (charge.getType()) {
+                        case EXCHANGE_RESHIP -> EXCHANGE_ORDER_NAME;
+                        case OVERTURN_RESHIP -> OVERTURN_ORDER_NAME;
+                        default -> REJECT_ORDER_NAME;
+                    },
                     collection.getReshipRecipient(), collection.getReshipPhone());
         });
 

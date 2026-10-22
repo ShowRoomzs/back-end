@@ -89,6 +89,7 @@ public class SellerOrderCommandService {
     private final ShipmentExcelParser excelParser;
     private final DeliveryTrackerPort tracker;
     private final OrderProperties orderProperties;
+    private final showroomz.domain.order.service.OrderStallChoiceService stallChoiceService;
 
     // ------------------------------------------------------------------ 준비 시작(3-1)
 
@@ -358,6 +359,7 @@ public class SellerOrderCommandService {
         }
         String before = (group.getCarrier() == null ? "" : group.getCarrier().getLabel() + " ")
                 + (group.getTrackingNumber() == null ? "" : group.getTrackingNumber());
+        boolean stalled = group.getTrackingAlert() == showroomz.domain.order.type.TrackingAlert.STALLED;
         if (deliveryGroupRepository.updateInvoice(deliveryGroupId, scope.market().getId(), request.carrier(),
                 trackingNumber) != 1) {
             throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED);
@@ -365,6 +367,25 @@ public class SellerOrderCommandService {
         fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.INVOICE_UPDATED,
                 FulfillmentActorType.SELLER, scope.sellerId(),
                 before.trim() + " → " + request.carrier().getLabel() + " " + trackingNumber, now);
+        if (stalled) {
+            // 추적 정지 건의 새 송장 — 소비자 재발송 선택의 처리다(1021 기-15). 선택은 이력으로 남긴다.
+            fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.RESHIPPED_AFTER_STALL,
+                    FulfillmentActorType.SELLER, scope.sellerId(), group.getStallChoice() == null ? "소비자 선택 전"
+                            : "소비자 선택 · " + group.getStallChoice().getLabel(), now);
+        }
+        return queryService.getOrder(sellerEmail, deliveryGroupId);
+    }
+
+    /**
+     * 소비자 환불 선택 처리(1021 기-15 · 10c C7b) — 추적 정지 건에서 소비자가 환불을 골랐다. 분실 판정과 같은 효과(하위주문 취소 · 항목 +
+     * 배송비 PG 환불)이고 운영자 분실 판정의 「추적 정지 N일」 조건은 면제된다.
+     */
+    @Transactional
+    public SellerOrderDetailResponse refundStallChoice(String sellerEmail, Long deliveryGroupId) {
+        SellerScope scope = accessGuard.resolve(sellerEmail);
+        OrderDeliveryGroup group = accessGuard.loadOwned(deliveryGroupId, scope);
+        stallChoiceService.refundByChoice(group.getId(), scope.market().getId(), FulfillmentActorType.SELLER,
+                scope.sellerId(), LocalDateTime.now());
         return queryService.getOrder(sellerEmail, deliveryGroupId);
     }
 

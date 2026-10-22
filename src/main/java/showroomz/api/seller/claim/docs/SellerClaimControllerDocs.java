@@ -187,7 +187,8 @@ public interface SellerClaimControllerDocs {
                     - `consumerPhone` 은 마스킹된 값이다(`010-****-4412`). **재발송 수취 정보(원문)는 여기 없다** — 재발송 목록
                       엑셀(`POST /reshipments/export`)에만 나간다
                     - `reasonDetail` — 소비자가 적은 상세 내용(브랜드 부담 사유는 필수) · `consumerAttachments` — 소비자 첨부 사진 URL
-                    - `exchangeFeeCharged`(교환만) — 고객 귀책 교환이라 요청 때 재발송 배송비를 결제했으면 `true`. 반품은 `null`
+                    - `reshipFeeCharged`(교환만) — 고객 귀책 교환이라 요청 때 재발송 배송비를 결제했으면 `true`. 반품은 `null`. 구 이름 `exchangeFeeCharged` 는 한 릴리스 동안 같은 값으로 남는다(1021 기-18)
+                    - `inspection` — 검수 판정(통과 · 사유 번복 · 반려) · 자동 입고 · 운임 정산 행(브랜드 정산 「± 운임 정산」과 같은 행) · 교환 사유 번복 결제 금액. `actions.canOverturn` 은 입고 확인 뒤 착불(브랜드 귀책) 신청 건
                     - `refund`(반품만) — 환불 예정액은 **요청(박스) 단위**다. `itemAmount`(이 항목의 상품 금액)와
                       `requestDeduction`(요청의 배송비 차감 — 요청당 한 번) · `requestExpectedAmount`(요청 예정액 —
                       판정이 다 끝났으면 확정액)를 따로 내린다. 묶음의 항목마다 같은 차감을 반복해 그리지 않는다.
@@ -319,7 +320,34 @@ public interface SellerClaimControllerDocs {
                                     """)))
     })
     ResponseEntity<SellerClaimDetailResponse> passInspection(
-            @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId);
+            @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(required = false,
+                    description = "M1 귀책 선택(1021 기-17 · 기-93) — 생략하면 신청 때 귀책 그대로")
+            showroomz.api.seller.claim.dto.SellerClaimPassRequest request);
+
+    @Operation(
+            summary = "검수 사유 번복 (단건)",
+            description = """
+                    B2b — 착불(브랜드 귀책 · 불량 · 오배송)로 신청했는데 검수 결과 소비자 귀책인 경우(1021 결정 노트 기-17 【잠정】). 반려가 아니다 — 상품은 받아들인다.
+
+                    - 판정 근거 설명 · 증빙 사진 필수 — 소비자에게 그대로 전달된다
+                    - 브랜드가 낸 착불 운임(그 상품의 기본 배송비 정액)을 소비자가 부담한다(기-93)
+                    - **반품** — 무료배송 주문이면 최초 배송비 차감도 다시 판정해, 환불액 = 상품액 − 최초 배송비 − 착불 운임. 바로 환불 대기
+                    - **교환** — 재발송 배송비 + 착불 운임을 소비자가 결제해야 새 상품이 나간다(결제 대기 · 미결제면 받은 상품을 돌려보낸다)
+                    - 선불(소비자 귀책) 신청이면 409 CLAIM_OVERTURN_NOT_APPLICABLE
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "사유 번복 — 갱신된 상세"),
+            @ApiResponse(responseCode = "400", description = "CLAIM_OVERTURN_EVIDENCE_REQUIRED — 설명 · 증빙 누락",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "CLAIM_OVERTURN_NOT_APPLICABLE(선불 신청) · CLAIM_STATE_CHANGED(검수 대기 아님)",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerClaimDetailResponse> overturnInspection(
+            @Parameter(description = "클레임 id", example = "3021") @PathVariable Long claimId,
+            @RequestBody showroomz.api.seller.claim.dto.SellerClaimOverturnRequest request);
 
     @Operation(
             summary = "검수 반려 (단건)",

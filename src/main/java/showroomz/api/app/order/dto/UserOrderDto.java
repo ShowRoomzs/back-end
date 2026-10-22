@@ -119,6 +119,61 @@ public class UserOrderDto {
         @Schema(description = "공구 종료 시각 — NOT_SHIPPED 일 때만")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime groupBuyEndAt;
+        @Schema(description = "추적 정지 · 소비자 선택(1d · 1021 기-15) — 추적 정지가 아니고 선택도 없으면 null", nullable = true)
+        private StallChoiceResponse stall;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "C10-2 1d 추적 정지 · 소비자 선택(1021 결정 노트 기-15 【잠정】)")
+    public static class StallChoiceResponse {
+        private Long deliveryGroupId;
+        @Schema(description = "NONE(추적 정지 아님) · WAITING(선택 개방 전 — 「N일 뒤 선택할 수 있어요」) · OPEN(재발송 · 환불 선택 가능) · "
+                + "CHOSEN(선택함 — 브랜드 처리 대기 또는 처리됨)", example = "OPEN")
+        private String state;
+        @Schema(description = "선택 개방 시각 — 추적 정지 판정 + N일", nullable = true)
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        private LocalDateTime opensAt;
+        @Schema(description = "개방까지 남은 일수(올림) — WAITING 일 때만 1 이상", nullable = true, example = "3")
+        private Integer daysUntilOpen;
+        @Schema(description = "추적이 멈춘 지 N일 — 마지막 스캔(없으면 발송)부터", nullable = true, example = "9")
+        private Integer daysStalled;
+        @Schema(description = "고른 처리 — RESHIP(재발송) · REFUND(환불)", nullable = true)
+        private showroomz.domain.order.type.StallChoice choice;
+        @Schema(example = "환불", nullable = true)
+        private String choiceLabel;
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
+        @Schema(nullable = true)
+        private LocalDateTime chosenAt;
+
+        public static StallChoiceResponse of(Long deliveryGroupId,
+                                             showroomz.domain.order.service.OrderStallChoiceService.View view) {
+            if (view == null) {
+                return StallChoiceResponse.builder().deliveryGroupId(deliveryGroupId).state("NONE").build();
+            }
+            return StallChoiceResponse.builder()
+                    .deliveryGroupId(deliveryGroupId)
+                    .state(view.state().name())
+                    .opensAt(view.opensAt())
+                    .daysUntilOpen(view.daysUntilOpen())
+                    .daysStalled(view.daysStalled())
+                    .choice(view.choice())
+                    .choiceLabel(view.choiceLabel())
+                    .chosenAt(view.chosenAt())
+                    .build();
+        }
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "추적 정지 소비자 선택")
+    public static class StallChoiceRequest {
+        @jakarta.validation.constraints.NotNull(message = "재발송 또는 환불을 선택해 주세요.")
+        @Schema(description = "RESHIP(재발송) · REFUND(환불)", example = "REFUND")
+        private showroomz.domain.order.type.StallChoice choice;
     }
 
     public enum NoticeType {

@@ -53,9 +53,17 @@ public class CreatorSanctionService {
     private final MessageSanctionChannelGateway sanctionCards;
     private final MemberNotifier notifier;
     private final MemberSanctionHooks hooks;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     public CreatorSanction suspend(Long creatorId, CreatorSuspensionReason reason, String reasonDetail, Long operatorId,
                                    String operatorName, LocalDateTime now) {
+        return suspend(creatorId, reason, reasonDetail, null, operatorId, operatorName, now);
+    }
+
+    /** 정지 — 종료일(포함)이 있으면 다음 날 00:00 자동 해제 · 이의 신청 기한 = 통지 + N영업일(1021 기-02). */
+    public CreatorSanction suspend(Long creatorId, CreatorSuspensionReason reason, String reasonDetail,
+                                   java.time.LocalDate endsOn, Long operatorId, String operatorName, LocalDateTime now) {
+        java.time.LocalDate term = termPolicy.requireEndsOn(endsOn, now);
         Creator creator = lockCreator(creatorId);
         if (creator.isWithdrawn()) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWN);
@@ -70,6 +78,7 @@ public class CreatorSanctionService {
 
         CreatorSanction sanction = sanctions.save(
                 CreatorSanction.suspend(creatorId, reason, detail, operatorId, operatorName, now));
+        sanction.applyTerm(term, termPolicy.appealDeadline(now));
         creator.markSuspended();
         if (sanction.isPayoutHeld()) {
             payoutHolds.hold(SettlementPayee.CREATOR, creatorId, PayoutBlockReason.CREATOR_SUSPENDED, now);
@@ -79,7 +88,8 @@ public class CreatorSanctionService {
         MessageThread channel = operatorChannels.requireCreatorChannel(creator);
         sanction.recordSuspendCard(sanctionCards.postSuspendedCard(channel, SanctionKind.CREATOR, sanction.getId(),
                 sanction.reasonText(), now, operatorId, new MessageCardPayload.Sanction(MemberType.CREATOR.name(),
-                        reason.name(), reason.getLabel(), detail, sanction.isPayoutHeld())));
+                        reason.name(), reason.getLabel(), detail, sanction.isPayoutHeld(), sanction.getEndsOn(),
+                        sanction.getAppealDeadlineAt())));
         hooks.onSuspended(MemberType.CREATOR, creatorId, now);
         String reasonLabel = reason.getLabel();
         AfterCommit.run(() -> notifier.suspended(MemberType.CREATOR, creatorId, reasonLabel));
@@ -93,6 +103,26 @@ public class CreatorSanctionService {
      */
     public CreatorSanction release(Long creatorId, SanctionReleaseReason reason, String note, Long operatorId,
                                    String operatorName, LocalDateTime now) {
+        return releaseInternal(creatorId, MemberSanctionRules.operatorReleaseReason(reason), note, operatorId,
+                operatorName, now);
+    }
+
+    /** 정지 기간 종료 자동 해제(1021 기-02) — 시스템. 기간이 없거나 남았거나 이미 풀렸으면 null. */
+    public CreatorSanction releaseByTerm(Long creatorId, LocalDateTime now) {
+        CreatorSanction open = sanctions.findByCreatorIdAndReleasedAtIsNull(creatorId).orElse(null);
+        if (open == null || !open.isTermEnded(now.toLocalDate())) {
+            return null;
+        }
+        CreatorSanction released = releaseInternal(creatorId, SanctionReleaseReason.TERM_ENDED, null, null, null, now);
+        if (released != null) {
+            released.markAutoReleased();
+        }
+        return released;
+    }
+
+    /** @param operatorId null 이면 시스템 해제 — 이력 주체 SYSTEM · 카드 발신 시스템 운영자. */
+    private CreatorSanction releaseInternal(Long creatorId, SanctionReleaseReason resolved, String note, Long operatorId,
+                                            String operatorName, LocalDateTime now) {
         Creator creator = lockCreator(creatorId);
         if (creator.isWithdrawn()) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWN);
@@ -100,7 +130,6 @@ public class CreatorSanctionService {
         if (creator.getStatus() != CreatorStatus.SUSPENDED) {
             throw new BusinessException(ErrorCode.CREATOR_NOT_SUSPENDED);
         }
-        SanctionReleaseReason resolved = MemberSanctionRules.operatorReleaseReason(reason);
         String normalizedNote = MemberSanctionRules.trimToNull(note);
 
         CreatorSanction sanction = sanctions.findByCreatorIdAndReleasedAtIsNull(creatorId).orElse(null);
@@ -114,12 +143,18 @@ public class CreatorSanctionService {
             }
             MessageThread channel = operatorChannels.requireCreatorChannel(creator);
             sanction.recordReleaseCard(sanctionCards.postReleasedCard(channel, SanctionKind.CREATOR, sanction.getId(),
-                    text, now, operatorId, new MessageCardPayload.Sanction(MemberType.CREATOR.name(), resolved.name(),
-                            resolved.getLabel(), normalizedNote, null)));
+                    text, now, operatorId == null ? OperatorChannelService.SYSTEM_OPERATOR_ID : operatorId,
+                    new MessageCardPayload.Sanction(MemberType.CREATOR.name(), resolved.name(), resolved.getLabel(),
+                            normalizedNote, null)));
         }
         hooks.onReleased(MemberType.CREATOR, creatorId, now);
-        history.byOperator(creatorId, CreatorAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
-                CreatorAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        if (operatorId == null) {
+            history.bySystem(creatorId, CreatorAdminEventType.SUSPENSION_RELEASED, text,
+                    CreatorAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        } else {
+            history.byOperator(creatorId, CreatorAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
+                    CreatorAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        }
         AfterCommit.run(() -> notifier.released(MemberType.CREATOR, creatorId));
         log.info("인플루언서 정지 해제 - creatorId: {}, reason: {}", creatorId, resolved);
         return sanction;

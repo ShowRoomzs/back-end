@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum UserAdminEventType {
-    SUSPENDED("계정 정지", "DANGER", true),
+    SUSPENDED("계정 이용 정지", "DANGER", true),
     SUSPENSION_RELEASED("정지 해제", "INFO", true),
     MEMO_CREATED("관리자 메모 기입", "NEUTRAL", true),
     MEMO_UPDATED("관리자 메모 수정", "NEUTRAL", true),

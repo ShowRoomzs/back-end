@@ -44,8 +44,10 @@ public class SettlementCalculator {
         long platformFee = apply(confirmedSales, rates.platformFeeRate());
         long rewardVat = apply(reward, rates.rewardVatRate());
 
+        // 1021 설계서 6-1 — 리워드 부가세 다음에 「+ 배송비 · + 재발송비 · + 반품 시 차감한 최초 배송비 · ± 운임 정산」.
         long brandBeforeClawback = confirmedSales - pgFee - platformFee - reward - rewardVat
-                + in.reshipFeeAmount() + in.consumerDeliveryFeeAmount();
+                + in.reshipFeeAmount() + in.consumerDeliveryFeeAmount()
+                + in.returnDeductionFeeAmount() + in.freightAdjustmentAmount();
         // 브랜드 수취액은 0 아래로 내려가지 않는다 — 남은 차감은 다음 정산으로 이월(6-2).
         long brandClawback = Math.min(Math.max(0, in.brandClawbackPending()), Math.max(0, brandBeforeClawback));
         long brandPayout = brandBeforeClawback - brandClawback;
@@ -74,18 +76,20 @@ public class SettlementCalculator {
                 in.reshipFeeAmount(), in.consumerDeliveryFeeAmount(), brandClawback, brandPayout, rewardClawback,
                 creatorBase, withholdingIncome, withholdingLocal, withholding, creatorVat, creatorPayout, platformShare,
                 Math.max(0, in.brandClawbackPending()) - brandClawback,
-                Math.max(0, in.rewardClawbackPending()) - rewardClawback);
+                Math.max(0, in.rewardClawbackPending()) - rewardClawback,
+                in.returnDeductionFeeAmount(), in.freightAdjustmentAmount());
     }
 
     /**
      * 검산(2-6) — 생성 트랜잭션 안에서 <b>반드시</b> 맞아야 한다. 어긋나면 생성을 롤백한다 — 틀린 정산이 양측에 공개되는 것보다
      * 한 회차 늦는 쪽이 낫다. 차감은 양변에서 상쇄되어 식에 따로 쓰지 않는다.
      *
-     * <pre>confirmed_sales + reship_fee + consumer_delivery_fee
+     * <pre>confirmed_sales + reship_fee + consumer_delivery_fee + return_deduction_fee ± freight_adjustment
      *   = brand_payout + creator_payout + withholding + platform_share + pg_fee</pre>
      */
     public void verify(SettlementAmounts a) {
-        long left = a.confirmedSalesAmount() + a.reshipFeeAmount() + a.consumerDeliveryFeeAmount();
+        long left = a.confirmedSalesAmount() + a.reshipFeeAmount() + a.consumerDeliveryFeeAmount()
+                + a.returnDeductionFeeAmount() + a.freightAdjustmentAmount();
         long right = a.brandPayoutAmount() + a.creatorPayoutAmount() + a.withholdingAmount()
                 + a.platformShareAmount() + a.pgFeeAmount();
         if (left != right) {
@@ -106,7 +110,7 @@ public class SettlementCalculator {
     public SettlementInput inputOf(Settlement s, long rewardAmount) {
         return new SettlementInput(s.getConfirmedSalesAmount(), rewardAmount, s.getReshipFeeAmount(),
                 s.getConsumerDeliveryFeeAmount(), s.getBrandClawbackAmount(), s.getRewardClawbackAmount(),
-                s.getCreatorBusinessType(), ratesOf(s));
+                s.getCreatorBusinessType(), ratesOf(s), s.getReturnDeductionFeeAmount(), s.getFreightAdjustmentAmount());
     }
 
     public SettlementRates ratesOf(Settlement s) {

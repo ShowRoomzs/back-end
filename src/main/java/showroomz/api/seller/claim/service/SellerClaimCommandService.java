@@ -51,8 +51,23 @@ public class SellerClaimCommandService {
 
     /** 검수 통과 — 단건만 받는다(근거가 건마다 다르다). */
     public SellerClaimDetailResponse pass(String sellerEmail, Long claimId) {
+        return pass(sellerEmail, claimId, false);
+    }
+
+    /** 검수 통과 + 귀책 선택(1021 기-17 · 기-93) — 브랜드 귀책 인정이면 운임 환급 · 정산 「− 운임 정산」. */
+    public SellerClaimDetailResponse pass(String sellerEmail, Long claimId, boolean faultToSeller) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        claimService.passInspection(claimId, scope.market().getId(), scope.sellerId(), LocalDateTime.now());
+        claimService.passInspection(claimId, scope.market().getId(), scope.sellerId(), faultToSeller,
+                LocalDateTime.now());
+        return queryService.getClaim(sellerEmail, claimId);
+    }
+
+    /** 검수 사유 번복(1021 기-17) — 착불 신청만 · 설명 · 증빙 필수 · 소비자에게 착불 운임 부담. */
+    public SellerClaimDetailResponse overturn(String sellerEmail, Long claimId,
+                                              showroomz.api.seller.claim.dto.SellerClaimOverturnRequest request) {
+        SellerScope scope = accessGuard.resolve(sellerEmail);
+        claimService.overturnInspection(claimId, scope.market().getId(), scope.sellerId(), request.explanation(),
+                request.evidenceImageUrls(), LocalDateTime.now());
         return queryService.getClaim(sellerEmail, claimId);
     }
 

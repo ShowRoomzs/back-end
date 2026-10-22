@@ -14,6 +14,12 @@ public enum ClaimEventType {
     RECEIVED("입고 확인"),
     INSPECTION_PASSED("검수 통과"),
     INSPECTION_REJECTED("검수 반려"),
+    /** 검수 사유 번복 — 착불(브랜드 귀책) 신청이 소비자 귀책으로(1021 기-17). */
+    REASON_OVERTURNED("검수 사유 번복"),
+    /** 검수 통과 때 브랜드 귀책으로 인정 — 선불 운임 · 최초 배송비 환급(1021 기-93). */
+    FAULT_ACCEPTED_ON_PASS("브랜드 귀책 인정"),
+    /** 택배 도착 후 N영업일 자동 입고(1021 기-17). */
+    AUTO_RECEIVED("자동 입고"),
     RESHIP_FEE_PAID("소비자 재배송비 결제"),
     RESHIP_FEE_SETTLED("재배송비 정산"),
     WITHDRAWN("요청 철회"),

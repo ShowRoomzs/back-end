@@ -164,7 +164,7 @@ public interface AdminThreadControllerDocs {
 
             | 필드 | 브랜드 | 인플루언서 |
             |---|---|---|
-            | `contractSigning` | 서명 진행중 + 체결 처리 대기 계약 수 | 같음 |
+            | `contractSigning` | 서명 진행중 + 공구 생성 대기 계약 수 | 같음 |
             | `contractConcluded` | 체결 완료 계약 수 | 같음 |
             | `groupBuyOngoing` | 진행중 공구 수 | 같음 |
             | `groupBuyEnded` | null | 종료 + 정산완료 공구 수 |

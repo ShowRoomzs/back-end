@@ -180,8 +180,8 @@ public class CreatorHomeTodoBuilder {
                         groupBuy.getStartAt(), openLabel, "게시물 재등록 · " + name,
                         "운영팀이 게시물을 반려했어요 · 사유를 확인하고 다시 등록해 주세요", "수정하기", target,
                         postBlocked ? new CreatorHomeDto.Blocked("정지 해제 후 재등록할 수 있어요") : null, null)));
-            } else if (groupBuy.getStatus() != GroupBuyStatus.PREPARING && postStatus == GroupBuyPostStatus.HIDDEN) {
-                undated.add(new CreatorHomeDto.Todo(GROUP_BUY_POST_HIDDEN_FIX, null, null, "숨김 게시물 수정 · " + name,
+            } else if (groupBuy.getStatus() != GroupBuyStatus.PREPARING && postStatus == GroupBuyPostStatus.EXPOSURE_SUSPENDED) {
+                undated.add(new CreatorHomeDto.Todo(GROUP_BUY_POST_HIDDEN_FIX, null, null, "노출 중지 게시물 수정 · " + name,
                         "운영팀이 게시물을 숨겼어요 · 사유를 확인하고 수정해 주세요", "수정하기", target, null, null));
             }
         }

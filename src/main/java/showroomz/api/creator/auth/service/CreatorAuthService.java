@@ -274,7 +274,11 @@ public class CreatorAuthService {
         response.setTokenType(null);
         response.setCode(ErrorCode.ACCOUNT_REJECTED.getCode());
         response.setRejectReasonType(application.getRejectReasonType());
-        response.setRejectReasonDetail(application.getRejectReasonDetail());
+        // 상세 사유는 내부 기록 — 신청자에게 내리지 않는다(1021 기-36). 사유는 통지 라벨로만.
+        response.setRejectReasonLabel(showroomz.api.admin.creator.type.CreatorRejectionReasonType
+                .fromCode(application.getRejectReasonType())
+                .map(showroomz.api.admin.creator.type.CreatorRejectionReasonType::getNoticeLabel).orElse(null));
+        response.setRejectedAt(application.getProcessedAt());
         response.setReapplyAvailableAt(application.resolveReapplyAvailableAt());
         return response;
     }

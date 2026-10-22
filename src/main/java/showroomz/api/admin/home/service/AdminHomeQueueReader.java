@@ -92,7 +92,8 @@ public class AdminHomeQueueReader {
         queues.add(failedRefunds(tabCount(refund, "FAILED"), now));
         queues.add(failedPayouts(now));
         queues.add(inquiries(now));
-        queues.add(operatorRefunds(tabCount(refund, "PENDING"), now));
+        queues.add(transferRefunds(refund.transferPending(), now));
+        queues.add(operatorRefunds(Math.max(0, tabCount(refund, "PENDING") - refund.transferPending()), now));
         queues.add(openReviews(groupBuyQueues.getOrDefault(AdminGroupBuyQueue.OPEN_REVIEW, 0L), now));
         queues.addAll(onboarding(now));
         queues.addAll(taxDocuments(now));
@@ -170,7 +171,8 @@ public class AdminHomeQueueReader {
     private Queue operatorRefunds(long count, LocalDateTime now) {
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         if (count > 0) {
-            for (OrderRefundTask task : opsRepository.findOperatorPendingRefunds(ROW_LIMIT)) {
+            for (OrderRefundTask task : opsRepository.findOperatorPendingRefunds(
+                    showroomz.domain.order.type.RefundMethod.PG_CANCEL, ROW_LIMIT)) {
                 rows.add(row(TodoUrgency.EXECUTION_PENDING, "집행 대기", "REFUND_EXECUTION",
                         "사유 환불 집행 대기 · " + task.getOrder().getOrderNumber(), won(task.getRefundAmount()),
                         TRANSACTIONS, ageText(task.getCreatedAt(), now), null,
@@ -179,6 +181,22 @@ public class AdminHomeQueueReader {
         }
         return itemized("REFUND_EXECUTION", TRANSACTIONS, count, rows, TodoUrgency.EXECUTION_PENDING, "사유 환불 집행 대기",
                 "/refunds?tab=PENDING");
+    }
+
+    /** 송금 대기(1021 설계서 4-5 · 16절) — 원래 결제액을 넘는 운임 환급. 운영자가 계좌로 보낸 뒤 [송금 완료 기록]. */
+    private Queue transferRefunds(long count, LocalDateTime now) {
+        List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
+        if (count > 0) {
+            for (OrderRefundTask task : opsRepository.findOperatorPendingRefunds(
+                    showroomz.domain.order.type.RefundMethod.BANK_TRANSFER, ROW_LIMIT)) {
+                rows.add(row(TodoUrgency.EXECUTION_PENDING, "송금 대기", "REFUND_TRANSFER",
+                        "운임 환급 송금 대기 · " + task.getOrder().getOrderNumber(), won(task.getRefundAmount()),
+                        TRANSACTIONS, ageText(task.getCreatedAt(), now), null,
+                        new AdminHomeDto.Target("REFUND", task.getId(), null), 1));
+            }
+        }
+        return itemized("REFUND_TRANSFER", TRANSACTIONS, count, rows, TodoUrgency.EXECUTION_PENDING, "운임 환급 송금 대기",
+                "/refunds?tab=PENDING&route=FREIGHT");
     }
 
     // ------------------------------------------------------------------ 기한 있는 큐 — 기한 초과 · 임박은 건별, 나머지는 대기 1행

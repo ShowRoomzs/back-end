@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
+import showroomz.api.seller.contract.dto.ContractDraftApprovalRequest;
+import showroomz.api.seller.contract.dto.ContractTerminationRequestRequest;
 import showroomz.api.seller.contract.dto.ContractDuplicateResponse;
 import showroomz.api.seller.contract.dto.ContractResendRequestResponse;
 import showroomz.api.seller.contract.dto.ContractReviewRequestRequest;
@@ -78,6 +80,10 @@ public class SellerContractCommandService {
     private final ContractRepository contractRepository;
     private final ContractResendRequestRepository resendRequestRepository;
     private final ContractChannelGateway channelGateway;
+    private final showroomz.domain.contract.repository.ContractTerminationRequestRepository terminationRequestRepository;
+    private final showroomz.domain.contract.repository.ContractDraftApprovalRepository draftApprovalRepository;
+    private final showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuyRepository;
+    private final showroomz.domain.groupbuy.repository.GroupBuyChangeRequestRepository groupBuyChangeRequestRepository;
     private final ContractClauseVersionRepository clauseVersionRepository;
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
@@ -308,6 +314,95 @@ public class SellerContractCommandService {
                     contractNotifier.notifyAdmin(contract, ContractEventType.RESEND_REQUESTED.name());
                     return new ContractResendRequestResponse(saved.getId(), saved.getRequestedAt(), false);
                 });
+    }
+
+    /**
+     * [해지 요청](파트너 08 B5 · 09 C4 · 1021 설계서 1-4 · 결정 노트 기-05 【잠정】) — 성립 뒤 · 공구 오픈 전에만. 계약은 그대로 체결완료다 —
+     * 운영자가 상대방 동의를 운영팀 채널에서 확인해 [해지 처리]를 하면 종결된다. 상대(인플루언서) 운영팀 채널에 「동의 확인」 카드가 붙는다.
+     *
+     * <p>내 계정 이용 정지 중에도 받는다 — 해지는 새로 벌이는 일이 아니라 거두는 일이다(1021 설계서 14절 Q3).
+     */
+    public ContractDetailResponse requestTermination(String sellerEmail, Long contractId,
+                                                     ContractTerminationRequestRequest request) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        if (request.reasonCode().requiresMemo() && (request.memo() == null || request.memo().isBlank())) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_REASON_MEMO_REQUIRED);
+        }
+        showroomz.domain.groupbuy.entity.GroupBuy groupBuy = contract.getGroupBuyId() == null ? null
+                : groupBuyRepository.findForUpdate(contract.getGroupBuyId()).orElse(null);
+        if (!showroomz.domain.contract.service.ContractTerminationPolicy.isTerminable(contract, groupBuy)) {
+            throw new BusinessException(ErrorCode.CONTRACT_TERMINATION_NOT_ALLOWED);
+        }
+        // 검토 중인 공구 변경 요청(중단 · 조기 마감)과 겹치지 않게 한다.
+        if (groupBuy != null && groupBuyChangeRequestRepository.findByGroupBuyIdOrderByRequestedAtDescIdDesc(groupBuy.getId())
+                .stream().anyMatch(showroomz.domain.groupbuy.entity.GroupBuyChangeRequest::isPending)) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_REQUEST_ALREADY_PENDING);
+        }
+        if (terminationRequestRepository.findPending(contract.getId()).isPresent()) {
+            throw new BusinessException(ErrorCode.CONTRACT_TERMINATION_ALREADY_PENDING);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo().trim();
+        showroomz.domain.contract.entity.ContractTerminationRequest saved = terminationRequestRepository.save(
+                showroomz.domain.contract.entity.ContractTerminationRequest.of(contract, ContractActorType.SELLER,
+                        market.getId(), request.reasonCode(), memo, contract.getGroupBuyId(), now));
+        ContractChannelGateway.ChannelCard card = channelGateway.postTerminationConsentCard(contract, saved);
+        saved.attachConsentCard(card.messageId());
+        historyRecorder.recordBySeller(contract, ContractEventType.TERMINATION_REQUESTED,
+                request.reasonCode().getLabel(), now);
+        contractNotifier.notifyCounterparty(contract, "TERMINATION_REQUESTED");
+        contractNotifier.notifyAdmin(contract, ContractEventType.TERMINATION_REQUESTED.name());
+        terminationRequestRepository.flush();
+        return detailAssembler.assemble(contract);
+    }
+
+    /** 해지 요청 철회 — 처리 전(PENDING)만. */
+    public ContractDetailResponse withdrawTermination(String sellerEmail, Long contractId) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        showroomz.domain.contract.entity.ContractTerminationRequest pending = terminationRequestRepository
+                .findPending(contract.getId())
+                .filter(r -> r.getRequesterType() == ContractActorType.SELLER)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONTRACT_TERMINATION_REQUEST_NOT_PENDING));
+        LocalDateTime now = LocalDateTime.now();
+        pending.close(showroomz.domain.contract.type.ContractTerminationRequestStatus.WITHDRAWN, market.getId(), now);
+        historyRecorder.recordBySeller(contract, ContractEventType.TERMINATION_REQUEST_WITHDRAWN, null, now);
+        terminationRequestRepository.flush();
+        return detailAssembler.assemble(contract);
+    }
+
+    /** 초안 승인 기록 추가(1021 설계서 1-8 · 기-30) — 계약 성립 이후 · 기록 전용(정지 중에도 받는다). */
+    public ContractDetailResponse recordDraftApproval(String sellerEmail, Long contractId,
+                                                      ContractDraftApprovalRequest request) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        if (contract.getEstablishedAt() == null) {
+            throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime approvedAt = request.approvedAt() == null ? now : request.approvedAt();
+        if (approvedAt.isAfter(now)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "승인 일시는 지금 이전이어야 합니다.");
+        }
+        String note = request.note() == null || request.note().isBlank() ? null : request.note().trim();
+        draftApprovalRepository.save(showroomz.domain.contract.entity.ContractDraftApproval.of(contract.getId(),
+                market.getId(), request.title().trim(), approvedAt, request.threadMessageId(), note, now));
+        historyRecorder.recordBySeller(contract, ContractEventType.DRAFT_APPROVAL_RECORDED, request.title().trim(), now);
+        draftApprovalRepository.flush();
+        return detailAssembler.assemble(contract);
+    }
+
+    /** 초안 승인 기록 삭제(잘못 적은 기록) — 행은 남긴다. */
+    public ContractDetailResponse deleteDraftApproval(String sellerEmail, Long contractId, Long approvalId) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        showroomz.domain.contract.entity.ContractDraftApproval approval = draftApprovalRepository
+                .findByIdAndContractIdAndDeletedAtIsNull(approvalId, contract.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONTRACT_NOT_FOUND));
+        approval.delete(LocalDateTime.now());
+        draftApprovalRepository.flush();
+        return detailAssembler.assemble(contract);
     }
 
     /**

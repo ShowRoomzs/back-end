@@ -262,7 +262,10 @@ public class SellerSettlementQueryService {
         return new SellerSettlementDto.InfluencerTax(s.getCreatorBusinessType(), type == null ? null : type.name(), label);
     }
 
-    /** 반품 · 교환 배송비(1-1) — 조회 시 계산 · 정산 행에 저장하지 않는다. 브랜드 부담은 요금표 값 그대로(왕복 · 편도 [미정]). */
+    /**
+     * 반품 · 교환 배송비(1-1) — 조회 시 계산 · 정산 행에 저장하지 않는다. 1021 기-18 — 브랜드 반품비 · 교환비 설정은 없다. 브랜드 부담 =
+     * 브랜드 귀책(착불) 요청의 착불 운임 = 주문 시점 편도 기본 배송비 스냅샷 합. 소비자 부담 = 반품 시 차감한 최초 배송비 합.
+     */
     private SellerSettlementDto.ClaimShipping claimShipping(Settlement s, Market market) {
         long consumerCount = 0, consumerAmount = 0, brandCount = 0, brandAmount = 0;
         for (Object[] row : claimCollectionRepository.sumFeesByGroupBuy(s.getGroupBuyId())) {
@@ -274,8 +277,7 @@ public class SellerSettlementQueryService {
                 consumerAmount += ((Number) row[3]).longValue();
             } else {
                 brandCount += count;
-                Integer fee = type == ClaimType.EXCHANGE ? market.getExchangeFee() : market.getReturnFee();
-                brandAmount += count * (fee == null ? 0 : fee);
+                brandAmount += ((Number) row[4]).longValue();
             }
         }
         return new SellerSettlementDto.ClaimShipping(

@@ -12,7 +12,9 @@ public enum ChangeRequestType {
     /** 비사업자 → 개인사업자(사업자 전환). */
     TO_BUSINESS(ChangeRequesterType.CREATOR, CreatorBusinessType.BUSINESS),
     /** 개인사업자 → 비사업자(비사업자 전환). */
-    TO_INDIVIDUAL(ChangeRequesterType.CREATOR, CreatorBusinessType.INDIVIDUAL);
+    TO_INDIVIDUAL(ChangeRequesterType.CREATOR, CreatorBusinessType.INDIVIDUAL),
+    /** 인플루언서 정산 계좌 변경(1021 결정 노트 기-22) — 운영자 확인(통장 사본 · 예금주 = 실명) 뒤 반영. */
+    CREATOR_ACCOUNT(ChangeRequesterType.CREATOR, null);
 
     private final ChangeRequesterType requesterType;
     private final CreatorBusinessType targetBusinessType;
@@ -49,6 +51,22 @@ public enum ChangeRequestType {
             return null;
         }
         return sourceBusinessType().getDescription() + " → " + targetBusinessType.getDescription();
+    }
+
+    /** 인플루언서 사업자 구분 변경(양방향)인가 — 계좌 변경 요청과 같은 표 · 같은 인플루언서 열린 요청 1건 규칙을 쓴다. */
+    public boolean isBusinessTypeChange() {
+        return this == TO_BUSINESS || this == TO_INDIVIDUAL;
+    }
+
+    /** 어드민 목록 · 상세의 유형 라벨(1021 기-22 「계좌 변경 (인플루언서)」). */
+    public String label() {
+        return switch (this) {
+            case BUSINESS_INFO -> "사업자 정보";
+            case SETTLEMENT_ACCOUNT -> "정산 계좌";
+            case TO_BUSINESS -> "사업자 전환 (인플루언서)";
+            case TO_INDIVIDUAL -> "비사업자 전환 (인플루언서)";
+            case CREATOR_ACCOUNT -> "계좌 변경 (인플루언서)";
+        };
     }
 
     /** 인플루언서 사업자 구분 변경 — 목표 구분으로 유형을 정한다. */

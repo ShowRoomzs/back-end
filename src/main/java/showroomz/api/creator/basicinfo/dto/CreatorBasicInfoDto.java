@@ -187,6 +187,9 @@ public class CreatorBasicInfoDto {
         @Schema(description = "배너가 보이는 최근 사업자 구분 변경 요청 — 없으면 null", nullable = true)
         private BusinessTypeChangeBanner businessTypeChange;
         private SettlementActions actions;
+        @Schema(description = "확인 중인 계좌 변경 요청(1021 기-22 · T2a) — 없으면 null. 확인이 끝날 때까지 기존 계좌 유지 · 지급 요청 전 지급은 보류",
+                nullable = true)
+        private PendingAccountChange pendingAccountChange;
     }
 
     @Getter
@@ -452,5 +455,27 @@ public class CreatorBasicInfoDto {
         private String businessTypeChange;
         @Schema(description = "[계좌 변경] 버튼 활성 — 현재는 항상 true", example = "true")
         private boolean accountChange;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "확인 중인 정산 계좌 변경 요청(1021 기-22)")
+    public static class PendingAccountChange {
+        private Long requestId;
+        @Schema(example = "CR-2610-0007")
+        private String requestCode;
+        @Schema(example = "신한은행")
+        private String bankName;
+        @Schema(description = "요청 계좌번호 — 마스킹", example = "110-***-***789")
+        private String maskedAccountNumber;
+        @Schema(description = "예금주 = 본인 실명(마스킹)", example = "김*민")
+        private String holderName;
+        private String bankbookFileName;
+        private LocalDateTime requestedAt;
+        @Schema(description = "운영자 확인 N영업일 — [정책값 미정]이면 null", nullable = true)
+        private Integer reviewBusinessDays;
+        @Schema(description = "확인 끝날 때까지 보류되는 지급 — 지급 요청 전 예정 · 보류 행")
+        private long holdingPayoutCount;
+        private long holdingPayoutAmount;
     }
 }

@@ -131,6 +131,12 @@ public class SellerOrderController implements SellerOrderControllerDocs {
         return ResponseEntity.ok(commandService.updateShipment(getCurrentSellerEmail(), deliveryGroupId, request));
     }
 
+    @Override
+    @PostMapping("/{deliveryGroupId}/stall-refund")
+    public ResponseEntity<SellerOrderDetailResponse> refundStallChoice(@PathVariable Long deliveryGroupId) {
+        return ResponseEntity.ok(commandService.refundStallChoice(getCurrentSellerEmail(), deliveryGroupId));
+    }
+
     // ── 취소 ────────────────────────────────────────────────────────────────
 
     @Override

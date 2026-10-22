@@ -48,6 +48,20 @@ public class SettlementNotifier {
         });
     }
 
+    /** 재계산(1021 기-13) — 양측 「환불로 정산 금액이 바뀌었습니다 · {MM.DD}까지 다시 확인」. */
+    @Transactional(readOnly = true)
+    public void settlementRecalculated(Long settlementId) {
+        stub("BOTH", "SETTLEMENT_RECALCULATED", settlementId);
+        load(settlementId, s -> {
+            String due = s.getReviewDueAt() == null ? "" : " · " + s.getReviewDueAt().format(MD) + " 23:59까지 다시 확인할 수 있습니다";
+            toBrand(s, NotificationType.SETTLEMENT_RECALCULATED, NotificationActorType.SYSTEM, null,
+                    "「" + title(s) + "」 정산이 환불로 재계산되었습니다" + due);
+            toCreator(s, NotificationType.SETTLEMENT_RECALCULATED, NotificationActorType.PLATFORM, null,
+                    title(s) + " 공구 정산이 환불로 다시 계산됐어요" + (s.getReviewDueAt() == null ? ""
+                            : " · " + s.getReviewDueAt().format(MD) + "까지 확인할 수 있어요"));
+        });
+    }
+
     /** 확정 — 양측 지급 예정일 · 사업자 「세금계산서 발행 요청」. */
     @Transactional(readOnly = true)
     public void settlementConfirmed(Long settlementId) {
@@ -217,6 +231,21 @@ public class SettlementNotifier {
         load(settlementId, s -> {
             toBrand(s, NotificationType.ADJUSTMENT_EXPIRED, NotificationActorType.SYSTEM, null, "「" + title(s) + "」 정산 조정 합의 기한이 지나 원래 금액으로 확정되었습니다");
             toCreator(s, NotificationType.ADJUSTMENT_EXPIRED, NotificationActorType.PLATFORM, null, title(s) + " 공구 정산 조정 합의 기한이 지나 원래 금액으로 확정됐어요");
+        });
+    }
+
+    /** 요청 철회(1021 기-14) — 상대에게 「조정 요청이 철회되어 원래 금액으로 확정」. */
+    @Transactional(readOnly = true)
+    public void adjustmentWithdrawn(Long settlementId, String withdrawnBy) {
+        stub("SELLER".equals(withdrawnBy) ? "CREATOR" : "SELLER", "ADJUSTMENT_WITHDRAWN", settlementId);
+        load(settlementId, s -> {
+            if ("SELLER".equals(withdrawnBy)) {
+                toCreator(s, NotificationType.ADJUSTMENT_WITHDRAWN, NotificationActorType.PLATFORM, null,
+                        title(s) + " 공구 정산 조정 요청이 철회되어 원래 금액으로 확정됐어요");
+            } else {
+                toBrand(s, NotificationType.ADJUSTMENT_WITHDRAWN, NotificationActorType.SYSTEM, null,
+                        "「" + title(s) + "」 정산 조정 요청이 철회되어 원래 금액으로 확정되었습니다");
+            }
         });
     }
 

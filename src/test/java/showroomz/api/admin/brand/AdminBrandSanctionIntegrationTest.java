@@ -245,9 +245,9 @@ class AdminBrandSanctionIntegrationTest extends AdminBrandTestSupport {
         MessageThread channel = operatorChannel(target);
         LocalDateTime now = LocalDateTime.now();
         Long first = channelGateway.postSuspendedCard(channel, MessageSanctionChannelGateway.SanctionKind.BRAND, 4242L,
-                "배송 지연 반복", now, operator.getId());
+                "배송 지연 반복", now, operator.getId(), null);
         Long second = channelGateway.postSuspendedCard(channel, MessageSanctionChannelGateway.SanctionKind.BRAND, 4242L,
-                "배송 지연 반복", now, operator.getId());
+                "배송 지연 반복", now, operator.getId(), null);
         assertThat(second).isEqualTo(first);
         assertThat(operatorCards(target.marketId())).containsExactly(MessageCardType.ACCOUNT_SUSPENDED);
     }

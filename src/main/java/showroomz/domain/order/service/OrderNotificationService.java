@@ -1,5 +1,7 @@
 package showroomz.domain.order.service;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,9 @@ import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentEventType;
+import showroomz.domain.order.type.RefundTaskSource;
+
+import java.util.List;
 
 /**
  * 주문 · 클레임 사건 → 알림함(1017 설계서 1-3 소비자 · 1-4 파트너 「판매」). 이력이 쌓이는 같은 지점에서 부른다 — 하위주문은
@@ -38,11 +43,14 @@ public class OrderNotificationService {
     private final NotificationPublisher publisher;
     private final NotificationDeadlineNoticeService lines;
 
+    @PersistenceContext
+    private EntityManager entityManager;
+
     /** 하위주문 이력 한 줄 — 호출자 트랜잭션 안. 알림은 커밋 뒤에 쓰인다. */
     public void onFulfillment(Long deliveryGroupId, FulfillmentEventType eventType, FulfillmentActorType actorType) {
         switch (eventType) {
             case INVOICE_REGISTERED, DELIVERED, CANCEL_REQUEST_APPROVED, CANCEL_REQUEST_REJECTED, REFUND_EXECUTED,
-                 REFUND_ENQUEUED_BY_OPERATOR, RETURN_DETECTED, TRACKING_STALLED -> {
+                 REFUND_ENQUEUED_BY_OPERATOR, RETURN_DETECTED, TRACKING_STALLED, STALL_CHOICE_MADE -> {
             }
             default -> {
                 return;
@@ -86,17 +94,47 @@ public class OrderNotificationService {
             }
             case CANCEL_REQUEST_REJECTED -> toUser(userId, NotificationType.CANCEL_REQUEST_REJECTED,
                     "취소 요청이 반려되었어요 · 주문은 그대로 배송돼요", "반려", deliveryGroupId, image, null);
-            case REFUND_EXECUTED -> toUser(userId, NotificationType.REFUND_COMPLETED,
-                    product + " 환불이 완료되었어요", product, deliveryGroupId, image, null);
+            case REFUND_EXECUTED -> {
+                // 반품 검수 통과 환불은 클레임 알림(REFUND_COMPLETED · 클레임으로 이동)이 따로 간다 — 같은 환불을 두 번 알리지 않는다.
+                if (!refundedByClaim(deliveryGroupId)) {
+                    toUser(userId, NotificationType.REFUND_COMPLETED, product + " 환불이 완료되었어요", product,
+                            deliveryGroupId, image, null);
+                }
+            }
             case REFUND_ENQUEUED_BY_OPERATOR -> toSeller(marketId, NotificationType.ORDER_OPERATOR_REFUND,
                     NotificationActorType.OPERATOR, "주문 " + code + "에 운영자 사유 환불이 승인되었습니다", deliveryGroupId);
             case RETURN_DETECTED -> toSeller(marketId, NotificationType.RETURN_DETECTED, NotificationActorType.SYSTEM,
                     "주문 " + code + " 반송이 감지되었습니다", deliveryGroupId);
             case TRACKING_STALLED -> toSeller(marketId, NotificationType.TRACKING_STALLED, NotificationActorType.SYSTEM,
                     "주문 " + code + " 배송 추적이 멈췄습니다 — 택배사 확인이 필요합니다", deliveryGroupId);
+            case STALL_CHOICE_MADE -> toSeller(marketId, NotificationType.ORDER_STALL_CHOICE_MADE, NotificationActorType.SYSTEM,
+                    "주문 " + code + " 소비자가 " + (group.getStallChoice() == null ? "처리 방법"
+                            : group.getStallChoice().getLabel()) + "을 선택했어요", deliveryGroupId);
             default -> {
             }
         }
+    }
+
+    /** 운임 환급 계좌 송금 완료(1021 설계서 4-5) — 금액이 문장에 들어가 이력 사건과 따로 부른다. 호출자 트랜잭션 안. */
+    public void onRefundTransferred(Long deliveryGroupId, Long refundTaskId, int amount) {
+        OrderDeliveryGroup group = deliveryGroupRepository.findById(deliveryGroupId).orElse(null);
+        if (group == null) {
+            return;
+        }
+        OrderLine line = lines.firstLine(deliveryGroupId);
+        toUser(group.getOrder().getUser().getId(), NotificationType.CLAIM_REFUND_TRANSFERRED,
+                String.format("운임 환급 %,d원을 계좌로 송금했어요", amount), String.format("%,d원", amount), deliveryGroupId,
+                line == null ? null : line.imageUrl(), "REFUND_TRANSFERRED:" + refundTaskId);
+    }
+
+    /** 방금 집행된 환불이 반품 검수 통과 환불인가 — 같은 트랜잭션에서 완료 처리된 행을 읽는다(조회 전 자동 flush). */
+    private boolean refundedByClaim(Long deliveryGroupId) {
+        List<RefundTaskSource> sources = entityManager.createQuery("SELECT t.source FROM OrderRefundTask t "
+                        + "WHERE t.deliveryGroup.id = :groupId "
+                        + "AND t.status = showroomz.domain.order.type.RefundTaskStatus.DONE "
+                        + "ORDER BY t.executedAt DESC, t.id DESC", RefundTaskSource.class)
+                .setParameter("groupId", deliveryGroupId).setMaxResults(1).getResultList();
+        return !sources.isEmpty() && sources.get(0) == RefundTaskSource.CLAIM_RETURN_PASSED;
     }
 
     /** 클레임 이력 한 줄 — 같은 트랜잭션에서 동기로 받는다. */

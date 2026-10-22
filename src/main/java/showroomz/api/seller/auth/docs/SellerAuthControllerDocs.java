@@ -594,9 +594,7 @@ public interface SellerAuthControllerDocs {
                                     "  \"freeShippingThreshold\": 50000,\n" +
                                     "  \"jejuSurcharge\": 5000,\n" +
                                     "  \"remoteAreaSurcharge\": 5000,\n" +
-                                    "  \"shippingLeadDays\": 3,\n" +
-                                    "  \"returnFee\": 3000,\n" +
-                                    "  \"exchangeFee\": 6000\n" +
+                                    "  \"shippingLeadDays\": 3\n" +
                                     "}"
                     )
             )

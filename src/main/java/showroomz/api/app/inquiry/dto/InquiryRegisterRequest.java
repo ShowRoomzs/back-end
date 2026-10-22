@@ -41,6 +41,11 @@ public class InquiryRegisterRequest {
             example = "true")
     private Boolean sanctionAppeal;
 
+    @Schema(description = "운임 환급 계좌 안내(선택) — 반품 상세 C10-5 「귀책 변경 · 운임 환급」의 [1:1 문의]로 쓸 때만 그 환급 건(`refundSplit.bankTransferRefundTaskId`)을 보낸다. "
+            + "본인 주문의 송금 대기 건이어야 하고, 유형은 CANCEL_EXCHANGE_RETURN 이어야 한다. orderId 를 비우면 그 주문으로 채운다. "
+            + "유형명은 「환불 계좌 안내」로 보인다", example = "905")
+    private Long refundTaskId;
+
     public boolean isSanctionAppeal() {
         return Boolean.TRUE.equals(sanctionAppeal);
     }

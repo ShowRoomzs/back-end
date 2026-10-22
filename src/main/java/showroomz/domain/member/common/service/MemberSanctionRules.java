@@ -36,6 +36,9 @@ public final class MemberSanctionRules {
         if (resolved == SanctionReleaseReason.WITHDRAWN) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "탈퇴 종결은 운영자가 고를 수 있는 해제 사유가 아닙니다.");
         }
+        if (resolved == SanctionReleaseReason.TERM_ENDED) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정지 기간 종료는 시스템이 자동으로 해제합니다.");
+        }
         return resolved;
     }
 

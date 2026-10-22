@@ -18,7 +18,7 @@ public record ContractSummaryResponse(
         Map<String, Long> tabCounts,
 
         @Schema(description = "브랜드가 지금 조치해야 하는 건수(GNB 배지). "
-                + "검토 반려 + 「상대만 서명 완료」(B4c)만 센다 — 검토 대기·체결 처리 대기는 공이 상대에게 있는 "
+                + "검토 반려 + 「상대만 서명 완료」(B4c)만 센다 — 검토 대기·공구 생성 대기는 공이 상대에게 있는 "
                 + "정상 대기라 넣지 않는다. 브랜드가 할 수 없는 일로 배지가 켜지면 안 된다",
                 example = "1")
         long actionRequiredCount

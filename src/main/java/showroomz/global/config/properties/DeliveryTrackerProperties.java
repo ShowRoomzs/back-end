@@ -33,6 +33,9 @@ public class DeliveryTrackerProperties {
     /** 추적 정지 — 마지막 이벤트 후 N일 갱신 없음. */
     private int stallAlertDays = 7;
 
+    /** 추적 정지 판정 + N일에 소비자 선택(재발송 · 환불)이 열린다(1021 기-15 【잠정】 · [정책값 미정]). */
+    private int consumerChoiceDays = 7;
+
     private String apiUrl = "https://info.sweettracker.co.kr";
 
     /** 스마트택배 API 키 — 로그·예외 메시지에 싣지 않는다. */

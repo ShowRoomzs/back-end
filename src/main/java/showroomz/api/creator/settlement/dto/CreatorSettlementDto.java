@@ -49,7 +49,7 @@ public final class CreatorSettlementDto {
             SettlementTone statusTone,
             @Schema(description = "내 행의 지급 예정일 · 지급일 — 확인 중 · 협의 · 보류 · 실패면 null", nullable = true) LocalDate payoutDate,
             @Schema(description = "SCHEDULED(「09.09 예정」) · PAID(「09.02」)", nullable = true) String payoutDateKind,
-            @Schema(description = "내 지급 행 보류 이유 — 상태는 「지급 예정」 그대로 · 보조 배지 「지급 정지 · 계정 정지」(S6). 보류가 아니면 null", nullable = true) PayoutHoldView payoutHold
+            @Schema(description = "내 지급 행 보류 이유 — 상태는 「지급 예정」 그대로 · 보조 배지 「지급 정지 · 계정 이용 정지」(S6). 보류가 아니면 null", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 

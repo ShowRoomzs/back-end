@@ -46,6 +46,9 @@ public class CreatorChangeRequestDetailAssembler implements ChangeRequestDetailA
     /** 변경 사유 입력란이 없어 reason 은 null 이 정상이다 · 요청자 이름 스냅샷도 없다(본인). */
     @Override
     public ChangeRequestDetailParts assemble(ChangeRequest request) {
+        if (request.getType() == ChangeRequestType.CREATOR_ACCOUNT) {
+            return assembleAccount(request);
+        }
         Creator creator = request.getCreator();
         boolean pending = request.isPending();
         boolean toBusiness = request.getType() == ChangeRequestType.TO_BUSINESS;
@@ -138,6 +141,55 @@ public class CreatorChangeRequestDetailAssembler implements ChangeRequestDetailA
 
         return new ChangeRequestDetailParts(null, null, null, diff, changedFieldLabels, evidence, references, holderCheck,
                 compare, impact);
+    }
+
+    /**
+     * 인플루언서 정산 계좌 변경(1021 기-22 · 어드민 C4b) — 은행 · 계좌번호(확인 중에는 전체 노출) · 예금주 대조. 예금주 기준은 본인 인증 실명이다.
+     * 처리가 끝나면 계좌번호 원문(암호문)이 비워져 요청 행의 마스킹 값만 남는다.
+     */
+    private ChangeRequestDetailParts assembleAccount(ChangeRequest request) {
+        Creator creator = request.getCreator();
+        boolean pending = request.isPending();
+        ChangeRequestItem bank = item(request, ChangeRequestField.CREATOR_ACCOUNT_BANK);
+        ChangeRequestItem number = item(request, ChangeRequestField.CREATOR_ACCOUNT_NUMBER);
+        String currentNumber = pending ? creator.getAccountNumber() : AdminMemberMasker.maskAccountNumber(creator.getAccountNumber());
+        String requestedNumber = pending && request.getAccountNumberEnc() != null
+                ? cipher.decrypt(request.getAccountNumberEnc()) : number == null ? null : number.getRequestedValue();
+        String realName = pending ? creator.getRealName() : AdminMemberMasker.maskName(creator.getRealName());
+        String holder = pending ? request.getAccountHolderName() : AdminMemberMasker.maskName(request.getAccountHolderName());
+
+        List<AdminChangeRequestDto.DiffRow> diff = new ArrayList<>();
+        diff.add(row("BANK", "은행", bank == null ? creator.getBankName() : bank.getCurrentValue(),
+                bank == null ? null : bank.getRequestedValue(), true, "REQUEST"));
+        diff.add(row("ACCOUNT_NUMBER", "계좌번호", currentNumber, requestedNumber, true, "REQUEST"));
+        diff.add(row("HOLDER", "예금주", realName, holder, false, "CHECK"));
+
+        List<String> changedFieldLabels = request.getItems().stream()
+                .sorted(Comparator.comparing(ChangeRequestItem::getSortOrder))
+                .map(i -> i.getFieldKey().getLabel())
+                .toList();
+        AdminChangeRequestDto.Evidence evidence = AdminChangeRequestDto.Evidence.builder()
+                .documentLabel("통장 사본")
+                .fileName(request.getEvidenceFileName())
+                .fileSizeBytes(request.getEvidenceFileSize())
+                .extension(extension(request.getEvidenceFileName()))
+                .fileUrl(request.getEvidenceFileUrl())
+                .uploadedAt(request.getRequestedAt())
+                .build();
+        List<AdminChangeRequestDto.ReferenceItem> references = new ArrayList<>();
+        references.add(reference("본인 인증 실명", realName));
+        AdminChangeRequestDto.HolderCheck holderCheck = AdminChangeRequestDto.HolderCheck.builder()
+                .currentHolder(realName)
+                .rule("REAL_NAME")
+                .mismatch(request.getAccountHolderName() != null && creator.getRealName() != null
+                        && !request.getAccountHolderName().equals(creator.getRealName()))
+                .build();
+        List<AdminChangeRequestDto.CompareItem> compare = new ArrayList<>();
+        compare.add(compare("HOLDER", "예금주(통장 사본) = 본인 실명", realName, null));
+        compare.add(compare("BANK", "은행", bank == null ? null : bank.getRequestedValue(), null));
+        compare.add(compare("ACCOUNT_NUMBER", "계좌번호", requestedNumber, null));
+        return new ChangeRequestDetailParts(null, null, null, diff, changedFieldLabels, evidence, references, holderCheck,
+                compare, null);
     }
 
     /**

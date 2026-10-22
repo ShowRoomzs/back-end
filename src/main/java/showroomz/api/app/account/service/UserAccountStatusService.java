@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 public class UserAccountStatusService {
 
     private final UserRepository userRepository;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
     private final UserSanctionRepository sanctionRepository;
     private final OneToOneInquiryRepository inquiryRepository;
 
@@ -67,14 +68,16 @@ public class UserAccountStatusService {
     /** 정지 행 없이 정지된 옛 회원(옛 {@code PATCH /status})은 사유 · 일시를 지어내지 않는다 — 확인을 기록할 행도 없다. */
     private Suspension suspension(UserSanction open) {
         if (open == null) {
-            return new Suspension(null, null, null, false, null);
+            return new Suspension(null, null, null, false, null, null);
         }
         Long pendingAppealId = inquiryRepository
                 .findFirstBySanctionIdAndStatusOrderByIdDesc(open.getId(), InquiryStatus.WAITING)
                 .map(OneToOneInquiry::getId)
                 .orElse(null);
         return new Suspension(open.getReason().name(), open.getReason().getAppLabel(), open.getSuspendedAt(),
-                open.isNoticePending(), pendingAppealId);
+                open.isNoticePending(), pendingAppealId,
+                showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(open.getEndsOn(),
+                        open.getSuspendedAt(), open.getAppealDeadlineAt(), termPolicy.appealReviewBusinessDays()));
     }
 
     private Users load(Long userId) {

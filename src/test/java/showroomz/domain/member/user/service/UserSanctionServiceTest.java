@@ -53,6 +53,9 @@ class UserSanctionServiceTest {
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 10, 10, 14, 20);
 
     @Mock
+    private showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
+
+    @Mock
     private UserRepository userRepository;
     @Mock
     private UserSanctionRepository sanctionRepository;

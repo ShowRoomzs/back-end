@@ -221,6 +221,43 @@ public interface AdminRefundControllerDocs {
                             examples = @ExampleObject(value = REQ_REFUND_MANUAL)))
             AdminTransactionDto.RefundManualCompleteRequest request);
 
+    @Operation(summary = "송금 완료 기록 (06c M3 · 1021 설계서 4-5)", description = """
+            귀책 변경 운임 환급 중 **원래 결제액을 넘는 부분**은 PG 가 돌려줄 수 없어 `method = BANK_TRANSFER` 행(「송금 대기」)으로 분리됩니다.
+            운영자가 소비자 계좌로 **직접 송금한 뒤** 이 호출로 계좌 · 완료를 기록합니다. **시스템은 송금하지 않습니다.**
+
+            **권한:** ADMIN
+
+            **조건** — 행 `transferable = true`(`BANK_TRANSFER` ∧ `PENDING`). 아니면 409 `REFUND_TRANSFER_NOT_PENDING`.
+
+            **입력** — `bankCode` · `accountNumber` · `holderName` · `transferConfirmed: true`. 하나라도 비었거나 확인이 false 면 400
+            `REFUND_TRANSFER_ACCOUNT_REQUIRED`. 폼 기본값은 상세 `transfer.suggestedAccount`(소비자 저장 환불 계좌) · 「1:1 문의 #N 로 받은 계좌」는
+            `transfer.linkedInquiryId`. 예금주 = 주문자 실명 확인은 운영자가 한다.
+
+            **효과** — 계좌번호는 암호화 저장 · 상태 `DONE`(「송금 완료」) · 이력 「계좌 송금 완료」 · 소비자 알림 `CLAIM_REFUND_TRANSFERRED`
+            (「운임 환급 N원을 계좌로 송금했어요」). 결제 누적 취소액 · 정산은 건드리지 않습니다 — 브랜드 정산은 운임 정산 행(「− 운임 정산」)이 이미 들고 있습니다.
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "기록 후 행 — `statusLabel` 「송금 완료」",
+                    content = @Content(schema = @Schema(implementation = AdminTransactionDto.RefundItem.class))),
+            @ApiResponse(responseCode = "400", description = "계좌 · 예금주 누락 · 송금 확인 false (`REFUND_TRANSFER_ACCOUNT_REQUIRED`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_REFUND_TRANSFER_ACCOUNT_REQUIRED))),
+            @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "없는 환불 건 (`REFUND_TASK_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_REFUND_TASK_NOT_FOUND))),
+            @ApiResponse(responseCode = "409", description = "송금 대기 행이 아님 · 이미 기록됨 (`REFUND_TRANSFER_NOT_PENDING`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = ERR_REFUND_TRANSFER_NOT_PENDING)))
+    })
+    ResponseEntity<AdminTransactionDto.RefundItem> completeTransfer(
+            @Parameter(hidden = true) UserPrincipal principal,
+            @Parameter(description = "환불 큐 ID", example = "905", required = true) Long refundTaskId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "송금한 계좌 · 송금 완료 확인",
+                    content = @Content(schema = @Schema(implementation = AdminTransactionDto.RefundTransferCompleteRequest.class),
+                            examples = @ExampleObject(value = REQ_REFUND_TRANSFER)))
+            AdminTransactionDto.RefundTransferCompleteRequest request);
+
     @Operation(summary = "환불 집행 · 재시도 (06c M1 · M2)", description = """
             운영자 사유 환불의 **[집행]**과 실패 건의 **[재시도]**가 같은 호출입니다(`/retry`는 없다). **돈이 나가는 순간은 이 호출 하나**입니다 —
             재확인 다이얼로그 1회 · 2인 승인 없음 · 일괄 없음. 요청 본문은 없습니다.

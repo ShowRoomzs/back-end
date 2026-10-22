@@ -249,8 +249,8 @@ class SellerHomeIntegrationTest extends SettlementTestSupport {
 
         jdbc.update("UPDATE market SET status = 'SUSPENDED' WHERE market_id = ?", brand.marketId());
         home = json(sellerGet(HOME).andExpect(status().isOk()));
-        assertThat(home.at("/upcomingGroupBuys/items/0/hold/label").asText()).isEqualTo("승인 보류 · 계정 정지");
-        assertThat(home.at("/contractsInProgress/items/0/hold/label").asText()).isEqualTo("체결 보류 · 계정 정지");
+        assertThat(home.at("/upcomingGroupBuys/items/0/hold/label").asText()).isEqualTo("승인 보류 · 계정 이용 정지");
+        assertThat(home.at("/contractsInProgress/items/0/hold/label").asText()).isEqualTo("체결 보류 · 계정 이용 정지");
         assertThat(home.at("/account/status").asText()).isEqualTo("SUSPENDED");
     }
 

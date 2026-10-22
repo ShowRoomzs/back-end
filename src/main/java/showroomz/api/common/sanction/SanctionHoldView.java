@@ -18,13 +18,13 @@ import static showroomz.domain.contract.service.ContractSanctionHoldService.isMa
  * 어긋날 수 없다. 내 정지면 경고(내 조치가 필요하다 · 운영팀 소명), 상대 정지면 중립(내 조치 없음)이고 <b>상대의 정지 사실 · 사유는
  * 내리지 않는다</b> — 「상대 계정 사정」으로만 쓴다.
  *
- * @param kind  MINE(내 계정 정지) · COUNTERPARTY(상대 계정 사정) · ADMIN(어드민 — 당사자를 밝힌다)
+ * @param kind  MINE(내 계정 이용 정지) · COUNTERPARTY(상대 계정 사정) · ADMIN(어드민 — 당사자를 밝힌다)
  * @param party 어드민만 — BRAND · CREATOR · BOTH
  */
 @Schema(description = "정지 보류 보조 배지 — 상태 옆에 붙는다. 없으면 null")
 public record SanctionHoldView(
         @Schema(description = "MINE · COUNTERPARTY · ADMIN", example = "MINE") String kind,
-        @Schema(description = "배지 문구", example = "체결 보류 · 계정 정지") String label,
+        @Schema(description = "배지 문구", example = "체결 보류 · 계정 이용 정지") String label,
         @Schema(description = "WARNING(내 정지 · 어드민) · NEUTRAL(상대 사정 · 편집 불가)", example = "WARNING") String tone,
         @Schema(description = "어드민만 — 정지 당사자 BRAND · CREATOR · BOTH", nullable = true) String party) {
 
@@ -43,9 +43,9 @@ public record SanctionHoldView(
         if (!isHoldable(status)) {
             return null;
         }
-        String stage = status == ContractStatus.REVIEW_PENDING ? "검토 보류" : "체결 보류";
+        String stage = stage(status);
         if (mine) {
-            return new SanctionHoldView("MINE", stage + " · 계정 정지", WARNING, null);
+            return new SanctionHoldView("MINE", stage + " · 계정 이용 정지", WARNING, null);
         }
         if (isCreatorSuspended(contract.getCreator())) {
             return new SanctionHoldView("COUNTERPARTY", stage + " · 상대 계정", NEUTRAL, null);
@@ -58,9 +58,9 @@ public record SanctionHoldView(
         if (!isHoldable(contract.getStatus())) {
             return null;
         }
-        String stage = contract.getStatus() == ContractStatus.REVIEW_PENDING ? "검토 보류" : "체결 보류";
+        String stage = stage(contract.getStatus());
         if (isCreatorSuspended(contract.getCreator())) {
-            return new SanctionHoldView("MINE", stage + " · 계정 정지", WARNING, null);
+            return new SanctionHoldView("MINE", stage + " · 계정 이용 정지", WARNING, null);
         }
         if (isMarketSuspended(contract.getMarket())) {
             return new SanctionHoldView("COUNTERPARTY", stage + " · 상대 브랜드 사정", NEUTRAL, null);
@@ -77,8 +77,8 @@ public record SanctionHoldView(
         if (party == null) {
             return null;
         }
-        String stage = contract.getStatus() == ContractStatus.REVIEW_PENDING ? "검토 보류" : "체결 보류";
-        return new SanctionHoldView("ADMIN", stage + " · 계정 정지", WARNING, party);
+        String stage = stage(contract.getStatus());
+        return new SanctionHoldView("ADMIN", stage + " · 계정 이용 정지", WARNING, party);
     }
 
     /** 서명 기한이 멈춰 있는가 — 서명 진행중 ∧ 보류(「정지 중 멈춤 · 해제 후 남은 기한부터」). */
@@ -96,7 +96,7 @@ public record SanctionHoldView(
             return null;
         }
         if (isMarketSuspended(groupBuy.getMarket())) {
-            return new SanctionHoldView("MINE", "승인 보류 · 계정 정지", WARNING, null);
+            return new SanctionHoldView("MINE", "승인 보류 · 계정 이용 정지", WARNING, null);
         }
         if (isCreatorSuspended(groupBuy.getCreator())) {
             return new SanctionHoldView("COUNTERPARTY", "승인 보류 · 상대 계정", NEUTRAL, null);
@@ -109,7 +109,7 @@ public record SanctionHoldView(
             return null;
         }
         if (isCreatorSuspended(groupBuy.getCreator())) {
-            return new SanctionHoldView("MINE", "승인 보류 · 계정 정지", WARNING, null);
+            return new SanctionHoldView("MINE", "승인 보류 · 계정 이용 정지", WARNING, null);
         }
         if (isMarketSuspended(groupBuy.getMarket())) {
             return new SanctionHoldView("COUNTERPARTY", "오픈 보류 · 상대 브랜드 사정", NEUTRAL, null);
@@ -122,10 +122,22 @@ public record SanctionHoldView(
             return null;
         }
         String party = party(groupBuy.getMarket(), groupBuy.getCreator());
-        return party == null ? null : new SanctionHoldView("ADMIN", "승인 보류 · 계정 정지", WARNING, party);
+        return party == null ? null : new SanctionHoldView("ADMIN", "승인 보류 · 계정 이용 정지", WARNING, party);
     }
 
     // ------------------------------------------------------------------
+
+    /**
+     * 보류 단계 — 검토 대기 「검토 보류」 · 서명 진행중 「체결 보류」 · 공구 생성 대기 「공구 생성 보류」(1021 설계서 1-3 —
+     * 계약은 양측 서명 완료로 이미 성립했고 운영자의 공구 생성만 멈춘다).
+     */
+    private static String stage(ContractStatus status) {
+        return switch (status) {
+            case REVIEW_PENDING -> "검토 보류";
+            case CONCLUSION_PENDING -> "공구 생성 보류";
+            default -> "체결 보류";
+        };
+    }
 
     private static boolean isHoldable(ContractStatus status) {
         return status == ContractStatus.REVIEW_PENDING || status == ContractStatus.SIGNING

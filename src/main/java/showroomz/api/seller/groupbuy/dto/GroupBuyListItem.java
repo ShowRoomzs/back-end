@@ -30,7 +30,7 @@ public record GroupBuyListItem(
 
         @Schema(description = "게시물 상태 8종 — 저장하지 않고 공구 상태에서 파생한다. "
                 + "NOT_WRITTEN(미작성) · WRITING(작성중) · PENDING_APPROVAL(승인대기) · REJECTED(반려) · "
-                + "SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · HIDDEN(숨김) · CLOSED(종료)", example = "EXPOSED")
+                + "SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · CLOSED(종료)", example = "EXPOSED")
         GroupBuyPostStatus postStatus,
 
         @Schema(description = "게시물 상태 배지 문구 — FE가 그대로 쓴다", example = "노출중") String postStatusLabel,

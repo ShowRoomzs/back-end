@@ -38,6 +38,7 @@ public class OrderController implements OrderControllerDocs {
     private final UserOrderQueryService userOrderQueryService;
     private final UserDeliveryTrackingService userDeliveryTrackingService;
     private final UserCancelService userCancelService;
+    private final showroomz.api.app.order.service.UserStallChoiceService stallChoiceService;
 
     @Override
     @GetMapping
@@ -86,6 +87,23 @@ public class OrderController implements OrderControllerDocs {
             @PathVariable("orderProductId") Long orderProductId) {
         return ResponseEntity.ok(
                 userDeliveryTrackingService.trackOrderItem(principal.getUserId(), orderId, orderProductId));
+    }
+
+    @Override
+    @GetMapping("/groups/{deliveryGroupId}/stall-choice")
+    public ResponseEntity<UserOrderDto.StallChoiceResponse> getStallChoice(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("deliveryGroupId") Long deliveryGroupId) {
+        return ResponseEntity.ok(stallChoiceService.get(principal.getUserId(), deliveryGroupId));
+    }
+
+    @Override
+    @PostMapping("/groups/{deliveryGroupId}/stall-choice")
+    public ResponseEntity<UserOrderDto.StallChoiceResponse> chooseStall(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("deliveryGroupId") Long deliveryGroupId,
+            @Valid @RequestBody UserOrderDto.StallChoiceRequest request) {
+        return ResponseEntity.ok(stallChoiceService.choose(principal.getUserId(), deliveryGroupId, request));
     }
 
     @Override

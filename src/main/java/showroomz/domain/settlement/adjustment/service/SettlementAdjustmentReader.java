@@ -106,7 +106,8 @@ public class SettlementAdjustmentReader {
                                                                     LocalDateTime now) {
         ProposalView latest = summary.latestProposal();
         return AdjustmentPermissionPolicy.permissions(summary.status(), summary.deadlineAt(),
-                latest == null ? null : latest.status(), latest == null ? null : latest.proposerType(), viewer, now);
+                latest == null ? null : latest.status(), latest == null ? null : latest.proposerType(),
+                summary.requesterType(), viewer, now);
     }
 
     private Map<Long, AdjustmentSummary> summarize(List<SettlementAdjustment> adjustments) {

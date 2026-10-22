@@ -94,10 +94,10 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(ids(json(adminGet(SETTLEMENTS + "?keyword=토너")))).containsExactly(failed.getId());
         assertThat(json(adminGet(SETTLEMENTS + "?keyword=글로우랩")).at("/pageInfo/totalResults").asLong()).isEqualTo(6);
 
-        // 증빙 탭 — 지급 예정 정산의 브랜드 세금계산서(발행 대기) + 주민번호 미등록 가상 행(비사업자 인플루언서 행 보류).
+        // 증빙 탭 — 지급 예정 정산의 브랜드 세금계산서(발행 대기). 주민번호 미등록은 보류 사유가 아니라 가상 행이 없다(1021 기-12).
         adminGet(SETTLEMENTS + "?tab=EVIDENCE").andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(2))
-                .andExpect(jsonPath("$.toolbar.count").value(2))
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.toolbar.count").value(1))
                 .andExpect(jsonPath("$.toolbar.operatorActionCount").value(1));
         adminGet(SETTLEMENTS + "?tab=UNKNOWN").andExpect(status().isBadRequest());
 
@@ -106,7 +106,7 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.tabCounts.REVIEWING").value(2))
                 .andExpect(jsonPath("$.tabCounts.ADJUSTING").value(1))
                 .andExpect(jsonPath("$.tabCounts.PAYOUT_FAILED").value(1))
-                .andExpect(jsonPath("$.tabCounts.EVIDENCE").value(2))
+                .andExpect(jsonPath("$.tabCounts.EVIDENCE").value(1))   // 주민번호 미등록 가상 행 없음(1021 기-12)
                 .andExpect(jsonPath("$.gnbBadge").value(2));   // 분배 실패 1 + 브랜드 세금계산서 발행 대기 1
     }
 
@@ -152,8 +152,8 @@ class AdminSettlementIntegrationTest extends SettlementTestSupport {
         // 브랜드 계좌는 확정 때 고정된다(「확정 회차는 기존 계좌로 지급」) — 지시 전이어도 스냅샷이다.
         assertThat(detail.at("/payouts/rows/0/accountSource").asText()).isEqualTo("SNAPSHOT");
         assertThat(detail.at("/payouts/check/balanced").asBoolean()).isTrue();
-        // 비사업자 · 주민번호 미등록 — 인플루언서 행 보류 사유가 레일에 뜬다.
-        assertThat(detail.at("/rail/blockReasons/0/code").asText()).isEqualTo("RESIDENT_NUMBER_MISSING");
+        // 비사업자 · 주민번호 미등록 — 지급 보류 사유가 아니다(1021 기-12).
+        assertThat(detail.at("/rail/blockReasons")).isEmpty();
         assertThat(detail.at("/rail/payoutDueDate").asText()).isEqualTo(confirmed.getPayoutDueDate().toString());
         assertThat(detail.at("/actions/canDownloadStatement").asBoolean()).isTrue();
         assertThat(detail.at("/actions/canRedistribute").asBoolean()).isFalse();

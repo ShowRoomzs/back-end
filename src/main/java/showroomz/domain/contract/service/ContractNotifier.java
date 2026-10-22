@@ -46,7 +46,15 @@ public class ContractNotifier {
             }
             case "CONCLUDED" -> {
                 type = NotificationType.CONTRACT_CONCLUDED;
-                sentence = "계약 「" + title + "」 체결이 완료되었습니다 — 공구가 생성되었습니다";
+                sentence = "계약 「" + title + "」 공구가 생성되었습니다 — 인플루언서 게시물 등록 · 운영팀 오픈 승인 뒤 오픈됩니다";
+            }
+            case "ESTABLISHED" -> {
+                type = NotificationType.CONTRACT_ESTABLISHED;
+                sentence = "계약 「" + title + "」 양측 서명이 완료되어 계약이 성립했습니다 — 운영팀이 공구를 생성합니다";
+            }
+            case "TERMINATED" -> {
+                type = NotificationType.CONTRACT_TERMINATED;
+                sentence = "계약 「" + title + "」가 해지되었습니다 — 사유는 운영팀 채널에서 확인할 수 있습니다";
             }
             case "EXPIRED" -> {
                 type = NotificationType.CONTRACT_EXPIRED;
@@ -115,7 +123,21 @@ public class ContractNotifier {
             }
             case "CONCLUDED" -> {
                 type = NotificationType.CONTRACT_CONCLUDED;
-                sentence = "「" + title + "」 계약이 체결됐어요 · 공구 게시물을 작성할 수 있어요";
+                sentence = "「" + title + "」 공구가 생성됐어요 · 공구 게시물을 작성할 수 있어요";
+            }
+            case "ESTABLISHED" -> {
+                type = NotificationType.CONTRACT_ESTABLISHED;
+                sentence = "「" + title + "」 양측 서명이 끝나 계약이 성립했어요 · 운영팀이 공구를 생성해요";
+            }
+            case "TERMINATION_REQUESTED" -> {
+                type = NotificationType.CONTRACT_TERMINATION_REQUESTED;
+                actor = NotificationActorType.BRAND;
+                actorName = brand;
+                sentence = brand + "가 「" + title + "」 계약 해지를 요청했어요 · 의견은 운영팀 채널에 남겨 주세요";
+            }
+            case "TERMINATED" -> {
+                type = NotificationType.CONTRACT_TERMINATED;
+                sentence = "「" + title + "」 계약이 해지됐어요 · 사유는 운영팀 채널에서 확인할 수 있어요";
             }
             case "EXPIRED" -> {
                 type = NotificationType.CONTRACT_EXPIRED;

@@ -23,7 +23,9 @@ public class AdminUserDto {
     @Schema(description = "정지 요청(M1) — 「변경할 상태」 셀렉트는 없다(§25-4)")
     public record SuspendRequest(
             @NotNull @Schema(description = "정지 사유 6종", example = "ABUSIVE_LANGUAGE") UserSuspensionReason reason,
-            @Size(max = 500) @Schema(description = "상세 사유 — 기타(OTHER)일 때만 필수 · 앱에 노출되지 않는다") String reasonDetail) {
+            @Size(max = 500) @Schema(description = "상세 사유 — 기타(OTHER)일 때만 필수 · 앱에 노출되지 않는다") String reasonDetail,
+            @Schema(description = "정지 종료일(포함 · 오늘 이상) — 다음 날 00:00 자동 해제(1021 기-02). 비우면 기간 없는 정지(수동 해제)",
+                    example = "2026-10-29", nullable = true) java.time.LocalDate endsOn) {
     }
 
     @Schema(description = "정지 해제 요청 — 사유 필수 · 상세 사유란 없음(§25-4)")

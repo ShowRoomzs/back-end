@@ -24,6 +24,11 @@ public enum UserClaimPhase {
     REJECTED_RESHIPPING,
     REJECTED_DONE,
     REJECTED_DISPOSED,
+    /**
+     * 교환 사유 번복(1021 설계서 4-4 · C10-5 1c) — 브랜드가 「소비자 귀책」으로 바로잡아 재발송 배송비 + 착불 운임을 내야 재발송된다. 반려가
+     * 아니라 행을 탈색하지 않는다.
+     */
+    OVERTURN_PAYMENT_PENDING,
     CANCELLED;
 
     /** 검수 반려 단계 — 반려된 상품은 고객에게 돌아오는 물건이라 행을 탈색하지 않는다(C10 설계서 1-1). */

@@ -83,6 +83,13 @@ public class SettlementAdjustmentCards {
                 new Snapshot(a).deadline(a.getDeadlineAt()).closed(a.getOriginalRewardAmount(), null, closedAt));
     }
 
+    /** 요청 철회(1021 기-14) — 「요청 철회 · 원래 금액 확정 · 이슈 종결」. */
+    public Message withdrawn(SettlementAdjustment a, AdjustableSettlement s, SettlementParty withdrawnBy,
+                             LocalDateTime closedAt) {
+        return system(a, s, "stl-adj-%d-closed".formatted(a.getId()), MessageCardType.SETTLEMENT_ADJUSTMENT_WITHDRAWN,
+                new Snapshot(a).deadline(a.getDeadlineAt()).closed(a.getOriginalRewardAmount(), withdrawnBy, closedAt));
+    }
+
     private Message system(SettlementAdjustment a, AdjustableSettlement s, String clientMessageId,
                            MessageCardType cardType, Snapshot snapshot) {
         return post(a, s, ParticipantType.ADMIN, OperatorChannelService.SYSTEM_OPERATOR_ID, clientMessageId, cardType,

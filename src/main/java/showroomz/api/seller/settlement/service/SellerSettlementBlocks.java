@@ -49,7 +49,10 @@ public class SellerSettlementBlocks {
                 s.getOriginalRewardAmount(), s.getRewardAmount(),
                 new SellerSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
                 new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
-                s.getConsumerDeliveryFeeAmount(), s.getBrandPayoutBeforeClawback(), clawbacksOf(s),
+                s.getConsumerDeliveryFeeAmount(),
+                new SettlementPartyDto.AmountCount(s.getReturnDeductionFeeAmount(), s.getReturnDeductionCount()),
+                new SettlementPartyDto.AmountCount(s.getFreightAdjustmentAmount(), s.getFreightAdjustmentCount()),
+                s.getBrandPayoutBeforeClawback(), clawbacksOf(s),
                 s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
     }
 

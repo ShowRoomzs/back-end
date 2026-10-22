@@ -132,6 +132,19 @@ public class OrderClaimCollection {
     @Column(name = "finalized_at")
     private LocalDateTime finalizedAt;
 
+    /** 검수 판정 요약(1021 기-17) — 통과 · 사유 번복 · 반려. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "inspection_result", length = 24)
+    private showroomz.domain.order.type.ClaimInspectionResult inspectionResult;
+
+    /** 사유 번복 판정 근거(소비자 전달). */
+    @Column(name = "inspection_note", length = 1000)
+    private String inspectionNote;
+
+    /** 택배 도착 후 N영업일 자동 입고(1021 기-17). */
+    @Column(name = "auto_received", nullable = false)
+    private boolean autoReceived;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -190,6 +203,28 @@ public class OrderClaimCollection {
     public void acceptSellerFault() {
         this.feeBearer = ClaimFeeBearer.SELLER;
         this.returnDeduction = 0;
+    }
+
+    /** 사유 번복(1021 기-17) — 귀책을 소비자로 돌리고 최초 배송비 차감을 다시 판정한 값으로 둔다. */
+    public void overturnToConsumer(int returnDeduction) {
+        this.feeBearer = ClaimFeeBearer.CONSUMER;
+        this.returnDeduction = returnDeduction;
+    }
+
+    public void recordInspectionResult(showroomz.domain.order.type.ClaimInspectionResult result) {
+        // 일부 반려 · 사유 번복이 먼저 적혔으면 통과로 덮지 않는다.
+        if (this.inspectionResult == null || result != showroomz.domain.order.type.ClaimInspectionResult.PASSED) {
+            this.inspectionResult = result;
+        }
+    }
+
+    /** 사유 번복 판정 근거 — 소비자에게 그대로 보인다. */
+    public void recordOverturnExplanation(String explanation) {
+        this.inspectionNote = explanation;
+    }
+
+    public void markAutoReceived() {
+        this.autoReceived = true;
     }
 
     public void finalizeWith(Integer refundAmount, LocalDateTime now) {

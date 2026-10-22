@@ -180,7 +180,7 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
         int historyBefore = groupBuyHistoryRepository.findByGroupBuyIdOrderByOccurredAtAscIdAsc(groupBuy.getId()).size();
 
         editPost(groupBuy.getId(), FULL_POST).andExpect(status().isOk())
-                .andExpect(jsonPath("$.post.status").value("HIDDEN"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"))
                 .andExpect(jsonPath("$.post.hidden.code").value("AD_DISCLOSURE"))
                 .andExpect(jsonPath("$.post.hidden.hiddenDays").isNumber())
                 .andExpect(jsonPath("$.post.title").value(FULL_POST.get("title")))

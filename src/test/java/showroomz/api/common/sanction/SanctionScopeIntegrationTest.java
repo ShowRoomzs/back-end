@@ -219,7 +219,7 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
 
         sellerGet("/v1/seller/contracts/" + signing.getId())
                 .andExpect(jsonPath("$.sanctionHold.kind").value("MINE"))
-                .andExpect(jsonPath("$.sanctionHold.label").value("체결 보류 · 계정 정지"))
+                .andExpect(jsonPath("$.sanctionHold.label").value("체결 보류 · 계정 이용 정지"))
                 .andExpect(jsonPath("$.sanctionHold.tone").value("WARNING"))
                 .andExpect(jsonPath("$.signatureDeadlinePaused").value(true));
         creatorGet("/v1/creator/contracts/" + signing.getId())
@@ -230,7 +230,7 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.contract.sanctionHold.party").value("BRAND"));
 
         sellerGet("/v1/seller/group-buys/" + preparing.getId())
-                .andExpect(jsonPath("$.sanctionHold.label").value("승인 보류 · 계정 정지"));
+                .andExpect(jsonPath("$.sanctionHold.label").value("승인 보류 · 계정 이용 정지"));
         creatorGet("/v1/creator/group-buys/" + preparing.getId())
                 .andExpect(jsonPath("$.sanctionHold.label").value("오픈 보류 · 상대 브랜드 사정"));
         adminGet("/v1/admin/group-buys/" + preparing.getId())

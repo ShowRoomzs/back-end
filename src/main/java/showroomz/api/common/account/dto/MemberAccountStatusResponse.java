@@ -24,8 +24,28 @@ public record MemberAccountStatusResponse(
             @Schema(example = "2026-10-08T14:20:00") LocalDateTime suspendedAt,
             @Schema(description = "지급 정지 사유인가 — true 면 배너에 정산 줄(정지가 풀리면 다음 영업일 지급)을 붙인다") boolean payoutHeld,
             @Schema(description = "운영팀 채널 스레드 id — [운영팀에 소명하기] 목적지", nullable = true) Long operatorChannelThreadId,
-            @Schema(description = "그 채널의 「계정 정지」 시스템 카드 message id — 스크롤 위치", nullable = true) Long suspendCardMessageId
+            @Schema(description = "그 채널의 「계정 이용 정지」 시스템 카드 message id — 스크롤 위치", nullable = true) Long suspendCardMessageId,
+            @Schema(description = "정지 기간 · 이의 신청 기한(1021 기-02)") Term term
     ) {
+    }
+
+    /** 정지 기간 · 자동 해제 · 이의 신청 기한(1021 기-02 【잠정】) — 소비자 앱 시트 · 파트너 · 스튜디오 배너가 같은 꼴을 쓴다. */
+    @Schema(name = "MemberSanctionTerm")
+    public record Term(
+            @Schema(description = "정지 종료일(포함) — 기간 없는 정지면 null", example = "2026-10-29", nullable = true)
+            java.time.LocalDate endsOn,
+            @Schema(description = "자동 해제 시각 = 종료일 다음 날 00:00", nullable = true) LocalDateTime autoReleaseAt,
+            @Schema(description = "정지 기간(일) — 시작일 · 종료일 포함", example = "7", nullable = true) Integer periodDays,
+            @Schema(description = "이의 신청 기한 — 통지 + N영업일 23:59:59(기한 뒤에도 접수한다)", nullable = true)
+            LocalDateTime appealDeadlineAt,
+            @Schema(description = "소명 검토 N영업일 — [정책값 미정]이면 null", nullable = true) Integer appealReviewBusinessDays
+    ) {
+        public static Term of(java.time.LocalDate endsOn, LocalDateTime suspendedAt, LocalDateTime appealDeadlineAt,
+                              Integer appealReviewBusinessDays) {
+            return new Term(endsOn, showroomz.domain.member.common.service.SanctionTermPolicy.autoReleaseAt(endsOn),
+                    showroomz.domain.member.common.service.SanctionTermPolicy.periodDays(suspendedAt, endsOn),
+                    appealDeadlineAt, appealReviewBusinessDays);
+        }
     }
 
     public static String blankToNull(String value) {

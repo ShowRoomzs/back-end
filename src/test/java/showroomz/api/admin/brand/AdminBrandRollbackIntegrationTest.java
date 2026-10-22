@@ -38,7 +38,7 @@ class AdminBrandRollbackIntegrationTest extends AdminBrandTestSupport {
         setPayout(s.getId(), SettlementPayee.BRAND, PayoutStatus.SCHEDULED, 900_000, null, LocalDate.now().plusDays(3));
         // 트랜잭션 프록시를 거치지 않도록 실제 대상 객체에 스텁한다.
         doThrow(new IllegalStateException("카드 등록 실패(주입)")).when(target(channelGateway))
-                .postSuspendedCard(any(), any(), any(), any(), any(), any());
+                .postSuspendedCard(any(), any(), any(), any(), any(), any(), any());
 
         int status = suspend(brand.marketId(), "SETTLEMENT_INFO_MISMATCH", null).andReturn().getResponse().getStatus();
         assertThat(status).isGreaterThanOrEqualTo(500);

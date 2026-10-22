@@ -381,8 +381,6 @@ public class SellerService {
         );
         // 발송 기한 N(공구 마감 후 N영업일) — 필수(§6-6 · 06 설계서 2-2).
         market.setShippingLeadDays(request.getShippingLeadDays());
-        market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
-        market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
 
         seller.setIsNewMember(false);
         seller.setModifiedAt(LocalDateTime.now());

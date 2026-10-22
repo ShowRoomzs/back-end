@@ -38,6 +38,8 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
     @Query(value =
             "SELECT * FROM brand_change_request r " +
             "WHERE r.status IN (:statuses) " +
+            "AND (:requesterType IS NULL OR r.requester_type = :requesterType) " +
+            "AND (:type IS NULL OR r.type = :type) " +
             "AND (:keyword IS NULL OR :keyword = '' OR EXISTS (" +
             "    SELECT 1 FROM market m WHERE m.market_id = r.market_id AND m.market_name LIKE CONCAT('%', :keyword, '%')" +
             ") OR EXISTS (" +
@@ -47,6 +49,8 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
             countQuery =
             "SELECT COUNT(*) FROM brand_change_request r " +
             "WHERE r.status IN (:statuses) " +
+            "AND (:requesterType IS NULL OR r.requester_type = :requesterType) " +
+            "AND (:type IS NULL OR r.type = :type) " +
             "AND (:keyword IS NULL OR :keyword = '' OR EXISTS (" +
             "    SELECT 1 FROM market m WHERE m.market_id = r.market_id AND m.market_name LIKE CONCAT('%', :keyword, '%')" +
             ") OR EXISTS (" +
@@ -55,7 +59,14 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
             nativeQuery = true)
     Page<ChangeRequest> search(@Param("statuses") Collection<String> statuses,
                                      @Param("keyword") String keyword,
+                                     @Param("requesterType") String requesterType,
+                                     @Param("type") String type,
                                      Pageable pageable);
+
+    /** 필터 없는 목록(1021 이전 호출부). */
+    default Page<ChangeRequest> search(Collection<String> statuses, String keyword, Pageable pageable) {
+        return search(statuses, keyword, null, null, pageable);
+    }
 
     /** 상세의 이전/다음(§16-2) — 현재 탭과 동일한 정렬의 전체 id 목록. */
     @Query(value =

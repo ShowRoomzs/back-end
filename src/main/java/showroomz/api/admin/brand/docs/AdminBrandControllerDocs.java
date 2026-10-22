@@ -131,7 +131,7 @@ public interface AdminBrandControllerDocs {
                                       "settlementInfo": { "bankName": "신한은행", "accountHolder": "(주)코코브라운", "maskedAccountNumber": "110-****-3841",
                                                           "taxEmail": "tax@cocobrown.example", "pendingChangeRequests": [] },
                                       "deliveryPolicy": { "defaultDeliveryFee": 3000, "freeShippingThreshold": 50000, "jejuSurcharge": 5000,
-                                                          "remoteAreaSurcharge": 4000, "returnFee": null, "exchangeFee": null,
+                                                          "remoteAreaSurcharge": 4000,
                                                           "shipLeadBusinessDays": 3, "shipLeadText": "공구 마감 후 3영업일 이내 발송 (주말·공휴일 제외)",
                                                           "shipLeadLastChange": { "changedAt": "2026-08-20T10:00:00", "previousDays": 2, "newDays": 3 },
                                                           "returnAddress": { "recipientName": "코코브라운 물류", "contact": "02-123-4567",
@@ -188,7 +188,7 @@ public interface AdminBrandControllerDocs {
                     | `OTHER` | 기타(직접 입력) — `reasonDetail` 필수 | — |
 
                     - **지급 정지는 사유가 정합니다**(운영자 스위치 없음) — 지급 예정 브랜드 몫이 보류(`BRAND_SUSPENDED`)되고, 해제 다음 영업일에 지급됩니다. 인플루언서 · 플랫폼 몫은 예정대로입니다.
-                    - 운영팀 소통 스레드에 「계정 정지」 시스템 카드가 자동으로 붙습니다(소명 경로).
+                    - 운영팀 소통 스레드에 「계정 이용 정지」 시스템 카드가 자동으로 붙습니다(소명 경로).
                     - 탈퇴 심사 중에도 정지할 수 있습니다. 정지 기간은 없습니다(수동 해제).
                     - 응답은 갱신된 레일입니다.
 

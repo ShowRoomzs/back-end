@@ -38,6 +38,9 @@ public class ContractDetailAssembler {
     private final PartyContractDocuments partyContractDocuments;
     private final showroomz.api.admin.contract.service.ContractDocumentStorage contractDocumentStorage;
     private final showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuyRepository;
+    private final showroomz.global.config.properties.ContractProperties contractProperties;
+    private final showroomz.domain.contract.repository.ContractTerminationRequestRepository terminationRequestRepository;
+    private final showroomz.domain.contract.repository.ContractDraftApprovalRepository draftApprovalRepository;
 
     public ContractDetailResponse assemble(Contract contract) {
         ContractStatus status = contract.getStatus();
@@ -67,7 +70,35 @@ public class ContractDetailAssembler {
                 permissions(contract),
                 history(contract),
                 SanctionHoldView.forBrand(contract),
-                SanctionHoldView.deadlinePaused(contract));
+                SanctionHoldView.deadlinePaused(contract),
+                contract.getEstablishedAt(),
+                terminationRequest(contract),
+                draftApprovals(contract));
+    }
+
+    /** 가장 최근 해지 요청 — 처리 대기 · 처리됨 · 철회 · 닫힘(1021 설계서 1-4). */
+    private ContractDetailResponse.TerminationRequest terminationRequest(Contract contract) {
+        if (contract.getId() == null) {
+            return null;
+        }
+        return terminationRequestRepository.findFirstByContract_IdOrderByRequestedAtDescIdDesc(contract.getId())
+                .map(r -> new ContractDetailResponse.TerminationRequest(r.getId(), r.getStatus().name(),
+                        r.getStatus().getLabel(), r.getReasonCode().name(), r.getReasonCode().getLabel(), r.getMemo(),
+                        r.getRequestedAt(), r.getClosedAt()))
+                .orElse(null);
+    }
+
+    /** 초안 승인 기록(1021 설계서 1-8) — 승인자는 브랜드명(지금 이름). 세 서피스가 같은 모양을 쓴다. */
+    public List<ContractDetailResponse.DraftApproval> draftApprovals(Contract contract) {
+        if (contract.getId() == null) {
+            return List.of();
+        }
+        String brandName = contract.getMarket().getMarketName();
+        return draftApprovalRepository.findByContractIdAndDeletedAtIsNullOrderByApprovedAtAscIdAsc(contract.getId())
+                .stream()
+                .map(a -> new ContractDetailResponse.DraftApproval(a.getId(), a.getTitle(), a.getApprovedAt(), brandName,
+                        a.sourceLabel(), a.getThreadMessageId(), a.getNote()))
+                .toList();
     }
 
     /**
@@ -136,6 +167,8 @@ public class ContractDetailAssembler {
                 contract.getFixedFeeAmount(),
                 contract.getFixedFeeTrigger(),
                 contract.getFixedFeeTrigger() == null ? null : contract.getFixedFeeTrigger().getLabel(),
+                contract.getFixedFeeTrigger() == null ? null : contract.getFixedFeeTrigger().getDescription(),
+                contractProperties.getFixedFeePaymentBusinessDays(),
                 contract.getFixedFeeNoticeAgreedAt(),
                 contract.getFixedFeePaidAt(),
                 contract.isObligationAlive());
@@ -243,7 +276,20 @@ public class ContractDetailAssembler {
                 status == ContractStatus.CONCLUDED
                         && contract.hasFixedFee()
                         && contract.getFixedFeePaidAt() == null,
-                ContractStatus.DUPLICABLE.contains(status));
+                ContractStatus.DUPLICABLE.contains(status),
+                canRequestTermination(contract),
+                contract.getId() != null && terminationRequestRepository.findPending(contract.getId()).isPresent(),
+                contract.getEstablishedAt() != null);
+    }
+
+    private boolean canRequestTermination(Contract contract) {
+        if (contract.getId() == null || !ContractStatus.TERMINABLE.contains(contract.getStatus())) {
+            return false;
+        }
+        showroomz.domain.groupbuy.entity.GroupBuy groupBuy = contract.getGroupBuyId() == null ? null
+                : groupBuyRepository.findById(contract.getGroupBuyId()).orElse(null);
+        return showroomz.domain.contract.service.ContractTerminationPolicy.isTerminable(contract, groupBuy)
+                && terminationRequestRepository.findPending(contract.getId()).isEmpty();
     }
 
     private List<ContractDetailResponse.HistoryEntry> history(Contract contract) {

@@ -29,6 +29,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 import showroomz.global.utils.BusinessRegistrationNumberHasher;
+import showroomz.domain.settlement.service.AfterCommit;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -290,6 +291,14 @@ public class CreatorApplicationService {
                 processorEmail
         );
 
+        // 통지(1021 기-36) — 정형 사유만 · 상세는 내부 기록. 업무 이메일은 아래에서 파기되므로 먼저 잡아 두고 커밋 뒤 보낸다.
+        String noticeEmail = application.getBusinessEmail();
+        CreatorRejectionNotice notice = CreatorRejectionNotice.of(request.getRejectReasonType(),
+                application.getProcessedAt().toLocalDate());
+        if (noticeEmail != null && !noticeEmail.isBlank()) {
+            AfterCommit.run(() -> mailService.sendCreatorRejectionNotice(noticeEmail, notice.subject(), notice.htmlBody()));
+        }
+
         Users user = application.getUser();
         String phoneHash = BusinessRegistrationNumberHasher.hash(application.getPhoneNumber());
         user.purgeAgreementsOnCreatorRejection();
@@ -302,6 +311,21 @@ public class CreatorApplicationService {
                 .reason(fullRejectReason)
                 .processorEmail(processorEmail)
                 .build());
+    }
+
+    /** 어드민 C1 「신청자 통지 미리보기」 — 실제 발송과 같은 템플릿. 반려일은 오늘. */
+    @Transactional(readOnly = true)
+    public CreatorRejectionNotice previewRejectionNotice(Long applicationId,
+                                                         showroomz.api.admin.creator.type.CreatorRejectionReasonType reasonType) {
+        CreatorApplication application = creatorApplicationRepository.findById(applicationId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
+        if (application.getStatus() != CreatorApplicationStatus.PENDING) {
+            throw new BusinessException(ErrorCode.INVALID_APPLICATION_STATUS);
+        }
+        if (reasonType == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "반려 사유를 선택해 주세요.");
+        }
+        return CreatorRejectionNotice.of(reasonType, java.time.LocalDate.now());
     }
 
     private String resolveProcessorEmail(Long adminUserId) {

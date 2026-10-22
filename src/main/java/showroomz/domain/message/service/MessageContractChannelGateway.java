@@ -6,9 +6,9 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractResendRequest;
+import showroomz.domain.contract.entity.ContractTerminationRequest;
 import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.type.ContractActorType;
-import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.message.entity.Message;
 import showroomz.domain.message.entity.MessageCardPayload;
 import showroomz.domain.message.entity.MessageThread;
@@ -31,6 +31,10 @@ public class MessageContractChannelGateway implements ContractChannelGateway {
 
     private static final String RESEND_CARD_KEY = "resend-card-%d";
     private static final String CANCEL_CARD_KEY = "contract-cancel-%d";
+    private static final String TERMINATION_CONSENT_KEY = "contract-termination-consent-%d";
+    /** 운영자가 다시 보낼 수 있다(요청 요지가 바뀌면) — 시각을 섞는다. */
+    private static final String CANCEL_CONSENT_KEY = "contract-cancel-consent-%d-%d";
+    private static final String TERMINATED_CARD_KEY = "contract-terminated-%d";
 
     private final OperatorChannelService operatorChannelService;
     private final MessageThreadService messageThreadService;
@@ -64,6 +68,62 @@ public class MessageContractChannelGateway implements ContractChannelGateway {
         return new ChannelCard(thread.getId(), card.getId());
     }
 
+    @Override
+    public ChannelCard postTerminationConsentCard(Contract contract, ContractTerminationRequest request) {
+        ContractActorType requester = request.getRequesterType();
+        boolean bySeller = requester == ContractActorType.SELLER;
+        MessageThread thread = channelOf(contract, ContractChannelGateway.counterpartOf(requester));
+        String reason = request.getReasonCode().getLabel();
+        Message card = messageThreadService.postSystemCard(thread,
+                bySeller ? ParticipantType.SELLER : ParticipantType.CREATOR, request.getRequesterId(),
+                TERMINATION_CONSENT_KEY.formatted(request.getId()),
+                MessageCardType.CONTRACT_CLOSE_CONSENT_REQUEST, MessageRefType.CONTRACT_TERMINATION_REQUEST,
+                request.getId(),
+                MessageCardPayload.notice(contract.getId(), contract.getContractNumber(), contract.getTitle(),
+                        requester.name(), partyName(contract, requester), request.getRequestedAt(), reason, null, null,
+                        new MessageCardPayload.Notice("TERMINATE", request.getMemo(), null, contract.getGroupBuyId(),
+                                null, null, null, null, null, null))).message();
+        return new ChannelCard(thread.getId(), card.getId());
+    }
+
+    @Override
+    public ChannelCard postCancelConsentCard(Contract contract, ContractActorType requesterType, String reasonSummary,
+                                             Long operatorId) {
+        MessageThread thread = channelOf(contract, ContractChannelGateway.counterpartOf(requesterType));
+        Message card = messageThreadService.postSystemCard(thread, ParticipantType.ADMIN, operatorId,
+                CANCEL_CONSENT_KEY.formatted(contract.getId(), System.currentTimeMillis()),
+                MessageCardType.CONTRACT_CLOSE_CONSENT_REQUEST, MessageRefType.CONTRACT, contract.getId(),
+                MessageCardPayload.notice(contract.getId(), contract.getContractNumber(), contract.getTitle(),
+                        requesterType.name(), partyName(contract, requesterType), java.time.LocalDateTime.now(),
+                        reasonSummary, null, operatorId,
+                        new MessageCardPayload.Notice("CANCEL", reasonSummary, null, contract.getGroupBuyId(),
+                                null, null, null, null, null, null))).message();
+        return new ChannelCard(thread.getId(), card.getId());
+    }
+
+    @Override
+    public java.util.List<ChannelCard> postTerminatedCards(Contract contract, String reasonLabel, String explanation,
+                                                           boolean groupBuyClosed, Long operatorId) {
+        java.util.List<ChannelCard> cards = new java.util.ArrayList<>();
+        for (ContractActorType party : java.util.List.of(ContractActorType.SELLER, ContractActorType.CREATOR)) {
+            MessageThread thread = channelOf(contract, party);
+            Message card = messageThreadService.postSystemCard(thread, ParticipantType.ADMIN, operatorId,
+                    TERMINATED_CARD_KEY.formatted(contract.getId()),
+                    MessageCardType.CONTRACT_TERMINATED, MessageRefType.CONTRACT, contract.getId(),
+                    MessageCardPayload.notice(contract.getId(), contract.getContractNumber(), contract.getTitle(),
+                            null, null, null, reasonLabel, contract.getClosedAt(), operatorId,
+                            new MessageCardPayload.Notice("TERMINATE", explanation, groupBuyClosed,
+                                    contract.getGroupBuyId(), null, null, null, null, null, null))).message();
+            cards.add(new ChannelCard(thread.getId(), card.getId()));
+        }
+        return cards;
+    }
+
+    private static String partyName(Contract contract, ContractActorType party) {
+        return party == ContractActorType.SELLER ? contract.getMarket().getMarketName()
+                : contract.getCreator() == null ? null : contract.getCreator().getShowroomName();
+    }
+
     private MessageThread channelOf(Contract contract, ContractActorType party) {
         return switch (party) {
             case SELLER -> operatorChannelService.requireMarketChannel(contract.getMarket());
@@ -86,10 +146,7 @@ public class MessageContractChannelGateway implements ContractChannelGateway {
         if (code == null) {
             return null;
         }
-        try {
-            return ContractCloseReasonCode.valueOf(code).getLabel();
-        } catch (IllegalArgumentException e) {
-            return code;
-        }
+        String label = showroomz.domain.contract.type.ContractCloseReasonLabels.labelOf(code);
+        return label == null ? code : label;
     }
 }

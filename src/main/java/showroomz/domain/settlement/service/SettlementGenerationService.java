@@ -38,6 +38,8 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.MaskingUtils;
 
 import java.math.BigDecimal;
+import showroomz.domain.order.entity.OrderClaimFreightAdjustment;
+import showroomz.domain.order.type.FreightSettledVia;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -83,6 +85,8 @@ public class SettlementGenerationService {
     private final OrderProductRepository orderProductRepository;
     private final OrderRefundTaskRepository refundTaskRepository;
     private final OrderClaimChargeRepository claimChargeRepository;
+    private final showroomz.domain.order.repository.OrderClaimCollectionRepository claimCollectionRepository;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
     private final SettlementRepository settlementRepository;
     private final SettlementItemRepository itemRepository;
     private final SettlementPayoutRepository payoutRepository;
@@ -93,6 +97,7 @@ public class SettlementGenerationService {
     private final SettlementNotifier notifier;
     private final SettlementProperties properties;
     private final BusinessDayCalculator businessDayCalculator;
+    private final SettlementRecalculationPolicy recalculationPolicy;
 
     @Transactional(readOnly = true)
     public List<Long> findGroupBuyIdsToGenerate(int limit) {
@@ -118,10 +123,7 @@ public class SettlementGenerationService {
         if (closure == null || closure.totalCount() == 0) {
             return Optional.empty(); // 판매 0건 — 정산을 만들지 않는다(공통 결정 #16)
         }
-        List<SettlementSourceRow> rows = orderProductRepository
-                .findSettlementSourceByGroupBuy(groupBuyId, SOURCE_GROUP_STATUSES).stream()
-                .filter(row -> row.groupStatus() != FulfillmentStatus.RETURNING || row.returnCompletedAt() != null)
-                .toList();
+        List<SettlementSourceRow> rows = sourceRows(groupBuyId);
         if (rows.isEmpty()) {
             return Optional.empty();
         }
@@ -131,9 +133,12 @@ public class SettlementGenerationService {
                 groupBuy.getCreator().getId());
         CreatorBusinessType businessType = groupBuy.getCreator().getBusinessType() == null
                 ? CreatorBusinessType.INDIVIDUAL : groupBuy.getCreator().getBusinessType();
+        // + 반품 시 차감한 최초 배송비 · ± 운임 정산(1021 설계서 6-1) — 판정이 끝난 요청만.
+        FeeLine returnDeductionFee = returnDeductionFee(groupBuyId);
+        FeeLine freightAdjustment = freightAdjustment(groupBuyId);
         SettlementAmounts amounts = calculator.calculate(new SettlementInput(collected.confirmedSales(),
                 collected.reward(), collected.reshipFee(), collected.consumerDeliveryFee(), pending.brandAmount(),
-                pending.rewardAmount(), businessType, rates()));
+                pending.rewardAmount(), businessType, rates(), returnDeductionFee.amount(), freightAdjustment.amount()));
         calculator.verify(amounts);
 
         LocalDateTime reviewDueAt = businessDayCalculator.dueAt(now, properties.getReviewBusinessDays());
@@ -153,6 +158,10 @@ public class SettlementGenerationService {
                 .amounts(amounts)
                 .build());
         Long settlementId = settlement.getId();
+        settlement.applyFeeLineCounts(returnDeductionFee.count(), freightAdjustment.count());
+        freightAdjustmentRepository
+                .findByGroupBuyIdAndAppliedSettlementIdIsNullAndSettledViaNot(groupBuyId, FreightSettledVia.CHARGE)
+                .forEach(row -> row.markApplied(settlementId));
         itemRepository.saveAll(collected.drafts().stream().map(draft -> draft.toItem(settlementId)).toList());
         payoutRepository.saveAll(List.of(
                 SettlementPayout.waiting(settlementId, SettlementPayee.BRAND, amounts.brandPayoutAmount()),
@@ -169,6 +178,68 @@ public class SettlementGenerationService {
         return Optional.of(settlementId);
     }
 
+    /**
+     * 확인 기간 중 환불 재계산(1021 설계서 6-3 · 기-13 【잠정】) — 클로백 대신 원천을 다시 모아 금액 · 항목을 덮어쓰고 확인 기간을 다시 시작한다.
+     * 요율은 생성 때 스냅샷 · 다른 회차 차감은 반영하지 않은 정산만({@link SettlementRecalculationPolicy}).
+     *
+     * @return 재계산했으면 true — 아니면 호출자가 클로백으로 간다
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recalculate(Long settlementId, String cause, LocalDateTime now) {
+        Settlement settlement = settlementRepository.findForUpdate(settlementId).orElse(null);
+        if (!recalculationPolicy.isRecalculable(settlement)) {
+            return false;
+        }
+        GroupBuy groupBuy = settlement.getGroupBuy();
+        Long groupBuyId = groupBuy.getId();
+        List<SettlementSourceRow> rows = sourceRows(groupBuyId);
+        if (rows.isEmpty()) {
+            return false;
+        }
+        Collect collected = collect(groupBuy, rows);
+        FeeLine returnDeductionFee = returnDeductionFee(groupBuyId);
+        List<OrderClaimFreightAdjustment> fresh = freightAdjustmentRepository
+                .findByGroupBuyIdAndAppliedSettlementIdIsNullAndSettledViaNot(groupBuyId, FreightSettledVia.CHARGE);
+        List<OrderClaimFreightAdjustment> freightRows = new java.util.ArrayList<>(
+                freightAdjustmentRepository.findByAppliedSettlementIdOrderByIdAsc(settlementId));
+        freightRows.addAll(fresh);
+        FeeLine freight = new FeeLine(freightRows.stream().mapToLong(OrderClaimFreightAdjustment::signedAmount).sum(),
+                freightRows.size());
+        SettlementAmounts amounts = calculator.calculate(new SettlementInput(collected.confirmedSales(),
+                collected.reward(), collected.reshipFee(), collected.consumerDeliveryFee(), 0, 0,
+                settlement.getCreatorBusinessType(), settlement.ratesSnapshot(), returnDeductionFee.amount(),
+                freight.amount()));
+        calculator.verify(amounts);
+
+        long brandBefore = settlement.getBrandPayoutAmount();
+        long rewardBefore = settlement.getRewardAmount();
+        LocalDateTime reviewDueAt = businessDayCalculator.dueAt(now, properties.getReviewBusinessDays());
+        settlement.recalculate(collected.breakdown(), amounts, reviewDueAt);
+        settlement.applyFeeLineCounts(returnDeductionFee.count(), freight.count());
+        fresh.forEach(row -> row.markApplied(settlementId));
+        historyRecorder.recordBySystem(settlementId, SettlementEventType.RECALCULATED,
+                "%s · 브랜드 %,d → %,d · 리워드 %,d → %,d · 확인 기간 %s까지 재시작".formatted(cause, brandBefore,
+                        amounts.brandPayoutAmount(), rewardBefore, amounts.rewardAmount(),
+                        reviewDueAt.format(DUE_FORMAT)), now);
+        // 아래 UPDATE 들이 엔티티 변경을 먼저 flush 한다 — 엔티티는 여기까지만 만진다.
+        itemRepository.deleteAllBySettlementId(settlementId);
+        itemRepository.saveAll(collected.drafts().stream().map(draft -> draft.toItem(settlementId)).toList());
+        payoutRepository.updateAmountBeforeConfirm(settlementId, SettlementPayee.BRAND, amounts.brandPayoutAmount());
+        payoutRepository.updateAmountBeforeConfirm(settlementId, SettlementPayee.CREATOR, amounts.creatorPayoutAmount());
+        payoutRepository.updateAmountBeforeConfirm(settlementId, SettlementPayee.PLATFORM, amounts.platformShareAmount());
+        settlementRepository.updateOriginalReward(settlementId, amounts.rewardAmount());
+        AfterCommit.run(() -> notifier.settlementRecalculated(settlementId));
+        log.info("정산 재계산 - settlementId: {} · {} · 브랜드 {} → {}", settlementId, cause, brandBefore,
+                amounts.brandPayoutAmount());
+        return true;
+    }
+
+    private List<SettlementSourceRow> sourceRows(Long groupBuyId) {
+        return orderProductRepository.findSettlementSourceByGroupBuy(groupBuyId, SOURCE_GROUP_STATUSES).stream()
+                .filter(row -> row.groupStatus() != FulfillmentStatus.RETURNING || row.returnCompletedAt() != null)
+                .toList();
+    }
+
     private SettlementRates rates() {
         return new SettlementRates(properties.getPgFeeRate(), properties.getPlatformFeeRate(),
                 properties.getRewardVatRate(), properties.getWithholdingIncomeRate(),
@@ -176,6 +247,26 @@ public class SettlementGenerationService {
     }
 
     // ------------------------------------------------------------------ 입력 수집(2-2 · 2-3)
+
+    private record FeeLine(long amount, int count) {
+    }
+
+    private FeeLine returnDeductionFee(Long groupBuyId) {
+        Object[] row = firstRow(claimCollectionRepository.sumReturnDeductionByGroupBuy(groupBuyId));
+        return row == null ? new FeeLine(0, 0)
+                : new FeeLine(((Number) row[1]).longValue(), ((Number) row[0]).intValue());
+    }
+
+    /** 귀책 변경 운임 정산(부호 있음) — 정산에 아직 반영되지 않은 행 · 추가 결제로 끝난 건 제외(재발송비에 이미 있다). */
+    private FeeLine freightAdjustment(Long groupBuyId) {
+        List<OrderClaimFreightAdjustment> rows = freightAdjustmentRepository
+                .findByGroupBuyIdAndAppliedSettlementIdIsNullAndSettledViaNot(groupBuyId, FreightSettledVia.CHARGE);
+        return new FeeLine(rows.stream().mapToLong(OrderClaimFreightAdjustment::signedAmount).sum(), rows.size());
+    }
+
+    private static Object[] firstRow(List<Object[]> rows) {
+        return rows == null || rows.isEmpty() || rows.get(0) == null ? null : rows.get(0);
+    }
 
     private record Collect(List<Draft> drafts, Settlement.Breakdown breakdown, long confirmedSales, long reward,
                            long reshipFee, long consumerDeliveryFee, LocalDateTime ordersClosedAt) {

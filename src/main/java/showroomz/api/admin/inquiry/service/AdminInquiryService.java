@@ -109,6 +109,7 @@ public class AdminInquiryService {
                 .claimId(inquiry.getClaimId())
                 .sanctionAppeal(inquiry.isSanctionAppeal())
                 .sanctionId(inquiry.getSanctionId())
+                .refundTaskId(inquiry.getRefundTaskId())
                 .createdAt(inquiry.getCreatedAt())
                 .answeredAt(inquiry.getAnsweredAt())
                 .elapsedText(elapsedText(inquiry, now))

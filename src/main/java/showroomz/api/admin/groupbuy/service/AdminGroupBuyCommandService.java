@@ -78,6 +78,7 @@ public class AdminGroupBuyCommandService {
     private final GroupBuyNotifier notifier;
     private final GroupBuySalesReader salesReader;
     private final GroupBuySettlementGateway settlementGateway;
+    private final showroomz.domain.message.service.MessageGroupBuyChannelGateway channelGateway;
 
     // ── 5-1 · 5-2 오픈 승인 · 반려 ────────────────────────────────────────────
 
@@ -237,6 +238,8 @@ public class AdminGroupBuyCommandService {
                         request.appealDeadlineAt().format(NOTICE_APPEAL_FORMAT)),
                 notice.getId(), now);
         notifier.notifyBothParties(groupBuy, "SUSPENSION_NOTICED");
+        // 양측 운영팀 채널에 「직권 중단 사전 통지 · 소명 요청」 카드(1021 기-21 · 20a A8 ①) — 의견은 답글로, 브랜드 소명 자료는 /appeal 로도.
+        channelGateway.postSuspensionNoticeCards(groupBuy, notice, operatorId);
         return result(groupBuy, facts.post(), null,
                 request.clause() == SuspensionReasonClause.ART17_3_BREACH ? CLAUSE_CAUTION_POST_ALTERATION : null);
     }

@@ -69,6 +69,7 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
     private final SettlementNumberGenerator numberGenerator;
     private final SettlementHistoryRecorder historyRecorder;
     private final SettlementNotifier notifier;
+    private final SettlementRecalculationPolicy recalculationPolicy;
 
     public static boolean isClawbackSource(RefundTaskSource source) {
         return SOURCES.contains(source);
@@ -158,7 +159,11 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
             return null;
         }
         Split split = split(task);
-        return split == null ? null : new ClawbackAmounts(split.brandAmount(), split.creatorAmount());
+        // 확인 기간 중이면 집행 때 클로백이 아니라 재계산이다(1021 설계서 6-3) — 차감 예정액이 없다.
+        if (split == null || recalculationPolicy.isRecalculable(split.origin())) {
+            return null;
+        }
+        return new ClawbackAmounts(split.brandAmount(), split.creatorAmount());
     }
 
     /**
@@ -172,14 +177,38 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
         }
         Settlement origin = settlementRepository.findById(target.settlementId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+        // 합의로 리워드가 바뀌었으면 그 비율로 — 인플루언서가 실제로 받은 몫만 회수한다(1021 기-13).
         long creatorAmount = target.creatorAmount();
-        long creatorVat = BigDecimal.valueOf(creatorAmount).multiply(origin.getRewardVatRate())
-                .setScale(0, RoundingMode.DOWN).longValue();
-        long brandAmount = Math.max(0, target.refundAmount() - creatorAmount - creatorVat);
+        if (origin.getOriginalRewardAmount() > 0 && origin.getRewardAmount() != origin.getOriginalRewardAmount()) {
+            creatorAmount = BigDecimal.valueOf(creatorAmount).multiply(BigDecimal.valueOf(origin.getRewardAmount()))
+                    .divide(BigDecimal.valueOf(origin.getOriginalRewardAmount()), 0, RoundingMode.DOWN).longValue();
+        }
+        long creatorVat = floor(creatorAmount, origin.getRewardVatRate());
+        // 브랜드 몫은 원래 지급액 역산 — 환불분에서 그 정산의 PG · 플랫폼 수수료(요율 스냅샷)를 뺀 실수령분만 회수한다(1021 기-13 【잠정】).
+        long refund = target.refundAmount();
+        long brandAmount = Math.max(0, refund - floor(refund, origin.getPgFeeRate())
+                - floor(refund, origin.getPlatformFeeRate()) - creatorAmount - creatorVat);
         return new Split(target, origin, brandAmount, creatorAmount);
     }
 
     private record Split(Target target, Settlement origin, long brandAmount, long creatorAmount) {
+    }
+
+    private static long floor(long amount, BigDecimal rate) {
+        return rate == null ? 0 : BigDecimal.valueOf(amount).multiply(rate).setScale(0, RoundingMode.DOWN).longValue();
+    }
+
+    /**
+     * 환불이 걸린 정산 — 재계산 대상인지 보려고 클로백 훅이 먼저 묻는다(1021 설계서 6-3). 차감 대상 출처가 아니거나 정산 항목이 없으면 null.
+     */
+    @Transactional(readOnly = true)
+    public Long originSettlementIdOf(Long refundTaskId) {
+        OrderRefundTask task = refundTaskRepository.findById(refundTaskId).orElse(null);
+        if (task == null || !isClawbackSource(task.getSource())) {
+            return null;
+        }
+        Target target = task.getSourceId() != null ? claimTarget(task) : groupTarget(task);
+        return target == null ? null : target.settlementId();
     }
 
     private record Target(Long settlementId, Long orderId, Long deliveryGroupId, Long orderProductId,

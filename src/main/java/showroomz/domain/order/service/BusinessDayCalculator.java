@@ -31,6 +31,14 @@ public class BusinessDayCalculator {
         return businessCalendar.addBusinessDays(base, businessDays).atTime(END_OF_DAY);
     }
 
+    /**
+     * 「기산 + N영업일」 기한이 지났을 수 있는 기산 시각의 경계 — 기산 시각이 이 값보다 앞인 건만 후보다. 주말 기산은 하루 일찍 걸릴 수
+     * 있어 최종 판정은 {@link #dueAt}으로 한 번 더 한다. 자동 입고 대상 조회(1021 기-17)가 쓴다.
+     */
+    public LocalDateTime dueElapsedCandidateBefore(LocalDateTime now, int businessDays) {
+        return businessCalendar.latestStartToFinishBefore(now.toLocalDate(), businessDays).plusDays(1).atStartOfDay();
+    }
+
     /** 달력일 기한 — {@code from}의 날짜 + N일의 끝. 회수 송장 등록 기한 · 재발송비 결제 기한이 쓴다. */
     public static LocalDateTime endOfDayAfter(LocalDateTime from, int days) {
         return from.toLocalDate().plusDays(days).atTime(END_OF_DAY);

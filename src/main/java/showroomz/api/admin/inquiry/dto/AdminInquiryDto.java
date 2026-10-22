@@ -144,6 +144,9 @@ public class AdminInquiryDto {
         private boolean sanctionAppeal;
         @Schema(description = "소명 대상 정지 id — 소명 문의만, 아니면 null", example = "12")
         private Long sanctionId;
+        @Schema(description = "운임 환급 계좌 안내 대상 환불 건 — 「환불 계좌 안내」 문의만, 아니면 null. 환불 관리 송금 항목(06c M3) 바로가기용"
+                + "(1021 설계서 4-5)", example = "905")
+        private Long refundTaskId;
         @Schema(description = "접수일시", example = "2026-07-16T10:12:00")
         private LocalDateTime createdAt;
         @Schema(description = "답변일시 — 미답변이면 null")

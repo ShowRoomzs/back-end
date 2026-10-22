@@ -43,15 +43,10 @@ public class PayoutBlockPolicy {
                 && creator.getAccountVerificationStatus().blocksPayout()) {
             reasons.add(PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED);
         }
-        if (settlement.isBusinessCreator()) {
-            if (!isCreatorTaxInvoiceVerified(settlement)) {
-                reasons.add(PayoutBlockReason.TAX_INVOICE_UNVERIFIED);
-            }
-            return reasons;
+        if (settlement.isBusinessCreator() && !isCreatorTaxInvoiceVerified(settlement)) {
+            reasons.add(PayoutBlockReason.TAX_INVOICE_UNVERIFIED);
         }
-        if (creator == null || creator.getResidentRegistrationNumberEnc() == null) {
-            reasons.add(PayoutBlockReason.RESIDENT_NUMBER_MISSING);
-        }
+        // 비사업자 주민등록번호 미등록은 지급을 막지 않는다(1021 결정 노트 기-12) — 원천징수영수증 생성만 등록 뒤로 미뤄진다.
         return reasons;
     }
 

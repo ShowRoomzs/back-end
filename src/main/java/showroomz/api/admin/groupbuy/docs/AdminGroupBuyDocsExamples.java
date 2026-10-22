@@ -248,7 +248,7 @@ final class AdminGroupBuyDocsExamples {
             """ + SUMMARY_41_LIVE + REFS_41 + """
               "readiness": null,
               "openReview": null,
-              "post": {"status": "HIDDEN", "statusLabel": "숨김", "statusTone": "WARNING", "postNumber": "POST-GB-20260806-104", "title": "여름 수분 세럼, 제가 쓰던 그 조합", "content": "건조한 여름에도 속당김 없이 쓰던 세럼·크림 조합이에요. 세럼 두 방울 뒤 크림으로 마무리하면 오후까지 촉촉해요. 2주 동안 써 보니 제 피부에는 당김이 덜했어요(개인 사용 후기).", "disclosureText": "유료 광고 포함 · 글로우랩으로부터 대가를 받아 진행하는 공동구매입니다", "submittedAt": "2026-08-06T14:02:00", "reviewedAt": "2026-08-07T10:15:00", "reviewedByName": "김운영", "lastEditedAt": "2026-08-16T18:40:00", "editCount": 2, "latestRevisionNo": 3, "rejection": null,
+              "post": {"status": "EXPOSURE_SUSPENDED", "statusLabel": "노출 중지", "statusTone": "DANGER", "postNumber": "POST-GB-20260806-104", "title": "여름 수분 세럼, 제가 쓰던 그 조합", "content": "건조한 여름에도 속당김 없이 쓰던 세럼·크림 조합이에요. 세럼 두 방울 뒤 크림으로 마무리하면 오후까지 촉촉해요. 2주 동안 써 보니 제 피부에는 당김이 덜했어요(개인 사용 후기).", "disclosureText": "유료 광고 포함 · 글로우랩으로부터 대가를 받아 진행하는 공동구매입니다", "submittedAt": "2026-08-06T14:02:00", "reviewedAt": "2026-08-07T10:15:00", "reviewedByName": "김운영", "lastEditedAt": "2026-08-16T18:40:00", "editCount": 2, "latestRevisionNo": 3, "rejection": null,
                 "hidden": {"code": "AD_EFFECT_ASSERTION", "label": "표시광고법 위반 문구 — 효과 단정", "detail": "본문 마지막 문장 「3일 만에 잔주름까지 사라지는 걸 직접 확인했어요」는 효과를 단정하는 표현입니다. 해당 문장을 삭제하거나 개인 사용 후기로 고쳐 주세요.", "hiddenAt": "2026-08-16T10:20:00", "hiddenByName": "김운영", "hiddenDays": 3, "revisionNo": 2, "ordersSinceHidden": null},
                 "closedBy": null},
               "sales": null,
@@ -561,15 +561,15 @@ final class AdminGroupBuyDocsExamples {
             """;
 
     static final String ACTION_HIDE = """
-            {"groupBuyId": 41, "status": "IN_PROGRESS", "statusLabel": "진행중", "postStatus": "HIDDEN", "postStatusLabel": "숨김", "openAt": null, "revisionAdvanced": false, "clauseCaution": null}
+            {"groupBuyId": 41, "status": "IN_PROGRESS", "statusLabel": "진행중", "postStatus": "EXPOSURE_SUSPENDED", "postStatusLabel": "노출 중지", "openAt": null, "revisionAdvanced": false, "clauseCaution": null}
             """;
 
     static final String ACTION_HIDE_REVISION_ADVANCED = """
-            {"groupBuyId": 41, "status": "IN_PROGRESS", "statusLabel": "진행중", "postStatus": "HIDDEN", "postStatusLabel": "숨김", "openAt": null, "revisionAdvanced": true, "clauseCaution": null}
+            {"groupBuyId": 41, "status": "IN_PROGRESS", "statusLabel": "진행중", "postStatus": "EXPOSURE_SUSPENDED", "postStatusLabel": "노출 중지", "openAt": null, "revisionAdvanced": true, "clauseCaution": null}
             """;
 
     static final String ACTION_HIDE_READY = """
-            {"groupBuyId": 48, "status": "READY", "statusLabel": "준비완료", "postStatus": "HIDDEN", "postStatusLabel": "숨김", "openAt": "2026-09-12T10:00:00", "revisionAdvanced": false, "clauseCaution": null}
+            {"groupBuyId": 48, "status": "READY", "statusLabel": "준비완료", "postStatus": "EXPOSURE_SUSPENDED", "postStatusLabel": "노출 중지", "openAt": "2026-09-12T10:00:00", "revisionAdvanced": false, "clauseCaution": null}
             """;
 
     static final String ACTION_UNHIDE = """

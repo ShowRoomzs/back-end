@@ -11,6 +11,8 @@ import org.springframework.web.client.RestTemplate;
 import io.sentry.SentryOptions;
 import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.AppProperties;
+import showroomz.global.config.properties.CompanyProperties;
+import showroomz.global.config.properties.ContractProperties;
 import showroomz.global.config.properties.CorsProperties;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.config.properties.TossPayoutsProperties;
@@ -32,7 +34,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 @EnableConfigurationProperties({ AppProperties.class, CorsProperties.class, S3Properties.class, PostProperties.class,
 		FcmProperties.class, GroupBuyProperties.class, OrderProperties.class, PortOneProperties.class,
 		DeliveryTrackerProperties.class, SettlementProperties.class, TossPayoutsProperties.class, MemberProperties.class,
-		AdminProperties.class, NotificationProperties.class })
+		AdminProperties.class, NotificationProperties.class, CompanyProperties.class, ContractProperties.class })
 public class ShowroomzApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ShowroomzApplication.class, args);

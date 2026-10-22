@@ -34,8 +34,11 @@ public class CreatorBusinessTypeChangeReader {
     }
 
     public View read(Creator creator) {
-        Optional<ChangeRequest> open = repository.findOpenForCreator(creator.getId());
-        List<ChangeRequest> processed = repository.findProcessedForCreator(creator.getId());
+        // 정산 계좌 변경 요청(1021 기-22)은 같은 표에 있지만 이 배너 · 확정일의 대상이 아니다.
+        Optional<ChangeRequest> open = repository.findOpenForCreator(creator.getId())
+                .filter(r -> r.getType().isBusinessTypeChange());
+        List<ChangeRequest> processed = repository.findProcessedForCreator(creator.getId()).stream()
+                .filter(r -> r.getType().isBusinessTypeChange()).toList();
         // 배너 = 대기 중이거나, 처리됐는데 아직 닫지 않은 최신 1건(브랜드 배너와 같은 식).
         ChangeRequest bannerRequest = Stream.concat(open.stream(),
                         processed.stream().filter(r -> r.getResultAcknowledgedAt() == null))

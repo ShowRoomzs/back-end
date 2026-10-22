@@ -185,6 +185,8 @@ order:
     receive-before-arrival: ${ORDER_CLAIM_RECEIVE_BEFORE_ARRIVAL:true}
     invoice-expiry-scheduler-enabled: true          # 회수 송장 미등록 자동 취소 배치
     payment-reconcile-scheduler-enabled: true       # 클레임 결제 정리 배치 — 미확정 결제 수렴 · 초안 삭제 · 취소 재시도
+    auto-receive-business-days: 3                   # 자동 입고 — 택배 도착 후 N영업일(1021 기-17 [정책값 미정])
+    auto-receive-scheduler-enabled: true            # 자동 입고 배치(매시 10분)
 
 # DeliveryTrackerProperties.java — 배송 추적 연동(34 설계서 3-3). enabled=false 면 Noop 스텁이 붙고
 # 감시 배치가 멈춘다(송장 형식 검증도 생략 기록). true 면 스마트택배 조회 API 어댑터가 붙는다(택배 추적 설계서) — 런칭 게이트.
@@ -196,6 +198,7 @@ delivery:
     call-gap-ms: 100                                # 건 사이 호출 간격
     pickup-alert-hours: 24                          # 집화 확인 필요 — 송장 등록 후 N시간 추적 미조회
     stall-alert-days: 7                             # 추적 정지 — 마지막 이벤트 후 N일 갱신 없음
+    consumer-choice-days: 7                         # 추적 정지 판정 + N일에 소비자 선택(재발송 · 환불) 개방(1021 기-15 [정책값 미정])
     api-url: https://info.sweettracker.co.kr
     api-key: ${DELIVERY_TRACKER_API_KEY:}           # enabled=true 인데 비어 있으면 기동 실패
     validation-enabled: false                       # 송장 형식 검증 — 에러 104 판정을 택배사별로 확인한 뒤 켠다
@@ -205,6 +208,8 @@ delivery:
 # 요율은 생성 시점에 정산 행에 스냅샷된다 — 바꿔도 지난 정산은 그때 요율로 읽힌다.
 settlement:
   review-business-days: 3                           # 정산 확인 기간 — 생성 다음 영업일부터 N영업일째 23:59:59
+  clawback:
+    recalculate-statuses: REVIEWING                 # 지급 전 환불 — 이 상태면 클로백 대신 재계산 · 확인 기간 재시작(1021 기-13 【잠정】)
   payout-business-days: 3                           # 지급 예정일 — 확정일 + N영업일
   payout-hour: 10                                   # 지급 배치 — 영업일 N시(KST)
   payout-retry-limit: 3                             # 재분배 상한(M3)
@@ -227,12 +232,12 @@ settlement:
     mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG_TEST(토스 테스트 키 · 개발 서버) | PG(토스 운영 키) — 런칭 게이트 켠 운영은 PG 만
     result-stale-business-days: 1                   # 지시 뒤 N영업일 지나도 REQUESTED 가 닫히지 않으면 「PG 처리 지연」 알림
     weekly-limit-amount: 10000000                   # PARTIALLY_APPROVED 셀러 주당 한도(토스 정책) — 우리가 먼저 센다
-  platform:                                         # SHOWROOMZ 사업자 정보 — 운영 값 수령 전 더미(이름에 TEST). 운영 프로필에서 비면 기동 실패
-    business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:SHOWROOMZ TEST}
-    representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:TEST 대표}
-    registration-number: ${SETTLEMENT_PLATFORM_REGISTRATION_NUMBER:000-00-00000}
-    address: ${SETTLEMENT_PLATFORM_ADDRESS:TEST 주소}
-    tax-email: ${SETTLEMENT_PLATFORM_TAX_EMAIL:tax-test@showroomz.shop}
+  platform:                                         # 세금계산서 공급받는자 · 원천징수영수증 발행자 — company.* 를 따른다(1021 기-35). 런칭 게이트 켜진 prod 에서 더미면 기동 실패
+    business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:${company.name}}
+    representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:${company.representative}}
+    registration-number: ${SETTLEMENT_PLATFORM_REGISTRATION_NUMBER:${company.registration-number}}
+    address: ${SETTLEMENT_PLATFORM_ADDRESS:${company.address}}
+    tax-email: ${SETTLEMENT_PLATFORM_TAX_EMAIL:${company.tax-email}}
   adjustment:                                       # 정산 조정 협의(44 이슈 스레드 설계서 1-8)
     deadline-business-days: 10                      # 합의 기한 — 개설 + N영업일 · 연장 없음
     deadline-time: "23:59:59"                       # 마감 시각(§46 B-4 미결)
@@ -255,3 +260,27 @@ sentry:
 showroomz:
   crypto:
     personal-data-key: ${PERSONAL_DATA_KEY:}
+
+# 운영자(통신판매중개자) 사업자 정보 — 1021 설계서 10-1 · 결정 노트 기-35. 앱 하단 · 세금계산서 공급받는자가 같은 값을 쓴다.
+company:
+  name: ${COMPANY_NAME:쇼룸즈}                                   # 「(주)」 없음
+  representative: ${COMPANY_REPRESENTATIVE:소병서}
+  registration-number: ${COMPANY_REGISTRATION_NUMBER:791-12-03353}
+  address: ${COMPANY_ADDRESS:경기도 용인시 수지구 죽전로 152, 글로컬산학협력단 B211-3호(죽전동, 단국대학교)}
+  mail-order-report-number: ${COMPANY_MAIL_ORDER_REPORT_NUMBER:}   # 비면 「신고 예정 [출시 전 확정]」
+  tax-email: ${COMPANY_TAX_EMAIL:tax-test@showroomz.shop}          # [확인 필요] — 이름에 test 가 있어 런칭 게이트가 막는다(실제 값 필요)
+  copyright: "© 2026 Showroomz"
+  privacy-officer:
+    name: ${COMPANY_PRIVACY_OFFICER_NAME:소병서}
+    phone: ${COMPANY_PRIVACY_OFFICER_PHONE:010-3325-6416}
+  cs:                                                              # 시안 값(1500-0000 · help@)은 예시 — [확인 필요]
+    phone: ${COMPANY_CS_PHONE:}
+    email: ${COMPANY_CS_EMAIL:}
+    hours: ${COMPANY_CS_HOURS:}
+
+# MemberProperties.java — 회원 제재 정책값. 계정 이용 정지 기간 · 이의 신청 기한(1021 기-02 【잠정】).
+member:
+  sanction:
+    appeal-business-days: 3                         # 이의 신청 기한 — 통지 + N영업일(표시용 · 접수는 막지 않는다)
+    # appeal-review-business-days:                  # 소명 검토 N영업일 — [정책값 미정] · 비우면 응답 null
+    auto-release-enabled: true                      # 정지 기간 종료 자동 해제(매일 00:05 · 기동 시 1회)

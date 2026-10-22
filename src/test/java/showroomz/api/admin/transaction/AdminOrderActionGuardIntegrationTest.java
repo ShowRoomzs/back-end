@@ -143,11 +143,11 @@ class AdminOrderActionGuardIntegrationTest extends OrderFlowTestSupport {
 
         cancel(group, "SOLD_OUT", "재고가 소진되어 취소합니다.").andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[0].status").value("CANCELLED"))
-                .andExpect(jsonPath("$.groups[0].cancel.cancelTypeLabel").value("브랜드 직권 취소"))
+                .andExpect(jsonPath("$.groups[0].cancel.cancelTypeLabel").value("직권 취소"))
                 .andExpect(jsonPath("$.groups[0].cancel.reasonDetail").value("재고가 소진되어 취소합니다."))
                 // [F-A04] 항목 행에도 취소 유형 — 소비자 메시지와 블록 문장이 같은 값이다.
                 .andExpect(jsonPath("$.groups[0].items[0].status").value("CANCELLED"))
-                .andExpect(jsonPath("$.groups[0].items[0].cancelTypeLabel").value("브랜드 직권 취소"))
+                .andExpect(jsonPath("$.groups[0].items[0].cancelTypeLabel").value("직권 취소"))
                 .andExpect(jsonPath("$.groups[0].refunds[0].origin").value("PG_AUTO"))
                 .andExpect(jsonPath("$.groups[0].actions.canCancel").value(false));
         // 응답은 커밋 전에 조립된다 — PG 자동 환불(커밋 직후)의 결과는 DB 로 본다.

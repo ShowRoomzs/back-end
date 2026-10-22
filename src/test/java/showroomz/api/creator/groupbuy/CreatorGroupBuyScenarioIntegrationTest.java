@@ -152,13 +152,13 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                         .content(toJson(Map.of("reasonCode", "AD_MEDICAL_CLAIM", "detail", "의약품 오인 표현"))))
                 .andExpect(status().isOk());
         studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
-                .andExpect(jsonPath("$.post.status").value("HIDDEN"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"))
                 .andExpect(jsonPath("$.post.hidden.detail").value("의약품 오인 표현"))
                 .andExpect(jsonPath("$.permissions.canEditPost").value(true));
         assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.DRAFT);
 
         editPost(groupBuy.getId(), Map.of("title", "수정 제목", "content", "오인 표현을 지웠습니다."))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("HIDDEN"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"));
         assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.DRAFT);
         assertThat(revisionRepository.findByGroupBuyPostPostIdOrderByRevisionNoAsc(post.getPostId())).hasSize(1);
 

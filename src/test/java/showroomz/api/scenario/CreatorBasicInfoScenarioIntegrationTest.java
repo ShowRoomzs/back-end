@@ -227,13 +227,11 @@ class CreatorBasicInfoScenarioIntegrationTest extends SettlementTestSupport {
         return body;
     }
 
+    /** 계좌 변경 = 변경 요청 → 운영자 승인(1021 기-22) — 승인 뒤 PG 실존 확인이 돈다. */
     private void changeAccount(String accountNumber) throws Exception {
-        mockMvc.perform(put(BASE + "/settlement-account").header(HttpHeaders.AUTHORIZATION, creatorToken)
-                        .contentType(MediaType.APPLICATION_JSON).content(toJson(Map.of("bankCode", "088",
-                                "accountNumber", accountNumber,
-                                "bankbookImageUrl", "https://cdn.showroomz.test/creator-document/bankbook.jpg"))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.account.verification.status").value("VERIFYING"));
+        changeCreatorAccountApproved(Map.of("bankCode", "088", "accountNumber", accountNumber,
+                "bankbookImageUrl", "https://cdn.showroomz.test/creator-document/bankbook.jpg"))
+                .andExpect(status().isOk());
     }
 
     /** 인플루언서 몫이 지시 전 예정(SCHEDULED)인 확정 정산. */

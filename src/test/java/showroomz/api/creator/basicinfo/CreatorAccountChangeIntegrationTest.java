@@ -66,16 +66,25 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("[AV-01] 계좌 변경 — 응답은 「확인 중」 · 커밋 뒤 PG 검증 통과로 「실명 확인 완료」 · 계좌 이력 · 셀러 호출은 새 계좌 · 실명 예금주")
+    @DisplayName("[AV-01] 계좌 변경 — 변경 요청(기존 계좌 유지) → 운영자 승인 → 커밋 뒤 PG 검증 통과로 「확인 완료」 · 계좌 이력 · 셀러 호출은 새 계좌 · 실명 예금주")
     void changeAndVerify() throws Exception {
-        change("088", NEW_ACCOUNT).andExpect(status().isOk())
-                .andExpect(jsonPath("$.account.bankName").value("신한은행"))
-                .andExpect(jsonPath("$.account.accountNumber").value("****234567"))
-                .andExpect(jsonPath("$.account.verification.status").value("VERIFYING"));
+        mockMvc.perform(put(BASE + "/settlement-account").header(HttpHeaders.AUTHORIZATION, creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(body("088", NEW_ACCOUNT))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.account.bankName").value("카카오뱅크"))
+                .andExpect(jsonPath("$.pendingAccountChange.bankName").value("신한은행"))
+                .andExpect(jsonPath("$.pendingAccountChange.requestCode").isNotEmpty());
+        assertThat(accountHistories.findFirstByCreatorIdOrderByChangedAtDescIdDesc(creator.getId())).isEmpty();
+        Long requestId = jdbc.queryForObject("SELECT MAX(request_id) FROM brand_change_request WHERE creator_id = ? "
+                + "AND type = 'CREATOR_ACCOUNT'", Long.class, creator.getId());
+        adminPost("/v1/admin/change-requests/" + requestId + "/approve", Map.of()).andExpect(status().isOk());
 
         creatorGet(BASE + "/settlement").andExpect(status().isOk())
+                .andExpect(jsonPath("$.account.bankName").value("신한은행"))
+                .andExpect(jsonPath("$.account.accountNumber").value("****234567"))
+                .andExpect(jsonPath("$.pendingAccountChange").doesNotExist())
                 .andExpect(jsonPath("$.account.verification.status").value("VERIFIED"))
-                .andExpect(jsonPath("$.account.verification.label").value("실명 확인 완료"))
+                .andExpect(jsonPath("$.account.verification.label").value("확인 완료"))
                 .andExpect(jsonPath("$.account.verification.verifiedAt").isNotEmpty())
                 .andExpect(jsonPath("$.account.bankbook.fileName").value("통장사본_신한은행.jpg"))
                 .andExpect(jsonPath("$.account.bankbook.submittedAt").isNotEmpty());
@@ -192,7 +201,7 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
     @DisplayName("[AV-08 ③] 15자리 계좌 — 입력 검증은 통과(10 ~ 16자리) · PG 에 15자리 그대로 간다 · 가짜 PG 는 통과시킨다(토스 사전검사는 14자 초과 거절)")
     void fifteenDigitAccountPassesInputValidation() throws Exception {
         change("088", "123456789012345").andExpect(status().isOk())
-                .andExpect(jsonPath("$.account.verification.status").value("VERIFYING"));
+                .andExpect(jsonPath("$.account.verification.status").value("VERIFIED"));
 
         assertThat(partnerGateway.calls(SettlementPayee.CREATOR)).last()
                 .satisfies(profile -> assertThat(profile.account().accountNumber()).isEqualTo("123456789012345"));
@@ -527,9 +536,9 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
                 .map(h -> h.getEventType()).toList();
     }
 
+    /** 계좌 변경 = 변경 요청 → 운영자 승인(1021 기-22). 요청이 실패하면 그 응답. */
     private ResultActions putBody(Map<String, Object> body) throws Exception {
-        return mockMvc.perform(put(BASE + "/settlement-account").header(HttpHeaders.AUTHORIZATION, creatorToken)
-                .contentType(MediaType.APPLICATION_JSON).content(toJson(body)));
+        return changeCreatorAccountApproved(body);
     }
 
     /** 인플루언서 몫이 지시 전 예정(SCHEDULED)인 확정 정산. */
@@ -540,9 +549,9 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
         return s;
     }
 
+    /** 계좌 변경 = 변경 요청 → 운영자 승인(1021 기-22). 요청이 실패하면 그 응답. */
     private ResultActions change(String bankCode, String accountNumber) throws Exception {
-        return mockMvc.perform(put(BASE + "/settlement-account").header(HttpHeaders.AUTHORIZATION, creatorToken)
-                .contentType(MediaType.APPLICATION_JSON).content(toJson(body(bankCode, accountNumber))));
+        return changeCreatorAccountApproved(body(bankCode, accountNumber));
     }
 
     private Map<String, Object> body(String bankCode, String accountNumber) {

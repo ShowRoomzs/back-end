@@ -281,6 +281,30 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     int shrinkForPartialReject(@Param("id") Long id, @Param("marketId") Long marketId,
                                @Param("quantity") int quantity);
 
+    /** 자동 입고 대상(1021 기-17) — 추적상 도착했는데 입고 확인이 없는 클레임. 도착 시각이 기준보다 이른 것. */
+    @Query("SELECT c.id FROM OrderClaim c WHERE c.status = showroomz.domain.order.type.ClaimStatus.ARRIVED "
+            + "AND c.collection.arrivedAt IS NOT NULL AND c.collection.arrivedAt < :arrivedBefore ORDER BY c.id ASC")
+    List<Long> findIdsToAutoReceive(@Param("arrivedBefore") java.time.LocalDateTime arrivedBefore,
+                                    org.springframework.data.domain.Pageable pageable);
+
+    /** 사유 번복(1021 기-17) — 같은 요청의 클레임 사본 부담 주체를 소비자로 맞춘다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.feeBearer = showroomz.domain.order.type.ClaimFeeBearer.CONSUMER "
+            + "WHERE c.collection.id = :collectionId")
+    int overturnToConsumer(@Param("collectionId") Long collectionId);
+
+    /**
+     * 교환 사유 번복(1021 기-17) — RECEIVED → REJECT_HOLD(재발송비 결제 대기). 반려가 아니므로 반려 열은 비운 채다 — 결제하면 반려
+     * 재발송비와 같은 길로 재발송 대기가 되고, 미결제면 받은 상품을 돌려보낸다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderClaim c SET c.status = showroomz.domain.order.type.ClaimStatus.REJECT_HOLD, "
+            + "c.stageEnteredAt = :now, c.inspectedAt = :now, c.inspectedBy = :sellerId "
+            + "WHERE c.id = :id AND c.marketId = :marketId "
+            + "AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED")
+    int overturnHold(@Param("id") Long id, @Param("marketId") Long marketId, @Param("sellerId") Long sellerId,
+                     @Param("now") java.time.LocalDateTime now);
+
     /** 귀책 변경(브랜드 귀책 인정) — 같은 요청의 클레임 사본 부담 주체를 맞춘다(목록 필터 · 어드민 「귀책」 열). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderClaim c SET c.feeBearer = showroomz.domain.order.type.ClaimFeeBearer.SELLER "
@@ -412,4 +436,13 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     @Query("SELECT COUNT(c) FROM OrderClaim c WHERE c.marketId = :marketId "
             + "AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now")
     long countInspectOverdueByMarket(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
+
+    /**
+     * 소비자 탈퇴 차단(1021 기-31) — 끝나지 않은 반품 · 교환 요청(박스) 수. 결제 대기(접수 전)는 세지 않는다. 구매확정 뒤 운영자가 연 하자
+     * 반품도 들어간다.
+     */
+    @Query("SELECT COUNT(DISTINCT c.collection.id) FROM OrderClaim c WHERE c.collection.userId = :userId "
+            + "AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED "
+            + "AND c.status <> showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING")
+    long countOpenCollectionsByUser(@Param("userId") Long userId);
 }

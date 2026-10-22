@@ -61,7 +61,10 @@ public class UserDeliveryTrackingService {
         TrackingState state = group != null && group.getDeliveredAt() != null ? TrackingState.DELIVERED
                 : hasInvoice ? TrackingState.IN_TRANSIT : TrackingState.NOT_SHIPPED;
 
+        showroomz.domain.order.service.OrderStallChoiceService.View stall = group == null ? null
+                : showroomz.domain.order.service.OrderStallChoiceService.view(group, java.time.LocalDateTime.now());
         return UserOrderDto.TrackingResponse.builder()
+                .stall(stall == null ? null : UserOrderDto.StallChoiceResponse.of(group.getId(), stall))
                 .state(state)
                 .context(TrackingContext.ORDER)
                 .headline(headline(state, group, events))

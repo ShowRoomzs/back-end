@@ -200,6 +200,9 @@ public class PostDto {
         private LocalDateTime endAt;
         @Schema(description = "대가관계 표시 — 공구 게시물에 항상 붙는다")
         private AdDisclosure adDisclosure;
+        @Schema(description = "판매 브랜드명 — 게시물 최하단 고지 「판매 {brandName} · 추천 {showroomName}님 — SHOWROOMZ는 통신판매중개자로서 "
+                + "거래 당사자가 아닙니다」(1021 기-34 【잠정】 · 고지 문장은 FE)", example = "글로우랩")
+        private String brandName;
         @Schema(description = "상품 수 — 항상 실제 개수. 「상품 N개 더보기」 문구의 근거", example = "3")
         private Integer productCount;
         @Schema(description = "상품 행 — 계약 상품 순서. 진행 중이면 목록·상세 모두 전부, 목록에서 CLOSED면 [](글만 표시), 상세는 마감이어도 전부")
@@ -219,6 +222,7 @@ public class PostDto {
                     .dDay(card.dDay())
                     .endAt(card.endAt())
                     .adDisclosure(new AdDisclosure(AdDisclosure.LABEL, card.adDisclosure()))
+                    .brandName(card.brandName())
                     .productCount(card.products().size())
                     .products(includeProducts
                             ? card.products().stream().map(GroupBuyProductItem::of).toList()

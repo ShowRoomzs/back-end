@@ -185,6 +185,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
             + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
             + "g.cancelledAt = :now, g.cancelType = showroomz.domain.order.type.OrderCancelType.SELLER_DIRECT, "
+            + "g.cancelActorType = showroomz.domain.order.type.FulfillmentActorType.ADMIN, "
             + "g.cancelReasonCode = :reasonCode, g.cancelReasonDetail = :reasonDetail "
             + "WHERE g.id = :id "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
@@ -248,7 +249,8 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.carrier = :carrier, g.trackingNumber = :trackingNumber, "
-            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL, g.pickedUpAt = NULL "
+            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL, g.pickedUpAt = NULL, "
+            + "g.stallChoiceOpenAt = CASE WHEN g.stallChoice IS NULL THEN NULL ELSE g.stallChoiceOpenAt END "
             + "WHERE g.id = :id AND g.market.id = :marketId "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
     int updateInvoice(@Param("id") Long id, @Param("marketId") Long marketId,
@@ -263,6 +265,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
             + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
             + "g.cancelledAt = :now, g.cancelType = showroomz.domain.order.type.OrderCancelType.SELLER_DIRECT, "
+            + "g.cancelActorType = showroomz.domain.order.type.FulfillmentActorType.SELLER, "
             + "g.cancelReasonCode = :reasonCode, g.cancelReasonDetail = :reasonDetail "
             + "WHERE g.id = :id AND g.market.id = :marketId "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
@@ -378,10 +381,27 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
                          @Param("trackingNumber") String trackingNumber, @Param("alert") TrackingAlert alert);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = NULL WHERE g.id = :id "
+    @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = NULL, "
+            + "g.stallChoiceOpenAt = CASE WHEN g.stallChoice IS NULL THEN NULL ELSE g.stallChoiceOpenAt END "
+            + "WHERE g.id = :id "
             + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber AND g.trackingAlert IS NOT NULL")
     int clearTrackingAlert(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
                            @Param("trackingNumber") String trackingNumber);
+
+    /** 추적 정지 판정 — 소비자 선택 개방 시각을 정한다(1021 기-15). 이미 골랐거나 열려 있으면 그대로. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.stallChoiceOpenAt = :openAt WHERE g.id = :id "
+            + "AND g.stallChoice IS NULL AND g.stallChoiceOpenAt IS NULL")
+    int openStallChoice(@Param("id") Long id, @Param("openAt") LocalDateTime openAt);
+
+    /** 소비자 선택(1021 기-15) — 배송중 ∧ 추적 정지 ∧ 개방 ∧ 미선택. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.stallChoice = :choice, g.stallChoiceAt = :now WHERE g.id = :id "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
+            + "AND g.trackingAlert = showroomz.domain.order.type.TrackingAlert.STALLED "
+            + "AND g.stallChoice IS NULL AND g.stallChoiceOpenAt IS NOT NULL AND g.stallChoiceOpenAt <= :now")
+    int chooseStall(@Param("id") Long id, @Param("choice") showroomz.domain.order.type.StallChoice choice,
+                    @Param("now") LocalDateTime now);
 
     /**
      * #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). 기준 시각은 교환 재발송이 도착했으면 그 시각이다

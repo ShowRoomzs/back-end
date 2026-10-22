@@ -180,7 +180,7 @@ public record AdminGroupBuyDetailResponse(
             @Schema(nullable = true) String reviewedByName,
             @Schema(nullable = true) LocalDateTime lastEditedAt,
             @Schema(description = "승인 후 수정 횟수") long editCount,
-            @Schema(description = "최신 판본 — 숨김 해제 요청에 그대로 돌려준다", nullable = true) Integer latestRevisionNo,
+            @Schema(description = "최신 판본 — 노출 중지 해제 요청에 그대로 돌려준다", nullable = true) Integer latestRevisionNo,
             @Schema(description = "반려 — 승인된 게시물에는 내리지 않는다(과거 반려는 이력에 있다)", nullable = true)
             Rejection rejection,
             @Schema(nullable = true) Hidden hidden,
@@ -206,9 +206,9 @@ public record AdminGroupBuyDetailResponse(
             String detail,
             LocalDateTime hiddenAt,
             @Schema(nullable = true) String hiddenByName,
-            @Schema(description = "숨김 경과일 — 양끝 포함") int hiddenDays,
-            @Schema(description = "숨김 당시 판본", nullable = true) Integer revisionNo,
-            @Schema(description = "숨김 이후 주문 — 판매 포트가 비면 null(0이 아니다)", nullable = true) Long ordersSinceHidden
+            @Schema(description = "노출 중지 경과일 — 양끝 포함") int hiddenDays,
+            @Schema(description = "노출 중지 당시 판본", nullable = true) Integer revisionNo,
+            @Schema(description = "노출 중지 이후 주문 — 판매 포트가 비면 null(0이 아니다)", nullable = true) Long ordersSinceHidden
     ) {
     }
 
@@ -303,8 +303,17 @@ public record AdminGroupBuyDetailResponse(
             Integer noticeRevisionNo,
             @Schema(description = "통지 후 증가분 — 판매 포트가 비면 null", nullable = true) SalesSinceNotice salesSinceNotice,
             @Schema(description = "브랜드 소명 — 미제출이면 null", nullable = true) Appeal appeal,
-            @Schema(description = "소명 기한 경과 — 미제출이어도 운영자가 최종 판정한다(제17조④)") boolean appealDeadlinePassed
+            @Schema(description = "소명 기한 경과 — 미제출이어도 운영자가 최종 판정한다(제17조④)") boolean appealDeadlinePassed,
+            @Schema(description = "인플루언서 의견 — 운영팀 채널 사전 통지 카드 뒤 답글(1021 기-21 · B2c 「인플루언서 의견: 미제출 · 운영팀 채널로 접수」). "
+                    + "카드가 없는 옛 통지면 null", nullable = true) ChannelOpinion creatorOpinion
     ) {
+    }
+
+    @Schema(description = "운영팀 채널로 받은 의견")
+    public record ChannelOpinion(
+            @Schema(description = "인플루언서 운영팀 채널") Long threadId,
+            @Schema(description = "사전 통지 카드 메시지") Long cardMessageId,
+            @Schema(description = "카드 뒤 인플루언서가 남긴 메시지 수 — 0이면 「미제출」", example = "0") long replyCount) {
     }
 
     public record SalesSinceNotice(int orders, long amount) {

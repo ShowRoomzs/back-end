@@ -82,7 +82,8 @@ public class UserClaimCommandService {
         UserClaimQueryService.CreatePlan plan = queryService.planCreate(userId, request.getDeliveryGroupId(),
                 request.getType(), reason.getFeeBearer());
         // 폼에서 본 금액과 지금 계산이 다르면 접수하지 않는다 — 앱이 귀책을 잘못 갈랐거나 오래된 폼이다.
-        if (request.getExpectedFee() != null && request.getExpectedFee() != plan.fee()) {
+        // 반품은 선택 수량으로 다시 판정한다(1021 기-18 일부 반품) — 아래 항목 검증 뒤에 비교한다.
+        if (exchange && request.getExpectedFee() != null && request.getExpectedFee() != plan.fee()) {
             throw new BusinessException(ErrorCode.CLAIM_AMOUNT_CHANGED);
         }
 
@@ -110,6 +111,15 @@ public class UserClaimCommandService {
                 throw new BusinessException(ErrorCode.CLAIM_EXCHANGE_OPTION_INVALID);
             }
             items.add(new Item(item.getOrderProductId(), quantity, exchange ? item.getExchangeVariantId() : null));
+        }
+        if (!exchange && request.getExpectedFee() != null) {
+            Map<Long, Integer> prices = queryService.unitPricesOf(request.getDeliveryGroupId());
+            long returningAmount = items.stream()
+                    .mapToLong(item -> (long) prices.getOrDefault(item.orderProductId(), 0) * item.quantity()).sum();
+            if (request.getExpectedFee() != queryService.returnFeeFor(userId, request.getDeliveryGroupId(),
+                    reason.getFeeBearer(), returningAmount)) {
+                throw new BusinessException(ErrorCode.CLAIM_AMOUNT_CHANGED);
+            }
         }
         ReshipAddress reshipAddress = exchange && request.getReshipAddressId() != null
                 ? queryService.reshipAddressOf(userId, request.getReshipAddressId()) : null;
@@ -141,8 +151,10 @@ public class UserClaimCommandService {
                                                UserClaimDto.ReshipFeePaymentRequest request) {
         OrderClaim claim = requireOwned(userId, claimId);
         // 판정이 다 끝나 결제 기한이 발급된 청구만 — 그 전이거나 이미 정산됐으면 낼 것이 없다.
+        // 사유 번복(1021 설계서 4-4) 청구도 같은 버튼이다 — 재발송 배송비 + 착불 운임 합산.
         OrderClaimCharge charge = chargeRepository.findByCollectionId(claim.getCollection().getId()).stream()
-                .filter(found -> found.getType() == ClaimChargeType.REJECT_RESHIP)
+                .filter(found -> found.getType() == ClaimChargeType.REJECT_RESHIP
+                        || found.getType() == ClaimChargeType.OVERTURN_RESHIP)
                 .filter(found -> found.isPending() && found.getDueAt() != null)
                 .findFirst()
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED));

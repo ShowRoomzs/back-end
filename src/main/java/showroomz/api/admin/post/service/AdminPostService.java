@@ -332,7 +332,7 @@ public class AdminPostService {
 
     private static void requireGeneral(Post post) {
         if (!post.isGeneral()) {
-            throw new BusinessException(ErrorCode.POST_NOT_EDITABLE, "공구 게시물은 공구 관리에서 숨김 처리해 주세요.");
+            throw new BusinessException(ErrorCode.POST_NOT_EDITABLE, "공구 게시물은 공구 관리에서 노출 중지해 주세요.");
         }
     }
 

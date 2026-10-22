@@ -77,6 +77,7 @@ public class SellerClaimQueryService {
     private final OrderProductRepository orderProductRepository;
     private final SellerClaimAssembler assembler;
     private final OrderProperties orderProperties;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
 
     public PageResponse<SellerClaimListItem> getClaims(String sellerEmail, ClaimTab tab, Set<ClaimType> types,
                                                        ClaimReason reason, LocalDate from, LocalDate to,
@@ -185,6 +186,9 @@ public class SellerClaimQueryService {
         List<String> sellerPhotos = urls(attachments, ClaimAttachmentOwner.SELLER);
         List<OrderClaimCharge> charges = chargeRepository.findByCollectionId(collection.getId());
         ClaimStatus status = claim.getStatus();
+        Boolean reshipFeeCharged = claim.getType() != ClaimType.EXCHANGE ? null
+                : charges.stream().anyMatch(charge -> charge.getType() == ClaimChargeType.EXCHANGE_RESHIP
+                && charge.getStatus() == ClaimChargeStatus.PAID);
 
         return new SellerClaimDetailResponse(
                 assembler.toListItem(claim, boxClaims, groupItems, consumerPhotos.size(), sellerPhotos.size(), charges,
@@ -193,10 +197,7 @@ public class SellerClaimQueryService {
                 group.getId(),
                 OrderAddressMasker.maskPhone(group.getOrder().getRecipientPhone()),
                 claim.getReasonDetail(),
-                claim.getType() != ClaimType.EXCHANGE ? null
-                        : charges.stream()
-                        .anyMatch(charge -> charge.getType() == ClaimChargeType.EXCHANGE_RESHIP
-                                && charge.getStatus() == ClaimChargeStatus.PAID),
+                reshipFeeCharged,
                 refund(claim, collection, boxClaims),
                 consumerPhotos,
                 sellerPhotos,
@@ -218,7 +219,31 @@ public class SellerClaimQueryService {
                                 h.getDetail(), h.getOccurredAt())).toList(),
                 new SellerClaimDetailResponse.Actions(assembler.canConfirmReceipt(status),
                         status == ClaimStatus.RECEIVED, status == ClaimStatus.RECEIVED,
-                        status == ClaimStatus.RESHIP_READY, status == ClaimStatus.RESHIPPING));
+                        status == ClaimStatus.RESHIP_READY, status == ClaimStatus.RESHIPPING,
+                        status == ClaimStatus.RECEIVED
+                                && collection.getFeeBearer() == showroomz.domain.order.type.ClaimFeeBearer.SELLER),
+                reshipFeeCharged,
+                inspection(collection, charges));
+    }
+
+    /** 검수 판정 · 운임 정산(1021 설계서 4-3 · 4-4) — 판정 기록도 운임 정산 행도 없으면 null. */
+    private SellerClaimDetailResponse.Inspection inspection(OrderClaimCollection collection, List<OrderClaimCharge> charges) {
+        List<SellerClaimDetailResponse.FreightRow> rows = freightAdjustmentRepository
+                .findByClaimCollectionIdOrderByIdAsc(collection.getId()).stream()
+                .map(row -> new SellerClaimDetailResponse.FreightRow(row.getTrigger(), row.getTrigger().getLabel(),
+                        row.getDirection(), row.getCollectFreight(), row.getPrepaidFreight(), row.getInitialFeeRestored(),
+                        row.signedAmount(), row.getSettledVia()))
+                .toList();
+        if (collection.getInspectionResult() == null && rows.isEmpty() && !collection.isAutoReceived()) {
+            return null;
+        }
+        Integer overturnFee = charges.stream().filter(charge -> charge.getType() == ClaimChargeType.OVERTURN_RESHIP)
+                .reduce((first, second) -> second).map(OrderClaimCharge::getAmount).orElse(null);
+        return new SellerClaimDetailResponse.Inspection(collection.getInspectionResult(),
+                collection.getInspectionResult() == null ? null : collection.getInspectionResult().getLabel(),
+                collection.getInspectionResult() == showroomz.domain.order.type.ClaimInspectionResult.REASON_OVERTURNED
+                        ? collection.getInspectionNote() : null,
+                collection.isAutoReceived(), overturnFee, rows);
     }
 
     // ------------------------------------------------------------------ 내부

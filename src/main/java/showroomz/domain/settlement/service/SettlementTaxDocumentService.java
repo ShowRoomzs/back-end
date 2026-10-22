@@ -195,7 +195,7 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
         Long creatorId = settlementRepository.findById(settlementId).map(Settlement::getCreatorId).orElse(null);
         if (blockPolicy.isCreatorSuspended(creatorId)) {
             historyRecorder.record(settlementId, SettlementEventType.TAX_INVOICE_VERIFIED, SettlementActorType.ADMIN,
-                    operatorId, "승인번호 확인 · 계정 정지 중 — 정지 해제 후 지급", now);
+                    operatorId, "승인번호 확인 · 계정 이용 정지 중 — 정지 해제 후 지급", now);
             AfterCommit.run(() -> notifier.taxInvoiceVerified(settlementId));
             return;
         }

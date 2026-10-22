@@ -34,8 +34,8 @@ public class AdminUserCommandService {
 
     public StatusResult suspend(Long userId, Long operatorId, SuspendRequest request) {
         String operatorName = operators.operatorName(operatorId);
-        sanctionService.suspend(userId, request.reason(), request.reasonDetail(), operatorId, operatorName,
-                LocalDateTime.now());
+        sanctionService.suspend(userId, request.reason(), request.reasonDetail(), request.endsOn(), operatorId,
+                operatorName, LocalDateTime.now());
         return result(userId);
     }
 

@@ -17,6 +17,7 @@ import showroomz.domain.member.brand.service.BrandSanctionReader;
 public class SellerAccountStatusService {
 
     private final SellerMarketResolver marketResolver;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
     private final BrandSanctionReader sanctionReader;
     private final OperatorChannelService operatorChannelService;
 
@@ -35,6 +36,8 @@ public class SellerAccountStatusService {
     private MemberAccountStatusResponse.Sanction toSanction(BrandSanction s, Market market) {
         return new MemberAccountStatusResponse.Sanction(s.getReason().name(), s.getReason().getLabel(),
                 MemberAccountStatusResponse.blankToNull(s.getReasonDetail()), s.getSuspendedAt(), s.isPayoutHeld(),
-                operatorChannelService.findMarketChannelThreadId(market).orElse(null), s.getSuspendCardId());
+                operatorChannelService.findMarketChannelThreadId(market).orElse(null), s.getSuspendCardId(),
+                MemberAccountStatusResponse.Term.of(s.getEndsOn(), s.getSuspendedAt(), s.getAppealDeadlineAt(),
+                        termPolicy.appealReviewBusinessDays()));
     }
 }

@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 public enum GroupBuyCloseType {
     COMPLETED("기간 종료"),
     EARLY_CLOSED("조기 마감"),
-    SUSPENDED("중단");
+    SUSPENDED("중단"),
+    /** 계약 해지로 오픈 전 종결(1021 기-05). */
+    CONTRACT_TERMINATED("계약 해지");
 
     private final String label;
 }

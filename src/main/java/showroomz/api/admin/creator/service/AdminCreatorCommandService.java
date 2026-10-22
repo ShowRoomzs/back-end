@@ -32,7 +32,8 @@ public class AdminCreatorCommandService {
     public Detail suspend(Long creatorId, Long operatorId, SuspendRequest request) {
         String operatorName = operators.operatorName(operatorId);
         LocalDateTime now = LocalDateTime.now();
-        sanctionService.suspend(creatorId, request.reason(), request.reasonDetail(), operatorId, operatorName, now);
+        sanctionService.suspend(creatorId, request.reason(), request.reasonDetail(), request.endsOn(), operatorId,
+                operatorName, now);
         return queryService.assemble(queryService.load(creatorId), operatorId, now);
     }
 

@@ -9,7 +9,9 @@ import lombok.RequiredArgsConstructor;
 public enum SettlementConfirmReason {
     AUTO("자동 확정", "확인 기간 경과 · 조정 요청 없음"),
     AGREED("합의 확정", "조정 합의 · 합의 금액"),
-    EXPIRED("기한 만료 확정", "합의 기한 경과 · 원래 금액");
+    EXPIRED("기한 만료 확정", "합의 기한 경과 · 원래 금액"),
+    /** 조정 요청 철회(1021 기-14) — 원래 금액 · 확정일 = 철회일. */
+    WITHDRAWN("철회 확정", "조정 요청 철회 · 원래 금액");
 
     private final String label;
     private final String description;

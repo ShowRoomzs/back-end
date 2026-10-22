@@ -184,6 +184,7 @@ public class AdminCreatorQueryService {
                 .orElse(null);
         // 53 설계서가 비워 둔 자리 — 열린 사업자 구분 변경 요청(§16-2a · 16 설계서 5-1).
         PendingBusinessTypeChange pending = changeRequests.findOpenForCreator(creator.getId())
+                .filter(r -> r.getType().isBusinessTypeChange())
                 .map(r -> new PendingBusinessTypeChange(r.getId(), r.getRequestCode(), r.getType().name(),
                         r.getRequestedAt()))
                 .orElse(null);

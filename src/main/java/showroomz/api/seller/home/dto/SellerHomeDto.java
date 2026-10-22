@@ -108,7 +108,7 @@ public final class SellerHomeDto {
     ) {
     }
 
-    @Schema(name = "SellerHomeContractsInProgress", description = "계약 진행 — 체결 전 4상태(검토 대기 · 검토 반려 · 서명 진행중 · 체결 처리 대기)")
+    @Schema(name = "SellerHomeContractsInProgress", description = "계약 진행 — 체결 전 4상태(검토 대기 · 검토 반려 · 서명 진행중 · 공구 생성 대기)")
     public record ContractsInProgress(
             @Schema(example = "4") long count,
             @Schema(description = "공구 시작일 순 최대 5건") List<ContractRow> items

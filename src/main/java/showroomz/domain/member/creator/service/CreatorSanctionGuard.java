@@ -83,6 +83,6 @@ public class CreatorSanctionGuard {
 
     private static BusinessException suspended(CreatorBlockedAction action) {
         return new BusinessException(ErrorCode.CREATOR_SUSPENDED,
-                "계정 정지 중에는 " + action.getPhrase() + " 수 없습니다.");
+                "계정 이용 정지 중에는 " + action.getPhrase() + " 수 없습니다.");
     }
 }

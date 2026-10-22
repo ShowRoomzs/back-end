@@ -53,10 +53,18 @@ public class BrandSanctionService {
     private final MessageSanctionChannelGateway channelGateway;
     private final MemberNotifier notifier;
     private final MemberSanctionHooks hooks;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     public BrandSanction suspend(Long marketId, BrandSuspensionReason reason, String reasonDetail, Long operatorId,
                                  String operatorName, LocalDateTime now) {
+        return suspend(marketId, reason, reasonDetail, null, operatorId, operatorName, now);
+    }
+
+    /** 정지 — 종료일(포함)이 있으면 다음 날 00:00 자동 해제 · 이의 신청 기한 = 통지 + N영업일(1021 기-02). */
+    public BrandSanction suspend(Long marketId, BrandSuspensionReason reason, String reasonDetail,
+                                 java.time.LocalDate endsOn, Long operatorId, String operatorName, LocalDateTime now) {
         String detail = MemberSanctionRules.requireDetail(reason, reasonDetail, ErrorCode.BRAND_SUSPEND_DETAIL_REQUIRED);
+        java.time.LocalDate term = termPolicy.requireEndsOn(endsOn, now);
         Market market = lockBrand(marketId);
         if (market.isWithdrawn()) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWN);
@@ -67,6 +75,7 @@ public class BrandSanctionService {
 
         BrandSanction sanction = sanctionRepository.save(
                 BrandSanction.suspend(marketId, reason, detail, operatorId, operatorName, now));
+        sanction.applyTerm(term, termPolicy.appealDeadline(now));
         market.markSuspended();
         if (sanction.isPayoutHeld()) {
             payoutHolds.hold(SettlementPayee.BRAND, marketId, PayoutBlockReason.BRAND_SUSPENDED, now);
@@ -77,7 +86,8 @@ public class BrandSanctionService {
         MessageThread channel = operatorChannelService.requireMarketChannel(market);
         sanction.recordSuspendCard(channelGateway.postSuspendedCard(channel, SanctionKind.BRAND, sanction.getId(),
                 sanction.reasonText(), now, operatorId, new MessageCardPayload.Sanction(MemberType.BRAND.name(),
-                        reason.name(), reason.getLabel(), detail, sanction.isPayoutHeld())));
+                        reason.name(), reason.getLabel(), detail, sanction.isPayoutHeld(), sanction.getEndsOn(),
+                        sanction.getAppealDeadlineAt())));
         hooks.onSuspended(MemberType.BRAND, marketId, now);
         AfterCommit.run(() -> notifier.suspended(MemberType.BRAND, marketId, reason.getLabel()));
         log.info("브랜드 정지 - marketId: {}, reason: {}, payoutHeld: {}", marketId, reason, sanction.isPayoutHeld());
@@ -90,7 +100,29 @@ public class BrandSanctionService {
      */
     public BrandSanction release(Long marketId, SanctionReleaseReason reason, String note, Long operatorId,
                                  String operatorName, LocalDateTime now) {
-        SanctionReleaseReason resolved = MemberSanctionRules.operatorReleaseReason(reason);
+        return releaseInternal(marketId, MemberSanctionRules.operatorReleaseReason(reason), note, operatorId,
+                operatorName, now);
+    }
+
+    /**
+     * 정지 기간 종료 자동 해제(1021 기-02) — 시스템이 운영자 해제와 같은 훅(지급 보류 해제 다음 영업일 · 카드 · 알림)으로 푼다. 기간이 없거나
+     * 아직 남았거나 이미 풀렸으면 null.
+     */
+    public BrandSanction releaseByTerm(Long marketId, LocalDateTime now) {
+        BrandSanction open = sanctionRepository.findByMarketIdAndReleasedAtIsNull(marketId).orElse(null);
+        if (open == null || !open.isTermEnded(now.toLocalDate())) {
+            return null;
+        }
+        BrandSanction released = releaseInternal(marketId, SanctionReleaseReason.TERM_ENDED, null, null, null, now);
+        if (released != null) {
+            released.markAutoReleased();
+        }
+        return released;
+    }
+
+    /** @param operatorId null 이면 시스템 해제 — 이력 주체 SYSTEM · 카드 발신 시스템 운영자. */
+    private BrandSanction releaseInternal(Long marketId, SanctionReleaseReason resolved, String note, Long operatorId,
+                                          String operatorName, LocalDateTime now) {
         Market market = lockBrand(marketId);
         if (!market.isSuspended()) {
             throw new BusinessException(market.isWithdrawn() ? ErrorCode.BRAND_WITHDRAWN : ErrorCode.BRAND_NOT_SUSPENDED);
@@ -107,12 +139,18 @@ public class BrandSanctionService {
             }
             MessageThread channel = operatorChannelService.requireMarketChannel(market);
             sanction.recordReleaseCard(channelGateway.postReleasedCard(channel, SanctionKind.BRAND, sanction.getId(),
-                    text, now, operatorId, new MessageCardPayload.Sanction(MemberType.BRAND.name(), resolved.name(),
-                            resolved.getLabel(), normalizedNote, null)));
+                    text, now, operatorId == null ? OperatorChannelService.SYSTEM_OPERATOR_ID : operatorId,
+                    new MessageCardPayload.Sanction(MemberType.BRAND.name(), resolved.name(), resolved.getLabel(),
+                            normalizedNote, null)));
         }
         hooks.onReleased(MemberType.BRAND, marketId, now);
-        historyRecorder.byAdmin(marketId, BrandAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
-                BrandAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        if (operatorId == null) {
+            historyRecorder.bySystem(marketId, BrandAdminEventType.SUSPENSION_RELEASED, text,
+                    BrandAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        } else {
+            historyRecorder.byAdmin(marketId, BrandAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName, text,
+                    BrandAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        }
         AfterCommit.run(() -> notifier.released(MemberType.BRAND, marketId));
         log.info("브랜드 정지 해제 - marketId: {}, reason: {}", marketId, resolved);
         return sanction;

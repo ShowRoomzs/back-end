@@ -68,6 +68,15 @@ public class AdminRefundController implements AdminRefundControllerDocs {
     }
 
     @Override
+    @PostMapping("/{refundTaskId}/transfer-complete")
+    public ResponseEntity<AdminTransactionDto.RefundItem> completeTransfer(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long refundTaskId,
+            @Valid @RequestBody AdminTransactionDto.RefundTransferCompleteRequest request) {
+        return ResponseEntity.ok(refundService.completeTransfer(AdminOrderController.operatorId(principal), refundTaskId,
+                request));
+    }
+
+    @Override
     @PostMapping("/{refundTaskId}/execute")
     public ResponseEntity<AdminTransactionDto.RefundExecuteResponse> execute(
             @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long refundTaskId) {

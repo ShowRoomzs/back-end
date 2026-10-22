@@ -95,6 +95,13 @@ public class CreatorBasicInfoController implements CreatorBasicInfoControllerDoc
         return ResponseEntity.ok(settlementInfoService.changeAccount(principal.getUserId(), request));
     }
 
+    @Override
+    @org.springframework.web.bind.annotation.DeleteMapping("/settlement-account/change-request")
+    public ResponseEntity<CreatorBasicInfoDto.SettlementInfoResponse> cancelSettlementAccountChange(
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(settlementInfoService.cancelAccountChange(principal.getUserId()));
+    }
+
     // ------------------------------------------------------------------ 사업자 구분 변경
 
     @Override

@@ -100,6 +100,16 @@ public class ChangeRequest extends BaseTimeEntity {
     @Column(name = "resident_number_enc", length = 255)
     private String residentNumberEnc;
 
+    /** 인플루언서 계좌 변경(1021 기-22 · V212) — 요청 은행 코드 · 계좌번호 암호문 · 예금주(실명 스냅샷). 처리 뒤 암호문은 비운다. */
+    @Column(name = "account_bank_code", length = 10)
+    private String accountBankCode;
+
+    @Column(name = "account_number_enc", length = 255)
+    private String accountNumberEnc;
+
+    @Column(name = "account_holder_name", length = 50)
+    private String accountHolderName;
+
     /** 승인 · 반려 · 취소의 동시 처리 차단(16 설계서 3-8). */
     @Version
     @Column(name = "version", nullable = false)
@@ -154,6 +164,13 @@ public class ChangeRequest extends BaseTimeEntity {
         this.residentNumberEnc = encrypted;
     }
 
+    /** 계좌 변경 요청 값(1021 기-22) — 계좌번호는 암호문으로. */
+    public void attachAccount(String bankCode, String accountNumberEncrypted, String holderName) {
+        this.accountBankCode = bankCode;
+        this.accountNumberEnc = accountNumberEncrypted;
+        this.accountHolderName = holderName;
+    }
+
     /** 바뀌는 항목 라벨(입력 순서) — 어드민 상세의 「변경 항목」 · 승인 결과 메일. */
     public List<String> changedFieldLabels() {
         return items.stream()
@@ -181,6 +198,7 @@ public class ChangeRequest extends BaseTimeEntity {
         this.processedAt = LocalDateTime.now();
         this.processedBy = processorId;
         this.residentNumberEnc = null;
+        this.accountNumberEnc = null;
     }
 
     public void reject(Long processorId, String reasonType, String reasonDetail) {
@@ -190,12 +208,14 @@ public class ChangeRequest extends BaseTimeEntity {
         this.rejectReason = reasonType;
         this.rejectReasonDetail = reasonDetail;
         this.residentNumberEnc = null;
+        this.accountNumberEnc = null;
     }
 
     public void cancel() {
         this.status = ChangeRequestStatus.CANCELED;
         this.processedAt = LocalDateTime.now();
         this.residentNumberEnc = null;
+        this.accountNumberEnc = null;
     }
 
     public void acknowledge() {

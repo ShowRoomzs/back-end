@@ -29,7 +29,8 @@ public record MessageCardPayload(
         LocalDateTime processedAt,
         Long operatorId,
         Adjustment adjustment,
-        Sanction sanction) {
+        Sanction sanction,
+        Notice notice) {
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -68,13 +69,40 @@ public record MessageCardPayload(
                                                    String requesterType, String requesterName,
                                                    LocalDateTime requestedAt) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, requesterType, requesterName,
-                requestedAt, null, null, null, null, null);
+                requestedAt, null, null, null, null, null, null);
     }
 
     public static MessageCardPayload adminCanceled(Long contractId, String contractNumber, String groupBuyTitle,
                                                    String reasonLabel, LocalDateTime processedAt, Long operatorId) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, null, null, null,
-                reasonLabel, processedAt, operatorId, null, null);
+                reasonLabel, processedAt, operatorId, null, null, null);
+    }
+
+    /**
+     * 동의 확인 · 해지 결과 · 직권 중단 사전 통지 카드(1021 설계서 1-6 · 2-3) — 버튼이 없는 안내 카드다. 동의 · 소명은 답글로 받고 결정은
+     * 각 관리 화면에서 한다(어드민 20a A8).
+     */
+    public static MessageCardPayload notice(Long contractId, String contractNumber, String groupBuyTitle,
+                                            String requesterType, String requesterName, LocalDateTime requestedAt,
+                                            String reasonLabel, LocalDateTime processedAt, Long operatorId,
+                                            Notice notice) {
+        return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, requesterType, requesterName,
+                requestedAt, reasonLabel, processedAt, operatorId, null, null, notice);
+    }
+
+    /**
+     * 안내 카드의 사실 — 카드 종류마다 채우는 칸이 다르다.
+     *
+     * @param kind               CANCEL(계약 취소 동의) · TERMINATE(계약 해지 동의 · 해지 결과) · ADMIN_SUSPENSION(직권 중단 사전 통지)
+     * @param body               당사자에게 그대로 보이는 설명(요청 메모 · 해지 설명 · 통지 본문)
+     * @param groupBuyClosed     [해지 결과] 생성된 공구가 함께 종결됐는가
+     * @param reasonClause       [직권 중단] 근거 호(ART17_1_LAW 등)
+     * @param counterpartyNoticed [직권 중단] 상대 당사자에게도 같은 통지가 갔는가
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Notice(String kind, String body, Boolean groupBuyClosed, Long groupBuyId, String groupBuyNumber,
+                         String reasonClause, String reasonClauseLabel, LocalDateTime executeScheduledAt,
+                         LocalDateTime appealDeadlineAt, Boolean counterpartyNoticed) {
     }
 
     /**
@@ -82,7 +110,8 @@ public record MessageCardPayload(
      * 계약 필드는 비어 있다.
      */
     public static MessageCardPayload sanction(String reasonLabel, LocalDateTime processedAt, Long operatorId) {
-        return new MessageCardPayload(null, null, null, null, null, null, reasonLabel, processedAt, operatorId, null, null);
+        return new MessageCardPayload(null, null, null, null, null, null, reasonLabel, processedAt, operatorId, null, null,
+                null);
     }
 
     /**
@@ -93,7 +122,7 @@ public record MessageCardPayload(
     public static MessageCardPayload sanction(String reasonText, LocalDateTime processedAt, Long operatorId,
                                               Sanction sanction) {
         return new MessageCardPayload(null, null, null, null, null, null, reasonText, processedAt, operatorId, null,
-                sanction);
+                sanction, null);
     }
 
     /**
@@ -104,13 +133,19 @@ public record MessageCardPayload(
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Sanction(String memberType, String reasonCode, String reasonLabel, String reasonDetail,
-                           Boolean payoutHeld) {
+                           Boolean payoutHeld, java.time.LocalDate endsOn, java.time.LocalDateTime appealDeadlineAt) {
+
+        /** 기간 없는 카드(해제 카드 · 1021 이전 정지). */
+        public Sanction(String memberType, String reasonCode, String reasonLabel, String reasonDetail,
+                        Boolean payoutHeld) {
+            this(memberType, reasonCode, reasonLabel, reasonDetail, payoutHeld, null, null);
+        }
     }
 
     public static MessageCardPayload settlementAdjustment(Long contractId, String contractNumber, String groupBuyTitle,
                                                           Adjustment adjustment) {
         return new MessageCardPayload(contractId, contractNumber, groupBuyTitle, null, null, null, null, null, null,
-                adjustment, null);
+                adjustment, null, null);
     }
 
     public String toJson() {
@@ -134,6 +169,6 @@ public record MessageCardPayload(
     }
 
     private static MessageCardPayload empty() {
-        return new MessageCardPayload(null, null, null, null, null, null, null, null, null, null, null);
+        return new MessageCardPayload(null, null, null, null, null, null, null, null, null, null, null, null);
     }
 }

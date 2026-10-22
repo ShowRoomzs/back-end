@@ -131,7 +131,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     /**
      * GNB 배지 — 브랜드가 지금 조치해야 하는 건수(설계서 4-4).
      * 검토 반려(브랜드 조치로만 풀리는 유일한 진행 상태)와 B4c(상대만 서명 완료)만 센다.
-     * 검토 대기·체결 처리 대기·B4는 공이 상대에게 있는 정상 대기라 넣지 않는다.
+     * 검토 대기·공구 생성 대기·B4는 공이 상대에게 있는 정상 대기라 넣지 않는다.
      */
     @Query("SELECT COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL AND ("
             + "  c.status = showroomz.domain.contract.type.ContractStatus.REVIEW_REJECTED"

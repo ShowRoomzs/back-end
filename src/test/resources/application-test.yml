@@ -13,8 +13,21 @@ settlement:
     mode: SIMULATED
   adjustment:
     scheduler-enabled: false
+  # 확인 기간 중 환불 재계산(1021 기-13)은 기본 끔 — 44 정산 테스트는 클로백 경로를 검증한다. 1021 P6 테스트가 켜고 끈다.
+  clawback:
+    recalculate-statuses: ""
 
 # 토스 지급대행 웹훅 서명 검증용 고정 보안 키(64 hex) — 모드는 SIMULATED 라 토스 호출은 없다(44 토스 설계서 8-1).
 toss:
   payouts:
     security-key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+# 자동 입고 배치(1021 기-17)는 끄고 서비스를 직접 부른다 — 과거 도착 시각으로 만든 픽스처가 테스트 중간에 입고되지 않게.
+order:
+  claim:
+    auto-receive-scheduler-enabled: false
+
+# 정지 기간 자동 해제 배치(1021 기-02)는 끄고 서비스를 직접 부른다.
+member:
+  sanction:
+    auto-release-enabled: false

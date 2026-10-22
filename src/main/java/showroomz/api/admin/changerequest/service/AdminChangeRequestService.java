@@ -55,7 +55,15 @@ public class AdminChangeRequestService {
     }
 
     public AdminChangeRequestDto.ListResponse getList(AdminChangeRequestStatusFilter statusFilter, String keyword, Pageable pageable) {
-        Page<ChangeRequest> page = changeRequestRepository.search(statusFilter.getStatusNames(), normalize(keyword), pageable);
+        return getList(statusFilter, keyword, null, null, pageable);
+    }
+
+    /** 목록 — 요청자(브랜드 · 인플루언서) · 유형 필터(1021 기-22 · 05 목록 「요청자 · 요청 유형」 열). */
+    public AdminChangeRequestDto.ListResponse getList(AdminChangeRequestStatusFilter statusFilter, String keyword,
+                                                      ChangeRequesterType requesterType, ChangeRequestType type,
+                                                      Pageable pageable) {
+        Page<ChangeRequest> page = changeRequestRepository.search(statusFilter.getStatusNames(), normalize(keyword),
+                requesterType == null ? null : requesterType.name(), type == null ? null : type.name(), pageable);
 
         List<AdminChangeRequestDto.ListItem> content = page.getContent().stream()
                 .map(this::toListItem)
@@ -79,7 +87,7 @@ public class AdminChangeRequestService {
                 .filter(reason -> reason.supports(type))
                 .map(reason -> AdminChangeRequestDto.RejectReasonOption.builder()
                         .code(reason)
-                        .label(reason.getDescription())
+                        .label(reason.descriptionFor(type))
                         .detailRequired(reason.isDetailRequired())
                         .build())
                 .toList();
@@ -159,7 +167,7 @@ public class AdminChangeRequestService {
         request.reject(processorId, reasonType.name(), detail);
         flushOrConflict(request);
         applierOf(request).notifyRejected(request, reasonType, detail);
-        return processResponse(request, reasonType.getDescription(), detail);
+        return processResponse(request, reasonType.descriptionFor(request.getType()), detail);
     }
 
     // ------------------------------------------------------------------ 공통
@@ -222,6 +230,7 @@ public class AdminChangeRequestService {
                 .requester(requester(request))
                 .brandName(request.isCreatorRequest() ? null : request.getMarket().getMarketName())
                 .type(request.getType())
+                .typeLabel(request.getType().label())
                 .requestedAt(request.getRequestedAt())
                 .processedAt(request.getProcessedAt())
                 .elapsedText(elapsedText(request))

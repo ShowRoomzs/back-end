@@ -205,7 +205,7 @@ public final class AdminThreadDto {
 
     @Schema(description = "② 진행 중 — 각 모듈의 집계값. null은 0이 아니라 「집계할 수 없음」이다(그 행을 그리지 않는다)")
     public record Progress(
-            @Schema(description = "서명 진행중 계약 수(서명 진행중 + 체결 처리 대기)", nullable = true) Long contractSigning,
+            @Schema(description = "서명 진행중 계약 수(서명 진행중 + 공구 생성 대기)", nullable = true) Long contractSigning,
             @Schema(description = "체결 완료 계약 수", nullable = true) Long contractConcluded,
             @Schema(description = "진행중 공구 수", nullable = true) Long groupBuyOngoing,
             @Schema(description = "[인플루언서] 종료 공구 수", nullable = true) Long groupBuyEnded,
@@ -271,7 +271,9 @@ public final class AdminThreadDto {
             @Schema(description = "[직권 취소] 처리 운영자 — 어드민에만 내려간다", example = "김운영") String processedByName,
             @Schema(description = "[직권 취소] 양측 통지 여부") Boolean notifiedBothParties,
             @Schema(description = "[정산 조정] 카드의 사실 — 파트너센터 · 스튜디오와 같은 스냅샷") MessageCardResponse.AdjustmentDetail adjustment,
-            @Schema(description = "[계정 정지 · 해제] 사유 · 상세 · 지급 정지 — 당사자 화면과 같은 스냅샷") MessageCardResponse.SanctionDetail sanction) {
+            @Schema(description = "[계정 이용 정지 · 해제] 사유 · 상세 · 지급 정지 — 당사자 화면과 같은 스냅샷") MessageCardResponse.SanctionDetail sanction,
+            @Schema(description = "[취소 · 해지 동의 확인 · 해지 결과 · 직권 중단 사전 통지] 안내 카드의 사실 — 당사자 화면과 같은 스냅샷(1021)")
+            MessageCardResponse.NoticeDetail notice) {
     }
 
     public record CardAction(

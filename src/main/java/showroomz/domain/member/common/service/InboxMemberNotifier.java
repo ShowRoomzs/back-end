@@ -39,8 +39,8 @@ public class InboxMemberNotifier implements MemberNotifier {
     public void suspended(MemberType type, Long memberId, String reasonLabel) {
         Channel channel = channel(type, memberId, true);
         publish(type, memberId, NotificationType.ACCOUNT_SUSPENDED,
-                type == MemberType.BRAND ? "계정이 정지되었습니다 · 사유: " + reasonLabel + " — 운영팀 채널에서 소명할 수 있습니다"
-                        : "계정이 정지됐어요 · 사유: " + reasonLabel + " · 운영팀 채널에서 소명할 수 있어요",
+                type == MemberType.BRAND ? "계정 이용이 정지되었습니다 · 사유: " + reasonLabel + " — 운영팀 채널에서 소명할 수 있습니다"
+                        : "계정 이용이 정지됐어요 · 사유: " + reasonLabel + " · 운영팀 채널에서 소명할 수 있어요",
                 NotificationTargetType.THREAD, channel.threadId(), channel.cardId());
     }
 
@@ -49,7 +49,7 @@ public class InboxMemberNotifier implements MemberNotifier {
     public void released(MemberType type, Long memberId) {
         Channel channel = channel(type, memberId, false);
         publish(type, memberId, NotificationType.ACCOUNT_RELEASED,
-                type == MemberType.BRAND ? "계정 정지가 해제되었습니다" : "계정 정지가 해제됐어요",
+                type == MemberType.BRAND ? "계정 이용 정지가 해제되었습니다" : "계정 이용 정지가 해제됐어요",
                 NotificationTargetType.THREAD, channel.threadId(), channel.cardId());
     }
 
@@ -86,6 +86,20 @@ public class InboxMemberNotifier implements MemberNotifier {
         publish(MemberType.CREATOR, creatorId, NotificationType.BUSINESS_TYPE_CHANGE_REJECTED,
                 "사업자 구분 변경 요청이 반려됐어요 · 사유: " + reasonLabel, NotificationTargetType.BASIC_INFO_TAB, null,
                 "SETTLEMENT");
+    }
+
+    @Override
+    public void accountChangeApproved(Long creatorId, String requestCode) {
+        publish(MemberType.CREATOR, creatorId, NotificationType.ACCOUNT_CHANGE_APPROVED,
+                "정산 계좌 변경 요청이 승인됐어요(" + requestCode + ") · 새 계좌를 확인하고 있어요", NotificationTargetType.BASIC_INFO_TAB,
+                null, "SETTLEMENT");
+    }
+
+    @Override
+    public void accountChangeRejected(Long creatorId, String requestCode, String reasonLabel) {
+        publish(MemberType.CREATOR, creatorId, NotificationType.ACCOUNT_CHANGE_REJECTED,
+                "정산 계좌 변경 요청이 반려됐어요 · 사유: " + reasonLabel + " · 기존 계좌로 지급돼요",
+                NotificationTargetType.BASIC_INFO_TAB, null, "SETTLEMENT");
     }
 
     // ------------------------------------------------------------------

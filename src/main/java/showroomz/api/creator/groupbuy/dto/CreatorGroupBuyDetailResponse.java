@@ -201,7 +201,7 @@ public record CreatorGroupBuyDetailResponse(
 
     public record Post(
             @Schema(description = "게시물 상태 8종(파생값) — NOT_WRITTEN(미작성) · WRITING(작성중) · PENDING_APPROVAL(승인대기) · "
-                    + "REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · HIDDEN(숨김) · CLOSED(종료 — 종결 3종 공통)",
+                    + "REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · CLOSED(종료 — 종결 3종 공통)",
                     example = "EXPOSED")
             GroupBuyPostStatus status,
             @Schema(description = "게시물 상태 배지 문구", example = "노출중") String statusLabel,
@@ -221,7 +221,7 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(description = "노출 종료 — 공구 종결 시각(종결 3종에서만)", nullable = true) LocalDateTime closedAt,
             @Schema(description = "승인 후 마지막 수정 시각", nullable = true) LocalDateTime lastEditedAt,
             @Schema(description = "반려 — 반려 상태일 때만", nullable = true) Rejection rejection,
-            @Schema(description = "숨김 — 숨김 중일 때만(종결 후에는 null)", nullable = true) Hidden hidden
+            @Schema(description = "노출 중지 — 노출 중지 중일 때만(종결 후에는 null)", nullable = true) Hidden hidden
     ) {
     }
 
@@ -236,13 +236,13 @@ public record CreatorGroupBuyDetailResponse(
     }
 
     public record Hidden(
-            @Schema(description = "숨김 사유 코드 — AD_EFFECT_ASSERTION · AD_MEDICAL_CLAIM · AD_SUPERLATIVE · DISCLOSURE_DAMAGED · "
+            @Schema(description = "노출 중지 사유 코드 — AD_EFFECT_ASSERTION · AD_MEDICAL_CLAIM · AD_SUPERLATIVE · DISCLOSURE_DAMAGED · "
                     + "CONTRACT_MISMATCH(계약과 다른 상품·가격 기재) · FALSE_INFORMATION(사실과 다른 정보) · ETC",
                     example = "AD_MEDICAL_CLAIM")
             String code,
             @Schema(description = "운영자 설명", nullable = true) String detail,
-            @Schema(description = "숨김 시각", example = "2026-08-16T15:20:00") LocalDateTime hiddenAt,
-            @Schema(description = "숨김 N일차 — 양끝 포함", example = "2") int hiddenDays
+            @Schema(description = "노출 중지 시각", example = "2026-08-16T15:20:00") LocalDateTime hiddenAt,
+            @Schema(description = "노출 중지 N일차 — 양끝 포함", example = "2") int hiddenDays
     ) {
     }
 
@@ -258,7 +258,7 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(description = "상품별 판매 수량") List<ItemQuantity> itemQuantities,
             @Schema(description = "판매액(원)") long amount,
             @Schema(description = "내 리워드(원) — 항목별 수량 × 개당 리워드의 합") long myReward,
-            @Schema(description = "숨김 이후 주문 수 — 숨김 중일 때만. 판매 모듈이 모르면 null(0이 아니다)", nullable = true)
+            @Schema(description = "노출 중지 이후 주문 수 — 노출 중지 중일 때만. 판매 모듈이 모르면 null(0이 아니다)", nullable = true)
             Long ordersSinceHidden
     ) {
     }
@@ -327,7 +327,10 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(description = "통지 본문 — 운영자가 양측에 쓴 글") String noticeBody,
             @Schema(description = "통지 시각", example = "2026-08-17T18:00:00") LocalDateTime noticedAt,
             @Schema(description = "집행 예정 시각", example = "2026-08-20T18:00:00", nullable = true) LocalDateTime executeScheduledAt,
-            @Schema(description = "집행까지 N영업일 — B13 「D-3」", example = "2", nullable = true) Integer businessDaysUntilExecution
+            @Schema(description = "집행까지 N영업일 — B13 「D-3」", example = "2", nullable = true) Integer businessDaysUntilExecution,
+            @Schema(description = "소명 · 의견 기한 — 브랜드와 같은 기한(1021 기-21). 의견은 운영팀 채널 답글로", example = "2026-08-20T23:59:59",
+                    nullable = true) LocalDateTime appealDeadlineAt,
+            @Schema(description = "의견을 남길 내 운영팀 채널 — 사전 통지 카드가 붙은 곳", nullable = true) Long operatorChannelThreadId
     ) {
     }
 
@@ -429,12 +432,14 @@ public record CreatorGroupBuyDetailResponse(
     @Schema(description = "버튼 노출 판정 — 서버가 내려준다. 실행 API가 같은 판정으로 409를 낸다")
     public record Permissions(
             @Schema(description = "[임시저장] · [등록하고 검토 요청] — PREPARING ∧ 게시물 없음·작성중·반려") boolean canWritePost,
-            @Schema(description = "[게시물 수정](승인 후) — 게시물 승인됨 ∧ READY·IN_PROGRESS(숨김 포함). 중단 예정·종결은 잠김")
+            @Schema(description = "[게시물 수정](승인 후) — 게시물 승인됨 ∧ (IN_PROGRESS ∨ 노출 중지된 READY). 진행 중에는 본문만(제목 잠금 — 노출 중지면 제목도) · 1021 기-08. 중단 예정·종결은 잠김")
             boolean canEditPost,
             @Schema(description = "[수락] · [거절](연장) — 연장 PENDING ∧ IN_PROGRESS ∧ 현재 시각 < 종료 시각") boolean canRespondExtension,
-            @Schema(description = "[공구 중단 요청] — IN_PROGRESS ∧ 검토 중 요청 없음 ∧ 게시물 숨김 아님") boolean canRequestSuspension,
+            @Schema(description = "[공구 중단 요청] — IN_PROGRESS ∧ 검토 중 요청 없음 ∧ 게시물 노출 중지 아님") boolean canRequestSuspension,
             @Schema(description = "[이행 확인] — **폐기(2026-10-06) · 항상 false**", deprecated = true) boolean canCheckFulfillment,
-            @Schema(description = "[스레드 열기] — 브랜드와의 PAIR 스레드가 있을 때") boolean canOpenPairThread
+            @Schema(description = "[스레드 열기] — 브랜드와의 PAIR 스레드가 있을 때") boolean canOpenPairThread,
+            @Schema(description = "[게시물 수정]에서 제목도 고칠 수 있는가 — 진행 중이면 false(본문만 · 1021 기-08) · 노출 중지면 true")
+            boolean canEditPostTitle
     ) {
     }
 

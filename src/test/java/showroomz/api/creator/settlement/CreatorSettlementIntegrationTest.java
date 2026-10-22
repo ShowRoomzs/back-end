@@ -208,7 +208,8 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
 
         JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
         assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("PENDING_INPUT");
-        assertThat(detail.at("/taxInvoice/supplier/name").asText()).isEqualTo("SHOWROOMZ TEST");
+        // 공급받는자 = 운영자 사업자 정보(company.* · 1021 기-35 — settlement.platform.* 는 그 별칭).
+        assertThat(detail.at("/taxInvoice/supplier/name").asText()).isEqualTo("쇼룸즈");
         assertThat(detail.at("/taxInvoice/supplyAmount").asLong()).isEqualTo(s.getRewardAfterClawback());
         assertThat(detail.at("/taxInvoice/vatAmount").asLong()).isEqualTo(s.getCreatorVatAmount());
         assertThat(detail.at("/timeline/payoutDueDate").isNull()).isTrue();

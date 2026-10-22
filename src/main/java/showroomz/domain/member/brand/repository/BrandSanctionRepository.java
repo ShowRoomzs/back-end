@@ -26,4 +26,9 @@ public interface BrandSanctionRepository extends JpaRepository<BrandSanction, Lo
 
     @Query("SELECT s FROM BrandSanction s WHERE s.marketId IN :marketIds AND s.releasedAt IS NULL")
     List<BrandSanction> findOpenByMarketIds(@Param("marketIds") Collection<Long> marketIds);
+
+    /** 정지 기간이 끝난 열린 정지의 회원 id(1021 기-02 자동 해제). */
+    @org.springframework.data.jpa.repository.Query("SELECT s.marketId FROM BrandSanction s WHERE s.releasedAt IS NULL "
+            + "AND s.endsOn IS NOT NULL AND s.endsOn < :today ORDER BY s.id ASC")
+    java.util.List<Long> findMemberIdsToAutoRelease(@org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
 }

@@ -28,8 +28,30 @@ public record SellerOrderDetailResponse(
         Timeline timeline,
         @Schema(description = "검토 중 취소 요청 블록(C11) — 없으면 null", nullable = true) CancelRequestBlock cancelRequest,
         Actions actions,
-        @Schema(description = "처리 이력 — 최신순(발생 시각 내림차순 · 동률은 id 내림차순)") List<HistoryItem> history
+        @Schema(description = "처리 이력 — 최신순(발생 시각 내림차순 · 동률은 id 내림차순)") List<HistoryItem> history,
+        @Schema(description = "추적 정지 · 소비자 선택(10c C7b · 1021 기-15) — 추적 정지가 아니고 선택도 없으면 null", nullable = true)
+        StallChoice stallChoice
 ) {
+
+    @Schema(name = "SellerOrderStallChoice")
+    public record StallChoice(
+            @Schema(description = "WAITING(선택 개방 전) · OPEN(소비자 선택 대기) · CHOSEN(소비자가 골랐다)", example = "CHOSEN") String state,
+            @Schema(description = "선택 개방 시각", nullable = true) LocalDateTime opensAt,
+            @Schema(description = "개방까지 남은 일수 — 「선택 전 추적 정지 N일 뒤 열림」", nullable = true, example = "3") Integer daysUntilOpen,
+            @Schema(description = "추적이 멈춘 지 N일", nullable = true, example = "9") Integer daysStalled,
+            @Schema(description = "소비자 선택 — RESHIP(새 송장 등록으로 처리) · REFUND([소비자 환불 처리])", nullable = true)
+            showroomz.domain.order.type.StallChoice choice,
+            @Schema(example = "환불", nullable = true) String choiceLabel,
+            @Schema(nullable = true) LocalDateTime chosenAt,
+            @Schema(description = "[소비자 환불 처리] 가능 — 소비자가 환불을 골랐고 아직 배송중") boolean canRefund
+    ) {
+        public static StallChoice of(showroomz.domain.order.service.OrderStallChoiceService.View view,
+                                     boolean shipping) {
+            return view == null ? null : new StallChoice(view.state().name(), view.opensAt(), view.daysUntilOpen(),
+                    view.daysStalled(), view.choice(), view.choiceLabel(), view.chosenAt(),
+                    shipping && view.choice() == showroomz.domain.order.type.StallChoice.REFUND);
+        }
+    }
 
     @Schema(name = "SellerOrderRecipient")
     public record Recipient(

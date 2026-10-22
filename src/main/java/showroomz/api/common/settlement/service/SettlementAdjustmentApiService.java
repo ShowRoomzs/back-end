@@ -109,6 +109,12 @@ public class SettlementAdjustmentApiService {
         return viewOf(adjustmentId, party);
     }
 
+    /** 요청 철회(1021 기-14) — 원래 금액 확정 · 이슈 종결. */
+    public SettlementAdjustmentDto.AdjustmentView withdraw(SettlementParty party, Long partyId, Long adjustmentId) {
+        adjustmentService.withdraw(adjustmentId, party, partyId, LocalDateTime.now());
+        return viewOf(adjustmentId, party);
+    }
+
     // ------------------------------------------------------------------ 조립
 
     private SettlementAdjustmentDto.AdjustmentView viewOf(Long adjustmentId, SettlementParty party) {
@@ -140,7 +146,7 @@ public class SettlementAdjustmentApiService {
                 summary.agreedRewardAmount(), summary.finalRewardAmount(), summary.openedAt(), summary.deadlineAt(),
                 summary.remainingBusinessDays(), summary.closedAt(),
                 new SettlementAdjustmentDto.Permissions(permissions.canAccept(), permissions.canReject(),
-                        permissions.canCounter(), permissions.canSend()),
+                        permissions.canCounter(), permissions.canSend(), permissions.canWithdraw()),
                 summary.proposals().stream().map(p -> proposal(summary, p, brandName, showroomName)).toList());
     }
 

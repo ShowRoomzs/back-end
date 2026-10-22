@@ -141,6 +141,7 @@ public class SettlementConfirmService {
             case AUTO -> SettlementEventType.AUTO_CONFIRMED;
             case AGREED -> SettlementEventType.CONFIRMED_BY_AGREEMENT;
             case EXPIRED -> SettlementEventType.CONFIRMED_BY_EXPIRY;
+            case WITHDRAWN -> SettlementEventType.CONFIRMED_BY_WITHDRAWAL;
         };
     }
 }

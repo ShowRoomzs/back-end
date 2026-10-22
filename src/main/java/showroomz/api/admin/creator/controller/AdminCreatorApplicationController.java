@@ -10,6 +10,8 @@ import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
+import showroomz.api.admin.creator.dto.CreatorRejectionNoticeResponse;
+import showroomz.api.admin.creator.type.CreatorRejectionReasonType;
 import showroomz.api.admin.creator.docs.AdminCreatorApplicationControllerDocs;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.auth.service.CreatorApplicationService;
@@ -56,6 +58,15 @@ public class AdminCreatorApplicationController implements AdminCreatorApplicatio
             @AuthenticationPrincipal UserPrincipal principal) {
         creatorApplicationService.reject(applicationId, request, requireAdminUserId(principal));
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @GetMapping("/{applicationId}/reject-preview")
+    public ResponseEntity<CreatorRejectionNoticeResponse> previewRejectionNotice(
+            @PathVariable("applicationId") Long applicationId,
+            @RequestParam("reasonType") CreatorRejectionReasonType reasonType) {
+        return ResponseEntity.ok(CreatorRejectionNoticeResponse.of(
+                creatorApplicationService.previewRejectionNotice(applicationId, reasonType)));
     }
 
     private Long requireAdminUserId(UserPrincipal principal) {

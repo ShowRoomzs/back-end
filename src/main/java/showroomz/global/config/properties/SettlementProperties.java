@@ -57,6 +57,7 @@ public class SettlementProperties {
     private Payout payout = new Payout();
     private Platform platform = new Platform();
     private Adjustment adjustment = new Adjustment();
+    private Clawback clawback = new Clawback();
 
     public enum PayoutMode {
         /** 즉시 PAID · 참조번호 SIM- — 개발 · QA · 통합 테스트. 런칭 게이트 켜진 운영 프로필에서는 기동 실패. */
@@ -95,6 +96,15 @@ public class SettlementProperties {
         private String registrationNumber;
         private String address;
         private String taxEmail;
+    }
+
+    /** 지급 전 환불(1021 결정 노트 기-13 【잠정】 · 설계서 6-3). */
+    @Getter
+    @Setter
+    public static class Clawback {
+        /** 이 상태의 정산은 클로백 대신 재계산 · 확인 기간 재시작(14절 Q18 — 기본 확인 기간만). 비우면 언제나 클로백. */
+        private java.util.Set<showroomz.domain.settlement.type.SettlementStatus> recalculateStatuses =
+                java.util.EnumSet.of(showroomz.domain.settlement.type.SettlementStatus.REVIEWING);
     }
 
     /** 정산 조정 협의(이슈 스레드 설계서 1-8). */

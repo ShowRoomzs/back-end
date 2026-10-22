@@ -42,10 +42,17 @@ public class SellerConnectionService {
     private final MarketRepository marketRepository;
     private final CreatorRepository creatorRepository;
 
-    /** §13-6 쇼룸명 검색 — 결과에 현재 연결 상태를 함께 실어 [요청] 버튼/상태 배지를 애초에 갈라 보여준다. */
+    /**
+     * §13-6 쇼룸명 검색 — 결과에 현재 연결 상태를 함께 실어 [요청] 버튼/상태 배지를 애초에 갈라 보여준다.
+     * 검색어는 필수다(1021 결정 노트 기-23 — 인플루언서 탐색은 베타 제외 · 연결 요청은 쇼룸명 검색 · 연결코드만). 빈 검색어로
+     * 전체 목록을 훑는 길을 닫는다.
+     */
     public PageResponse<ConnectionCreatorSearchItem> searchCreators(String sellerEmail, String keyword, PagingRequest pagingRequest) {
-        Market market = getMyMarket(sellerEmail);
         String safeKeyword = keyword == null ? "" : keyword.trim();
+        if (safeKeyword.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "검색할 쇼룸명을 입력해 주세요.");
+        }
+        Market market = getMyMarket(sellerEmail);
 
         Page<ConnectionCreatorSearchItem> page = connectionRepository.searchConnectableCreators(
                 market.getId(), safeKeyword, UserStatus.WITHDRAWN, pagingRequest.toPageable());

@@ -103,7 +103,7 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
                 .andExpect(jsonPath("$.status").value("CONCLUSION_PENDING"));
 
         detail(c).andExpect(jsonPath("$.contract.status").value("CONCLUSION_PENDING"))
-                .andExpect(jsonPath("$.contract.statusLabel").value("체결 처리 대기"))
+                .andExpect(jsonPath("$.contract.statusLabel").value("공구 생성 대기"))
                 .andExpect(jsonPath("$.stepper.signedCount").value(2))
                 .andExpect(jsonPath("$.permissions.canUploadDocument").value(true))
                 .andExpect(jsonPath("$.permissions.canUpdateSignature").value(true))

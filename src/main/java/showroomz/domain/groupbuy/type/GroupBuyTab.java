@@ -20,7 +20,7 @@ public enum GroupBuyTab {
     /** 시안 탭 라벨 「종료·정산」. */
     ENDED(EnumSet.of(GroupBuyStatus.ENDED, GroupBuyStatus.SETTLED)),
     /** 정상 종료와 성격이 달라 탭을 분리한다. */
-    SUSPENDED(EnumSet.of(GroupBuyStatus.SUSPENDED));
+    SUSPENDED(EnumSet.of(GroupBuyStatus.SUSPENDED, GroupBuyStatus.TERMINATED));
 
     private final Set<GroupBuyStatus> statuses;
 

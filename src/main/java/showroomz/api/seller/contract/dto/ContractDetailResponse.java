@@ -74,8 +74,43 @@ public record ContractDetailResponse(
         SanctionHoldView sanctionHold,
 
         @Schema(description = "서명 기한이 멈춰 있는가 — 당사자 정지 보류 중(정지 중 멈춤 · 해제 후 남은 기한부터)")
-        boolean signatureDeadlinePaused
+        boolean signatureDeadlinePaused,
+
+        @Schema(description = "계약 성립 = 양측 서명 완료 시각(1021 기-05) — 3단계 「양측 서명 완료 · 계약 성립」. 서명이 하나라도 비면 null. "
+                + "concludedAt 은 운영자의 공구 생성 처리 시각", nullable = true)
+        LocalDateTime establishedAt,
+
+        @Schema(description = "가장 최근 해지 요청(1021 기-05) — 처리 대기면 [요청 철회] · 해지 상세(B9)의 「사유 구분 · 메모」. 요청이 없으면 null",
+                nullable = true)
+        TerminationRequest terminationRequest,
+
+        @Schema(description = "초안 승인 기록(1021 기-30) — 브랜드 사전 검수 · 기록 전용. 없으면 빈 배열")
+        List<DraftApproval> draftApprovals
 ) {
+
+    @Schema(description = "해지 요청")
+    public record TerminationRequest(
+            Long requestId,
+            @Schema(description = "PENDING(처리 대기) · HANDLED(해지 처리됨) · WITHDRAWN(요청 철회) · LAPSED(공구 오픈으로 닫힘)",
+                    example = "PENDING") String status,
+            @Schema(example = "처리 대기") String statusLabel,
+            @Schema(description = "사유 코드 — 공구 중단 요청과 같은 4종", example = "QUALITY_ISSUE") String reasonCode,
+            @Schema(example = "상품 품질 이슈") String reasonLabel,
+            @Schema(nullable = true) String memo,
+            LocalDateTime requestedAt,
+            @Schema(nullable = true) LocalDateTime closedAt) {
+    }
+
+    @Schema(description = "초안 승인 기록 1건")
+    public record DraftApproval(
+            Long approvalId,
+            @Schema(description = "대상", example = "릴스 1차 초안") String title,
+            @Schema(example = "2026-08-12T15:40:00") LocalDateTime approvedAt,
+            @Schema(description = "승인자 — 브랜드명", example = "무드코스메틱") String approvedByName,
+            @Schema(description = "출처", example = "연결·소통 스레드에서 확인한 초안") String sourceLabel,
+            @Schema(description = "근거 스레드 메시지", nullable = true) Long threadMessageId,
+            @Schema(nullable = true) String note) {
+    }
 
     @Schema(description = "계약 상대")
     public record Counterparty(
@@ -134,6 +169,9 @@ public record ContractDetailResponse(
             @Schema(description = "고정 지급비(원). 0원이면 지급 의무 없음", example = "100000", nullable = true) Integer amount,
             @Schema(description = "지급 시점: POST_REGISTERED / GROUP_BUY_ENDED / SETTLEMENT_COMPLETED", example = "POST_REGISTERED", nullable = true) FixedFeeTrigger trigger,
             @Schema(description = "지급 시점 라벨", example = "공구 게시물 등록 후", nullable = true) String triggerLabel,
+            @Schema(description = "지급 시점 정의(툴팁 · 1021 기-28)", example = "운영자 오픈 승인 후 게시물이 쇼룸에 노출된 때", nullable = true)
+            String triggerDescription,
+            @Schema(description = "지급 시점 뒤 N영업일 안에 지급 — null 이면 [정책값 미정]", nullable = true) Integer paymentBusinessDays,
             @Schema(description = "고지 확인 체크 시각", nullable = true) LocalDateTime noticeAgreedAt,
             @Schema(description = "지급 완료 기록 시각", nullable = true) LocalDateTime paidAt,
             @Schema(description = "지급 의무가 살아 있는지 — 종결 3종이면 false. 화면이 「지급 의무 소멸」로 바뀌는 근거")
@@ -214,7 +252,7 @@ public record ContractDetailResponse(
     ) {
     }
 
-    @Schema(description = "계약 문서 — 검토 대기~체결 처리 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
+    @Schema(description = "계약 문서 — 검토 대기~공구 생성 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
     public record Document(
             @Schema(description = "문서 종류: GENERATED_DRAFT / SIGNED_PDF / AUDIT_TRAIL") ContractDocumentType type,
             @Schema(description = "화면 표시용 문서 종류") String typeLabel,
@@ -238,7 +276,10 @@ public record ContractDetailResponse(
             @Schema(description = "검토 요청 취소 가능") boolean canCancelRequest,
             @Schema(description = "서명 안내 재발송 요청 가능") boolean canRequestResend,
             @Schema(description = "고정 지급비 지급 완료 기록 가능") boolean canRecordPayment,
-            @Schema(description = "이 조건으로 새 계약 작성 가능") boolean canDuplicate
+            @Schema(description = "이 조건으로 새 계약 작성 가능") boolean canDuplicate,
+            @Schema(description = "[해지 요청](B5 · 1021 기-05) — 성립 뒤 · 공구 오픈 전 ∧ 처리 대기 요청 없음") boolean canRequestTermination,
+            @Schema(description = "해지 요청 철회 — 처리 대기 요청이 있을 때") boolean canWithdrawTermination,
+            @Schema(description = "초안 승인 기록 추가(1021 기-30) — 계약 성립 이후") boolean canRecordDraftApproval
     ) {
     }
 

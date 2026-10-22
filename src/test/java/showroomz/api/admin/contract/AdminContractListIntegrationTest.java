@@ -155,7 +155,7 @@ class AdminContractListIntegrationTest extends AdminContractTestSupport {
             Map<String, String[]> expected = Map.of(
                     "겨울 리페어 크림 공구", new String[]{"검토 대기", "INFO"},
                     "여름 수분 세럼 공구", new String[]{"서명 진행중", "INFO"},
-                    "데일리 토너 공구", new String[]{"체결 처리 대기", "INFO"},
+                    "데일리 토너 공구", new String[]{"공구 생성 대기", "INFO"},
                     "앰플 리필 공구", new String[]{"검토 반려", "WARNING"},
                     "글로우 크림 앵콜 공구", new String[]{"체결완료", "SUCCESS"},
                     "봄 클렌저 공구", new String[]{"거절", "DANGER"},

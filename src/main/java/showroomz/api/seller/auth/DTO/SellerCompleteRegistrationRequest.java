@@ -61,16 +61,5 @@ public class SellerCompleteRegistrationRequest {
     @Schema(description = "발송 기한 — 공구 마감 후 N영업일(주말·공휴일 제외) · 1~7. "
             + "소비자 상품 상세에 「공구 마감 후 N영업일 이내 발송」으로 자동 표시된다", example = "3")
     private Integer shippingLeadDays;
-
-    @Min(value = 0, message = "반품비는 0 이상이어야 합니다.")
-    @Schema(description = "반품비(회수비) — 소비자 반품 금액에는 쓰지 않는다(기본 배송비 기준 · 앱 클레임 설계서 1-8). "
-            + "파트너 정산 「반품·교환 배송비」 블록의 브랜드 부담 표시에 쓴다. 생략 시 3000",
-            example = "3000", nullable = true)
-    private Integer returnFee;
-
-    @Min(value = 0, message = "교환비는 0 이상이어야 합니다.")
-    @Schema(description = "교환비 — 소비자 교환 금액에는 쓰지 않는다(기본 배송비 기준 · 앱 클레임 설계서 1-8). "
-            + "파트너 정산 「반품·교환 배송비」 블록의 브랜드 부담 표시에 쓴다. 생략 시 6000",
-            example = "6000", nullable = true)
-    private Integer exchangeFee;
+    // 반품비 · 교환비 입력은 1021 결정 노트 기-18 로 폐기 — 반품 · 교환 배송비는 상품 배송비로 자동 계산한다. 구 FE 가 보내도 무시된다.
 }

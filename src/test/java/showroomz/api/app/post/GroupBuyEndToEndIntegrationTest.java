@@ -193,12 +193,12 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
         following().andExpect(jsonPath("$.content[*].post.postId").value(not(hasItem(postId.intValue()))));
         liked(consumer).andExpect(jsonPath("$.content[*].post.postId").value(not(hasItem(postId.intValue()))));
         brandView(id).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
-                .andExpect(jsonPath("$.post.status").value("HIDDEN"));
+                .andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"));
         assertThat(productStatus(cream)).isEqualTo(ProductGroupBuyStatus.IN_PROGRESS);
 
         // 숨김 중 수정은 해제가 아니다 — 운영자가 읽고 풀어야 나간다.
         studioSend(patch(STUDIO + "/" + id + "/post"), Map.of("title", "앵콜 공구 — 정정본", "content", "효능 표현을 지웠습니다."))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("HIDDEN"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"));
         assertInvisible(postId);
 
         int latest = objectMapper.readTree(adminView(id).andReturn().getResponse().getContentAsString())

@@ -12,8 +12,9 @@ import java.util.Set;
  * brandSignedAt · creatorSignedAt 두 값의 조합으로 FE가 고른다. 서버가 SIGNING_MY_TURN 같은
  * 값을 만들면 조합 4개가 상태값으로 폭발한다.
  *
- * <p>{@link #CONCLUDED} 밖으로 나가는 전이는 없다 — 체결 후 해지 값이 9종에 없고,
- * 설계서 미결 #3이 확정되기 전까지 임의로 만들지 않는다.
+ * <p>1021 결정 노트 기-05 【잠정】 — 계약은 <b>양측 서명 완료 순간 성립</b>하고(established_at), 운영자는 「공구 생성」만 한다.
+ * 성립 뒤 · 공구 오픈 전에는 {@link #TERMINATED 해지}로 종결할 수 있다(1021 설계서 1-4). 취소({@link #CANCELED})는 성립 전
+ * ({@link #SIGNING})에만 남긴다 — 성립된 계약을 「취소」하는 길을 닫아 두 종결이 겹치지 않게 한다.
  */
 @Getter
 @RequiredArgsConstructor
@@ -23,11 +24,13 @@ public enum ContractStatus {
     REVIEW_PENDING("검토 대기", ContractStatusTone.INFO, false),
     REVIEW_REJECTED("검토 반려", ContractStatusTone.WARNING, false),
     SIGNING("서명 진행중", ContractStatusTone.INFO, false),
-    CONCLUSION_PENDING("체결 처리 대기", ContractStatusTone.INFO, false),
+    CONCLUSION_PENDING("공구 생성 대기", ContractStatusTone.INFO, false),
     CONCLUDED("체결완료", ContractStatusTone.SUCCESS, true),
     DECLINED("거절", ContractStatusTone.DANGER, true),
     EXPIRED("만료", ContractStatusTone.NEUTRAL, true),
-    CANCELED("취소", ContractStatusTone.NEUTRAL, true);
+    CANCELED("취소", ContractStatusTone.NEUTRAL, true),
+    /** 해지 — 성립 뒤 · 공구 오픈 전 종결(기-05). 생성된 공구도 함께 종결된다. */
+    TERMINATED("해지", ContractStatusTone.NEUTRAL, true);
 
     private final String label;
     private final ContractStatusTone tone;
@@ -52,12 +55,16 @@ public enum ContractStatus {
      * <p><b>브랜드에게는 계약 취소가 없다.</b> 발송 전의 되돌림은 [요청 취소](검토 대기 → 작성중)뿐이고,
      * 발송 이후는 모두싸인에 양측 서명 요청이 나가 있어 요청을 거둘 수 있는 운영자만 취소한다.
      *
-     * <p>{@link #CONCLUDED}는 넣지 않는다 — 체결 후 해지 값이 9종에 없다(설계서 미결 #3).
+     * <p>성립 전({@link #SIGNING})만 — 양측 서명이 끝나 성립한 뒤({@link #CONCLUSION_PENDING} 이후)는 {@link #TERMINABLE 해지}다
+     * (1021 설계서 1-0 ③ · Q2).
      */
-    public static final Set<ContractStatus> ADMIN_CANCELABLE = Set.of(SIGNING, CONCLUSION_PENDING);
+    public static final Set<ContractStatus> ADMIN_CANCELABLE = Set.of(SIGNING);
+
+    /** 해지 허용 구간 — 성립 뒤(공구 생성 대기 · 체결완료). 공구가 오픈 전(준비중 · 준비완료)인지는 서비스가 본다(1021 설계서 1-4). */
+    public static final Set<ContractStatus> TERMINABLE = Set.of(CONCLUSION_PENDING, CONCLUDED);
 
     /** 재작성(이 조건으로 새 계약 작성) 허용 구간 — 진행 중 계약의 복제는 기획이 다룬 적 없다(설계서 4-3). */
-    public static final Set<ContractStatus> DUPLICABLE = Set.of(CONCLUDED, DECLINED, EXPIRED, CANCELED);
+    public static final Set<ContractStatus> DUPLICABLE = Set.of(CONCLUDED, DECLINED, EXPIRED, CANCELED, TERMINATED);
 
     /**
      * 인플루언서에게 <b>도착한</b> 계약의 상태 집합(§27 설계서 1-1).
@@ -70,7 +77,7 @@ public enum ContractStatus {
      * 탭이 늘거나 바뀌어도 「무엇이 도착한 계약인가」의 정의는 한 곳에 남아야 하기 때문이다.
      */
     public static final Set<ContractStatus> RECEIVED_BY_CREATOR =
-            Set.of(SIGNING, CONCLUSION_PENDING, CONCLUDED, DECLINED, EXPIRED, CANCELED);
+            Set.of(SIGNING, CONCLUSION_PENDING, CONCLUDED, DECLINED, EXPIRED, CANCELED, TERMINATED);
 
     /**
      * 체결 전 진행 구간 — 아직 종결되지 않았고 체결도 되지 않은 계약. 이 계약들의 상품 옵션은 곧 계약서에

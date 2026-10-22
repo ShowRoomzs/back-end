@@ -46,6 +46,7 @@ public class GroupBuyLifecycleService {
     private final GroupBuyNotifier notifier;
     private final GroupBuyTerminator terminator;
     private final GroupBuyProperties properties;
+    private final showroomz.domain.contract.repository.ContractTerminationRequestRepository terminationRequestRepository;
 
     @Transactional(readOnly = true)
     public List<Long> findIdsToOpen(LocalDateTime now, int limit) {
@@ -94,6 +95,9 @@ public class GroupBuyLifecycleService {
         postExposure.sync(groupBuy, now);
         productSynchronizer.resync(groupBuy);
         notifier.notifyBothParties(groupBuy, "OPENED");
+        // 오픈되면 해지 요청은 닫힌다 — 그 뒤는 공구 중단 요청이다(1021 설계서 1-4 · 파트너 08 C9 안내). 조건부 UPDATE 가 영속성 컨텍스트를
+        // 비우므로 공구 엔티티를 다 쓴 뒤에 부른다.
+        terminationRequestRepository.lapseByGroupBuy(groupBuyId, now);
         // 팔로워 「{쇼룸}에 새 공구가 열렸어요」(광고성 · C11 · C15) — 커밋 뒤 팔로워별로 쓴다.
         AfterCommit.run(() -> followerNotifications.notifyGroupBuyOpened(groupBuyId));
         return true;

@@ -23,5 +23,14 @@ public class MemberProperties {
          * 확정했다(1017 설계서 8-2). 끌 수 있게 플래그는 남긴다.
          */
         private boolean blockGroupBuyPost = true;
+
+        /** 이의 신청 기한 — 통지 + N영업일(1021 기-02 【잠정】 · 표시용 · 접수는 막지 않는다). */
+        private int appealBusinessDays = 3;
+
+        /** 소명 검토 N영업일 — 운영자 처리 기한 · 표시만. 미정이면 null(1021 기-02 [정책값 미정]). */
+        private Integer appealReviewBusinessDays;
+
+        /** 정지 기간 종료 자동 해제 배치(매일 00:05 · 기동 시 1회). */
+        private boolean autoReleaseEnabled = true;
     }
 }

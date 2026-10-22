@@ -287,11 +287,11 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
         assertThat(payout(confirmed.getId(), SettlementPayee.BRAND).getStatus())
                 .isIn(PayoutStatus.REQUESTED, PayoutStatus.PAID);
 
-        // 해제 — 주민등록번호 미등록이 남아 보류 유지 · 정지 사유만 지운다.
+        // 해제 — 다른 보류 사유가 없으면 예정으로 돌아간다(주민등록번호 미등록은 1021 기-12 로 보류 사유가 아니다).
         adminPost(base + "/release", Map.of()).andExpect(status().isOk());
-        SettlementPayout stillBlocked = payout(confirmed.getId(), SettlementPayee.CREATOR);
-        assertThat(stillBlocked.getStatus()).isEqualTo(PayoutStatus.BLOCKED);
-        assertThat(stillBlocked.getFailCode()).isNull();
+        SettlementPayout released = payout(confirmed.getId(), SettlementPayee.CREATOR);
+        assertThat(released.getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        assertThat(released.getFailCode()).isNull();
     }
 
     // ------------------------------------------------------------------ CR-06 탈퇴
@@ -411,7 +411,7 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.content[0].sellingGroupBuyCount").value(1))
                 .andExpect(jsonPath("$.content[0].status").value("CONNECTED"));
         adminGet(CREATORS + "reason-options").andExpect(status().isOk())
-                .andExpect(jsonPath("$.suspensionReasons.length()").value(6))
+                .andExpect(jsonPath("$.suspensionReasons.length()").value(7))
                 .andExpect(jsonPath("$.releaseReasons.length()").value(2))
                 .andExpect(jsonPath("$.privacyUnmaskReasons.length()").value(4));
     }

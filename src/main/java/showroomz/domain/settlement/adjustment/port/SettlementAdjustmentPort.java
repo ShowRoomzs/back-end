@@ -29,6 +29,9 @@ public interface SettlementAdjustmentPort {
     /** 조정 협의 → 지급 예정 · 원래 금액 그대로 · 확정 시각 = 기한 다음 날 00:00. */
     void confirmByExpiry(Long settlementId, Long adjustmentId, LocalDateTime now);
 
+    /** 요청 철회 확정(1021 기-14) — 원래 금액 · 확정일 = 철회일. */
+    void confirmByWithdrawal(Long settlementId, Long adjustmentId, LocalDateTime now);
+
     /** 제안 · 반대 · D-1 의 정산 이력. {@code actor}가 null 이면 시스템. */
     void recordEvent(Long settlementId, SettlementEventType type, SettlementParty actor, Long actorId, String detail);
 

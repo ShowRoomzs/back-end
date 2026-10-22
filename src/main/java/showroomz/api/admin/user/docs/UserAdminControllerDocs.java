@@ -206,7 +206,7 @@ public interface UserAdminControllerDocs {
     );
 
     @Operation(
-            summary = "소비자 계정 정지",
+            summary = "소비자 계정 이용 정지",
             description = "정지 모달(M1)의 실행입니다. 「변경할 상태」를 받지 않습니다 — 버튼이 이미 목적지를 말합니다(§25-4).\n\n" +
                     "**사유 6종** — `ABUSIVE_LANGUAGE`(욕설·비방) · `RETURN_ABUSE`(반품 남용) · `FRAUDULENT_ORDER_SUSPECTED`(부정 주문 의심) · " +
                     "`PAYMENT_FRAUD_SUSPECTED`(결제 도용 의심) · `MULTIPLE_REPORTS`(신고 다수 접수) · `OTHER`(기타 — `reasonDetail` 필수)\n\n" +
@@ -242,7 +242,7 @@ public interface UserAdminControllerDocs {
                                     "  \"histories\": {\n" +
                                     "    \"total\": 4,\n" +
                                     "    \"content\": [\n" +
-                                    "      { \"historyId\": 52, \"eventType\": \"SUSPENDED\", \"label\": \"계정 정지\", \"tone\": \"DANGER\",\n" +
+                                    "      { \"historyId\": 52, \"eventType\": \"SUSPENDED\", \"label\": \"계정 이용 정지\", \"tone\": \"DANGER\",\n" +
                                     "        \"detail\": \"욕설·비방 — 상품 문의 3건에 욕설 · 비방 반복\", \"actorType\": \"ADMIN\", \"actorName\": \"김운영\",\n" +
                                     "        \"refType\": \"SANCTION\", \"refId\": 17, \"occurredAt\": \"2026-10-10T14:20:00\" },\n" +
                                     "      { \"historyId\": null, \"eventType\": \"SIGNED_UP\", \"label\": \"가입\", \"tone\": \"NEUTRAL\",\n" +
@@ -337,7 +337,7 @@ public interface UserAdminControllerDocs {
                                     "    { \"historyId\": 53, \"eventType\": \"MEMO_CREATED\", \"label\": \"관리자 메모 기입\", \"tone\": \"NEUTRAL\",\n" +
                                     "      \"detail\": null, \"actorType\": \"ADMIN\", \"actorName\": \"김운영\", \"refType\": \"MEMO\", \"refId\": 3,\n" +
                                     "      \"occurredAt\": \"2026-10-10T14:25:00\" },\n" +
-                                    "    { \"historyId\": 52, \"eventType\": \"SUSPENDED\", \"label\": \"계정 정지\", \"tone\": \"DANGER\",\n" +
+                                    "    { \"historyId\": 52, \"eventType\": \"SUSPENDED\", \"label\": \"계정 이용 정지\", \"tone\": \"DANGER\",\n" +
                                     "      \"detail\": \"욕설·비방 — 상품 문의 3건에 욕설 · 비방 반복\", \"actorType\": \"ADMIN\", \"actorName\": \"김운영\",\n" +
                                     "      \"refType\": \"SANCTION\", \"refId\": 17, \"occurredAt\": \"2026-10-10T14:20:00\" },\n" +
                                     "    { \"historyId\": null, \"eventType\": \"SIGNED_UP\", \"label\": \"가입\", \"tone\": \"NEUTRAL\",\n" +

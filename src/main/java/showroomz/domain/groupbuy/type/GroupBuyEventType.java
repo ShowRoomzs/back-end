@@ -41,6 +41,8 @@ public enum GroupBuyEventType {
     SUSPENSION_WITHDRAWN,
     SUSPENDED_BY_ADMIN,
     SUSPENDED_EMERGENCY,
+    /** 계약 해지로 오픈 전 종결(1021 설계서 1-4). */
+    TERMINATED_BY_CONTRACT,
     /** 공구 종료 · 게시물 노출 종료 — SYSTEM. */
     ENDED,
     ISSUE_OPENED,

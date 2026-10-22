@@ -163,7 +163,7 @@ class AdminBrandDetailIntegrationTest extends AdminBrandTestSupport {
     void deliveryPolicy() throws Exception {
         BrandFixture.Brand owner = cleanBrand("배송정책브랜드");
         jdbc.update("UPDATE market SET default_delivery_fee = 3000, free_shipping_threshold = 50000, jeju_surcharge = 3000, "
-                + "remote_area_surcharge = 5000, return_fee = 6000, exchange_fee = 6000, shipping_lead_days = 2 "
+                + "remote_area_surcharge = 5000, shipping_lead_days = 2 "
                 + "WHERE market_id = ?", owner.marketId());
 
         JsonNode policy = brandDetailJson(owner.marketId()).path("deliveryPolicy");
@@ -171,8 +171,7 @@ class AdminBrandDetailIntegrationTest extends AdminBrandTestSupport {
         assertThat(policy.path("freeShippingThreshold").asInt()).isEqualTo(50000);
         assertThat(policy.path("jejuSurcharge").asInt()).isEqualTo(3000);
         assertThat(policy.path("remoteAreaSurcharge").asInt()).isEqualTo(5000);
-        assertThat(policy.path("returnFee").asInt()).isEqualTo(6000);
-        assertThat(policy.path("exchangeFee").asInt()).isEqualTo(6000);
+        assertThat(policy.has("returnFee")).isFalse();
         assertThat(policy.path("shipLeadBusinessDays").asInt()).isEqualTo(2);
         assertThat(policy.path("shipLeadText").asText()).isNotBlank();
         assertThat(policy.path("shipLeadLastChange").isNull() || policy.path("shipLeadLastChange").isMissingNode()).isTrue();

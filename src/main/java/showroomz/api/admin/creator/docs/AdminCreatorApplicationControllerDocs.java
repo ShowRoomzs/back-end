@@ -21,6 +21,8 @@ import showroomz.api.admin.creator.dto.CreatorApplicationDetailResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationListResponse;
 import showroomz.api.admin.creator.dto.CreatorApplicationRejectRequest;
 import showroomz.api.admin.creator.dto.CreatorApplicationSearchCondition;
+import showroomz.api.admin.creator.dto.CreatorRejectionNoticeResponse;
+import showroomz.api.admin.creator.type.CreatorRejectionReasonType;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
@@ -384,4 +386,23 @@ public interface AdminCreatorApplicationControllerDocs {
             @PathVariable("applicationId") Long applicationId,
             @Valid @RequestBody CreatorApplicationRejectRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal principal);
+
+    @Operation(
+            summary = "반려 통지 미리보기",
+            description = "C1 모달의 「신청자 통지 미리보기」(1021 결정 노트 기-36).\n\n"
+                    + "- 신청자에게는 **정형 사유(통지 라벨)** · 반려일 · 재신청 가능일(반려일 + 14일)만 이메일로 간다\n"
+                    + "- 상세 사유는 내부 기록 — 미리보기 · 메일에 담기지 않는다\n"
+                    + "- 「허위 팔로워 의심」은 통지에서 「채널 운영 기준 미충족」으로 보낸다\n\n"
+                    + "반려 처리(`POST …/reject`)가 커밋되면 같은 문안으로 업무 이메일에 발송한다(발송 뒤 업무 이메일은 파기)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "미리보기",
+                    content = @Content(schema = @Schema(implementation = CreatorRejectionNoticeResponse.class))),
+            @ApiResponse(responseCode = "400", description = "사유 미선택(INVALID_INPUT_VALUE)"),
+            @ApiResponse(responseCode = "404", description = "신청서 없음(APPLICATION_NOT_FOUND)"),
+            @ApiResponse(responseCode = "409", description = "검수 대기가 아님(INVALID_APPLICATION_STATUS)")
+    })
+    ResponseEntity<CreatorRejectionNoticeResponse> previewRejectionNotice(
+            @Parameter(description = "지원서 ID", example = "12") Long applicationId,
+            @Parameter(description = "반려 사유 코드", example = "SUSPECTED_FAKE_FOLLOWERS") CreatorRejectionReasonType reasonType);
 }

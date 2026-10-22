@@ -61,7 +61,8 @@ public class BrandChangeRequestDetailAssembler implements ChangeRequestDetailAss
         List<DiffFieldSpec> specs = switch (request.getType()) {
             case BUSINESS_INFO -> BUSINESS_INFO_SPECS;
             case SETTLEMENT_ACCOUNT -> SETTLEMENT_ACCOUNT_SPECS;
-            case TO_BUSINESS, TO_INDIVIDUAL -> throw new IllegalStateException("브랜드 대조표에 인플루언서 요청: " + request.getType());
+            case TO_BUSINESS, TO_INDIVIDUAL, CREATOR_ACCOUNT ->
+                    throw new IllegalStateException("브랜드 대조표에 인플루언서 요청: " + request.getType());
         };
         Map<String, ChangeRequestItem> itemsByKey = request.getItems().stream()
                 .collect(Collectors.toMap(item -> item.getFieldKey().name(), item -> item));

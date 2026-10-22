@@ -42,7 +42,7 @@ public class MyCreatorApplicationResponse {
     @Schema(description = "신청 상태 (PENDING, APPROVED, REJECTED)", example = "REJECTED")
     private final CreatorApplicationStatus status;
 
-    @Schema(description = "반려 사유", example = "허위 팔로워 의심")
+    @Schema(description = "반려 사유 — 신청자 통지 라벨(1021 기-36 · 상세 사유는 내리지 않는다)", example = "채널 운영 기준 미충족")
     private final String rejectReason;
 
     @Schema(description = "재신청 가능 일시 (반려 처리일 + 14일)", example = "2026-08-05T15:30:00")
@@ -62,7 +62,10 @@ public class MyCreatorApplicationResponse {
         this.appliedAt = ca.getCreatedAt();
         this.processedAt = ca.getProcessedAt();
         this.status = ca.getStatus();
-        this.rejectReason = ca.getRejectReason();
+        this.rejectReason = showroomz.api.admin.creator.type.CreatorRejectionReasonType.fromCode(ca.getRejectReasonType())
+                .map(showroomz.api.admin.creator.type.CreatorRejectionReasonType::getNoticeLabel)
+                .orElse(ca.getStatus() == showroomz.domain.member.creator.type.CreatorApplicationStatus.REJECTED
+                        ? "기타" : null);
         this.reapplyAvailableAt = reapplyAvailableAt;
         this.canReapply = !LocalDateTime.now().isBefore(reapplyAvailableAt);
     }

@@ -138,6 +138,22 @@ public class SettlementAdjustmentPortAdapter implements SettlementAdjustmentPort
         confirmService.confirm(settlementId, SettlementConfirmReason.EXPIRED, confirmedAt);
     }
 
+    /** 요청 철회 확정(1021 기-14) — 원래 금액 그대로 · 확정 시각 = 철회 시각 · 지급 예정일 = 확정일 + N영업일. */
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void confirmByWithdrawal(Long settlementId, Long adjustmentId, LocalDateTime now) {
+        Settlement settlement = settlementRepository.findForUpdate(settlementId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_NOT_FOUND));
+        if (settlement.getStatus() != SettlementStatus.ADJUSTING) {
+            if (settlement.getStatus().isConfirmed()) {
+                return; // 멱등
+            }
+            throw new BusinessException(ErrorCode.SETTLEMENT_STATE_CHANGED);
+        }
+        // 철회 이력은 철회한 쪽을 주체로 서비스가 남긴다.
+        confirmService.confirm(settlementId, SettlementConfirmReason.WITHDRAWN, now);
+    }
+
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void recordEvent(Long settlementId, SettlementEventType type, SettlementParty actor, Long actorId,

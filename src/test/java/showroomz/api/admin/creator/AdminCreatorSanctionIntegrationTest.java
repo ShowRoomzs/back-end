@@ -272,7 +272,7 @@ class AdminCreatorSanctionIntegrationTest extends AdminCreatorTestSupport {
 
         createPost("정지 중 새 게시물", "PUBLISH").andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
-                .andExpect(jsonPath("$.message").value("계정 정지 중에는 새 게시물을 등록할 수 없습니다."));
+                .andExpect(jsonPath("$.message").value("계정 이용 정지 중에는 새 게시물을 등록할 수 없습니다."));
         createPost("정지 중 임시저장", "DRAFT").andExpect(status().isCreated());
         mockMvc.perform(post(CREATOR_POSTS + "/" + draft + "/publish").header(HttpHeaders.AUTHORIZATION, creatorToken))
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"));
@@ -300,7 +300,7 @@ class AdminCreatorSanctionIntegrationTest extends AdminCreatorTestSupport {
         try {
             submitGroupBuyPost(blocked).andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
-                    .andExpect(jsonPath("$.message").value("계정 정지 중에는 공구 게시물을 제출할 수 없습니다."));
+                    .andExpect(jsonPath("$.message").value("계정 이용 정지 중에는 공구 게시물을 제출할 수 없습니다."));
         } finally {
             memberProperties.getSanction().setBlockGroupBuyPost(false);
         }

@@ -194,7 +194,7 @@ public final class AdminCreatorDto {
     public record Activity(
             long groupBuyPostCount,
             @Schema(description = "공구 게시물 검토 반려 횟수 — 사실 기록만") long reviewRejectCount,
-            @Schema(description = "숨김 · 노출 중지 횟수 — 공구 게시물 숨김 + 일반 게시물 노출 중지") long hiddenCount,
+            @Schema(description = "노출 중지 횟수 — 공구 게시물 노출 중지 + 일반 게시물 노출 중지") long hiddenCount,
             long generalPostCount,
             @Schema(description = "쇼룸 팔로워 — 앱 내 팔로우 수(인스타 팔로워 아님)") long followerCount,
             long threadCount,
@@ -279,7 +279,9 @@ public final class AdminCreatorDto {
     }
 
     public record SuspendRequest(@NotNull CreatorSuspensionReason reason,
-                                 @Size(max = 500) @Schema(description = "기타(OTHER)일 때만 필수") String reasonDetail) {
+                                 @Size(max = 500) @Schema(description = "기타(OTHER)일 때만 필수") String reasonDetail,
+                                 @Schema(description = "정지 종료일(포함 · 오늘 이상) — 다음 날 00:00 자동 해제(1021 기-02). 비우면 기간 없는 정지(수동 해제)",
+                                         example = "2026-10-29", nullable = true) java.time.LocalDate endsOn) {
     }
 
     public record ReleaseRequest(@Schema(description = "해제 사유 — 비우면 RESOLVED. WITHDRAWN 은 시스템 전용") SanctionReleaseReason reason,

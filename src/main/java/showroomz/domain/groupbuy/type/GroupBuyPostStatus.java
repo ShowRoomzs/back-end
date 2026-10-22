@@ -21,7 +21,12 @@ public enum GroupBuyPostStatus {
     REJECTED("반려", GroupBuyTone.WARNING),
     SCHEDULED("예약", GroupBuyTone.INFO),
     EXPOSED("노출중", GroupBuyTone.SUCCESS),
-    HIDDEN("숨김", GroupBuyTone.WARNING),
+    /**
+     * 노출 중지 — 운영자 조치(1021 설계서 2-1 · 기-08 「숨김」→「노출 중지」 · 위험색). 일반 게시물의 {@code PostStatus.SUSPENDED}
+     * (「노출 중지」 · 이의 기한 뒤 삭제)와 다른 조치라 값 이름을 {@code EXPOSURE_} 로 구분한다. 이력 · 알림 · 열 이름(hidden_*)은
+     * DB 저장 문자열이라 그대로 둔다.
+     */
+    EXPOSURE_SUSPENDED("노출 중지", GroupBuyTone.DANGER),
     /** 종료 — 종료·조기 마감·중단 공통. 원문은 분쟁 근거로 보관된다. */
     CLOSED("종료", GroupBuyTone.NEUTRAL);
 
@@ -39,7 +44,7 @@ public enum GroupBuyPostStatus {
             case DRAFT -> WRITING;
             case PENDING -> PENDING_APPROVAL;
             case REJECTED -> REJECTED;
-            case APPROVED -> post.isHidden() ? HIDDEN
+            case APPROVED -> post.isHidden() ? EXPOSURE_SUSPENDED
                     : groupBuy.getStatus().isSelling() ? EXPOSED
                     : SCHEDULED;
         };

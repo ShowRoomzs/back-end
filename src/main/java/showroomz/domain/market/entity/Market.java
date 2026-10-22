@@ -94,11 +94,6 @@ public class Market {
     @Column(name = "shipping_lead_days")
     private Integer shippingLeadDays;
 
-    @Column(name = "return_fee", nullable = false)
-    private Integer returnFee = 3000;
-
-    @Column(name = "exchange_fee", nullable = false)
-    private Integer exchangeFee = 6000;
 
     /** 파트너 홈 첫 공구 가이드 숨김 시각(1017 설계서 4-4) — null 이면 보인다. 첫 공구가 오픈되면 숨김과 무관하게 사라진다. */
     @Column(name = "home_guide_hidden_at")

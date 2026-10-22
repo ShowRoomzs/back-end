@@ -42,9 +42,17 @@ public class UserSanctionService {
     private final UserStatusHistoryRepository statusHistoryRepository;
     private final UserAdminHistoryRecorder historyRecorder;
     private final UserSanctionNotifier notifier;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     public UserSanction suspend(Long userId, UserSuspensionReason reason, String reasonDetail, Long operatorId,
                                 String operatorName, LocalDateTime now) {
+        return suspend(userId, reason, reasonDetail, null, operatorId, operatorName, now);
+    }
+
+    /** 정지 — 종료일(포함)이 있으면 다음 날 00:00 자동 해제 · 이의 신청 기한 = 통지 + N영업일(1021 기-02). */
+    public UserSanction suspend(Long userId, UserSuspensionReason reason, String reasonDetail, java.time.LocalDate endsOn,
+                                Long operatorId, String operatorName, LocalDateTime now) {
+        java.time.LocalDate term = termPolicy.requireEndsOn(endsOn, now);
         if (reason == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정지 사유를 선택해 주세요.");
         }
@@ -62,6 +70,7 @@ public class UserSanctionService {
 
         UserSanction sanction = sanctionRepository.save(
                 UserSanction.suspend(userId, reason, detail, operatorId, operatorName, now));
+        sanction.applyTerm(term, termPolicy.appealDeadline(now));
         transition(user, UserStatus.SUSPENDED, reason.name());
         historyRecorder.byOperator(userId, UserAdminEventType.SUSPENDED, operatorId, operatorName, sanction.reasonText(),
                 UserAdminHistoryRecorder.REF_SANCTION, sanction.getId(), now);
@@ -92,11 +101,30 @@ public class UserSanctionService {
             sanction.release(reason, operatorId, operatorName, now);
         }
         transition(user, UserStatus.NORMAL, reason.name());
-        historyRecorder.byOperator(userId, UserAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName,
-                reason.getLabel(), UserAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        if (operatorId == null) {
+            historyRecorder.bySystem(userId, UserAdminEventType.SUSPENSION_RELEASED, reason.getLabel(),
+                    UserAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(), now);
+        } else {
+            historyRecorder.byOperator(userId, UserAdminEventType.SUSPENSION_RELEASED, operatorId, operatorName,
+                    reason.getLabel(), UserAdminHistoryRecorder.REF_SANCTION, sanction == null ? null : sanction.getId(),
+                    now);
+        }
         AfterCommit.run(() -> notifier.released(userId));
         log.info("소비자 정지 해제 - userId: {}, reason: {}", userId, reason);
         return sanction;
+    }
+
+    /** 정지 기간 종료 자동 해제(1021 기-02) — 시스템 · 사유 「제재 기간 종료」. 기간이 없거나 남았거나 이미 풀렸으면 null. */
+    public UserSanction releaseByTerm(Long userId, LocalDateTime now) {
+        UserSanction open = sanctionRepository.findByUserIdAndReleasedAtIsNull(userId).orElse(null);
+        if (open == null || !open.isTermEnded(now.toLocalDate())) {
+            return null;
+        }
+        UserSanction released = release(userId, UserReleaseReason.TERM_ENDED, null, null, now);
+        if (released != null) {
+            released.markAutoReleased();
+        }
+        return released;
     }
 
     /**

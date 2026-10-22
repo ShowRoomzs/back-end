@@ -31,4 +31,12 @@ public class UserAdminHistoryRecorder {
         return histories.save(UserAdminHistory.of(userId, eventType, UserAdminActorType.ADMIN, operatorId, operatorName,
                 detail, refType, refId, now));
     }
+
+    /** 시스템 조치 — 정지 기간 종료 자동 해제(1021 기-02). */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public UserAdminHistory bySystem(Long userId, UserAdminEventType eventType, String detail, String refType, Long refId,
+                                     LocalDateTime now) {
+        return histories.save(UserAdminHistory.of(userId, eventType, UserAdminActorType.SYSTEM, null, null, detail,
+                refType, refId, now));
+    }
 }

@@ -63,4 +63,9 @@ public interface SettlementItemRepository extends JpaRepository<SettlementItem, 
             + "WHERE u.id = i.consumerUserId AND i.settlementId IN :settlementIds AND i.status IN :statuses")
     List<Object[]> findBuyersBySettlement(@Param("settlementIds") Collection<Long> settlementIds,
                                           @Param("statuses") Collection<showroomz.domain.settlement.type.SettlementItemStatus> statuses);
+
+    /** 재계산(1021 설계서 6-3) — 항목을 다시 만들기 전에 지운다. */
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true)
+    @Query("DELETE FROM SettlementItem i WHERE i.settlementId = :settlementId")
+    int deleteAllBySettlementId(@Param("settlementId") Long settlementId);
 }

@@ -16,7 +16,7 @@ public record CreatorGroupBuySummaryResponse(
                 example = "{\"ALL\":11,\"PREPARING\":3,\"READY\":1,\"IN_PROGRESS\":4,\"ENDED\":3}")
         Map<String, Long> tabCounts,
 
-        @Schema(description = "내 조치가 필요한 공구 수(공구 단위 — 조건 여러 개에 걸려도 1) = 게시물 작성·재등록(준비중) + 숨김 게시물 수정(준비완료·진행중) "
+        @Schema(description = "내 조치가 필요한 공구 수(공구 단위 — 조건 여러 개에 걸려도 1) = 게시물 작성·재등록(준비중) + 노출 중지 게시물 수정(준비완료·진행중) "
                 + "+ 연장 응답(진행중 · 종료 전) + 이행 확인(종료 · 내 확인 전). GNB 「공구 관리 N」 배지 · 목록 헤더",
                 example = "3")
         long actionRequiredCount

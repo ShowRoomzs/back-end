@@ -38,6 +38,27 @@ public class WithdrawalInfoResponse {
             example = "false")
     private boolean creatorReviewRequired;
 
+    @Schema(description = "탈퇴 차단 사유 분해(1021 기-31) — [진행 중 주문 N건 보기]는 합. 전부 0 이고 인플루언서가 아니어야 탈퇴할 수 있다")
+    private Blockers blockers;
+
+    @Getter
+    @AllArgsConstructor
+    @Schema(name = "WithdrawalBlockers")
+    public static class Blockers {
+        @Schema(description = "구매확정 전 주문 상품 수(결제 전 제외)", example = "1")
+        private long ongoingOrders;
+        @Schema(description = "진행 중 반품 · 교환 요청 수", example = "1")
+        private long openClaims;
+        @Schema(description = "미결제 재발송비 · 사유 번복 결제 수", example = "0")
+        private long unpaidCharges;
+        @Schema(description = "송금 대기 중인 운임 환급 수 — 받을 돈이 남아 있다", example = "0")
+        private long pendingTransfers;
+
+        public boolean any() {
+            return ongoingOrders + openClaims + unpaidCharges + pendingTransfers > 0;
+        }
+    }
+
     @Getter
     @AllArgsConstructor
     @Schema(description = "탈퇴 이유 선택지")

@@ -101,7 +101,7 @@ public final class SellerSettlementDto {
             @Schema(description = "명세 미리보기 5건 — 주문번호 내림차순") List<Item> items,
             long itemTotalCount,
             Actions actions,
-            @Schema(description = "내 지급 행 보류 이유 — 「지급 정지 · 계정 정지 중 — 정지가 풀리면 다음 영업일에 지급」(S5)", nullable = true) PayoutHoldView payoutHold
+            @Schema(description = "내 지급 행 보류 이유 — 「지급 정지 · 계정 이용 정지 중 — 정지가 풀리면 다음 영업일에 지급」(S5)", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -137,6 +137,10 @@ public final class SellerSettlementDto {
             RateAmount rewardVat,
             SettlementPartyDto.AmountCount reshipFee,
             @Schema(description = "소비자 결제 배송비 — 브랜드 가산(§46 B-6 미결 행)") long consumerDeliveryFee,
+            @Schema(description = "+ 반품 시 차감한 최초 배송비 — 무료배송 · 소비자 귀책 반품에서 환불액에서 뺀 금액 · 브랜드 정산에 남는다(1021 기-18)")
+            SettlementPartyDto.AmountCount returnDeductionFee,
+            @Schema(description = "± 운임 정산 — 귀책 변경(사유 번복 · 귀책 인정 · 이의 인용) · amount 는 부호 있음(소비자 부담 +, 환급 −) · 1021 기-93")
+            SettlementPartyDto.AmountCount freightAdjustment,
             @Schema(description = "차감 전 브랜드 수취액") long brandPayoutBeforeClawback,
             @Schema(description = "차감 반영 — 이전 회차 환불의 회수(없으면 [])") List<Clawback> clawbacks,
             long brandClawbackAmount,

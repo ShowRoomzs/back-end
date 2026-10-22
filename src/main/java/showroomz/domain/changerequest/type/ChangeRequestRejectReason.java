@@ -14,10 +14,10 @@ public enum ChangeRequestRejectReason {
     EVIDENCE_UNREADABLE("서류 판독 불가 (흐림·잘림)", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
     EVIDENCE_EXPIRED("서류 유효기간 경과", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
     REASON_INSUFFICIENT("변경 사유 불충분", EnumSet.of(ChangeRequestType.BUSINESS_INFO)),
-    BANKBOOK_MISSING("통장 사본 미첨부", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
-    HOLDER_NAME_MISMATCH("예금주와 사업자 명의 불일치", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
-    ACCOUNT_NUMBER_INVALID("계좌번호 오류·미개설 계좌", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
-    BANKBOOK_UNREADABLE("통장 사본 판독 불가", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT)),
+    BANKBOOK_MISSING("통장 사본 미첨부", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT, ChangeRequestType.CREATOR_ACCOUNT)),
+    HOLDER_NAME_MISMATCH("예금주와 사업자 명의 불일치", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT, ChangeRequestType.CREATOR_ACCOUNT)),
+    ACCOUNT_NUMBER_INVALID("계좌번호 오류·미개설 계좌", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT, ChangeRequestType.CREATOR_ACCOUNT)),
+    BANKBOOK_UNREADABLE("통장 사본 판독 불가", EnumSet.of(ChangeRequestType.SETTLEMENT_ACCOUNT, ChangeRequestType.CREATOR_ACCOUNT)),
     // ---- 인플루언서 사업자 구분 변경(§16-2a · 시안 C8b — 표기 그대로 · 두 방향 공통 · 16 설계서 2-2)
     LICENSE_UNREADABLE("사업자등록증 판독 불가 (흐림·잘림)", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
     LICENSE_OWNER_NAME_MISMATCH("등록증의 대표자명이 본인 실명과 다름", EnumSet.of(ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL)),
@@ -35,6 +35,14 @@ public enum ChangeRequestRejectReason {
     }
 
     public String getDescription() {
+        return description;
+    }
+
+    /** 요청 유형별 문장 — 인플루언서 계좌의 예금주 기준은 사업자 명의가 아니라 본인 실명이다(1021 기-22). */
+    public String descriptionFor(ChangeRequestType type) {
+        if (this == HOLDER_NAME_MISMATCH && type == ChangeRequestType.CREATOR_ACCOUNT) {
+            return "예금주가 본인 실명과 일치하지 않음";
+        }
         return description;
     }
 

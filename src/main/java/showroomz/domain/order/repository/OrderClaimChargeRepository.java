@@ -29,4 +29,9 @@ public interface OrderClaimChargeRepository extends JpaRepository<OrderClaimChar
             + "WHERE c.deliveryGroup.groupBuy.id = :groupBuyId AND h.status IN :statuses")
     List<Object[]> sumByGroupBuy(@Param("groupBuyId") Long groupBuyId,
                                  @Param("statuses") Collection<showroomz.domain.order.type.ClaimChargeStatus> statuses);
+
+    /** 소비자 탈퇴 차단(1021 기-31) — 아직 내지 않은 재발송비 · 사유 번복 결제. */
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(c) FROM OrderClaimCharge c WHERE c.collection.userId = :userId "
+            + "AND c.status = showroomz.domain.order.type.ClaimChargeStatus.PENDING")
+    long countPendingByUser(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

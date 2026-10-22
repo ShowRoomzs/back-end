@@ -52,6 +52,9 @@ public class CreatorContractDetailAssembler {
     private final ConnectionRepository connectionRepository;
     private final MessageThreadRepository messageThreadRepository;
     private final ContractDocumentStorage contractDocumentStorage;
+    private final showroomz.global.config.properties.ContractProperties contractProperties;
+    private final showroomz.domain.contract.repository.ContractTerminationRequestRepository terminationRequestRepository;
+    private final showroomz.api.seller.contract.service.ContractDetailAssembler partnerAssembler;
 
     public CreatorContractDetailResponse assemble(Contract contract,
                                                   CreatorContractDetailResponse.Navigation navigation) {
@@ -86,7 +89,17 @@ public class CreatorContractDetailAssembler {
                 history(contract, connection),
                 navigation,
                 SanctionHoldView.forCreator(contract),
-                SanctionHoldView.deadlinePaused(contract));
+                SanctionHoldView.deadlinePaused(contract),
+                terminationRequested(contract),
+                partnerAssembler.draftApprovals(contract));
+    }
+
+    /** 브랜드 해지 요청이 처리 대기 중이면(1021 설계서 1-4) — 동의 · 의견은 운영팀 채널 답글로 받는다. */
+    private CreatorContractDetailResponse.TerminationRequested terminationRequested(Contract contract) {
+        return terminationRequestRepository.findPending(contract.getId())
+                .map(r -> new CreatorContractDetailResponse.TerminationRequested(r.getReasonCode().getLabel(),
+                        r.getMemo(), r.getRequestedAt(), r.getConsentCardId()))
+                .orElse(null);
     }
 
     private CreatorContractDetailResponse.Brand brand(Contract contract, Long threadId, boolean connected) {
@@ -113,7 +126,8 @@ public class CreatorContractDetailAssembler {
                 contract.getReviewApprovedAt(),
                 contract.getSignatureRequestedAt(),
                 signedCount,
-                contract.getConcludedAt());
+                contract.getConcludedAt(),
+                contract.getEstablishedAt());
     }
 
     /**
@@ -225,6 +239,8 @@ public class CreatorContractDetailAssembler {
                 contract.getFixedFeeAmount(),
                 contract.getFixedFeeTrigger(),
                 contract.getFixedFeeTrigger() == null ? null : contract.getFixedFeeTrigger().getLabel(),
+                contract.getFixedFeeTrigger() == null ? null : contract.getFixedFeeTrigger().getDescription(),
+                contractProperties.getFixedFeePaymentBusinessDays(),
                 paymentState(contract));
     }
 

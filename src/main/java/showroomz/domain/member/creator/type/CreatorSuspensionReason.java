@@ -16,6 +16,8 @@ public enum CreatorSuspensionReason implements SuspensionReasonType {
     GROUP_BUY_NONPERFORMANCE("공구 진행 불이행", false),
     CONSUMER_RESPONSE_NEGLECT("소비자 응대 불이행", false),
     SETTLEMENT_INFO_MISMATCH("정산 정보 불일치", true),
+    /** 허위 기재(1021 기-03 정지 모달) — 지급 정지 아님(14절 Q21). */
+    FALSE_INFORMATION("허위 기재", false),
     OTHER("기타(직접 입력)", false);
 
     private final String label;

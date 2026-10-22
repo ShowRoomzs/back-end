@@ -91,6 +91,7 @@ public class GroupBuyPostCardLoader {
                 saleState.isClosed() ? null : dDay(groupBuy.getEndAt(), now),
                 groupBuy.getEndAt(),
                 GroupBuyDisclosure.text(groupBuy.getMarket().getMarketName()),
+                groupBuy.getMarket().getMarketName(),
                 products);
     }
 

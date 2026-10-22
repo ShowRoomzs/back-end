@@ -23,6 +23,8 @@ public enum NotificationType {
     CLAIM_RESHIP_FEE_NEEDED("반품·교환", false),
     CLAIM_INSPECTION_PASSED("반품·교환", false),
     CLAIM_INSPECTION_REJECTED("반품·교환", false),
+    /** 운임 환급 초과분 계좌 송금 완료(1021 설계서 4-5) — 「계좌로 N원을 송금했어요」. */
+    CLAIM_REFUND_TRANSFERRED("반품·교환", false),
     REFUND_COMPLETED("주문", false),
     INQUIRY_ANSWERED("문의", false),
     FOLLOW_GROUP_BUY_OPENED("쇼룸", true),
@@ -55,6 +57,12 @@ public enum NotificationType {
     CONTRACT_RESEND_HANDLED("계약", false),
     CONTRACT_SIGN_DEADLINE_D1("계약", false),
     CONTRACT_FIXED_FEE_PAID("계약", false),
+    /** 양측 서명 완료 · 계약 성립(1021 기-05). */
+    CONTRACT_ESTABLISHED("계약", false),
+    /** 상대가 해지를 요청했다(1021 설계서 1-4) — 의견은 운영팀 채널. */
+    CONTRACT_TERMINATION_REQUESTED("계약", false),
+    /** 해지 처리됨 — 양측. */
+    CONTRACT_TERMINATED("계약", false),
 
     GROUP_BUY_POST_SUBMITTED("공구", false),
     GROUP_BUY_POST_APPROVED("공구", false),
@@ -79,11 +87,15 @@ public enum NotificationType {
     ORDER_INVOICE_BY_ADMIN("판매", false),
     ORDER_OPERATOR_REFUND("판매", false),
     CLAIM_OPENED_BY_ADMIN("판매", false),
+    /** 추적 정지 소비자 선택(1021 기-15) — 「소비자가 재발송/환불을 선택했어요」. */
+    ORDER_STALL_CHOICE_MADE("판매", false),
     CANCEL_AUTO_APPROVED("판매", false),
     RETURN_DETECTED("판매", false),
     TRACKING_STALLED("판매", false),
 
     SETTLEMENT_CREATED("정산", false),
+    /** 확인 기간 중 환불 재계산(1021 기-13) — 금액이 바뀌고 확인 기간이 다시 시작됐다. */
+    SETTLEMENT_RECALCULATED("정산", false),
     SETTLEMENT_CONFIRMED("정산", false),
     SETTLEMENT_PAID("정산", false),
     REWARD_PAID("정산", false),
@@ -97,6 +109,8 @@ public enum NotificationType {
     ADJUSTMENT_AGREED("정산", false),
     ADJUSTMENT_DEADLINE_D1("정산", false),
     ADJUSTMENT_EXPIRED("정산", false),
+    /** 상대가 조정 요청을 철회했다(1021 기-14). */
+    ADJUSTMENT_WITHDRAWN("정산", false),
 
     INQUIRY_DELETE_APPROVED("문의", false),
     INQUIRY_DELETE_REJECTED("문의", false),
@@ -108,6 +122,9 @@ public enum NotificationType {
     ACCOUNT_VERIFICATION_FAILED("기본정보", false),
     BUSINESS_TYPE_CHANGE_APPROVED("기본정보", false),
     BUSINESS_TYPE_CHANGE_REJECTED("기본정보", false),
+    /** 정산 계좌 변경 요청 승인 · 반려(1021 기-22). */
+    ACCOUNT_CHANGE_APPROVED("기본정보", false),
+    ACCOUNT_CHANGE_REJECTED("기본정보", false),
 
     ACCOUNT_SUSPENDED("계정", false),
     ACCOUNT_RELEASED("계정", false),

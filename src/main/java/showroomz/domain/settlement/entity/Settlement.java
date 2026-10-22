@@ -156,6 +156,20 @@ public class Settlement {
     @Column(name = "consumer_delivery_fee_amount", nullable = false)
     private long consumerDeliveryFeeAmount;
 
+    /** + 반품 시 차감한 최초 배송비(무료배송 · 소비자 귀책) — 브랜드 정산에 남는다(1021 기-18 · 설계서 6-1). */
+    @Column(name = "return_deduction_fee_amount", nullable = false)
+    private long returnDeductionFeeAmount;
+
+    @Column(name = "return_deduction_count", nullable = false)
+    private int returnDeductionCount;
+
+    /** ± 운임 정산(귀책 변경) — 소비자 부담 +, 소비자 환급 −(1021 기-93 · 설계서 6-1). 리워드 기준에는 영향이 없다. */
+    @Column(name = "freight_adjustment_amount", nullable = false)
+    private long freightAdjustmentAmount;
+
+    @Column(name = "freight_adjustment_count", nullable = false)
+    private int freightAdjustmentCount;
+
     @Column(name = "brand_clawback_amount", nullable = false)
     private long brandClawbackAmount;
 
@@ -232,7 +246,45 @@ public class Settlement {
         this.originalRewardAmount = amounts.rewardAmount();
         this.reshipFeeAmount = amounts.reshipFeeAmount();
         this.consumerDeliveryFeeAmount = amounts.consumerDeliveryFeeAmount();
+        this.returnDeductionFeeAmount = amounts.returnDeductionFeeAmount();
+        this.freightAdjustmentAmount = amounts.freightAdjustmentAmount();
         applyAmounts(amounts);
+    }
+
+    /**
+     * 확인 기간 중 환불 재계산(1021 설계서 6-3) — 생성과 같은 산식으로 다시 모은 값을 덮어쓰고 확인 기간을 다시 시작한다. 요율 스냅샷은 그대로다.
+     * 원래 리워드({@code original_reward_amount})는 갱신 불가 열이라 리포지토리 UPDATE 로 따로 맞춘다.
+     */
+    public void recalculate(Breakdown breakdown, SettlementAmounts amounts, LocalDateTime reviewDueAt) {
+        this.grossOrderAmount = breakdown.grossOrderAmount();
+        this.cancelDeduction = breakdown.cancelDeduction();
+        this.cancelCount = breakdown.cancelCount();
+        this.returnDeduction = breakdown.returnDeduction();
+        this.returnCount = breakdown.returnCount();
+        this.deliveryExceptionDeduction = breakdown.deliveryExceptionDeduction();
+        this.deliveryExceptionCount = breakdown.deliveryExceptionCount();
+        this.reshipCount = breakdown.reshipCount();
+        this.confirmedSalesAmount = amounts.confirmedSalesAmount();
+        this.pgFeeAmount = amounts.pgFeeAmount();
+        this.platformFeeAmount = amounts.platformFeeAmount();
+        this.reshipFeeAmount = amounts.reshipFeeAmount();
+        this.consumerDeliveryFeeAmount = amounts.consumerDeliveryFeeAmount();
+        this.returnDeductionFeeAmount = amounts.returnDeductionFeeAmount();
+        this.freightAdjustmentAmount = amounts.freightAdjustmentAmount();
+        this.reviewDueAt = reviewDueAt;
+        applyAmounts(amounts);
+    }
+
+    /** 이 정산의 요율 스냅샷 — 재계산 · 클로백 역산이 생성 때 요율을 쓴다. */
+    public showroomz.domain.settlement.service.SettlementRates ratesSnapshot() {
+        return new showroomz.domain.settlement.service.SettlementRates(pgFeeRate, platformFeeRate, rewardVatRate,
+                withholdingIncomeRate, withholdingLocalRate);
+    }
+
+    /** 분해 줄 건수(1021 설계서 6-1) — 「무료배송 · 소비자 귀책 2건」 · 「귀책 변경 1건」. */
+    public void applyFeeLineCounts(int returnDeductionCount, int freightAdjustmentCount) {
+        this.returnDeductionCount = returnDeductionCount;
+        this.freightAdjustmentCount = freightAdjustmentCount;
     }
 
     /** 분해 행 중 산식 입력이 아닌 것 — 건수 · 차감 전 총액. */

@@ -36,6 +36,9 @@ public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry
     /** 이 정지의 소명 문의 — 어드민 해제 모달의 「소명 문의 번호」(§25-4). */
     List<OneToOneInquiry> findBySanctionIdOrderByCreatedAtDescIdDesc(Long sanctionId);
 
+    /** 운임 환급 계좌 안내 문의 최신 1건(1021 설계서 4-5 · 어드민 06c M3 「1:1 문의 #N 로 받은 계좌」). */
+    Optional<OneToOneInquiry> findFirstByRefundTaskIdOrderByIdDesc(Long refundTaskId);
+
     /** 처리 이력 파생 행 「정지 소명 문의 접수」(7-2). */
     List<OneToOneInquiry> findByUser_IdAndSanctionIdIsNotNull(Long userId);
 

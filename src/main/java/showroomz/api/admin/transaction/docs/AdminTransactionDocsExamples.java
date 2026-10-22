@@ -1178,4 +1178,16 @@ final class AdminTransactionDocsExamples {
     static final String ERR_REFUND_TASK_NOT_VOIDABLE = """
             {"code": "REFUND_TASK_NOT_VOIDABLE", "message": "철회할 수 없는 환불 건입니다. 집행 전 운영자 사유 환불만 철회할 수 있습니다."}
             """;
+
+    static final String REQ_REFUND_TRANSFER = """
+            {"bankCode": "088", "accountNumber": "110-123-456789", "holderName": "김수민", "transferConfirmed": true}
+            """;
+
+    static final String ERR_REFUND_TRANSFER_ACCOUNT_REQUIRED = """
+            {"code": "REFUND_TRANSFER_ACCOUNT_REQUIRED", "message": "송금한 계좌(은행 · 계좌번호 · 예금주)와 송금 완료 확인이 필요합니다."}
+            """;
+
+    static final String ERR_REFUND_TRANSFER_NOT_PENDING = """
+            {"code": "REFUND_TRANSFER_NOT_PENDING", "message": "송금 대기 중인 환급 항목이 아닙니다."}
+            """;
 }

@@ -151,4 +151,9 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
             + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID ORDER BY s.settlementNumber ASC")
     List<Settlement> findRetainedForBusinessTypeChange(@Param("creatorId") Long creatorId,
                                                        @Param("businessType") showroomz.domain.member.creator.type.CreatorBusinessType businessType);
+
+    /** 재계산(1021 설계서 6-3) — 원래 리워드는 갱신 불가 열이라 여기서만 바꾼다. */
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Settlement s SET s.originalRewardAmount = :amount WHERE s.id = :settlementId")
+    int updateOriginalReward(@Param("settlementId") Long settlementId, @Param("amount") long amount);
 }

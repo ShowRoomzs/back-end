@@ -18,4 +18,9 @@ public interface UserSanctionRepository extends JpaRepository<UserSanction, Long
 
     /** 해제 토스트를 아직 확인하지 않은 해제 행 — 확인은 한 번에 전부(3-2). */
     List<UserSanction> findByUserIdAndReleasedAtIsNotNullAndReleaseNoticeAckedAtIsNull(Long userId);
+
+    /** 정지 기간이 끝난 열린 정지의 회원 id(1021 기-02 자동 해제). */
+    @org.springframework.data.jpa.repository.Query("SELECT s.userId FROM UserSanction s WHERE s.releasedAt IS NULL "
+            + "AND s.endsOn IS NOT NULL AND s.endsOn < :today ORDER BY s.id ASC")
+    java.util.List<Long> findMemberIdsToAutoRelease(@org.springframework.data.repository.query.Param("today") java.time.LocalDate today);
 }

@@ -72,6 +72,18 @@ public class BrandSanction {
     @Column(name = "release_card_id")
     private Long releaseCardId;
 
+    /** 정지 종료일(포함) — 다음 날 00:00 자동 해제(1021 기-02). null = 기간 없음(기존 행 · 수동 해제). */
+    @Column(name = "ends_on")
+    private java.time.LocalDate endsOn;
+
+    /** 이의 신청 기한 — 통지 + N영업일 23:59:59(표시용 · 접수 차단 안 함). */
+    @Column(name = "appeal_deadline_at")
+    private LocalDateTime appealDeadlineAt;
+
+    @org.hibernate.annotations.ColumnDefault("false")
+    @Column(name = "auto_released", nullable = false)
+    private boolean autoReleased;
+
     public static BrandSanction suspend(Long marketId, BrandSuspensionReason reason, String reasonDetail,
                                         Long operatorId, String operatorName, LocalDateTime now) {
         BrandSanction sanction = new BrandSanction();
@@ -83,6 +95,21 @@ public class BrandSanction {
         sanction.suspendedBy = operatorId;
         sanction.suspendedByName = operatorName;
         return sanction;
+    }
+
+    /** 정지 기간 · 이의 신청 기한(1021 기-02) — 정지 때 한 번. */
+    public void applyTerm(java.time.LocalDate endsOn, LocalDateTime appealDeadlineAt) {
+        this.endsOn = endsOn;
+        this.appealDeadlineAt = appealDeadlineAt;
+    }
+
+    /** 기간이 끝났는가 — 종료일 다음 날부터. */
+    public boolean isTermEnded(java.time.LocalDate today) {
+        return endsOn != null && endsOn.isBefore(today);
+    }
+
+    public void markAutoReleased() {
+        this.autoReleased = true;
     }
 
     public boolean isOpen() {

@@ -24,8 +24,13 @@ public final class AdjustmentPermissionPolicy {
     private AdjustmentPermissionPolicy() {
     }
 
-    public record Permissions(boolean canAccept, boolean canReject, boolean canCounter, boolean canSend) {
-        public static final Permissions NONE = new Permissions(false, false, false, false);
+    public record Permissions(boolean canAccept, boolean canReject, boolean canCounter, boolean canSend,
+                              boolean canWithdraw) {
+        public static final Permissions NONE = new Permissions(false, false, false, false, false);
+
+        public Permissions(boolean canAccept, boolean canReject, boolean canCounter, boolean canSend) {
+            this(canAccept, canReject, canCounter, canSend, false);
+        }
 
         public boolean canRespond() {
             return canAccept || canReject || canCounter;
@@ -41,6 +46,19 @@ public final class AdjustmentPermissionPolicy {
             return viewer == latestProposer ? AdjustmentTurn.THEIR_TURN : AdjustmentTurn.MY_TURN;
         }
         return AdjustmentTurn.OPEN_FLOOR;
+    }
+
+    /**
+     * [요청 철회](1021 기-14) 까지 — 협의 중 ∧ 기한 전 ∧ 뷰어 = 처음 요청한 쪽 ∧ 최신 제안이 뷰어의 것이고 응답 대기(상대가 반대 · 수정 제안을
+     * 낸 뒤면 철회가 아니라 협의다).
+     */
+    public static Permissions permissions(AdjustmentStatus status, LocalDateTime deadlineAt, ProposalStatus latestStatus,
+                                          SettlementParty latestProposer, SettlementParty requester,
+                                          SettlementParty viewer, LocalDateTime now) {
+        Permissions base = permissions(status, deadlineAt, latestStatus, latestProposer, viewer, now);
+        boolean canWithdraw = viewer != null && status == AdjustmentStatus.OPEN && !now.isAfter(deadlineAt)
+                && viewer == requester && viewer == latestProposer && latestStatus == ProposalStatus.PENDING;
+        return new Permissions(base.canAccept(), base.canReject(), base.canCounter(), base.canSend(), canWithdraw);
     }
 
     /** 전부 {@code OPEN ∧ now ≤ deadline_at} 전제. 「내가 보낸 요청 카드에는 처음부터 버튼이 없다」(T1)가 뷰어 = 제안자에서 나온다. */

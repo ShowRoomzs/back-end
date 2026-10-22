@@ -21,6 +21,8 @@ public record GroupBuyPostCard(
         Integer dDay,
         LocalDateTime endAt,
         String adDisclosure,
+        /** 판매 브랜드명 — C5 하단 고지 「판매 ○○브랜드 · 추천 ○○님」(1021 기-34). 조회 시점의 마켓명. */
+        String brandName,
         List<Product> products
 ) {
 

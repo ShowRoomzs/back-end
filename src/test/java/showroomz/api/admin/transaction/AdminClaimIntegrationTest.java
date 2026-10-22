@@ -310,8 +310,8 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
                 + "AND event_type = 'DISPUTE_ACCEPTED'", String.class, claimId)).contains("재발송비 결제 요청 취소");
         assertThat(jdbc.queryForList("SELECT event_type FROM order_fulfillment_history WHERE delivery_group_id = ?",
                 String.class, group.getId())).contains("REFUND_ENQUEUED_BY_OPERATOR");
-        // 편입만 — 돈은 나가지 않았다.
-        assertThat(fake.partialCancelCalls()).isEmpty();
+        // 상품 환불은 편입만 — 돈은 나가지 않았다. 1021 설계서 4-5 의 운임 환급(선불 운임 · 서버 계산)만 별도 행으로 PG 자동 집행된다.
+        assertThat(fake.partialCancelCalls()).singleElement().asString().endsWith(":" + freightRefundOf(claimId));
     }
 
     @Test
@@ -422,7 +422,8 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
 
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", Map.of()).andExpect(jsonPath("$.outcome").value("DONE"));
         assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
-        assertThat(fake.partialCancelCalls()).hasSize(1);
+        // 운임 환급(인용 때 자동 집행) + 상품 환불(운영자 집행) — 두 번.
+        assertThat(fake.partialCancelCalls()).hasSize(2).last().asString().endsWith(":" + CREAM_PRICE);
     }
 
     @Test
@@ -676,7 +677,7 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
     }
 
     @Test
-    @DisplayName("[F-B08] 인용 뒤 — 상세 인용 불가 · 인용 금액 null · 목록 행 귀책 변경 참 · 종결 단계 · fee_bearer 는 그대로(현재 동작)")
+    @DisplayName("[F-B08] 인용 뒤 — 상세 인용 불가 · 인용 금액 null · 목록 행 귀책 변경 참 · 종결 단계 · fee_bearer 는 브랜드 귀책으로(1021 7-2)")
     void afterAcceptanceDetailAndRow() throws Exception {
         Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
         accept(claimId).andExpect(status().isOk());
@@ -684,12 +685,12 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         JsonNode detail = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
         assertThat(detail.get("canAcceptDispute").asBoolean()).isFalse();
         assertThat(detail.has("disputeRefundAmount") && !detail.get("disputeRefundAmount").isNull()).isFalse();
-        // 인용은 귀책 변경 표시(faultChangedToSeller)만 세우고 fee_bearer 는 그대로다 — 「귀책」 열이 소비자 귀책으로 남는다(현재 동작 고정 · 확인 필요).
-        assertThat(detail.get("feeBearer").asText()).isEqualTo("CONSUMER");
+        // 1021 설계서 7-2 — 인용은 귀책 변경 표시(faultChangedToSeller)와 함께 fee_bearer 도 SELLER 로 돌린다(운임 환급 · 브랜드 부담).
+        assertThat(detail.get("feeBearer").asText()).isEqualTo("SELLER");
         JsonNode row = rowOf(json(adminGet(ADMIN_CLAIMS + "?tab=DONE")).get("content"), claimId);
         assertThat(row.get("faultChangedToSeller").asBoolean()).isTrue();
         assertThat(row.at("/claim/stage").asText()).isEqualTo("DONE");
-        assertThat(row.get("feeBearerLabel").asText()).isEqualTo("소비자 귀책");
+        assertThat(row.get("feeBearerLabel").asText()).isEqualTo("브랜드 귀책");
     }
 
     // ------------------------------------------------------------------ 도우미
@@ -700,6 +701,12 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         jdbc.update("UPDATE order_claim SET inspect_due_at = ?, inspect_notice_count = 3 WHERE claim_id = ?",
                 LocalDateTime.now().minusDays(4), claimId);
         return claimId;
+    }
+
+    /** 1021 4-5 — 반려 이의 인용으로 세운 운임 환급(선불 운임) 행의 금액. */
+    private int freightRefundOf(Long claimId) {
+        return jdbc.queryForObject("SELECT refund_amount FROM order_refund_task WHERE source = 'FREIGHT_REFUND' "
+                + "AND source_id = ?", Integer.class, collectionIdOf(claimId));
     }
 
     private int operatorTasksOf(Long claimId) {

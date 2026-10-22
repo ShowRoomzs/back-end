@@ -298,7 +298,7 @@ public class AdminBrandQueryService {
                 .map(h -> new AdminBrandDto.ShipLeadChange(h.getChangedAt(), h.getPreviousDays(), h.getNewDays()))
                 .orElse(null);
         return new AdminBrandDto.DeliveryPolicy(market.getDefaultDeliveryFee(), market.getFreeShippingThreshold(),
-                market.getJejuSurcharge(), market.getRemoteAreaSurcharge(), market.getReturnFee(), market.getExchangeFee(), days,
+                market.getJejuSurcharge(), market.getRemoteAreaSurcharge(), days,
                 ShipDuePolicy.noticeText(days), change,
                 new AdminBrandDto.ReturnAddress(market.getShippingRecipientName(), market.getShippingContact(),
                         market.getShippingAddress(), market.getShippingDetailAddress()));

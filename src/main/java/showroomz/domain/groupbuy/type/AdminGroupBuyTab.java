@@ -22,7 +22,7 @@ public enum AdminGroupBuyTab {
     IN_PROGRESS(EnumSet.of(GroupBuyStatus.IN_PROGRESS, GroupBuyStatus.SUSPENSION_SCHEDULED)),
     ENDED(EnumSet.of(GroupBuyStatus.ENDED)),
     SETTLED(EnumSet.of(GroupBuyStatus.SETTLED)),
-    SUSPENDED(EnumSet.of(GroupBuyStatus.SUSPENDED));
+    SUSPENDED(EnumSet.of(GroupBuyStatus.SUSPENDED, GroupBuyStatus.TERMINATED));
 
     private final Set<GroupBuyStatus> statuses;
 

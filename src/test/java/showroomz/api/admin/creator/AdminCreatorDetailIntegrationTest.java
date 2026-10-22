@@ -301,8 +301,7 @@ class AdminCreatorDetailIntegrationTest extends AdminCreatorTestSupport {
         change.put("accountNumber", "1101234567");
         change.put("bankbookImageUrl", "https://cdn.showroomz.test/creator-document/bankbook.jpg");
         change.put("bankbookFileName", "통장사본_신한은행.jpg");
-        mockMvc.perform(put("/v1/creator/basic-info/settlement-account").header(HttpHeaders.AUTHORIZATION, creatorToken)
-                .contentType(MediaType.APPLICATION_JSON).content(toJson(change))).andExpect(status().isOk());
+        changeCreatorAccountApproved(change).andExpect(status().isOk());   // 변경 요청 → 운영자 승인(1021 기-22)
 
         String body = bodyOf(adminGet(base).andExpect(status().isOk())
                 .andExpect(jsonPath("$.settlementAccount.bankName").value("신한은행"))
@@ -531,13 +530,13 @@ class AdminCreatorDetailIntegrationTest extends AdminCreatorTestSupport {
     // ------------------------------------------------------------------ 8. 사유 목록
 
     @Test
-    @DisplayName("[RO-01 · RO-02] 사유 목록 — 정지 6(지급 정지 = 정산 정보 불일치만 · 기타만 상세 필수) · 해제 2(시스템 전용 제외) · 반려 5 · 해제 사유 4(기타 없음)")
+    @DisplayName("[RO-01 · RO-02] 사유 목록 — 정지 7(지급 정지 = 정산 정보 불일치만 · 기타만 상세 필수) · 해제 2(시스템 전용 제외) · 반려 5 · 해제 사유 4(기타 없음)")
     void reasonOptions() throws Exception {
         JsonNode options = json(adminGet(CREATORS + "reason-options").andExpect(status().isOk()));
 
         assertThat(codes(options.get("suspensionReasons"))).containsExactly("AD_DISCLOSURE_OMITTED_REPEATED",
                 "AD_LAW_VIOLATION_REPEATED", "GROUP_BUY_NONPERFORMANCE", "CONSUMER_RESPONSE_NEGLECT",
-                "SETTLEMENT_INFO_MISMATCH", "OTHER");
+                "SETTLEMENT_INFO_MISMATCH", "FALSE_INFORMATION", "OTHER");   // 허위 기재(1021 기-03 · 지급 정지 아님)
         for (JsonNode option : options.get("suspensionReasons")) {
             String code = option.get("code").asText();
             assertThat(option.get("holdsPayout").asBoolean()).isEqualTo(code.equals("SETTLEMENT_INFO_MISMATCH"));

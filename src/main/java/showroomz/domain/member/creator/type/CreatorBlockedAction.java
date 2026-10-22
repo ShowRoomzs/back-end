@@ -16,13 +16,11 @@ public enum CreatorBlockedAction {
     CONNECTION_ACCEPT("새 연결을 수락할"),
     /** 연장 수락(S4a) — 판매 기간을 늘리는 일. 연장 거절 · 중단 요청은 허용. */
     GROUP_BUY_EXTENSION_ACCEPT("기간 연장을 수락할"),
-    /** 탈퇴 승인 요청(S7) — 정지 중 탈퇴는 제재를 피하는 출구가 된다. */
-    WITHDRAWAL_REQUEST("탈퇴를 신청할"),
     /** 쇼룸명 변경(S7) — 소비자 · 브랜드가 정지된 계정을 다른 계정으로 오인한다. 소개 · 프로필 이미지는 허용. */
     SHOWROOM_NAME_CHANGE("쇼룸명을 바꿀"),
     /** 서명 안내 재발송 요청(S3). 계약 거절은 허용. */
     CONTRACT_RESEND_REQUEST("서명 안내 재발송을 요청할");
 
-    /** 「계정 정지 중에는 {phrase} 수 없습니다」의 가운데. */
+    /** 「계정 이용 정지 중에는 {phrase} 수 없습니다」의 가운데. */
     private final String phrase;
 }

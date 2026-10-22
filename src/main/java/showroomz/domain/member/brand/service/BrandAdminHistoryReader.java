@@ -114,7 +114,8 @@ public class BrandAdminHistoryReader {
         return switch (type) {
             case BUSINESS_INFO -> "사업자 정보 변경 요청";
             case SETTLEMENT_ACCOUNT -> "정산 계좌 변경 요청";
-            case TO_BUSINESS, TO_INDIVIDUAL -> throw new IllegalStateException("브랜드 이력에 인플루언서 요청 유형: " + type);
+            case TO_BUSINESS, TO_INDIVIDUAL, CREATOR_ACCOUNT ->
+                    throw new IllegalStateException("브랜드 이력에 인플루언서 요청 유형: " + type);
         };
     }
 

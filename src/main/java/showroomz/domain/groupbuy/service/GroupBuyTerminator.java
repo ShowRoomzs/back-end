@@ -166,6 +166,17 @@ public class GroupBuyTerminator {
                     GroupBuyEventType.SUSPENDED_BY_ADMIN, admin, detail, suspensionId, false);
         }
 
+        /**
+         * ⑥ 계약 해지(1021 설계서 1-4) — 오픈 전(준비중 · 준비완료)만. 주문이 없으므로 환불 · 정산이 없다. 이력 detail 은 해지 사유 라벨.
+         */
+        public static Termination terminatedByContract(Long contractId, GroupBuyActor admin, String detail,
+                                                       LocalDateTime now) {
+            return new Termination(EnumSet.of(GroupBuyStatus.PREPARING, GroupBuyStatus.READY),
+                    GroupBuyStatus.TERMINATED, now, GroupBuyCloseType.CONTRACT_TERMINATED, null, null,
+                    AdminSuspensionStatus.LAPSED, GroupBuyEventType.TERMINATED_BY_CONTRACT, admin, detail, contractId,
+                    false);
+        }
+
         /** ⑤ 긴급 직권 중단 — 진행중·중단 예정 어디서든. 진행 중 통지는 SUPERSEDED가 된다. */
         public static Termination suspendedEmergency(Long suspensionId, GroupBuyActor admin, String detail,
                                                      LocalDateTime now) {

@@ -27,7 +27,8 @@ public class CreatorGroupBuyPermissionPolicy {
                 canRespondExtension(facts, now),
                 canRequestSuspension(facts),
                 canCheckFulfillment(facts),
-                hasPairThread);
+                hasPairThread,
+                canEditPost(facts) && !GroupBuyPostPolicy.isTitleLocked(facts.post(), facts.groupBuy()));
     }
 
     /** 임시저장과 제출이 같은 조건 — PREPARING ∧ 게시물 없음·작성중·반려. 승인대기는 취소·재제출도 불가(B2). */
@@ -36,7 +37,7 @@ public class CreatorGroupBuyPermissionPolicy {
         return facts.groupBuy().getStatus() == GroupBuyStatus.PREPARING && (post == null || post.isWritable());
     }
 
-    /** 승인 ∧ 공구 READY · IN_PROGRESS(숨김 포함) — 중단 예정·종결은 잠근다(31 설계 2-5). */
+    /** 승인 ∧ (공구 IN_PROGRESS ∨ 노출 중지된 READY) — 1021 기-08 · 중단 예정·종결은 잠근다(31 설계 2-5). */
     public boolean canEditPost(GroupBuyFacts facts) {
         return GroupBuyPostPolicy.isEditable(facts.post(), facts.groupBuy());
     }

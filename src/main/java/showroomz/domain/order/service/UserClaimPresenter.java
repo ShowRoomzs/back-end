@@ -45,7 +45,7 @@ public final class UserClaimPresenter {
     }
 
     /**
-     * @param rejectCharge 그 요청의 반려 재발송비 청구(가장 최근) — 없으면 null
+     * @param rejectCharge 그 요청의 반려 재발송비 · 사유 번복 청구(가장 최근) — 없으면 null
      * @param today        기한이 지났는지의 기준
      */
     public static View present(OrderClaim claim, OrderClaimCharge rejectCharge, LocalDate today) {
@@ -78,6 +78,14 @@ public final class UserClaimPresenter {
 
     /** 결제가 필요한지는 그 요청의 판정이 다 끝나야 정해진다 — 그 전에는 결제 블록을 열지 않는다. */
     private static View rejectHold(OrderClaim claim, OrderClaimCharge rejectCharge, LocalDate today, String type) {
+        if (claim.getRejectedAt() == null) {
+            // 교환 사유 번복(1021 설계서 4-4) — 반려가 아니라 소비자 귀책으로 바로잡혀 결제를 기다린다. 청구는 번복 때 바로 열린다.
+            LocalDate due = rejectCharge == null || rejectCharge.getDueAt() == null ? null
+                    : notPassed(rejectCharge.getDueAt().toLocalDate(), today);
+            return new View(UserClaimPhase.OVERTURN_PAYMENT_PENDING, type + " 사유 변경", "재발송 배송비 · 착불 운임 결제 필요",
+                    true, "사유 변경 · 결제 필요",
+                    new Todo(TodoType.PAY_RESHIP_FEE, withDue("재발송 배송비 · 착불 운임 결제 필요", due), due));
+        }
         if (claim.getCollection().getFinalizedAt() == null) {
             return view(UserClaimPhase.REJECTED_WAITING, type + " 반려", "함께 보낸 상품을 검수하고 있어요", "검수 반려");
         }

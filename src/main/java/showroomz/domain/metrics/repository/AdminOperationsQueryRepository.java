@@ -37,12 +37,15 @@ public class AdminOperationsQueryRepository {
     }
 
     /** 사유 환불 집행 대기 — 운영자 편입 · 집행 전(어드민 환불 탭 PENDING 과 같은 조건). */
-    public List<OrderRefundTask> findOperatorPendingRefunds(int limit) {
+    public List<OrderRefundTask> findOperatorPendingRefunds(showroomz.domain.order.type.RefundMethod method, int limit) {
+        // 수단으로 나눈다 — 계좌 송금(1021 설계서 4-5)은 집행이 아니라 「송금 대기」 큐다.
         return em.createQuery("SELECT t FROM OrderRefundTask t JOIN FETCH t.order "
                         + "WHERE t.origin = showroomz.domain.order.type.RefundTaskOrigin.OPERATOR "
+                        + "AND t.method = :method "
                         + "AND t.status IN (showroomz.domain.order.type.RefundTaskStatus.PENDING, "
                         + "    showroomz.domain.order.type.RefundTaskStatus.EXECUTING) "
                         + "ORDER BY t.createdAt ASC, t.id ASC", OrderRefundTask.class)
+                .setParameter("method", method)
                 .setMaxResults(limit).getResultList();
     }
 

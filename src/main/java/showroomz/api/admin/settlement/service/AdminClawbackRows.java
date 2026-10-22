@@ -34,6 +34,7 @@ public class AdminClawbackRows {
     private final SettlementClawbackRepository clawbackRepository;
     private final SettlementRepository settlementRepository;
     private final SettlementClawbackViews clawbackViews;
+    private final showroomz.domain.settlement.repository.SettlementHistoryRepository historyRepository;
 
     public record Rows(List<AdminSettlementDto.ClawbackItem> items, long unrecoverableCount, long unrecoverableAmount) {
     }
@@ -80,11 +81,42 @@ public class AdminClawbackRows {
                             : applied.get(lastApplied.getAppliedSettlementId()).getSettlementNumber(),
                     unrecoverableReason, head.clawback().getCreatedAt()));
         }
+        List<AdminSettlementDto.ClawbackItem> recalculated = recalculatedRows();
+        if (!recalculated.isEmpty()) {
+            items.addAll(recalculated);
+            items.sort(Comparator.comparing(AdminSettlementDto.ClawbackItem::createdAt,
+                    Comparator.nullsLast(Comparator.reverseOrder())));
+        }
         String pattern = keyword == null || keyword.isBlank() ? null : keyword.trim().toLowerCase(Locale.ROOT);
         if (pattern != null) {
             items = items.stream().filter(item -> matches(item, pattern)).toList();
         }
         return new Rows(items, unrecoverableCount, unrecoverableAmount);
+    }
+
+    /**
+     * 재계산 가상 행(1021 설계서 6-3 · 07a L6) — 확인 기간 중 환불은 차감이 아니라 재계산이지만 시안은 같은 탭에 보인다. 저장 테이블 없이 정산
+     * 이력 {@code RECALCULATED}를 행으로 만든다 — 차감번호 「—」 · 상태 「재계산 · 확인 기간 재시작」 · 사유 = 이력 문장(환불 번호 · 금액 변동).
+     */
+    private List<AdminSettlementDto.ClawbackItem> recalculatedRows() {
+        List<showroomz.domain.settlement.entity.SettlementHistory> histories = historyRepository
+                .findByEventTypeOrderByOccurredAtDescIdDesc(showroomz.domain.settlement.type.SettlementEventType.RECALCULATED);
+        if (histories.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, Settlement> settlements = settlementRepository.findAllById(histories.stream()
+                        .map(showroomz.domain.settlement.entity.SettlementHistory::getSettlementId).distinct().toList())
+                .stream().collect(Collectors.toMap(Settlement::getId, Function.identity()));
+        String label = showroomz.domain.settlement.type.SettlementEventType.RECALCULATED.getLabel();
+        List<AdminSettlementDto.ClawbackItem> rows = new ArrayList<>();
+        for (showroomz.domain.settlement.entity.SettlementHistory h : histories) {
+            Settlement s = settlements.get(h.getSettlementId());
+            rows.add(new AdminSettlementDto.ClawbackItem("—", h.getSettlementId(),
+                    s == null ? null : s.getSettlementNumber(), null, null,
+                    s == null ? null : s.getMarket().getMarketName(), s == null ? null : s.getCreator().getShowroomName(),
+                    h.getDetail(), 0, 0, 0, "RECALCULATED", label, "RECALCULATED", label, null, null, h.getOccurredAt()));
+        }
+        return rows;
     }
 
     private static boolean matches(AdminSettlementDto.ClawbackItem item, String pattern) {

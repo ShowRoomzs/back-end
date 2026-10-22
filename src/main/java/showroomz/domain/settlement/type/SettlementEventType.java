@@ -14,9 +14,12 @@ public enum SettlementEventType {
     ADJUSTMENT_ACCEPTED("조정 동의"),
     ADJUSTMENT_DEADLINE_NOTICED("합의 기한 D-1 안내"),
     ADJUSTMENT_EXPIRED("합의 기한 경과"),
+    /** 요청자 철회(1021 기-14). */
+    ADJUSTMENT_WITHDRAWN("조정 요청 철회"),
     AUTO_CONFIRMED("자동 확정"),
     CONFIRMED_BY_AGREEMENT("합의 확정"),
     CONFIRMED_BY_EXPIRY("기한 만료 확정"),
+    CONFIRMED_BY_WITHDRAWAL("철회 확정"),
     TAX_INVOICE_REQUESTED("세금계산서 발행 요청"),
     TAX_INVOICE_SUBMITTED("세금계산서 승인번호 입력"),
     TAX_INVOICE_VERIFIED("세금계산서 확인"),
@@ -34,9 +37,13 @@ public enum SettlementEventType {
     /** 결과 조회에서 사람이 봐야 할 것 — PG 보류 · 지급액 불일치 · 지급 미실행(5-4 · 9-2). */
     PAYOUT_CHECK_REQUIRED("지급 확인 필요"),
     WITHHOLDING_RECEIPT_GENERATED("원천징수영수증 생성"),
+    /** 비사업자 주민등록번호 미등록 — 지급은 진행하고 영수증 생성만 미룬다(1021 기-12). */
+    WITHHOLDING_RECEIPT_SKIPPED("원천징수영수증 생성 보류"),
     CLAWBACK_REGISTERED("차감 발생"),
     CLAWBACK_APPLIED("차감 반영"),
-    CLAWBACK_UNRECOVERABLE("차감 미회수");
+    CLAWBACK_UNRECOVERABLE("차감 미회수"),
+    /** 확인 기간 중 환불 — 클로백 대신 재계산 · 확인 기간 재시작(1021 기-13 【잠정】). */
+    RECALCULATED("재계산 · 확인 기간 재시작");
 
     private final String label;
 }

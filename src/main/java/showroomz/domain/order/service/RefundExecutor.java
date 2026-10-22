@@ -124,6 +124,12 @@ public class RefundExecutor {
         return transitions.voidTask(taskId, reason, operatorId, now);
     }
 
+    /** 계좌 송금 완료 기록(1021 설계서 4-5) — 송금은 운영자가 밖에서 했다. 기록만. */
+    public boolean recordTransfer(Long taskId, String bankCode, String accountEnc, String holderName, Long operatorId,
+                                  LocalDateTime now) {
+        return transitions.recordTransfer(taskId, bankCode, accountEnc, holderName, operatorId, now);
+    }
+
     /** 수동 완료 기록 — PG 없이 완료 후속만. 기록 실패는 예외로 올린다(돈이 나간 것이 아니라 기록이므로 되돌려도 된다). */
     public boolean recordManual(Long taskId, String pgCancellationId, String note, Long operatorId, LocalDateTime now) {
         return transitions.recordManual(taskId, pgCancellationId, note, operatorId, now);

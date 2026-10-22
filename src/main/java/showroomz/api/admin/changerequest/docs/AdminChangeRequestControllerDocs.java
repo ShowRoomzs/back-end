@@ -111,6 +111,12 @@ public interface AdminChangeRequestControllerDocs {
             @RequestParam(value = "status", defaultValue = "PENDING") AdminChangeRequestStatusFilter status,
             @Parameter(description = "브랜드명 · 쇼룸명 검색어(부분 일치) — 비우면 전체", example = "코코")
             @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "요청자 — BRAND · CREATOR(1021 기-22) · 비우면 전체", example = "CREATOR")
+            @RequestParam(value = "requesterType", required = false)
+            showroomz.domain.changerequest.type.ChangeRequesterType requesterType,
+            @Parameter(description = "요청 유형 — BUSINESS_INFO · SETTLEMENT_ACCOUNT · TO_BUSINESS · TO_INDIVIDUAL · CREATOR_ACCOUNT · 비우면 전체",
+                    example = "CREATOR_ACCOUNT")
+            @RequestParam(value = "type", required = false) showroomz.domain.changerequest.type.ChangeRequestType type,
             @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(

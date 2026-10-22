@@ -24,8 +24,8 @@ public class AdminBrandCommandService {
 
     public AdminBrandDto.Rail suspend(Long marketId, AdminBrandDto.SuspendRequest request, Long operatorId) {
         String operatorName = operatorResolver.operatorName(operatorId);
-        sanctionService.suspend(marketId, request.reason(), request.reasonDetail(), operatorId, operatorName,
-                LocalDateTime.now());
+        sanctionService.suspend(marketId, request.reason(), request.reasonDetail(), request.endsOn(), operatorId,
+                operatorName, LocalDateTime.now());
         return queries.rail(marketId);
     }
 

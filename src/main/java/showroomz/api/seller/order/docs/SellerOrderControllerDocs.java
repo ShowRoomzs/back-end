@@ -590,6 +590,26 @@ public interface SellerOrderControllerDocs {
             @Parameter(description = "하위주문 id", example = "1024") @PathVariable Long deliveryGroupId,
             @Valid @RequestBody ShipmentUpdateRequest request);
 
+    @Operation(summary = "소비자 환불 선택 처리 (10c C7b · 1021 기-15)", description = """
+            추적 정지 건에서 소비자가 **환불**을 골랐을 때(`stallChoice.choice = REFUND` · `canRefund = true`) 처리한다.
+            분실 판정과 같은 효과 — 하위주문 취소(재고 원복 없음) · 항목 + 배송비 PG 자동 환불 · 이력 「배송 분실 처리」.
+            운영자 분실 판정의 「추적 정지 N일」 조건은 면제된다(소비자 선택이 근거).
+
+            소비자가 **재발송**을 골랐으면 이 API 가 아니라 송장 수정(`PATCH /{deliveryGroupId}/shipment`)으로 새 송장을 등록한다 — 이력
+            「추적 정지 후 재발송」이 남는다.
+
+            **권한:** SELLER (내 브랜드 주문만)
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "처리 후 상세"),
+            @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 주문 · 타 브랜드 주문",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "ORDER_STATE_CHANGED — 소비자가 환불을 고르지 않았거나 추적 정지 · 배송중이 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerOrderDetailResponse> refundStallChoice(
+            @Parameter(description = "하위주문 id", example = "1024") @PathVariable Long deliveryGroupId);
+
     // ── 취소 ────────────────────────────────────────────────────────────────
 
     @Operation(
@@ -684,9 +704,9 @@ public interface SellerOrderControllerDocs {
             summary = "취소 요청 거부",
             description = """
                     E7 — 사유 필수(소비자에게 그대로 전달 · 약관 제18조①). 사유는 드롭다운 `reasonCode` —
-                    `ALREADY_PACKED`(이미 포장·출고가 완료됨) · `PICKED_UP`(택배사 집화가 완료됨) · `MADE_TO_ORDER`(주문 제작·맞춤 상품) ·
+                    `ALREADY_PACKED`(이미 포장·출고가 완료됨) · `PICKED_UP`(택배사 집화가 완료됨) · (`MADE_TO_ORDER` 는 1021 기-33 으로 삭제 — 400) ·
                     `ETC`(기타 — `detail` 필수). **환불은 일어나지 않는다.** 전 항목 배송이 진행되고 소비자는 수령 후 반품으로만 돌릴 수
-                    있다(반품비 발생).
+                    있다(단순 변심 반품이면 반송 배송비는 소비자 부담 · 기-18).
 
                     **응답 기한 1영업일**(주말·공휴일 제외) — 요청 + 1영업일의 끝까지 승인·거부하지 않으면 **자동 승인**되고 PG 가 즉시
                     환불한다. 목록 · 상세의 `cancelRequest.respondDueAt` 가 그 시각이다.

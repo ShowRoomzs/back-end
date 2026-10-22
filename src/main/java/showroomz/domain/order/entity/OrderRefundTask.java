@@ -114,6 +114,30 @@ public class OrderRefundTask extends BaseTimeEntity {
     @Column(name = "executed_by")
     private Long executedBy;
 
+    /**
+     * 환불 방법(1021 설계서 4-5) — 원래 결제액을 넘는 환급(귀책 변경 선불 운임 등)은 PG 가 돌려줄 수 없어 {@code BANK_TRANSFER} 행으로 나눈다.
+     * 송금 행은 결제 id 가 없어 PG 자동 집행 · 재시도 · 잔액 계산에서 빠진다. 운영자가 송금한 뒤 계좌 · 시각을 기록한다.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "method", nullable = false, length = 16)
+    private showroomz.domain.order.type.RefundMethod method = showroomz.domain.order.type.RefundMethod.PG_CANCEL;
+
+    @Column(name = "transfer_bank_code", length = 10)
+    private String transferBankCode;
+
+    /** 송금 계좌번호 — 암호문. */
+    @Column(name = "transfer_account_enc", length = 255)
+    private String transferAccountEnc;
+
+    @Column(name = "transfer_holder_name", length = 50)
+    private String transferHolderName;
+
+    @Column(name = "transferred_at")
+    private LocalDateTime transferredAt;
+
+    @Column(name = "transferred_by")
+    private Long transferredBy;
+
     @Builder
     public OrderRefundTask(OrderDeliveryGroup deliveryGroup, Order order, RefundTaskSource source, Long sourceId,
                            Integer refundAmount, RefundTaskOrigin origin, String paymentId,
@@ -158,6 +182,47 @@ public class OrderRefundTask extends BaseTimeEntity {
         task.paymentCancelId = paymentCancelId;
         task.executedAt = now;
         return task;
+    }
+
+    /** 원래 결제액 초과 환급 — 운영자 계좌 송금 대기 행(1021 설계서 4-5). 결제 id 없음 · 운영자 사유. */
+    public static OrderRefundTask bankTransfer(OrderDeliveryGroup deliveryGroup, RefundTaskSource source, Long sourceId,
+                                               int amount, String detail) {
+        OrderRefundTask task = OrderRefundTask.builder()
+                .deliveryGroup(deliveryGroup)
+                .order(deliveryGroup.getOrder())
+                .source(source)
+                .sourceId(sourceId)
+                .refundAmount(amount)
+                .origin(RefundTaskOrigin.OPERATOR)
+                .paymentId(null)
+                .partialCancel(false)
+                .reasonDetail(detail)
+                .build();
+        task.method = showroomz.domain.order.type.RefundMethod.BANK_TRANSFER;
+        return task;
+    }
+
+    /** [송금 완료 기록] 가능 — 송금 대기 행. */
+    public boolean isTransferable() {
+        return isBankTransfer() && status == RefundTaskStatus.PENDING;
+    }
+
+    public boolean isBankTransfer() {
+        return method == showroomz.domain.order.type.RefundMethod.BANK_TRANSFER;
+    }
+
+    /** 송금 완료 기록 — 시스템은 송금하지 않는다. 계좌 · 처리자 · 시각만 남긴다. */
+    public void markTransferred(String bankCode, String accountEnc, String holderName, Long operatorId,
+                                LocalDateTime now) {
+        this.transferBankCode = bankCode;
+        this.transferAccountEnc = accountEnc;
+        this.transferHolderName = holderName;
+        this.transferredBy = operatorId;
+        this.transferredAt = now;
+        this.status = RefundTaskStatus.DONE;
+        this.attempt = Math.max(1, this.attempt);
+        this.executedBy = operatorId;
+        this.executedAt = now;
     }
 
     /** 환불번호 {@code RFD-918} — 저장하지 않고 id 를 포맷한다(39 설계서 1-4). 이력 detail 의 접두로 큐 행과 이력을 잇는다. */
@@ -212,7 +277,8 @@ public class OrderRefundTask extends BaseTimeEntity {
      * 종결해 되돌릴 수 없다 — {@link OperatorRefundReason#isClaimBound()}).
      */
     public boolean isVoidable() {
-        return status == RefundTaskStatus.PENDING && origin == RefundTaskOrigin.OPERATOR
+        // 송금 대기(운임 환급 초과분)는 귀책 변경의 결과라 철회하지 않는다 — 송금 완료 기록만 있다(1021 설계서 4-5).
+        return status == RefundTaskStatus.PENDING && origin == RefundTaskOrigin.OPERATOR && !isBankTransfer()
                 && (reasonCode == null || !reasonCode.isClaimBound());
     }
 

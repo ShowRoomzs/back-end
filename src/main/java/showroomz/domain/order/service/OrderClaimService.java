@@ -6,6 +6,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.order.entity.OrderClaimFreightAdjustment;
+import showroomz.domain.order.type.ClaimInspectionResult;
+import showroomz.domain.order.type.FreightAdjustmentDirection;
+import showroomz.domain.order.type.FreightAdjustmentTrigger;
+import showroomz.domain.order.type.FreightSettledVia;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderClaimAttachment;
@@ -102,6 +107,8 @@ public class OrderClaimService {
     private final OrderFulfillmentService fulfillmentService;
     private final BusinessDayCalculator businessDayCalculator;
     private final ClaimFeePolicy feePolicy;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
+    private final ClaimFeeContextReader feeContextReader;
     private final DeliveryTrackerPort tracker;
     private final OrderProperties orderProperties;
     private final ApplicationEventPublisher eventPublisher;
@@ -205,6 +212,13 @@ public class OrderClaimService {
 
         ClaimFeeBearer feeBearer = reason.getFeeBearer();
         boolean exchange = command.type() == ClaimType.EXCHANGE;
+        // 일부 반품 재판정(1021 설계서 3-3) — 이번 요청 뒤 남는 상품액이 결제 시점 무료배송 기준 아래일 때만 최초 배송비를 뺀다. 하위주문당 한 번.
+        long returningAmount = 0;
+        for (Item item : command.items()) {
+            returningAmount += (long) products.get(item.orderProductId()).getPrice() * item.quantity();
+        }
+        int returnDeduction = exchange ? 0 : feePolicy.returnDeduction(command.type(), feeBearer, group,
+                feeContextReader.contextFor(group, returningAmount));
         Map<Long, ClaimExchangeOptionReader.Option> exchangeOptions = exchange
                 ? reserveExchangeOptions(command.items(), products, feeBearer) : Map.of();
         // 고객 귀책 교환은 재발송 배송비를 결제해야 접수된다 — 그때까지는 브랜드 화면 어디에도 나오지 않는다.
@@ -229,7 +243,7 @@ public class OrderClaimService {
                 .returnContact(market.getShippingContact())
                 .returnAddress(market.getShippingAddress())
                 .returnDetailAddress(market.getShippingDetailAddress())
-                .returnDeduction(feePolicy.returnDeduction(command.type(), feeBearer, group))
+                .returnDeduction(returnDeduction)
                 // 재발송 수취지 — 기본은 원 주문 배송지의 사본. 교환은 요청 때 다른 배송지를 고를 수 있다.
                 .reshipRecipient(reshipTo != null ? reshipTo.recipient() : order.getRecipientName())
                 .reshipPhone(reshipTo != null ? reshipTo.phone() : order.getRecipientPhone())
@@ -459,7 +473,7 @@ public class OrderClaimService {
         Long collectionId = found.getCollection().getId();
         OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_PAYMENT_NOT_REQUIRED));
-        if (found.getType() == ClaimChargeType.REJECT_RESHIP) {
+        if (found.getType() == ClaimChargeType.REJECT_RESHIP || found.getType() == ClaimChargeType.OVERTURN_RESHIP) {
             markReshipFeePaid(chargeId, paymentId, collection.getUserId(), now);
             return;
         }
@@ -682,6 +696,43 @@ public class OrderClaimService {
         return true;
     }
 
+    /** 자동 입고 후보(1021 기-17) — 추적상 도착 후 N영업일이 지났을 수 있는 클레임. 최종 판정은 {@link #autoReceive}가 한다. */
+    @Transactional(readOnly = true)
+    public List<Long> findIdsToAutoReceive(LocalDateTime now, int limit) {
+        LocalDateTime arrivedBefore = businessDayCalculator.dueElapsedCandidateBefore(now,
+                orderProperties.getClaim().getAutoReceiveBusinessDays());
+        return claimRepository.findIdsToAutoReceive(arrivedBefore, PageRequest.of(0, limit));
+    }
+
+    /**
+     * 자동 입고(1021 기-17 【잠정】) — 브랜드가 입고 확인을 하지 않아도 시스템이 입고 처리한다. 검수 기한은 입고 확인과 같은 규칙(입고 + 2영업일)
+     * 으로 생긴다. 이미 입고됐거나 상태가 바뀌었으면 false.
+     */
+    @Transactional
+    public boolean autoReceive(Long claimId, LocalDateTime now) {
+        OrderClaim claim = claimRepository.findById(claimId).orElse(null);
+        if (claim == null || claim.getStatus() != ClaimStatus.ARRIVED) {
+            return false;
+        }
+        OrderProperties.Claim config = orderProperties.getClaim();
+        LocalDateTime arrivedAt = claim.getCollection().getArrivedAt();
+        if (arrivedAt == null || !now.isAfter(businessDayCalculator.dueAt(arrivedAt, config.getAutoReceiveBusinessDays()))) {
+            return false;
+        }
+        Long collectionId = claim.getCollection().getId();
+        // 검수 기한 기산점은 입고 확인과 같은 설정을 따른다 — 시스템이 입고했어도 브랜드의 검수 기한은 그대로 2영업일이다.
+        LocalDateTime basis = "ARRIVED".equalsIgnoreCase(config.getInspectDueBasis()) ? arrivedAt : now;
+        LocalDateTime inspectDueAt = businessDayCalculator.dueAt(basis, config.getInspectDueBusinessDays());
+        if (claimRepository.markReceived(claimId, claim.getMarketId(), EnumSet.of(ClaimStatus.ARRIVED), null,
+                inspectDueAt, now) != 1) {
+            return false;
+        }
+        collectionRepository.findById(collectionId).ifPresent(OrderClaimCollection::markAutoReceived);
+        appendHistory(claimId, ClaimEventType.AUTO_RECEIVED, FulfillmentActorType.SYSTEM, null,
+                "택배 도착 후 " + config.getAutoReceiveBusinessDays() + "영업일 경과 · 자동 입고", now);
+        return true;
+    }
+
     /**
      * 검수 통과 — 반품이면 환불 대기로 가고 <b>판매가 무효가 된 시점이 여기</b>라 항목의 반품 수량을 지금 올린다(전량이면
      * 항목이 RETURNED). 돌아온 물건의 재고는 원복하지 않는다 — 다시 팔 수 있는지는 브랜드의 판단이다. 교환이면 재발송
@@ -690,11 +741,205 @@ public class OrderClaimService {
      */
     @Transactional
     public void passInspection(Long claimId, Long marketId, Long sellerId, LocalDateTime now) {
+        passInspection(claimId, marketId, sellerId, false, now);
+    }
+
+    /**
+     * 검수 통과 + 귀책 선택(1021 설계서 4-3 · 파트너 11 M1 · 결정 노트 기-17 · 기-93). 신청 때 소비자 귀책(선불)이었는데 브랜드 귀책으로
+     * 인정하면 — 선불 운임(기본 배송비 정액)과 차감했던 최초 배송비를 소비자에게 돌려주고, 브랜드 정산에서 「− 운임 정산」으로 뺀다.
+     * 교환이면 요청 때 결제한 재발송 배송비도 결제 취소한다. 원래 결제액을 넘는 환급은 운영자 계좌 송금 행으로 선다.
+     */
+    @Transactional
+    public void passInspection(Long claimId, Long marketId, Long sellerId, boolean faultToSeller, LocalDateTime now) {
         OrderClaim claim = claimRepository.findOwned(claimId, marketId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         Long collectionId = claim.getCollection().getId();
+        if (faultToSeller) {
+            OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+            if (collection.getFeeBearer() == ClaimFeeBearer.CONSUMER && claim.getStatus() == ClaimStatus.RECEIVED) {
+                acceptSellerFaultWithFreight(collection, claim, FreightAdjustmentTrigger.FAULT_TO_SELLER_ON_PASS, now);
+                if (collection.getType() == ClaimType.EXCHANGE) {
+                    refundPaidExchangeCharge(collectionId, now);
+                }
+                appendHistory(claimId, ClaimEventType.FAULT_ACCEPTED_ON_PASS, FulfillmentActorType.SELLER, sellerId,
+                        "브랜드 귀책 인정 · 선불 운임 · 최초 배송비 환급", now);
+            }
+        }
+        passInternal(claim, marketId, sellerId, now);
+        collectionRepository.findById(collectionId).ifPresent(c -> c.recordInspectionResult(ClaimInspectionResult.PASSED));
+        finalizeCollection(collectionId, now);
+    }
+
+    /**
+     * 검수 「사유 번복」(1021 설계서 4-3 · 파트너 11 B2b · 결정 노트 기-17 【잠정】) — 착불(브랜드 귀책)로 신청했는데 검수 결과 소비자 귀책이다.
+     * 상품은 받아들인다(반려가 아니다). 귀책이 소비자로 바뀌어 — 브랜드가 낸 착불 운임(기본 배송비 정액)을 소비자가 부담하고, 반품이면 무료배송
+     * 주문의 최초 배송비 차감도 다시 판정한다. 반품은 환불액에서 빼고, 교환은 재발송 배송비 + 착불 운임을 결제해야 새 상품이 나간다.
+     *
+     * @param explanation 소비자에게 그대로 전달되는 판정 근거(필수)
+     * @param evidenceImageUrls 증빙 사진 1장 이상
+     */
+    @Transactional
+    public void overturnInspection(Long claimId, Long marketId, Long sellerId, String explanation,
+                                   List<String> evidenceImageUrls, LocalDateTime now) {
+        String text = blankToNull(explanation);
+        int evidenceCount = evidenceImageUrls == null ? 0 : evidenceImageUrls.size();
+        if (text == null || evidenceCount < 1 || evidenceCount > orderProperties.getClaim().getEvidenceMax()
+                || evidenceImageUrls.stream().anyMatch(url -> url == null || url.isBlank())) {
+            throw new BusinessException(ErrorCode.CLAIM_OVERTURN_EVIDENCE_REQUIRED);
+        }
+        OrderClaim claim = claimRepository.findOwned(claimId, marketId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        if (claim.getStatus() != ClaimStatus.RECEIVED) {
+            throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+        }
+        Long collectionId = claim.getCollection().getId();
+        OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        if (collection.getFeeBearer() != ClaimFeeBearer.SELLER) {
+            throw new BusinessException(ErrorCode.CLAIM_OVERTURN_NOT_APPLICABLE);
+        }
+        OrderDeliveryGroup group = claim.getDeliveryGroup();
+        int collectFreight = feePolicy.freightFlat(group);
+        boolean exchange = collection.getType() == ClaimType.EXCHANGE;
+        // 귀책이 소비자로 — 반품이면 무료배송 주문의 최초 배송비 차감을 다시 판정한다(이 요청의 수량은 이미 점유 중이라 남는 금액에 빠져 있다).
+        int returnDeduction = exchange ? 0 : feePolicy.returnDeduction(ClaimType.RETURN, ClaimFeeBearer.CONSUMER, group,
+                feeContextReader.contextFor(group, 0));
+        collection.overturnToConsumer(returnDeduction);
+        claimRepository.overturnToConsumer(collectionId);
+        // 위 조건부 UPDATE 가 영속성 컨텍스트를 비웠다 — 판정 기록은 다시 읽은 행에 적는다.
+        collection = collectionRepository.findById(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        for (int i = 0; i < evidenceCount; i++) {
+            attachmentRepository.save(OrderClaimAttachment.builder()
+                    .claim(claim).owner(ClaimAttachmentOwner.SELLER).imageUrl(evidenceImageUrls.get(i))
+                    .sortOrder(i).build());
+        }
+        collection.recordInspectionResult(ClaimInspectionResult.REASON_OVERTURNED);
+        collection.recordOverturnExplanation(text);
+        if (exchange) {
+            // 교환 — 재발송 배송비(편도 + 권역) + 착불 운임을 결제해야 재발송한다. 결제 대기 · 미결제 반송은 반려 재발송비와 같은 길이다.
+            int reship = feePolicy.reshipFee(group);
+            OrderClaimCharge charge = chargeRepository.save(OrderClaimCharge.builder()
+                    .collection(collection).type(ClaimChargeType.OVERTURN_RESHIP).amount(reship + collectFreight)
+                    .status(ClaimChargeStatus.PENDING).createdAt(now).build());
+            charge.openForPayment(BusinessDayCalculator.endOfDayAfter(now, orderProperties.getClaim().getReshipPayDueDays()));
+            freightAdjustmentRepository.save(freightRow(collection, claim, FreightAdjustmentTrigger.REASON_OVERTURNED,
+                    FreightAdjustmentDirection.CHARGE_CONSUMER, collectFreight, 0, 0, FreightSettledVia.CHARGE, now));
+            if (claimRepository.overturnHold(claimId, marketId, sellerId, now) != 1) {
+                throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
+            }
+            appendHistory(claimId, ClaimEventType.REASON_OVERTURNED, FulfillmentActorType.SELLER, sellerId,
+                    String.format("사유 번복 · 재발송 배송비 %,d원 + 착불 운임 %,d원 결제 필요", reship, collectFreight), now);
+            finalizeCollection(collectionId, now);
+            return;
+        }
+        freightAdjustmentRepository.save(freightRow(collection, claim, FreightAdjustmentTrigger.REASON_OVERTURNED,
+                FreightAdjustmentDirection.CHARGE_CONSUMER, collectFreight, 0, 0, FreightSettledVia.REFUND_DEDUCTION, now));
+        appendHistory(claimId, ClaimEventType.REASON_OVERTURNED, FulfillmentActorType.SELLER, sellerId,
+                String.format("사유 번복 · 착불 운임 %,d원 환불액에서 차감", collectFreight), now);
         passInternal(claim, marketId, sellerId, now);
         finalizeCollection(collectionId, now);
+    }
+
+    /**
+     * 귀책을 브랜드로 — 선불 운임 + 차감했던 최초 배송비를 소비자에게 돌려줄 운임 정산 행(정산은 운임만 · 4-3).
+     *
+     * <p>최초 배송비 환원은 시점에 따라 길이 다르다. 판정 종료 전(검수 통과)이면 요청의 차감액을 0으로 돌려 상품 환불에서 이미 빠지지 않으므로
+     * 따로 돌려줄 돈이 없다. 판정 종료 뒤(이의 인용)면 차감된 채 환불이 나갔으므로 그 몫을 운임 환급에 더한다 — {@link #freightRefundOf}.
+     */
+    private void acceptSellerFaultWithFreight(OrderClaimCollection collection, OrderClaim claim,
+                                              FreightAdjustmentTrigger trigger, LocalDateTime now) {
+        // 이의 인용은 판정 종료 뒤다 — 통과 상품이 있어 환불에서 실제로 뺐을 때만 환원할 몫이 있다.
+        boolean deducted = trigger != FreightAdjustmentTrigger.DISPUTE_ACCEPTED
+                || (collection.getRefundAmount() != null && collection.getRefundAmount() > 0);
+        int restored = deducted ? collection.getReturnDeduction() : 0;
+        int prepaid = feePolicy.freightFlat(claim.getDeliveryGroup());
+        // 행을 먼저 만든다 — 아래 조건부 UPDATE 가 영속성 컨텍스트를 비워 하위주문 프록시를 못 읽게 된다.
+        OrderClaimFreightAdjustment row = freightRow(collection, claim, trigger,
+                FreightAdjustmentDirection.REFUND_CONSUMER, 0, prepaid, restored, FreightSettledVia.REFUND_ADDITION, now);
+        collection.acceptSellerFault();
+        freightAdjustmentRepository.save(row);
+        claimRepository.acceptSellerFault(collection.getId());
+    }
+
+    private OrderClaimFreightAdjustment freightRow(OrderClaimCollection collection, OrderClaim claim,
+                                                   FreightAdjustmentTrigger trigger, FreightAdjustmentDirection direction,
+                                                   int collectFreight, int prepaidFreight, int restored,
+                                                   FreightSettledVia via, LocalDateTime now) {
+        OrderDeliveryGroup group = collection.getDeliveryGroup();
+        return OrderClaimFreightAdjustment.builder()
+                .claimCollectionId(collection.getId())
+                .claimId(claim == null ? null : claim.getId())
+                .deliveryGroupId(group.getId())
+                .groupBuyId(group.getGroupBuyId())
+                .marketId(collection.getMarketId())
+                .trigger(trigger)
+                .direction(direction)
+                .collectFreight(collectFreight)
+                .prepaidFreight(prepaidFreight)
+                .initialFeeRestored(restored)
+                .settledVia(via)
+                .createdAt(now)
+                .build();
+    }
+
+    /** 교환 요청 때 결제한 재발송 배송비를 돌려준다 — 브랜드 귀책으로 바뀌어 소비자가 낼 돈이 아니다. */
+    private void refundPaidExchangeCharge(Long collectionId, LocalDateTime now) {
+        List<String> paymentIds = new ArrayList<>();
+        for (OrderClaimCharge charge : chargeRepository.findByCollectionId(collectionId)) {
+            if (charge.getType() == ClaimChargeType.EXCHANGE_RESHIP && charge.getStatus() == ClaimChargeStatus.PAID) {
+                charge.refund(now);
+                if (charge.getPaidPaymentId() != null) {
+                    paymentIds.add(charge.getPaidPaymentId());
+                }
+            }
+        }
+        for (String paymentId : paymentIds) {
+            claimPaymentRepository.requestCancel(paymentId, List.of(ClaimPaymentStatus.PAID), now);
+        }
+    }
+
+    /**
+     * 운임 환급(선불 운임 + 최초 배송비 환원)을 환불 큐에 세운다 — 원래 결제액을 넘는 부분은 운영자 계좌 송금 행(1021 설계서 4-5).
+     * 정산은 운임 정산 행이 맡으므로 상품 대금 환불(클로백 대상)과 나눠 세운다.
+     */
+    private void enqueueFreightRefunds(OrderClaimCollection collection, LocalDateTime now) {
+        // 앞선 조건부 UPDATE 가 영속성 컨텍스트를 비웠을 수 있다 — 하위주문 · 주문은 다시 읽은 것을 쓴다.
+        OrderDeliveryGroup group = deliveryGroupRepository.findById(collection.getDeliveryGroup().getId()).orElseThrow();
+        for (OrderClaimFreightAdjustment row : freightAdjustmentRepository.findByClaimCollectionIdOrderByIdAsc(collection.getId())) {
+            if (row.getSettledVia() != FreightSettledVia.REFUND_ADDITION || row.getRefundTaskId() != null) {
+                continue;
+            }
+            int refund = freightRefundOf(row);
+            if (refund <= 0) {
+                continue;
+            }
+            OrderFulfillmentService.SplitRefund split = fulfillmentService.enqueueRefundSplit(group,
+                    RefundTaskSource.FREIGHT_REFUND, collection.getId(), refund,
+                    "귀책 변경 운임 환급 — 원래 결제액 초과분 · 1:1 문의로 계좌 확인");
+            if (split.transfer() != null) {
+                row.settleVia(FreightSettledVia.BANK_TRANSFER, split.transfer().getId(), null);
+            } else if (split.pg() != null) {
+                row.settleVia(FreightSettledVia.REFUND_ADDITION, split.pg().getId(), null);
+            }
+        }
+    }
+
+    /**
+     * 운임 환급으로 돌려줄 돈 — 선불 운임 + (판정 종료 뒤 귀책 변경이면) 이미 차감된 최초 배송비. 판정 종료 전 귀책 변경의 최초 배송비 환원은
+     * 상품 환불의 차감이 0이 되는 것으로 끝난다 — 여기 더하면 이중 환급이다.
+     */
+    public static int freightRefundOf(OrderClaimFreightAdjustment row) {
+        return row.getPrepaidFreight()
+                + (row.getTrigger() == FreightAdjustmentTrigger.DISPUTE_ACCEPTED ? row.getInitialFeeRestored() : 0);
+    }
+
+    /** 환불액에서 뺄 운임(사유 번복 착불 운임). */
+    private int freightDeductionOf(Long collectionId) {
+        return freightAdjustmentRepository.findByClaimCollectionIdOrderByIdAsc(collectionId).stream()
+                .filter(row -> row.getSettledVia() == FreightSettledVia.REFUND_DEDUCTION)
+                .mapToInt(OrderClaimFreightAdjustment::getCollectFreight).sum();
     }
 
     private void passInternal(OrderClaim claim, Long marketId, Long sellerId, LocalDateTime now) {
@@ -763,10 +1008,24 @@ public class OrderClaimService {
         OrderClaimCollection collection = collectionRepository.findForUpdate(collectionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         // 귀책 변경 — 판정 종료 전에 요청 값을 바꿔 둔다(환불액 · 재발송비가 종료 때 이 값으로 계산된다).
+        boolean appliedForCollect = collection.getFeeBearer() == ClaimFeeBearer.SELLER;
         if (command.faultToSeller()) {
-            collection.acceptSellerFault();
+            if (collection.getFeeBearer() == ClaimFeeBearer.CONSUMER) {
+                // 선불(소비자 귀책) 신청을 브랜드 귀책으로 — 선불 운임 · 최초 배송비 환급(1021 기-93).
+                acceptSellerFaultWithFreight(collection, claim, FreightAdjustmentTrigger.FAULT_TO_SELLER_ON_PASS, now);
+            } else {
+                collection.acceptSellerFault();
+            }
         }
         int reshipFee = command.faultToSeller() ? 0 : feePolicy.rejectReshipFee(claim.getDeliveryGroup());
+        // 착불(브랜드 귀책)로 신청한 건의 반려 — 브랜드가 낸 착불 운임을 소비자가 부담한다(1021 기-93 · 파트너 11 B1r).
+        // 반려 재발송비 청구에 합쳐 받는다 — 반품 일부 반려면 환불액에서 빠지고, 전체 반려 · 교환이면 결제한다.
+        int collectFreight = appliedForCollect && !command.faultToSeller() ? feePolicy.freightFlat(claim.getDeliveryGroup()) : 0;
+        if (collectFreight > 0 && pendingRejectCharge(collectionId) == null) {
+            reshipFee += collectFreight;
+            freightAdjustmentRepository.save(freightRow(collection, claim, FreightAdjustmentTrigger.REJECT_WITH_COLLECT,
+                    FreightAdjustmentDirection.CHARGE_CONSUMER, collectFreight, 0, 0, FreightSettledVia.CHARGE, now));
+        }
         if (pendingRejectCharge(collectionId) == null) {
             chargeRepository.save(OrderClaimCharge.builder()
                     .collection(collection).type(ClaimChargeType.REJECT_RESHIP).amount(reshipFee)
@@ -795,6 +1054,8 @@ public class OrderClaimService {
         if (command.faultToSeller()) {
             claimRepository.acceptSellerFault(collectionId);
         }
+        collectionRepository.findById(collectionId)
+                .ifPresent(c -> c.recordInspectionResult(ClaimInspectionResult.REJECTED));
         OrderClaim rejected = claimRepository.getReferenceById(rejectTargetId);
         for (int i = 0; i < evidenceCount; i++) {
             attachmentRepository.save(OrderClaimAttachment.builder()
@@ -849,8 +1110,10 @@ public class OrderClaimService {
             long passedGoods = claims.stream().filter(claim -> claim.getRejectedAt() == null)
                     .mapToLong(claim -> (long) claim.getOrderProduct().getPrice() * claim.getQuantity()).sum();
             if (passedGoods > 0) {
+                // 사유 번복의 착불 운임은 최초 배송비와 함께 환불액에서 뺀다(1021 기-93).
                 ClaimRefundCalculator.Result result = ClaimRefundCalculator.calculate(passedGoods,
-                        collection.getReturnDeduction(), rejectCharge == null ? null : rejectCharge.getAmount());
+                        collection.getReturnDeduction() + freightDeductionOf(collectionId),
+                        rejectCharge == null ? null : rejectCharge.getAmount());
                 refundAmount = result.refund();
                 if (result.reshipDeducted()) {
                     rejectCharge.settle(ClaimChargeStatus.DEDUCTED, null, now);
@@ -874,6 +1137,8 @@ public class OrderClaimService {
                     orderProperties.getClaim().getReshipPayDueDays()));
         }
         collection.finalizeWith(refundAmount, now);
+        // 귀책 변경 운임 환급 — 상품 환불과 따로 세운다(초과분은 계좌 송금 · 1021 설계서 4-5).
+        enqueueFreightRefunds(collection, now);
 
         if (settlement != null) {
             claimRepository.moveByCollection(collectionId, ClaimStatus.REJECT_HOLD, ClaimStatus.RESHIP_READY, now);
@@ -1290,6 +1555,14 @@ public class OrderClaimService {
         }
         OrderRefundTask task = fulfillmentService.enqueueOperatorRefund(group, claimId, amount,
                 showroomz.domain.order.type.OperatorRefundReason.DISPUTE_ACCEPTED, detail, adminId, now);
+        // 귀책이 브랜드로 — 선불로 보낸 반품이면 선불 운임 · 차감했던 최초 배송비를 함께 돌려준다(1021 설계서 4-4 · 기-93). 상품 환불을
+        // 먼저 세워야 원래 결제액 잔액이 상품 몫에 먼저 쓰이고 넘는 운임만 계좌 송금으로 간다.
+        OrderClaimCollection disputed = collectionRepository.findById(collectionId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
+        if (disputed.getFeeBearer() == ClaimFeeBearer.CONSUMER) {
+            acceptSellerFaultWithFreight(disputed, claim, FreightAdjustmentTrigger.DISPUTE_ACCEPTED, now);
+            enqueueFreightRefunds(disputed, now);
+        }
         if (claimRepository.closeRejectedByDispute(claimId, amount, now) != 1) {
             throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
         }
@@ -1415,9 +1688,10 @@ public class OrderClaimService {
 
     // ------------------------------------------------------------------ 내부
 
-    /** 그 요청의 미정산 반려 재발송비 — 한 요청에 1건까지다. */
+    /** 그 요청의 미정산 반려 재발송비(사유 번복 재발송비 포함 · 1021 기-17) — 한 요청에 1건까지다. */
     private OrderClaimCharge pendingRejectCharge(Long collectionId) {
-        return pendingCharge(collectionId, ClaimChargeType.REJECT_RESHIP);
+        OrderClaimCharge reject = pendingCharge(collectionId, ClaimChargeType.REJECT_RESHIP);
+        return reject != null ? reject : pendingCharge(collectionId, ClaimChargeType.OVERTURN_RESHIP);
     }
 
     private OrderClaimCharge pendingCharge(Long collectionId, ClaimChargeType type) {

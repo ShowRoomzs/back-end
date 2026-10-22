@@ -44,8 +44,11 @@ public class AdminChangeRequestDto {
         @Schema(description = "브랜드명 — 브랜드 요청만(인플루언서 요청은 null) · requester.name 을 쓴다", example = "코코브라운",
                 deprecated = true)
         private String brandName;
-        @Schema(description = "요청 유형 — BUSINESS_INFO · SETTLEMENT_ACCOUNT · TO_BUSINESS · TO_INDIVIDUAL", example = "BUSINESS_INFO")
+        @Schema(description = "요청 유형 — BUSINESS_INFO · SETTLEMENT_ACCOUNT · TO_BUSINESS · TO_INDIVIDUAL · CREATOR_ACCOUNT(1021 기-22)",
+                example = "BUSINESS_INFO")
         private ChangeRequestType type;
+        @Schema(description = "요청 유형 라벨 — 「계좌 변경 (인플루언서)」 등", example = "사업자 정보")
+        private String typeLabel;
         @Schema(description = "요청 시각", example = "2026-08-07T10:00:00")
         private LocalDateTime requestedAt;
         @Schema(description = "처리 시각 — PENDING이면 null", example = "2026-08-10T11:05:00")

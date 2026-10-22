@@ -84,7 +84,8 @@ public class CreatorAdminHistoryReader {
             }
         }
         for (ChangeRequest request : processed) {
-            if (request.getProcessedAt() == null) {
+            // 정산 계좌 변경 승인은 계좌 변경 이력(저장 행)이 남긴다(1021 기-22) — 파생 행은 사업자 구분 변경만.
+            if (request.getProcessedAt() == null || !request.getType().isBusinessTypeChange()) {
                 continue;
             }
             boolean approved = request.getStatus() == ChangeRequestStatus.APPROVED;

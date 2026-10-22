@@ -27,4 +27,12 @@ public interface MemberNotifier {
 
     /** 인플루언서 사업자 구분 변경 반려(§16-5 — 정형 문구 + 상세 사유 가공 없이). */
     void businessTypeChangeRejected(Long creatorId, String businessEmail, String requestCode, String reasonLabel);
+
+    /** 인플루언서 정산 계좌 변경 요청 승인(1021 기-22) — 새 계좌 실존 확인(PG)이 이어진다. */
+    default void accountChangeApproved(Long creatorId, String requestCode) {
+    }
+
+    /** 인플루언서 정산 계좌 변경 요청 반려(1021 기-22) — 기존 계좌 그대로. */
+    default void accountChangeRejected(Long creatorId, String requestCode, String reasonLabel) {
+    }
 }

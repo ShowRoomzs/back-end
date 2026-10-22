@@ -67,6 +67,7 @@ public class CreatorGroupBuyDetailAssembler {
     private final CreatorGroupBuyPermissionPolicy permissionPolicy;
     private final BusinessCalendar businessCalendar;
     private final GroupBuyProperties properties;
+    private final showroomz.domain.connection.service.OperatorChannelService operatorChannelService;
 
     public CreatorGroupBuyDetailResponse assemble(GroupBuy groupBuy, Navigation navigation) {
         LocalDateTime now = LocalDateTime.now();
@@ -355,7 +356,10 @@ public class CreatorGroupBuyDetailAssembler {
                 request.getRequestedAt());
     }
 
-    /** 중단 예정일 때 진행 중 통지만 — 소명 기한·소명 내용·첨부는 브랜드↔운영자 절차라 싣지 않는다. */
+    /**
+     * 중단 예정일 때 진행 중 통지만. 1021 결정 노트 기-21 — 소명 · 의견 기한은 양측 같은 값이라 인플루언서에게도 싣고, 의견은 운영팀 채널
+     * 답글로 받는다(채널 id). 브랜드의 소명 내용 · 첨부는 여전히 싣지 않는다.
+     */
     private AdminSuspension adminSuspension(GroupBuy groupBuy, GroupBuyFacts facts, LocalDateTime now) {
         if (groupBuy.getStatus() != GroupBuyStatus.SUSPENSION_SCHEDULED) {
             return null;
@@ -369,7 +373,9 @@ public class CreatorGroupBuyDetailAssembler {
                         notice.getExecuteScheduledAt(),
                         notice.getExecuteScheduledAt() == null ? null
                                 : businessCalendar.businessDaysBetween(now.toLocalDate(),
-                                        notice.getExecuteScheduledAt().toLocalDate())))
+                                        notice.getExecuteScheduledAt().toLocalDate()),
+                        notice.getAppealDeadlineAt(),
+                        operatorChannelService.findCreatorChannelThreadId(groupBuy.getCreator()).orElse(null)))
                 .orElse(null);
     }
 

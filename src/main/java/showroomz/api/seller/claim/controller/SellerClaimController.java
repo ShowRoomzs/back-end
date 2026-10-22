@@ -86,8 +86,17 @@ public class SellerClaimController implements SellerClaimControllerDocs {
 
     @Override
     @PostMapping("/{claimId}/inspection/pass")
-    public ResponseEntity<SellerClaimDetailResponse> passInspection(@PathVariable Long claimId) {
-        return ResponseEntity.ok(commandService.pass(getCurrentSellerEmail(), claimId));
+    public ResponseEntity<SellerClaimDetailResponse> passInspection(@PathVariable Long claimId,
+            @RequestBody(required = false) showroomz.api.seller.claim.dto.SellerClaimPassRequest request) {
+        return ResponseEntity.ok(commandService.pass(getCurrentSellerEmail(), claimId,
+                request != null && Boolean.TRUE.equals(request.faultToSeller())));
+    }
+
+    @Override
+    @PostMapping("/{claimId}/inspection/overturn")
+    public ResponseEntity<SellerClaimDetailResponse> overturnInspection(@PathVariable Long claimId,
+            @RequestBody showroomz.api.seller.claim.dto.SellerClaimOverturnRequest request) {
+        return ResponseEntity.ok(commandService.overturn(getCurrentSellerEmail(), claimId, request));
     }
 
     @Override

@@ -879,7 +879,7 @@ class AdminPostActionScenarioIntegrationTest extends AdminPostScenarioSupport {
                             .header(HttpHeaders.AUTHORIZATION, admin)))) {
                 result.andExpect(status().isConflict())
                         .andExpect(jsonPath("$.code").value("POST_NOT_EDITABLE"))
-                        .andExpect(jsonPath("$.message").value("공구 게시물은 공구 관리에서 숨김 처리해 주세요."));
+                        .andExpect(jsonPath("$.message").value("공구 게시물은 공구 관리에서 노출 중지해 주세요."));
             }
             expectError(suspendRequest(postId, body("policyClause", "ARTICLE_5")), 400, "INVALID_INPUT");
             assertThat(reportStatuses(postId)).containsExactly("PENDING");

@@ -37,26 +37,6 @@ class SellerCompleteRegistrationRequestValidationTest {
     }
 
     @Test
-    @DisplayName("[ON-05] 반품비 · 교환비는 생략해도 검증을 통과한다")
-    void optional() {
-        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
-
-        assertThat(validator.validateProperty(request, "returnFee")).isEmpty();
-        assertThat(validator.validateProperty(request, "exchangeFee")).isEmpty();
-    }
-
-    @Test
-    @DisplayName("[ON-05] 반품비 · 교환비를 보내면 0 이상이어야 한다")
-    void notNegative() {
-        SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();
-        request.setReturnFee(-1);
-        request.setExchangeFee(-1);
-
-        assertThat(validator.validateProperty(request, "returnFee")).hasSize(1);
-        assertThat(validator.validateProperty(request, "exchangeFee")).hasSize(1);
-    }
-
-    @Test
     @DisplayName("[OB-04] 발송 기한을 빼면 「발송 기한을 입력해 주세요.」")
     void shippingLeadDaysRequired() {
         SellerCompleteRegistrationRequest request = new SellerCompleteRegistrationRequest();

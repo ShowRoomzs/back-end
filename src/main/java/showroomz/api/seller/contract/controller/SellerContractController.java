@@ -15,6 +15,8 @@ import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
 import showroomz.api.seller.contract.dto.ContractDocumentDownloadResponse;
 import showroomz.api.seller.contract.dto.ContractDuplicateResponse;
+import showroomz.api.seller.contract.dto.ContractDraftApprovalRequest;
+import showroomz.api.seller.contract.dto.ContractTerminationRequestRequest;
 import showroomz.api.seller.contract.dto.ContractFormSourcesResponse;
 import showroomz.api.seller.contract.dto.ContractListItem;
 import showroomz.api.seller.contract.dto.ContractResendRequestResponse;
@@ -158,6 +160,36 @@ public class SellerContractController implements SellerContractControllerDocs {
         ContractDuplicateResponse response =
                 sellerContractCommandService.duplicate(getCurrentSellerEmail(), contractId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @Override
+    @PostMapping("/{contractId}/termination-request")
+    public ResponseEntity<ContractDetailResponse> requestTermination(@PathVariable Long contractId,
+            @Valid @RequestBody ContractTerminationRequestRequest request) {
+        return ResponseEntity.ok(
+                sellerContractCommandService.requestTermination(getCurrentSellerEmail(), contractId, request));
+    }
+
+    @Override
+    @DeleteMapping("/{contractId}/termination-request")
+    public ResponseEntity<ContractDetailResponse> withdrawTermination(@PathVariable Long contractId) {
+        return ResponseEntity.ok(sellerContractCommandService.withdrawTermination(getCurrentSellerEmail(), contractId));
+    }
+
+    @Override
+    @PostMapping("/{contractId}/draft-approvals")
+    public ResponseEntity<ContractDetailResponse> recordDraftApproval(@PathVariable Long contractId,
+            @Valid @RequestBody ContractDraftApprovalRequest request) {
+        return ResponseEntity.ok(
+                sellerContractCommandService.recordDraftApproval(getCurrentSellerEmail(), contractId, request));
+    }
+
+    @Override
+    @DeleteMapping("/{contractId}/draft-approvals/{approvalId}")
+    public ResponseEntity<ContractDetailResponse> deleteDraftApproval(@PathVariable Long contractId,
+            @PathVariable Long approvalId) {
+        return ResponseEntity.ok(
+                sellerContractCommandService.deleteDraftApproval(getCurrentSellerEmail(), contractId, approvalId));
     }
 
     private String getCurrentSellerEmail() {

@@ -187,7 +187,7 @@ public record GroupBuyDetailResponse(
 
     public enum GateState { DONE, ACTION_REQUIRED, WAITING, REJECTED }
 
-    @Schema(description = "공구 게시물 — 작성·수정은 인플루언서, 심사·숨김은 운영자 몫이다. 브랜드는 읽기만 한다")
+    @Schema(description = "공구 게시물 — 작성·수정은 인플루언서, 심사·노출 중지은 운영자 몫이다. 브랜드는 읽기만 한다")
     public record Post(
             @Schema(description = "게시물 상태 8종 — NOT_WRITTEN · WRITING · PENDING_APPROVAL · REJECTED · SCHEDULED · EXPOSED · HIDDEN · CLOSED",
                     example = "EXPOSED")
@@ -203,9 +203,9 @@ public record GroupBuyDetailResponse(
             @Schema(description = "운영자 오픈 반려 사유 — 반려 기록이 있을 때", nullable = true) Reason rejectReason,
             @Schema(description = "운영자 오픈 반려 시각 — rejectReason이 있을 때만(재제출해도 마지막 반려 시각이 남는다)", nullable = true)
             LocalDateTime rejectedAt,
-            @Schema(description = "운영자 숨김 사유 — 숨김 중일 때만", nullable = true) Reason hiddenReason,
-            @Schema(description = "숨김 시각 — 숨김 중일 때만", nullable = true) LocalDateTime hiddenAt,
-            @Schema(description = "숨김 경과 일수 — 숨김 중일 때만", nullable = true) Integer hiddenDays
+            @Schema(description = "운영자 노출 중지 사유 — 노출 중지 중일 때만", nullable = true) Reason hiddenReason,
+            @Schema(description = "노출 중지 시각 — 노출 중지 중일 때만", nullable = true) LocalDateTime hiddenAt,
+            @Schema(description = "노출 중지 경과 일수 — 노출 중지 중일 때만", nullable = true) Integer hiddenDays
     ) {
     }
 
@@ -404,11 +404,13 @@ public record GroupBuyDetailResponse(
             @Schema(description = "[기간 연장] — IN_PROGRESS ∧ 연장 요청 이력 없음 ∧ 종료 12시간 전 ∧ 요청 차단 아님")
             boolean canRequestExtension,
             @Schema(description = "[조기 마감 요청] — IN_PROGRESS ∧ 요청 차단 아님") boolean canRequestEarlyClose,
-            @Schema(description = "[공구 중단 요청] — READY 또는 IN_PROGRESS ∧ 요청 차단 아님") boolean canRequestSuspension,
+            @Schema(description = "[공구 중단 요청] — IN_PROGRESS ∧ 요청 차단 아님(1021 기-05 — 오픈 전은 해지 요청)") boolean canRequestSuspension,
             @Schema(description = "[소명 제출] — SUSPENSION_SCHEDULED ∧ 통지 중 ∧ 미제출 ∧ 소명 기한 이내") boolean canSubmitAppeal,
             @Schema(description = "**폐기(2026-10-06) — 항상 false.** 이슈는 정산 조정 요청(정산 상세)으로만 열린다", deprecated = true) boolean canOpenIssue,
             @Schema(description = "[이행 확인] — **폐기(2026-10-06) · 항상 false**", deprecated = true) boolean canCheckFulfillment,
-            @Schema(description = "[스레드 열기] — 인플루언서와 PAIR 스레드가 있음(counterparty.pairThreadId != null)") boolean canOpenPairThread
+            @Schema(description = "[스레드 열기] — 인플루언서와 PAIR 스레드가 있음(counterparty.pairThreadId != null)") boolean canOpenPairThread,
+            @Schema(description = "[해지 요청](B3 · C4 · 1021 기-05) — 준비중 · 준비완료 ∧ 계약 해지 요청 없음 ∧ 공구 변경 요청 검토 중 아님. "
+                    + "실행은 계약 API `POST /v1/seller/contracts/{contractId}/termination-request`") boolean canRequestTermination
     ) {
     }
 

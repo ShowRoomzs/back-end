@@ -26,7 +26,9 @@ import showroomz.domain.member.user.repository.UserSanctionRepository;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderClaim;
+import showroomz.domain.order.entity.OrderRefundTask;
 import showroomz.domain.order.repository.OrderClaimRepository;
+import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.repository.OrderRepository;
 import showroomz.domain.order.type.ClaimStatus;
 
@@ -54,6 +56,7 @@ public class InquiryService {
     private final OrderRepository orderRepository;
     private final OrderClaimRepository claimRepository;
     private final UserSanctionRepository sanctionRepository;
+    private final OrderRefundTaskRepository refundTaskRepository;
 
     // 1:1 문의 등록 — 답변은 어드민(운영자)만 등록한다
     @Transactional
@@ -62,6 +65,9 @@ public class InquiryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
         if (request.isSanctionAppeal()) {
             return registerSanctionAppeal(user, request);
+        }
+        if (request.getRefundTaskId() != null) {
+            return registerRefundAccountNotice(user, request);
         }
         OrderClaim disputed = request.getClaimId() == null ? null
                 : requireDisputableClaim(userId, request.getClaimId(), request.getType(), request.getOrderId());
@@ -97,7 +103,7 @@ public class InquiryService {
             throw new BusinessException(ErrorCode.SANCTION_APPEAL_NOT_AVAILABLE);
         }
         requireAppealShape(request.getType(), request.getOrderId());
-        if (request.getClaimId() != null) {
+        if (request.getClaimId() != null || request.getRefundTaskId() != null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정지 문의에는 반품 · 교환 요청을 연결할 수 없습니다.");
         }
         if (inquiryRepository.findFirstBySanctionIdAndStatusOrderByIdDesc(sanction.getId(), InquiryStatus.WAITING).isPresent()) {
@@ -109,6 +115,39 @@ public class InquiryService {
                 .content(request.getContent())
                 .imageUrls(request.getImageUrls())
                 .sanctionId(sanction.getId())
+                .build());
+        return InquiryRegisterResponse.builder()
+                .inquiryId(inquiry.getId())
+                .build();
+    }
+
+    /**
+     * 「환불 계좌 안내」(C10-5 · 1021 설계서 4-5) — 원래 결제액을 넘는 운임 환급은 계좌로 보내야 해 계좌를 이 문의로 받는다. 본인 주문의 송금 대기
+     * 건만 · 유형은 취소/교환/반품 · 주문은 그 환급 건의 주문. 어드민 06c M3 이 이 문의를 「1:1 문의 #N 로 받은 계좌」로 찾는다.
+     */
+    private InquiryRegisterResponse registerRefundAccountNotice(Users user, InquiryRegisterRequest request) {
+        // 남의 환급 건은 없는 것과 같다 — 존재를 드러내지 않는다.
+        OrderRefundTask task = refundTaskRepository.findWithOrder(request.getRefundTaskId())
+                .filter(found -> found.getOrder().getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFUND_TASK_NOT_FOUND));
+        if (!task.isTransferable()) {
+            throw new BusinessException(ErrorCode.REFUND_TRANSFER_NOT_PENDING);
+        }
+        if (request.getType() != CsCategory.CANCEL_EXCHANGE_RETURN) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "환불 계좌 안내 문의의 유형은 취소/교환/반품(CANCEL_EXCHANGE_RETURN)이어야 합니다.");
+        }
+        Long orderId = task.getOrder().getId();
+        if (request.getClaimId() != null || (request.getOrderId() != null && !request.getOrderId().equals(orderId))) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "환불 계좌 안내 문의는 그 환급 건의 주문에만 연결할 수 있습니다.");
+        }
+        OneToOneInquiry inquiry = inquiryRepository.save(OneToOneInquiry.builder()
+                .user(user)
+                .type(CsCategory.CANCEL_EXCHANGE_RETURN)
+                .content(request.getContent())
+                .imageUrls(request.getImageUrls())
+                .orderId(orderId)
+                .refundTaskId(task.getId())
                 .build());
         return InquiryRegisterResponse.builder()
                 .inquiryId(inquiry.getId())

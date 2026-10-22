@@ -221,8 +221,26 @@ public final class AdminOrderDto {
             @Schema(description = "④ 정산 반영(37 설계서 8절 #4) — 이 하위주문이 어느 정산에 얼마로 들어갔나. 정산 생성 전이면 null",
                     nullable = true)
             Settlement settlement,
-            Actions actions
+            Actions actions,
+            @Schema(description = "추적 정지 · 소비자 선택(06a · 06d · 1021 기-15) — 「선택 개방까지 N일」 · 소비자 선택. 없으면 null", nullable = true)
+            StallChoice stallChoice
     ) {
+    }
+
+    @Schema(name = "AdminOrderStallChoice")
+    public record StallChoice(
+            @Schema(description = "WAITING · OPEN · CHOSEN", example = "WAITING") String state,
+            @Schema(nullable = true) LocalDateTime opensAt,
+            @Schema(description = "선택 개방까지 N일", nullable = true, example = "3") Integer daysUntilOpen,
+            @Schema(nullable = true, example = "9") Integer daysStalled,
+            @Schema(nullable = true) showroomz.domain.order.type.StallChoice choice,
+            @Schema(example = "재발송", nullable = true) String choiceLabel,
+            @Schema(nullable = true) LocalDateTime chosenAt
+    ) {
+        public static StallChoice of(showroomz.domain.order.service.OrderStallChoiceService.View view) {
+            return view == null ? null : new StallChoice(view.state().name(), view.opensAt(), view.daysUntilOpen(),
+                    view.daysStalled(), view.choice(), view.choiceLabel(), view.chosenAt());
+        }
     }
 
     @Schema(name = "AdminOrderSettlement", description = "하위주문의 정산 반영(44 어드민 정산관리 설계서 8-3)")

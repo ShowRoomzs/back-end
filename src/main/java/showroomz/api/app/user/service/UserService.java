@@ -48,6 +48,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final showroomz.domain.order.repository.OrderClaimRepository claimRepository;
+    private final showroomz.domain.order.repository.OrderClaimChargeRepository claimChargeRepository;
+    private final showroomz.domain.order.repository.OrderRefundTaskRepository refundTaskRepository;
     private final BankRepository bankRepository;
     private final CreatorFollowRepository creatorFollowRepository;
     private final CreatorRepository creatorRepository;
@@ -65,9 +68,10 @@ public class UserService {
      * <p>결제 대기(PENDING)도 막는다. 결제창이 열린 사이 탈퇴하면 뒤늦게 도착한 웹훅이 결제를 확정할 사용자가 없다.
      * 결제하지 않은 주문은 만료 스케줄러가 30분 뒤 CANCELLED로 내리므로 오래 막히지 않는다(결제 계획서 4-1 · 선행 수정 계획서 3-4).
      */
+    /** 탈퇴를 막지 않는 항목 — 종결 · 결제 전(1021 기-31 · 14절 Q22 결제 대기는 진행 중 주문이 아니다). */
     private static final Set<OrderProductStatus> FINISHED_ORDER_STATUSES =
             EnumSet.of(OrderProductStatus.PURCHASE_CONFIRMED, OrderProductStatus.CANCELLED,
-                    OrderProductStatus.RETURNED);
+                    OrderProductStatus.RETURNED, OrderProductStatus.PENDING);
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);
@@ -281,7 +285,8 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
         }
 
-        long ongoingOrderCount = orderProductRepository.countOngoingByUserId(user.getId(), FINISHED_ORDER_STATUSES);
+        WithdrawalInfoResponse.Blockers blockers = withdrawalBlockers(user.getId());
+        long ongoingOrderCount = blockers.getOngoingOrders();
 
         List<WithdrawalInfoResponse.WithdrawalReasonOption> reasons = Arrays.stream(WithdrawalReason.values())
                 .map(r -> new WithdrawalInfoResponse.WithdrawalReasonOption(r.name(), r.getDescription()))
@@ -289,14 +294,24 @@ public class UserService {
 
         boolean creatorReviewRequired = isUnwithdrawnCreator(user);
         return new WithdrawalInfoResponse(
-                ongoingOrderCount == 0 && !creatorReviewRequired,
+                !blockers.any() && !creatorReviewRequired,
                 ongoingOrderCount,
                 creatorFollowRepository.countByUser(user),
                 wishlistRepository.countByUser_Id(user.getId()),
                 cartRepository.countByUser(user),
                 reasons,
-                creatorReviewRequired
+                creatorReviewRequired,
+                blockers
         );
+    }
+
+    /** 탈퇴 차단 사유(1021 기-31 【잠정】) — 진행 중 주문 · 반품 · 교환 · 미결제 재발송비 · 송금 대기 운임 환급. */
+    private WithdrawalInfoResponse.Blockers withdrawalBlockers(Long userId) {
+        return new WithdrawalInfoResponse.Blockers(
+                orderProductRepository.countOngoingByUserId(userId, FINISHED_ORDER_STATUSES),
+                claimRepository.countOpenCollectionsByUser(userId),
+                claimChargeRepository.countPendingByUser(userId),
+                refundTaskRepository.countPendingTransfersByUser(userId));
     }
 
     /**
@@ -334,8 +349,19 @@ public class UserService {
 
         // 2. 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다.
         //    화면에서 이미 비활성이지만, 조회 후 주문이 생겼거나 API를 직접 호출한 경우를 여기서 거른다.
-        if (orderProductRepository.countOngoingByUserId(user.getId(), FINISHED_ORDER_STATUSES) > 0) {
+        WithdrawalInfoResponse.Blockers blockers = withdrawalBlockers(user.getId());
+        if (blockers.getOngoingOrders() > 0) {
             throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER);
+        }
+        // 반품 · 교환 진행 · 미결제 재발송비 · 송금 대기 운임 환급도 막는다(1021 기-31) — 같은 코드 · 사유 문장만 다르다.
+        if (blockers.getOpenClaims() > 0) {
+            throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER, "진행 중인 반품 · 교환이 있어 지금은 탈퇴할 수 없습니다.");
+        }
+        if (blockers.getUnpaidCharges() > 0) {
+            throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER, "결제하지 않은 재발송 배송비가 있어 지금은 탈퇴할 수 없습니다.");
+        }
+        if (blockers.getPendingTransfers() > 0) {
+            throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER, "아직 송금되지 않은 환급금이 있어 지금은 탈퇴할 수 없습니다.");
         }
 
         // 2-1. 인플루언서는 스튜디오에서 탈퇴를 신청해 운영자 승인을 받아야 한다 — 소비자 탈퇴로 심사를 우회하지 않는다.

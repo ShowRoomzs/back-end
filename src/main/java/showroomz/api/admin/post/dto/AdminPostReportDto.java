@@ -42,7 +42,7 @@ public class AdminPostReportDto {
          * 공구 게시물 신고는 이 큐의 조치(노출 중지)로 처리할 수 없다 — 공구 게시물은 어드민 공구관리의 숨김으로 내린다
          * (공구 게시물 설계 7-2 · 31 설계 S0). 운영자가 그쪽으로 가도록 타입을 싣는다. 연동은 미결 ⑤.
          */
-        @Schema(description = "게시물 타입 — GROUP_BUY면 이 화면이 아니라 어드민 공구관리의 게시물 숨김으로 처리한다",
+        @Schema(description = "게시물 타입 — GROUP_BUY면 이 화면이 아니라 어드민 공구관리의 게시물 노출 중지으로 처리한다",
                 example = "GENERAL")
         private PostType postType;
 

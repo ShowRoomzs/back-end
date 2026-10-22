@@ -441,24 +441,25 @@ public interface CreatorBasicInfoControllerDocs {
     })
     ResponseEntity<CreatorBasicInfoDto.AccountChangeImpact> getAccountChangeImpact(@Parameter(hidden = true) UserPrincipal principal);
 
-    @Operation(summary = "정산 계좌 변경 · 실명 확인",
+    @Operation(summary = "정산 계좌 변경 요청 (1021 기-22)",
             description = """
-                    은행 · 계좌번호 · 통장 사본(재제출 필수)을 저장하고 **실명 확인**을 시작한다 — 예금주는 받지 않는다(본인 인증 실명).
+                    은행 · 계좌번호 · 통장 사본으로 **계좌 변경 요청**을 낸다 — 바로 바뀌지 않고 운영자가 통장 사본과 예금주(= 본인 인증 실명)를 확인한 뒤
+                    반영한다. 예금주는 받지 않는다.
 
                     **흐름**
                     1. 통장 사본을 `POST /v1/creator/images?type=CREATOR_DOCUMENT`(jpg · jpeg · png · pdf · 10MB)로 먼저 올린다.
                     2. 확인 모달(T6)의 재료는 `GET …/settlement-account/change-impact`.
-                    3. 이 API 로 저장 — 응답 시점의 `account.verification.status` 는 `VERIFYING`.
-                    4. 확인은 PG 셀러 등록 · 수정의 계좌 검증이며 **커밋 직후 비동기**로 반영된다. FE 는 정산 정보를 다시 조회해
-                       결과(`VERIFIED` · `FAILED` + `failReason`)를 그린다. 일시 실패는 지급 배치 앞단에서 다시 시도한다.
+                    3. 이 API 로 요청 — 응답의 `pendingAccountChange` 에 요청 번호 · 은행 · 마스킹 계좌 · 보류 지급이 실린다. `account` 는 **기존 계좌 그대로**다.
+                    4. 운영자 승인 → 새 계좌로 바뀌고 PG 계좌 실존 확인(`verification.status = VERIFYING` → `VERIFIED` · `FAILED`)이 이어진다.
+                       반려 → 기존 계좌 그대로 · 알림. 확인 중 취소는 `DELETE …/settlement-account/change-request`.
 
                     **지급 영향**
-                    - 확인이 끝날 때까지 인플루언서 몫 **지급 예정 건은 보류**된다(보류 사유 「정산 계좌 확인 중」) — 확인되면 자동으로 풀린다.
-                    - 이미 지시가 나간 지급은 이전 계좌로 끝난다. 진행 중 지급이 있어도 변경을 막지 않는다.
+                    - 확인이 끝날 때까지 인플루언서 몫 **지급 요청 전 예정 지급은 보류**된다(「정산 계좌 확인 중」). 이미 PG 에 나간 지급은 기존 계좌로 끝난다.
                     - 브랜드 몫 · 플랫폼 몫에는 영향이 없다.
 
                     **검증** — 은행 코드 3자리(`GET /v1/common/banks`) · 계좌번호 하이픈 없이 숫자 10 ~ 16자리 · 통장 사본 URL 필수 ·
-                    지금 계좌와 은행 · 번호가 모두 같으면 400 `CREATOR_ACCOUNT_UNCHANGED`.
+                    지금 계좌와 은행 · 번호가 모두 같으면 400 `CREATOR_ACCOUNT_UNCHANGED` · 열린 변경 요청(사업자 구분 변경 포함)이 있으면 409
+                    `CHANGE_REQUEST_ALREADY_PENDING`.
 
                     **권한:** CREATOR
                     """)
@@ -474,7 +475,7 @@ public interface CreatorBasicInfoControllerDocs {
                             }
                             """)))
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "저장 · 확인 시작 — 응답은 정산 정보 탭 조회와 같다(`verification.status = VERIFYING`)",
+            @ApiResponse(responseCode = "200", description = "요청 접수 — 응답은 정산 정보 탭 조회와 같다(`pendingAccountChange` 채움 · `account` 는 기존 계좌)",
                     content = @Content(mediaType = "application/json",
                             schema = @Schema(implementation = CreatorBasicInfoDto.SettlementInfoResponse.class))),
             @ApiResponse(responseCode = "400", description = "같은 계좌 · 은행 미선택 · 계좌번호 형식 · 통장 사본 누락",
@@ -495,12 +496,28 @@ public interface CreatorBasicInfoControllerDocs {
                             examples = @ExampleObject(value = """
                                     { "code": "BANK_NOT_FOUND", "message": "존재하지 않는 은행 코드입니다." }
                                     """))),
-            @ApiResponse(responseCode = "409", description = "탈퇴한 인플루언서 — CREATOR_WITHDRAWN",
+            @ApiResponse(responseCode = "409", description = "탈퇴한 인플루언서 — CREATOR_WITHDRAWN · 열린 변경 요청 — CHANGE_REQUEST_ALREADY_PENDING",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<CreatorBasicInfoDto.SettlementInfoResponse> changeSettlementAccount(
             @Parameter(hidden = true) UserPrincipal principal,
             @Valid @RequestBody CreatorBasicInfoDto.ChangeSettlementAccountRequest request);
+
+    @Operation(summary = "정산 계좌 변경 요청 취소 (1021 기-22)",
+            description = """
+                    확인 중인 계좌 변경 요청을 거둔다 — 기존 계좌 그대로 · 보류했던 지급은 원래 예정일(지났으면 오늘)로 돌아간다.
+
+                    **권한:** CREATOR
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "취소 — 정산 정보 탭 조회와 같다(`pendingAccountChange = null`)",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = CreatorBasicInfoDto.SettlementInfoResponse.class))),
+            @ApiResponse(responseCode = "400", description = "확인 중인 계좌 변경 요청이 없음 — CHANGE_REQUEST_NOT_PENDING",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<CreatorBasicInfoDto.SettlementInfoResponse> cancelSettlementAccountChange(
+            @Parameter(hidden = true) UserPrincipal principal);
 
     // ------------------------------------------------------------------ 사업자 구분 변경(T4 ~ T10 · §16-2a)
 

@@ -163,8 +163,13 @@ public class Contract extends BaseTimeEntity {
     @Column(name = "creator_viewed_at")
     private LocalDateTime creatorViewedAt;
 
+    /** 공구 생성 처리 시각 — 운영자가 [공구 생성]을 누른 때. 계약 성립 시각은 {@link #establishedAt}(1021 기-05). */
     @Column(name = "concluded_at")
     private LocalDateTime concludedAt;
+
+    /** 계약 성립 = 양측 서명 완료 시각(나중 서명) — 1021 결정 노트 기-05 【잠정】. 서명이 하나라도 비면 null. */
+    @Column(name = "established_at")
+    private LocalDateTime establishedAt;
 
     @Column(name = "closed_at")
     private LocalDateTime closedAt;
@@ -394,7 +399,24 @@ public class Contract extends BaseTimeEntity {
         brandSignedAt = brand;
         creatorSignedAt = creator;
         signatureAsOf = now;
-        status = brand != null && creator != null ? ContractStatus.CONCLUSION_PENDING : ContractStatus.SIGNING;
+        boolean both = brand != null && creator != null;
+        status = both ? ContractStatus.CONCLUSION_PENDING : ContractStatus.SIGNING;
+        // 계약 성립 = 양측 서명 완료(1021 기-05). 서명을 되돌리면 성립도 거둔다(운영자 정정).
+        establishedAt = both ? (brand.isAfter(creator) ? brand : creator) : null;
+    }
+
+    /**
+     * 해지(1021 설계서 1-4) — 성립 뒤 · 공구 오픈 전 종결. 종결 열은 취소 · 만료와 같은 자리를 쓴다.
+     *
+     * @param reasonCode {@code ContractTerminationReasonCode} 이름
+     * @param explanation 양측에 전달하는 설명
+     */
+    public void terminate(String reasonCode, String explanation, LocalDateTime now) {
+        status = ContractStatus.TERMINATED;
+        closedAt = now;
+        closeActorType = ContractActorType.ADMIN;
+        closeReasonCode = reasonCode;
+        closeReasonMemo = explanation;
     }
 
     public void conclude(LocalDateTime now) {
@@ -448,7 +470,8 @@ public class Contract extends BaseTimeEntity {
     public boolean isObligationAlive() {
         return status != ContractStatus.DECLINED
                 && status != ContractStatus.EXPIRED
-                && status != ContractStatus.CANCELED;
+                && status != ContractStatus.CANCELED
+                && status != ContractStatus.TERMINATED;
     }
 
     private static int nullToZero(Integer value) {

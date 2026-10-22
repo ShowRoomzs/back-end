@@ -112,8 +112,10 @@ public class AdminSettlementDetailAssembler {
                 s.getOriginalRewardAmount(), s.getRewardAmount(),
                 new AdminSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
                 new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
-                s.getConsumerDeliveryFeeAmount(), s.getBrandPayoutBeforeClawback(), s.getBrandClawbackAmount(),
-                s.getBrandPayoutAmount());
+                s.getConsumerDeliveryFeeAmount(),
+                new SettlementPartyDto.AmountCount(s.getReturnDeductionFeeAmount(), s.getReturnDeductionCount()),
+                new SettlementPartyDto.AmountCount(s.getFreightAdjustmentAmount(), s.getFreightAdjustmentCount()),
+                s.getBrandPayoutBeforeClawback(), s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
         AdminSettlementDto.CreatorAxis creator = new AdminSettlementDto.CreatorAxis(s.getCreatorBusinessType(),
                 s.getRewardAmount(), s.getRewardClawbackAmount(),
                 s.isBusinessCreator() ? null : new AdminSettlementDto.Withholding(s.getWithholdingAmount(),
@@ -167,7 +169,9 @@ public class AdminSettlementDetailAssembler {
                 .toList();
         long payoutTotal = payouts.values().stream().mapToLong(SettlementPayout::getAmount).sum();
         long total = payoutTotal + s.getPgFeeAmount() + s.getWithholdingAmount();
-        long inflow = s.getConfirmedSalesAmount() + s.getReshipFeeAmount() + s.getConsumerDeliveryFeeAmount();
+        // 생성 검산(SettlementCalculator.verify)과 같은 식 — 1021 6-1 「반품 시 차감한 최초 배송비 · ± 운임 정산」도 재원이다.
+        long inflow = s.getConfirmedSalesAmount() + s.getReshipFeeAmount() + s.getConsumerDeliveryFeeAmount()
+                + s.getReturnDeductionFeeAmount() + s.getFreightAdjustmentAmount();
         return new AdminSettlementDto.Payouts(rows, s.getPgFeeAmount(),
                 new AdminSettlementDto.Check(total, inflow, s.getConfirmedSalesAmount(), s.getWithholdingAmount(),
                         total == inflow));

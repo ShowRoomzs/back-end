@@ -109,8 +109,11 @@ public class OrderAssembler {
                     .shipping(OrderDto.Shipping.builder()
                             .productTotal(group.getProductTotal().longValue())
                             .deliveryFee(group.getDeliveryFee())
-                            .freeShippingThreshold(group.getMarket() != null ? group.getMarket().getFreeShippingThreshold() : null)
+                            // 결제 시점 스냅샷(1021 기-20) — 마켓 현재 값이 아니다.
+                            .freeShippingThreshold(group.getFreeShippingThreshold())
                             .isFreeShipping(group.isFreeShippingApplied())
+                            .deliveryRegion(group.getDeliveryRegion().name())
+                            .regionSurcharge(group.getRegionSurcharge())
                             .build())
                     // 확정 기한이 있으면 그 날, 공구 진행 중이면 마감 예정 기준 예상일 — 문구는 주문 시점 N 그대로.
                     .expectedShipDueDate(group.getShipDueAt() != null ? group.getShipDueAt().toLocalDate()

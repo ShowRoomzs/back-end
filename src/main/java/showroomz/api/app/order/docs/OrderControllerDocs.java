@@ -245,6 +245,43 @@ public interface OrderControllerDocs {
             @Parameter(description = "주문 항목 ID", example = "1501") @PathVariable("orderProductId") Long orderProductId);
 
     @Operation(
+            summary = "추적 정지 · 소비자 선택 조회 (C10-2 1d · 1021 기-15)",
+            description = "배송 추적이 멈춘 하위주문의 선택 상태. 추적 정지 판정 + N일(`delivery.tracker.consumer-choice-days` · 잠정 7)에 " +
+                    "재발송 · 환불 선택이 열린다. 배송 조회 응답의 `stall` 과 같은 값이다.\n\n" +
+                    "**`state`** — `NONE`(추적 정지 아님) · `WAITING`(개방 전 · `daysUntilOpen`) · `OPEN`(선택 가능) · `CHOSEN`(선택함)\n\n" +
+                    "**권한:** USER (본인 주문만)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 하위주문 · 남의 주문",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<UserOrderDto.StallChoiceResponse> getStallChoice(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "하위주문 ID", example = "1024") @PathVariable("deliveryGroupId") Long deliveryGroupId);
+
+    @Operation(
+            summary = "추적 정지 · 소비자 선택 (C10-2 1d · 1021 기-15)",
+            description = "재발송(`RESHIP`) · 환불(`REFUND`) 중 하나를 고른다. **한 번만** — 바꿀 수 없다. 처리는 브랜드가 한다" +
+                    "(재발송 = 새 송장 · 환불 = 하위주문 취소 + 항목 · 배송비 PG 환불). 브랜드에 알림이 간다.\n\n" +
+                    "**권한:** USER (본인 주문만)"
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "선택 후 상태(`CHOSEN`)"),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT — choice 누락",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 하위주문 · 남의 주문",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "ORDER_STALL_CHOICE_NOT_OPEN — 추적 정지가 아니거나 개방 전 · "
+                    + "ORDER_STALL_CHOICE_ALREADY_MADE — 이미 선택함",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<UserOrderDto.StallChoiceResponse> chooseStall(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "하위주문 ID", example = "1024") @PathVariable("deliveryGroupId") Long deliveryGroupId,
+            @Valid @RequestBody UserOrderDto.StallChoiceRequest request);
+
+    @Operation(
             summary = "주문 배송지 변경 (C10-1 · C13-2)",
             description = "주문의 배송지를 내 배송지 중 하나로 바꾼다. 주문은 배송지를 참조하지 않고 값을 복사해 든다 — " +
                     "바꾼 뒤 그 배송지를 수정·삭제해도 주문은 그대로다. 배송 요청사항도 고른 배송지의 것으로 바뀐다.\n\n" +

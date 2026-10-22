@@ -29,7 +29,9 @@ public record AccountStatusResponse(
             @Schema(description = "true 면 정지 안내 시트를 자동으로 1회 띄우고 suspension-notice/ack 를 부른다", example = "true")
             boolean noticePending,
             @Schema(description = "답변 전 정지 문의 id — 있으면 「1:1 문의로 이의 신청」이 새 작성 대신 이 문의로 간다", example = "null")
-            Long pendingAppealInquiryId) {
+            Long pendingAppealInquiryId,
+            @Schema(description = "C20 시트 「정지 기간 N일 · 자동 해제 YYYY-MM-DD · 이의 신청 기한」(1021 기-02) — 옛 회원은 null", nullable = true)
+            showroomz.api.common.account.dto.MemberAccountStatusResponse.Term term) {
     }
 
     @Schema(description = "해제 토스트")

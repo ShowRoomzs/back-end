@@ -63,8 +63,8 @@ public class GroupBuyNotifier {
             case "OPEN_APPROVED" -> operator(NotificationType.GROUP_BUY_POST_APPROVED, t + " 게시물 오픈 승인이 완료되었습니다");
             case "OPEN_REJECTED" -> operator(NotificationType.GROUP_BUY_POST_REJECTED,
                     t + " 게시물이 반려되었습니다 — 인플루언서 수정 대기");
-            case "POST_HIDDEN" -> operator(NotificationType.GROUP_BUY_POST_HIDDEN, t + " 게시물이 운영팀에 의해 숨김 처리되었습니다");
-            case "POST_UNHIDDEN" -> operator(NotificationType.GROUP_BUY_POST_UNHIDDEN, t + " 게시물 숨김이 해제되었습니다");
+            case "POST_HIDDEN" -> operator(NotificationType.GROUP_BUY_POST_HIDDEN, t + " 게시물이 운영팀에 의해 노출 중지되었습니다");
+            case "POST_UNHIDDEN" -> operator(NotificationType.GROUP_BUY_POST_UNHIDDEN, t + " 게시물 노출 중지가 해제되었습니다");
             case "EXTENSION_ACCEPTED" -> new Line(NotificationType.GROUP_BUY_EXTENSION_ACCEPTED,
                     NotificationActorType.CREATOR, creator, t + " 기간 연장을 수락했습니다");
             case "EXTENSION_REJECTED" -> new Line(NotificationType.GROUP_BUY_EXTENSION_REJECTED,
@@ -78,7 +78,7 @@ public class GroupBuyNotifier {
             case "EARLY_CLOSE_REJECTED", "SUSPENSION_REJECTED" -> operator(NotificationType.GROUP_BUY_REQUEST_REJECTED,
                     t + ("EARLY_CLOSE_REJECTED".equals(event) ? " 조기 마감 요청이 반려되었습니다" : " 중단 요청이 반려되었습니다"));
             case "SUSPENSION_NOTICED" -> operator(NotificationType.GROUP_BUY_ADMIN_SUSPENSION_NOTICED,
-                    t + " 직권 중단 사전통지가 도착했습니다 — 운영팀 채널에서 소명할 수 있습니다");
+                    t + " 직권 중단 사전통지가 도착했습니다 — 소명 자료 제출 또는 운영팀 채널에 의견을 남길 수 있습니다");
             case "SUSPENSION_WITHDRAWN" -> operator(NotificationType.GROUP_BUY_ADMIN_SUSPENSION_WITHDRAWN,
                     t + " 직권 중단 통지가 철회되었습니다");
             case "SUSPENDED_BY_ADMIN", "SUSPENDED_EMERGENCY" -> operator(NotificationType.GROUP_BUY_SUSPENDED_BY_ADMIN,
@@ -97,8 +97,8 @@ public class GroupBuyNotifier {
                     t + " 게시물이 승인됐어요 · 시작 시각에 공개돼요");
             case "OPEN_REJECTED" -> operator(NotificationType.GROUP_BUY_POST_REJECTED,
                     t + " 게시물이 반려됐어요 · 사유를 확인해 주세요");
-            case "POST_HIDDEN" -> operator(NotificationType.GROUP_BUY_POST_HIDDEN, t + " 게시물이 숨김 처리됐어요");
-            case "POST_UNHIDDEN" -> operator(NotificationType.GROUP_BUY_POST_UNHIDDEN, t + " 게시물 숨김이 해제됐어요");
+            case "POST_HIDDEN" -> operator(NotificationType.GROUP_BUY_POST_HIDDEN, t + " 게시물 노출이 중지됐어요");
+            case "POST_UNHIDDEN" -> operator(NotificationType.GROUP_BUY_POST_UNHIDDEN, t + " 게시물 노출 중지가 해제됐어요");
             case "EXTENSION_REQUESTED" -> new Line(NotificationType.GROUP_BUY_EXTENSION_REQUESTED,
                     NotificationActorType.BRAND, brand, brand + "가 " + t + " 기간 연장을 요청했어요");
             case "SUSPENSION_REQUESTED" -> new Line(NotificationType.GROUP_BUY_SUSPENSION_REQUESTED,
@@ -110,7 +110,7 @@ public class GroupBuyNotifier {
             case "EARLY_CLOSE_REJECTED", "SUSPENSION_REJECTED" -> operator(NotificationType.GROUP_BUY_REQUEST_REJECTED,
                     t + ("EARLY_CLOSE_REJECTED".equals(event) ? " 조기 마감 요청이 반려됐어요" : " 중단 요청이 반려됐어요"));
             case "SUSPENSION_NOTICED" -> operator(NotificationType.GROUP_BUY_ADMIN_SUSPENSION_NOTICED,
-                    t + " 직권 중단 사전통지가 도착했어요");
+                    t + " 직권 중단 사전통지가 도착했어요 · 의견은 운영팀 채널에 남겨 주세요");
             case "SUSPENSION_WITHDRAWN" -> operator(NotificationType.GROUP_BUY_ADMIN_SUSPENSION_WITHDRAWN,
                     t + " 직권 중단 통지가 철회됐어요");
             case "SUSPENDED_BY_ADMIN", "SUSPENDED_EMERGENCY" -> operator(NotificationType.GROUP_BUY_SUSPENDED_BY_ADMIN,

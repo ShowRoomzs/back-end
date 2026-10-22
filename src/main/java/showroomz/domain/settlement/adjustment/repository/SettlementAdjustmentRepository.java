@@ -51,6 +51,13 @@ public interface SettlementAdjustmentRepository extends JpaRepository<Settlement
             + "AND a.deadlineAt < :now")
     int closeAsExpired(@Param("adjustmentId") Long adjustmentId, @Param("now") LocalDateTime now);
 
+    /** 요청자 철회(1021 기-14) — 원래 금액 · 협의 중일 때만. 0행이면 상대가 먼저 응답했거나 종결됐다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementAdjustment a SET a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.WITHDRAWN, "
+            + "a.finalRewardAmount = a.originalRewardAmount, a.closedAt = :now "
+            + "WHERE a.id = :adjustmentId AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN")
+    int closeAsWithdrawn(@Param("adjustmentId") Long adjustmentId, @Param("now") LocalDateTime now);
+
     /** D-1 통지 표지(6-1 ①) — 멱등. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementAdjustment a SET a.noticeSentAt = :now WHERE a.id = :adjustmentId "

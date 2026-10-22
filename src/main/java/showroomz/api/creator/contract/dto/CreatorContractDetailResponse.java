@@ -96,8 +96,23 @@ public record CreatorContractDetailResponse(
         SanctionHoldView sanctionHold,
 
         @Schema(description = "서명 기한이 멈춰 있는가 — 당사자 정지 보류 중(정지 중 멈춤 · 해제 후 남은 기한부터)")
-        boolean signatureDeadlinePaused
+        boolean signatureDeadlinePaused,
+
+        @Schema(description = "브랜드의 해지 요청이 처리 대기 중(1021 기-05) — 「의견은 운영팀 채널로」 안내 · 사유 · 메모. 없으면 null",
+                nullable = true)
+        TerminationRequested terminationRequested,
+
+        @Schema(description = "초안 승인 기록(1021 기-30) — 브랜드가 남긴 기록(읽기 전용). 없으면 빈 배열")
+        List<showroomz.api.seller.contract.dto.ContractDetailResponse.DraftApproval> draftApprovals
 ) {
+
+    @Schema(description = "상대(브랜드)의 해지 요청")
+    public record TerminationRequested(
+            @Schema(example = "상품 품질 이슈") String reasonLabel,
+            @Schema(description = "브랜드 메모 — 운영팀 채널 동의 확인 카드와 같은 문구", nullable = true) String memo,
+            LocalDateTime requestedAt,
+            @Schema(description = "동의 확인 카드가 붙은 내 운영팀 채널 메시지", nullable = true) Long consentCardMessageId) {
+    }
 
     @Schema(description = "계약을 보낸 브랜드")
     public record Brand(
@@ -132,7 +147,9 @@ public record CreatorContractDetailResponse(
             @Schema(description = "운영자 검토 통과", nullable = true) LocalDateTime reviewApprovedAt,
             @Schema(description = "서명 요청 발송", nullable = true) LocalDateTime signatureRequestedAt,
             @Schema(description = "서명 완료 수(0~2)", example = "1") int signedCount,
-            @Schema(description = "체결 완료", nullable = true) LocalDateTime concludedAt
+            @Schema(description = "공구 생성 처리(운영자) — 1021 이후 「체결 완료」 단계는 공구 생성이다", nullable = true) LocalDateTime concludedAt,
+            @Schema(description = "계약 성립 = 양측 서명 완료(1021 기-05) — 3단계 「양측 서명 완료 · 계약 성립」", nullable = true)
+            LocalDateTime establishedAt
     ) {
     }
 
@@ -245,6 +262,9 @@ public record CreatorContractDetailResponse(
             @Schema(example = "1200000", nullable = true) Integer amount,
             @Schema(nullable = true) FixedFeeTrigger trigger,
             @Schema(example = "공구 게시물 등록 후", nullable = true) String triggerLabel,
+            @Schema(description = "지급 시점 정의(툴팁 · 1021 기-28)", example = "운영자 오픈 승인 후 게시물이 쇼룸에 노출된 때", nullable = true)
+            String triggerDescription,
+            @Schema(description = "지급 시점 뒤 N영업일 안에 지급 — null 이면 [정책값 미정]", nullable = true) Integer paymentBusinessDays,
             @Schema(description = "지급 상태. **fixed_fee_paid_at 원시값은 내리지 않는다**",
                     example = "NOT_YET") CreatorFixedFeePaymentState paymentState
     ) {
@@ -304,7 +324,7 @@ public record CreatorContractDetailResponse(
     ) {
     }
 
-    @Schema(description = "계약 문서 — 서명 진행중·체결 처리 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
+    @Schema(description = "계약 문서 — 서명 진행중·공구 생성 대기는 계약서 생성본, 체결완료는 체결 문서 2종")
     public record Document(
             ContractDocumentType documentType,
             @Schema(example = "서명 완료 계약서") String documentTypeLabel,

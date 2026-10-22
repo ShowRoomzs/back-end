@@ -102,7 +102,6 @@ public final class AdminBrandDto {
     @Schema(name = "AdminBrandDeliveryPolicy", description = "조회 전용 · 탈퇴 후에도 보존(남은 반품의 비용 기준)")
     public record DeliveryPolicy(Integer defaultDeliveryFee, Integer freeShippingThreshold, Integer jejuSurcharge,
                                  @Schema(description = "도서산간 추가비 — 제주 제외") Integer remoteAreaSurcharge,
-                                 Integer returnFee, Integer exchangeFee,
                                  @Schema(description = "발송 기한 N(공구 마감 + N영업일)") int shipLeadBusinessDays,
                                  String shipLeadText,
                                  @Schema(description = "최근 변경 — 「08.20 2→3 변경」 보조줄 · 없으면 null")
@@ -235,7 +234,9 @@ public final class AdminBrandDto {
 
     @Schema(name = "AdminBrandSuspendRequest")
     public record SuspendRequest(@NotNull BrandSuspensionReason reason,
-                                 @Size(max = 500) @Schema(description = "기타(직접 입력)일 때만 필수") String reasonDetail) {
+                                 @Size(max = 500) @Schema(description = "기타(직접 입력)일 때만 필수") String reasonDetail,
+                                 @Schema(description = "정지 종료일(포함 · 오늘 이상) — 다음 날 00:00 자동 해제(1021 기-02). 비우면 기간 없는 정지(수동 해제)",
+                                         example = "2026-10-29", nullable = true) java.time.LocalDate endsOn) {
     }
 
     @Schema(name = "AdminBrandReleaseRequest")

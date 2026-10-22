@@ -21,7 +21,7 @@ public enum ContractTab {
     REVIEW(Set.of(ContractStatus.REVIEW_PENDING, ContractStatus.REVIEW_REJECTED)),
     SIGNING(Set.of(ContractStatus.SIGNING, ContractStatus.CONCLUSION_PENDING)),
     CONCLUDED(Set.of(ContractStatus.CONCLUDED)),
-    CLOSED(Set.of(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED));
+    CLOSED(Set.of(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED, ContractStatus.TERMINATED));
 
     private final Set<ContractStatus> statuses;
 

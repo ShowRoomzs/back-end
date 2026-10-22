@@ -578,8 +578,6 @@ class ProductServiceTest {
         market.setFreeShippingThreshold(30000);
         market.setJejuSurcharge(3000);
         market.setRemoteAreaSurcharge(5000);
-        market.setReturnFee(3000);
-        market.setExchangeFee(6000);
         return market;
     }
 }

@@ -186,5 +186,11 @@ public class OrderProperties {
 
         /** 클레임 결제 정리 배치(5분) 가동 여부 — 미확정 결제 수렴 · 결제 없는 초안 삭제 · 취소 재시도. */
         private boolean paymentReconcileSchedulerEnabled = true;
+
+        /** 자동 입고 — 택배 도착(추적상) 후 N영업일이 지나도 입고 확인이 없으면 시스템이 입고 처리(1021 기-17 [정책값 미정]). */
+        private int autoReceiveBusinessDays = 3;
+
+        /** 자동 입고 배치 가동 여부. */
+        private boolean autoReceiveSchedulerEnabled = true;
     }
 }

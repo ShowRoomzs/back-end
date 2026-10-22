@@ -43,6 +43,9 @@ public class CreatorSettlementInfoService {
     private final CreatorSettlementAccountRecorder accountRecorder;
     private final PayoutHoldTransitions payoutHolds;
     private final CreatorAccountVerificationService accountVerification;
+    private final showroomz.domain.changerequest.repository.ChangeRequestRepository changeRequestRepository;
+    private final showroomz.domain.changerequest.service.ChangeRequestCodeGenerator codeGenerator;
+    private final showroomz.global.utils.PersonalDataCipher cipher;
 
     @Transactional(readOnly = true)
     public CreatorBasicInfoDto.SettlementInfoResponse getSettlement(Long userId) {
@@ -73,8 +76,9 @@ public class CreatorSettlementInfoService {
     }
 
     /**
-     * 정산 계좌 변경 + 실명 확인 시작(T2 · T3 · T6 · 50 설계서 6-2). 순서가 곧 규칙이다 — 이전 계좌를 읽어 이력을 남기고, 값을 바꿔 「확인 중」으로
-     * 두고, 지시 전 예정 행을 보류한 뒤, 커밋 뒤에 PG 셀러 계좌 검증을 부른다. 진행 중 지급이 있어도 막지 않는다(허용 + 보류).
+     * 정산 계좌 변경 → <b>변경 요청</b>(1021 결정 노트 기-22 · 설계서 8-2). 즉시 바꾸지 않고 운영자가 통장 사본 · 예금주(= 본인 실명)를 확인한 뒤
+     * 반영한다. 확인 중에는 기존 계좌를 유지하고, 지급 요청이 나가기 전의 예정 지급은 보류한다(이미 PG 에 나간 건은 기존 계좌 그대로).
+     * 열린 요청이 있으면(사업자 구분 변경 포함 · 인플루언서당 1건) 409.
      */
     @Transactional
     public CreatorBasicInfoDto.SettlementInfoResponse changeAccount(Long userId,
@@ -90,13 +94,45 @@ public class CreatorSettlementInfoService {
         if (creator.hasAccount(bank.getName(), request.getAccountNumber())) {
             throw new BusinessException(ErrorCode.CREATOR_ACCOUNT_UNCHANGED);
         }
+        if (changeRequestRepository.findOpenForCreator(creatorId).isPresent()) {
+            throw new BusinessException(ErrorCode.CHANGE_REQUEST_ALREADY_PENDING);
+        }
         LocalDateTime now = LocalDateTime.now();
-        accountRecorder.recordChange(creator, bank.getName(), request.getAccountNumber(), CreatorAdminActorType.CREATOR,
-                creatorId, now);
-        creator.changeSettlementAccount(bank.getName(), request.getAccountNumber(), request.getBankbookImageUrl(),
-                request.getBankbookFileName(), now);
+        // 파일명은 선택 — 요청 행 열이 NOT NULL 이라 빈 값으로 두고 반영 때 비운다.
+        String fileName = request.getBankbookFileName() == null ? "" : request.getBankbookFileName().strip();
+        showroomz.domain.changerequest.entity.ChangeRequest changeRequest =
+                showroomz.domain.changerequest.entity.ChangeRequest.createForCreator(codeGenerator.next(), creator,
+                        showroomz.domain.changerequest.type.ChangeRequestType.CREATOR_ACCOUNT,
+                        request.getBankbookImageUrl(), fileName, 0L);
+        changeRequest.addItem(showroomz.domain.changerequest.type.ChangeRequestField.CREATOR_ACCOUNT_BANK,
+                creator.getBankName(), bank.getName(), 0);
+        changeRequest.addItem(showroomz.domain.changerequest.type.ChangeRequestField.CREATOR_ACCOUNT_NUMBER,
+                SettlementAccountMasker.mask(creator.getAccountNumber()),
+                SettlementAccountMasker.mask(request.getAccountNumber()), 1);
+        changeRequest.attachAccount(bank.getCode(), cipher.encrypt(request.getAccountNumber()), creator.getRealName());
+        try {
+            changeRequestRepository.saveAndFlush(changeRequest);
+        } catch (org.springframework.dao.DataIntegrityViolationException e) {
+            throw new BusinessException(ErrorCode.CHANGE_REQUEST_ALREADY_PENDING);
+        }
+        // 확인 끝날 때까지 지급 요청 전 예정 지급은 보류 — PG 에 이미 나간 건(REQUESTED)은 기존 계좌 그대로(8-0 ②).
         payoutHolds.hold(SettlementPayee.CREATOR, creatorId, PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED, now);
-        AfterCommit.run(() -> accountVerification.verify(creatorId));
+        return toResponse(creator);
+    }
+
+    /** 확인 중인 계좌 변경 요청 취소(1021 기-22) — 기존 계좌 그대로 · 보류한 지급은 원래 예정일(지났으면 오늘)로 되돌린다. */
+    @Transactional
+    public CreatorBasicInfoDto.SettlementInfoResponse cancelAccountChange(Long userId) {
+        Creator creator = creatorOf(userId);
+        showroomz.domain.changerequest.entity.ChangeRequest open = changeRequestRepository.findOpenForCreator(creator.getId())
+                .filter(r -> r.getType() == showroomz.domain.changerequest.type.ChangeRequestType.CREATOR_ACCOUNT)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING));
+        open.cancel();
+        LocalDateTime now = LocalDateTime.now();
+        if (creator.getAccountVerificationStatus() == null || !creator.getAccountVerificationStatus().blocksPayout()) {
+            payoutHolds.release(SettlementPayee.CREATOR, creator.getId(), PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED,
+                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, now.toLocalDate(), now);
+        }
         return toResponse(creator);
     }
 
@@ -127,7 +163,42 @@ public class CreatorSettlementInfoService {
                                 : business ? "REQUEST_TO_INDIVIDUAL" : "REQUEST_TO_BUSINESS")
                         .accountChange(true)
                         .build())
+                .pendingAccountChange(pendingAccountChange(creator))
                 .build();
+    }
+
+    private CreatorBasicInfoDto.PendingAccountChange pendingAccountChange(Creator creator) {
+        return changeRequestRepository.findOpenForCreator(creator.getId())
+                .filter(r -> r.getType() == showroomz.domain.changerequest.type.ChangeRequestType.CREATOR_ACCOUNT)
+                .map(r -> {
+                    long count = 0;
+                    long amount = 0;
+                    for (Object[] row : payoutRepository.aggregateCreatorPendingPayouts(creator.getId())) {
+                        if (row[0] != PayoutStatus.REQUESTED) {
+                            count += ((Number) row[1]).longValue();
+                            amount += ((Number) row[2]).longValue();
+                        }
+                    }
+                    String bankName = r.getItems().stream()
+                            .filter(i -> i.getFieldKey() == showroomz.domain.changerequest.type.ChangeRequestField.CREATOR_ACCOUNT_BANK)
+                            .map(showroomz.domain.changerequest.entity.ChangeRequestItem::getRequestedValue).findFirst().orElse(null);
+                    String masked = r.getItems().stream()
+                            .filter(i -> i.getFieldKey() == showroomz.domain.changerequest.type.ChangeRequestField.CREATOR_ACCOUNT_NUMBER)
+                            .map(showroomz.domain.changerequest.entity.ChangeRequestItem::getRequestedValue).findFirst().orElse(null);
+                    return CreatorBasicInfoDto.PendingAccountChange.builder()
+                            .requestId(r.getId())
+                            .requestCode(r.getRequestCode())
+                            .bankName(bankName)
+                            .maskedAccountNumber(masked)
+                            .holderName(MaskingUtils.maskNameMiddle(r.getAccountHolderName()))
+                            .bankbookFileName(r.getEvidenceFileName())
+                            .requestedAt(r.getRequestedAt())
+                            .reviewBusinessDays(null)
+                            .holdingPayoutCount(count)
+                            .holdingPayoutAmount(amount)
+                            .build();
+                })
+                .orElse(null);
     }
 
     private CreatorBasicInfoDto.AccountInfo account(Creator creator, boolean business) {

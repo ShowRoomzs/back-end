@@ -79,7 +79,8 @@ public class OrderDto {
     @Schema(description = "결제수단 선택 — CARD 면 cardIssuer, EASY_PAY 면 easyPayProvider")
     public static class PaymentSelection {
         @NotNull(message = "결제수단은 필수입니다.")
-        @Schema(description = "결제수단", example = "CARD")
+        @Schema(description = "결제수단 — CARD(카드) · EASY_PAY(간편결제)만. 계좌이체 · 휴대폰 결제 · 할부 선택은 지원하지 않는다(1021 기-26)",
+                example = "CARD")
         private PaymentMethod method;
 
         @Schema(description = "카드사 — method=CARD 일 때 필수", example = "SHINHAN")
@@ -214,11 +215,15 @@ public class OrderDto {
     @Schema(description = "그룹 배송비")
     public static class Shipping {
         private Long productTotal;
-        @Schema(description = "실제 부과 배송비 — 무료면 0")
+        @Schema(description = "실제 부과 배송비 — 무료면 0. 제주 · 도서산간 추가비가 있으면 더한 값(1021 설계서 3-2)")
         private Integer deliveryFee;
         @Schema(nullable = true)
         private Integer freeShippingThreshold;
         private Boolean isFreeShipping;
+        @Schema(description = "배송 권역 — STANDARD · JEJU · REMOTE. 배송지를 모르면 STANDARD", example = "STANDARD")
+        private String deliveryRegion;
+        @Schema(description = "권역 추가비(편도) — deliveryFee 에 포함. 무료배송이어도 부과된다", example = "0")
+        private Integer regionSurcharge;
     }
 
     @Getter

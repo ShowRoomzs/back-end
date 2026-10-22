@@ -26,8 +26,8 @@ public final class ChangeRequestFieldResolver {
             case BANK_CODE -> seller.getBankName();
             case ACCOUNT_NUMBER -> seller.getAccountNumber();
             case ACCOUNT_HOLDER -> seller.getAccountHolder();
-            case CREATOR_BUSINESS_TYPE, CREATOR_BUSINESS_REG_NUMBER, CREATOR_RESIDENT_NUMBER ->
-                    throw new IllegalArgumentException("인플루언서 항목은 브랜드 현재값이 없다: " + field);
+            case CREATOR_BUSINESS_TYPE, CREATOR_BUSINESS_REG_NUMBER, CREATOR_RESIDENT_NUMBER, CREATOR_ACCOUNT_BANK,
+                 CREATOR_ACCOUNT_NUMBER -> throw new IllegalArgumentException("인플루언서 항목은 브랜드 현재값이 없다: " + field);
         };
     }
 

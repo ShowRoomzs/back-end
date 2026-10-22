@@ -22,7 +22,10 @@ public enum ChangeRequestField {
     ACCOUNT_HOLDER("예금주", ChangeRequestType.SETTLEMENT_ACCOUNT),
     CREATOR_BUSINESS_TYPE("사업자 구분", ChangeRequestType.TO_BUSINESS, ChangeRequestType.TO_INDIVIDUAL),
     CREATOR_BUSINESS_REG_NUMBER("사업자등록번호", ChangeRequestType.TO_BUSINESS),
-    CREATOR_RESIDENT_NUMBER("주민등록번호", ChangeRequestType.TO_INDIVIDUAL);
+    CREATOR_RESIDENT_NUMBER("주민등록번호", ChangeRequestType.TO_INDIVIDUAL),
+    /** 인플루언서 계좌 변경(1021 기-22) — 계좌번호는 마스킹 값으로 남기고 원문은 요청 행 암호문에. */
+    CREATOR_ACCOUNT_BANK("은행", ChangeRequestType.CREATOR_ACCOUNT),
+    CREATOR_ACCOUNT_NUMBER("계좌번호", ChangeRequestType.CREATOR_ACCOUNT);
 
     private final String label;
     private final Set<ChangeRequestType> types;

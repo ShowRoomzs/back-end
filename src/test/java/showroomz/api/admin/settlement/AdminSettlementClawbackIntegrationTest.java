@@ -37,9 +37,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
 
     private static final String SETTLEMENTS = "/v1/admin/settlements";
-    /** 크림 27,200 · 리워드 12% → 단위 리워드 3,264 · 부가세 326 · 브랜드 측 27,200 − 3,264 − 326. */
+    /** 크림 27,200 · 리워드 12% → 단위 리워드 3,264 · 부가세 326. */
     private static final long CREAM_REWARD = 3_264;
-    private static final long CREAM_BRAND = 27_200 - 3_264 - 326;
+    /** 브랜드 측은 원래 지급액 역산(1021 기-13) — 환불분 − PG 수수료 floor(27,200 × 3%) − 플랫폼 수수료(베타 0%) − 리워드 − 부가세. */
+    private static final long CREAM_BRAND = 27_200 - 816 - 3_264 - 326;
 
     @Autowired private SettlementClawbackRepository clawbackRepository;
     @Autowired private SettlementTaxDocumentRepository documentRepository;
@@ -239,12 +240,12 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
 
         assertThat(clawbackRepository.findByRefundTaskIdOrderByIdAsc(taskId))
                 .extracting(SettlementClawback::getSide, SettlementClawback::getAmount)
-                .containsExactly(tuple(ClawbackSide.BRAND, 10_000L));
+                .containsExactly(tuple(ClawbackSide.BRAND, 9_700L));   // 원래 지급액 역산 — PG 수수료 3% 300 을 뺀다(1021 기-13)
         adminGet(ADMIN_ORDERS + "/" + creamGroup.getOrder().getId())
                 .andExpect(jsonPath("$.groups[0].settlement.clawbacks.length()").value(1))
                 .andExpect(jsonPath("$.groups[0].settlement.clawbacks[0].side").value("BRAND"));
         // [46-5-1] 06c 측별 금액 — 인플루언서 측 행이 없으면 null.
-        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.brandAmount").value(10_000))
+        adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.brandAmount").value(9_700))
                 .andExpect(jsonPath("$.settlement.clawback.creatorAmount").doesNotExist());
     }
 
@@ -280,7 +281,7 @@ class AdminSettlementClawbackIntegrationTest extends SettlementTestSupport {
         assertThat(clawbackService.markUnrecoverable(LocalDateTime.now())).isEqualTo(1);
 
         adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(jsonPath("$.settlement.clawback.status").value("UNRECOVERABLE"))
-                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("미회수"));
+                .andExpect(jsonPath("$.settlement.clawback.statusLabel").value("미회수 · 베타: 플랫폼 손실 처리"));
         JsonNode clawbacks = json(adminGet(ADMIN_ORDERS + "/" + creamGroup.getOrder().getId())).at("/groups/0/settlement/clawbacks");
         assertThat(clawbacks).extracting(c -> c.get("side").asText() + ":" + c.get("status").asText())
                 .containsExactly("BRAND:PENDING", "CREATOR:UNRECOVERABLE");

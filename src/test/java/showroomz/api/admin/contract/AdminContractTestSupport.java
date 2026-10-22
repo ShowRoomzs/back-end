@@ -402,10 +402,19 @@ public abstract class AdminContractTestSupport extends IntegrationTestSupport {
     protected ResultActions cancel(Contract contract, Boolean signatureRequestWithdrawn, ContractCloseReasonCode reasonCode,
                                    String memo, ContractActorType requesterType,
                                    ContractCancelRequestChannel requestChannel, LocalDateTime requestedAt) throws Exception {
+        // 당사자 요청이면 상대방 동의 확인(1021 기-06)을 기본으로 체크한다 — 그 검증은 별도 테스트가 본다.
+        return cancel(contract, signatureRequestWithdrawn, reasonCode, memo, requesterType, requestChannel, requestedAt,
+                requesterType == ContractActorType.ADMIN ? null : Boolean.TRUE);
+    }
+
+    protected ResultActions cancel(Contract contract, Boolean signatureRequestWithdrawn, ContractCloseReasonCode reasonCode,
+                                   String memo, ContractActorType requesterType,
+                                   ContractCancelRequestChannel requestChannel, LocalDateTime requestedAt,
+                                   Boolean counterpartyConsentConfirmed) throws Exception {
         return mockMvc.perform(post(BASE + "/" + contract.getId() + "/cancel")
                 .header(HttpHeaders.AUTHORIZATION, adminToken).contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(new CancelRequest(signatureRequestWithdrawn, reasonCode, memo,
-                        requesterType, requestChannel, requestedAt))));
+                        requesterType, requestChannel, requestedAt, counterpartyConsentConfirmed))));
     }
 
     protected ResultActions handleResend(Contract contract) throws Exception {

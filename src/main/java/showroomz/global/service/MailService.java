@@ -135,6 +135,17 @@ public class MailService {
         sendEmail(to, subject, text);
     }
 
+    /**
+     * 인플루언서 입점 반려 통지(1021 기-36) — 정형 사유 · 반려일 · 재신청 가능일만. 상세 사유는 보내지 않는다.
+     * 문안은 {@code CreatorRejectionNotice} 가 만든다(어드민 미리보기와 같은 문안).
+     */
+    @Async
+    public void sendCreatorRejectionNotice(String to, String subject, String htmlBody) {
+        sendEmail(to, subject, htmlBody);
+    }
+
+    /** @deprecated 상세 사유를 신청자에게 보낸다 — 1021 기-36 으로 {@link #sendCreatorRejectionNotice} 로 대체. */
+    @Deprecated
     @Async
     public void sendCreatorRejectionEmail(String to, String nickname, LocalDateTime processedAt,
                                           String reasonSummary, String reasonDetail) {

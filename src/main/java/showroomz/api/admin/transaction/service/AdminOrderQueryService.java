@@ -284,7 +284,8 @@ public class AdminOrderQueryService {
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
                 settlementReader.readByDeliveryGroup(group.getId()).map(AdminOrderQueryService::settlement).orElse(null),
-                actions(group, pendingRequest != null, refundable, now));
+                actions(group, pendingRequest != null, refundable, now),
+                AdminOrderDto.StallChoice.of(showroomz.domain.order.service.OrderStallChoiceService.view(group, now)));
     }
 
     private static AdminOrderDto.Settlement settlement(OrderSettlementReader.GroupSettlement s) {

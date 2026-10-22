@@ -59,7 +59,8 @@ public class MessageCardReader {
                            String reasonLabel, LocalDateTime processedAt, Long processedBy,
                            MessageCardActionState actionState, LocalDateTime doneAt, Long doneBy,
                            Long noticeMessageId, AdjustmentCard adjustment,
-                           MessageCardPayload.Sanction sanction) {
+                           MessageCardPayload.Sanction sanction,
+                           MessageCardPayload.Notice notice) {
     }
 
     /**
@@ -127,9 +128,15 @@ public class MessageCardReader {
         MessageCardType type = card.getCardType();
         if (type != MessageCardType.CONTRACT_RESEND_REQUEST) {
             // 결과 카드는 종결이다 — 조치가 남지 않는다.
-            return new CardView(type, type.getTitle(), MessageCardTone.NEUTRAL,
-                    p.contractId(), p.contractNumber(), p.groupBuyTitle(), null, null, null,
-                    p.reasonLabel(), p.processedAt(), p.operatorId(), null, null, null, null, null, p.sanction());
+            // 동의 확인 · 사전 통지 카드는 요청자 · 요청 시각을 함께 보인다(1021 설계서 1-6 · 2-3).
+            return new CardView(type, type.getTitle(),
+                    type == MessageCardType.CONTRACT_CLOSE_CONSENT_REQUEST
+                            || type == MessageCardType.GROUP_BUY_SUSPENSION_NOTICE
+                            ? MessageCardTone.WARNING : MessageCardTone.NEUTRAL,
+                    p.contractId(), p.contractNumber(), p.groupBuyTitle(),
+                    p.requesterType(), p.requesterName(), p.requestedAt(),
+                    p.reasonLabel(), p.processedAt(), p.operatorId(), null, null, null, null, null, p.sanction(),
+                    p.notice());
         }
         MessageCardActionState state = actionState(resend);
         return new CardView(type, type.getTitle(),
@@ -139,7 +146,7 @@ public class MessageCardReader {
                 state,
                 resend == null ? null : resend.getHandledAt(),
                 resend == null ? null : resend.getHandledBy(),
-                resend == null ? null : resend.getNoticeMessageId(), null, null);
+                resend == null ? null : resend.getNoticeMessageId(), null, null, null);
     }
 
     /**
@@ -175,7 +182,7 @@ public class MessageCardReader {
                 proposal == null || proposal.getResponderType() == null ? null : proposal.getResponderType().name(),
                 proposal == null ? null : proposal.getRespondedAt(), state, resultLabel);
         return new CardView(type, type.getTitle(), MessageCardTone.NEUTRAL, p.contractId(), p.contractNumber(),
-                p.groupBuyTitle(), null, null, null, null, null, null, null, null, null, null, view, null);
+                p.groupBuyTitle(), null, null, null, null, null, null, null, null, null, null, view, null, null);
     }
 
     /**
