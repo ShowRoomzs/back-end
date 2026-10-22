@@ -53,6 +53,8 @@ public class CreatorSettlementQueryService {
     private static final int MAX_PAGE_SIZE = 100;
     private static final int PREVIEW_SIZE = 5;
     private static final String PLATFORM_NAME = "SHOWROOMZ";
+    /** 지급 조건 「세금계산서 확인 후」 — 스튜디오 홈 H4 리워드 카드. */
+    static final String PAYOUT_CONDITION_TAX_INVOICE = "TAX_INVOICE_UNVERIFIED";
 
     private final UserRepository userRepository;
     private final CreatorRepository creatorRepository;
@@ -123,7 +125,11 @@ public class CreatorSettlementQueryService {
     // ------------------------------------------------------------------ 요약(2-3)
 
     public CreatorSettlementDto.Summary getSummary(String creatorEmail) {
-        Creator creator = resolveCreator(creatorEmail);
+        return summarize(resolveCreator(creatorEmail));
+    }
+
+    /** 요약 — 스튜디오 홈 리워드 카드(1017 설계서 5-1 {@code reward})도 같은 값을 쓴다. */
+    public CreatorSettlementDto.Summary summarize(Creator creator) {
         LocalDateTime now = LocalDateTime.now();
         Map<SettlementStatus, Long> counts = SettlementPartyViews.partyStatusCounts(
                 settlementRepository.countByStatusForCreator(creator.getId()));
@@ -162,7 +168,8 @@ public class CreatorSettlementQueryService {
                 new SettlementPartyDto.StatusCounts(counts.get(SettlementStatus.REVIEWING),
                         counts.get(SettlementStatus.ADJUSTING), counts.get(SettlementStatus.PAYOUT_SCHEDULED),
                         counts.get(SettlementStatus.PAID)),
-                openReview + blocks.taxInvoiceAttentionCount(creator.getId()));
+                openReview + blocks.taxInvoiceAttentionCount(creator.getId()),
+                payoutRepository.existsBlockedByUnverifiedTaxInvoice(creator.getId()) ? PAYOUT_CONDITION_TAX_INVOICE : null);
     }
 
     // ------------------------------------------------------------------ 상세(2-4)

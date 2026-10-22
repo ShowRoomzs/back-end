@@ -82,6 +82,7 @@ public interface CreatorSettlementControllerDocs {
                     | `adjusting` | 조정 협의 건수 |
                     | `statusCounts` | 상태 칩 숫자 — 분배 실패는 `PAID` 에 포함 |
                     | `attentionCount` | GNB 「정산 관리」 배지 = 요청 가능 창이 열린 정산 확인 중 + 세금계산서 입력 대기 · 반려. 조정 협의의 「내 응답 필요」는 연결·소통 배지가 센다 |
+                    | `payoutCondition` | `TAX_INVOICE_UNVERIFIED` — 지급 예정 중 세금계산서 확인 전이라 보류된 건이 있다(「지급 조건 세금계산서 확인 후」) · 없으면 null |
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "KPI · 상태 칩 · 배지",

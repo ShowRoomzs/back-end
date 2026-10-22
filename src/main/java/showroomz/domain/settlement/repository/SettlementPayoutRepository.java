@@ -342,4 +342,17 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
             + "AND p.failCode = :failCode")
     int clearHoldCode(@Param("payoutId") Long payoutId, @Param("failCode") String failCode);
+
+    /**
+     * 지급 조건 「세금계산서 확인 후」(1017 설계서 5-1 {@code reward.payoutCondition}) — 인플루언서 지급 행이 보류(BLOCKED)인데
+     * 그 정산의 세금계산서가 아직 검증 전인가. 확정 시 보류 사유는 저장되지 않으므로({@code fail_code} 없음) 문서 상태로 판정한다.
+     */
+    @Query("SELECT COUNT(p) > 0 FROM SettlementPayout p, Settlement s, SettlementTaxDocument d "
+            + "WHERE p.settlementId = s.id AND d.settlementId = s.id AND s.creator.id = :creatorId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED "
+            + "AND d.type = showroomz.domain.settlement.type.TaxDocumentType.CREATOR_TAX_INVOICE "
+            + "AND d.clawbackId IS NULL "
+            + "AND d.status <> showroomz.domain.settlement.type.TaxDocumentStatus.VERIFIED")
+    boolean existsBlockedByUnverifiedTaxInvoice(@Param("creatorId") Long creatorId);
 }

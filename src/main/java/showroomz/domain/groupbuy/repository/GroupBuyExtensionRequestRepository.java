@@ -50,4 +50,16 @@ public interface GroupBuyExtensionRequestRepository extends JpaRepository<GroupB
             + "WHERE e.groupBuy.id = :groupBuyId "
             + "AND e.status = showroomz.domain.groupbuy.type.ExtensionRequestStatus.PENDING")
     int expirePending(@Param("groupBuyId") Long groupBuyId, @Param("now") LocalDateTime now);
+
+    /**
+     * 스튜디오 홈 할 일 「연장 응답」 · 달력 「연장 응답 기한」(1017 설계서 5-1 · 5-3) — 내 진행중 공구의 응답 대기 연장 요청.
+     * 조건은 공구 GNB 배지({@code CreatorGroupBuyActionPredicate} extensionToAnswer)와 같다. 공구 · 계약 · 브랜드를 함께 읽는다.
+     */
+    @Query("SELECT e FROM GroupBuyExtensionRequest e JOIN FETCH e.groupBuy g JOIN FETCH g.contract JOIN FETCH g.market "
+            + "WHERE g.creator.id = :creatorId "
+            + "AND e.status = showroomz.domain.groupbuy.type.ExtensionRequestStatus.PENDING "
+            + "AND g.status = showroomz.domain.groupbuy.type.GroupBuyStatus.IN_PROGRESS AND g.endAt > :now "
+            + "ORDER BY g.endAt ASC, e.id ASC")
+    List<GroupBuyExtensionRequest> findPendingForCreator(@Param("creatorId") Long creatorId,
+                                                         @Param("now") LocalDateTime now);
 }

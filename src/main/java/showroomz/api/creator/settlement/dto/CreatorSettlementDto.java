@@ -62,7 +62,10 @@ public final class CreatorSettlementDto {
             ReviewingKpi reviewing,
             CountKpi adjusting,
             SettlementPartyDto.StatusCounts statusCounts,
-            @Schema(description = "GNB 배지 = 요청 가능 창이 열린 정산 확인 중 + 세금계산서 입력 대기 · 반려") long attentionCount
+            @Schema(description = "GNB 배지 = 요청 가능 창이 열린 정산 확인 중 + 세금계산서 입력 대기 · 반려") long attentionCount,
+            @Schema(description = "지급 조건 — `TAX_INVOICE_UNVERIFIED` 면 지급 예정 중 세금계산서 확인 전이라 보류된 건이 있다"
+                    + "(「지급 조건 세금계산서 확인 후」). 없으면 null", example = "TAX_INVOICE_UNVERIFIED", nullable = true)
+            String payoutCondition
     ) {
     }
 

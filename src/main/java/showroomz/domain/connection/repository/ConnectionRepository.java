@@ -136,4 +136,9 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "AND c.market.id = :marketId AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED " +
            "ORDER BY c.respondedAt DESC, c.id DESC")
     List<Connection> findLatestConnectedPairsByMarket(@Param("marketId") Long marketId, Pageable pageable);
+
+    /** 스튜디오 시작 가이드(1017 설계서 5-1 guide) — 브랜드 연결 요청을 한 번이라도 받았는가(상태 무관). 첫 요청이 오면 가이드가 사라진다. */
+    @Query("SELECT COUNT(c) > 0 FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.creator.id = :creatorId")
+    boolean existsPairForCreator(@Param("creatorId") Long creatorId);
 }

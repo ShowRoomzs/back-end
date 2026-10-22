@@ -310,4 +310,14 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
             + "ORDER BY c.signatureDeadlineAt ASC, c.id ASC")
     List<Contract> findSignatureDeadlinesForMarket(@Param("marketId") Long marketId, @Param("from") LocalDateTime from,
                                                    @Param("to") LocalDateTime to);
+
+    /**
+     * 스튜디오 홈 할 일 「계약 서명」 · 달력 「서명 기한」(1017 설계서 5-1 · 5-3) — 서명 요청됐고 내 서명이 아직 없는 서명 진행중
+     * ({@link #countCreatorActionRequired}의 행). 브랜드를 함께 읽는다.
+     */
+    @Query("SELECT c FROM Contract c JOIN FETCH c.market WHERE c.creator.id = :creatorId "
+            + "AND c.signatureRequestedAt IS NOT NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING AND c.creatorSignedAt IS NULL "
+            + "ORDER BY c.signatureDeadlineAt ASC, c.id ASC")
+    List<Contract> findCreatorSignatureTodos(@Param("creatorId") Long creatorId);
 }
