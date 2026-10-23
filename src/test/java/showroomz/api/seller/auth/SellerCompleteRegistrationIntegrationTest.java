@@ -147,14 +147,37 @@ class SellerCompleteRegistrationIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("[OV-06] 무료배송 기준금액 0 을 명시하면 0 으로 저장한다 — 브랜드가 고른 「항상 무료배송」이라 생략(null)과 구분된다")
-    void explicitZeroThresholdKept() throws Exception {
+    @DisplayName("[55 P3] 기본정보 배송 정책에 무료배송 기준금액 0 을 저장하면 null — 조회도 null(무료배송 없음) · 50,000 은 그대로")
+    void basicInfoZeroThresholdStoredAsNone() throws Exception {
+        complete(registerToken(), fullRequest()).andExpect(status().isCreated());
+        String token = sellerToken(brand.seller());
+
+        Map<String, Object> policy = new HashMap<>(Map.of(
+                "shippingLeadDays", 3, "defaultDeliveryFee", 3000, "freeShippingThreshold", 0));
+        mockMvc.perform(put("/v1/seller/basic-info/delivery-policy").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(policy)))
+                .andExpect(status().is2xxSuccessful());
+        assertThat(reloadMarket().getFreeShippingThreshold()).isNull();
+        mockMvc.perform(get("/v1/seller/basic-info/delivery-policy").header(HttpHeaders.AUTHORIZATION, token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.freeShippingThreshold").doesNotExist());
+
+        policy.put("freeShippingThreshold", 50_000);
+        mockMvc.perform(put("/v1/seller/basic-info/delivery-policy").header(HttpHeaders.AUTHORIZATION, token)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(policy)))
+                .andExpect(status().is2xxSuccessful());
+        assertThat(reloadMarket().getFreeShippingThreshold()).isEqualTo(50_000);
+    }
+
+    @Test
+    @DisplayName("[OV-06 · 55 P3] 무료배송 기준금액 0 을 명시하면 null(무료배송 없음)로 저장한다 — 시안 06 「0원이면 무료배송을 적용하지 않습니다」")
+    void explicitZeroThresholdStoredAsNone() throws Exception {
         Map<String, Object> request = fullRequest();
         request.put("freeShippingThreshold", 0);
 
         complete(registerToken(), request).andExpect(status().isCreated());
 
-        assertThat(reloadMarket().getFreeShippingThreshold()).isZero();
+        assertThat(reloadMarket().getFreeShippingThreshold()).isNull();
     }
 
     @Test

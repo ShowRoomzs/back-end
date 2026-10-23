@@ -30,6 +30,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
+import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -373,8 +374,8 @@ public class SellerService {
         market.setShippingAddress(request.getAddress());
         market.setShippingDetailAddress(request.getDetailAddress());
         market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
-        // 비우면 무료배송 없음(null) — 0 을 넣으면 「합계 ≥ 0」이라 모든 주문이 무료배송이 된다(06 설계서 3-1 · 기본정보 관리와 같은 규칙).
-        market.setFreeShippingThreshold(request.getFreeShippingThreshold());
+        // 비우거나 0 이면 무료배송 없음(null) — 기본정보 관리와 같은 규칙(55 계획서 P3 · 시안 06).
+        market.setFreeShippingThreshold(FreeShippingPolicy.effective(request.getFreeShippingThreshold()));
         market.setJejuSurcharge(request.getJejuSurcharge() != null ? request.getJejuSurcharge() : 0);
         market.setRemoteAreaSurcharge(
                 request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0

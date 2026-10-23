@@ -242,7 +242,7 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
                               showroomz.domain.order.type.DeliveryRegion deliveryRegion, Integer regionSurcharge) {
         // 지정하지 않으면 마켓 설정에서 — 결제 시점 값으로 고정한다(기-20).
         this.freeShippingThreshold = freeShippingThreshold != null ? freeShippingThreshold
-                : market != null ? market.getFreeShippingThreshold() : null;
+                : showroomz.domain.order.service.FreeShippingPolicy.thresholdOf(market);
         this.deliveryRegion = deliveryRegion != null ? deliveryRegion : showroomz.domain.order.type.DeliveryRegion.STANDARD;
         this.regionSurcharge = regionSurcharge != null ? regionSurcharge : 0;
         this.order = order;

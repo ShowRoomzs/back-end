@@ -51,6 +51,7 @@ import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
+import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimTab;
@@ -297,7 +298,7 @@ public class AdminBrandQueryService {
                 .findFirstByMarketIdOrderByChangedAtDescIdDesc(market.getId())
                 .map(h -> new AdminBrandDto.ShipLeadChange(h.getChangedAt(), h.getPreviousDays(), h.getNewDays()))
                 .orElse(null);
-        return new AdminBrandDto.DeliveryPolicy(market.getDefaultDeliveryFee(), market.getFreeShippingThreshold(),
+        return new AdminBrandDto.DeliveryPolicy(market.getDefaultDeliveryFee(), FreeShippingPolicy.thresholdOf(market),
                 market.getJejuSurcharge(), market.getRemoteAreaSurcharge(), days,
                 ShipDuePolicy.noticeText(days), change,
                 new AdminBrandDto.ReturnAddress(market.getShippingRecipientName(), market.getShippingContact(),

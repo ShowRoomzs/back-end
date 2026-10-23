@@ -222,7 +222,7 @@ public interface SellerBasicInfoControllerDocs {
                     | `shippingLeadDays` | 발송 기한 N — 공구 마감 후 N영업일(주말·공휴일 제외 · 1~7). 값이 없던 옛 마켓은 기본값으로 내린다 |
                     | `shipDueText` | 소비자 상품 상세에 그대로 나가는 문구 — 「공구 마감 후 N영업일 이내 발송 (주말·공휴일 제외)」 |
                     | `defaultDeliveryFee` | 기본 배송비 — 반품 배송비 차감 · 교환 재발송비도 이 값이다 |
-                    | `freeShippingThreshold` | 무료배송 기준금액 — **null 이면 무료배송 없음**, 0 이면 모든 주문 무료배송 |
+                    | `freeShippingThreshold` | 무료배송 기준금액 — **null 이면 무료배송 없음**(0 으로 저장된 값도 없음으로 내린다) |
                     | `jejuSurcharge` | 제주 추가비 |
                     | `remoteAreaSurcharge` | 도서산간 추가비 — **제주 제외** |
 
@@ -273,7 +273,7 @@ public interface SellerBasicInfoControllerDocs {
                     - 발송 기한 `shippingLeadDays` **필수** · 1~7영업일(전자상거래법 제15조① 공급 시기 약정 · 상한 7은 운영정책).
                       값이 바뀌면 변경 이력이 남는다(어드민 브랜드 상세 「08.20 2→3 변경」).
                     - 기본 배송비 `defaultDeliveryFee` **필수** · 0 이상.
-                    - 무료배송 기준금액 `freeShippingThreshold` — **비우면(null) 무료배송 없음**. 0 을 보내면 모든 주문이 무료배송이다.
+                    - 무료배송 기준금액 `freeShippingThreshold` — **비우거나(null) 0 이면 무료배송 없음**(시안 06 「0원이면 무료배송을 적용하지 않습니다」) · 0 은 null 로 저장된다. 모든 주문을 무료배송으로 하려면 기본 배송비를 0 으로 둔다.
                     - 제주 추가비 · 도서산간 추가비 — 비우면 0. 도서산간은 제주를 뺀 지역이다.
 
                     **권한:** SELLER

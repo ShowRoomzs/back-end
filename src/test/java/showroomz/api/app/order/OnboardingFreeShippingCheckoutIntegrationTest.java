@@ -43,14 +43,28 @@ class OnboardingFreeShippingCheckoutIntegrationTest extends OrderPaymentTestSupp
     }
 
     @Test
-    @DisplayName("[OV-06] 기준금액 0 을 명시한 브랜드는 1개만 사도 무료배송 — 0 은 「항상 무료」이고 미입력(null)과 다르다")
-    void explicitZeroThresholdIsAlwaysFree() throws Exception {
+    @DisplayName("[OV-06 · 55 P3] 기준금액 0 을 명시해도 무료배송 없음 — 시안 06 「0원이면 무료배송을 적용하지 않습니다」 · null 로 저장")
+    void explicitZeroThresholdMeansNoFreeShipping() throws Exception {
         onboard(Map.of("freeShippingThreshold", 0));
+        assertThat(marketRepository.findById(brand.marketId()).orElseThrow().getFreeShippingThreshold()).isNull();
 
         directCheckout(1)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.groups[0].shipping.isFreeShipping").value(true))
-                .andExpect(jsonPath("$.summary.deliveryFeeTotal").value(0));
+                .andExpect(jsonPath("$.groups[0].shipping.isFreeShipping").value(false))
+                .andExpect(jsonPath("$.groups[0].shipping.freeShippingThreshold").doesNotExist())
+                .andExpect(jsonPath("$.summary.deliveryFeeTotal").value(DELIVERY_FEE));
+    }
+
+    @Test
+    @DisplayName("[55 P3] 이행 전 DB 에 0 이 남아 있어도 계산은 무료배송 없음 — 「합계 ≥ 0」으로 모든 주문이 무료가 되지 않는다")
+    void storedZeroIsReadAsNoFreeShipping() throws Exception {
+        onboardWithoutFreeShippingThreshold();
+        jdbc.update("UPDATE market SET free_shipping_threshold = 0 WHERE market_id = ?", brand.marketId());
+
+        directCheckout(2)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.groups[0].shipping.isFreeShipping").value(false))
+                .andExpect(jsonPath("$.summary.deliveryFeeTotal").value(DELIVERY_FEE));
     }
 
     // ------------------------------------------------------------------ helpers

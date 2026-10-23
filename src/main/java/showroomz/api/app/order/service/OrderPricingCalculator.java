@@ -7,6 +7,7 @@ import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.service.GroupBuyPriceResolver;
 import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductDisplayStatus;
@@ -211,7 +212,7 @@ public class OrderPricingCalculator {
             if (deliveryFee != null && deliveryFee > acc.maxDeliveryFee) {
                 acc.maxDeliveryFee = deliveryFee;
             }
-            Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
+            Integer threshold = FreeShippingPolicy.thresholdOf(market);
             if (threshold != null) {
                 if (acc.minFreeThreshold == null || threshold < acc.minFreeThreshold) {
                     acc.minFreeThreshold = threshold;
@@ -242,7 +243,7 @@ public class OrderPricingCalculator {
         int deliveryFee = market != null && market.getDefaultDeliveryFee() != null
                 ? market.getDefaultDeliveryFee()
                 : 0;
-        Integer threshold = market != null ? market.getFreeShippingThreshold() : null;
+        Integer threshold = FreeShippingPolicy.thresholdOf(market);
 
         long selectedTotal = groupLines.stream()
                 .filter(line -> selectedIds.contains(line.lineId()))

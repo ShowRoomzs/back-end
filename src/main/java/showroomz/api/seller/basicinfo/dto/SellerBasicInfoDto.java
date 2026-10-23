@@ -379,7 +379,7 @@ public class SellerBasicInfoDto {
         private Integer defaultDeliveryFee;
 
         @jakarta.validation.constraints.Min(value = 0, message = "무료배송 기준금액은 0 이상이어야 합니다.")
-        @Schema(description = "무료배송 기준금액 — 비우면 무료배송 없음", example = "50000", nullable = true)
+        @Schema(description = "무료배송 기준금액 — 비우거나 0 이면 무료배송 없음(0 은 null 로 저장)", example = "50000", nullable = true)
         private Integer freeShippingThreshold;
 
         @jakarta.validation.constraints.Min(value = 0, message = "제주 추가비는 0 이상이어야 합니다.")

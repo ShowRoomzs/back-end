@@ -18,6 +18,7 @@ import showroomz.domain.member.brand.entity.MarketShipLeadHistory;
 import showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository;
 import showroomz.domain.member.brand.service.BrandSanctionReader;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -162,7 +163,8 @@ public class SellerBasicInfoService {
         }
         market.setShippingLeadDays(request.getShippingLeadDays());
         market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
-        market.setFreeShippingThreshold(request.getFreeShippingThreshold());
+        // 0 은 「무료배송 없음」 — null 로 저장한다(55 계획서 P3 · 시안 06).
+        market.setFreeShippingThreshold(FreeShippingPolicy.effective(request.getFreeShippingThreshold()));
         market.setJejuSurcharge(request.getJejuSurcharge() != null ? request.getJejuSurcharge() : 0);
         market.setRemoteAreaSurcharge(request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0);
     }
