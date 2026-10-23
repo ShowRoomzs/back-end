@@ -1,5 +1,6 @@
 package showroomz.api.app.faq.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +11,10 @@ import showroomz.domain.cs.type.CsCategory;
 @AllArgsConstructor
 public class FaqCategoryItem {
 
+    @Schema(description = "카테고리 코드 — ALL(전체 · 필터 없음) · DELIVERY · CANCEL_EXCHANGE_RETURN · ORDER_PAYMENT · SERVICE · ACCOUNT. "
+            + "ALL은 저장용 카테고리로 쓸 수 없다", example = "DELIVERY")
     private String key;
+    @Schema(description = "카테고리 한글 표시명", example = "배송")
     private String description;
 
     public static FaqCategoryItem from(CsCategory category) {

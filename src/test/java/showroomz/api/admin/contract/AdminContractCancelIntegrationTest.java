@@ -28,7 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 운영자 [계약 취소] — 서명 요청 발송 이후 체결 전({@code SIGNING}·{@code CONCLUSION_PENDING}).
+ * 운영자 [계약 취소] — 서명 요청 발송 이후 성립 전({@code SIGNING}). 양측 서명이 찬 {@code CONCLUSION_PENDING}은 성립한 계약이라
+ * 취소가 아니라 해지 대상이다(1021 기-06).
  *
  * <p>이 구간은 브랜드가 취소할 수 없다. 모두싸인에 양측 서명 요청이 나가 있어서 우리 상태만 종결하면
  * 상대가 여전히 서명 링크를 들고 있다 — 요청을 거둘 수 있는 운영자만 취소하고, API가 없으니
@@ -41,12 +42,11 @@ class AdminContractCancelIntegrationTest extends AdminContractTestSupport {
     private static final String MEMO = "브랜드 요청으로 서명 요청을 회수했습니다.";
 
     @Test
-    @DisplayName("서명 진행중(한쪽 서명 포함)·체결 처리 대기는 운영자가 취소할 수 있고 종결 주체는 운영자로 남는다")
+    @DisplayName("서명 진행중(한쪽 서명 포함)은 운영자가 취소할 수 있고 종결 주체는 운영자로 남는다 · 성립한 계약(공구 생성 대기)은 취소 409")
     void cancelsAfterSignatureRequestUntilConclusion() throws Exception {
         List<Contract> cancelable = List.of(
                 seed(ContractStatus.SIGNING),
-                seed(ContractStatus.SIGNING, s -> s.brandSignedAt(now.minusHours(5)).asOf(now.minusHours(4))),
-                seed(ContractStatus.CONCLUSION_PENDING));
+                seed(ContractStatus.SIGNING, s -> s.brandSignedAt(now.minusHours(5)).asOf(now.minusHours(4))));
 
         for (Contract c : cancelable) {
             detail(c).andExpect(jsonPath("$.permissions.canCancel").value(true));
@@ -74,6 +74,15 @@ class AdminContractCancelIntegrationTest extends AdminContractTestSupport {
             // 양측 모두 서명 요청을 받은 상태였다 — 둘 다에게 알린다.
             verify(notifier).notifyBothParties(argThat(x -> x.getId().equals(c.getId())), eq("CANCELED"));
         }
+
+        // 1021 기-06 — 양측 서명이 찬 계약은 성립했다. 취소가 아니라 해지로만 끝낸다.
+        Contract established = seed(ContractStatus.CONCLUSION_PENDING);
+        detail(established).andExpect(jsonPath("$.permissions.canCancel").value(false))
+                .andExpect(jsonPath("$.permissions.canTerminate").value(true));
+        cancel(established, true, ContractCloseReasonCode.SCHEDULE_CHANGE, MEMO)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONTRACT_STATUS_CONFLICT"));
+        assertUntouched(established, ContractStatus.CONCLUSION_PENDING);
     }
 
     @Test
@@ -173,7 +182,7 @@ class AdminContractCancelIntegrationTest extends AdminContractTestSupport {
         LocalDateTime brandAskedAt = now.minusHours(2);
         LocalDateTime creatorAskedAt = now.minusDays(1);
         Contract byBrand = seed(ContractStatus.SIGNING, s -> s.createdAt(now.minusDays(10)));
-        Contract byCreator = seed(ContractStatus.CONCLUSION_PENDING, s -> s.createdAt(now.minusDays(10)));
+        Contract byCreator = seed(ContractStatus.SIGNING, s -> s.createdAt(now.minusDays(10)));
         Contract byOperator = seed(ContractStatus.SIGNING);
 
         cancel(byBrand, true, ContractCloseReasonCode.NEGOTIATION_STOPPED, MEMO,

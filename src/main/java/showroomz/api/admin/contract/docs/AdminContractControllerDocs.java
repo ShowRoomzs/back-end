@@ -16,7 +16,7 @@ import showroomz.domain.contract.type.*;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Admin - Contract", description = "관리자 계약 관리 API — 모두싸인에서 처리한 절차 기록 · 계약 조건은 읽기 전용")
+@Tag(name = "Admin - Contract", description = "관리자 계약 관리 API")
 public interface AdminContractControllerDocs {
 
     @Operation(summary = "계약 목록 및 조치 큐", description = """

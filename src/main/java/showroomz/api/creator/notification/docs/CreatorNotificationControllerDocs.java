@@ -10,7 +10,7 @@ import showroomz.api.common.notification.dto.NotificationItem;
 import showroomz.api.common.notification.dto.NotificationSummary;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "Creator - Notifications", description = "쇼룸 스튜디오 탑바 종 드롭다운(ui-studio-14 H1a) — 최근 30일 · 전체 목록 화면 없음(MVP)")
+@Tag(name = "Creator - Notifications", description = "쇼룸 스튜디오 알림 API")
 public interface CreatorNotificationControllerDocs {
 
     @Operation(
@@ -23,20 +23,33 @@ public interface CreatorNotificationControllerDocs {
                     - [모두 읽음]은 `POST /read-all`
 
                     **권한:** CREATOR""")
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND")})
     ResponseEntity<PageResponse<NotificationItem>> getNotifications(
             @Parameter(description = "true 면 안 읽음만") boolean unreadOnly,
             @Parameter(example = "1") int page,
             @Parameter(example = "20") int size);
 
     @Operation(summary = "안 읽은 수(종 배지)", description = "**권한:** CREATOR")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND")})
     ResponseEntity<NotificationSummary> getSummary();
 
     @Operation(summary = "알림 읽음", description = "**권한:** CREATOR")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "읽음"),
-            @ApiResponse(responseCode = "404", description = "NOTIFICATION_NOT_FOUND")})
-    ResponseEntity<Void> markRead(Long notificationId);
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "NOTIFICATION_NOT_FOUND · CREATOR_NOT_FOUND")})
+    ResponseEntity<Void> markRead(@Parameter(description = "알림 ID", example = "1024") Long notificationId);
 
     @Operation(summary = "모두 읽음", description = "**권한:** CREATOR")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "모두 읽음"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND")})
     ResponseEntity<Void> markAllRead();
 }

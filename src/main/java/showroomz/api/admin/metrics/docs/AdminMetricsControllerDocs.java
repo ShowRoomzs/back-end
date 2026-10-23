@@ -12,11 +12,12 @@ import org.springframework.http.ResponseEntity;
 import showroomz.api.admin.metrics.dto.AdminMetricsDto;
 import showroomz.api.admin.metrics.type.MetricsPreset;
 import showroomz.api.admin.metrics.type.MetricsTab;
+import showroomz.api.app.auth.DTO.ErrorResponse;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Tag(name = "Admin - Metrics", description = "어드민 운영 지표(ui-admin-21-metrics rev.2)")
+@Tag(name = "Admin - Metrics", description = "관리자 운영 지표 API")
 public interface AdminMetricsControllerDocs {
 
     @Operation(
@@ -64,7 +65,15 @@ public interface AdminMetricsControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = AdminMetricsDto.TabBadge.class))))
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = AdminMetricsDto.TabBadge.class)))),
+            @ApiResponse(responseCode = "400", description = "INVALID_INPUT_VALUE — CUSTOM 기간 오류(from · to 누락 · from > to · 1년 초과)"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
-    ResponseEntity<List<AdminMetricsDto.TabBadge>> getTabs(MetricsPreset preset, LocalDate from, LocalDate to);
+    ResponseEntity<List<AdminMetricsDto.TabBadge>> getTabs(
+            @Parameter(description = "TODAY · D7(기본) · M1 · M6 · CUSTOM", example = "D7") MetricsPreset preset,
+            @Parameter(description = "CUSTOM 시작일(포함)", example = "2026-09-01") LocalDate from,
+            @Parameter(description = "CUSTOM 종료일(포함)", example = "2026-09-30") LocalDate to);
 }

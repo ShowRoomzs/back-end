@@ -106,8 +106,10 @@ class AdminCreatorSanctionIntegrationTest extends AdminCreatorTestSupport {
     }
 
     @Test
-    @DisplayName("[SP-10 · RL-06] 사유 6종 — 지급 정지는 정산 정보 불일치만 · 정지 1건 = 1행(해제해도 남는다) · 이력 · 카드가 정지마다 쌓인다")
+    @DisplayName("[SP-10 · RL-06] 사유 7종(1021 기-03 허위 기재 추가) — 지급 정지는 정산 정보 불일치만 · 정지 1건 = 1행(해제해도 남는다) · 이력 · 카드가 정지마다 쌓인다")
     void everyReasonAndRepeatedSuspension() throws Exception {
+        int reasons = CreatorSuspensionReason.values().length;
+        assertThat(reasons).isEqualTo(7);
         for (CreatorSuspensionReason reason : CreatorSuspensionReason.values()) {
             boolean held = reason == CreatorSuspensionReason.SETTLEMENT_INFO_MISMATCH;
             suspend(reason.name(), reason == CreatorSuspensionReason.OTHER ? "직접 입력 사유" : null)
@@ -119,11 +121,11 @@ class AdminCreatorSanctionIntegrationTest extends AdminCreatorTestSupport {
             adminPost(base + "/release", Map.of()).andExpect(status().isOk());
         }
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM creator_sanction WHERE creator_id = ? AND released_at IS NOT NULL",
-                Long.class, creator.getId())).isEqualTo(6L);
+                Long.class, creator.getId())).isEqualTo((long) reasons);
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM creator_sanction WHERE creator_id = ? AND payout_held = TRUE",
                 Long.class, creator.getId())).isEqualTo(1L);
-        assertThat(events().stream().filter(e -> e == CreatorAdminEventType.SUSPENDED)).hasSize(6);
-        assertThat(cardTypes()).hasSize(12);
+        assertThat(events().stream().filter(e -> e == CreatorAdminEventType.SUSPENDED)).hasSize(reasons);
+        assertThat(cardTypes()).hasSize(reasons * 2);   // 정지 · 해제 카드
     }
 
     @Test
@@ -288,21 +290,21 @@ class AdminCreatorSanctionIntegrationTest extends AdminCreatorTestSupport {
     }
 
     @Test
-    @DisplayName("[GD-03] 공구 게시물 제출 — 플래그 꺼짐(기본)이면 정지와 무관하게 제출 · 켜면 409 CREATOR_SUSPENDED")
+    @DisplayName("[GD-03] 공구 게시물 등록 — 플래그 켜짐(기본 · 1017 결정 9)이면 정지 중 409 CREATOR_SUSPENDED · 끄면 제출된다")
     void groupBuyPostSubmissionFlag() throws Exception {
-        GroupBuy open = seedPreparing();
         GroupBuy blocked = seedPreparing();
+        GroupBuy open = seedPreparing();
         suspend("AD_DISCLOSURE_OMITTED_REPEATED", null).andExpect(status().isOk());
 
-        submitGroupBuyPost(open).andExpect(status().isOk());
+        submitGroupBuyPost(blocked).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.message").value("계정 이용 정지 중에는 공구 게시물을 등록할 수 없습니다."));
 
-        memberProperties.getSanction().setBlockGroupBuyPost(true);
+        memberProperties.getSanction().setBlockGroupBuyPost(false);
         try {
-            submitGroupBuyPost(blocked).andExpect(status().isConflict())
-                    .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
-                    .andExpect(jsonPath("$.message").value("계정 이용 정지 중에는 공구 게시물을 제출할 수 없습니다."));
+            submitGroupBuyPost(open).andExpect(status().isOk());
         } finally {
-            memberProperties.getSanction().setBlockGroupBuyPost(false);
+            memberProperties.getSanction().setBlockGroupBuyPost(true);
         }
     }
 
@@ -329,12 +331,18 @@ class AdminCreatorSanctionIntegrationTest extends AdminCreatorTestSupport {
     }
 
     @Test
-    @DisplayName("[GD-07] 정지는 새 연결 수락을 막지 않는다 — 204")
-    void suspendedCreatorCanAcceptConnection() throws Exception {
+    @DisplayName("[GD-07] 정지 중에는 새 연결을 수락할 수 없다(1017 결정 9) — 409 CREATOR_SUSPENDED · 해제하면 204")
+    void suspendedCreatorCannotAcceptConnection() throws Exception {
         BrandFixture.Brand other = fixture.createBrand("other-brand@showroomz.test", "다른랩");
         Connection requested = connectionRepository.save(Connection.requestPair(other.market(), creator));
         suspend("AD_DISCLOSURE_OMITTED_REPEATED", null).andExpect(status().isOk());
 
+        mockMvc.perform(post("/v1/creator/connections/" + requested.getId() + "/accept")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken)).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.message").value("계정 이용 정지 중에는 새 연결을 수락할 수 없습니다."));
+
+        adminPost(base + "/release", Map.of()).andExpect(status().isOk());
         mockMvc.perform(post("/v1/creator/connections/" + requested.getId() + "/accept")
                 .header(HttpHeaders.AUTHORIZATION, creatorToken)).andExpect(status().isNoContent());
     }

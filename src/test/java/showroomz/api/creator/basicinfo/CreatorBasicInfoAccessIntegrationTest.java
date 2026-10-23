@@ -92,6 +92,10 @@ class CreatorBasicInfoAccessIntegrationTest extends SettlementTestSupport {
                         .content(toJson(Map.of("bankCode", "088", "accountNumber", "1101234567",
                                 "bankbookImageUrl", "https://cdn.showroomz.test/creator-document/bankbook.jpg"))))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        // 열린 요청은 인플루언서당 1건(1021 8절) — 계좌 변경 요청을 거둔 뒤 사업자 구분 변경을 낸다. 취소 응답도 원값을 내지 않는다.
+        bodies.append(mockMvc.perform(request(HttpMethod.DELETE, BASE + "/settlement-account/change-request")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
 
         jdbc.update("UPDATE creator SET business_type = 'BUSINESS' WHERE creator_id = ?", creator.getId());
         Map<String, Object> toIndividual = new HashMap<>();

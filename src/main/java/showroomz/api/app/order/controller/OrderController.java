@@ -1,6 +1,5 @@
 package showroomz.api.app.order.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +29,6 @@ import showroomz.global.dto.PageResponse;
 @RestController
 @RequestMapping("/v1/user/orders")
 @RequiredArgsConstructor
-@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 내역 · 주문 상세 · 취소 (C9 · C10)")
 public class OrderController implements OrderControllerDocs {
 
     private final CheckoutService checkoutService;

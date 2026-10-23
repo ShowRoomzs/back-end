@@ -16,7 +16,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.product.DTO.ProductDetailViewRequest;
 
-@Tag(name = "User - Product View", description = "상품 상세 조회 적재 API (성과 관리 원천)")
+@Tag(name = "User - Product View", description = "사용자 상품 조회 적재 API")
 public interface UserProductViewControllerDocs {
 
     @Operation(

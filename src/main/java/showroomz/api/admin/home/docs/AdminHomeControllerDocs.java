@@ -9,8 +9,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.admin.home.dto.AdminHomeDto;
+import showroomz.api.app.auth.DTO.ErrorResponse;
 
-@Tag(name = "Admin - Home", description = "어드민 홈(ui-admin-00-home rev.4) · 사이드바 배지")
+@Tag(name = "Admin - Home", description = "관리자 홈 API")
 public interface AdminHomeControllerDocs {
 
     @Operation(
@@ -35,7 +36,11 @@ public interface AdminHomeControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공",
-                    content = @Content(schema = @Schema(implementation = AdminHomeDto.Home.class)))
+                    content = @Content(schema = @Schema(implementation = AdminHomeDto.Home.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<AdminHomeDto.Home> getHome();
 
@@ -66,7 +71,11 @@ public interface AdminHomeControllerDocs {
                                       "groupBuys": 4, "transactions": 9, "settlements": 3,
                                       "cs": {"total": 7, "inquiries": 6},
                                       "posts": {"total": 2, "general": 2}
-                                    }""")))
+                                    }"""))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<AdminHomeDto.Badges> getBadges();
 }

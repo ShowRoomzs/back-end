@@ -71,7 +71,7 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
         mockMvc.perform(put(BASE + "/settlement-account").header(HttpHeaders.AUTHORIZATION, creatorToken)
                         .contentType(MediaType.APPLICATION_JSON).content(toJson(body("088", NEW_ACCOUNT))))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.account.bankName").value("카카오뱅크"))
+                .andExpect(jsonPath("$.account.bankName").value("국민은행"))   // 승인 전 — 기존 계좌 그대로
                 .andExpect(jsonPath("$.pendingAccountChange.bankName").value("신한은행"))
                 .andExpect(jsonPath("$.pendingAccountChange.requestCode").isNotEmpty());
         assertThat(accountHistories.findFirstByCreatorIdOrderByChangedAtDescIdDesc(creator.getId())).isEmpty();
@@ -445,8 +445,8 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("[PB-05] 주민번호 없는 비사업자 — 계좌가 확인돼도 주민번호 사유로 보류가 남는다(계좌 사유만 지운다)")
-    void residentNumberHoldRemains() throws Exception {
+    @DisplayName("[PB-05] 주민번호 없는 비사업자 — 주민번호는 지급 보류 사유가 아니다(1021 기-12) · 계좌가 확인되면 지급 예정으로 돌아간다")
+    void residentNumberDoesNotHold() throws Exception {
         jdbc.update("UPDATE creator SET resident_registration_number_enc = NULL, resident_registration_number_masked = NULL "
                 + "WHERE creator_id = ?", creator.getId());
         Settlement s = scheduledSettlement("가을 공구");
@@ -455,7 +455,7 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
 
         SettlementPayout row = payout(s.getId(), SettlementPayee.CREATOR);
         assertThat(creator().getAccountVerificationStatus()).isEqualTo(CreatorAccountVerificationStatus.VERIFIED);
-        assertThat(row.getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(row.getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
         assertThat(row.getFailCode()).isNull();
     }
 

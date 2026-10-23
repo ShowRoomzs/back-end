@@ -21,7 +21,7 @@ import showroomz.api.app.order.dto.OrderDto;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 내역 · 주문 상세 · 취소 (C9 · C10)")
+@Tag(name = "User - Order", description = "사용자 주문 API")
 public interface OrderControllerDocs {
 
     @Operation(
@@ -362,7 +362,8 @@ public interface OrderControllerDocs {
                     + "ORDER_STATE_CHANGED — 이미 발송 · 취소됐거나 결제 상태가 아닌 항목")
     })
     ResponseEntity<UserCancelDto.DetailResponse> requestCancel(@Parameter(hidden = true) UserPrincipal principal,
-                                                              Long orderId, UserCancelDto.CreateRequest request);
+                                                              @Parameter(description = "주문 ID", example = "1147") Long orderId,
+                                                              UserCancelDto.CreateRequest request);
 
     @Operation(
             summary = "취소 요청 철회 (C10 1c)",
@@ -411,5 +412,6 @@ public interface OrderControllerDocs {
             @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND · ORDER_PRODUCT_NOT_FOUND — 남의 주문 · 취소 내역 없는 항목")
     })
     ResponseEntity<UserCancelDto.DetailResponse> getCancelDetail(@Parameter(hidden = true) UserPrincipal principal,
-                                                                Long orderId, Long orderProductId);
+                                                                @Parameter(description = "주문 ID", example = "1147") Long orderId,
+                                                                @Parameter(description = "주문 항목 ID", example = "1501") Long orderProductId);
 }

@@ -30,7 +30,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Post", description = "어드민 게시물 · 소통 모니터링 — 일반 게시물 (§24-5 · §54)")
+@Tag(name = "Admin - Post", description = "관리자 게시물 모니터링 API")
 public interface AdminPostControllerDocs {
 
     // ------------------------------------------------------------------ 조회
@@ -56,7 +56,13 @@ public interface AdminPostControllerDocs {
                     - `editedAfterFirstReport` — 최초 대기 신고 뒤에 본문이 고쳐졌는가(조치 판단 재료)
                     """
     )
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공")})
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<PageResponse<AdminPostMonitoringDto.ListItem>> getPosts(
             @Parameter(description = "탭 — ALL(기본) · REPORTED · SUSPENDED · UNDER_REVIEW(이의 신청) · CLOSED(종결)", example = "ALL")
             @RequestParam(value = "tab", required = false) PostMonitoringTab tab,
@@ -76,11 +82,17 @@ public interface AdminPostControllerDocs {
                     신고 접수 탭이 비어도 심사 1건이 남으면 1이다(C9).
                     """
     )
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공",
-            content = @Content(schema = @Schema(implementation = AdminPostMonitoringDto.SummaryResponse.class),
-                    examples = @ExampleObject(value = """
-                            { "all": 6, "reported": 2, "suspended": 1, "underReview": 1, "closed": 1, "actionRequired": 3 }
-                            """)))})
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = AdminPostMonitoringDto.SummaryResponse.class),
+                            examples = @ExampleObject(value = """
+                                    { "all": 6, "reported": 2, "suspended": 1, "underReview": 1, "closed": 1, "actionRequired": 3 }
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<AdminPostMonitoringDto.SummaryResponse> getSummary();
 
     @Operation(
@@ -112,10 +124,24 @@ public interface AdminPostControllerDocs {
                     7종 — 소비자 신고 사유 6종과 같은 축 + 운영자 전용 「개인정보 노출」(`operatorOnly`).
                     `detailRequired`가 true(기타)면 설명이 필수다. 「의료적 효능 표현」은 사유가 아니라 허위 · 과장 정보의 근거 규정(3조 4항)이다.
                     """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<List<AdminPostDto.SuspensionReasonItem>> getSuspensionReasons();
 
     @Operation(summary = "근거 규정 조항 목록 (C4)",
             description = "운영정책 문서가 아직 없어 **가정값**이다. `suggestedFor`는 FE 기본 선택용 추천이고 서버는 조합을 검증하지 않는다.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<List<AdminPostDto.PolicyClauseItem>> getPolicyClauses();
 
     // ------------------------------------------------------------------ 조치
@@ -204,6 +230,8 @@ public interface AdminPostControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "표시 완료"),
             @ApiResponse(responseCode = "404", description = "게시물 없음 · 그 게시물의 사진이 아님(POST_IMAGE_NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "공구 게시물(POST_NOT_EDITABLE) — 공구 관리에서 다룬다",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> flagImage(
@@ -213,10 +241,13 @@ public interface AdminPostControllerDocs {
             @Parameter(description = "사진 ID", required = true, example = "9003", in = ParameterIn.PATH)
             @PathVariable("imageId") Long imageId);
 
-    @Operation(summary = "사진 「신고 지목」 끄기")
+    @Operation(summary = "사진 「신고 지목」 끄기",
+            description = "켜기로 붙인 표시를 지운다(켠 시각 · 운영자도 함께 비운다). 이미 꺼져 있어도 204다. 알림 · 이력은 남기지 않는다.")
     @ApiResponses({
             @ApiResponse(responseCode = "204", description = "해제 완료"),
             @ApiResponse(responseCode = "404", description = "게시물 없음 · 그 게시물의 사진이 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "공구 게시물(POST_NOT_EDITABLE) — 공구 관리에서 다룬다",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> unflagImage(
@@ -239,7 +270,13 @@ public interface AdminPostControllerDocs {
                     - `suspensionReasonCode` — 이 신고를 받아 내릴 때 그대로 넣는 값(같은 코드 축)
                     """
     )
-    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공")})
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<PageResponse<AdminPostReportDto.ReportItem>> getReports(
             @Parameter(description = "게시물 ID로 좁히기", example = "301")
             @RequestParam(value = "postId", required = false) Long postId,
@@ -266,6 +303,13 @@ public interface AdminPostControllerDocs {
 
     @Operation(summary = "이의 신청 목록",
             description = "심사 대기(`PENDING`)는 **오래 기다린 순**이다. `reviewDueAt` = 접수 + 3영업일(주말 · 공휴일 제외).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<PageResponse<AdminPostDto.AppealItem>> getAppeals(
             @Parameter(description = "심사 상태로 좁히기", example = "PENDING")
             @RequestParam(value = "status", required = false) PostAppealStatus status,

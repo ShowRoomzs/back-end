@@ -29,7 +29,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.creator.groupbuy.docs.CreatorGroupBuyDocsExamples.*;
 
-@Tag(name = "Creator - GroupBuy", description = "쇼룸 스튜디오 공구 조회·게시물 제출·요청 응답 API.")
+@Tag(name = "Creator - GroupBuy", description = "쇼룸 스튜디오 공구 API")
 public interface CreatorGroupBuyControllerDocs {
 
     // ── 조회 ────────────────────────────────────────────────────────────────

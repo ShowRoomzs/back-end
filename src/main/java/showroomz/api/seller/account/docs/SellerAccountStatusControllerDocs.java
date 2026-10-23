@@ -8,9 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.common.account.dto.MemberAccountStatusResponse;
 
-@Tag(name = "Seller - Account Status", description = "파트너센터 계정 상태 — 정지 배너(ui-partner-15 · 16 H4)")
+@Tag(name = "Seller - Account Status", description = "파트너센터 계정 상태 API")
 public interface SellerAccountStatusControllerDocs {
 
     @Operation(
@@ -43,7 +44,13 @@ public interface SellerAccountStatusControllerDocs {
                                             }"""),
                                     @ExampleObject(name = "정상", value = """
                                             {"status": "ACTIVE", "sanction": null, "withdrawalPending": false}""")
-                            }))
+                            })),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 — FORBIDDEN",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 · 마켓 없음 — SELLER_NOT_FOUND · MARKET_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<MemberAccountStatusResponse> getAccountStatus();
 }

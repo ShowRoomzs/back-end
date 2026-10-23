@@ -19,7 +19,7 @@ import java.util.Set;
 
 import static showroomz.api.seller.performance.docs.SellerPerformanceDocsExamples.*;
 
-@Tag(name = "Seller - Performance", description = "파트너센터 성과 관리 API (§48 · 48 파트너 성과 설계서)")
+@Tag(name = "Seller - Performance", description = "파트너센터 성과 관리 API")
 public interface SellerPerformanceControllerDocs {
 
     String FIGURE = """

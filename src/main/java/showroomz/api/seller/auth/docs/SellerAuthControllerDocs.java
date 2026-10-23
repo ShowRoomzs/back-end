@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
-@Tag(name = "Seller - Auth", description = "Seller Auth API")
+@Tag(name = "Seller - Auth", description = "파트너센터 인증 API")
 public interface SellerAuthControllerDocs {
 
     @Operation(

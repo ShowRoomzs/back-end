@@ -94,7 +94,7 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
     // ------------------------------------------------------------------ SC-02 인플루언서 가드
 
     @Test
-    @DisplayName("SC-02 인플루언서 정지 — 연결 수락 · 연장 수락 · 탈퇴 요청 · 쇼룸명 · 재발송 409, 소개 수정 · 연장 거절은 허용")
+    @DisplayName("SC-02 인플루언서 정지 — 연결 수락 · 연장 수락 · 쇼룸명 · 재발송 409, 소개 수정 · 연장 거절은 허용 · 탈퇴 요청은 정지가 아니라 진행 중 계약으로 막힌다(1021 7-3)")
     void creatorGuards() throws Exception {
         BrandRequest other = otherBrandRequest();
         Contract signing = seedContract(ContractStatus.SIGNING, LocalDateTime.now().plusDays(5));
@@ -106,7 +106,7 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
         creatorPost("/v1/creator/group-buys/" + groupBuy.getId() + "/extension/acceptance", Map.of())
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"));
         creatorPost("/v1/creator/basic-info/withdrawal-requests", Map.of("reason", "활동 종료"))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"));
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREATOR_WITHDRAWAL_CONDITION_UNMET"));
         creatorPost("/v1/creator/contracts/" + signing.getId() + "/resend-request", Map.of())
                 .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"));
 

@@ -24,7 +24,7 @@ import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Inquiry (1:1 문의)", description = "1:1 문의 관련 API")
+@Tag(name = "User - Inquiry", description = "1:1 문의 관련 API")
 public interface InquiryControllerDocs {
 
     @Operation(

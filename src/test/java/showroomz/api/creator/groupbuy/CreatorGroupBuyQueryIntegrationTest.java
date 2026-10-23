@@ -209,7 +209,7 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("직권 중단 예고 — 통지 본문·집행 예정만 · 소명 기한은 없다 · 게시물 수정·연장 응답 잠금")
+    @DisplayName("직권 중단 예고 — 통지 본문·집행 예정 · 소명 기한(1021 기-21 · 인플루언서도 의견을 낸다) · 게시물 수정·연장 응답 잠금")
     void suspensionScheduledDetail() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
@@ -220,7 +220,7 @@ class CreatorGroupBuyQueryIntegrationTest extends CreatorGroupBuyTestSupport {
                 .andExpect(jsonPath("$.adminSuspension.reasonClause").value("ART17_1_LAW"))
                 .andExpect(jsonPath("$.adminSuspension.noticeBody").exists())
                 .andExpect(jsonPath("$.adminSuspension.businessDaysUntilExecution").isNumber())
-                .andExpect(jsonPath("$.adminSuspension.appealDeadlineAt").doesNotExist())
+                .andExpect(jsonPath("$.adminSuspension.appealDeadlineAt").exists())
                 .andExpect(jsonPath("$.post.status").value("EXPOSED"))
                 .andExpect(jsonPath("$.permissions.canEditPost").value(false))
                 .andExpect(jsonPath("$.permissions.canRequestSuspension").value(false));

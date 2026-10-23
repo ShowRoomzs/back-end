@@ -14,7 +14,7 @@ import showroomz.api.common.settlement.dto.SettlementAdjustmentDto;
 
 import static showroomz.api.creator.settlement.docs.CreatorSettlementDocsExamples.*;
 
-@Tag(name = "Creator - Settlement Adjustment", description = "쇼룸 스튜디오 정산 조정 협의 API (#12)")
+@Tag(name = "Creator - Settlement Adjustment", description = "쇼룸 스튜디오 정산 조정 협의 API")
 public interface CreatorSettlementAdjustmentControllerDocs {
 
     String TURN_RULE = """

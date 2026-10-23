@@ -24,7 +24,7 @@ import java.util.List;
 
 import static showroomz.api.app.post.docs.PostDocsExamples.*;
 
-@Tag(name = "User - Post", description = "소비자 쇼룸 게시물 조회·좋아요 API.")
+@Tag(name = "User - Post", description = "사용자 쇼룸 게시물 API")
 public interface PostControllerDocs {
 
     @Operation(

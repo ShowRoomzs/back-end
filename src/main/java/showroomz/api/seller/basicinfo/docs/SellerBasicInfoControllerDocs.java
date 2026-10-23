@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.seller.basicinfo.dto.SellerBasicInfoDto;
 
-@Tag(name = "Seller - Basic Info", description = "파트너센터 기본정보 관리 API (§15) — 사업자 정보·정산 계좌·담당자·CS·계정 4개 서브탭")
+@Tag(name = "Seller - Basic Info", description = "파트너센터 기본정보 관리 API")
 public interface SellerBasicInfoControllerDocs {
 
     @Operation(summary = "사업자 정보 조회", description = """
@@ -255,7 +255,13 @@ public interface SellerBasicInfoControllerDocs {
                                               "remoteAreaSurcharge": 0
                                             }
                                             """)
-                            }))
+                            })),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 — FORBIDDEN",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 · 마켓 없음 — SELLER_NOT_FOUND · MARKET_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<SellerBasicInfoDto.DeliveryPolicyResponse> getDeliveryPolicy();
 
@@ -407,7 +413,13 @@ public interface SellerBasicInfoControllerDocs {
                                               }
                                             }
                                             """)
-                            }))
+                            })),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 — FORBIDDEN",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 없음 — SELLER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> getAccountInfo();
 

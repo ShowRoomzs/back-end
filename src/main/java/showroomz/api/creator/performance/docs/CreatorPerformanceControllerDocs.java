@@ -20,7 +20,7 @@ import java.util.Set;
 
 import static showroomz.api.creator.performance.docs.CreatorPerformanceDocsExamples.*;
 
-@Tag(name = "Creator - Performance", description = "쇼룸 스튜디오 성과 관리 API (§49 · 49 스튜디오 성과 설계서) — 종료 공구의 성과 · 조회 전용")
+@Tag(name = "Creator - Performance", description = "쇼룸 스튜디오 성과 관리 API")
 public interface CreatorPerformanceControllerDocs {
 
     String STATUS = """

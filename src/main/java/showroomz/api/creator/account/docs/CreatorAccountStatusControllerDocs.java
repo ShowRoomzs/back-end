@@ -8,9 +8,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
+import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.common.account.dto.MemberAccountStatusResponse;
 
-@Tag(name = "Creator - Account Status", description = "쇼룸 스튜디오 계정 상태 — 정지 배너(ui-studio-13 · 14 H5)")
+@Tag(name = "Creator - Account Status", description = "쇼룸 스튜디오 계정 상태 API")
 public interface CreatorAccountStatusControllerDocs {
 
     @Operation(
@@ -40,7 +41,13 @@ public interface CreatorAccountStatusControllerDocs {
                                         "suspendCardMessageId": 1203
                                       },
                                       "withdrawalPending": false
-                                    }""")))
+                                    }"""))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "CREATOR 가 아님 — FORBIDDEN",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "크리에이터 없음 — CREATOR_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<MemberAccountStatusResponse> getAccountStatus();
 }

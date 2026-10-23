@@ -34,8 +34,7 @@ import java.util.List;
 
 import static showroomz.api.admin.thread.docs.AdminThreadDocsExamples.*;
 
-@Tag(name = "Admin - Thread", description = """
-        관리자 소통 스레드 API""")
+@Tag(name = "Admin - Thread", description = "관리자 소통 스레드 API")
 public interface AdminThreadControllerDocs {
 
     // ── 목록 · 배지 ──────────────────────────────────────────────────────────

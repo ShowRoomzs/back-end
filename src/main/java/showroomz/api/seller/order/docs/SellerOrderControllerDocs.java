@@ -39,7 +39,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Order", description = "파트너센터 주문 관리 API (§34)")
+@Tag(name = "Seller - Order", description = "파트너센터 주문 관리 API")
 public interface SellerOrderControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -539,8 +539,14 @@ public interface SellerOrderControllerDocs {
 
                     **권한:** SELLER
                     """)
-    @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
-            content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary")))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
+                    content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER 가 아님(CREATOR 포함)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<byte[]> shipmentTemplate();
 
     @Operation(

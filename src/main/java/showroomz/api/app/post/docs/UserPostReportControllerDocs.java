@@ -1,6 +1,7 @@
 package showroomz.api.app.post.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -20,7 +21,7 @@ import showroomz.api.app.post.DTO.PostReportRequest;
 
 import java.util.List;
 
-@Tag(name = "User - Post Report", description = "게시물 신고 API (C4 ⋯ 시트 · 하단 고지)")
+@Tag(name = "User - Post Report", description = "사용자 게시물 신고 API")
 public interface UserPostReportControllerDocs {
 
     @Operation(
@@ -84,6 +85,6 @@ public interface UserPostReportControllerDocs {
     })
     ResponseEntity<Void> reportPost(
             @AuthenticationPrincipal UserPrincipal userPrincipal,
-            @PathVariable("postId") Long postId,
+            @Parameter(description = "신고할 게시물 ID", example = "123") @PathVariable("postId") Long postId,
             @Valid @RequestBody PostReportRequest request);
 }

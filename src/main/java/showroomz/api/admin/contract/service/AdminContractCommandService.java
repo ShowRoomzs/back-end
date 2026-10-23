@@ -188,11 +188,13 @@ public class AdminContractCommandService {
         transition(c, ContractStatus.CANCELED);
         c.applyCanceledByAdmin(request.reasonCode().name(), memo, requester, now);
         // 결과 카드는 양측 운영팀 채널에 붙는다(1021 기-06 · 36 설계 §36-9 A-5 해소). 채널은 회원당 하나라 당사자에서 유도한다.
-        // 요청 채널 기록은 요청자 쪽 채널이다(직권이면 기록하지 않는다).
+        // 요청 채널 기록은 스레드로 들어온 요청의 요청자 쪽 채널이다 — 전화 · 이메일 · 직권이면 NULL(V167 정의 그대로).
         for (ContractActorType party : List.of(ContractActorType.SELLER, ContractActorType.CREATOR)) {
             if (party == ContractActorType.CREATOR && c.getCreator() == null) continue;
             Long threadId = channelGateway.postAdminCanceledCard(c, party, operator).threadId();
-            if (party == requester.type()) c.recordCancelRequestThread(threadId);
+            if (party == requester.type() && requester.channel() == ContractCancelRequestChannel.THREAD) {
+                c.recordCancelRequestThread(threadId);
+            }
         }
         record(c, operator, name, ContractEventType.CANCELED, request.reasonCode().getLabel(), now);
         notifier.notifyBothParties(c, "CANCELED");

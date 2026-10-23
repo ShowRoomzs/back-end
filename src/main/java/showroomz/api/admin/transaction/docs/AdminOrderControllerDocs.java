@@ -25,7 +25,7 @@ import java.time.LocalDate;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Order", description = "관리자 거래 관리 · 주문 조회 API (06a)")
+@Tag(name = "Admin - Order", description = "관리자 주문 관리 API")
 public interface AdminOrderControllerDocs {
 
     // ── 조회 ─────────────────────────────────────────────────────────────────

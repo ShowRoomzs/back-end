@@ -245,11 +245,12 @@ class OrderCancelScenarioIntegrationTest extends OrderFlowTestSupport {
             assertThat(fake.partialCancelCalls()).containsExactly(purchase.paymentId() + ":" + (CREAM_PRICE + DELIVERY_FEE));
             assertThat(payment(purchase.paymentId()).getStatus()).isEqualTo(PaymentStatus.CANCELLED);
 
+            // 화면 라벨은 주체 없이 「직권 취소」(1021 기-16) — 주체는 cancel_actor_type 이 가른다.
             sellerOrder(group)
-                    .andExpect(jsonPath("$.timeline.cancelTypeLabel").value("브랜드 직권 취소"))
+                    .andExpect(jsonPath("$.timeline.cancelTypeLabel").value("직권 취소"))
                     .andExpect(jsonPath("$.timeline.cancelReasonLabel").value("품절"))
                     .andExpect(jsonPath("$.timeline.cancelReasonDetail").value(message));
-            sellerOrders("tab=CANCELLED").andExpect(jsonPath("$.content[0].cancelTypeLabel").value("브랜드 직권 취소"));
+            sellerOrders("tab=CANCELLED").andExpect(jsonPath("$.content[0].cancelTypeLabel").value("직권 취소"));
             appOrder(purchase.orderId()).andExpect(jsonPath("$.cancellable").value(false));
         }
 

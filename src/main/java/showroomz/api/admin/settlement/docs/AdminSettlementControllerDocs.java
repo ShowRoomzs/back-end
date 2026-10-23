@@ -22,7 +22,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.settlement.docs.AdminSettlementDocsExamples.*;
 
-@Tag(name = "Admin - Settlement", description = "관리자 정산 관리 API (07a · 07b)")
+@Tag(name = "Admin - Settlement", description = "관리자 정산 관리 API")
 public interface AdminSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

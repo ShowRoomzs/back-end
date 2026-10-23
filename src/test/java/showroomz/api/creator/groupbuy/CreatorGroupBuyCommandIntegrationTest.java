@@ -198,7 +198,7 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("수정 잠금 — 중단 예정 · 승인 전 준비중은 NOT_EDITABLE · 노출 중 제목을 비울 수 없다")
+    @DisplayName("수정 잠금 — 중단 예정 · 승인 전 준비중은 NOT_EDITABLE · 노출 중 제목은 잠김(1021 기-08) · 본문은 비울 수 없다")
     void editLocks() throws Exception {
         GroupBuy scheduled = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPost(scheduled.getId(), GroupBuyPostReviewStatus.APPROVED, false);
@@ -213,7 +213,10 @@ class CreatorGroupBuyCommandIntegrationTest extends CreatorGroupBuyTestSupport {
 
         GroupBuy selling = seedIn(GroupBuyStatus.IN_PROGRESS);
         seedPost(selling.getId(), GroupBuyPostReviewStatus.APPROVED, false);
+        // 진행 중 노출 게시물은 제목을 바꿀 수 없다 — 비우는 것도 바꾸는 것이다.
         editPost(selling.getId(), Map.of("title", "", "content", "본문만")).andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_POST_TITLE_LOCKED"));
+        editPost(selling.getId(), Map.of("title", "글로우 크림 앵콜 공구 오픈", "content", "")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_POST_REQUIRED_FIELD"));
     }
 

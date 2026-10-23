@@ -22,7 +22,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.app.post.docs.PostDocsExamples.*;
 
-@Tag(name = "User Post", description = "소비자 피드·좋아요한 게시물 조회 API.")
+@Tag(name = "User - Feed", description = "사용자 피드 API")
 public interface UserFeedControllerDocs {
 
     @Operation(

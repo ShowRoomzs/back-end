@@ -14,7 +14,7 @@ import showroomz.api.common.settlement.dto.SettlementAdjustmentDto;
 
 import static showroomz.api.seller.settlement.docs.SellerSettlementDocsExamples.*;
 
-@Tag(name = "Seller - Settlement Adjustment", description = "파트너센터 정산 조정 협의 API (§13)")
+@Tag(name = "Seller - Settlement Adjustment", description = "파트너센터 정산 조정 협의 API")
 public interface SellerSettlementAdjustmentControllerDocs {
 
     String TURN_RULE = """

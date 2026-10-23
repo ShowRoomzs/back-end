@@ -21,7 +21,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Inquiry (1:1 문의)", description = "어드민 1:1 문의(CS) API — 1:1 문의는 마켓이 아닌 어드민으로만 접수된다")
+@Tag(name = "Admin - Inquiry", description = "관리자 1:1 문의 관리 API")
 public interface AdminInquiryControllerDocs {
 
     @Operation(

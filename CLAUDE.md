@@ -6,6 +6,16 @@ Showroomz 백엔드 (Spring Boot / Gradle / Java).
 
 사용자에게 하는 답변은 **항상 한국어**로 작성한다. 코드 식별자·경로·명령어는 원문 그대로 둔다.
 
+## 테스트 실행
+
+시간을 줄이기 위해 **전체 테스트(`./gradlew test`)는 돌리지 않는다.** 사용자가 전체 실행을 직접 요청할 때만 돌린다.
+
+- 변경한 코드와 관련된 테스트만 `--tests`로 지정해 돌린다. 관련 테스트는 바꾼 클래스명·패키지로 `src/test`를 검색해 찾는다.
+  ```
+  ./gradlew test --tests '*AdminBrandSanctionIntegrationTest' --tests 'showroomz.api.admin.brand.*'
+  ```
+- 관련 테스트가 없거나 문서·어노테이션만 바꿨으면 컴파일만 확인한다: `./gradlew compileJava compileTestJava -q`
+
 ## 패키지 구조
 
 - `showroomz.api.<역할>.<기능>.{controller, docs, dto|DTO, service}` — 역할은 `admin` / `seller` / `creator` / `app`(유저) / `common` / `test`

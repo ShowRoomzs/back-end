@@ -39,7 +39,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Contract", description = "파트너센터 계약 작성·조회·검토 요청 API.")
+@Tag(name = "Seller - Contract", description = "파트너센터 계약 관리 API")
 public interface SellerContractControllerDocs {
 
     @Operation(
@@ -98,12 +98,20 @@ public interface SellerContractControllerDocs {
                     검토 대기·공구 생성 대기는 공이 상대에게 있는 정상 대기라 넣지 않는다 —
                     브랜드가 할 수 없는 일로 배지가 켜지면 안 된다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "6개 탭 건수와 조치 필요 건수",
-            content = @Content(schema = @Schema(implementation = ContractSummaryResponse.class),
-                    examples = @ExampleObject(value = """
-                            {"tabCounts":{"ALL":14,"DRAFT":2,"REVIEW":2,"SIGNING":2,"CONCLUDED":5,"CLOSED":3},
-                             "actionRequiredCount":1}
-                            """))))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "6개 탭 건수와 조치 필요 건수",
+                    content = @Content(schema = @Schema(implementation = ContractSummaryResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"tabCounts":{"ALL":14,"DRAFT":2,"REVIEW":2,"SIGNING":2,"CONCLUDED":5,"CLOSED":3},
+                                     "actionRequiredCount":1}
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 (`FORBIDDEN`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 · 브랜드(마켓) 없음 (`SELLER_NOT_FOUND` · `MARKET_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<ContractSummaryResponse> getSummary();
 
     @Operation(
@@ -121,16 +129,24 @@ public interface SellerContractControllerDocs {
                     옵션 행에는 **최소 물량만** 입력한다. 공구가·리워드율은 상품 단위다. `stock`은 참고값이며
                     서버는 최소 물량 ≤ 재고를 판정하지 않는다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "연결된 상대와 진열 상품 전체",
-            content = @Content(schema = @Schema(implementation = ContractFormSourcesResponse.class),
-                    examples = @ExampleObject(value = """
-                            {"counterparties":[{"creatorId":31,"showroomName":"글로우_지민",
-                              "connectionId":54,"profileImageUrl":null}],
-                             "products":[{"productId":87,"productName":"수분진정 세럼 30ml",
-                              "regularPrice":32000,"thumbnailUrl":null,
-                              "options":[{"variantId":301,"variantName":"단품","regularPrice":32000,"stock":420,"isRepresentative":true},
-                                         {"variantId":302,"variantName":"2개 세트","regularPrice":60000,"stock":180,"isRepresentative":false}]}]}
-                            """))))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "연결된 상대와 진열 상품 전체",
+                    content = @Content(schema = @Schema(implementation = ContractFormSourcesResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"counterparties":[{"creatorId":31,"showroomName":"글로우_지민",
+                                      "connectionId":54,"profileImageUrl":null}],
+                                     "products":[{"productId":87,"productName":"수분진정 세럼 30ml",
+                                      "regularPrice":32000,"thumbnailUrl":null,
+                                      "options":[{"variantId":301,"variantName":"단품","regularPrice":32000,"stock":420,"isRepresentative":true},
+                                                 {"variantId":302,"variantName":"2개 세트","regularPrice":60000,"stock":180,"isRepresentative":false}]}]}
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 (`FORBIDDEN`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 · 브랜드(마켓) 없음 (`SELLER_NOT_FOUND` · `MARKET_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<ContractFormSourcesResponse> getFormSources();
 
     @Operation(
@@ -579,6 +595,17 @@ public interface SellerContractControllerDocs {
             @Valid @RequestBody ContractDraftApprovalRequest request);
 
     @Operation(summary = "초안 승인 기록 삭제", description = "잘못 적은 기록을 지웁니다(행은 남습니다).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "삭제 완료 — 상세(draftApprovals)",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약(CONTRACT_NOT_OWNED_BY_SELLER) · SELLER · CREATOR 가 아님(FORBIDDEN)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 · 이 계약의 기록이 아니거나 이미 삭제됨(CONTRACT_NOT_FOUND) · "
+                    + "판매자 · 브랜드 없음(SELLER_NOT_FOUND · MARKET_NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<ContractDetailResponse> deleteDraftApproval(
             @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
             @Parameter(description = "기록 ID", example = "3") @PathVariable Long approvalId);

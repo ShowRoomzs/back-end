@@ -13,7 +13,7 @@ import showroomz.api.app.account.dto.AccountStatusResponse;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 
-@Tag(name = "User - Account Status", description = "계정 이용 정지 상태(C20) — 배너 · 배지 · 안내 시트 · 해제 토스트")
+@Tag(name = "User - Account Status", description = "사용자 계정 상태 API")
 public interface UserAccountStatusControllerDocs {
 
     @Operation(
@@ -68,12 +68,29 @@ public interface UserAccountStatusControllerDocs {
                     )
             ),
             @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
                     responseCode = "403",
                     description = "탈퇴 회원",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = "{\"code\": \"USER_WITHDRAWN\", \"message\": \"탈퇴한 회원입니다.\"}")
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "토큰의 회원을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}")
                     )
             )
     })
@@ -85,7 +102,35 @@ public interface UserAccountStatusControllerDocs {
                     "멱등입니다. 그 사이 정지가 해제됐으면 아무 일도 하지 않습니다.\n\n" +
                     "**권한:** USER/CREATOR (로그인 필수)"
     )
-    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "확인 기록")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "확인 기록"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "탈퇴 회원",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_WITHDRAWN\", \"message\": \"탈퇴한 회원입니다.\"}")
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "토큰의 회원을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}")
+                    )
+            )
+    })
     ResponseEntity<Void> ackSuspensionNotice(@Parameter(hidden = true) UserPrincipal principal);
 
     @Operation(
@@ -93,6 +138,34 @@ public interface UserAccountStatusControllerDocs {
             description = "해제 토스트를 띄운 뒤 부릅니다. 확인하지 않은 해제가 여럿이어도 한 번에 모두 확인됩니다. 멱등입니다.\n\n" +
                     "**권한:** USER/CREATOR (로그인 필수)"
     )
-    @ApiResponses(value = {@ApiResponse(responseCode = "204", description = "확인 기록")})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "확인 기록"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "탈퇴 회원",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_WITHDRAWN\", \"message\": \"탈퇴한 회원입니다.\"}")
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "토큰의 회원을 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_NOT_FOUND\", \"message\": \"존재하지 않는 회원입니다.\"}")
+                    )
+            )
+    })
     ResponseEntity<Void> ackReleaseNotice(@Parameter(hidden = true) UserPrincipal principal);
 }

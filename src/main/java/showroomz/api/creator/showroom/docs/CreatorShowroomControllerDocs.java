@@ -23,7 +23,7 @@ import showroomz.api.creator.showroom.dto.ShowroomStatsResponse;
 import showroomz.api.creator.showroom.type.StatsPeriod;
 import showroomz.api.creator.showroom.type.TopContentSort;
 
-@Tag(name = "Creator - Showroom", description = "쇼룸 스튜디오 쇼룸 관리(#8) API — 공개 프로필 · 쇼룸 현황")
+@Tag(name = "Creator - Showroom", description = "쇼룸 스튜디오 쇼룸 관리 API")
 @SecurityRequirement(name = "Authorization")
 public interface CreatorShowroomControllerDocs {
 

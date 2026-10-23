@@ -22,7 +22,7 @@ import showroomz.domain.changerequest.type.ChangeRequestType;
 
 import java.util.List;
 
-@Tag(name = "Seller - Change Request", description = "파트너센터 브랜드 회원정보(사업자 정보·정산 계좌) 변경 요청 API (§15-6·§15-7)")
+@Tag(name = "Seller - Change Request", description = "파트너센터 회원정보 변경 요청 API")
 public interface SellerChangeRequestControllerDocs {
 
     @Operation(
@@ -206,6 +206,68 @@ public interface SellerChangeRequestControllerDocs {
                                     )
                             }
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "브랜드 유형이 아님 — 인플루언서 유형(`TO_BUSINESS` · `TO_INDIVIDUAL`)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "허용되지 않는 유형",
+                                    value = "{\n" +
+                                            "  \"code\": \"CHANGE_REQUEST_TYPE_NOT_ALLOWED\",\n" +
+                                            "  \"message\": \"요청할 수 없는 변경 유형입니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "SELLER · CREATOR 가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "권한 없음",
+                                    value = "{\n" +
+                                            "  \"code\": \"FORBIDDEN\",\n" +
+                                            "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자 · 마켓 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "판매자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"SELLER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 판매자입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "마켓 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"MARKET_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 마켓입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
     })
     ResponseEntity<ChangeRequestBannerResponse> getLatest(
@@ -220,34 +282,98 @@ public interface SellerChangeRequestControllerDocs {
                     "- 사업자등록번호는 변경 불가이므로 이 목록에 없다(§15-1 ③)\n\n" +
                     "**권한:** SELLER"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "조회 성공",
-            content = @Content(
-                    mediaType = "application/json",
-                    examples = {
-                            @ExampleObject(
-                                    name = "사업자 정보 항목",
-                                    value = "[\n" +
-                                            "  { \"fieldKey\": \"MARKET_NAME\", \"label\": \"브랜드명\", \"currentValue\": \"코코브라운\" },\n" +
-                                            "  { \"fieldKey\": \"REPRESENTATIVE_NAME\", \"label\": \"대표자명\", \"currentValue\": \"김대표\" },\n" +
-                                            "  { \"fieldKey\": \"COMPANY_NAME\", \"label\": \"사업자등록증 상호\", \"currentValue\": \"(주)코코브라운\" },\n" +
-                                            "  { \"fieldKey\": \"BUSINESS_CONDITION\", \"label\": \"업태\", \"currentValue\": \"도소매\" },\n" +
-                                            "  { \"fieldKey\": \"BUSINESS_ADDRESS\", \"label\": \"사업장 주소\", \"currentValue\": \"서울시 서초구 ...\" },\n" +
-                                            "  { \"fieldKey\": \"MAIL_ORDER_REG_NUMBER\", \"label\": \"통신판매업 신고번호\", \"currentValue\": \"2024-서울서초-0001\" }\n" +
-                                            "]"
-                            ),
-                            @ExampleObject(
-                                    name = "정산 계좌 항목",
-                                    value = "[\n" +
-                                            "  { \"fieldKey\": \"BANK_CODE\", \"label\": \"은행\", \"currentValue\": \"088\" },\n" +
-                                            "  { \"fieldKey\": \"ACCOUNT_NUMBER\", \"label\": \"계좌번호\", \"currentValue\": \"110987654321\" },\n" +
-                                            "  { \"fieldKey\": \"ACCOUNT_HOLDER\", \"label\": \"예금주\", \"currentValue\": \"(주)코코브라운\" }\n" +
-                                            "]"
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사업자 정보 항목",
+                                            value = "[\n" +
+                                                    "  { \"fieldKey\": \"MARKET_NAME\", \"label\": \"브랜드명\", \"currentValue\": \"코코브라운\" },\n" +
+                                                    "  { \"fieldKey\": \"REPRESENTATIVE_NAME\", \"label\": \"대표자명\", \"currentValue\": \"김대표\" },\n" +
+                                                    "  { \"fieldKey\": \"COMPANY_NAME\", \"label\": \"사업자등록증 상호\", \"currentValue\": \"(주)코코브라운\" },\n" +
+                                                    "  { \"fieldKey\": \"BUSINESS_CONDITION\", \"label\": \"업태\", \"currentValue\": \"도소매\" },\n" +
+                                                    "  { \"fieldKey\": \"BUSINESS_ADDRESS\", \"label\": \"사업장 주소\", \"currentValue\": \"서울시 서초구 ...\" },\n" +
+                                                    "  { \"fieldKey\": \"MAIL_ORDER_REG_NUMBER\", \"label\": \"통신판매업 신고번호\", \"currentValue\": \"2024-서울서초-0001\" }\n" +
+                                                    "]"
+                                    ),
+                                    @ExampleObject(
+                                            name = "정산 계좌 항목",
+                                            value = "[\n" +
+                                                    "  { \"fieldKey\": \"BANK_CODE\", \"label\": \"은행\", \"currentValue\": \"088\" },\n" +
+                                                    "  { \"fieldKey\": \"ACCOUNT_NUMBER\", \"label\": \"계좌번호\", \"currentValue\": \"110987654321\" },\n" +
+                                                    "  { \"fieldKey\": \"ACCOUNT_HOLDER\", \"label\": \"예금주\", \"currentValue\": \"(주)코코브라운\" }\n" +
+                                                    "]"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "브랜드 유형이 아님 — 인플루언서 유형(`TO_BUSINESS` · `TO_INDIVIDUAL`)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "허용되지 않는 유형",
+                                    value = "{\n" +
+                                            "  \"code\": \"CHANGE_REQUEST_TYPE_NOT_ALLOWED\",\n" +
+                                            "  \"message\": \"요청할 수 없는 변경 유형입니다.\"\n" +
+                                            "}"
                             )
-                    }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "SELLER · CREATOR 가 아님",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "권한 없음",
+                                    value = "{\n" +
+                                            "  \"code\": \"FORBIDDEN\",\n" +
+                                            "  \"message\": \"접근 권한이 없습니다.\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "판매자 · 마켓 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "판매자 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"SELLER_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 판매자입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "마켓 없음",
+                                            value = "{\n" +
+                                                    "  \"code\": \"MARKET_NOT_FOUND\",\n" +
+                                                    "  \"message\": \"존재하지 않는 마켓입니다.\"\n" +
+                                                    "}"
+                                    )
+                            }
+                    )
             )
-    )
+    })
     ResponseEntity<List<ChangeRequestFieldOption>> getFields(
             @Parameter(description = "요청 유형 — BUSINESS_INFO / SETTLEMENT_ACCOUNT", required = true, example = "BUSINESS_INFO")
             @RequestParam("type") ChangeRequestType type);

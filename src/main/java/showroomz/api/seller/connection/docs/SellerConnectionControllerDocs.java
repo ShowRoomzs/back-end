@@ -21,7 +21,7 @@ import showroomz.api.seller.connection.dto.ConnectionCreatorSearchItem;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller - Connection", description = "파트너센터 연결 요청 API (§13)")
+@Tag(name = "Seller - Connection", description = "파트너센터 연결 요청 API")
 public interface SellerConnectionControllerDocs {
 
     @Operation(

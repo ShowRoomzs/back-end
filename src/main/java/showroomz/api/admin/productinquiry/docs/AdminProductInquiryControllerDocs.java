@@ -1,6 +1,7 @@
 package showroomz.api.admin.productinquiry.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +24,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Product Inquiry Monitoring", description = "어드민 상품 문의 모니터링 API (§18) — 운영자는 답변하지 않는다")
+@Tag(name = "Admin - Product Inquiry", description = "관리자 상품 문의 모니터링 API")
 public interface AdminProductInquiryControllerDocs {
 
     @Operation(
@@ -57,8 +58,11 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<AdminProductInquiryDto.ListResponse> getList(
+            @Parameter(description = "상태 탭 — ALL(기본) · WAITING · ANSWERED · DELETE_REQUESTED · DELETED", example = "ALL")
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
+            @Parameter(description = "문의 유형 — OPTION · INGREDIENT_USAGE · RESTOCK · DELIVERY · ETC · 비우면 전체", example = "OPTION")
             @RequestParam(value = "type", required = false) ProductInquiryType type,
+            @Parameter(description = "상품명 · 브랜드명 · 질문 본문 부분 일치 검색어", example = "보습")
             @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest
     );
@@ -118,9 +122,13 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<AdminProductInquiryDto.DetailResponse> getDetail(
+            @Parameter(description = "상품 문의 ID", required = true, example = "101")
             @PathVariable("inquiryId") Long inquiryId,
+            @Parameter(description = "목록 상태 탭 — 이전·다음 계산용", example = "ALL")
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
+            @Parameter(description = "목록 문의 유형 — 이전·다음 계산용", example = "OPTION")
             @RequestParam(value = "type", required = false) ProductInquiryType type,
+            @Parameter(description = "목록 검색어 — 이전·다음 계산용", example = "보습")
             @RequestParam(value = "keyword", required = false) String keyword
     );
 
@@ -145,6 +153,7 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> executeDelete(
+            @Parameter(description = "상품 문의 ID", required = true, example = "101")
             @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody AdminProductInquiryDeleteDecision.ExecuteRequest request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -172,6 +181,7 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> rejectDeleteRequest(
+            @Parameter(description = "상품 문의 ID", required = true, example = "101")
             @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody AdminProductInquiryDeleteDecision.RejectRequest request,
             @AuthenticationPrincipal UserPrincipal principal

@@ -23,7 +23,7 @@ import showroomz.api.app.review.dto.ReviewUpdateRequest;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Review")
+@Tag(name = "User - Review", description = "사용자 리뷰 API")
 public interface ReviewControllerDocs {
 
     @Operation(

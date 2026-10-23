@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.creator.home.dto.CreatorHomeDto;
 
-@Tag(name = "Creator - Home", description = "쇼룸 스튜디오 홈(ui-studio-14-home)")
+@Tag(name = "Creator - Home", description = "쇼룸 스튜디오 홈 API")
 public interface CreatorHomeControllerDocs {
 
     @Operation(
@@ -73,7 +73,10 @@ public interface CreatorHomeControllerDocs {
                                       "reward": {"payoutScheduledAmount": 602800, "payoutScheduledDate": null,
                                                  "payoutCondition": "TAX_INVOICE_UNVERIFIED", "totalPaidNet": 4815000},
                                       "showroom7d": {"visitors": 1184, "newFollowers": 37, "conversionRate": 3.1}
-                                    }""")))
+                                    }"""))),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND")
     })
     ResponseEntity<CreatorHomeDto.Home> getHome();
 
@@ -90,7 +93,10 @@ public interface CreatorHomeControllerDocs {
     )
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공(진행 중 공구가 없으면 본문 null)",
-                    content = @Content(schema = @Schema(implementation = CreatorHomeDto.Live.class)))
+                    content = @Content(schema = @Schema(implementation = CreatorHomeDto.Live.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND")
     })
     ResponseEntity<CreatorHomeDto.Live> getLive();
 

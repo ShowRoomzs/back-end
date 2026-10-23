@@ -505,8 +505,9 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         assertThat(stockOf(creamVariant)).isEqualTo(stock);
         assertThat(chargeStatus(claimId)).isEqualTo("PENDING");
         assertThat(claimStatus(claimId)).isEqualTo("REJECT_HOLD");
+        // 브랜드 귀책 교환이라 회수는 착불 — 반려되면 착불 운임이 재발송비 청구에 합산된다(1021 설계서 4-3).
         userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.reshipFee.state").value("PAYABLE"))
-                .andExpect(jsonPath("$.reshipFee.amount").value(DELIVERY_FEE));
+                .andExpect(jsonPath("$.reshipFee.amount").value(DELIVERY_FEE * 2));
         String paymentId = json(userPost(USER_CLAIMS + "/" + claimId + "/reship-fee/payments", CARD)
                 .andExpect(status().isOk())).get("paymentId").asText();
         completeClaimPayment(paymentId).andExpect(jsonPath("$.claimStatus").value("RESHIP_READY"));
@@ -657,7 +658,7 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
     // ================================================================== CY-Q
 
     @Test
-    @DisplayName("[CY-Q] 수량 일부 — 3개 중 1개 반품(환불 24,200) → 남은 2개 교환 → 새 상품 도착 + 7일 구매확정 · 판매 집계 2개")
+    @DisplayName("[CY-Q] 수량 일부 — 3개 중 1개 반품(환불 27,200 · 남는 금액이 무료배송 기준 이상이라 최초 배송비 차감 없음 · 1021 기-18) → 남은 2개 교환 → 새 상품 도착 + 7일 구매확정 · 판매 집계 2개")
     void partialQuantityCycle() throws Exception {
         ProductVariant refill = addSamePriceVariant(creamVariant, 5);
         OrderDeliveryGroup group = shipAndDeliver(purchase(creamVariant, 3).group(), LocalDateTime.now().minusHours(1));
@@ -671,7 +672,7 @@ class OrderClaimCycleScenarioIntegrationTest extends OrderFlowTestSupport {
         Long returnId = claimIds(userPost(USER_CLAIMS, returnBody).andExpect(status().isCreated())).get(0);
         receiveAndPass(returnId);
         assertThat(refundTasks(group)).containsExactly(
-                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE - DELIVERY_FEE, "DONE"));
+                new RefundTask("CLAIM_RETURN_PASSED", CREAM_PRICE, "DONE"));
         appOrder(group.getOrder().getId()).andExpect(jsonPath("$.items[0].status").value("DELIVERED"))
                 .andExpect(jsonPath("$.items[0].returnedQuantity").value(1))
                 .andExpect(jsonPath("$.items[0].actions[*].type", hasItem("RETURN_REQUEST")));

@@ -10,7 +10,7 @@ import showroomz.api.common.notification.dto.NotificationItem;
 import showroomz.api.common.notification.dto.NotificationSummary;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "Seller - Notifications", description = "파트너센터 탑바 종 드롭다운(ui-partner-16) — 최근 30일 · 전체/안 읽음 · 모두 읽음")
+@Tag(name = "Seller - Notifications", description = "파트너센터 알림 API")
 public interface SellerNotificationControllerDocs {
 
     @Operation(
@@ -24,20 +24,33 @@ public interface SellerNotificationControllerDocs {
                     - 정지 · 직권 중단 사전통지는 운영팀 채널 카드로 간다(`target.type = THREAD`, `target.sub` = 카드 message id)
 
                     **권한:** SELLER""")
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER · CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND")})
     ResponseEntity<PageResponse<NotificationItem>> getNotifications(
             @Parameter(description = "true 면 안 읽음 탭") boolean unreadOnly,
             @Parameter(example = "1") int page,
             @Parameter(example = "20") int size);
 
     @Operation(summary = "안 읽은 수(종 배지)", description = "인디고 숫자 배지 — 모든 페이지 탑바가 60초마다 폴링합니다.\n\n**권한:** SELLER")
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER · CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND")})
     ResponseEntity<NotificationSummary> getSummary();
 
     @Operation(summary = "알림 읽음", description = "**권한:** SELLER")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "읽음"),
-            @ApiResponse(responseCode = "404", description = "NOTIFICATION_NOT_FOUND")})
-    ResponseEntity<Void> markRead(Long notificationId);
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER · CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "NOTIFICATION_NOT_FOUND · SELLER_NOT_FOUND · MARKET_NOT_FOUND")})
+    ResponseEntity<Void> markRead(@Parameter(description = "알림 ID", example = "1024") Long notificationId);
 
     @Operation(summary = "모두 읽음", description = "드롭다운 [모두 읽음] — 배지가 0이 됩니다.\n\n**권한:** SELLER")
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "모두 읽음"),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER · CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND")})
     ResponseEntity<Void> markAllRead();
 }

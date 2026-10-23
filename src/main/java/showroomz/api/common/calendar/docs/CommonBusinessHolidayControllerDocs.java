@@ -14,7 +14,7 @@ import showroomz.api.common.calendar.dto.HolidayItem;
 import java.time.LocalDate;
 import java.util.List;
 
-@Tag(name = "Common - Business Holidays", description = "공휴일 공개 조회 — 홈 달력의 주말 · 공휴일 표시")
+@Tag(name = "Common - Business Holiday", description = "공용 공휴일 조회 API")
 public interface CommonBusinessHolidayControllerDocs {
 
     @Operation(

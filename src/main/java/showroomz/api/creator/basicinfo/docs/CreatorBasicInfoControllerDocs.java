@@ -17,7 +17,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.creator.basicinfo.dto.CreatorBasicInfoDto;
 
-@Tag(name = "Creator - BasicInfo", description = "쇼룸 스튜디오 기본정보 관리(§50) — 계정 · 정산 정보")
+@Tag(name = "Creator - Basic Info", description = "쇼룸 스튜디오 기본정보 관리 API")
 @SecurityRequirement(name = "Authorization")
 public interface CreatorBasicInfoControllerDocs {
 

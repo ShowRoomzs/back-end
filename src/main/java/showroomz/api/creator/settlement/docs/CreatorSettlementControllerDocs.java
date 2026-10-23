@@ -21,7 +21,7 @@ import java.util.Set;
 
 import static showroomz.api.creator.settlement.docs.CreatorSettlementDocsExamples.*;
 
-@Tag(name = "Creator - Settlement", description = "쇼룸 스튜디오 정산 관리 API (#12)")
+@Tag(name = "Creator - Settlement", description = "쇼룸 스튜디오 정산 관리 API")
 public interface CreatorSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

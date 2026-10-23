@@ -17,7 +17,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Admin - Brand Member", description = "어드민 회원 관리 · 브랜드 — 상세 · 정지 · 탈퇴 심사 · 메모 · 이력(ui-admin-15 · 52 설계서)")
+@Tag(name = "Admin - Brand Member", description = "관리자 브랜드 회원 관리 API")
 public interface AdminBrandControllerDocs {
 
     /** 정지 · 해제 · 탈퇴 승인 · 반려가 돌려주는 갱신된 레일 — 상세의 rail 과 같은 모양. */
@@ -79,7 +79,11 @@ public interface AdminBrandControllerDocs {
                                       "pageInfo": { "currentPage": 1, "totalPages": 1, "totalResults": 2, "limit": 20, "hasNext": false },
                                       "summary": { "total": 48, "active": 44, "suspended": 2, "withdrawn": 2, "withdrawalPending": 1 }
                                     }
-                                    """)))
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     AdminBrandDto.ListResponse list(@Parameter(description = "탭 — ALL(기본) · ACTIVE(휴면 포함) · SUSPENDED · WITHDRAWN", example = "ALL")
                                     AdminBrandTab tab,
@@ -577,7 +581,11 @@ public interface AdminBrandControllerDocs {
                                         { "code": "OTHER", "label": "기타(직접 입력)", "detailRequired": true, "holdsPayout": null }
                                       ]
                                     }
-                                    """)))
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     AdminBrandDto.ReasonOptions reasonOptions();
 }

@@ -34,7 +34,7 @@ import showroomz.global.dto.PagingRequest;
 import java.time.LocalDate;
 import java.util.Set;
 
-@Tag(name = "Seller - Claim", description = "파트너센터 반품·교환 관리 API (§35)")
+@Tag(name = "Seller - Claim", description = "파트너센터 반품·교환 관리 API")
 public interface SellerClaimControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -623,19 +623,30 @@ public interface SellerClaimControllerDocs {
 
                     **권한:** SELLER
                     """)
-    @ApiResponse(responseCode = "200", description = "조회 성공",
-            content = @Content(schema = @Schema(implementation = SellerClaimReshipDto.TemplateResponse.class),
-                    examples = @ExampleObject(name = "저장 구성 없음(기본 7종)", value = """
-                            {
-                              "columns": ["CLAIM_NUMBER", "RECIPIENT", "PHONE", "ZIP_CODE", "ADDRESS", "PRODUCT_NAME", "OPTION"],
-                              "available": [
-                                { "code": "CLAIM_NUMBER", "header": "접수번호", "basic": true },
-                                { "code": "RECIPIENT", "header": "수취인", "basic": true },
-                                { "code": "QUANTITY", "header": "수량", "basic": false },
-                                { "code": "CLAIM_TYPE", "header": "유형", "basic": false }
-                              ]
-                            }
-                            """)))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = SellerClaimReshipDto.TemplateResponse.class),
+                            examples = @ExampleObject(name = "저장 구성 없음(기본 7종)", value = """
+                                    {
+                                      "columns": ["CLAIM_NUMBER", "RECIPIENT", "PHONE", "ZIP_CODE", "ADDRESS", "PRODUCT_NAME", "OPTION"],
+                                      "available": [
+                                        { "code": "CLAIM_NUMBER", "header": "접수번호", "basic": true },
+                                        { "code": "RECIPIENT", "header": "수취인", "basic": true },
+                                        { "code": "QUANTITY", "header": "수량", "basic": false },
+                                        { "code": "CLAIM_TYPE", "header": "유형", "basic": false }
+                                      ]
+                                    }
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER 가 아님(CREATOR 포함)",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND",
+                    content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<SellerClaimReshipDto.TemplateResponse> getReshipTemplate();
 
     @Operation(summary = "재발송 목록 컬럼 기본값 저장",

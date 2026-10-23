@@ -370,10 +370,14 @@ class AdminBrandSanctionIntegrationTest extends AdminBrandTestSupport {
         String admin = adminGet("/v1/admin/settlements/" + s.getId()).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         assertThat(admin).contains("BRAND_SUSPENDED").contains(PayoutBlockReason.BRAND_SUSPENDED.getLabel());
-        // 파트너 정산 화면은 보류 사유를 싣지 않고 브랜드 몫 BLOCKED 를 「지급 예정」으로 접는다(현재 동작 고정 · 시나리오 17 #18).
-        String partner = getAs(brandToken, "/v1/seller/settlements/" + s.getId()).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        assertThat(partner).doesNotContain(PayoutBlockReason.BRAND_SUSPENDED.getLabel()).contains("지급 예정");
+        // 파트너 정산 화면은 상태 라벨을 「지급 예정」으로 두고 계정 정지 보류를 payoutHold 배지로 따로 낸다(1017 설계서 S5 · S6).
+        getAs(brandToken, "/v1/seller/settlements/" + s.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.payoutHold.reason").value("BRAND_SUSPENDED"))
+                .andExpect(jsonPath("$.payoutHold.label").value(PayoutBlockReason.BRAND_SUSPENDED.getLabel()))
+                .andExpect(jsonPath("$.payoutHold.sanction").value(true));
+        String partner = getAs(brandToken, "/v1/seller/settlements/" + s.getId()).andReturn().getResponse()
+                .getContentAsString();
+        assertThat(partner).contains("지급 예정");
 
         release(brand.marketId(), Map.of()).andExpect(status().isOk());
         brandDetail(brand.marketId()).andExpect(jsonPath("$.operations.payoutHeld").value(false))

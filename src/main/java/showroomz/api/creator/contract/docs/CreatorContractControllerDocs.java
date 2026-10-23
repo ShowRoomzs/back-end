@@ -30,7 +30,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.creator.contract.docs.CreatorContractDocsExamples.*;
 
-@Tag(name = "Creator - Contract", description = "쇼룸 스튜디오에 도착한 계약 조회·거절·재발송 요청 API.")
+@Tag(name = "Creator - Contract", description = "쇼룸 스튜디오 계약 API")
 public interface CreatorContractControllerDocs {
 
     @Operation(

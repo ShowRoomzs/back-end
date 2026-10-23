@@ -104,6 +104,22 @@ public interface AdminMarketControllerDocs {
                                     )
                             }
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
             )
     })
     ResponseEntity<AdminMarketDto.ApplicationListResponse> getMarketApplications(

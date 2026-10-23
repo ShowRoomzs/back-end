@@ -282,6 +282,7 @@ public interface CartControllerDocs {
     })
     ResponseEntity<CartDto.UpdateCartResponse> updateCart(
             @AuthenticationPrincipal UserPrincipal principal,
+            @Parameter(description = "수정할 장바구니 항목 ID — 조회 응답의 `items[].cartId`", example = "10")
             @PathVariable Long cartItemId,
             @RequestBody CartDto.UpdateCartRequest request,
             @Parameter(

@@ -19,7 +19,7 @@ import showroomz.api.creator.connection.type.ConnectionRequestStatusFilter;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Creator - Connection", description = "쇼룸 스튜디오 연결 요청함 API (§14)")
+@Tag(name = "Creator - Connection", description = "쇼룸 스튜디오 연결 요청함 API")
 public interface CreatorConnectionControllerDocs {
 
     @Operation(

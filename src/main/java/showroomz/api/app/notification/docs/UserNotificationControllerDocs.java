@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import showroomz.api.common.notification.dto.NotificationItem;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "User - Notifications", description = "C11 알림 — 목록 · 읽음 · 종 배지 초기화")
+@Tag(name = "User - Notifications", description = "사용자 알림 API")
 public interface UserNotificationControllerDocs {
 
     @Operation(
@@ -27,17 +27,25 @@ public interface UserNotificationControllerDocs {
                     이용 정지 계정도 열람할 수 있습니다.
 
                     **권한:** USER/CREATOR""")
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공"))
+    @ApiResponses({@ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(responseCode = "401", description = "인증 실패 — 토큰이 없거나 유효하지 않다"),
+            @ApiResponse(responseCode = "403", description = "탈퇴한 회원(USER_WITHDRAWN)"),
+            @ApiResponse(responseCode = "404", description = "토큰의 회원을 찾을 수 없다(USER_NOT_FOUND)")})
     ResponseEntity<PageResponse<NotificationItem>> getNotifications(
             @Parameter(description = "1부터", example = "1") int page,
             @Parameter(example = "20") int size);
 
     @Operation(summary = "알림 읽음", description = "탭한 알림의 로즈 점을 지웁니다. 멱등입니다.\n\n**권한:** USER/CREATOR")
     @ApiResponses({@ApiResponse(responseCode = "204", description = "읽음"),
-            @ApiResponse(responseCode = "404", description = "내 알림이 아니거나 보관 기간이 지났다(NOTIFICATION_NOT_FOUND)")})
-    ResponseEntity<Void> markRead(Long notificationId);
+            @ApiResponse(responseCode = "401", description = "인증 실패 — 토큰이 없거나 유효하지 않다"),
+            @ApiResponse(responseCode = "403", description = "탈퇴한 회원(USER_WITHDRAWN)"),
+            @ApiResponse(responseCode = "404", description = "내 알림이 아니거나 보관 기간이 지났다(NOTIFICATION_NOT_FOUND) · 토큰의 회원을 찾을 수 없다(USER_NOT_FOUND)")})
+    ResponseEntity<Void> markRead(@Parameter(description = "알림 ID — 목록의 `notificationId`", example = "501") Long notificationId);
 
     @Operation(summary = "종 배지 초기화", description = "C11 목록에 들어올 때 1회 부릅니다. 홈 요약의 `notificationBadgeCount` 가 0이 됩니다.\n\n**권한:** USER/CREATOR")
-    @ApiResponses(@ApiResponse(responseCode = "204", description = "초기화"))
+    @ApiResponses({@ApiResponse(responseCode = "204", description = "초기화"),
+            @ApiResponse(responseCode = "401", description = "인증 실패 — 토큰이 없거나 유효하지 않다"),
+            @ApiResponse(responseCode = "403", description = "탈퇴한 회원(USER_WITHDRAWN)"),
+            @ApiResponse(responseCode = "404", description = "토큰의 회원을 찾을 수 없다(USER_NOT_FOUND)")})
     ResponseEntity<Void> markBadgeSeen();
 }

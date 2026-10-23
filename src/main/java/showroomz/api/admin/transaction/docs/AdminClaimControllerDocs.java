@@ -25,7 +25,7 @@ import java.util.Set;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Claim", description = "관리자 거래 관리 · 반품·교환 API (06b)")
+@Tag(name = "Admin - Claim", description = "관리자 반품·교환 관리 API")
 public interface AdminClaimControllerDocs {
 
     @Operation(summary = "반품·교환 목록 (06b A1)", description = """

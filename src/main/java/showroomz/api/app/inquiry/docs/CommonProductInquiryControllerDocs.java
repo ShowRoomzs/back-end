@@ -13,7 +13,7 @@ import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 
 import java.util.List;
 
-@Tag(name = "User - Inquiry Product", description = "상품 문의 관련 API")
+@Tag(name = "Common - Product Inquiry", description = "공용 상품 문의 조회 API")
 public interface CommonProductInquiryControllerDocs {
 
     @Operation(

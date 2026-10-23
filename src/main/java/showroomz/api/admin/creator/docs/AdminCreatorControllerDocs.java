@@ -14,10 +14,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "Admin - Influencer Member", description = """
-        어드민 회원 관리 › 인플루언서 상세(ui-admin-18 rev.1 · 53 설계서). 좌측은 사실 조회, 우측 레일은 판단과 조치다.
-        본인확인 정보는 기본 마스킹이고 마스킹 해제(M4)로만 열린다. 계좌번호는 해제 경로가 없다(전체 값은 정산 관리에서만).
-        정지 · 탈퇴 규칙은 §51 — 정지는 로그인 허용 · 새로 벌이는 일만 차단, 탈퇴는 신청 → 운영자 승인이다.""")
+@Tag(name = "Admin - Influencer Member", description = "관리자 인플루언서 회원 관리 API")
 public interface AdminCreatorControllerDocs {
 
     /** 상세 · 조치 응답 예시 — 정지 상태 · 탈퇴 신청 심사 중. */
@@ -426,7 +423,13 @@ public interface AdminCreatorControllerDocs {
             **권한:** ADMIN
             """)
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "잠금 완료")
+            @ApiResponse(responseCode = "204", description = "잠금 완료"),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<Void> lock(@Parameter(description = "creatorId", required = true, example = "3018") Long creatorId,
                               @Parameter(hidden = true) UserPrincipal principal);
@@ -648,7 +651,11 @@ public interface AdminCreatorControllerDocs {
                                         { "code": "INVESTIGATION_COOPERATION", "label": "수사기관 협조", "detailRequired": false, "holdsPayout": null }
                                       ]
                                     }
-                                    """)))
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ReasonOptions reasonOptions();
 }

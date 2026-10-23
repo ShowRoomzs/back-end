@@ -22,7 +22,7 @@ import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Inquiry Product", description = "상품 문의 관련 API")
+@Tag(name = "User - Product Inquiry", description = "상품 문의 관련 API")
 public interface ProductInquiryControllerDocs {
 
     @Operation(

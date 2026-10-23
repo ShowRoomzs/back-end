@@ -19,10 +19,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(
-        name = "User - Search",
-        description = "검색 관련 API."
-)
+@Tag(name = "User - Search", description = "사용자 검색 API")
 public interface SearchControllerDocs {
 
     @Operation(

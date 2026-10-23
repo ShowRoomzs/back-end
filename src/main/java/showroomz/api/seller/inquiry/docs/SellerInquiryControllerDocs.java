@@ -1,6 +1,7 @@
 package showroomz.api.seller.inquiry.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -19,7 +20,7 @@ import showroomz.api.seller.inquiry.dto.SellerInquiryListResponse;
 import showroomz.api.seller.inquiry.dto.SellerInquirySearchCondition;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller - Inquiry", description = "파트너센터 문의 관리 API (§23)")
+@Tag(name = "Seller - Inquiry", description = "파트너센터 문의 관리 API")
 public interface SellerInquiryControllerDocs {
 
     @Operation(
@@ -94,7 +95,7 @@ public interface SellerInquiryControllerDocs {
             )
     })
     ResponseEntity<ProductInquiryDetailResponse> getInquiryDetail(
-            @PathVariable("inquiryId") Long inquiryId,
+            @Parameter(description = "상품 문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
             @ModelAttribute SellerInquirySearchCondition condition
     );
 
@@ -127,7 +128,7 @@ public interface SellerInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> registerAnswer(
-            @PathVariable("inquiryId") Long inquiryId,
+            @Parameter(description = "상품 문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody SellerInquiryAnswerRequest request
     );
 
@@ -158,7 +159,7 @@ public interface SellerInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> modifyAnswer(
-            @PathVariable("inquiryId") Long inquiryId,
+            @Parameter(description = "상품 문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody SellerInquiryAnswerRequest request
     );
 
@@ -200,7 +201,7 @@ public interface SellerInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> requestDelete(
-            @PathVariable("inquiryId") Long inquiryId,
+            @Parameter(description = "상품 문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody SellerInquiryDeleteRequest request
     );
 }

@@ -110,19 +110,19 @@ class CreatorSettlementInfoIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("[SI-02] 계좌 확인 상태별 표시 — 확인 중 · 완료(확인일) · 실패(사유 라벨 · 모르는 코드는 「계좌 확인 실패」) · 변경 필요")
+    @DisplayName("[SI-02] 계좌 확인 상태별 표시 — 운영자 확인 중 · 확인 완료(확인일) · 실패(사유 라벨 · 모르는 코드는 「계좌 확인 실패」) · 변경 필요(1021 기-22 라벨)")
     void verificationStatusDisplay() throws Exception {
         registerCreatorAccount();
 
         verification("VERIFYING", null, null);
         creatorGet(SETTLEMENT)
-                .andExpect(jsonPath("$.account.verification.label").value("실명 확인 중"))
+                .andExpect(jsonPath("$.account.verification.label").value("운영자 확인 중"))
                 .andExpect(jsonPath("$.account.verification.tone").value("INFO"))
                 .andExpect(jsonPath("$.account.verification.failReason").doesNotExist());
 
         verification("VERIFIED", null, LocalDateTime.of(2026, 7, 2, 10, 15, 30));
         creatorGet(SETTLEMENT)
-                .andExpect(jsonPath("$.account.verification.label").value("실명 확인 완료"))
+                .andExpect(jsonPath("$.account.verification.label").value("확인 완료"))
                 .andExpect(jsonPath("$.account.verification.tone").value("SUCCESS"))
                 .andExpect(jsonPath("$.account.verification.verifiedAt").value("2026-07-02T10:15:30Z"));
 

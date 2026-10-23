@@ -17,7 +17,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Refund", description = "관리자 거래 관리 · 환불 관리 API (06c)")
+@Tag(name = "Admin - Refund", description = "관리자 환불 관리 API")
 public interface AdminRefundControllerDocs {
 
     @Operation(summary = "환불 목록 (06c A1 ~ A3)", description = """

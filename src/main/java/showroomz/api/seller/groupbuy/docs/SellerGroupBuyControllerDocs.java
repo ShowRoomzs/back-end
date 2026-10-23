@@ -31,7 +31,7 @@ import showroomz.domain.groupbuy.type.GroupBuyTab;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller - GroupBuy", description = "파트너센터 공구 조회·준비 확인·변경 요청 API.")
+@Tag(name = "Seller - GroupBuy", description = "파트너센터 공구 관리 API")
 public interface SellerGroupBuyControllerDocs {
 
     // ── 조회 ────────────────────────────────────────────────────────────────

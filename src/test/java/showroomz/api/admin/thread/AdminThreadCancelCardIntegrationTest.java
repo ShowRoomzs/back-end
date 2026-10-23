@@ -27,8 +27,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 당사자가 운영팀 채널에 대화로 요청 → 운영자가 사정 확인 → 계약 관리 C6 직권 취소 → 요청 채널에 결과 카드
  * </pre>
  *
- * <p>요청은 일반 대화다 — 카드가 붙는 것은 처리 결과뿐이다. 카드가 붙는 채널은 요청자에서 서버가 유도한다(운영자가 고르지 않는다).
- * 사유 메모는 당사자에게 그대로 공개된다(2026.10.05 확정). 상대방 채널에는 붙지 않는다(§36-9 A-5 미결).
+ * <p>요청은 일반 대화다 — 카드가 붙는 것은 처리 결과뿐이다. 카드가 붙는 채널은 당사자에서 서버가 유도한다(운영자가 고르지 않는다).
+ * 사유 메모는 당사자에게 그대로 공개된다(2026.10.05 확정). 결과 카드는 요청 경로와 무관하게 <b>양측</b> 채널에 붙는다(1021 기-06 ·
+ * §36-9 A-5 해소). 계약의 요청 채널 기록은 스레드로 들어온 요청의 요청자 채널뿐이다.
  */
 @DisplayName("[통합] 어드민 소통 스레드 — 직권 취소 결과 카드")
 class AdminThreadCancelCardIntegrationTest extends AdminThreadTestSupport {
@@ -38,7 +39,7 @@ class AdminThreadCancelCardIntegrationTest extends AdminThreadTestSupport {
     // ------------------------------------------------------------------ 카드가 붙는 곳
 
     @Test
-    @DisplayName("브랜드가 스레드로 요청한 취소 — 브랜드 운영팀 채널에 결과 카드가 붙고 요청 채널이 계약에 남는다")
+    @DisplayName("브랜드가 스레드로 요청한 취소 — 브랜드 운영팀 채널에 결과 카드가 붙고 요청 채널이 계약에 남는다 · 상대 채널에도 같은 카드")
     void sellerThreadRequestPostsToBrandChannel() throws Exception {
         Contract c = signingContract();
         sellerSend(brandChannel, "여름 수분 세럼 계약 취소 요청드립니다.").andExpect(status().isCreated());
@@ -68,12 +69,12 @@ class AdminThreadCancelCardIntegrationTest extends AdminThreadTestSupport {
                 .andExpect(jsonPath("$.content[0].card.action").value(nullValue()))
                 .andExpect(jsonPath("$.content[1].senderType").value("SELLER"));
 
-        // 상대방(인플루언서) 채널에는 붙지 않는다.
-        assertThat(cardsIn(creatorChannel)).isEmpty();
+        // 상대방(인플루언서) 채널에도 같은 결과 카드가 붙는다(1021 기-06).
+        assertThat(cardsIn(creatorChannel)).hasSize(1);
     }
 
     @Test
-    @DisplayName("인플루언서가 스레드로 요청한 취소 — 인플루언서 운영팀 채널에 붙고 브랜드 채널에는 없다")
+    @DisplayName("인플루언서가 스레드로 요청한 취소 — 요청 채널은 인플루언서 운영팀 채널 · 결과 카드는 브랜드 채널에도 붙는다")
     void creatorThreadRequestPostsToCreatorChannel() throws Exception {
         Contract c = signingContract();
         creatorSend(creatorChannel, "공구 일정이 안 맞아 취소 요청드립니다.").andExpect(status().isCreated());
@@ -82,23 +83,24 @@ class AdminThreadCancelCardIntegrationTest extends AdminThreadTestSupport {
 
         assertThat(reload(c).getCancelRequestThreadId()).isEqualTo(creatorChannel.getId());
         assertThat(cardsIn(creatorChannel)).hasSize(1);
-        assertThat(cardsIn(brandChannel)).isEmpty();
+        assertThat(cardsIn(brandChannel)).hasSize(1);
         adminMessages(creatorChannel).andExpect(jsonPath("$.content[0].card.detail.reasonLabel").value("상대와 협의 중단"));
     }
 
     @Test
-    @DisplayName("체결 처리 대기(양측 서명 완료) 계약의 취소도 같은 카드가 붙는다")
-    void conclusionPendingCancelPostsCard() throws Exception {
+    @DisplayName("체결 처리 대기(양측 서명 완료)는 성립한 계약 — 취소 409 · 결과 카드도 없다(해지로 끝낸다 · 1021 기-06)")
+    void conclusionPendingCancelIsRejected() throws Exception {
         Contract c = seed(ContractStatus.CONCLUSION_PENDING, s -> s.createdAt(now.minusDays(2)));
 
-        cancelBy(c, ContractCloseReasonCode.CONDITION_REVIEW, null, ContractActorType.SELLER).andExpect(status().isOk());
+        cancelBy(c, ContractCloseReasonCode.CONDITION_REVIEW, null, ContractActorType.SELLER).andExpect(status().isConflict());
 
-        adminMessages(brandChannel).andExpect(jsonPath("$.content[0].card.cardType").value("CONTRACT_ADMIN_CANCELED"))
-                .andExpect(jsonPath("$.content[0].card.detail.reasonLabel").value("조건 재검토 필요"));
+        assertThat(reload(c).getStatus()).isEqualTo(ContractStatus.CONCLUSION_PENDING);
+        assertThat(cardsIn(brandChannel)).isEmpty();
+        assertThat(cardsIn(creatorChannel)).isEmpty();
     }
 
     @Test
-    @DisplayName("요청 경로가 스레드가 아니면(전화 · 이메일 · 기타) · 운영자 직권이면 카드가 없다 — 가리킬 요청 채널이 없다")
+    @DisplayName("요청 경로가 스레드가 아니면(전화 · 이메일 · 기타) · 운영자 직권이면 요청 채널 기록이 없다 — 결과 카드는 그래도 양측에 붙는다")
     void noCardWithoutThreadRequest() throws Exception {
         for (ContractCancelRequestChannel channel : new ContractCancelRequestChannel[]{
                 ContractCancelRequestChannel.PHONE, ContractCancelRequestChannel.EMAIL, ContractCancelRequestChannel.ETC}) {
@@ -111,8 +113,9 @@ class AdminThreadCancelCardIntegrationTest extends AdminThreadTestSupport {
         cancel(byAdmin, true, ContractCloseReasonCode.SCHEDULE_CHANGE, null).andExpect(status().isOk());
 
         assertThat(reload(byAdmin).getCancelRequestThreadId()).isNull();
-        assertThat(cardsIn(brandChannel)).isEmpty();
-        assertThat(cardsIn(creatorChannel)).isEmpty();
+        // 취소 4건 — 건마다 양측 채널에 한 장씩.
+        assertThat(cardsIn(brandChannel)).hasSize(4);
+        assertThat(cardsIn(creatorChannel)).hasSize(4);
     }
 
     @Test

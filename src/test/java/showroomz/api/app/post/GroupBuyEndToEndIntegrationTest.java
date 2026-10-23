@@ -144,8 +144,8 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
     }
 
     @Test
-    @DisplayName("오픈 전 중단 — 준비완료에서 브랜드 중단 요청이 승인되면 게시물은 소비자에게 한 번도 나가지 않는다")
-    void suspendedBeforeOpenNeverReachesConsumer() throws Exception {
+    @DisplayName("오픈 전 해지 — 준비완료에서 브랜드 해지 요청이 처리되면 게시물은 소비자에게 한 번도 나가지 않는다(오픈 전 중단 요청은 계약 해지 · 1021 기-05)")
+    void terminatedBeforeOpenNeverReachesConsumer() throws Exception {
         long id = seedPreparing().getId();
         studioSend(post(STUDIO + "/" + id + "/post/submission"), Map.of("title", TITLE, "content", CONTENT))
                 .andExpect(status().isOk());
@@ -153,10 +153,28 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
         admin(id, "open-review/approve", null).andExpect(jsonPath("$.status").value("READY"));
         Long postId = groupBuyPostRepository.findByGroupBuyId(id).orElseThrow().getPostId();
 
+        // 오픈 전에는 공구 중단 요청이 없다 — 계약 해지 요청으로 간다.
         brand(id, "suspension-request", Map.of("reasonCode", "NEGOTIATION_BROKEN", "memo", "상품 공급이 어렵습니다."))
+                .andExpect(status().isConflict());
+        Long contractId = jdbc.queryForObject("SELECT contract_id FROM group_buy WHERE group_buy_id = ?", Long.class, id);
+        mockMvc.perform(post("/v1/seller/contracts/" + contractId + "/termination-request")
+                        .header(HttpHeaders.AUTHORIZATION, brandToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("reasonCode", "NEGOTIATION_BROKEN"))))
                 .andExpect(status().isOk());
-        admin(id, "change-requests/" + latestRequestId(id) + "/approve", Map.of("decisionReason", "공급 중단을 확인했습니다."))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUSPENDED"));
+        Long requestId = jdbc.queryForObject("SELECT request_id FROM contract_termination_request WHERE contract_id = ? "
+                + "AND status = 'PENDING'", Long.class, contractId);
+        java.util.Map<String, Object> terminate = new java.util.HashMap<>();
+        terminate.put("reasonCode", "TERMINATE_CANNOT_PROCEED");
+        terminate.put("explanation", "상품 공급이 어려워 양측 합의로 해지합니다.");
+        terminate.put("counterpartyConsentConfirmed", true);
+        terminate.put("groupBuyNotOpenedConfirmed", true);
+        terminate.put("requestId", requestId);
+        mockMvc.perform(post("/v1/admin/contracts/" + contractId + "/terminate")
+                        .header(HttpHeaders.AUTHORIZATION, operatorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(terminate)))
+                .andExpect(status().isOk());
+        assertThat(reload(id).getStatus()).isEqualTo(GroupBuyStatus.TERMINATED);
+        assertThat(reload(id).getCloseType()).isEqualTo(GroupBuyCloseType.CONTRACT_TERMINATED);
 
         studioView(id).andExpect(jsonPath("$.post.status").value("CLOSED"));
         LocalDateTime now = LocalDateTime.now().withNano(0);
@@ -182,9 +200,12 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
         following().andExpect(jsonPath("$.content[*].post.postId").value(hasItem(postId.intValue())));
         liked(consumer).andExpect(jsonPath("$.content[*].post.postId").value(hasItem(postId.intValue())));
 
+        // 진행 중에는 본문만 고친다 — 제목을 바꾸면 400(1021 기-08).
         studioSend(patch(STUDIO + "/" + id + "/post"), Map.of("title", "앵콜 공구 — 세트 구성 안내", "content", "세트 구성을 바꿨습니다."))
+                .andExpect(status().isBadRequest());
+        studioSend(patch(STUDIO + "/" + id + "/post"), Map.of("title", TITLE, "content", "세트 구성을 바꿨습니다."))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSED"));
-        consumerPost(postId).andExpect(jsonPath("$.groupBuy.title").value("앵콜 공구 — 세트 구성 안내"))
+        consumerPost(postId).andExpect(jsonPath("$.groupBuy.title").value(TITLE))
                 .andExpect(jsonPath("$.content").value("세트 구성을 바꿨습니다."));
 
         admin(id, "post/hide", Map.of("reasonCode", "AD_MEDICAL_CLAIM", "detail", "「피부 재생」은 의료적 효능 표현입니다."))
@@ -196,7 +217,7 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
                 .andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"));
         assertThat(productStatus(cream)).isEqualTo(ProductGroupBuyStatus.IN_PROGRESS);
 
-        // 숨김 중 수정은 해제가 아니다 — 운영자가 읽고 풀어야 나간다.
+        // 숨김 중 수정은 해제가 아니다 — 운영자가 읽고 풀어야 나간다. 노출 중지 중에는 제목도 시정할 수 있다(1021 기-08).
         studioSend(patch(STUDIO + "/" + id + "/post"), Map.of("title", "앵콜 공구 — 정정본", "content", "효능 표현을 지웠습니다."))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"));
         assertInvisible(postId);
@@ -381,9 +402,10 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
                 .andExpect(status().isOk());
         admin(id, "admin-suspension/withdraw", Map.of("reasonCode", "RECTIFIED", "detail", "정정된 표시를 확인했습니다."))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("IN_PROGRESS"));
-        studioSend(patch(STUDIO + "/" + id + "/post"), Map.of("title", "정정 완료 공구", "content", "근거 자료를 함께 안내합니다."))
+        // 철회 뒤 다시 열린다 — 진행 중이라 본문만(1021 기-08).
+        studioSend(patch(STUDIO + "/" + id + "/post"), Map.of("title", TITLE, "content", "근거 자료를 함께 안내합니다."))
                 .andExpect(status().isOk());
-        consumerPost(postId).andExpect(jsonPath("$.groupBuy.title").value("정정 완료 공구"));
+        consumerPost(postId).andExpect(jsonPath("$.content").value("근거 자료를 함께 안내합니다."));
 
         admin(id, "admin-suspension/emergency", Map.of("emergencyReason", "CONSUMER_HARM", "body", "피부 이상 반응 신고가 급증했습니다."))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("SUSPENDED"));

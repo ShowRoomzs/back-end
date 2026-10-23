@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.common.company.dto.CompanyInfoResponse;
 
-@Tag(name = "Common - Company Info", description = "운영자(통신판매중개자) 사업자 정보 — 앱 하단 · 쇼룸 하단 · 상품 상세 하단")
+@Tag(name = "Common - Company Info", description = "공용 사업자 정보 API")
 public interface CommonCompanyInfoControllerDocs {
 
     @Operation(

@@ -23,7 +23,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Change Request", description = "어드민 회원정보 변경 요청 검토·승인·반려 API (§16 · rev.7) — 브랜드(사업자 정보 · 정산 계좌) + 인플루언서(사업자 구분 변경)")
+@Tag(name = "Admin - Change Request", description = "관리자 회원정보 변경 요청 관리 API")
 public interface AdminChangeRequestControllerDocs {
 
     @Operation(
@@ -104,6 +104,22 @@ public interface AdminChangeRequestControllerDocs {
                                             "}"
                             )
                     )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
             )
     })
     ResponseEntity<AdminChangeRequestDto.ListResponse> getList(
@@ -123,18 +139,36 @@ public interface AdminChangeRequestControllerDocs {
             summary = "GNB 배지용 검토 대기 건수",
             description = "§16-0 상위 '입점 관리' 배지 합산에 쓰인다. `pendingCount`만 반환한다.\n\n**권한:** ADMIN"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "조회 성공",
-            content = @Content(
-                    mediaType = "application/json",
-                    schema = @Schema(implementation = AdminChangeRequestDto.SummaryResponse.class),
-                    examples = @ExampleObject(
-                            name = "성공",
-                            value = "{\n  \"pendingCount\": 2\n}"
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = AdminChangeRequestDto.SummaryResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공",
+                                    value = "{\n  \"pendingCount\": 2\n}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
                     )
             )
-    )
+    })
     ResponseEntity<AdminChangeRequestDto.SummaryResponse> getSummary();
 
     @Operation(
@@ -146,47 +180,65 @@ public interface AdminChangeRequestControllerDocs {
                     "- `detailRequired`는 `OTHER`만 `true` — 선택 시 `reasonDetail` 필수\n\n" +
                     "**권한:** ADMIN"
     )
-    @ApiResponse(
-            responseCode = "200",
-            description = "조회 성공",
-            content = @Content(
-                    mediaType = "application/json",
-                    examples = {
-                            @ExampleObject(
-                                    name = "사업자 정보",
-                                    value = "[\n" +
-                                            "  { \"code\": \"EVIDENCE_MISSING\", \"label\": \"증빙 서류 미첨부\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"EVIDENCE_VALUE_MISMATCH\", \"label\": \"증빙 서류와 요청 값이 일치하지 않음\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"EVIDENCE_UNREADABLE\", \"label\": \"서류 판독 불가 (흐림·잘림)\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"EVIDENCE_EXPIRED\", \"label\": \"서류 유효기간 경과\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"REASON_INSUFFICIENT\", \"label\": \"변경 사유 불충분\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
-                                            "]"
-                            ),
-                            @ExampleObject(
-                                    name = "정산 계좌",
-                                    value = "[\n" +
-                                            "  { \"code\": \"BANKBOOK_MISSING\", \"label\": \"통장 사본 미첨부\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"HOLDER_NAME_MISMATCH\", \"label\": \"예금주와 사업자 명의 불일치\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"ACCOUNT_NUMBER_INVALID\", \"label\": \"계좌번호 오류·미개설 계좌\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"BANKBOOK_UNREADABLE\", \"label\": \"통장 사본 판독 불가\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
-                                            "]"
-                            ),
-                            @ExampleObject(
-                                    name = "사업자 구분 변경(TO_BUSINESS · TO_INDIVIDUAL)",
-                                    value = "[\n" +
-                                            "  { \"code\": \"LICENSE_UNREADABLE\", \"label\": \"사업자등록증 판독 불가 (흐림·잘림)\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"LICENSE_OWNER_NAME_MISMATCH\", \"label\": \"등록증의 대표자명이 본인 실명과 다름\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"BUSINESS_NUMBER_MISMATCH\", \"label\": \"사업자등록번호가 등록증과 다름\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"BUSINESS_SUSPENDED_OR_CLOSED\", \"label\": \"휴업 · 폐업 상태의 사업자\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"CLOSURE_NOT_CONFIRMED\", \"label\": \"폐업 사실이 확인되지 않음 (비사업자 전환)\", \"detailRequired\": false },\n" +
-                                            "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
-                                            "]"
-                            )
-                    }
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = {
+                                    @ExampleObject(
+                                            name = "사업자 정보",
+                                            value = "[\n" +
+                                                    "  { \"code\": \"EVIDENCE_MISSING\", \"label\": \"증빙 서류 미첨부\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"EVIDENCE_VALUE_MISMATCH\", \"label\": \"증빙 서류와 요청 값이 일치하지 않음\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"EVIDENCE_UNREADABLE\", \"label\": \"서류 판독 불가 (흐림·잘림)\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"EVIDENCE_EXPIRED\", \"label\": \"서류 유효기간 경과\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"REASON_INSUFFICIENT\", \"label\": \"변경 사유 불충분\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
+                                                    "]"
+                                    ),
+                                    @ExampleObject(
+                                            name = "정산 계좌",
+                                            value = "[\n" +
+                                                    "  { \"code\": \"BANKBOOK_MISSING\", \"label\": \"통장 사본 미첨부\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"HOLDER_NAME_MISMATCH\", \"label\": \"예금주와 사업자 명의 불일치\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"ACCOUNT_NUMBER_INVALID\", \"label\": \"계좌번호 오류·미개설 계좌\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"BANKBOOK_UNREADABLE\", \"label\": \"통장 사본 판독 불가\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
+                                                    "]"
+                                    ),
+                                    @ExampleObject(
+                                            name = "사업자 구분 변경(TO_BUSINESS · TO_INDIVIDUAL)",
+                                            value = "[\n" +
+                                                    "  { \"code\": \"LICENSE_UNREADABLE\", \"label\": \"사업자등록증 판독 불가 (흐림·잘림)\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"LICENSE_OWNER_NAME_MISMATCH\", \"label\": \"등록증의 대표자명이 본인 실명과 다름\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"BUSINESS_NUMBER_MISMATCH\", \"label\": \"사업자등록번호가 등록증과 다름\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"BUSINESS_SUSPENDED_OR_CLOSED\", \"label\": \"휴업 · 폐업 상태의 사업자\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"CLOSURE_NOT_CONFIRMED\", \"label\": \"폐업 사실이 확인되지 않음 (비사업자 전환)\", \"detailRequired\": false },\n" +
+                                                    "  { \"code\": \"OTHER\", \"label\": \"기타\", \"detailRequired\": true }\n" +
+                                                    "]"
+                                    )
+                            }
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "관리자 권한 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class)
+                    )
             )
-    )
+    })
     ResponseEntity<List<AdminChangeRequestDto.RejectReasonOption>> getRejectReasons(
             @Parameter(description = "요청 유형 — BUSINESS_INFO / SETTLEMENT_ACCOUNT / TO_BUSINESS / TO_INDIVIDUAL", required = true, example = "BUSINESS_INFO")
             @RequestParam("type") ChangeRequestType type);

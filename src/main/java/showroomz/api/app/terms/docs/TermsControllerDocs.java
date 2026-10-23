@@ -21,7 +21,7 @@ import showroomz.domain.terms.type.TermsType;
 
 import java.util.List;
 
-@Tag(name = "Common - Terms", description = "공용 약관·정책 문서 API (기획 §21 · C18 문서 뷰어)\n\n")
+@Tag(name = "Common - Terms", description = "공용 약관 API")
 public interface TermsControllerDocs {
 
     @Operation(

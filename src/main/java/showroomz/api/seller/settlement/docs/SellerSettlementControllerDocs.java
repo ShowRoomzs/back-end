@@ -20,7 +20,7 @@ import java.util.Set;
 
 import static showroomz.api.seller.settlement.docs.SellerSettlementDocsExamples.*;
 
-@Tag(name = "Seller - Settlement", description = "파트너센터 정산 관리 API (§13)")
+@Tag(name = "Seller - Settlement", description = "파트너센터 정산 관리 API")
 public interface SellerSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";

@@ -460,6 +460,11 @@ abstract class SellerContractTestSupport extends IntegrationTestSupport {
             // 브랜드에게 계약 취소는 없다 — 취소는 서명 요청 발송 이후 운영자가 한다.
             case CANCELED -> contract.applyCanceledByAdmin(ContractCloseReasonCode.SCHEDULE_CHANGE.name(),
                     "브랜드 요청으로 서명 요청을 회수했습니다.", ContractCancelRequester.byAdmin(), now.minusDays(1));
+            // 해지는 성립(양측 서명) 뒤 · 공구 오픈 전에 운영자가 한다(1021 설계서 1-4).
+            case TERMINATED -> {
+                contract.updateSignatures(now.minusDays(1), now.minusDays(1), now.minusDays(1));
+                contract.terminate("TERMINATE_CONTENT_ERROR", "계약 내용 오류로 해지합니다.", now.minusHours(2));
+            }
             default -> throw new IllegalArgumentException("적재할 수 없는 상태: " + status);
         }
     }

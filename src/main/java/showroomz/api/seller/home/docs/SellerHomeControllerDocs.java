@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.seller.home.dto.SellerHomeDto;
 
-@Tag(name = "Seller - Home", description = "파트너센터 홈(ui-partner-16-home) · GNB 배지")
+@Tag(name = "Seller - Home", description = "파트너센터 홈 API")
 public interface SellerHomeControllerDocs {
 
     @Operation(
@@ -82,7 +82,10 @@ public interface SellerHomeControllerDocs {
                                         "hourly": [{"hour": 0, "orders": 2, "amount": 66000, "collecting": false},
                                                    {"hour": 14, "orders": 6, "amount": 198000, "collecting": true}]
                                       }]
-                                    }""")))
+                                    }"""))),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER · CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND")
     })
     ResponseEntity<SellerHomeDto.Live> getLive();
 
@@ -143,7 +146,10 @@ public interface SellerHomeControllerDocs {
             @ApiResponse(responseCode = "200", description = "조회 성공",
                     content = @Content(schema = @Schema(implementation = SellerHomeDto.Badges.class),
                             examples = @ExampleObject(value = """
-                                    {"connections": 2, "contracts": 2, "groupBuys": 2, "sales": 23, "settlements": 1, "inquiries": 3}""")))
+                                    {"connections": 2, "contracts": 2, "groupBuys": 2, "sales": 23, "settlements": 1, "inquiries": 3}"""))),
+            @ApiResponse(responseCode = "401", description = "인증 실패"),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER · CREATOR 가 아님"),
+            @ApiResponse(responseCode = "404", description = "SELLER_NOT_FOUND · MARKET_NOT_FOUND")
     })
     ResponseEntity<SellerHomeDto.Badges> getBadges();
 }

@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import showroomz.api.app.auth.DTO.*;
+import showroomz.api.app.auth.docs.LocalAuthControllerDocs;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.entity.UserPrincipal;
@@ -26,17 +27,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 
-import io.swagger.v3.oas.annotations.Hidden;
-import io.swagger.v3.oas.annotations.tags.Tag;
-
 import java.time.LocalDateTime;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/user/auth/local")
 @RequiredArgsConstructor
-@Tag(name = "Z Test", description = "테스트용 API")
-public class LocalAuthController {
+public class LocalAuthController implements LocalAuthControllerDocs {
 
     private final AuthenticationManager authenticationManager;
     private final UserRepository userRepository;
@@ -44,6 +41,7 @@ public class LocalAuthController {
     private final PasswordEncoder passwordEncoder;
     private final AuthService authService;
 
+    @Override
     @PostMapping("/signup")
     public Map<String, String> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
         String loginId = signUpRequest.getUsername(); // username이 로그인 ID
@@ -90,6 +88,7 @@ public class LocalAuthController {
         return Map.of("message", "회원가입이 완료되었습니다.");
     }
 
+    @Override
     @PostMapping("/login")
     public TokenResponse login(
             HttpServletRequest request,
