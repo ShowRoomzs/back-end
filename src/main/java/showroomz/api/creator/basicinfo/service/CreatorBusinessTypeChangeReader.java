@@ -33,9 +33,12 @@ public class CreatorBusinessTypeChangeReader {
                        CreatorBasicInfoDto.DocumentFile license, boolean pending) {
     }
 
-    public View read(Creator creator) {
+    /**
+     * @param openRequest 인플루언서의 열린 요청(유형 무관 · 없으면 null) — 정산 정보 탭이 한 번 읽어 계좌 변경 블록 · 버튼 상태와 같이 쓴다(55 계획서 S3).
+     */
+    public View read(Creator creator, ChangeRequest openRequest) {
         // 정산 계좌 변경 요청(1021 기-22)은 같은 표에 있지만 이 배너 · 확정일의 대상이 아니다.
-        Optional<ChangeRequest> open = repository.findOpenForCreator(creator.getId())
+        Optional<ChangeRequest> open = Optional.ofNullable(openRequest)
                 .filter(r -> r.getType().isBusinessTypeChange());
         List<ChangeRequest> processed = repository.findProcessedForCreator(creator.getId()).stream()
                 .filter(r -> r.getType().isBusinessTypeChange()).toList();

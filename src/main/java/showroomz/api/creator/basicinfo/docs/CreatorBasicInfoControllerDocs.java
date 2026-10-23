@@ -320,6 +320,16 @@ public interface CreatorBasicInfoControllerDocs {
                     **버튼(`actions`)** — `businessTypeChange` 는 모든 상태에서 값이 있다(같은 자리 버튼): 열린 요청이 있으면 `CANCEL`,
                     없으면 현재 구분의 반대 `REQUEST_TO_BUSINESS` · `REQUEST_TO_INDIVIDUAL`. 「정산은 이렇게 진행됩니다」 카드는 FE 정적 문구다.
 
+                    사업자 구분 변경과 계좌 변경은 **동시에 요청할 수 없다**(열린 요청은 인플루언서당 1건). 버튼은 숨기지 않고 비활성 사유를 싣는다.
+
+                    | 확인 중인 요청 | `businessTypeChange` | `businessTypeChangeBlockedReason` | `accountChange` | `accountChangeBlockedReason` |
+                    | --- | --- | --- | --- | --- |
+                    | 없음 | `REQUEST_TO_*` | null | true | null |
+                    | 사업자 구분 변경 | `CANCEL` | null | **false** | 「사업자 구분 확인이 끝난 뒤 요청할 수 있어요」 |
+                    | 계좌 변경 | `REQUEST_TO_*`(비활성) | 「정산 계좌 확인이 끝난 뒤 요청할 수 있어요」 | true | null |
+
+                    사유가 있는 버튼을 눌러도 서버는 409 `CHANGE_REQUEST_ALREADY_PENDING` 을 낸다.
+
                     **권한:** CREATOR
                     """)
     @ApiResponses({
@@ -340,7 +350,8 @@ public interface CreatorBasicInfoControllerDocs {
                                                                   "verifiedAt": "2026-07-02T10:15:00", "failReason": null }
                                               },
                                               "businessTypeChange": null,
-                                              "actions": { "businessTypeChange": "REQUEST_TO_BUSINESS", "accountChange": true }
+                                              "actions": { "businessTypeChange": "REQUEST_TO_BUSINESS", "businessTypeChangeBlockedReason": null,
+                                                           "accountChange": true, "accountChangeBlockedReason": null }
                                             }
                                             """),
                                     @ExampleObject(name = "개인사업자 · 계좌 확인 중", value = """
@@ -362,7 +373,8 @@ public interface CreatorBasicInfoControllerDocs {
                                                                   "verifiedAt": null, "failReason": null }
                                               },
                                               "businessTypeChange": null,
-                                              "actions": { "businessTypeChange": "REQUEST_TO_INDIVIDUAL", "accountChange": true }
+                                              "actions": { "businessTypeChange": "REQUEST_TO_INDIVIDUAL", "businessTypeChangeBlockedReason": null,
+                                                           "accountChange": true, "accountChangeBlockedReason": null }
                                             }
                                             """),
                                     @ExampleObject(name = "T4 사업자 전환 확인 대기", value = """
@@ -381,7 +393,9 @@ public interface CreatorBasicInfoControllerDocs {
                                                 "rejectReason": null, "rejectReasonDetail": null,
                                                 "accountChangeRequiredOnApproval": false
                                               },
-                                              "actions": { "businessTypeChange": "CANCEL", "accountChange": true }
+                                              "actions": { "businessTypeChange": "CANCEL", "businessTypeChangeBlockedReason": null,
+                                                           "accountChange": false,
+                                                           "accountChangeBlockedReason": "사업자 구분 확인이 끝난 뒤 요청할 수 있어요" }
                                             }
                                             """),
                                     @ExampleObject(name = "T9a 비사업자 전환 반려", value = """
@@ -401,7 +415,8 @@ public interface CreatorBasicInfoControllerDocs {
                                                 "rejectReasonDetail": null,
                                                 "accountChangeRequiredOnApproval": false
                                               },
-                                              "actions": { "businessTypeChange": "REQUEST_TO_INDIVIDUAL", "accountChange": true }
+                                              "actions": { "businessTypeChange": "REQUEST_TO_INDIVIDUAL", "businessTypeChangeBlockedReason": null,
+                                                           "accountChange": true, "accountChangeBlockedReason": null }
                                             }
                                             """)
                             })),

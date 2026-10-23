@@ -54,21 +54,49 @@ class Design1021AccountChangeDetailIntegrationTest extends SettlementTestSupport
     }
 
     @Test
-    @DisplayName("열린 요청은 인플루언서당 1건 — 사업자 구분 변경이 대기면 계좌 변경 409 · 취소하면 접수 · 그 뒤 사업자 구분 변경 409")
+    @DisplayName("열린 요청은 인플루언서당 1건 — 사업자 구분 변경이 대기면 계좌 변경 409 · 취소하면 접수 · 그 뒤 사업자 구분 변경 409 · "
+            + "버튼은 숨기지 않고 비활성 사유(55 S3)")
     void exclusiveWithBusinessTypeChange() throws Exception {
+        // 요청 전 — 두 버튼 모두 활성 · 사유 없음.
+        creatorGet(BASE + "/settlement")
+                .andExpect(jsonPath("$.actions.businessTypeChange").value("REQUEST_TO_BUSINESS"))
+                .andExpect(jsonPath("$.actions.businessTypeChangeBlockedReason").doesNotExist())
+                .andExpect(jsonPath("$.actions.accountChange").value(true))
+                .andExpect(jsonPath("$.actions.accountChangeBlockedReason").doesNotExist());
+
         long businessRequestId = json(businessTypeChange().andExpect(status().isCreated())).get("requestId").asLong();
+        // 사업자 구분 변경 대기 — 같은 자리 [취소] · [계좌 변경] 비활성 + 사유.
+        creatorGet(BASE + "/settlement")
+                .andExpect(jsonPath("$.actions.businessTypeChange").value("CANCEL"))
+                .andExpect(jsonPath("$.actions.businessTypeChangeBlockedReason").doesNotExist())
+                .andExpect(jsonPath("$.actions.accountChange").value(false))
+                .andExpect(jsonPath("$.actions.accountChangeBlockedReason").value("사업자 구분 확인이 끝난 뒤 요청할 수 있어요"));
 
         requestChange(NEW_ACCOUNT).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_ALREADY_PENDING"));
 
         mockMvc.perform(post(BASE + "/business-type-change-requests/" + businessRequestId + "/cancel")
                 .header(HttpHeaders.AUTHORIZATION, creatorToken)).andExpect(status().isNoContent());
-        requestChange(NEW_ACCOUNT).andExpect(status().isOk());
+        // 계좌 변경 대기 — 요청 응답부터 [사업자 여부 변경 요청]은 값 그대로 + 비활성 사유 · [계좌 변경]은 활성.
+        requestChange(NEW_ACCOUNT).andExpect(status().isOk())
+                .andExpect(jsonPath("$.actions.businessTypeChange").value("REQUEST_TO_BUSINESS"))
+                .andExpect(jsonPath("$.actions.businessTypeChangeBlockedReason").value("정산 계좌 확인이 끝난 뒤 요청할 수 있어요"))
+                .andExpect(jsonPath("$.actions.accountChange").value(true))
+                .andExpect(jsonPath("$.actions.accountChangeBlockedReason").doesNotExist());
         businessTypeChange().andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CHANGE_REQUEST_ALREADY_PENDING"));
         // 취소된 사업자 구분 변경은 배너가 없다 · 계좌 변경 요청 블록만 보인다.
         creatorGet(BASE + "/settlement").andExpect(jsonPath("$.businessTypeChange").doesNotExist())
-                .andExpect(jsonPath("$.pendingAccountChange.bankName").value("신한은행"));
+                .andExpect(jsonPath("$.pendingAccountChange.bankName").value("신한은행"))
+                .andExpect(jsonPath("$.actions.businessTypeChangeBlockedReason").value("정산 계좌 확인이 끝난 뒤 요청할 수 있어요"));
+
+        // 계좌 변경 취소 — 사유가 사라진다.
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete(BASE + "/settlement-account/change-request").header(HttpHeaders.AUTHORIZATION, creatorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pendingAccountChange").doesNotExist())
+                .andExpect(jsonPath("$.actions.businessTypeChangeBlockedReason").doesNotExist())
+                .andExpect(jsonPath("$.actions.accountChange").value(true));
     }
 
     @Test

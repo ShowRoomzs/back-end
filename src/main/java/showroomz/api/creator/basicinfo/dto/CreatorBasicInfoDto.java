@@ -449,12 +449,19 @@ public class CreatorBasicInfoDto {
 
     @Getter
     @Builder
-    @Schema(description = "정산 정보 탭 버튼 상태")
+    @Schema(description = "정산 정보 탭 버튼 상태 — 사업자 구분 변경과 계좌 변경은 동시에 요청할 수 없다(1021 Q24). 버튼은 숨기지 않고 비활성 사유를 싣는다")
     public static class SettlementActions {
-        @Schema(description = "REQUEST_TO_BUSINESS · REQUEST_TO_INDIVIDUAL · CANCEL — 모든 상태에서 같은 자리", example = "REQUEST_TO_BUSINESS")
+        @Schema(description = "REQUEST_TO_BUSINESS · REQUEST_TO_INDIVIDUAL · CANCEL — 모든 상태에서 같은 자리. "
+                + "계좌 변경 확인 중에도 값은 REQUEST_TO_* 그대로고 `businessTypeChangeBlockedReason` 이 채워진다", example = "REQUEST_TO_BUSINESS")
         private String businessTypeChange;
-        @Schema(description = "[계좌 변경] 버튼 활성 — 현재는 항상 true", example = "true")
+        @Schema(description = "[사업자 여부 변경 요청] 비활성 사유 — 계좌 변경 요청이 확인 중일 때만, 그 밖에는 null",
+                example = "정산 계좌 확인이 끝난 뒤 요청할 수 있어요", nullable = true)
+        private String businessTypeChangeBlockedReason;
+        @Schema(description = "[계좌 변경] 버튼 활성 — 사업자 구분 변경 요청이 확인 중이면 false", example = "true")
         private boolean accountChange;
+        @Schema(description = "[계좌 변경] 비활성 사유 — `accountChange = false` 일 때만, 그 밖에는 null",
+                example = "사업자 구분 확인이 끝난 뒤 요청할 수 있어요", nullable = true)
+        private String accountChangeBlockedReason;
     }
 
     @Getter

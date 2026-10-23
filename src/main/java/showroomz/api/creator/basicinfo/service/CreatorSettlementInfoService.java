@@ -35,6 +35,10 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CreatorSettlementInfoService {
 
+    /** 버튼 비활성 사유(55 계획서 S3 · D9) — 상대 요청이 확인 중일 때만 싣는다. */
+    static final String BUSINESS_TYPE_CHANGE_BLOCKED_BY_ACCOUNT = "정산 계좌 확인이 끝난 뒤 요청할 수 있어요";
+    static final String ACCOUNT_CHANGE_BLOCKED_BY_BUSINESS_TYPE = "사업자 구분 확인이 끝난 뒤 요청할 수 있어요";
+
     private final CreatorRepository creatorRepository;
     private final SettlementProperties settlementProperties;
     private final CreatorBusinessTypeChangeReader businessTypeChanges;
@@ -138,7 +142,12 @@ public class CreatorSettlementInfoService {
 
     CreatorBasicInfoDto.SettlementInfoResponse toResponse(Creator creator) {
         boolean business = creator.getBusinessType() == CreatorBusinessType.BUSINESS;
-        CreatorBusinessTypeChangeReader.View change = businessTypeChanges.read(creator);
+        // 열린 요청은 인플루언서당 1건(유형 무관 · V203) — 한 번 읽어 배너 · 버튼 · 계좌 변경 블록이 같이 쓴다(55 계획서 S3).
+        showroomz.domain.changerequest.entity.ChangeRequest open =
+                changeRequestRepository.findOpenForCreator(creator.getId()).orElse(null);
+        showroomz.domain.changerequest.entity.ChangeRequest openAccount = open != null
+                && open.getType() == showroomz.domain.changerequest.type.ChangeRequestType.CREATOR_ACCOUNT ? open : null;
+        CreatorBusinessTypeChangeReader.View change = businessTypeChanges.read(creator, open);
         return CreatorBasicInfoDto.SettlementInfoResponse.builder()
                 .businessType(CreatorBasicInfoDto.BusinessTypeInfo.builder()
                         .value(creator.getBusinessType() == null ? null : creator.getBusinessType().name())
@@ -158,18 +167,29 @@ public class CreatorSettlementInfoService {
                 .taxInvoiceRecipient(business ? taxInvoiceRecipient() : null)
                 .account(account(creator, business))
                 .businessTypeChange(change.banner())
-                .actions(CreatorBasicInfoDto.SettlementActions.builder()
-                        .businessTypeChange(change.pending() ? "CANCEL"
-                                : business ? "REQUEST_TO_INDIVIDUAL" : "REQUEST_TO_BUSINESS")
-                        .accountChange(true)
-                        .build())
-                .pendingAccountChange(pendingAccountChange(creator))
+                .actions(actions(business, change.pending(), openAccount != null))
+                .pendingAccountChange(pendingAccountChange(creator, openAccount))
                 .build();
     }
 
-    private CreatorBasicInfoDto.PendingAccountChange pendingAccountChange(Creator creator) {
-        return changeRequestRepository.findOpenForCreator(creator.getId())
-                .filter(r -> r.getType() == showroomz.domain.changerequest.type.ChangeRequestType.CREATOR_ACCOUNT)
+    /**
+     * 버튼 상태 — 사업자 구분 변경과 계좌 변경은 동시에 열 수 없다(1021 Q24 유지 · 55 계획서 D9). 버튼은 숨기지 않고(시안 06 「같은 자리」)
+     * 상대 요청이 확인 중이면 비활성 사유를 싣는다. 눌러도 409 {@code CHANGE_REQUEST_ALREADY_PENDING} 이 나는 상태를 미리 알린다.
+     */
+    private static CreatorBasicInfoDto.SettlementActions actions(boolean business, boolean businessTypePending,
+                                                                 boolean accountPending) {
+        return CreatorBasicInfoDto.SettlementActions.builder()
+                .businessTypeChange(businessTypePending ? "CANCEL"
+                        : business ? "REQUEST_TO_INDIVIDUAL" : "REQUEST_TO_BUSINESS")
+                .businessTypeChangeBlockedReason(accountPending ? BUSINESS_TYPE_CHANGE_BLOCKED_BY_ACCOUNT : null)
+                .accountChange(!businessTypePending)
+                .accountChangeBlockedReason(businessTypePending ? ACCOUNT_CHANGE_BLOCKED_BY_BUSINESS_TYPE : null)
+                .build();
+    }
+
+    private CreatorBasicInfoDto.PendingAccountChange pendingAccountChange(Creator creator,
+                                                                          showroomz.domain.changerequest.entity.ChangeRequest openAccount) {
+        return java.util.Optional.ofNullable(openAccount)
                 .map(r -> {
                     long count = 0;
                     long amount = 0;
