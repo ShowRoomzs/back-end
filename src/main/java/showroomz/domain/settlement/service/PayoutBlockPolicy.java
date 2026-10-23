@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.port.PayoutHoldReader;
+import showroomz.domain.settlement.port.PendingAccountChangeReader;
 import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.SettlementPayee;
@@ -30,6 +31,7 @@ public class PayoutBlockPolicy {
 
     private final SettlementTaxDocumentRepository documentRepository;
     private final PayoutHoldReader payoutHoldReader;
+    private final PendingAccountChangeReader pendingAccountChangeReader;
 
     public List<PayoutBlockReason> blockReasons(Settlement settlement) {
         List<PayoutBlockReason> reasons = new ArrayList<>();
@@ -41,6 +43,9 @@ public class PayoutBlockPolicy {
         // 스튜디오 계좌 변경 뒤 실명 확인 전 · 실패 · 변경 필요(50 설계서 1-3) — 사업자 · 비사업자 모두. 확인 이력 없는 기존 회원은 막지 않는다.
         if (creator != null && creator.getAccountVerificationStatus() != null
                 && creator.getAccountVerificationStatus().blocksPayout()) {
+            reasons.add(PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED);
+        } else if (pendingAccountChangeReader.hasPending(creatorId)) {
+            // 계좌 변경 확인 중(1021 기-22 · 8-0 ②) — 확인 상태는 기존 값 그대로라 요청을 직접 본다. 확인이 끝날 때까지 기존 계좌로 내보내지 않는다.
             reasons.add(PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED);
         }
         if (settlement.isBusinessCreator() && !isCreatorTaxInvoiceVerified(settlement)) {

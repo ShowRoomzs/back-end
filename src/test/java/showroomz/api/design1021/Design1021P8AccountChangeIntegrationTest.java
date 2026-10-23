@@ -88,6 +88,23 @@ class Design1021P8AccountChangeIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("요청 중 — 지급 배치가 보류를 다시 판정해도 풀리지 않는다(확인 전 기존 계좌 지급 금지 · 8-0 ②) · 취소하면 풀린다")
+    void batchKeepsHoldWhilePending() throws Exception {
+        Settlement scheduled = seedSettlement("예정 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
+        jdbc.update("UPDATE settlement_payout SET status = 'SCHEDULED', due_date = ? WHERE settlement_id = ?",
+                LocalDate.now().plusDays(2), scheduled.getId());
+        requestChange().andExpect(status().isOk());
+
+        payoutService.releaseBlocked(LocalDate.now());
+
+        assertThat(payout(scheduled.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(payout(scheduled.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+
+        cancel().andExpect(status().isOk());
+        assertThat(payout(scheduled.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+    }
+
+    @Test
     @DisplayName("취소 — 확인 중 요청을 거두면 보류가 풀리고 계좌 그대로 · 열린 요청이 없으면 400(CHANGE_REQUEST_NOT_PENDING)")
     void cancelRequest() throws Exception {
         Settlement scheduled = seedSettlement("예정 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);

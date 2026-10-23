@@ -72,6 +72,41 @@ class Design1021AccountChangeDetailIntegrationTest extends SettlementTestSupport
     }
 
     @Test
+    @DisplayName("계좌 변경 요청 id 를 사업자 구분 변경 취소 · 확인 API 로 보내면 404 — 요청은 확인 중 · 지급 보류 그대로")
+    void businessTypeCancelRejectsAccountRequest() throws Exception {
+        Settlement s = seedSettlement("예정 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
+        jdbc.update("UPDATE settlement_payout SET status = 'SCHEDULED', due_date = ? WHERE settlement_id = ?",
+                LocalDate.now().plusDays(2), s.getId());
+        requestChange(NEW_ACCOUNT).andExpect(status().isOk());
+        long accountRequestId = latestRequestId();
+
+        mockMvc.perform(post(BASE + "/business-type-change-requests/" + accountRequestId + "/cancel")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken))
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("CHANGE_REQUEST_NOT_FOUND"));
+        mockMvc.perform(post(BASE + "/business-type-change-requests/" + accountRequestId + "/acknowledge")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken))
+                .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("CHANGE_REQUEST_NOT_FOUND"));
+
+        assertThat(jdbc.queryForObject("SELECT status FROM brand_change_request WHERE request_id = ?", String.class,
+                accountRequestId)).isEqualTo("PENDING");
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        creatorGet(BASE + "/settlement").andExpect(jsonPath("$.pendingAccountChange.bankName").value("신한은행"));
+    }
+
+    @Test
+    @DisplayName("반대 방향 — 사업자 구분 변경만 열려 있으면 계좌 변경 취소는 400 · 사업자 구분 변경 요청은 그대로")
+    void accountCancelLeavesBusinessTypeRequest() throws Exception {
+        long businessRequestId = json(businessTypeChange().andExpect(status().isCreated())).get("requestId").asLong();
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .delete(BASE + "/settlement-account/change-request").header(HttpHeaders.AUTHORIZATION, creatorToken))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("CHANGE_REQUEST_NOT_PENDING"));
+
+        assertThat(jdbc.queryForObject("SELECT status FROM brand_change_request WHERE request_id = ?", String.class,
+                businessRequestId)).isEqualTo("PENDING");
+    }
+
+    @Test
     @DisplayName("승인 뒤 PG 실존 확인이 실패하면 「확인 실패」 · 보류된 지급은 계속 막힘 · 승인 알림은 간다 · 계좌 이력 주체는 인플루언서")
     void approvedButVerificationFails() throws Exception {
         Settlement s = seedSettlement("예정 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);

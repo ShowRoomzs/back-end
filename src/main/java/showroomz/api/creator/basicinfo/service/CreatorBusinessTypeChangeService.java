@@ -141,6 +141,10 @@ public class CreatorBusinessTypeChangeService {
         if (request.getCreator() == null || !request.getCreator().getId().equals(creator.getId())) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_ACCESS_DENIED);
         }
+        // 계좌 변경 요청은 이 경로로 다루지 않는다 — 취소는 지급 보류 해제를 함께 하는 계좌 쪽 API(DELETE …/settlement-account/change-request)만 한다.
+        if (!request.getType().isBusinessTypeChange()) {
+            throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_FOUND);
+        }
         return request;
     }
 
