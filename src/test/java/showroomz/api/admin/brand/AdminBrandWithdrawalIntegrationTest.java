@@ -498,10 +498,10 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
                 .andExpect(status().isBadRequest());
         assertThat(withdrawalRepository.findById(first).orElseThrow().isPending()).isTrue();
 
-        reject(owner.marketId(), first, Map.of("reason", "UNSHIPPED_ORDERS")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.histories.items[0].detail").value("미배송 주문 잔존"));
+        reject(owner.marketId(), first, Map.of("reason", "UNCLOSED_ORDERS")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.histories.items[0].detail").value("미종결 주문 잔존"));
         for (BrandWithdrawalRejectReason reason : BrandWithdrawalRejectReason.values()) {
-            if (reason == BrandWithdrawalRejectReason.UNSHIPPED_ORDERS) {
+            if (reason == BrandWithdrawalRejectReason.UNCLOSED_ORDERS) {
                 continue;
             }
             Long id = withdrawalService.request(owner.marketId(), null, null, LocalDateTime.now()).getId();
@@ -517,7 +517,7 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
         suspend(owner.marketId(), "REPEATED_SHIPPING_DELAY", null).andExpect(status().isOk());
         Long requestId = withdrawalService.request(owner.marketId(), null, null, LocalDateTime.now()).getId();
 
-        reject(owner.marketId(), requestId, Map.of("reason", "CLAIM_UNRESOLVED", "note", "반품 1건 수취 확인 후 다시 신청해 주세요."))
+        reject(owner.marketId(), requestId, Map.of("reason", "UNCLOSED_ORDERS", "note", "반품 1건 수취 확인 후 다시 신청해 주세요."))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentStatus.memberStatus").value("SUSPENDED"))
                 .andExpect(jsonPath("$.currentStatus.actions.canSuspend").value(false))
@@ -525,18 +525,18 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
                 .andExpect(jsonPath("$.currentStatus.actions.canReviewWithdrawal").value(false))
                 .andExpect(jsonPath("$.histories.items[0].type").value("WITHDRAWAL_REJECTED"))
                 .andExpect(jsonPath("$.histories.items[0].tone").value("INFO"))
-                .andExpect(jsonPath("$.histories.items[0].detail").value("반품·교환 처리 미완료 — 반품 1건 수취 확인 후 다시 신청해 주세요."));
+                .andExpect(jsonPath("$.histories.items[0].detail").value("미종결 주문 잔존 — 반품 1건 수취 확인 후 다시 신청해 주세요."));
 
         BrandWithdrawalRequest rejected = withdrawalRepository.findById(requestId).orElseThrow();
         assertThat(rejected.getStatus()).isEqualTo(MemberWithdrawalStatus.REJECTED);
-        assertThat(rejected.getRejectReason()).isEqualTo(BrandWithdrawalRejectReason.CLAIM_UNRESOLVED);
+        assertThat(rejected.getRejectReason()).isEqualTo(BrandWithdrawalRejectReason.UNCLOSED_ORDERS);
         assertThat(rejected.getRejectNote()).isEqualTo("반품 1건 수취 확인 후 다시 신청해 주세요.");
         assertThat(rejected.getProcessedByName()).isEqualTo("김운영");
         assertThat(sanctionRepository.findByMarketIdAndReleasedAtIsNull(owner.marketId())).isPresent();
         getAs(sellerToken(owner.seller()), "/v1/seller/basic-info/account")
                 .andExpect(jsonPath("$.withdrawal.lastRejection.requestId").value(requestId))
-                .andExpect(jsonPath("$.withdrawal.lastRejection.reasonCode").value("CLAIM_UNRESOLVED"))
-                .andExpect(jsonPath("$.withdrawal.lastRejection.reasonLabel").value("반품·교환 처리 미완료"))
+                .andExpect(jsonPath("$.withdrawal.lastRejection.reasonCode").value("UNCLOSED_ORDERS"))
+                .andExpect(jsonPath("$.withdrawal.lastRejection.reasonLabel").value("미종결 주문 잔존"))
                 .andExpect(jsonPath("$.withdrawal.lastRejection.rejectedAt").exists());
     }
 

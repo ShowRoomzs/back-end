@@ -575,9 +575,9 @@ public interface AdminCreatorControllerDocs {
 
             | `reason` | 라벨 |
             | --- | --- |
-            | `GROUP_BUY_REMAINING` | 진행중 공구가 남아 있음 |
-            | `SETTLEMENT_IN_PROGRESS` | 진행 중 정산 남음 |
-            | `UNDELIVERED_ORDER` | 미배송 주문 처리 미완료 |
+            | `GROUP_BUY_REMAINING` | 끝나지 않은 공구 남음 |
+            | `UNFINISHED_CONTRACTS` | 끝나지 않은 계약 남음 |
+            | `SETTLEMENT_IN_PROGRESS` | 미정산 남음 |
             | `DISPUTE_IN_PROGRESS` | 분쟁·신고 처리 중 |
             | `OTHER` | 기타(직접 입력) |
 
@@ -638,9 +638,9 @@ public interface AdminCreatorControllerDocs {
                                         { "code": "MISTAKE", "label": "오정지", "detailRequired": false, "holdsPayout": null }
                                       ],
                                       "withdrawalRejectReasons": [
-                                        { "code": "GROUP_BUY_REMAINING", "label": "진행중 공구가 남아 있음", "detailRequired": false, "holdsPayout": null },
-                                        { "code": "SETTLEMENT_IN_PROGRESS", "label": "진행 중 정산 남음", "detailRequired": false, "holdsPayout": null },
-                                        { "code": "UNDELIVERED_ORDER", "label": "미배송 주문 처리 미완료", "detailRequired": false, "holdsPayout": null },
+                                        { "code": "GROUP_BUY_REMAINING", "label": "끝나지 않은 공구 남음", "detailRequired": false, "holdsPayout": null },
+                                        { "code": "UNFINISHED_CONTRACTS", "label": "끝나지 않은 계약 남음", "detailRequired": false, "holdsPayout": null },
+                                        { "code": "SETTLEMENT_IN_PROGRESS", "label": "미정산 남음", "detailRequired": false, "holdsPayout": null },
                                         { "code": "DISPUTE_IN_PROGRESS", "label": "분쟁·신고 처리 중", "detailRequired": false, "holdsPayout": null },
                                         { "code": "OTHER", "label": "기타(직접 입력)", "detailRequired": true, "holdsPayout": null }
                                       ],

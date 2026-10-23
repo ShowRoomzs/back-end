@@ -321,11 +321,11 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
 
         adminPost(url, Map.of("reason", "OTHER")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED"));
-        adminPost(url, Map.of("reason", "CLAIM_UNRESOLVED", "note", "반품 1건 수취 확인 후 다시 신청해 주세요."))
+        adminPost(url, Map.of("reason", "UNCLOSED_ORDERS", "note", "반품 1건 수취 확인 후 다시 신청해 주세요."))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentStatus.memberStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.withdrawalReview").doesNotExist());
-        adminPost(url, Map.of("reason", "CLAIM_UNRESOLVED")).andExpect(status().isConflict())
+        adminPost(url, Map.of("reason", "UNCLOSED_ORDERS")).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("BRAND_WITHDRAWAL_NOT_PENDING"));
 
         BrandWithdrawalRequest again = withdrawalService.request(clean.marketId(), null, null, LocalDateTime.now());
@@ -400,7 +400,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("RO-01 모달 사유 목록 —정지 6종(지급 정지 2종) · 해제 2종(탈퇴 종결 제외) · 반려 6종 · 인플루언서 상세와 같은 모양")
+    @DisplayName("RO-01 모달 사유 목록 —정지 6종(지급 정지 2종) · 해제 2종(탈퇴 종결 제외) · 반려 5종(시안 M3) · 인플루언서 상세와 같은 모양")
     void reasonOptions() throws Exception {
         adminGet(BRANDS + "/reason-options").andExpect(status().isOk())
                 .andExpect(jsonPath("$.suspensionReasons.length()").value(6))
@@ -408,7 +408,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.suspensionReasons[0].holdsPayout").value(true))
                 .andExpect(jsonPath("$.suspensionReasons[5].detailRequired").value(true))
                 .andExpect(jsonPath("$.releaseReasons.length()").value(2))
-                .andExpect(jsonPath("$.withdrawalRejectReasons.length()").value(6));
+                .andExpect(jsonPath("$.withdrawalRejectReasons.length()").value(5));
     }
 
     // ------------------------------------------------------------------ BD-16 · BD-17 메모 · 이력

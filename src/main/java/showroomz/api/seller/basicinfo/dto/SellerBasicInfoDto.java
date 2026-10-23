@@ -262,9 +262,9 @@ public class SellerBasicInfoDto {
         private Long requestId;
         @Schema(description = "반려 시각", example = "2026-10-16T11:00:00")
         private LocalDateTime rejectedAt;
-        @Schema(example = "CLAIM_UNRESOLVED")
+        @Schema(example = "UNCLOSED_ORDERS")
         private String reasonCode;
-        @Schema(example = "반품·교환 처리 미완료")
+        @Schema(example = "미종결 주문 잔존")
         private String reasonLabel;
         @Schema(description = "운영자가 남긴 안내", nullable = true)
         private String note;

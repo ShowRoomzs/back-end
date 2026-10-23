@@ -276,7 +276,7 @@ class AdminCreatorWithdrawalIntegrationTest extends AdminCreatorTestSupport {
                 String.class, first.getId())).isEqualTo("GROUP_BUY_REMAINING");
         adminGet(base + "/histories").andExpect(jsonPath("$.content[0].eventType").value("WITHDRAWAL_REJECTED"))
                 .andExpect(jsonPath("$.content[0].tone").value("INFO"))
-                .andExpect(jsonPath("$.content[0].detail").value("진행중 공구가 남아 있음"));
+                .andExpect(jsonPath("$.content[0].detail").value("끝나지 않은 공구 남음"));
 
         adminPost(base + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT")).andExpect(status().isOk());
         CreatorWithdrawalRequest second = savePendingRequest("다시 신청", LocalDateTime.now());

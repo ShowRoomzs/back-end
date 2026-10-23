@@ -316,10 +316,10 @@ class AdminBrandMemoHistoryIntegrationTest extends AdminBrandTestSupport {
         assertThat(textsAt(body.path("releaseReasons"), "code")).containsExactly("RESOLVED", "MISTAKE");
         assertThat(textsAt(body.path("releaseReasons"), "label")).containsExactly("소명 · 시정 확인", "오정지");
         body.path("releaseReasons").forEach(r -> assertThat(r.path("holdsPayout").isNull()).isTrue());
-        assertThat(textsAt(body.path("withdrawalRejectReasons"), "code")).containsExactly("CLAIM_UNRESOLVED",
-                "UNSHIPPED_ORDERS", "ACTIVE_GROUP_BUYS", "UNSETTLED", "CONTRACT_IN_PROGRESS", "OTHER");
+        assertThat(textsAt(body.path("withdrawalRejectReasons"), "code")).containsExactly("ACTIVE_GROUP_BUYS",
+                "CONTRACT_IN_PROGRESS", "UNCLOSED_ORDERS", "UNSETTLED", "OTHER");
         assertThat(textsAt(body.path("withdrawalRejectReasons"), "detailRequired"))
-                .containsExactly("false", "false", "false", "false", "false", "true");
+                .containsExactly("false", "false", "false", "false", "true");
 
         JsonNode creatorOptions = json(adminGet("/v1/admin/creators/reason-options").andExpect(status().isOk()));
         Set<String> brandRow = new HashSet<>();

@@ -121,7 +121,7 @@ public interface CreatorBasicInfoControllerDocs {
                                                 "approvalDueBusinessDays": 5,
                                                 "pendingRequest": null,
                                                 "rejection": { "requestId": 41, "rejectedAt": "2026-10-16T15:02:00",
-                                                               "reasonCode": "SETTLEMENT_IN_PROGRESS", "reasonLabel": "진행 중 정산 남음",
+                                                               "reasonCode": "SETTLEMENT_IN_PROGRESS", "reasonLabel": "미정산 남음",
                                                                "note": "9월 정산 지급이 끝난 뒤 다시 신청해 주세요." }
                                               }
                                             }

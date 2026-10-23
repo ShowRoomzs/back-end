@@ -406,7 +406,7 @@ public interface SellerBasicInfoControllerDocs {
                                                 "pendingRequest": null,
                                                 "lastRejection": {
                                                   "requestId": 31, "rejectedAt": "2026-10-16T11:00:00",
-                                                  "reasonCode": "CLAIM_UNRESOLVED", "reasonLabel": "반품·교환 처리 미완료",
+                                                  "reasonCode": "UNCLOSED_ORDERS", "reasonLabel": "미종결 주문 잔존",
                                                   "note": "반품 검수 2건을 마친 뒤 다시 신청해 주세요."
                                                 },
                                                 "reasonOptions": [ "… 5개" ]

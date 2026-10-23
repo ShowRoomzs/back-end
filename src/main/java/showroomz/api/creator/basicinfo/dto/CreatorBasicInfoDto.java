@@ -122,7 +122,7 @@ public class CreatorBasicInfoDto {
         private LocalDateTime rejectedAt;
         @Schema(example = "SETTLEMENT_IN_PROGRESS")
         private String reasonCode;
-        @Schema(example = "진행 중 정산 남음")
+        @Schema(example = "미정산 남음")
         private String reasonLabel;
         @Schema(description = "운영자가 남긴 안내", nullable = true)
         private String note;

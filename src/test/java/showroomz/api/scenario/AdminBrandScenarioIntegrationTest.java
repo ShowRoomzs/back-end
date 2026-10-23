@@ -155,7 +155,7 @@ class AdminBrandScenarioIntegrationTest extends SettlementTestSupport {
         assertThat(keys).containsExactly("UNCLOSED_ORDERS");
         assertThat(unmet.at("/unmet/UNCLOSED_ORDERS").asLong()).isEqualTo(1);
 
-        adminPost(base(brand) + "/withdrawal-requests/" + requestId + "/reject", Map.of("reason", "UNSHIPPED_ORDERS"))
+        adminPost(base(brand) + "/withdrawal-requests/" + requestId + "/reject", Map.of("reason", "UNCLOSED_ORDERS"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.currentStatus.memberStatus").value("ACTIVE"));
 

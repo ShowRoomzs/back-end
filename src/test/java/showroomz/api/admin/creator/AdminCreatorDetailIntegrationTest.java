@@ -548,7 +548,7 @@ class AdminCreatorDetailIntegrationTest extends AdminCreatorTestSupport {
         assertThat(options.get("releaseReasons").get(0).get("label").asText()).isEqualTo("소명 · 시정 확인");
 
         assertThat(codes(options.get("withdrawalRejectReasons"))).containsExactly("GROUP_BUY_REMAINING",
-                "SETTLEMENT_IN_PROGRESS", "UNDELIVERED_ORDER", "DISPUTE_IN_PROGRESS", "OTHER");
+                "UNFINISHED_CONTRACTS", "SETTLEMENT_IN_PROGRESS", "DISPUTE_IN_PROGRESS", "OTHER");
         for (JsonNode option : options.get("withdrawalRejectReasons")) {
             assertThat(option.get("detailRequired").asBoolean()).isEqualTo(option.get("code").asText().equals("OTHER"));
             assertThat(option.get("holdsPayout").isNull()).isTrue();

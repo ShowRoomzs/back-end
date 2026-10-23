@@ -329,11 +329,10 @@ public interface AdminBrandControllerDocs {
 
                     | `reason` | 라벨 |
                     | --- | --- |
-                    | `CLAIM_UNRESOLVED` | 반품·교환 처리 미완료 |
-                    | `UNSHIPPED_ORDERS` | 미배송 주문 잔존 |
-                    | `ACTIVE_GROUP_BUYS` | 진행중 공구 잔존 |
-                    | `UNSETTLED` | 미정산액 잔존 |
+                    | `ACTIVE_GROUP_BUYS` | 진행 중 공구 잔존 |
                     | `CONTRACT_IN_PROGRESS` | 체결 전 계약 잔존 |
+                    | `UNCLOSED_ORDERS` | 미종결 주문 잔존 |
+                    | `UNSETTLED` | 진행 중 정산 잔존 |
                     | `OTHER` | 기타(직접 입력) |
 
                     회원 상태는 바뀌지 않고(내내 활성) 브랜드는 바로 재신청할 수 있습니다. 사유 · 안내는 파트너센터 계정 정보의 `withdrawal.lastRejection` 에 실립니다.
@@ -345,7 +344,7 @@ public interface AdminBrandControllerDocs {
                     schema = @Schema(implementation = AdminBrandDto.WithdrawalRejectRequest.class),
                     examples = {
                             @ExampleObject(name = "정형 사유", value = """
-                                    { "reason": "CLAIM_UNRESOLVED", "note": "반품 검수 2건을 마친 뒤 다시 신청해 주세요." }
+                                    { "reason": "UNCLOSED_ORDERS", "note": "반품 1건의 수취가 확인되지 않았습니다. 처리 완료 후 다시 신청해 주세요." }
                                     """),
                             @ExampleObject(name = "기타(안내 필수)", value = """
                                     { "reason": "OTHER", "note": "소비자 분쟁 1건이 조정 중입니다. 종결 후 다시 신청해 주세요." }
@@ -573,11 +572,10 @@ public interface AdminBrandControllerDocs {
                                         { "code": "MISTAKE", "label": "오정지", "detailRequired": false, "holdsPayout": null }
                                       ],
                                       "withdrawalRejectReasons": [
-                                        { "code": "CLAIM_UNRESOLVED", "label": "반품·교환 처리 미완료", "detailRequired": false, "holdsPayout": null },
-                                        { "code": "UNSHIPPED_ORDERS", "label": "미배송 주문 잔존", "detailRequired": false, "holdsPayout": null },
-                                        { "code": "ACTIVE_GROUP_BUYS", "label": "진행중 공구 잔존", "detailRequired": false, "holdsPayout": null },
-                                        { "code": "UNSETTLED", "label": "미정산액 잔존", "detailRequired": false, "holdsPayout": null },
+                                        { "code": "ACTIVE_GROUP_BUYS", "label": "진행 중 공구 잔존", "detailRequired": false, "holdsPayout": null },
                                         { "code": "CONTRACT_IN_PROGRESS", "label": "체결 전 계약 잔존", "detailRequired": false, "holdsPayout": null },
+                                        { "code": "UNCLOSED_ORDERS", "label": "미종결 주문 잔존", "detailRequired": false, "holdsPayout": null },
+                                        { "code": "UNSETTLED", "label": "진행 중 정산 잔존", "detailRequired": false, "holdsPayout": null },
                                         { "code": "OTHER", "label": "기타(직접 입력)", "detailRequired": true, "holdsPayout": null }
                                       ]
                                     }
