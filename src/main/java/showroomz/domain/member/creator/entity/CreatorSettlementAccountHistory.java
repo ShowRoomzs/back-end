@@ -30,7 +30,7 @@ public class CreatorSettlementAccountHistory {
     @Column(name = "previous_bank_name", length = 50)
     private String previousBankName;
 
-    @Column(name = "previous_last4", length = 4)
+    @Column(name = "previous_last4", columnDefinition = "char(4)")
     private String previousLast4;
 
     @Column(name = "previous_account_enc", length = 255)
@@ -39,7 +39,7 @@ public class CreatorSettlementAccountHistory {
     @Column(name = "bank_name", nullable = false, length = 50)
     private String bankName;
 
-    @Column(name = "last4", length = 4)
+    @Column(name = "last4", columnDefinition = "char(4)")
     private String last4;
 
     @Column(name = "account_enc", nullable = false, length = 255)

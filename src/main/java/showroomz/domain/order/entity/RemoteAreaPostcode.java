@@ -20,10 +20,10 @@ public class RemoteAreaPostcode {
     @Column(name = "postcode_id")
     private Long id;
 
-    @Column(name = "postcode_from", nullable = false, length = 5)
+    @Column(name = "postcode_from", nullable = false, columnDefinition = "char(5)")
     private String postcodeFrom;
 
-    @Column(name = "postcode_to", nullable = false, length = 5)
+    @Column(name = "postcode_to", nullable = false, columnDefinition = "char(5)")
     private String postcodeTo;
 
     @Enumerated(EnumType.STRING)
