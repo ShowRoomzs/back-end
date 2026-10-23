@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import showroomz.api.admin.user.service.AdminUserTradeReader;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserAdminActorType;
@@ -195,7 +196,7 @@ public class AdminUserDto {
         @Schema(description = "성별", example = "MALE")
         private String gender;
 
-        @Schema(description = "기본 배송지 (더미값)", example = "서울특별시 강남구 테헤란로")
+        @Schema(description = "기본 배송지 — 시 · 군 · 구까지만(상세주소는 열람 통제 대상). 없거나 탈퇴로 파기됐으면 null", example = "서울특별시 마포구")
         private String defaultAddress;
 
         @Schema(description = "최초 로그인 시간(가입일)", example = "2024-01-01T10:00:00")
@@ -216,22 +217,22 @@ public class AdminUserDto {
         @Schema(description = "처리 이력 최신 5건 + 전체 건수 — 전체는 GET /{userId}/histories")
         private HistorySummary histories;
 
-        @Schema(description = "누적 구매액 (더미값)", example = "1500000")
+        @Schema(description = "누적 구매액 — 순결제액(결제된 주문 총액 − 그 결제의 PG 취소 성공액)", example = "684000")
         private Long totalPurchaseAmount;
 
-        @Schema(description = "이번달 구매액 (더미값)", example = "300000")
+        @Schema(description = "이번 달 구매액 — 결제월 기준 순결제액", example = "52100")
         private Long thisMonthPurchaseAmount;
 
-        @Schema(description = "누적 주문수 (더미값)", example = "15")
+        @Schema(description = "누적 주문 수 — 결제된 주문 중 취소되지 않은 상품이 남은 주문(목록과 같은 식)", example = "14")
         private Integer totalOrderCount;
 
-        @Schema(description = "이번달 주문수 (더미값)", example = "3")
+        @Schema(description = "이번 달 주문 수 — 결제월 기준", example = "1")
         private Integer thisMonthOrderCount;
 
-        @Schema(description = "평균 주문 금액 (더미값)", example = "100000")
+        @Schema(description = "평균 주문 금액 — 누적 구매액 ÷ 누적 주문 수(주문이 없으면 0)", example = "48857")
         private Long averageOrderAmount;
 
-        @Schema(description = "최근 주문일 (더미값)", example = "2024-05-01T14:30:00")
+        @Schema(description = "최근 주문일 — 마지막 결제 시각. 주문이 없으면 null", example = "2026-10-03T10:12:00")
         private LocalDateTime lastOrderDate;
 
         @Schema(description = "상품 위시리스트 수", example = "12")
@@ -252,18 +253,10 @@ public class AdminUserDto {
                 Long followedShowroomCount,
                 Long reviewCount,
                 Long inquiryCount,
+                AdminUserTradeReader.Trade trade,
                 StatusCard statusCard,
                 MemoPage memos,
                 HistorySummary histories) {
-
-            Long dummyTotalPurchaseAmount = 1500000L;
-            Long dummyThisMonthPurchaseAmount = 300000L;
-            Integer dummyTotalOrderCount = 15;
-            Integer dummyThisMonthOrderCount = 3;
-            Long dummyAverageOrderAmount = dummyTotalOrderCount > 0
-                    ? dummyTotalPurchaseAmount / dummyTotalOrderCount
-                    : 0L;
-            LocalDateTime dummyLastOrderDate = LocalDateTime.now().minusDays(5);
 
             return UserDetailResponse.builder()
                     .userId(user.getId())
@@ -272,19 +265,19 @@ public class AdminUserDto {
                     .status(user.getStatus())
                     .birthday(user.getBirthday())
                     .gender(user.getGender())
-                    .defaultAddress("서울특별시 강남구 테헤란로 123, 101호")
+                    .defaultAddress(trade.defaultAddress())
                     .createdAt(user.getCreatedAt())
                     .marketingAgree(user.isMarketingAgree())
                     .profileImageUrl(user.getProfileImageUrl())
                     .statusCard(statusCard)
                     .memos(memos)
                     .histories(histories)
-                    .totalPurchaseAmount(dummyTotalPurchaseAmount)
-                    .thisMonthPurchaseAmount(dummyThisMonthPurchaseAmount)
-                    .totalOrderCount(dummyTotalOrderCount)
-                    .thisMonthOrderCount(dummyThisMonthOrderCount)
-                    .averageOrderAmount(dummyAverageOrderAmount)
-                    .lastOrderDate(dummyLastOrderDate)
+                    .totalPurchaseAmount(trade.totalPurchaseAmount())
+                    .thisMonthPurchaseAmount(trade.thisMonthPurchaseAmount())
+                    .totalOrderCount(trade.totalOrderCount())
+                    .thisMonthOrderCount(trade.thisMonthOrderCount())
+                    .averageOrderAmount(trade.averageOrderAmount())
+                    .lastOrderDate(trade.lastOrderDate())
                     .productWishlistCount(wishlistCount)
                     .followedShowroomCount(followedShowroomCount)
                     .writtenReviewCount(reviewCount)

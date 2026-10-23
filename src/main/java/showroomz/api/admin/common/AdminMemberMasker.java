@@ -91,6 +91,22 @@ public final class AdminMemberMasker {
         return masked.toString();
     }
 
+    /**
+     * 주소를 시 · 군 · 구까지만(ui-admin-13 A1 · A4) — 서울특별시 마포구 월드컵로 12 → 서울특별시 마포구 · 경기도 성남시 분당구 판교로 1 →
+     * 경기도 성남시 분당구(구가 있는 시는 구까지). 상세주소는 넘기지 않는다. 값이 없으면 null.
+     */
+    public static String maskAddressToDistrict(String address) {
+        if (address == null || address.isBlank()) {
+            return null;
+        }
+        String[] tokens = address.trim().split("\\s+");
+        if (tokens.length <= 2) {
+            return String.join(" ", tokens);
+        }
+        boolean cityWithDistrict = tokens[1].endsWith("시") && tokens[2].endsWith("구");
+        return cityWithDistrict ? tokens[0] + " " + tokens[1] + " " + tokens[2] : tokens[0] + " " + tokens[1];
+    }
+
     private static String digits(String value) {
         if (value == null || value.isBlank()) {
             return null;

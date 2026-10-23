@@ -4,6 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,9 @@ import showroomz.domain.order.entity.QOrder;
 import showroomz.domain.order.entity.QOrderProduct;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.OrderStatus;
+import showroomz.domain.payment.entity.QPayment;
+import showroomz.domain.payment.entity.QPaymentCancel;
+import showroomz.domain.payment.type.PaymentCancelStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -47,6 +51,8 @@ public class AdminUserQueryRepository {
     private static final QOrder order = QOrder.order;
     private static final QOrderProduct orderProduct = QOrderProduct.orderProduct;
     private static final QUserStatusHistory statusHistory = QUserStatusHistory.userStatusHistory;
+    private static final QPayment payment = QPayment.payment;
+    private static final QPaymentCancel paymentCancel = QPaymentCancel.paymentCancel;
 
     /** 정지 탭 요약의 "최근 30일 신규 정지" 기준 */
     private static final int NEW_SUSPENSION_WINDOW_DAYS = 30;
@@ -234,5 +240,86 @@ public class AdminUserQueryRepository {
 
     private boolean isPhoneSuffix(String keyword) {
         return keyword.length() == 4 && keyword.chars().allMatch(Character::isDigit);
+    }
+
+    // ------------------------------------------------------------------ 상세 거래 지표(55 계획서 M3-1)
+
+    /**
+     * 상세 거래 지표의 재료 — 금액은 결제 시점 총액과 PG 취소 성공액을 따로 담고, 순구매액은 서비스가 뺀다.
+     *
+     * @param orderCount      누적 주문 — 목록과 같은 식({@link #orderCount()})
+     * @param cancelledAmount 그 주문 <b>자신의 결제</b>에서 성공한 PG 취소 합(전액 · 부분 · 운임 환급 모두). 중복 결제 자동 취소는 주문 결제가
+     *                        아니라 빠진다 · 결제액을 넘는 계좌 송금 환급은 PG 취소가 아니라 빠진다
+     */
+    public record PurchaseTotals(long paidAmount, long thisMonthPaidAmount, long cancelledAmount,
+                                 long thisMonthCancelledAmount, long orderCount, long thisMonthOrderCount,
+                                 LocalDateTime lastOrderAt) {
+    }
+
+    /**
+     * 한 소비자의 거래 지표. 회원 한 명의 주문은 많아야 수백 건이라 행을 읽어 합산한다. 「이번 달」은 <b>결제월</b> 기준이다 — 지난달 주문을 이번 달에
+     * 취소해도 지난달 몫에서 빠진다.
+     */
+    public PurchaseTotals purchaseTotals(Long userId, LocalDateTime monthStart) {
+        List<Tuple> paid = queryFactory
+                .select(order.totalAmount, order.paidAt)
+                .from(order)
+                .where(order.user.id.eq(userId), order.paidAt.isNotNull())
+                .fetch();
+        List<Tuple> cancels = queryFactory
+                .select(paymentCancel.amount, order.paidAt)
+                .from(paymentCancel)
+                .join(paymentCancel.payment, payment)
+                .join(payment.order, order)
+                .where(order.user.id.eq(userId),
+                        order.paidAt.isNotNull(),
+                        paymentCancel.status.eq(PaymentCancelStatus.SUCCEEDED),
+                        payment.paymentId.eq(order.paidPaymentId))
+                .fetch();
+        List<LocalDateTime> counted = queryFactory
+                .select(order.paidAt)
+                .from(order)
+                .where(order.user.id.eq(userId),
+                        order.status.in(OrderStatus.PAID_OR_LATER),
+                        JPAExpressions.selectOne().from(orderProduct)
+                                .where(orderProduct.order.id.eq(order.id),
+                                        orderProduct.status.ne(OrderProductStatus.CANCELLED))
+                                .exists())
+                .fetch();
+
+        long paidAmount = 0;
+        long thisMonthPaid = 0;
+        LocalDateTime lastOrderAt = null;
+        for (Tuple row : paid) {
+            long amount = amountOf(row.get(order.totalAmount));
+            LocalDateTime paidAt = row.get(order.paidAt);
+            paidAmount += amount;
+            if (isThisMonth(paidAt, monthStart)) {
+                thisMonthPaid += amount;
+            }
+            if (paidAt != null && (lastOrderAt == null || paidAt.isAfter(lastOrderAt))) {
+                lastOrderAt = paidAt;
+            }
+        }
+        long cancelled = 0;
+        long thisMonthCancelled = 0;
+        for (Tuple row : cancels) {
+            long amount = amountOf(row.get(paymentCancel.amount));
+            cancelled += amount;
+            if (isThisMonth(row.get(order.paidAt), monthStart)) {
+                thisMonthCancelled += amount;
+            }
+        }
+        long thisMonthOrders = counted.stream().filter(paidAt -> isThisMonth(paidAt, monthStart)).count();
+        return new PurchaseTotals(paidAmount, thisMonthPaid, cancelled, thisMonthCancelled, counted.size(),
+                thisMonthOrders, lastOrderAt);
+    }
+
+    private static long amountOf(Integer amount) {
+        return amount != null ? amount : 0L;
+    }
+
+    private static boolean isThisMonth(LocalDateTime paidAt, LocalDateTime monthStart) {
+        return paidAt != null && !paidAt.isBefore(monthStart);
     }
 }

@@ -79,9 +79,17 @@ class AdminUserServiceTest {
     private AdminUserMemoService memoService;
     @Mock
     private AdminUserHistoryReader historyReader;
+    @Mock
+    private AdminUserTradeReader tradeReader;
 
     @InjectMocks
     private AdminUserService adminUserService;
+
+    @org.junit.jupiter.api.BeforeEach
+    void givenNoTrade() {
+        given(tradeReader.read(any(), any())).willReturn(
+                new AdminUserTradeReader.Trade(0, 0, 0, 0, 0, null, null));
+    }
 
     private Users user(UserStatus status) {
         LocalDateTime now = LocalDateTime.now();
