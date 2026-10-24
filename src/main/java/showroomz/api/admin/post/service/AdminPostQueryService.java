@@ -46,6 +46,7 @@ import showroomz.domain.post.vo.PostMonitoringCounts;
 import showroomz.domain.post.vo.PostMonitoringNeighbors;
 import showroomz.domain.post.vo.PostMonitoringRow;
 import showroomz.domain.post.vo.PostSanctionCounts;
+import showroomz.global.config.properties.PostProperties;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -95,6 +96,7 @@ public class AdminPostQueryService {
     private final PostAppealReviewDue appealReviewDue;
     private final AdminOperatorResolver adminOperatorResolver;
     private final ObjectMapper objectMapper;
+    private final PostProperties postProperties;
 
     // ------------------------------------------------------------------ 목록 · 요약
 
@@ -206,7 +208,15 @@ public class AdminPostQueryService {
                 .timeline(new TimelineBuilder(operatorNames, showroomName)
                         .build(post, reports, suspensions, appeal, logs, downloads))
                 .navigation(toNavigation(monitoringQueryRepository.findNeighbors(postId, tab, sort, keyword, showroomId)))
+                .policy(policy())
                 .build();
+    }
+
+    /** 조치 모달 문구의 정책값 — 조치 로직(AdminPostService)이 쓰는 설정과 같은 출처다. */
+    private AdminPostMonitoringDto.Policy policy() {
+        return new AdminPostMonitoringDto.Policy(postProperties.getAppealDeadlineDays(),
+                postProperties.getAppealReviewBusinessDays(), postProperties.getDownloadGraceDays(),
+                postProperties.getRetentionMonths());
     }
 
     private static AdminPostMonitoringDto.Navigation toNavigation(PostMonitoringNeighbors neighbors) {

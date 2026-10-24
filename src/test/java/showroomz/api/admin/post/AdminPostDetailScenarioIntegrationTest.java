@@ -35,6 +35,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("[통합] 어드민 일반 게시물 — 상세 시나리오")
 class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private showroomz.global.config.properties.PostProperties postProperties;
+
     // ------------------------------------------------------------------ 5-1 · 5-2. 존재 · 원문 · 작성자 · 사진
 
     @Nested
@@ -314,6 +317,39 @@ class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
             assertThat(body.get("reports").get("items").get(0).get("handledByName").asText()).isEqualTo("김운영");
             assertThat(body.get("suspensions").get(0).get("suspendedByName").asText()).isEqualTo("김운영");
             assertThat(body.get("appeal").get("reviewedByName").asText()).isEqualTo("박운영");
+        }
+
+        @Test
+        @DisplayName("[56 B3] 조치 모달 정책값 — 상세 policy 는 설정값(이의 7일 · 심사 3영업일 · 유예 7일 · 보관 6개월) · 설정을 바꾸면 "
+                + "그대로 따라가고 실제 조치 기한도 같은 값으로 잡힌다")
+        void policyFollowsSettings() throws Exception {
+            Long postId = publish(soyeon, "정책값", LocalDateTime.now().minusDays(1));
+            JsonNode policy = detail(postId).get("policy");
+            assertThat(policy.get("appealDeadlineDays").asInt()).isEqualTo(7);
+            assertThat(policy.get("appealReviewBusinessDays").asInt()).isEqualTo(3);
+            assertThat(policy.get("downloadGraceDays").asInt()).isEqualTo(7);
+            assertThat(policy.get("retentionMonths").asInt()).isEqualTo(6);
+
+            postProperties.setAppealDeadlineDays(10);
+            postProperties.setAppealReviewBusinessDays(5);
+            postProperties.setDownloadGraceDays(14);
+            postProperties.setRetentionMonths(12);
+            try {
+                JsonNode changed = detail(postId).get("policy");
+                assertThat(changed.get("appealDeadlineDays").asInt()).isEqualTo(10);
+                assertThat(changed.get("appealReviewBusinessDays").asInt()).isEqualTo(5);
+                assertThat(changed.get("downloadGraceDays").asInt()).isEqualTo(14);
+                assertThat(changed.get("retentionMonths").asInt()).isEqualTo(12);
+
+                suspend(postId);
+                JsonNode card = detail(postId).get("suspensions").get(0);
+                assertThat(at(card.get("appealDeadline"))).isEqualTo(at(card.get("suspendedAt")).plusDays(10));
+            } finally {
+                postProperties.setAppealDeadlineDays(7);
+                postProperties.setAppealReviewBusinessDays(3);
+                postProperties.setDownloadGraceDays(7);
+                postProperties.setRetentionMonths(6);
+            }
         }
     }
 

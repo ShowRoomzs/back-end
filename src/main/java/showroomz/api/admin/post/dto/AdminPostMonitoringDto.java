@@ -154,6 +154,26 @@ public class AdminPostMonitoringDto {
         private List<TimelineItem> timeline;
         @Schema(description = "이전 · 다음 — 상세를 연 목록(tab · sort · keyword · showroomId)의 순서 기준")
         private Navigation navigation;
+        @Schema(description = "조치 모달 · 안내 문구의 정책값 — 설정(post.*)에서 읽는다 · FE 하드코딩 금지")
+        private Policy policy;
+    }
+
+    /**
+     * 노출 중지 모달(C4) 「이의가 있으면 7일 안에」 · 심사 카드(C6) 「3영업일 이내」 · 반려 모달(C7) 「유예 기간(7일)」 · 보관 「N개월」의 숫자.
+     * 가정값이라(§24-8 · 법률 자문 대기) 설정으로 바뀐다 — 게시물마다 같은 값이다. 이미 내려진 조치의 기한은 각 카드의 절대 시각이 진실이다.
+     */
+    @Schema(name = "AdminPostPolicy", description = "게시물 조치 정책값 — 지금 조치하면 적용될 값(설정 post.*)")
+    @Getter
+    @AllArgsConstructor
+    public static class Policy {
+        @Schema(description = "이의 신청 기한(일) — 노출 중지 + N일(post.appeal-deadline-days)", example = "7")
+        private int appealDeadlineDays;
+        @Schema(description = "이의 심사 예상 소요(영업일) — 접수 + N영업일(post.appeal-review-business-days)", example = "3")
+        private int appealReviewBusinessDays;
+        @Schema(description = "반려 후 원본 내려받기 유예(일) — 반려 + N일 뒤 영구 삭제(post.download-grace-days)", example = "7")
+        private int downloadGraceDays;
+        @Schema(description = "삭제 게시물 비공개 보관(개월) — 삭제 + N개월 뒤 파기(post.retention-months)", example = "6")
+        private int retentionMonths;
     }
 
     /** 브랜드 상세의 Navigation과 같은 모양이다 — 기준만 id 순이 아니라 목록 순서다(55 계획서 A7) */

@@ -111,6 +111,10 @@ public interface AdminPostControllerDocs {
                     - `navigation` — **상세를 연 목록의 순서**로 바로 앞 · 뒤 게시물(이전 · 다음 버튼). 목록은 탭 · 정렬 · 검색어마다 순서가 달라
                       목록 조회에 쓴 `tab` · `sort` · `keyword` · `showroomId`를 그대로 넘긴다(생략하면 목록 기본값 ALL · ACTION_FIRST).
                       첫 건 · 끝 건이면 그쪽이 null, 그 목록에 없는 게시물(다른 탭 · 작성중)이면 둘 다 null
+                    - `policy` — 조치 모달 · 안내 문구의 정책값(설정 `post.*` · 가정값). 노출 중지 모달(C4) 「7일 안에 이의 신청」 =
+                      `appealDeadlineDays` · 심사 카드(C6) 「3영업일 이내」 = `appealReviewBusinessDays` · 반려 모달(C7) 「유예 기간(7일)」 =
+                      `downloadGraceDays` · 보관 「N개월」 = `retentionMonths`. FE 가 숫자를 하드코딩하지 않는다.
+                      이미 내려진 조치의 기한은 각 카드의 절대 시각(`appealDeadline` · `reviewDueAt` · `graceUntil` · `purgeAt`)이 진실이다
                     """
     )
     @ApiResponses({
