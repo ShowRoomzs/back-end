@@ -116,6 +116,11 @@ portone:
     kakaopay: ${PORTONE_CHANNEL_KAKAOPAY:}          # 비워 두면 카드 채널을 따라간다
     naverpay: ${PORTONE_CHANNEL_NAVERPAY:}
     tosspay: ${PORTONE_CHANNEL_TOSSPAY:}
+    identity: ${PORTONE_CHANNEL_IDENTITY:}          # KCP 휴대폰 본인확인 채널(57 설계서 6-1) — 결제 채널과 다른 키
+  identity:                                         # 본인인증 — enabled=false 면 결제가 켜져 있어도 FakeIdentityGateway
+    enabled: ${PORTONE_IDENTITY_ENABLED:true}
+    ttl-minutes: 10                                 # 시작 → 완료 상한
+    duplicate-block: ${IDENTITY_DUPLICATE_BLOCK:true}   # DI 중복 가입 차단(확정) — 장애 때만 false · DB UNIQUE 는 남는다
 
 # TossPayoutsProperties.java — 토스페이먼츠 지급대행(Payouts v2) · 44_토스페이먼츠_지급대행_연동_BE_설계서.md 6-3. 결제(포트원 허브형)와 키를 공유하지 않는다
 toss:

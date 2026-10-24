@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.app.auth.service.IdentityVerificationService;
-import showroomz.api.app.auth.service.IdentityVerificationService.IdentityVerification;
 import showroomz.api.app.setting.DTO.AccountInfoResponse;
 import showroomz.api.app.setting.DTO.IdentityReverifyRequest;
 import showroomz.api.app.setting.DTO.NotificationSettingRequest;
@@ -160,15 +159,9 @@ public class SettingService {
                 .agreed(true)
                 .build());
 
-        // TODO(PASS 연동): 인증 결과가 기존 명의와 다를 때(타인 명의) 처리 정책이 정해지면 여기서 분기한다.
-        IdentityVerification verification = identityVerificationService.verify(username);
-        user.updateIdentity(
-                verification.getName(),
-                verification.getBirthday(),
-                verification.getGender(),
-                verification.getPhoneNumber(),
-                verification.getVerifiedAt()
-        );
+        // 완료 API 가 보관한 REVERIFY 행을 회원 행으로 옮긴다(57 설계서 3-4). 없으면 400 IDENTITY_VERIFICATION_REQUIRED.
+        // 타인 명의(기존 DI 와 다름)는 정책 미정이라 서비스가 WARN 만 남기고 허용한다(13절 #7).
+        identityVerificationService.consumeForReverify(user, LocalDateTime.now());
 
         return new AccountInfoResponse(
                 MaskingUtils.maskName(user.getName()),

@@ -64,6 +64,7 @@ public class UserService {
     private final OrderProductRepository orderProductRepository;
     private final DeviceTokenService deviceTokenService;
     private final SuspendedWithdrawalPolicy suspendedWithdrawal;
+    private final showroomz.domain.member.user.repository.IdentityVerificationRepository identityVerificationRepository;
 
     /**
      * 더 이상 진행 중이 아닌 주문 상태 — 이 셋을 뺀 나머지가 탈퇴를 막는다. 전량 반품(RETURNED)도 항목의 종결이다.
@@ -418,8 +419,10 @@ public class UserService {
                     .build());
         }
 
-        // 8. 회원 행에 남은 개인정보 파기 (닉네임·프로필 사진·본인인증 정보·환불 계좌)
+        // 8. 회원 행에 남은 개인정보 파기 (닉네임·프로필 사진·본인인증 정보·CI/DI·환불 계좌)
         user.purgeOnWithdrawal();
+        //    본인인증 행(identity_verification)에 남은 인증 결과도 즉시 비운다(57 설계서 5절) — 행 자체는 조사 자료로 남는다.
+        identityVerificationRepository.purgePersonalDataByUser(user.getId());
 
         // Dirty Checking(변경 감지)에 의해 트랜잭션 종료 시 자동으로 Update 쿼리가 실행됩니다.
     }

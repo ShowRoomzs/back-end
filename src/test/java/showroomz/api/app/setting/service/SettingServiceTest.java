@@ -12,7 +12,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.service.IdentityVerificationService;
-import showroomz.api.app.auth.service.IdentityVerificationService.IdentityVerification;
 import showroomz.api.app.setting.DTO.AccountInfoResponse;
 import showroomz.api.app.setting.DTO.IdentityReverifyRequest;
 import showroomz.api.app.setting.DTO.NotificationSettingRequest;
@@ -33,7 +32,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
@@ -207,21 +209,38 @@ class SettingServiceTest {
             assertThat(response.getIdentityVerifiedAt()).isNull();
         }
 
+        /** 완료 API 가 보관한 결과를 옮기는 것은 IdentityVerificationService 의 몫(57 설계서 3-4) — 여기서는 옮긴 뒤 마스킹만 본다. */
         @Test
-        @DisplayName("재인증은 PASS 결과로 회원정보를 덮어쓰고 마스킹한 값을 돌려준다")
+        @DisplayName("재인증은 보관된 인증 결과로 회원정보를 덮어쓰고 마스킹한 값을 돌려준다")
         void reverifyOverwritesIdentityFromVerificationResult() {
             givenUser();
             LocalDateTime verifiedAt = LocalDateTime.now();
-            given(identityVerificationService.verify(USERNAME)).willReturn(
-                    new IdentityVerification("홍길동", "1998-04-12", "FEMALE", "01000000000", verifiedAt));
+            willAnswer(invocation -> {
+                user.applyIdentity("홍길동", "1998-04-12", "FEMALE", "01000000000", "SKT", false, "ci-enc", "di-enc", "di-hash", verifiedAt);
+                return null;
+            }).given(identityVerificationService).consumeForReverify(eq(user), any());
 
             AccountInfoResponse response = settingService.reverifyIdentity(USERNAME, reverifyRequest(true));
 
             assertThat(user.getName()).isEqualTo("홍길동");
             assertThat(user.getPhoneNumber()).isEqualTo("01000000000");
             assertThat(user.getIdentityVerifiedAt()).isEqualTo(verifiedAt);
+            assertThat(user.getIdentityDiHash()).isEqualTo("di-hash");
             assertThat(response.getName()).isEqualTo("홍길*");
             assertThat(response.getPhoneNumber()).isEqualTo("010-****-0000");
+        }
+
+        @Test
+        @DisplayName("완료된 인증이 없으면 서비스가 400 을 던지고 회원정보는 그대로다")
+        void reverifyWithoutVerifiedRowIsRejected() {
+            givenUser();
+            willThrow(new BusinessException(ErrorCode.IDENTITY_VERIFICATION_REQUIRED))
+                    .given(identityVerificationService).consumeForReverify(eq(user), any());
+
+            assertThatThrownBy(() -> settingService.reverifyIdentity(USERNAME, reverifyRequest(true)))
+                    .isInstanceOf(BusinessException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorCode.IDENTITY_VERIFICATION_REQUIRED);
+            assertThat(user.getIdentityVerifiedAt()).isNull();
         }
 
         /** 가입 시 동의와 별개의 새 수집 행위라 매번 이력에 남는다 — 같은 값이어도 누적된다. */
@@ -229,8 +248,6 @@ class SettingServiceTest {
         @DisplayName("재인증 동의는 매번 이력에 남는다")
         void reverifyConsentIsRecordedEveryTime() {
             givenUser();
-            given(identityVerificationService.verify(USERNAME)).willReturn(
-                    new IdentityVerification("홍길동", "1998-04-12", "FEMALE", "01000000000", LocalDateTime.now()));
 
             settingService.reverifyIdentity(USERNAME, reverifyRequest(true));
 
@@ -250,7 +267,7 @@ class SettingServiceTest {
                     .hasFieldOrPropertyWithValue("errorCode", ErrorCode.IDENTITY_CONSENT_REQUIRED);
 
             verify(userConsentHistoryRepository, never()).save(any());
-            verify(identityVerificationService, never()).verify(any());
+            verify(identityVerificationService, never()).consumeForReverify(any(), any());
         }
     }
 

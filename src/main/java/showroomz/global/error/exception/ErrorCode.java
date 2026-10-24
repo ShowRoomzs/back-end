@@ -62,6 +62,15 @@ public enum ErrorCode {
     USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW(HttpStatus.CONFLICT, "USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW", "인플루언서 계정은 쇼룸 스튜디오 기본정보에서 탈퇴를 신청해 주세요."),
     // C15-2 회원정보 변경 — 재인증은 가입 시 동의와 별개의 새 수집 행위라 매번 다시 동의를 받는다
     IDENTITY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "IDENTITY_CONSENT_REQUIRED", "본인확인을 위한 개인정보 수집·이용에 동의해야 합니다."),
+    // 포트원 KCP 본인인증(57 설계서 7-3) — 가입 · 재인증은 완료 API 뒤에만 성공한다
+    IDENTITY_VERIFICATION_REQUIRED(HttpStatus.BAD_REQUEST, "IDENTITY_VERIFICATION_REQUIRED", "본인인증을 먼저 완료해 주세요."),
+    IDENTITY_VERIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "IDENTITY_VERIFICATION_NOT_FOUND", "본인인증 요청을 찾을 수 없습니다."),
+    IDENTITY_VERIFICATION_NOT_COMPLETED(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION_NOT_COMPLETED", "본인인증이 완료되지 않았습니다. 다시 시도해 주세요."),
+    IDENTITY_VERIFICATION_EXPIRED(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION_EXPIRED", "본인인증 유효 시간이 지났습니다. 다시 시도해 주세요."),
+    IDENTITY_VERIFICATION_CONSUMED(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION_CONSUMED", "이미 사용된 본인인증입니다."),
+    IDENTITY_VERIFICATION_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "IDENTITY_VERIFICATION_FAILED", "본인인증에 실패했습니다. 다시 시도해 주세요."),
+    IDENTITY_ALREADY_REGISTERED(HttpStatus.CONFLICT, "IDENTITY_ALREADY_REGISTERED", "이미 가입된 본인인증 정보입니다."),
+    IDENTITY_GATEWAY_ERROR(HttpStatus.BAD_GATEWAY, "IDENTITY_GATEWAY_ERROR", "인증사 통신에 실패했습니다. 잠시 후 다시 시도해 주세요."),
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
     MISSING_REFRESH_TOKEN_LOGOUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "Refresh Token이 필요합니다."),
     INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "아이디 또는 비밀번호가 올바르지 않습니다."),

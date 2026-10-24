@@ -195,7 +195,9 @@ public interface SettingControllerDocs {
                     "false면 400 `IDENTITY_CONSENT_REQUIRED`.\n" +
                     "- 동의 일시는 회원 동의 이력에 기록됩니다.\n" +
                     "- 인증이 끝나면 이름·생년월일·성별·휴대폰번호와 본인인증 시각이 갱신되고, 갱신된 마스킹 값을 반환합니다.\n\n" +
-                    "**PASS 연동 전까지는 임시 인증 데이터로 갱신됩니다.**\n\n" +
+                    "**선행 조건(57 설계서 3-4):** `POST /v1/user/identity-verifications`(purpose=REVERIFY) → 포트원 SDK 창 → " +
+                    "`POST /v1/user/identity-verifications/{id}/complete` 가 10분 안에 끝나 있어야 합니다. 없으면 400 `IDENTITY_VERIFICATION_REQUIRED` " +
+                    "(동의 이력은 그 전에 남습니다).\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

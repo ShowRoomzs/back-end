@@ -16,7 +16,6 @@ import showroomz.api.app.auth.refreshToken.UserRefreshToken;
 import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.service.AuthService;
 import showroomz.api.app.auth.service.IdentityVerificationService;
-import showroomz.api.app.auth.service.IdentityVerificationService.IdentityVerification;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
@@ -140,15 +139,7 @@ public class AuthController implements AuthControllerDocs {
             }
         }
 
-        // 3. 본인인증(C0-2) 결과 조회 — PASS 연동 전까지는 임시 데이터
-        IdentityVerification verification = identityVerificationService.verify(username);
-
-        // 만 14세 미만은 가입 차단 (C0 1d)
-        if (verification.isUnderMinAge()) {
-            throw new BusinessException(ErrorCode.UNDER_MIN_AGE);
-        }
-
-        // 4. Users 조회 및 업데이트
+        // 3. Users 조회
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
@@ -157,14 +148,12 @@ public class AuthController implements AuthControllerDocs {
             throw new BusinessException(ErrorCode.ALREADY_REGISTERED);
         }
 
-        user.setNickname(registerRequest.getNickname());
+        // 4. 본인인증(C0-2) 결과 결합 — 완료 API(POST /identity-verifications/{id}/complete)가 보관한 VERIFIED 행을 회원 행으로 옮긴다.
+        //    실명·생년월일·성별·연락처·CI/DI 는 사용자 입력이 아니라 인증 결과다. 만 14세 판정은 완료 API 에서 끝났다(57 설계서 3-3).
+        //    없으면 400 IDENTITY_VERIFICATION_REQUIRED.
+        identityVerificationService.consumeForSignup(user, LocalDateTime.now());
 
-        // 실명·생년월일·성별·연락처는 사용자 입력이 아니라 본인인증 결과로 저장
-        user.setName(verification.getName());
-        user.setBirthday(verification.getBirthday());
-        user.setGender(verification.getGender());
-        user.setPhoneNumber(verification.getPhoneNumber());
-        user.setIdentityVerifiedAt(verification.getVerifiedAt());
+        user.setNickname(registerRequest.getNickname());
 
         // 동의 항목 저장
         user.setAgeAgree(registerRequest.isAgeAgree());

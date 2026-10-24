@@ -204,9 +204,12 @@ class ConsumerHomeAndSettingsIntegrationTest extends IntegrationTestSupport {
                             org.hamcrest.Matchers.containsString("1998-04-12"))));
         }
 
+        /** 57 설계서 3-4 — 재인증은 본인인증 완료(시작 → SDK → 완료) 뒤에만 성공한다. 상세 분기는 IdentityVerificationIntegrationTest. */
         @Test
         @DisplayName("재인증에 동의하면 인증 결과로 회원정보가 채워지고 마스킹돼 내려온다")
         void reverifyFillsIdentity() throws Exception {
+            completeIdentityVerification();
+
             mockMvc.perform(post(REVERIFY_PATH)
                             .header(HttpHeaders.AUTHORIZATION, userToken)
                             .contentType(MediaType.APPLICATION_JSON)
@@ -237,11 +240,27 @@ class ConsumerHomeAndSettingsIntegrationTest extends IntegrationTestSupport {
         @Test
         @DisplayName("재인증 동의는 부를 때마다 이력에 쌓인다")
         void reverifyConsentAccumulates() throws Exception {
+            completeIdentityVerification();
             reverify();
             assertThat(identityHistoryCount()).isEqualTo(1);
 
+            completeIdentityVerification();
             reverify();
             assertThat(identityHistoryCount()).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("본인인증을 완료하지 않고 재인증하면 400 — 동의 이력은 남는다(동의는 별개의 수집 행위)")
+        void reverifyWithoutVerificationIsRejected() throws Exception {
+            mockMvc.perform(post(REVERIFY_PATH)
+                            .header(HttpHeaders.AUTHORIZATION, userToken)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(toJson(Map.of("agreeConsent", true))))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("IDENTITY_VERIFICATION_REQUIRED"));
+
+            mockMvc.perform(get(ACCOUNT_PATH).header(HttpHeaders.AUTHORIZATION, userToken))
+                    .andExpect(jsonPath("$.identityVerifiedAt").doesNotExist());
         }
     }
 
@@ -295,6 +314,20 @@ class ConsumerHomeAndSettingsIntegrationTest extends IntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(Map.of("agreeConsent", true))))
                 .andExpect(status().is2xxSuccessful());
+    }
+
+    /** 본인인증 시작 → (SDK 창은 Fake 가 대신) → 완료 — 재인증 API 가 소비할 REVERIFY 행을 만든다. */
+    private void completeIdentityVerification() throws Exception {
+        String body = mockMvc.perform(post("/v1/user/identity-verifications")
+                        .header(HttpHeaders.AUTHORIZATION, userToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("purpose", "REVERIFY"))))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        String id = com.jayway.jsonpath.JsonPath.read(body, "$.identityVerificationId");
+        mockMvc.perform(post("/v1/user/identity-verifications/" + id + "/complete")
+                        .header(HttpHeaders.AUTHORIZATION, userToken))
+                .andExpect(status().isOk());
     }
 
     private int consentHistoryCount(String consentType) {
