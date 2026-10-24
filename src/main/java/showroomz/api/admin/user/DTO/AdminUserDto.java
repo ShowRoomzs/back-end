@@ -49,7 +49,9 @@ public class AdminUserDto {
             @Schema(description = "상세 사유 — 어드민 전용") String reasonDetail,
             LocalDateTime suspendedAt,
             @Schema(example = "김운영") String suspendedByName,
-            @Schema(description = "이 정지의 소명 문의(최신순) — 해제 모달의 「소명 문의 번호 · 클릭 이동」") List<AppealInquiry> appealInquiries) {
+            @Schema(description = "이 정지의 소명 문의(최신순) — 해제 모달의 「소명 문의 번호 · 클릭 이동」") List<AppealInquiry> appealInquiries,
+            @Schema(description = "정지 기간 · 자동 해제 · 이의 신청 기한 · 소명 검토 일수(1021 기-02) — 파트너 · 스튜디오 · 앱 배너와 같은 꼴 · 55 계획서 M5")
+            showroomz.api.common.account.dto.MemberAccountStatusResponse.Term term) {
     }
 
     public record AppealInquiry(Long inquiryId, boolean answered, LocalDateTime createdAt) {

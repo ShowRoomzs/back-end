@@ -113,6 +113,7 @@ public class AdminBrandQueryService {
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementTaxDocumentRepository taxDocumentRepository;
     private final BrandWithdrawalEligibility withdrawalEligibility;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     /** 모달 셀렉트 사유 목록(정합 계획서 R1-9) — enum 단일 소스. 인플루언서 상세와 같은 조립식이다. */
     public AdminBrandDto.ReasonOptions reasonOptions() {
@@ -402,9 +403,11 @@ public class AdminBrandQueryService {
                 seller.getCreatedAt(), approvedAt, seller.getLastLoginAt(), sanction, withdrawal, actions);
     }
 
-    private static AdminBrandDto.Sanction toSanction(BrandSanction s, Long threadId) {
+    private AdminBrandDto.Sanction toSanction(BrandSanction s, Long threadId) {
         return new AdminBrandDto.Sanction(s.getId(), s.getReason().name(), s.getReason().getLabel(), s.getReasonDetail(),
-                s.isPayoutHeld(), s.getSuspendedAt(), s.getSuspendedByName(), threadId);
+                s.isPayoutHeld(), s.getSuspendedAt(), s.getSuspendedByName(), threadId,
+                showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(s.getEndsOn(), s.getSuspendedAt(),
+                        s.getAppealDeadlineAt(), termPolicy.appealReviewBusinessDays()));
     }
 
     /** 진행 중 칩 8종 — 1건 이상만(§52-3). */

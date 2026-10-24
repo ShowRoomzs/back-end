@@ -47,7 +47,11 @@ class Design1021P7SanctionWithdrawalIntegrationTest extends SettlementTestSuppor
                 .andExpect(status().isBadRequest());
         adminPost("/v1/admin/brands/" + brand.marketId() + "/suspend",
                 Map.of("reason", "PRODUCT_INFO_FALSIFIED", "endsOn", today.plusDays(6).toString()))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                // 55 계획서 M5 — 어드민 상세의 정지 블록에도 같은 기간 블록이 실린다
+                .andExpect(jsonPath("$.currentStatus.sanction.term.endsOn").value(today.plusDays(6).toString()))
+                .andExpect(jsonPath("$.currentStatus.sanction.term.periodDays").value(7))
+                .andExpect(jsonPath("$.currentStatus.sanction.term.appealDeadlineAt").exists());
 
         JsonNode account = json(sellerGet("/v1/seller/account-status").andExpect(status().isOk()));
         assertThat(account.at("/sanction/term/endsOn").asText()).isEqualTo(today.plusDays(6).toString());

@@ -24,6 +24,7 @@ public class AdminUserStatusCardAssembler {
 
     private final UserSanctionRepository sanctions;
     private final OneToOneInquiryRepository inquiries;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     public StatusCard statusCard(Users user) {
         UserSanction open = sanctions.findByUserIdAndReleasedAtIsNull(user.getId()).orElse(null);
@@ -38,6 +39,8 @@ public class AdminUserStatusCardAssembler {
                 .map(inquiry -> new AppealInquiry(inquiry.getId(), inquiry.isAnswered(), inquiry.getCreatedAt()))
                 .toList();
         return new SanctionInfo(sanction.getId(), sanction.getReason(), sanction.getReason().getLabel(),
-                sanction.getReasonDetail(), sanction.getSuspendedAt(), sanction.getSuspendedByName(), appeals);
+                sanction.getReasonDetail(), sanction.getSuspendedAt(), sanction.getSuspendedByName(), appeals,
+                showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(sanction.getEndsOn(), sanction.getSuspendedAt(),
+                        sanction.getAppealDeadlineAt(), termPolicy.appealReviewBusinessDays()));
     }
 }

@@ -171,7 +171,9 @@ public final class AdminBrandDto {
                            String reasonLabel, @Schema(description = "상세 사유 전문") String reasonDetail,
                            @Schema(description = "브랜드 몫 지급 정지 — 사유가 정한다") boolean payoutHeld,
                            LocalDateTime suspendedAt, String suspendedByName,
-                           @Schema(description = "소명 경로 — 운영팀 스레드") Long threadId) {
+                           @Schema(description = "소명 경로 — 운영팀 스레드") Long threadId,
+                           @Schema(description = "정지 기간 · 자동 해제 · 이의 신청 기한 · 소명 검토 일수(1021 기-02) — 파트너 · 스튜디오 · 앱 배너와 같은 꼴 · 55 계획서 M5")
+                           showroomz.api.common.account.dto.MemberAccountStatusResponse.Term term) {
     }
 
     @Schema(name = "AdminBrandWithdrawal")

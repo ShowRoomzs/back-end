@@ -93,7 +93,7 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
 
     @Test
     @DisplayName("인플루언서 지급 정지 사유 · 기간 종료 — 시스템 해제 · 보류된 지급 예정 행 복귀 · 운영팀 해제 카드 · 처리 이력 주체 시스템 · 자동 해제 표식")
-    void creatorAutoReleaseRestoresPayout() {
+    void creatorAutoReleaseRestoresPayout() throws Exception {
         Settlement s = seedSettlement("정지 해제 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
         jdbc.update("UPDATE settlement_payout SET status = 'SCHEDULED', due_date = ? WHERE settlement_id = ? "
                 + "AND payee = 'CREATOR'", LocalDate.now().plusDays(2), s.getId());
@@ -102,6 +102,10 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
                 CreatorSuspensionReason.SETTLEMENT_INFO_MISMATCH, null, now.toLocalDate(), operator.getId(), "운영자", now));
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("CREATOR_SUSPENDED");
+        // 55 계획서 M5 — 어드민 인플루언서 상세 정지 블록에도 기간 블록
+        adminGet("/v1/admin/creators/" + creator.getId())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.endsOn").value(now.toLocalDate().toString()))
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.periodDays").value(1));
 
         assertThat(inTransaction(() -> creatorSanctionService.releaseByTerm(creator.getId(), now))).isNull();
         LocalDateTime nextDay = now.toLocalDate().plusDays(1).atTime(0, 5);
@@ -129,6 +133,12 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
         LocalDate today = LocalDate.now();
         adminPost("/v1/admin/users/" + consumer.getId() + "/suspend",
                 Map.of("reason", "RETURN_ABUSE", "endsOn", today.toString())).andExpect(status().isOk());
+        // 55 계획서 M5 — 어드민 소비자 상세 상태 카드에도 기간 블록
+        adminGet("/v1/admin/users/" + consumer.getId())
+                .andExpect(jsonPath("$.statusCard.sanction.term.endsOn").value(today.toString()))
+                .andExpect(jsonPath("$.statusCard.sanction.term.periodDays").value(1))
+                .andExpect(jsonPath("$.statusCard.sanction.term.autoReleaseAt").value(org.hamcrest.Matchers.startsWith(
+                        today.plusDays(1).toString())));
         consumerAccountStatus().andExpect(jsonPath("$.status").value("SUSPENDED"))
                 .andExpect(jsonPath("$.suspension.term.endsOn").value(today.toString()))
                 .andExpect(jsonPath("$.suspension.term.periodDays").value(1))

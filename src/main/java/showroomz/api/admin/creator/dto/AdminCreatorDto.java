@@ -154,7 +154,9 @@ public final class AdminCreatorDto {
             LocalDateTime suspendedAt,
             String operatorName,
             @Schema(description = "리워드 지급 정지 — 정산 정보 불일치만") boolean payoutHeld,
-            @Schema(example = "유지 · 사유가 정산 정보와 무관") String payoutNote) {
+            @Schema(example = "유지 · 사유가 정산 정보와 무관") String payoutNote,
+            @Schema(description = "정지 기간 · 자동 해제 · 이의 신청 기한 · 소명 검토 일수(1021 기-02) — 파트너 · 스튜디오 · 앱 배너와 같은 꼴 · 55 계획서 M5")
+            showroomz.api.common.account.dto.MemberAccountStatusResponse.Term term) {
     }
 
     public record Withdrawal(LocalDateTime withdrawnAt, LocalDateTime requestedAt, String operatorName) {
