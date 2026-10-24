@@ -59,6 +59,38 @@ class CreatorHomeDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("[56 A4] 다가오는 일정 오픈 카드 — kind · 공구 상태 · 게시물 상태로 문구를 고른다(승인 완료 SCHEDULED · 운영자 검토 중 PENDING_APPROVAL)")
+    void upcomingOpenCardCarriesPostStatus() throws Exception {
+        // 진행 중 공구(fixture)는 4일 뒤 종료 — 그 뒤로 오픈 두 건
+        LocalDateTime base = groupBuy.getEndAt().plusDays(1).withHour(9).withMinute(0).withSecond(0);
+        GroupBuy approved = seed(brand, creator, "여름 수분 세럼 공구", base, base.plusDays(7));
+        moveTo(approved.getId(), GroupBuyStatus.READY);
+        seedPost(approved.getId(), GroupBuyPostReviewStatus.APPROVED, false);
+        GroupBuy reviewing = seed(brand, creator, "수분 토너 대용량 공구", base.plusDays(1), base.plusDays(8));
+        seedPost(reviewing.getId(), GroupBuyPostReviewStatus.PENDING, false);
+
+        JsonNode upcoming = json(creatorGet(HOME).andExpect(status().isOk())).get("upcoming");
+        assertThat(upcoming).hasSize(3);
+        assertThat(upcoming.at("/0/kind").asText()).isEqualTo("GROUP_BUY_END");
+        assertThat(upcoming.at("/0/groupBuyStatus").asText()).isEqualTo("IN_PROGRESS");
+
+        JsonNode open = upcoming.get(1);
+        assertThat(open.at("/target/id").asLong()).isEqualTo(approved.getId());
+        assertThat(open.get("kind").asText()).isEqualTo("GROUP_BUY_OPEN");
+        assertThat(open.get("groupBuyStatus").asText()).isEqualTo("READY");
+        assertThat(open.get("postStatus").asText()).isEqualTo("SCHEDULED");
+        // 기존 필드는 그대로
+        assertThat(open.get("title").asText()).isEqualTo("공구 오픈 · 여름 수분 세럼 공구");
+        assertThat(open.get("description").asText()).isEqualTo("오픈되면 게시물이 공개되고 판매가 시작돼요");
+
+        JsonNode pending = upcoming.get(2);
+        assertThat(pending.at("/target/id").asLong()).isEqualTo(reviewing.getId());
+        assertThat(pending.get("kind").asText()).isEqualTo("GROUP_BUY_OPEN");
+        assertThat(pending.get("groupBuyStatus").asText()).isEqualTo("PREPARING");
+        assertThat(pending.get("postStatus").asText()).isEqualTo("PENDING_APPROVAL");
+    }
+
+    @Test
     @DisplayName("CD-02 세금계산서 반려 — 「다시 입력」 · 반려 안내 · extra.rejected / 제출됨 · 검증됨은 할 일이 아니다")
     void rejectedTaxInvoice() throws Exception {
         Settlement rejected = seedSettlement("반려 공구", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);

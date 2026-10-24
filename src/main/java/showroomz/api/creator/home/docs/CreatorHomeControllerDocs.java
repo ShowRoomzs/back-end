@@ -25,7 +25,7 @@ public interface CreatorHomeControllerDocs {
                     | `guide` | H3 시작 가이드 — 브랜드 연결 요청을 한 번이라도 받으면 `visible = false`(숨기기 버튼 없음) |
                     | `live` | 진행 중 공구 실시간 띠 — 없으면 null(H3). 갱신은 `/home/live` |
                     | `todos` | 할 일 카드 — **서버가 정렬 · 문구를 정한다**. 정지 중 막힌 카드만 `blocked` |
-                    | `upcoming` | 다가오는 일정 3건(오픈 · 종료) — `todos` 가 비면(H2) 그린다 |
+                    | `upcoming` | 다가오는 일정 3건(오픈 · 종료 — `kind`) — `todos` 가 비면(H2) 그린다. 오픈 카드 문구는 `postStatus` 로 고른다(`SCHEDULED` 「게시물 승인 완료 · 오픈 대기」 · `PENDING_APPROVAL` 「운영자가 게시물을 검토하고 있어요」) · `groupBuyStatus` 함께 |
                     | `reward` | 지급 예정 · 누적 수령(세후) · `payoutCondition`(「지급 조건 세금계산서 확인 후」) |
                     | `showroom7d` | 쇼룸 최근 7일 방문자 · 신규 팔로워 · 전환율 — 쇼룸 통계 7일과 같은 값 |
 

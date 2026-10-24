@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.api.common.account.dto.MemberAccountStatusResponse;
 import showroomz.api.common.calendar.dto.HolidayItem;
 import showroomz.api.common.sanction.SanctionHoldView;
+import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -82,12 +84,19 @@ public final class CreatorHomeDto {
     public record Blocked(@Schema(example = "정지 해제 후 등록할 수 있어요") String message) {
     }
 
-    @Schema(name = "CreatorHomeUpcoming")
+    @Schema(name = "CreatorHomeUpcoming", description = "다가오는 일정 카드 — 오픈 카드 문구는 FE 가 postStatus 로 고른다(시안 H2)")
     public record Upcoming(
             LocalDate date,
             @Schema(example = "공구 종료 · 밤 리페어 크림 공구") String title,
             @Schema(example = "종료 후 주문이 모두 끝나면 정산이 생성돼요") String description,
-            Target target
+            Target target,
+            @Schema(description = "GROUP_BUY_OPEN(공구 오픈) · GROUP_BUY_END(공구 종료)", example = "GROUP_BUY_OPEN") String kind,
+            @Schema(description = "공구 상태 — 오픈 카드는 PREPARING(준비중) · READY(준비완료)", example = "READY")
+            GroupBuyStatus groupBuyStatus,
+            @Schema(description = "공구 게시물 상태(공구 관리 · 파트너 홈과 같은 파생값) — 오픈 카드 문구의 재료: "
+                    + "SCHEDULED 「게시물 승인 완료 · 오픈 대기」 · PENDING_APPROVAL 「운영자가 게시물을 검토하고 있어요」 · "
+                    + "NOT_WRITTEN · WRITING · REJECTED · EXPOSURE_SUSPENDED", example = "SCHEDULED")
+            GroupBuyPostStatus postStatus
     ) {
     }
 
