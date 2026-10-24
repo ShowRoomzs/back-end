@@ -102,8 +102,9 @@ public class CreatorAccountVerificationService {
                     PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, now.toLocalDate(), now);
         } else if (result.failCode() != null && ACCOUNT_FAIL_CODES.contains(result.failCode())) {
             creator.markAccountFailed(result.failCode());
+            // 보류 사유 enum 에 없는 코드(BANK_REJECTED)는 정산 정보 화면의 failReason 과 같은 라벨 — 알림에 코드를 그대로 싣지 않는다.
             notifier.accountVerificationFailed(creatorId, PayoutBlockReason.fromCode(result.failCode())
-                    .map(PayoutBlockReason::getLabel).orElse(result.failCode()));
+                    .map(PayoutBlockReason::getLabel).orElse("계좌 확인 실패"));
         } else {
             log.warn("인플루언서 계좌 확인 보류(재시도 대상) - creatorId: {}, code: {}, reason: {}", creatorId,
                     result.failCode(), result.failReason());
