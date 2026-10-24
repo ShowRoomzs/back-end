@@ -169,6 +169,27 @@ class AdminBrandListIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
+    @DisplayName("[55 M2-04] 옛 파라미터 withdrawalPending=true · false 는 무시된다 — 대기만 거르지 않고 전체 탭과 같은 행 · 요약 · 탭과 함께 보내도 그 탭 그대로")
+    void legacyWithdrawalPendingParamIgnored() throws Exception {
+        BrandFixture.Brand waiting = cleanBrand("옛대기");
+        cleanBrand("옛활성");
+        withdrawalService.request(waiting.marketId(), null, null, LocalDateTime.now());
+
+        JsonNode all = json(adminGet(BRANDS).andExpect(status().isOk()));
+        assertThat(all.path("content")).hasSize(3);
+        for (String value : List.of("true", "false")) {
+            JsonNode legacy = json(adminList("withdrawalPending", value).andExpect(status().isOk()));
+            assertThat(legacy.path("content")).as(value).isEqualTo(all.path("content"));
+            assertThat(legacy.path("summary")).as(value).isEqualTo(all.path("summary"));
+        }
+
+        JsonNode active = json(adminGet(BRANDS + "?tab=ACTIVE").andExpect(status().isOk()));
+        assertThat(textsAt(active.path("content"), "brandName")).containsExactlyInAnyOrder("글로우랩", "옛활성");
+        assertThat(json(adminList("tab", "ACTIVE", "withdrawalPending", "true").andExpect(status().isOk())).path("content"))
+                .isEqualTo(active.path("content"));
+    }
+
+    @Test
     @DisplayName("55 M2 담당자 연락처 · 연결 인플루언서 — 연락처는 마스킹하지 않는다 · 연결중 쌍만 센다 · 탈퇴 행은 연락처 null")
     void contactAndConnectedCreators() throws Exception {
         BrandFixture.Brand owner = cleanBrand("연결브랜드");

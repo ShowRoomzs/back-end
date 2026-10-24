@@ -520,6 +520,30 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
+    @DisplayName("[55 M7-05] 지운 옛 반려 사유(CLAIM_UNRESOLVED · UNSHIPPED_ORDERS)로 반려 — 400 INVALID_INPUT(enum 역직렬화 실패) · 신청은 대기 그대로 · "
+            + "이력 · 메일 없음")
+    void removedRejectReasonsAreRejected() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("옛반려사유");
+        Long requestId = withdrawalService.request(owner.marketId(), null, null, LocalDateTime.now()).getId();
+
+        for (String removed : List.of("CLAIM_UNRESOLVED", "UNSHIPPED_ORDERS")) {
+            reject(owner.marketId(), requestId, Map.of("reason", removed, "note", "반품 처리 후 다시 신청해 주세요."))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+
+        BrandWithdrawalRequest request = withdrawalRepository.findById(requestId).orElseThrow();
+        assertThat(request.getStatus()).isEqualTo(MemberWithdrawalStatus.PENDING);
+        assertThat(request.getRejectReason()).isNull();
+        assertThat(textsAt(json(adminGet(base(owner.marketId()) + "/histories")).path("content"), "type"))
+                .doesNotContain("WITHDRAWAL_REJECTED");
+        org.mockito.Mockito.verify(mailService, org.mockito.Mockito.never()).sendMemberWithdrawalRejectedEmail(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        brandDetail(owner.marketId()).andExpect(jsonPath("$.rail.currentStatus.actions.canReviewWithdrawal").value(true));
+    }
+
+    @Test
     @DisplayName("WR-02 · WR-04 반려 결과 — 행 · 이력(정보 톤) · 회원 상태 불변(정지면 정지 그대로) · 파트너 계정 탭 lastRejection")
     void rejectResult() throws Exception {
         BrandFixture.Brand owner = cleanBrand("반려결과");
