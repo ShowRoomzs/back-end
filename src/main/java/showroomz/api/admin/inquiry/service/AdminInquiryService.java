@@ -49,10 +49,12 @@ public class AdminInquiryService {
     private final AdminInquiryQueryRepository inquiryQueryRepository;
     private final SellerRepository sellerRepository;
 
+    /** @param userId 작성한 소비자로 좁힌다 — 소비자 상세에서 넘어온 진입(56 C1). 탭 건수도 같은 소비자 기준이다 */
     public AdminInquiryDto.ListResponse getList(AdminInquiryStatusFilter statusFilter, CsCategory type,
-                                                String keyword, Pageable pageable) {
+                                                String keyword, Long userId, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
-        Page<OneToOneInquiry> page = inquiryQueryRepository.search(statusFilter, type, normalizedKeyword, pageable);
+        Page<OneToOneInquiry> page = inquiryQueryRepository.search(statusFilter, type, normalizedKeyword, userId,
+                pageable);
 
         LocalDateTime now = LocalDateTime.now();
         List<AdminInquiryDto.ListItem> content = page.getContent().stream()
@@ -62,7 +64,7 @@ public class AdminInquiryService {
         return AdminInquiryDto.ListResponse.builder()
                 .content(content)
                 .pageInfo(new PaginationInfo(page))
-                .statusCounts(buildStatusCounts(type, normalizedKeyword))
+                .statusCounts(buildStatusCounts(type, normalizedKeyword, userId))
                 .build();
     }
 
@@ -82,12 +84,12 @@ public class AdminInquiryService {
     }
 
     public AdminInquiryDto.DetailResponse getDetail(Long inquiryId, AdminInquiryStatusFilter statusFilter,
-                                                    CsCategory type, String keyword) {
+                                                    CsCategory type, String keyword, Long userId) {
         OneToOneInquiry inquiry = getInquiry(inquiryId);
         Users user = inquiry.getUser();
         LocalDateTime now = LocalDateTime.now();
 
-        List<Long> orderedIds = inquiryQueryRepository.findOrderedIds(statusFilter, type, normalize(keyword));
+        List<Long> orderedIds = inquiryQueryRepository.findOrderedIds(statusFilter, type, normalize(keyword), userId);
         int index = orderedIds.indexOf(inquiryId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
@@ -163,8 +165,8 @@ public class AdminInquiryService {
                 .build();
     }
 
-    private AdminInquiryDto.StatusCounts buildStatusCounts(CsCategory type, String keyword) {
-        Map<InquiryStatus, Long> counts = inquiryQueryRepository.countByStatus(type, keyword);
+    private AdminInquiryDto.StatusCounts buildStatusCounts(CsCategory type, String keyword, Long userId) {
+        Map<InquiryStatus, Long> counts = inquiryQueryRepository.countByStatus(type, keyword, userId);
         long waiting = counts.getOrDefault(InquiryStatus.WAITING, 0L);
         long answered = counts.getOrDefault(InquiryStatus.ANSWERED, 0L);
 

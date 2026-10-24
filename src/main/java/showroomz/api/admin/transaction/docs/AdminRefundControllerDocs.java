@@ -50,6 +50,9 @@ public interface AdminRefundControllerDocs {
             - 주문번호 — `20261003-000123`
             - PG 거래번호 — 포트원 거래 id · paymentId
 
+            **소비자 `userId`** — 주문한 소비자만(선택 · 주문 목록 `userId`와 같은 축). 탭의 상태 · 기간 규칙은 그대로입니다.
+            소비자 상세 「환불 실패」 칩은 `tab=FAILED&userId=`로 들어오고, 그 `pageInfo.totalResults`가 칩 건수와 같습니다.
+
             **정렬 `sort`** — `LATEST`(「일시」 최신순 · 기본) · `AMOUNT_DESC`(환불액 높은순 · 동률은 최신 id 먼저)
 
             **페이징** — `page`(1부터) · `size`(기본 20 · **1~100**, 벗어나면 400)
@@ -88,6 +91,7 @@ public interface AdminRefundControllerDocs {
             @Parameter(description = "환불번호(RFD-918 · 918) · 주문번호 · PG 거래번호 정확 일치", example = "RFD-918") String keyword,
             @Parameter(description = "정렬 — LATEST(기본) · AMOUNT_DESC", example = "LATEST") AdminTransactionDto.RefundSort sort,
             @Parameter(description = "[완료 탭] 집행 시각 기준 최근 N일 — 기본 30 · 1 미만은 1. 다른 탭에서는 무시", example = "30") Integer days,
+            @Parameter(description = "주문한 소비자 ID — 소비자 상세에서 넘어온 진입(선택)", example = "88231") Long userId,
             PagingRequest pagingRequest);
 
     @Operation(summary = "환불 요약", description = """

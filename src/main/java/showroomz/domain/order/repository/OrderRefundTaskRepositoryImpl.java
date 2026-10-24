@@ -77,6 +77,9 @@ public class OrderRefundTaskRepositoryImpl implements OrderRefundTaskRepositoryC
         if (condition.sources() != null) {
             where.and(t.source.in(condition.sources()));
         }
+        if (condition.userId() != null) {
+            where.and(o.user.id.eq(condition.userId()));
+        }
         BooleanBuilder keyword = new BooleanBuilder();
         if (condition.refundTaskId() != null) {
             keyword.or(t.id.eq(condition.refundTaskId()));

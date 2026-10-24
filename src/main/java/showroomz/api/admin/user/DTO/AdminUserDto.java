@@ -190,8 +190,25 @@ public class AdminUserDto {
             @Schema(example = "OPEN_INQUIRY") UserPendingChip key,
             @Schema(example = "열린 문의") String label,
             @Schema(description = "열린 문의만 WARNING · 나머지 NEUTRAL", example = "WARNING") String tone,
-            @Schema(example = "1") long count,
-            @Schema(description = "이동할 화면 — INQUIRIES · ORDERS · CLAIMS · REFUNDS(FE 가 userId 를 붙인다)", example = "INQUIRIES") String target) {
+            @Schema(description = "건수 — links[].count 의 합. 각 링크 목록을 그 query 로 부른 결과 건수와 같다(56 C1)", example = "1") long count,
+            @Schema(description = "이동할 화면 — INQUIRIES · ORDERS · CLAIMS · REFUNDS(FE 가 userId 를 붙인다)", example = "INQUIRIES") String target,
+            @Schema(description = "이동 목록(56 C1) — 칩이 가리키는 목록 화면 · 그 목록 API 에 그대로 붙일 쿼리(탭 · 상태 · userId) · 그 목록 건수. "
+                    + "열린 문의만 1:1 문의(INQUIRIES)와 상품 문의(PRODUCT_INQUIRIES) 두 목록으로 갈릴 수 있고, 0건인 목록은 뺀다(하나면 그 목록으로 바로 간다). "
+                    + "나머지 칩은 한 개다")
+            List<PendingChipLink> links) {
+    }
+
+    @Schema(name = "AdminUserPendingChipLink",
+            description = "칩 이동 목록 — target 목록 API 를 query 로 부르면 pageInfo.totalResults 가 count 와 같다. 기간 조건은 없다(클레임 목록은 userId 가 있으면 기본 1개월을 걸지 않는다)")
+    public record PendingChipLink(
+            @Schema(description = "목록 화면 — INQUIRIES(GET /v1/admin/inquiries) · PRODUCT_INQUIRIES(GET /v1/admin/product-inquiries) · "
+                    + "ORDERS(GET /v1/admin/orders) · CLAIMS(GET /v1/admin/claims) · REFUNDS(GET /v1/admin/refunds)", example = "INQUIRIES")
+            String target,
+            @Schema(description = "목록 쿼리 파라미터 — 값은 문자열 · userId 포함. 열린 문의 {status: WAITING} · 배송중 {status: SHIPPING} · "
+                    + "취소 요청 {tab: CANCEL, cancelRequested: true} · 반품·교환 {tab: ALL, openOnly: true} · 환불 실패 {tab: FAILED}",
+                    example = "{\"status\": \"WAITING\", \"userId\": \"88231\"}")
+            java.util.Map<String, String> query,
+            @Schema(description = "그 목록 건수", example = "1") long count) {
     }
 
     @Schema(name = "AdminUserJudgement",

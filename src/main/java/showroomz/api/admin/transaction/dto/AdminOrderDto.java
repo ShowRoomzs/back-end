@@ -95,25 +95,30 @@ public final class AdminOrderDto {
     ) {
     }
 
-    /** 목록 · 요약 조건(37 설계서 2-1 · 8절 #1 · #2). 요약은 탭 · 상태 · 정렬을 무시한다. */
+    /**
+     * 목록 · 요약 조건(37 설계서 2-1 · 8절 #1 · #2). 요약은 탭 · 상태 · 정렬을 무시한다.
+     *
+     * @param cancelRequested 검토 중 취소 요청이 있는 하위주문만(56 C1) — 요약은 이 값도 무시한다
+     */
     public record SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, Long groupBuyId,
                                Long creatorId, Long userId, PaymentMethod paymentMethod, TrackingAlert trackingAlert,
-                               AdminOrderSearchType searchType, String keyword, AdminOrderSort sort) {
+                               AdminOrderSearchType searchType, String keyword, AdminOrderSort sort,
+                               boolean cancelRequested) {
 
         public SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, String keyword) {
-            this(tab, status, marketId, null, null, null, null, null, null, keyword, null);
+            this(tab, status, marketId, null, null, null, null, null, null, keyword, null, false);
         }
 
-        /** 요약용 — 탭만 바꾼 같은 조건(상태 · 정렬은 뺀다). */
+        /** 요약용 — 탭만 바꾼 같은 조건(상태 · 정렬 · 취소 요청 좁히기는 뺀다). */
         public SearchParams forTab(AdminOrderTab tab) {
             return new SearchParams(tab, null, marketId, groupBuyId, creatorId, userId, paymentMethod, trackingAlert,
-                    searchType, keyword, null);
+                    searchType, keyword, null, false);
         }
 
         /** 요약용 — 상태 셀렉트 하나를 고른 같은 조건. */
         public SearchParams withStatus(FulfillmentStatus status) {
             return new SearchParams(tab, status, marketId, groupBuyId, creatorId, userId, paymentMethod, trackingAlert,
-                    searchType, keyword, null);
+                    searchType, keyword, null, cancelRequested);
         }
     }
 

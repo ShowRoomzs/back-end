@@ -53,13 +53,16 @@ public class AdminProductInquiryService {
     private final SellerRepository sellerRepository;
     private final NotificationPublisher notificationPublisher;
 
+    /**
+     * @param userId 작성한 소비자로 좁힌다(56 C1) — 탭 건수도 같은 소비자 기준. 툴바 「삭제 요청 N건」은 지금처럼 전체다
+     */
     @Transactional(readOnly = true)
     public AdminProductInquiryDto.ListResponse getList(AdminProductInquiryStatusFilter statusFilter,
-                                                        ProductInquiryType type, String keyword,
+                                                        ProductInquiryType type, String keyword, Long userId,
                                                         Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
         Page<ProductInquiry> page = adminProductInquiryQueryRepository.search(
-                statusFilter, type, normalizedKeyword, pageable);
+                statusFilter, type, normalizedKeyword, userId, pageable);
 
         List<AdminProductInquiryDto.ListItem> content = page.getContent().stream()
                 .map(this::toListItem)
@@ -68,7 +71,7 @@ public class AdminProductInquiryService {
         return AdminProductInquiryDto.ListResponse.builder()
                 .content(content)
                 .pageInfo(new PaginationInfo(page))
-                .statusCounts(buildStatusCounts(type, normalizedKeyword))
+                .statusCounts(buildStatusCounts(type, normalizedKeyword, userId))
                 .deleteRequestedCount(adminProductInquiryQueryRepository.countAllDeleteRequested())
                 .build();
     }
@@ -92,11 +95,11 @@ public class AdminProductInquiryService {
 
     @Transactional(readOnly = true)
     public AdminProductInquiryDto.DetailResponse getDetail(Long inquiryId, AdminProductInquiryStatusFilter statusFilter,
-                                                            ProductInquiryType type, String keyword) {
+                                                            ProductInquiryType type, String keyword, Long userId) {
         ProductInquiry inquiry = getInquiry(inquiryId);
 
         List<Long> orderedIds = adminProductInquiryQueryRepository.findOrderedIds(
-                statusFilter, type, normalize(keyword));
+                statusFilter, type, normalize(keyword), userId);
         int index = orderedIds.indexOf(inquiryId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
@@ -183,9 +186,9 @@ public class AdminProductInquiryService {
                 .build();
     }
 
-    private AdminProductInquiryDto.StatusCounts buildStatusCounts(ProductInquiryType type, String keyword) {
+    private AdminProductInquiryDto.StatusCounts buildStatusCounts(ProductInquiryType type, String keyword, Long userId) {
         Map<AdminProductInquiryStatusFilter, Long> counts =
-                adminProductInquiryQueryRepository.countByStatus(type, keyword);
+                adminProductInquiryQueryRepository.countByStatus(type, keyword, userId);
 
         return AdminProductInquiryDto.StatusCounts.builder()
                 .all(counts.get(AdminProductInquiryStatusFilter.ALL))

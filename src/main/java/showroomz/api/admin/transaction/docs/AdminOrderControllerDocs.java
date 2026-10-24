@@ -47,6 +47,8 @@ public interface AdminOrderControllerDocs {
             - `status` — 상태 셀렉트. `PENDING`(결제 대기)은 목록에 오지 않으므로 고르지 않습니다.
             - `marketId` — 브랜드 상세의 「이 브랜드 진행 주문 보기」 진입 · `groupBuyId` · `creatorId`(공구를 연 인플루언서) · `paymentMethod` — 상세 조건
             - `userId` — 소비자 상세의 「최근 주문」 · 「전체 주문 내역 보기」 진입(주문한 소비자 · 55 계획서 M3-2)
+            - `cancelRequested` — `true`면 **검토 중 취소 요청**이 있는 하위주문만(기본 `false`). 취소 탭은 취소된 하위주문까지 담아서, 소비자 상세
+              「취소 요청」 칩은 `tab=CANCEL&cancelRequested=true&userId=`로 들어옵니다(`pendingChips[].links[].query` 그대로 · 건수 = 칩 건수)
             - `trackingAlert` — 배송 이상 탭의 「이상 유형」(`PICKUP_UNCONFIRMED` 집화 확인 필요 · `STALLED` 추적 정지)
             - `from` · `to` — **결제일** 기준(양 끝 포함, `yyyy-MM-dd`)
 
@@ -109,6 +111,7 @@ public interface AdminOrderControllerDocs {
             @Parameter(description = "정렬 — PAID_DESC(기본) · PAID_ASC · AMOUNT_DESC · ISSUE_OLDEST", example = "PAID_DESC") AdminOrderSort sort,
             @Parameter(description = "결제일 시작(포함) — yyyy-MM-dd", example = "2026-10-01") LocalDate from,
             @Parameter(description = "결제일 끝(포함) — yyyy-MM-dd", example = "2026-10-10") LocalDate to,
+            @Parameter(description = "검토 중 취소 요청이 있는 하위주문만 — 기본 false", example = "true") boolean cancelRequested,
             PagingRequest pagingRequest);
 
     @Operation(summary = "주문 탭 건수", description = """

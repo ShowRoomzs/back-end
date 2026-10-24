@@ -42,8 +42,14 @@ public class OrderClaimRepositoryImpl implements OrderClaimRepositoryCustom {
         BooleanBuilder where = new BooleanBuilder()
                 .and(condition.marketId() == null ? null : c.marketId.eq(condition.marketId()))
                 .and(c.status.in(condition.tab().getStatuses()))
-                .and(c.requestedAt.goe(condition.from()))
-                .and(c.requestedAt.loe(condition.to()));
+                .and(condition.from() == null ? null : c.requestedAt.goe(condition.from()))
+                .and(condition.to() == null ? null : c.requestedAt.loe(condition.to()));
+        if (condition.userId() != null) {
+            where.and(o.user.id.eq(condition.userId()));
+        }
+        if (condition.openOnly()) {
+            where.and(c.status.ne(ClaimStatus.COMPLETED));
+        }
         if (condition.types() != null && !condition.types().isEmpty()) {
             where.and(c.type.in(condition.types()));
         }

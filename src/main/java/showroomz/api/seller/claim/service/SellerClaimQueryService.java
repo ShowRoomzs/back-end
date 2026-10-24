@@ -90,25 +90,31 @@ public class SellerClaimQueryService {
     public PageResponse<SellerClaimListItem> searchClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                           ClaimReason reason, LocalDate from, LocalDate to,
                                                           String keyword, PagingRequest pagingRequest) {
-        return searchClaims(marketId, tab, types, reason, from, to, keyword, null, null, null, pagingRequest);
+        return searchClaims(marketId, tab, types, reason, from, to, keyword, null, null, null, null, false,
+                pagingRequest);
     }
 
     /**
      * 어드민 06b — 파트너와 같은 조회에 브랜드명 · 소비자명 검색과 정렬 셀렉트를 더한다(38 설계서 7절 #2 · #3). 전체 탭은 검수
      * 지연을 상단에 고정한다(페이지를 넘어서도 고정되도록 서버 정렬).
+     *
+     * <p>소비자 상세에서 넘어온 진입(56 C1) — {@code userId}로 주문한 소비자만 남기고, {@code openOnly}면 종결(COMPLETED)을 뺀다.
+     * {@code userId}가 있고 기간을 둘 다 비웠으면 기본 1개월을 걸지 않는다 — 한 소비자의 클레임은 많지 않고, 「반품·교환」 칩
+     * 건수(기간 없음)와 목록 건수가 같아야 한다.
      */
     public PageResponse<SellerClaimListItem> searchClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                           ClaimReason reason, LocalDate from, LocalDate to,
                                                           String keyword, String marketName, String consumerName,
-                                                          showroomz.domain.order.type.ClaimSort sort,
-                                                          PagingRequest pagingRequest) {
+                                                          showroomz.domain.order.type.ClaimSort sort, Long userId,
+                                                          boolean openOnly, PagingRequest pagingRequest) {
         LocalDateTime now = LocalDateTime.now();
+        boolean unbounded = userId != null && from == null && to == null;
         SellerClaimSearchCondition base = buildCondition(marketId, tab, types, reason, from, to, keyword, now);
         boolean admin = marketId == null;
         SellerClaimSearchCondition condition = new SellerClaimSearchCondition(base.marketId(), base.tab(), base.types(),
-                base.reason(), base.from(), base.to(), base.claimId(), base.orderNumber(),
-                admin ? marketName : null, admin ? consumerName : null, sort,
-                admin && base.tab() == ClaimTab.ALL, now);
+                base.reason(), unbounded ? null : base.from(), unbounded ? null : base.to(), base.claimId(),
+                base.orderNumber(), admin ? marketName : null, admin ? consumerName : null, sort,
+                admin && base.tab() == ClaimTab.ALL, now, userId, openOnly);
         int size = pagingRequest.getSize();
         if (size < 1 || size > orderProperties.getListPageSizeMax()) {
             throw new BusinessException(ErrorCode.ORDER_PAGE_SIZE_INVALID);

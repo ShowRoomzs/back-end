@@ -69,9 +69,10 @@ public class AdminClaimService {
                                                                      ClaimReason reason, LocalDate from, LocalDate to,
                                                                      String keyword, String marketName,
                                                                      String consumerName, ClaimSort sort,
+                                                                     Long userId, boolean openOnly,
                                                                      PagingRequest paging) {
         PageResponse<SellerClaimListItem> page = claimQueryService.searchClaims(marketId, tab, types, reason, from, to,
-                keyword, marketName, consumerName, sort, paging);
+                keyword, marketName, consumerName, sort, userId, openOnly, paging);
         Map<Long, OrderClaim> claims = claimRepository.findAllById(page.getContent().stream()
                         .map(SellerClaimListItem::claimId).toList()).stream()
                 .collect(Collectors.toMap(OrderClaim::getId, Function.identity()));

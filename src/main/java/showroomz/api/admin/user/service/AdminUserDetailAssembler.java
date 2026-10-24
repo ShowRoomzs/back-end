@@ -32,7 +32,6 @@ import showroomz.domain.member.user.type.NotificationToggle;
 import showroomz.domain.member.user.type.UserPendingChip;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.vo.NotificationSetting;
-import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.type.AdminOrderTab;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
@@ -41,8 +40,10 @@ import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -55,7 +56,8 @@ import java.util.Map;
  *   <li>마스킹은 서버가 끝낸다 — 본인확인 정보 · 배송지 상세 · 수령인 · 연락처는 <b>이 운영자의 유효한 열람 세션</b>이 없으면 원본을 싣지
  *   않는다(§25-1 · M3-3). 다른 운영자의 세션은 적용되지 않는다</li>
  *   <li>탈퇴는 파기 — 본인확인 · 배송지 · 알림 수신 · 최근 로그인은 값 없이 {@code destroyed}만, 주문 · 문의 기록은 보존이라 그대로 싣는다</li>
- *   <li>다른 화면이 이미 세는 숫자는 같은 식을 쓴다 — 최근 주문은 어드민 주문 목록 · 반품 · 교환 칩은 탈퇴 차단 식 · 문의 번호는 각 관리 화면 번호</li>
+ *   <li>다른 화면이 이미 세는 숫자는 같은 식을 쓴다 — 최근 주문은 어드민 주문 목록 · 진행 중 칩은 칩이 가리키는 목록(56 C1) · 문의 번호는
+ *   각 관리 화면 번호</li>
  * </ul>
  */
 @Component
@@ -69,6 +71,12 @@ public class AdminUserDetailAssembler {
     /** 알림 설정 화면(C15)의 토글 순서 — 혜택 · 이벤트는 users.marketing_agree 다. */
     private static final List<NotificationToggle> PUSH_TOGGLES =
             List.of(NotificationToggle.FOLLOW_GROUP_BUY, NotificationToggle.FOLLOW_POST, NotificationToggle.GROUP_BUY_ENDING);
+    /** 진행 중 칩 이동 목록(56 C1) — {@code AdminUserDto.PendingChipLink.target}. */
+    private static final String TARGET_INQUIRIES = "INQUIRIES";
+    private static final String TARGET_PRODUCT_INQUIRIES = "PRODUCT_INQUIRIES";
+    private static final String TARGET_ORDERS = "ORDERS";
+    private static final String TARGET_CLAIMS = "CLAIMS";
+    private static final String TARGET_REFUNDS = "REFUNDS";
 
     private final AdminUserQueryRepository queries;
     private final AdminLoginDeviceReader loginDevices;
@@ -76,7 +84,6 @@ public class AdminUserDetailAssembler {
     private final OneToOneInquiryRepository oneToOneInquiryRepository;
     private final ProductInquiryRepository productInquiryRepository;
     private final DeliveryAddressRepository deliveryAddressRepository;
-    private final OrderClaimRepository claimRepository;
     private final UserPrivacyAccessLogRepository privacyLogs;
     private final AdminPrivacySessions privacySessions;
 
@@ -189,7 +196,7 @@ public class AdminUserDetailAssembler {
         paging.setPage(1);
         paging.setSize(RECENT_ORDER_LIMIT);
         PageResponse<AdminOrderDto.ListItem> page = orderQueryService.getOrders(new AdminOrderDto.SearchParams(
-                AdminOrderTab.ALL, null, null, null, null, userId, null, null, null, null, null), null, null, paging);
+                AdminOrderTab.ALL, null, null, null, null, userId, null, null, null, null, null, false), null, null, paging);
         return new AdminUserDto.RecentOrders(page.getPageInfo().getTotalResults(), page.getContent());
     }
 
@@ -274,25 +281,46 @@ public class AdminUserDetailAssembler {
 
     // ------------------------------------------------------------------ 레일 — 진행 중 · 판단 메타
 
-    /** 진행 중 칩 5종 — 1건 이상만(ui-admin-13 CS 응대 보강 ②). */
+    /**
+     * 진행 중 칩 5종 — 1건 이상만(ui-admin-13 CS 응대 보강 ②). 칩마다 가리키는 목록 · 쿼리 · 건수를 {@code links}로 싣는다(56 C1) — 칩
+     * 건수 = 링크 건수의 합이고, 각 링크 건수는 그 목록을 query 로 부른 결과 건수와 같은 식이다.
+     */
     private List<AdminUserDto.PendingChip> pendingChips(Long userId) {
         AdminUserQueryRepository.PendingCounts orders = queries.pendingCounts(userId);
-        Map<UserPendingChip, Long> counts = new EnumMap<>(UserPendingChip.class);
-        counts.put(UserPendingChip.OPEN_INQUIRY,
-                oneToOneInquiryRepository.countByUser_IdAndStatus(userId, InquiryStatus.WAITING)
-                        + productInquiryRepository.countByUser_IdAndStatusAndExposureStatusNot(userId, InquiryStatus.WAITING,
-                        InquiryExposureStatus.DELETED));
-        counts.put(UserPendingChip.SHIPPING, orders.shippingOrders());
-        counts.put(UserPendingChip.CANCEL_REQUESTED, orders.cancelRequestedOrders());
-        counts.put(UserPendingChip.RETURN_EXCHANGE, claimRepository.countOpenCollectionsByUser(userId));
-        counts.put(UserPendingChip.REFUND_FAILED, orders.refundFailed());
+        Map<UserPendingChip, List<AdminUserDto.PendingChipLink>> links = new EnumMap<>(UserPendingChip.class);
+        links.put(UserPendingChip.OPEN_INQUIRY, List.of(
+                link(TARGET_INQUIRIES, userId, oneToOneInquiryRepository.countByUser_IdAndStatus(userId, InquiryStatus.WAITING),
+                        "status", "WAITING"),
+                link(TARGET_PRODUCT_INQUIRIES, userId, productInquiryRepository.countByUser_IdAndStatusAndExposureStatus(
+                        userId, InquiryStatus.WAITING, InquiryExposureStatus.NORMAL), "status", "WAITING")));
+        links.put(UserPendingChip.SHIPPING, List.of(
+                link(TARGET_ORDERS, userId, orders.shippingOrders(), "status", "SHIPPING")));
+        links.put(UserPendingChip.CANCEL_REQUESTED, List.of(
+                link(TARGET_ORDERS, userId, orders.cancelRequestedOrders(), "tab", "CANCEL", "cancelRequested", "true")));
+        links.put(UserPendingChip.RETURN_EXCHANGE, List.of(
+                link(TARGET_CLAIMS, userId, orders.openClaims(), "tab", "ALL", "openOnly", "true")));
+        links.put(UserPendingChip.REFUND_FAILED, List.of(
+                link(TARGET_REFUNDS, userId, orders.refundFailed(), "tab", "FAILED")));
         List<AdminUserDto.PendingChip> chips = new ArrayList<>();
-        counts.forEach((chip, count) -> {
+        links.forEach((chip, all) -> {
+            List<AdminUserDto.PendingChipLink> shown = all.stream().filter(link -> link.count() > 0).toList();
+            long count = shown.stream().mapToLong(AdminUserDto.PendingChipLink::count).sum();
             if (count > 0) {
-                chips.add(new AdminUserDto.PendingChip(chip, chip.getLabel(), chip.getTone(), count, chip.getTarget()));
+                chips.add(new AdminUserDto.PendingChip(chip, chip.getLabel(), chip.getTone(), count, chip.getTarget(),
+                        shown));
             }
         });
         return chips;
+    }
+
+    /** 목록 쿼리 — 탭 · 상태 쌍 다음에 userId. 값은 쿼리 문자열 그대로다. */
+    private static AdminUserDto.PendingChipLink link(String target, Long userId, long count, String... pairs) {
+        Map<String, String> query = new LinkedHashMap<>();
+        for (int i = 0; i + 1 < pairs.length; i += 2) {
+            query.put(pairs[i], pairs[i + 1]);
+        }
+        query.put("userId", String.valueOf(userId));
+        return new AdminUserDto.PendingChipLink(target, Collections.unmodifiableMap(query), count);
     }
 
     /** 판단 메타 — 탈퇴 회원은 조치가 없어 거래 값을 비우고 가입 후 경과 · 정지 이력만 남긴다(시안 C1). */

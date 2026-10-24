@@ -34,8 +34,9 @@ public class AdminRefundController implements AdminRefundControllerDocs {
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "sort", required = false) AdminTransactionDto.RefundSort sort,
             @RequestParam(value = "days", required = false) Integer days,
+            @RequestParam(value = "userId", required = false) Long userId,
             @ModelAttribute PagingRequest pagingRequest) {
-        return ResponseEntity.ok(refundService.getRefunds(tab, route, keyword, sort, days, pagingRequest));
+        return ResponseEntity.ok(refundService.getRefunds(tab, route, keyword, sort, days, userId, pagingRequest));
     }
 
     @Override

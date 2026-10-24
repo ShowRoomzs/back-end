@@ -439,6 +439,7 @@ public class AdminOrderQueryService {
         return new AdminOrderSearchCondition(params.tab() == null ? AdminOrderTab.ALL : params.tab(), params.status(),
                 params.marketId(), params.groupBuyId(), params.creatorId(), params.userId(), params.paymentMethod(),
                 params.trackingAlert(), params.searchType(), params.keyword(), params.sort(),
-                from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59));
+                from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59),
+                params.cancelRequested());
     }
 }

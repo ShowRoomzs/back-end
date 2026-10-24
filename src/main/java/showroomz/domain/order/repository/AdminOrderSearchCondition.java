@@ -22,16 +22,17 @@ import java.time.LocalDateTime;
  * @param searchType    검색 대상 — null · ALL 이면 통합(주문번호 · 하위주문번호 · 수취인 · 브랜드명 · 송장)
  * @param keyword       검색어
  * @param sort          정렬 — null 이면 결제일시 최신순
+ * @param cancelRequested 검토 중 취소 요청이 있는 하위주문만 — 소비자 상세 「취소 요청」 칩 진입(56 C1). 취소 탭의 「검토 중 요청」 쪽만 남긴다
  */
 public record AdminOrderSearchCondition(AdminOrderTab tab, FulfillmentStatus status, Long marketId, Long groupBuyId,
                                         Long creatorId, Long userId, PaymentMethod paymentMethod,
                                         TrackingAlert trackingAlert,
                                         AdminOrderSearchType searchType, String keyword, AdminOrderSort sort,
-                                        LocalDateTime from, LocalDateTime to) {
+                                        LocalDateTime from, LocalDateTime to, boolean cancelRequested) {
 
     /** 기본 축(탭 · 상태 · 브랜드 · 통합 키워드 · 기간)만 — 요약 · 테스트용. */
     public AdminOrderSearchCondition(AdminOrderTab tab, FulfillmentStatus status, Long marketId, String keyword,
                                      LocalDateTime from, LocalDateTime to) {
-        this(tab, status, marketId, null, null, null, null, null, null, keyword, null, from, to);
+        this(tab, status, marketId, null, null, null, null, null, null, keyword, null, from, to, false);
     }
 }

@@ -395,27 +395,38 @@ public class AdminUserQueryRepository {
     }
 
     /**
-     * 레일 「진행 중」 칩 중 주문 축 세 가지 — 배송 중 · 취소 요청 검토 중 · 환불 실패.
+     * 레일 「진행 중」 칩 중 주문 축 네 가지 — 배송 중 · 취소 요청 검토 중 · 반품 · 교환 진행 · 환불 실패. 각 값은 칩이 가리키는 목록을 그 조건 +
+     * {@code userId}로 부른 건수와 같아야 한다(56 C1) — 식을 목록 조건(같은 조인 · 같은 소비자 축 orders.user_id)에 맞춰 둔다.
      *
-     * @param shippingOrders        배송 중 하위주문이 있는 주문 수 — 주문 목록 {@code status=SHIPPING&userId=} 와 같은 수
-     * @param cancelRequestedOrders 브랜드가 검토 중인 취소 요청이 있는 주문 수
-     * @param refundFailed          실패한 환불 작업 수(어드민 환불 관리 「실패」 탭)
+     * @param shippingOrders        배송 중 하위주문이 있는 주문 수 — 주문 목록 {@code status=SHIPPING&userId=}
+     * @param cancelRequestedOrders 브랜드가 검토 중인 취소 요청이 있는 주문 수 — 주문 목록 {@code tab=CANCEL&cancelRequested=true&userId=}
+     * @param openClaims            끝나지 않은 반품 · 교환 클레임(목록 행) 수 — 클레임 목록 {@code tab=ALL&openOnly=true&userId=}(기간 없음)
+     * @param refundFailed          실패한 환불 작업 수 — 환불 목록 {@code tab=FAILED&userId=}
      */
-    public record PendingCounts(long shippingOrders, long cancelRequestedOrders, long refundFailed) {
+    public record PendingCounts(long shippingOrders, long cancelRequestedOrders, long openClaims, long refundFailed) {
     }
 
     public PendingCounts pendingCounts(Long userId) {
         Long shipping = queryFactory.select(order.id.countDistinct()).from(deliveryGroup).join(deliveryGroup.order, order)
-                .where(order.user.id.eq(userId), deliveryGroup.fulfillmentStatus.eq(FulfillmentStatus.SHIPPING))
+                .where(order.user.id.eq(userId), order.paidAt.isNotNull(),
+                        deliveryGroup.fulfillmentStatus.eq(FulfillmentStatus.SHIPPING))
                 .fetchOne();
-        Long cancel = queryFactory.select(cancelRequest.order.id.countDistinct()).from(cancelRequest)
-                .where(cancelRequest.order.user.id.eq(userId), cancelRequest.status.eq(CancelRequestStatus.PENDING))
+        Long cancel = queryFactory.select(order.id.countDistinct()).from(cancelRequest)
+                .join(cancelRequest.deliveryGroup, deliveryGroup).join(deliveryGroup.order, order)
+                .where(order.user.id.eq(userId), order.paidAt.isNotNull(),
+                        cancelRequest.status.eq(CancelRequestStatus.PENDING))
                 .fetchOne();
-        Long failed = queryFactory.select(refundTask.count()).from(refundTask)
-                .where(refundTask.order.user.id.eq(userId), refundTask.status.eq(RefundTaskStatus.FAILED))
+        // 결제 대기(접수 전)는 어느 탭에도 없고, 종결은 openOnly 가 뺀다 — 행 단위(클레임)다. 탈퇴 차단은 박스 단위라 0 여부만 같다.
+        Long claims = queryFactory.select(claim.count()).from(claim)
+                .join(claim.deliveryGroup, deliveryGroup).join(deliveryGroup.order, order)
+                .where(order.user.id.eq(userId),
+                        claim.status.notIn(ClaimStatus.PAYMENT_PENDING, ClaimStatus.COMPLETED))
+                .fetchOne();
+        Long failed = queryFactory.select(refundTask.count()).from(refundTask).join(refundTask.order, order)
+                .where(order.user.id.eq(userId), refundTask.status.eq(RefundTaskStatus.FAILED))
                 .fetchOne();
         return new PendingCounts(shipping != null ? shipping : 0L, cancel != null ? cancel : 0L,
-                failed != null ? failed : 0L);
+                claims != null ? claims : 0L, failed != null ? failed : 0L);
     }
 
     /** 정지 이력 횟수 — user_sanction 행 기준(D15 · 옛 {@code PATCH /status} 정지는 행이 없어 빠진다). 열린 정지도 센다. */

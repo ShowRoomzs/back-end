@@ -173,6 +173,10 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         if (condition.status() != null) {
             where.and(g.fulfillmentStatus.eq(condition.status()));
         }
+        if (condition.cancelRequested()) {
+            where.and(JPAExpressions.selectOne().from(r)
+                    .where(r.deliveryGroup.eq(g).and(r.status.eq(CancelRequestStatus.PENDING))).exists());
+        }
         if (condition.from() != null) {
             where.and(o.paidAt.goe(condition.from()));
         }

@@ -64,10 +64,11 @@ public class AdminRefundService {
         this.readOnlyTransaction.setReadOnly(true);
     }
 
+    /** @param userId 주문한 소비자로 좁힌다 — 소비자 상세 「환불 실패」 칩 진입(56 C1). 탭의 상태 · 기간 규칙은 그대로다 */
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.RefundItem> getRefunds(RefundTab tab, AdminTransactionDto.RefundRoute route,
                                                                    String keyword, AdminTransactionDto.RefundSort sort,
-                                                                   Integer days, PagingRequest paging) {
+                                                                   Integer days, Long userId, PagingRequest paging) {
         int size = paging.getSize();
         if (size < 1 || size > orderProperties.getListPageSizeMax()) {
             throw new BusinessException(ErrorCode.ORDER_PAGE_SIZE_INVALID);
@@ -75,7 +76,7 @@ public class AdminRefundService {
         Pageable pageable = PageRequest.of(Math.max(paging.getPage() - 1, 0), size);
         RefundTab resolved = tab == null ? RefundTab.PENDING : tab;
         Page<OrderRefundTask> page = refundTaskRepository.searchForAdmin(
-                condition(resolved, route, keyword, sort, days, LocalDateTime.now()), pageable);
+                condition(resolved, route, keyword, sort, days, userId, LocalDateTime.now()), pageable);
         return PageResponse.of(new PageImpl<>(assembler.items(page.getContent()), pageable, page.getTotalElements()));
     }
 
@@ -202,7 +203,8 @@ public class AdminRefundService {
 
     /** 탭 → 상태 · 출처 · 기간 · 「일시」 열, 검색어 → 환불번호 · 주문번호 · PG 거래번호(39 설계서 0-5 · 1-2 · 3-1). */
     static AdminRefundSearchCondition condition(RefundTab tab, AdminTransactionDto.RefundRoute route, String keyword,
-                                                AdminTransactionDto.RefundSort sort, Integer days, LocalDateTime now) {
+                                                AdminTransactionDto.RefundSort sort, Integer days, Long userId,
+                                                LocalDateTime now) {
         Set<RefundTaskStatus> statuses = switch (tab) {
             case PENDING -> EnumSet.of(RefundTaskStatus.PENDING, RefundTaskStatus.EXECUTING);
             case FAILED -> EnumSet.of(RefundTaskStatus.FAILED);
@@ -221,7 +223,7 @@ public class AdminRefundService {
         boolean prefixed = AdminRefundNumber.hasPrefix(text);
         return new AdminRefundSearchCondition(statuses, origin, executedFrom,
                 route == null ? null : route.getSources(), refundTaskId, prefixed ? null : text,
-                prefixed && refundTaskId == null, column, sort == AdminTransactionDto.RefundSort.AMOUNT_DESC);
+                prefixed && refundTaskId == null, column, sort == AdminTransactionDto.RefundSort.AMOUNT_DESC, userId);
     }
 
     /** 완료 탭 기간(일) — 목록과 요약이 같은 값을 써야 탭 숫자 = 목록 건수다. 기본 30 · 1 미만은 1. */

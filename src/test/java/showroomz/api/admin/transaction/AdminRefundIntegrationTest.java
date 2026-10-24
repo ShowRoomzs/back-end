@@ -15,6 +15,7 @@ import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminRefundService;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.service.RefundExecutor;
 import showroomz.global.payment.portone.FakePaymentGateway;
@@ -264,6 +265,28 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(detail.at("/additionalPayments/0/claimPaymentStatus").asText()).isEqualTo("CANCELLED");
         assertThat(detail.get("history")).extracting(h -> h.get("type").asText())
                 .contains("REFUND_ENQUEUED_BY_OPERATOR", "DISPUTE_ACCEPTED");
+    }
+
+    /** 소비자 상세 「환불 실패」 칩이 이 목록으로 온다(56 C1) — 소비자 축은 주문 목록과 같은 주문자(orders.user_id)다. */
+    @Test
+    @DisplayName("[56 C1] 목록 userId — 주문한 소비자만 · 탭 규칙 그대로(실패 탭 = 실패만 · 집행 대기 탭 = 운영자 사유만)")
+    void listByConsumer() throws Exception {
+        long mineFailed = failedRefund();
+        long othersFailed = failedRefund();
+        long minePending = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+        long othersPending = operatorRefund(deliveredGroup(creamVariant, 1), 6_000);
+        Users other = createConsumer("noah", "노아");
+        for (long taskId : List.of(othersFailed, othersPending)) {
+            jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = "
+                    + "(SELECT order_id FROM order_refund_task WHERE refund_task_id = ?)", other.getId(), taskId);
+        }
+
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + consumer.getId()))).containsExactly(mineFailed);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + other.getId()))).containsExactly(othersFailed);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED"))).containsExactlyInAnyOrder(mineFailed, othersFailed);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?userId=" + consumer.getId()))).containsExactly(minePending);
+        adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + consumer.getId())
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(1));
     }
 
     @Test

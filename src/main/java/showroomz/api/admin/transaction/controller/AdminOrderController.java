@@ -58,9 +58,11 @@ public class AdminOrderController implements AdminOrderControllerDocs {
             @RequestParam(value = "sort", required = false) AdminOrderSort sort,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(value = "cancelRequested", defaultValue = "false") boolean cancelRequested,
             @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(queryService.getOrders(new AdminOrderDto.SearchParams(tab, status, marketId, groupBuyId,
-                creatorId, userId, paymentMethod, trackingAlert, searchType, keyword, sort), from, to, pagingRequest));
+                creatorId, userId, paymentMethod, trackingAlert, searchType, keyword, sort, cancelRequested), from, to,
+                pagingRequest));
     }
 
     @Override
@@ -76,7 +78,7 @@ public class AdminOrderController implements AdminOrderControllerDocs {
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(queryService.getSummary(new AdminOrderDto.SearchParams(null, null, marketId, groupBuyId,
-                creatorId, userId, paymentMethod, null, searchType, keyword, null),
+                creatorId, userId, paymentMethod, null, searchType, keyword, null, false),
                 from, to));
     }
 

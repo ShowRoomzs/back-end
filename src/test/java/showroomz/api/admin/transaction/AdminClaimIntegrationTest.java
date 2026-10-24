@@ -12,6 +12,7 @@ import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminClaimService;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimType;
@@ -85,6 +86,35 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?marketId=" + brand.marketId()))).containsExactlyInAnyOrder(rejected, exchange);
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?tab=REJECT_HOLD"))).containsExactly(rejected);
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?types=EXCHANGE"))).containsExactlyInAnyOrder(exchange, other);
+    }
+
+    /**
+     * 소비자 상세 「반품·교환」 칩이 이 목록으로 온다(56 C1) — 칩은 기간 없이 세므로 userId 진입에서 기간을 비우면 기본 1개월을 걸지 않는다.
+     * 소비자 축은 주문 목록과 같은 주문자(orders.user_id)다.
+     */
+    @Test
+    @DisplayName("[56 C1] 목록 userId · openOnly — 주문한 소비자만 · 기간을 비우면 기본 1개월 없이 · 기간을 주면 그 기간 · openOnly 는 종결 제외")
+    void listByConsumer() throws Exception {
+        Long recent = returnClaim(deliveredGroup(creamVariant, 1));
+        Long old = returnClaim(deliveredGroup(creamVariant, 1));
+        jdbc.update("UPDATE order_claim SET requested_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(45), old);
+        Long completed = passed(returnClaim(deliveredGroup(creamVariant, 1)));
+        assertThat(claimStatus(completed)).isEqualTo("COMPLETED");
+        Long others = returnClaim(deliveredGroup(creamVariant, 1));
+        Users other = createConsumer("noah", "노아");
+        Long othersOrder = jdbc.queryForObject("SELECT order_id FROM order_claim WHERE claim_id = ?", Long.class, others);
+        jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = ?", other.getId(), othersOrder);
+
+        String mine = ADMIN_CLAIMS + "?userId=" + consumer.getId();
+        assertThat(ids(adminGet(mine))).containsExactlyInAnyOrder(recent, old, completed);
+        assertThat(ids(adminGet(mine + "&openOnly=true"))).containsExactlyInAnyOrder(recent, old);
+        adminGet(mine + "&tab=ALL&openOnly=true").andExpect(jsonPath("$.pageInfo.totalResults").value(2));
+        assertThat(ids(adminGet(mine + "&from=" + java.time.LocalDate.now().minusDays(7))))
+                .containsExactlyInAnyOrder(recent, completed);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?userId=" + other.getId()))).containsExactly(others);
+        // userId 가 없으면 지금처럼 기본 1개월 — 45일 전 신청은 빠진다
+        assertThat(ids(adminGet(ADMIN_CLAIMS))).containsExactlyInAnyOrder(recent, completed, others);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?openOnly=true"))).containsExactlyInAnyOrder(recent, others);
     }
 
     @Test

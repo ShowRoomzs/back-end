@@ -199,6 +199,37 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(jsonPath("$.tabCounts.ALL").value(4));
     }
 
+    /**
+     * 소비자 상세 「취소 요청」 칩이 이 목록으로 온다(56 C1) — 취소 탭은 취소된 하위주문까지 담아서 칩 건수(검토 중 요청)와 어긋난다.
+     * cancelRequested 로 검토 중 요청만 남긴다. 요약은 이 값을 받지 않는다(탭 숫자는 그대로).
+     */
+    @Test
+    @DisplayName("[56 C1] cancelRequested — 검토 중 취소 요청 하위주문만(취소된 하위주문 · 응답 끝난 요청 제외) · userId 와 함께 · 요약 탭 숫자는 그대로")
+    void cancelRequestedFilter() throws Exception {
+        OrderDeliveryGroup requested = preparingGroup();
+        seedCancelRequest(requested, itemsOf(requested));
+        OrderDeliveryGroup cancelled = paidGroup();
+        directCancel(List.of(cancelled.getId()), "SOLD_OUT", "품절").andExpect(jsonPath("$.succeeded").value(1));
+        OrderDeliveryGroup rejected = preparingGroup();
+        rejectRequest(seedCancelRequest(rejected, itemsOf(rejected)), "이미 출고 준비 중입니다.")
+                .andExpect(status().isOk());
+        OrderDeliveryGroup others = preparingGroup();
+        seedCancelRequest(others, itemsOf(others));
+        showroomz.domain.member.user.entity.Users other = createConsumer("noah", "노아");
+        jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = ?", other.getId(), orderOf(others));
+
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL")))
+                .containsExactlyInAnyOrder(orderOf(requested), orderOf(cancelled), orderOf(others));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL&cancelRequested=true")))
+                .containsExactlyInAnyOrder(orderOf(requested), orderOf(others));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL&cancelRequested=true&userId=" + consumer.getId())))
+                .containsExactly(orderOf(requested));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?cancelRequested=true&userId=" + other.getId())))
+                .containsExactly(orderOf(others));
+        adminGet(ADMIN_ORDERS + "/summary?userId=" + consumer.getId())
+                .andExpect(jsonPath("$.tabCounts.CANCEL").value(2));
+    }
+
     // ------------------------------------------------------------------ T10 사유 환불 편입 가드
 
     @Test

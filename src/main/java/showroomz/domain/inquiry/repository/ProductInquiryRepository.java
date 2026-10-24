@@ -35,6 +35,13 @@ public interface ProductInquiryRepository extends JpaRepository<ProductInquiry, 
                                                      InquiryExposureStatus exposureStatus);
 
     /**
+     * 어드민 소비자 상세 「열린 문의」 칩의 상품 문의 몫(56 C1) — 상품 문의 모니터링 「답변대기」 탭(답변 대기 ∧ 정상 노출)과 같은 식이다.
+     * 삭제 요청 검토 중인 문의는 그 화면의 「삭제 요청」 탭 소관이라 빠진다.
+     */
+    long countByUser_IdAndStatusAndExposureStatus(Long userId, InquiryStatus status,
+                                                  InquiryExposureStatus exposureStatus);
+
+    /**
      * 내 상품 문의 조회 — 삭제 집행된 문의는 질문·답변이 함께 소비자 화면에서 내려간다 (§23-5).
      */
     @Query(value = "SELECT DISTINCT pi FROM ProductInquiry pi " +

@@ -39,11 +39,20 @@ import showroomz.domain.notification.entity.DeviceToken;
 import showroomz.domain.notification.repository.DeviceTokenRepository;
 import showroomz.domain.notification.type.DevicePlatform;
 import showroomz.domain.order.entity.Order;
+import showroomz.domain.order.entity.OrderCancelRequest;
+import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.entity.OrderProduct;
+import showroomz.domain.order.entity.OrderRefundTask;
+import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.repository.OrderRepository;
+import showroomz.domain.order.type.CancelRequestReason;
 import showroomz.domain.order.type.OrderProductStatus;
+import showroomz.domain.order.type.RefundTaskOrigin;
+import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
@@ -94,6 +103,8 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     @Autowired private ProductInquiryRepository productInquiryRepository;
     @Autowired private UserSanctionRepository sanctionRepository;
     @Autowired private UserPrivacyAccessLogRepository privacyLogRepository;
+    @Autowired private OrderCancelRequestRepository cancelRequestRepository;
+    @Autowired private OrderRefundTaskRepository refundTaskRepository;
 
     private String adminToken;
     private Seller admin;
@@ -401,7 +412,7 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
-    @DisplayName("진행 중 칩 — 1건 이상만 · 열린 문의(WARNING) · 배송중(주문 수) · 반품·교환(박스 수) · 없으면 빈 배열")
+    @DisplayName("진행 중 칩 — 1건 이상만 · 열린 문의(WARNING) · 배송중(주문 수) · 반품·교환(클레임 수 · 56 C1) · 없으면 빈 배열")
     void pendingChips() throws Exception {
         Users hong = createConsumer("hong", UserStatus.NORMAL);
         detail(hong).andExpect(jsonPath("$.pendingChips.length()").value(0));
@@ -424,6 +435,103 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.pendingChips[1].count").value(1))
                 .andExpect(jsonPath("$.pendingChips[2].key").value("RETURN_EXCHANGE"))
                 .andExpect(jsonPath("$.pendingChips[2].target").value("CLAIMS"));
+    }
+
+    /**
+     * 칩 건수 = 칩이 가리키는 목록을 그 탭 · 상태 + userId 로 부른 건수(56 C1). links 의 query 를 그대로 붙여 실제 목록 API 를 불러 맞춘다 —
+     * 목록마다 경계가 다르다: 상품 문의 「답변대기」는 삭제 요청 건을 뺀다 · 주문 「취소」 탭은 취소된 하위주문까지 담는다 · 클레임 목록은 행 단위이고
+     * 기본 1개월이 있다 · 환불 「실패」 탭은 완료를 뺀다. 다른 소비자의 같은 데이터는 어디에도 섞이지 않아야 한다.
+     */
+    @Test
+    @DisplayName("[56 C1] 진행 중 칩 건수 = links 목록을 그 query(탭 · 상태 · userId)로 부른 건수 — 삭제 요청 상품 문의 · 취소된 하위주문 · 종결 · 결제 대기 클레임 · 완료 환불 · 다른 소비자 제외 · 한 박스 2건은 2 · 40일 전 진행 클레임 포함")
+    void pendingChipsMatchTargetLists() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        Users other = createConsumer("other", UserStatus.NORMAL);
+        for (Users user : List.of(hong, other)) {
+            seedPendingWork(user);
+        }
+
+        JsonNode chips = json(detail(hong)).path("pendingChips");
+        java.util.Map<String, Long> counts = new java.util.LinkedHashMap<>();
+        for (JsonNode chip : chips) {
+            long sum = 0;
+            for (JsonNode link : chip.path("links")) {
+                long listed = listTotal(link.path("target").asText(), link.path("query"));
+                assertThat(listed).as("%s → %s %s", chip.path("key").asText(), link.path("target").asText(),
+                        link.path("query")).isEqualTo(link.path("count").asLong());
+                assertThat(link.path("query").path("userId").asText()).isEqualTo(String.valueOf(hong.getId()));
+                sum += listed;
+            }
+            assertThat(chip.path("count").asLong()).as(chip.path("key").asText()).isEqualTo(sum);
+            counts.put(chip.path("key").asText(), chip.path("count").asLong());
+        }
+        assertThat(counts).containsExactly(
+                java.util.Map.entry("OPEN_INQUIRY", 2L), java.util.Map.entry("SHIPPING", 1L),
+                java.util.Map.entry("CANCEL_REQUESTED", 1L), java.util.Map.entry("RETURN_EXCHANGE", 3L),
+                java.util.Map.entry("REFUND_FAILED", 1L));
+
+        JsonNode openInquiry = chips.get(0).path("links");
+        assertThat(openInquiry).hasSize(2);
+        assertThat(openInquiry.get(0).path("target").asText()).isEqualTo("INQUIRIES");
+        assertThat(openInquiry.get(0).path("query").path("status").asText()).isEqualTo("WAITING");
+        assertThat(openInquiry.get(1).path("target").asText()).isEqualTo("PRODUCT_INQUIRIES");
+        JsonNode cancel = chips.get(2).path("links").get(0).path("query");
+        assertThat(cancel.path("tab").asText()).isEqualTo("CANCEL");
+        assertThat(cancel.path("cancelRequested").asText()).isEqualTo("true");
+        JsonNode claims = chips.get(3).path("links").get(0).path("query");
+        assertThat(claims.path("tab").asText()).isEqualTo("ALL");
+        assertThat(claims.path("openOnly").asText()).isEqualTo("true");
+        assertThat(chips.get(4).path("links").get(0).path("query").path("tab").asText()).isEqualTo("FAILED");
+
+        // 취소 탭만으로는 취소된 하위주문까지 나온다 — 칩이 cancelRequested 를 싣는 이유
+        assertThat(listTotal("ORDERS", objectMapper.valueToTree(java.util.Map.of("tab", "CANCEL",
+                "userId", String.valueOf(hong.getId()))))).isEqualTo(2);
+        // 0건인 목록은 links 에서 빠진다 — 상품 문의만 남으면 링크 1개
+        jdbc.update("UPDATE one_to_one_inquiry SET status = 'ANSWERED', answered_at = ? WHERE user_id = ?",
+                LocalDateTime.now(), hong.getId());
+        JsonNode onlyProduct = json(detail(hong)).path("pendingChips").get(0);
+        assertThat(onlyProduct.path("key").asText()).isEqualTo("OPEN_INQUIRY");
+        assertThat(onlyProduct.path("count").asLong()).isEqualTo(1);
+        assertThat(onlyProduct.path("links")).hasSize(1);
+        assertThat(onlyProduct.path("links").get(0).path("target").asText()).isEqualTo("PRODUCT_INQUIRIES");
+    }
+
+    @Test
+    @DisplayName("[56 C1] 1:1 문의 목록 userId — 그 소비자 문의만 · 탭 건수도 그 소비자 기준 · 상세 이전 · 다음도 그 소비자 안에서")
+    void oneToOneInquiryListByConsumer() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        Users other = createConsumer("other", UserStatus.NORMAL);
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        OneToOneInquiry older = oneToOne(hong, CsCategory.DELIVERY, "세럼 배송이 언제 오나요?", now.minusDays(3));
+        OneToOneInquiry between = oneToOne(other, CsCategory.DELIVERY, "다른 소비자 문의", now.minusDays(2));
+        OneToOneInquiry newer = oneToOne(hong, CsCategory.CANCEL_EXCHANGE_RETURN, "크림 반품 회수가 안 와요", now.minusDays(1));
+        // 답변 완료는 답변 시각이 함께 있다(목록 「응답 소요」가 그 시각으로 계산된다)
+        jdbc.update("UPDATE one_to_one_inquiry SET status = 'ANSWERED', answered_at = ? WHERE inquiry_id = ?",
+                now.minusHours(20), newer.getId());
+
+        mockMvc.perform(get("/v1/admin/inquiries").param("userId", String.valueOf(hong.getId()))
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(2))
+                .andExpect(jsonPath("$.content[0].inquiryId").value(newer.getId()))
+                .andExpect(jsonPath("$.content[1].inquiryId").value(older.getId()))
+                .andExpect(jsonPath("$.statusCounts.all").value(2))
+                .andExpect(jsonPath("$.statusCounts.waiting").value(1))
+                .andExpect(jsonPath("$.statusCounts.answered").value(1));
+        mockMvc.perform(get("/v1/admin/inquiries").param("status", "WAITING").param("userId", String.valueOf(hong.getId()))
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(1))
+                .andExpect(jsonPath("$.content[0].inquiryId").value(older.getId()));
+        mockMvc.perform(get("/v1/admin/inquiries").header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(3));
+
+        mockMvc.perform(get("/v1/admin/inquiries/" + newer.getId()).param("userId", String.valueOf(hong.getId()))
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.prevInquiryId").doesNotExist())
+                .andExpect(jsonPath("$.nextInquiryId").value(older.getId()));
+        mockMvc.perform(get("/v1/admin/inquiries/" + newer.getId()).header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(jsonPath("$.nextInquiryId").value(between.getId()));
     }
 
     @Test
@@ -643,22 +751,117 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
         return deliveryGroupRepository.findById(group.getId()).orElseThrow();
     }
 
-    /** 반품 · 교환 1건(박스 1 + 클레임 1) — H2 는 컬럼 DEFAULT 를 쓰지 않아 NOT NULL 컬럼을 모두 채운다. */
-    private void claim(Order order, OrderDeliveryGroup group, Users user, String type, String claimStatus, String result) {
+    /** 반품 · 교환 1건(박스 1 + 클레임 1) — H2 는 컬럼 DEFAULT 를 쓰지 않아 NOT NULL 컬럼을 모두 채운다. 박스(요청) id 를 돌려준다. */
+    private Long claim(Order order, OrderDeliveryGroup group, Users user, String type, String claimStatus, String result) {
         LocalDateTime now = LocalDateTime.now();
-        Long orderProductId = jdbc.queryForObject("SELECT MIN(order_product_id) FROM order_product WHERE order_id = ?",
-                Long.class, order.getId());
         jdbc.update("INSERT INTO order_claim_collection (order_id, delivery_group_id, market_id, user_id, type, reason_code, "
                         + "fee_bearer, invoice_due_at, return_deduction, auto_received, created_at) "
                         + "VALUES (?, ?, ?, ?, ?, 'CHANGE_OF_MIND', 'CONSUMER', ?, 0, false, ?)",
                 order.getId(), group.getId(), market.getId(), user.getId(), type, now.plusDays(3), now);
         Long collectionId = jdbc.queryForObject("SELECT MAX(collection_id) FROM order_claim_collection", Long.class);
+        claimInBox(collectionId, order, group, user, type, claimStatus, result);
+        return collectionId;
+    }
+
+    /** 같은 박스에 클레임 1건 더 — 목록은 클레임(행) 단위다. */
+    private void claimInBox(Long collectionId, Order order, OrderDeliveryGroup group, Users user, String type,
+                            String claimStatus, String result) {
+        LocalDateTime now = LocalDateTime.now();
+        Long orderProductId = jdbc.queryForObject("SELECT MIN(order_product_id) FROM order_product WHERE order_id = ?",
+                Long.class, order.getId());
         jdbc.update("INSERT INTO order_claim (collection_id, order_id, delivery_group_id, order_product_id, market_id, user_id, "
                         + "type, quantity, reason_code, fee_bearer, status, stage_entered_at, requested_at, collect_due_at, "
                         + "notice_count, inspect_notice_count, fault_changed_to_seller, opened_by, result) "
                         + "VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'CHANGE_OF_MIND', 'CONSUMER', ?, ?, ?, ?, 0, 0, false, 'CONSUMER', ?)",
                 collectionId, order.getId(), group.getId(), orderProductId, market.getId(), user.getId(), type, claimStatus,
                 now, now, now.plusDays(3), result);
+    }
+
+    /**
+     * 진행 중 칩 다섯 축의 데이터 — 칩에 들어가는 것 하나씩과, 같은 목록 근처에 있지만 칩에서 빠져야 하는 것을 함께 심는다(56 C1).
+     * 하위주문 상태는 결제 훅 대신 바로 쓴다.
+     */
+    private void seedPendingWork(Users user) {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        Product product = variant.getProduct();
+        // 열린 문의 — 1:1 대기 1(답변 완료 1 은 빠짐) · 상품 대기 1(대기지만 삭제 요청 검토 중 1 · 삭제 집행 1 은 빠짐)
+        oneToOne(user, CsCategory.DELIVERY, "배송 문의", now.minusHours(3));
+        OneToOneInquiry answered = oneToOne(user, CsCategory.DELIVERY, "답변된 문의", now.minusHours(2));
+        jdbc.update("UPDATE one_to_one_inquiry SET status = 'ANSWERED', answered_at = ? WHERE inquiry_id = ?",
+                now.minusHours(1), answered.getId());
+        productInquiry(user, product, "대기 문의", now.minusHours(3));
+        exposure(productInquiry(user, product, "삭제 요청된 문의", now.minusHours(2)), "DELETE_REQUESTED");
+        exposure(productInquiry(user, product, "삭제된 문의", now.minusHours(1)), "DELETED");
+        // 배송중 1
+        group(orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID), "SHIPPING");
+        // 취소 요청 검토 중 1 — 취소된 하위주문은 취소 탭에 있지만 칩이 아니다
+        cancelRequest(group(orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID), "PREPARING"), user);
+        group(orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.CANCELLED), "CANCELLED");
+        // 반품 · 교환 진행 3 — 한 박스 2건 + 40일 전 신청 1(기본 1개월 밖). 종결 · 결제 대기(접수 전)는 빠진다
+        Order boxed = orders.paidOrder(user, variant, 2, PRICE, OrderProductStatus.PAID);
+        OrderDeliveryGroup boxedGroup = group(boxed, "DELIVERED");
+        Long box = claim(boxed, boxedGroup, user, "RETURN", "REQUESTED", null);
+        claimInBox(box, boxed, boxedGroup, user, "RETURN", "REQUESTED", null);
+        Order old = orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID);
+        Long oldBox = claim(old, group(old, "DELIVERED"), user, "EXCHANGE", "REQUESTED", null);
+        jdbc.update("UPDATE order_claim SET requested_at = ?, stage_entered_at = ? WHERE collection_id = ?",
+                now.minusDays(40), now.minusDays(40), oldBox);
+        Order done = orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.RETURNED);
+        claim(done, group(done, "DELIVERED"), user, "RETURN", "COMPLETED", "REFUNDED");
+        Order unpaid = orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID);
+        claim(unpaid, group(unpaid, "DELIVERED"), user, "EXCHANGE", "PAYMENT_PENDING", null);
+        // 환불 실패 1 — 완료는 빠진다
+        Order failed = orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID);
+        refundTask(failed, group(failed, "DELIVERED"), "FAILED");
+        Order refunded = orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID);
+        refundTask(refunded, group(refunded, "DELIVERED"), "DONE");
+    }
+
+    /** 칩 링크의 목록 API 를 query 그대로 불러 전체 건수를 읽는다. */
+    private long listTotal(String target, JsonNode query) throws Exception {
+        String path = switch (target) {
+            case "INQUIRIES" -> "/v1/admin/inquiries";
+            case "PRODUCT_INQUIRIES" -> "/v1/admin/product-inquiries";
+            case "ORDERS" -> "/v1/admin/orders";
+            case "CLAIMS" -> "/v1/admin/claims";
+            case "REFUNDS" -> "/v1/admin/refunds";
+            default -> throw new IllegalArgumentException(target);
+        };
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder request =
+                get(path).header(HttpHeaders.AUTHORIZATION, adminToken);
+        query.fields().forEachRemaining(field -> request.param(field.getKey(), field.getValue().asText()));
+        return json(mockMvc.perform(request).andExpect(status().isOk())).path("pageInfo").path("totalResults").asLong();
+    }
+
+    private void exposure(ProductInquiry inquiry, String exposureStatus) {
+        jdbc.update("UPDATE product_inquiry SET exposure_status = ? WHERE product_inquiry_id = ?", exposureStatus,
+                inquiry.getId());
+    }
+
+    /** 검토 중 취소 요청 — 앱 C10 경로 대신 테이블 계약대로 심는다(전 항목 · 단순 변심). */
+    private void cancelRequest(OrderDeliveryGroup group, Users user) {
+        transactionTemplate.executeWithoutResult(tx -> {
+            OrderDeliveryGroup attached = deliveryGroupRepository.findById(group.getId()).orElseThrow();
+            OrderCancelRequest request = OrderCancelRequest.builder()
+                    .deliveryGroup(attached).order(attached.getOrder()).requestedBy(user.getId())
+                    .reasonCode(CancelRequestReason.CHANGE_OF_MIND).statusAtRequest(attached.getFulfillmentStatus())
+                    .requestedAt(LocalDateTime.now().withNano(0)).build();
+            for (OrderProduct item : orderProductRepository.findByDeliveryGroupIds(List.of(attached.getId()))) {
+                request.addItem(OrderCancelRequestItem.builder().cancelRequest(request).orderProduct(item)
+                        .quantity(item.getQuantity()).refundAmount(item.getPrice() * item.getQuantity()).build());
+            }
+            cancelRequestRepository.save(request);
+        });
+    }
+
+    /** 환불 작업 — PG 자동 · 직권 취소 출처. 상태는 집행 대신 바로 쓴다. */
+    private void refundTask(Order order, OrderDeliveryGroup group, String taskStatus) {
+        Long taskId = transactionTemplate.execute(tx -> refundTaskRepository.save(OrderRefundTask.builder()
+                .deliveryGroup(deliveryGroupRepository.findById(group.getId()).orElseThrow())
+                .order(orderRepository.findById(order.getId()).orElseThrow())
+                .source(RefundTaskSource.SELLER_DIRECT_CANCEL).sourceId(group.getId()).refundAmount(PRICE)
+                .origin(RefundTaskOrigin.PG_AUTO).partialCancel(false).build()).getId());
+        jdbc.update("UPDATE order_refund_task SET status = ? WHERE refund_task_id = ?", taskStatus, taskId);
     }
 
     private OneToOneInquiry oneToOne(Users user, CsCategory type, String content, LocalDateTime createdAt) {
