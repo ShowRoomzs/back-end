@@ -72,7 +72,8 @@ public interface SellerPerformanceControllerDocs {
 
     @Operation(summary = "성과 요약 (KPI 8 · 상태 칩)",
             description = """
-                    **지급 완료 공구만 합산**합니다(§47-1 KPI 모집단 — 집계 중 · 조정 협의는 평균을 왜곡한다). 검색어 · 상태 칩을 따라가지 않습니다.
+                    **금액이 확정된 정산 — 지급 예정 + 지급 완료 공구를 합산**합니다(55 계획서 P1 · D3 — 집계 중은 금액이 없고, 정산 확인 중 · 조정 협의는 조정 요청으로 값이 바뀔 수 있다). 검색어 · 상태 칩을 따라가지 않습니다.
+                    근거 문장은 「정산 N건 합산(지급 예정 a · 지급 완료 b)」이고 한쪽이 0건이어도 둘 다 적습니다 · `population.breakdown` 이 같은 내역입니다.
 
                     **권한:** SELLER
 
@@ -80,13 +81,13 @@ public interface SellerPerformanceControllerDocs {
                     평균 AOV = Σ확정 거래액 ÷ Σ확정 주문 · 평균 구매확정률 = Σ구매확정 ÷ Σ주문 · 평균 재구매율 = Σ재구매 ÷ Σ구매확정 소비자.
                     지급 완료에는 분배 실패 건도 포함됩니다.
 
-                    지급 완료 공구가 없으면(`population.count = 0`) 지표는 전부 `value = null`(「—」 · 0원은 실적처럼 읽힌다) · `statusCounts` 는 실제 수(다섯 키 항상 있음).
+                    모집단 공구가 없으면(`population.count = 0`) 지표는 전부 `value = null`(「—」 · 0원은 실적처럼 읽힌다) · `statusCounts` 는 실제 수(다섯 키 항상 있음).
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "KPI · 상태 칩",
                     content = @Content(schema = @Schema(implementation = SellerPerformanceDto.Summary.class), examples = {
-                            @ExampleObject(name = "L1", summary = "지급 완료 2건 합산", value = SUMMARY),
-                            @ExampleObject(name = "L2", summary = "지급 완료 공구 없음", value = SUMMARY_EMPTY)})),
+                            @ExampleObject(name = "L1", summary = "정산 2건 합산(지급 예정 1 · 지급 완료 1)", value = SUMMARY),
+                            @ExampleObject(name = "L2", summary = "지급 예정 · 지급 완료 공구 없음", value = SUMMARY_EMPTY)})),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
             @ApiResponse(responseCode = "403", description = "판매자 권한 없음",

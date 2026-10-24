@@ -52,22 +52,22 @@ final class SellerPerformanceDocsExamples {
 
     static final String SUMMARY = """
             {
-              "population": {"status": "PAID", "count": 2},
-              "confirmedSales": {"value": 9190000, "state": "FINAL", "basis": "지급 완료 2건 합산"},
+              "population": {"count": 2, "statuses": ["PAYOUT_SCHEDULED", "PAID"], "breakdown": {"PAYOUT_SCHEDULED": 1, "PAID": 1}},
+              "confirmedSales": {"value": 9190000, "state": "FINAL", "basis": "정산 2건 합산(지급 예정 1 · 지급 완료 1)"},
               "visitors": {"value": 8640, "state": "FINAL", "basis": "2건 누적 · 고유 방문"},
               "avgAov": {"value": 18755, "state": "FINAL", "basis": "확정 거래액 ÷ 확정 주문 490건"},
               "avgConversionRate": {"value": 5.7, "state": "FINAL", "basis": "방문 8,640명 대비 구매확정 490건"},
               "avgRoas": {"value": 550, "state": "FINAL", "basis": "확정 거래액 ÷ 총 집행비 1,669,000원"},
-              "genderRatio": {"female": 80, "male": 20, "basis": "지급 완료 2건 합산"},
+              "genderRatio": {"female": 80, "male": 20, "basis": "정산 2건 합산(지급 예정 1 · 지급 완료 1)"},
               "avgConfirmRate": {"value": 91.4, "state": "FINAL", "basis": "주문 536건 중 490건 확정"},
               "avgRepurchaseRate": {"value": 29.0, "state": "FINAL", "basis": "구매확정 490명 중 재구매 142명"},
-              "statusCounts": {"AGGREGATING": 3, "REVIEWING": 0, "ADJUSTING": 1, "PAYOUT_SCHEDULED": 0, "PAID": 2}
+              "statusCounts": {"AGGREGATING": 3, "REVIEWING": 0, "ADJUSTING": 1, "PAYOUT_SCHEDULED": 1, "PAID": 1}
             }
             """;
 
     static final String SUMMARY_EMPTY = """
             {
-              "population": {"status": "PAID", "count": 0},
+              "population": {"count": 0, "statuses": ["PAYOUT_SCHEDULED", "PAID"], "breakdown": {"PAYOUT_SCHEDULED": 0, "PAID": 0}},
               "confirmedSales": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
               "visitors": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},
               "avgAov": {"value": null, "state": "FINAL", "basis": "집계된 공구 없음"},

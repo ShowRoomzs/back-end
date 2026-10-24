@@ -69,9 +69,9 @@ public final class SellerPerformanceDto {
 
     // ------------------------------------------------------------------ 요약(3-3)
 
-    @Schema(name = "SellerPerformanceSummary", description = "모집단 = 지급 완료 공구 합산 · 검색어 · 상태 칩과 무관 · 평균은 합산 비율(Σ분자 ÷ Σ분모). 지급 완료 0건이면 지표 value 는 전부 null")
+    @Schema(name = "SellerPerformanceSummary", description = "모집단 = 지급 예정 + 지급 완료 공구 합산(55 계획서 P1) · 검색어 · 상태 칩과 무관 · 평균은 합산 비율(Σ분자 ÷ Σ분모). 모집단 0건이면 지표 value 는 전부 null")
     public record Summary(
-            @Schema(description = "KPI 모집단 — 「지급 완료 N건 합산」") Population population,
+            @Schema(description = "KPI 모집단 — 「정산 N건 합산(지급 예정 a · 지급 완료 b)」") Population population,
             @Schema(description = "확정 거래액 합(원)") PerformanceFigure<Long> confirmedSales,
             @Schema(description = "쇼룸 방문 누적(명) — 공구별 고유 방문의 합") PerformanceFigure<Long> visitors,
             @Schema(description = "평균 객단가(원) = Σ확정 거래액 ÷ Σ확정 주문") PerformanceFigure<Long> avgAov,
@@ -86,17 +86,21 @@ public final class SellerPerformanceDto {
     ) {
     }
 
-    @Schema(name = "SellerPerformancePopulation", description = "KPI 모집단")
+    @Schema(name = "SellerPerformancePopulation", description = "KPI 모집단 — 금액이 확정된 정산(지급 예정 + 지급 완료). 정산 확인 중 · 조정 협의는 뺀다(55 계획서 P1 · D3)")
     public record Population(
-            @Schema(description = "모집단 상태 — 항상 PAID", example = "PAID") PerformanceStatus status,
-            @Schema(description = "지급 완료 공구 수 — 0 이면 빈 상태(L2)", example = "2") long count) {
+            @Schema(description = "모집단 공구 수 — 0 이면 빈 상태(L2)", example = "2") long count,
+            @Schema(description = "모집단 상태 — 항상 [PAYOUT_SCHEDULED, PAID]", example = "[\"PAYOUT_SCHEDULED\", \"PAID\"]")
+            List<PerformanceStatus> statuses,
+            @Schema(description = "상태별 건수 — 두 키가 항상 있다(0 포함) · 합 = count · 지급 완료에는 분배 실패 포함",
+                    example = "{\"PAYOUT_SCHEDULED\": 1, \"PAID\": 1}")
+            Map<PerformanceStatus, Long> breakdown) {
     }
 
     @Schema(name = "SellerPerformanceGenderRatio", description = "성비(정수 %) — 미확인은 분모에서 뺀다 · 아는 성별이 없으면 female · male 이 null · 큰 쪽을 앞에 두는 것은 FE")
     public record GenderRatio(
             @Schema(description = "여성 %", example = "80", nullable = true) Integer female,
             @Schema(description = "남성 %", example = "20", nullable = true) Integer male,
-            @Schema(description = "보조줄", example = "지급 완료 2건 합산", nullable = true) String basis) {
+            @Schema(description = "보조줄", example = "정산 2건 합산(지급 예정 1 · 지급 완료 1)", nullable = true) String basis) {
     }
 
     // ------------------------------------------------------------------ 상세(3-4)

@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import showroomz.domain.settlement.type.SettlementStatus;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 
@@ -24,6 +25,12 @@ public enum PerformanceStatus {
     ADJUSTING("조정 협의", PerformanceTone.WARNING),
     PAYOUT_SCHEDULED("지급 예정", PerformanceTone.NEUTRAL),
     PAID("지급 완료", PerformanceTone.SUCCESS);
+
+    /**
+     * 파트너 성과 KPI 모집단(55 계획서 P1 · D3 · 시안 rev.7 「정산 2건 합산(지급 예정 1 · 지급 완료 1)」) — 금액이 확정된 정산만. 정산 확인 중 ·
+     * 조정 협의는 조정 요청으로 값이 바뀔 수 있어 뺀다. 지급 완료에는 분배 실패가 들어 있다({@link #of}).
+     */
+    public static final Set<PerformanceStatus> KPI_POPULATION = Collections.unmodifiableSet(EnumSet.of(PAYOUT_SCHEDULED, PAID));
 
     private final String label;
     private final PerformanceTone tone;

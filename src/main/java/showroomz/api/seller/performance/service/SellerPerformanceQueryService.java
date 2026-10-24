@@ -79,7 +79,10 @@ public class SellerPerformanceQueryService {
 
     // ------------------------------------------------------------------ 요약(3-3)
 
-    /** 모집단 전체 기준 — 검색어 · 상태 칩과 무관. KPI 는 지급 완료 공구만 합산한다(§47-1). */
+    /**
+     * 모집단 전체 기준 — 검색어 · 상태 칩과 무관. KPI 는 금액이 확정된 정산(지급 예정 + 지급 완료 · {@link PerformanceStatus#KPI_POPULATION})만
+     * 합산한다(55 계획서 P1 · D3 — 정산 확인 중 · 조정 협의는 조정 요청으로 값이 바뀔 수 있다).
+     */
     public SellerPerformanceDto.Summary getSummary(String sellerEmail) {
         Market market = accessGuard.resolve(sellerEmail).market();
         List<GroupBuy> listed = queryRepository.findAllListedForMarket(market.getId());
@@ -91,11 +94,11 @@ public class SellerPerformanceQueryService {
             Settlement s = settlements.get(groupBuy.getId());
             counts.merge(PerformanceStatus.of(s == null ? null : s.getStatus()), 1L, Long::sum);
         }
-        List<GroupBuy> paid = listed.stream().filter(groupBuy -> {
+        List<GroupBuy> population = listed.stream().filter(groupBuy -> {
             Settlement s = settlements.get(groupBuy.getId());
-            return s != null && PerformanceStatus.of(s.getStatus()) == PerformanceStatus.PAID;
+            return s != null && PerformanceStatus.KPI_POPULATION.contains(PerformanceStatus.of(s.getStatus()));
         }).toList();
-        return assembler.summary(reader.readRows(paid).values(), counts);
+        return assembler.summary(reader.readRows(population).values(), counts);
     }
 
     // ------------------------------------------------------------------ 상세(3-4)

@@ -87,24 +87,31 @@ public class SellerPerformanceAssembler {
                 true);
     }
 
-    /** KPI — 지급 완료 공구의 합산 비율(Σ분자 ÷ Σ분모). 공구 평균(평균의 평균)이 아니다. */
-    public SellerPerformanceDto.Summary summary(Collection<PerformanceFacts> paid, Map<PerformanceStatus, Long> counts) {
-        long n = paid.size();
+    /**
+     * KPI — 모집단(지급 예정 + 지급 완료 · {@link PerformanceStatus#KPI_POPULATION}) 공구의 합산 비율(Σ분자 ÷ Σ분모). 공구 평균(평균의
+     * 평균)이 아니다. 근거 문장은 「정산 N건 합산(지급 예정 a · 지급 완료 b)」 — 한쪽이 0건이어도 둘 다 적는다(55 계획서 P1).
+     *
+     * @param settled 모집단(금액이 확정된 정산) 공구의 원천값
+     * @param counts  상태 칩 숫자 — 모집단 내역(breakdown)은 여기서 두 키만 뗀다(쿼리를 늘리지 않는다)
+     */
+    public SellerPerformanceDto.Summary summary(Collection<PerformanceFacts> settled, Map<PerformanceStatus, Long> counts) {
+        long n = settled.size();
+        SellerPerformanceDto.Population population = population(n, counts);
         if (n == 0) {
             String basis = "집계된 공구 없음";
-            return new SellerPerformanceDto.Summary(new SellerPerformanceDto.Population(PerformanceStatus.PAID, 0),
+            return new SellerPerformanceDto.Summary(population,
                     PerformanceFigure.none(FigureState.FINAL, basis), PerformanceFigure.none(FigureState.FINAL, basis),
                     PerformanceFigure.none(FigureState.FINAL, basis), PerformanceFigure.none(FigureState.FINAL, basis),
                     PerformanceFigure.none(FigureState.FINAL, basis), new SellerPerformanceDto.GenderRatio(null, null, basis),
                     PerformanceFigure.none(FigureState.FINAL, basis), PerformanceFigure.none(FigureState.FINAL, basis),
                     counts);
         }
-        long sales = sum(paid, f -> f.orders().confirmedSalesAmount());
-        long visitors = sum(paid, f -> f.traffic().visitorCount());
-        long confirmed = sum(paid, f -> f.orders().confirmedCount());
-        long orders = sum(paid, f -> f.orders().orderCount());
+        long sales = sum(settled, f -> f.orders().confirmedSalesAmount());
+        long visitors = sum(settled, f -> f.traffic().visitorCount());
+        long confirmed = sum(settled, f -> f.orders().confirmedCount());
+        long orders = sum(settled, f -> f.orders().orderCount());
         long roasSales = 0, spend = 0;
-        for (PerformanceFacts f : paid) {
+        for (PerformanceFacts f : settled) {
             long s = spendOf(f, f.settlement().getRewardAmount());
             if (s > 0) {
                 spend += s;
@@ -112,7 +119,7 @@ public class SellerPerformanceAssembler {
             }
         }
         long buyers = 0, repeat = 0, female = 0, male = 0;
-        for (PerformanceFacts f : paid) {
+        for (PerformanceFacts f : settled) {
             buyers += f.buyers().size();
             for (PerformanceFacts.Buyer b : f.buyers()) {
                 repeat += b.repeatInBrand() ? 1 : 0;
@@ -120,9 +127,10 @@ public class SellerPerformanceAssembler {
                 male += "MALE".equalsIgnoreCase(b.gender()) ? 1 : 0;
             }
         }
-        String scope = "지급 완료 %d건 합산".formatted(n);
+        String scope = "정산 %d건 합산(지급 예정 %d · 지급 완료 %d)".formatted(n,
+                population.breakdown().get(PerformanceStatus.PAYOUT_SCHEDULED), population.breakdown().get(PerformanceStatus.PAID));
         GenderSplit split = GenderSplit.of(female, male);
-        return new SellerPerformanceDto.Summary(new SellerPerformanceDto.Population(PerformanceStatus.PAID, n),
+        return new SellerPerformanceDto.Summary(population,
                 PerformanceFigure.fin(sales, scope),
                 PerformanceFigure.fin(visitors, "%d건 누적 · 고유 방문".formatted(n)),
                 PerformanceFigure.fin(div(sales, confirmed), "확정 거래액 ÷ 확정 주문 %,d건".formatted(confirmed)),
@@ -279,6 +287,15 @@ public class SellerPerformanceAssembler {
 
     private static SellerPerformanceDto.Influencer influencer(GroupBuy groupBuy) {
         return new SellerPerformanceDto.Influencer(groupBuy.getCreator().getId(), groupBuy.getCreator().getShowroomName());
+    }
+
+    /** KPI 모집단 — 상태 칩 숫자에서 모집단 상태만 뗀다(두 키가 항상 있다 · 0 포함). */
+    private static SellerPerformanceDto.Population population(long count, Map<PerformanceStatus, Long> counts) {
+        Map<PerformanceStatus, Long> breakdown = new LinkedHashMap<>();
+        for (PerformanceStatus status : PerformanceStatus.KPI_POPULATION) {
+            breakdown.put(status, counts.getOrDefault(status, 0L));
+        }
+        return new SellerPerformanceDto.Population(count, List.copyOf(PerformanceStatus.KPI_POPULATION), breakdown);
     }
 
     /** 상태 칩 — 0 인 상태도 키가 있다. */

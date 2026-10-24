@@ -251,7 +251,7 @@ class SellerPerformanceIntegrationTest extends SettlementTestSupport {
     // ------------------------------------------------------------------ PF3 요약
 
     @Test
-    @DisplayName("PF3 요약 — 지급 완료만 합산 · 빈 상태는 null · 상태 칩은 모집단 전체")
+    @DisplayName("PF3 요약 — 지급 예정 + 지급 완료 합산(55 계획서 P1) · 빈 상태는 null · 상태 칩은 모집단 전체")
     void summaryKpi() throws Exception {
         sellerGet(PERF + "/summary").andExpect(status().isOk())
                 .andExpect(jsonPath("$.population.count").value(0))
@@ -262,6 +262,12 @@ class SellerPerformanceIntegrationTest extends SettlementTestSupport {
         sellerGet(PERF + "/summary")
                 .andExpect(jsonPath("$.population.count").value(0))
                 .andExpect(jsonPath("$.statusCounts.REVIEWING").value(1));
+
+        jdbc.update("UPDATE settlement SET status = 'PAYOUT_SCHEDULED' WHERE settlement_id = ?", s.getId());
+        sellerGet(PERF + "/summary")
+                .andExpect(jsonPath("$.population.count").value(1))
+                .andExpect(jsonPath("$.population.breakdown.PAYOUT_SCHEDULED").value(1))
+                .andExpect(jsonPath("$.confirmedSales.basis").value("정산 1건 합산(지급 예정 1 · 지급 완료 0)"));
 
         jdbc.update("UPDATE settlement SET status = 'PAYOUT_FAILED' WHERE settlement_id = ?", s.getId());
         sellerGet(PERF + "/summary")
