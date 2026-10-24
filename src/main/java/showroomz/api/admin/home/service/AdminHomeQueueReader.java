@@ -3,6 +3,7 @@ package showroomz.api.admin.home.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.changerequest.dto.AdminChangeRequestDto;
 import showroomz.api.admin.changerequest.service.AdminChangeRequestService;
 import showroomz.api.admin.contract.service.AdminContractQueryService;
 import showroomz.api.admin.groupbuy.service.AdminGroupBuyQueryService;
@@ -101,42 +102,83 @@ public class AdminHomeQueueReader {
         queues.add(openReviews(groupBuyQueues.getOrDefault(AdminGroupBuyQueue.OPEN_REVIEW, 0L), now));
         queues.addAll(onboarding(now));
         queues.addAll(taxDocuments(now));
-        queues.add(waiting("CHANGE_REQUEST", ONBOARDING, "변경 요청 검토",
-                changeRequestService.getSummary().getPendingCount(), opsRepository.oldestPendingChangeRequest(),
+        AdminChangeRequestDto.SummaryResponse changeRequests = changeRequestService.getSummary();
+        queues.add(waiting("CHANGE_REQUEST", ONBOARDING, "변경 요청 검토", changeRequestDetail(changeRequests),
+                changeRequests.getPendingCount(), opsRepository.oldestPendingChangeRequest(),
                 "/change-requests?status=PENDING", now));
-        queues.add(waiting("WITHDRAWAL", MEMBERS, "탈퇴 승인 검토",
+        queues.add(waiting("WITHDRAWAL", MEMBERS, "탈퇴 승인 검토", null,
                 brandWithdrawalRepository.countPending() + opsRepository.countPendingCreatorWithdrawals(),
                 opsRepository.oldestPendingWithdrawal(), "/members/withdrawals", now));
-        queues.add(waiting("CLAWBACK_UNRECOVERABLE", SETTLEMENTS, "차감 미회수",
-                clawbackRows.build(null).unrecoverableCount(), opsRepository.oldestUnrecoverableClawback(),
+        AdminClawbackRows.Rows clawbacks = clawbackRows.build(null);
+        queues.add(waiting("CLAWBACK_UNRECOVERABLE", SETTLEMENTS, "차감 미회수", clawbackDetail(clawbacks),
+                clawbacks.unrecoverableCount(), opsRepository.oldestUnrecoverableClawback(),
                 "/settlements?tab=CLAWBACK", now));
         AdminOrderExceptionDto.ExceptionSummary exceptions = exceptionService.getSummary();
         queues.add(waiting("PROCESSING_DELAY", TRANSACTIONS, "처리 지연 확인",
+                kindDetail(exceptions, AdminOrderExceptionDto.ExceptionTab.DELAY),
                 exceptions.tabCounts().getOrDefault("DELAY", 0L), null, "/order-exceptions?tab=DELAY", now));
         // 사이드바 배지 범위(order.exception.badge-scope)가 처리 지연만이면 배송 예외는 할 일에 넣지 않는다 — 합계가 배지와 같아야 한다.
         queues.add(waiting("DELIVERY_EXCEPTION", TRANSACTIONS, "배송 예외 확인",
+                kindDetail(exceptions, AdminOrderExceptionDto.ExceptionTab.DELIVERY),
                 "ALL".equals(exceptions.badgeScope()) ? exceptions.tabCounts().getOrDefault("DELIVERY", 0L) : 0L,
                 null, "/order-exceptions?tab=DELIVERY", now));
-        queues.add(waiting("CLAIM_DISPUTE", TRANSACTIONS, "반려 이의 확인", claimRepository.countOpenDisputes(null),
+        queues.add(waiting("CLAIM_DISPUTE", TRANSACTIONS, "반려 이의 확인", null, claimRepository.countOpenDisputes(null),
                 opsRepository.oldestOpenDispute(), "/claims?dispute=OPEN", now));
-        queues.add(waiting("POST_REPORT", POSTS, "신고 게시물 검토", postQueryService.getSummary().getActionRequired(),
-                null, "/posts?tab=REPORTED", now));
-        queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청",
+        queues.add(waiting("POST_REPORT", POSTS, "신고 게시물 검토", "일반 게시물 신고 누적",
+                postQueryService.getSummary().getActionRequired(), null, "/posts?tab=REPORTED", now));
+        queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청", null,
                 productInquiryService.getSummary().getDeleteRequestedCount(), null,
                 "/product-inquiries?status=DELETE_REQUESTED", now));
         queues.addAll(contracts(now));
-        queues.add(waiting("SUSPEND_REQUEST", GROUP_BUYS, "중단 요청",
+        queues.add(waiting("SUSPEND_REQUEST", GROUP_BUYS, "중단 요청", null,
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.SUSPEND_REQUEST, 0L),
                 opsRepository.oldestPendingGroupBuyChangeRequest(ChangeRequestType.SUSPEND),
                 "/group-buys?queue=SUSPEND_REQUEST", now));
-        queues.add(waiting("EARLY_CLOSE_REQUEST", GROUP_BUYS, "조기 마감 요청",
+        queues.add(waiting("EARLY_CLOSE_REQUEST", GROUP_BUYS, "조기 마감 요청", null,
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.EARLY_CLOSE_REQUEST, 0L),
                 opsRepository.oldestPendingGroupBuyChangeRequest(ChangeRequestType.EARLY_CLOSE),
                 "/group-buys?queue=EARLY_CLOSE_REQUEST", now));
-        queues.add(waiting("APPEAL_REVIEW", GROUP_BUYS, "소명 검토",
+        queues.add(waiting("APPEAL_REVIEW", GROUP_BUYS, "소명 검토", null,
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.APPEAL_REVIEW, 0L), null,
                 "/group-buys?queue=APPEAL_REVIEW", now));
         return new Snapshot(queues);
+    }
+
+    // ------------------------------------------------------------------ 대기 행 보조줄(55 계획서 A3 · 00-home rev.4)
+
+    /** 「브랜드 2 · 인플루언서 2」 — 0인 쪽은 뺀다. */
+    private static String changeRequestDetail(AdminChangeRequestDto.SummaryResponse summary) {
+        List<String> parts = new ArrayList<>();
+        if (summary.getBrandPendingCount() > 0) {
+            parts.add("브랜드 " + summary.getBrandPendingCount());
+        }
+        if (summary.getCreatorPendingCount() > 0) {
+            parts.add("인플루언서 " + summary.getCreatorPendingCount());
+        }
+        return parts.isEmpty() ? null : String.join(" · ", parts);
+    }
+
+    /** 1건이면 「CLW-0003 · 2,094원」, 여러 건이면 「N건 · 합계 X원」. */
+    private static String clawbackDetail(AdminClawbackRows.Rows rows) {
+        if (rows.unrecoverableCount() == 0) {
+            return null;
+        }
+        if (rows.unrecoverableCount() == 1 && !rows.unrecoverableNumbers().isEmpty()) {
+            return rows.unrecoverableNumbers().getFirst() + " · " + String.format("%,d원", rows.unrecoverableAmount());
+        }
+        return rows.unrecoverableCount() + "건 · 합계 " + String.format("%,d원", rows.unrecoverableAmount());
+    }
+
+    /** 예외 유형별 건수 — 그 탭의 0이 아닌 유형만, 많은 순(같으면 유형 순). 「추적 정지 2 · 집화 확인 필요 1 · 반송 중 1」. */
+    private static String kindDetail(AdminOrderExceptionDto.ExceptionSummary summary, AdminOrderExceptionDto.ExceptionTab tab) {
+        String detail = java.util.Arrays.stream(AdminOrderExceptionDto.ExceptionKind.values())
+                .filter(kind -> kind.tab() == tab)
+                .filter(kind -> summary.kindCounts().getOrDefault(kind.name(), 0L) > 0)
+                .sorted(Comparator.comparingLong(
+                        (AdminOrderExceptionDto.ExceptionKind kind) -> summary.kindCounts().get(kind.name())).reversed())
+                .map(kind -> kind.getLabel() + " " + summary.kindCounts().get(kind.name()))
+                .collect(Collectors.joining(" · "));
+        return detail.isEmpty() ? null : detail;
     }
 
     // ------------------------------------------------------------------ 건별 — 실패 · 집행 대기
@@ -224,7 +266,8 @@ public class AdminHomeQueueReader {
         }
         long inSla = Math.max(0, count - overdue);
         if (inSla > 0) {
-            rows.add(row(TodoUrgency.WAITING, "대기", "INQUIRY", "1:1 문의(기한 내)", null, CS,
+            rows.add(row(TodoUrgency.WAITING, "대기", "INQUIRY", "1:1 문의(기한 내)",
+                    overdue > 0 ? "기한 내 · 초과 " + overdue + "건은 위에" : "기한 내", CS,
                     ageText(opsRepository.oldestWaitingInquirySince(threshold), now), null,
                     new AdminHomeDto.Target("QUEUE", null, "/inquiries?status=WAITING"), inSla));
         }
@@ -286,15 +329,18 @@ public class AdminHomeQueueReader {
                 .filter(d -> d.getDueDate() != null && !d.getDueDate().isAfter(dueSoonLimit))
                 .sorted(Comparator.comparing(SettlementTaxDocument::getDueDate))
                 .toList();
-        Map<Long, String> numbers = urgent.isEmpty() ? Map.of()
-                : settlementRepository.findAllById(urgent.stream().map(SettlementTaxDocument::getSettlementId).toList())
-                .stream().collect(Collectors.toMap(Settlement::getId, Settlement::getSettlementNumber, (a, b) -> a));
+        // 대기 행 보조줄의 브랜드 수(55 계획서 A3)까지 한 번에 — 발행 대기 문서의 정산을 모두 읽는다.
+        Map<Long, Settlement> settlements = toIssue.isEmpty() ? Map.of()
+                : settlementRepository.findAllById(toIssue.stream().map(SettlementTaxDocument::getSettlementId).distinct()
+                .toList()).stream().collect(Collectors.toMap(Settlement::getId, Function.identity(), (a, b) -> a));
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         for (SettlementTaxDocument document : urgent.stream().limit(ROW_LIMIT).toList()) {
             boolean overdue = document.getDueDate().isBefore(today);
+            Settlement settlement = settlements.get(document.getSettlementId());
             rows.add(row(overdue ? TodoUrgency.OVERDUE : TodoUrgency.DUE_SOON, overdue ? "기한 초과" : "기한 임박",
                     "TAX_INVOICE_ISSUE",
-                    "세금계산서 발행 · " + numbers.getOrDefault(document.getSettlementId(), "정산 " + document.getSettlementId()),
+                    "세금계산서 발행 · " + (settlement == null ? "정산 " + document.getSettlementId()
+                            : settlement.getSettlementNumber()),
                     document.getType().getLabel(), SETTLEMENTS, ageText(document.getCreatedAt(), now),
                     "마감 " + document.getDueDate().format(MONTH_DAY),
                     new AdminHomeDto.Target("SETTLEMENT", document.getSettlementId(), null), 1));
@@ -307,17 +353,32 @@ public class AdminHomeQueueReader {
         }
         long rest = toIssue.size() - urgent.size();
         if (rest > 0) {
-            LocalDateTime oldest = toIssue.stream().filter(d -> !urgent.contains(d))
+            List<SettlementTaxDocument> waitingDocuments = toIssue.stream().filter(d -> !urgent.contains(d)).toList();
+            LocalDateTime oldest = waitingDocuments.stream()
                     .map(SettlementTaxDocument::getCreatedAt).filter(Objects::nonNull)
                     .min(Comparator.naturalOrder()).orElse(null);
-            rows.add(row(TodoUrgency.WAITING, "대기", "TAX_INVOICE_ISSUE", "세금계산서 발행", null, SETTLEMENTS,
-                    ageText(oldest, now), null, new AdminHomeDto.Target("QUEUE", null, "/settlements?tab=EVIDENCE"), rest));
+            rows.add(row(TodoUrgency.WAITING, "대기", "TAX_INVOICE_ISSUE", "세금계산서 발행",
+                    issueDetail(waitingDocuments, settlements), SETTLEMENTS, ageText(oldest, now), null,
+                    new AdminHomeDto.Target("QUEUE", null, "/settlements?tab=EVIDENCE"), rest));
         }
         LocalDateTime oldestSubmitted = toVerify.stream().map(SettlementTaxDocument::getSubmittedAt)
                 .filter(Objects::nonNull).min(Comparator.naturalOrder()).orElse(null);
         return List.of(new Queue("TAX_INVOICE_ISSUE", SETTLEMENTS, toIssue.size(), rows),
-                waiting("TAX_INVOICE_VERIFY", SETTLEMENTS, "세금계산서 대조", toVerify.size(), oldestSubmitted,
-                        "/settlements?tab=EVIDENCE", now));
+                waiting("TAX_INVOICE_VERIFY", SETTLEMENTS, "세금계산서 대조", "인플루언서 사업자 승인번호", toVerify.size(),
+                        oldestSubmitted, "/settlements?tab=EVIDENCE", now));
+    }
+
+    /**
+     * 발행 대기 행 보조줄(55 계획서 A3) — 「브랜드 3곳 · 홈택스 수동 · 11.10 마감」. 이 행이 대표하는 문서(기한 임박으로 올라간 건 제외)의
+     * 브랜드 수와 가장 빠른 마감이다. 마감이 없으면 마감 문구를 뺀다.
+     */
+    private static String issueDetail(List<SettlementTaxDocument> documents, Map<Long, Settlement> settlements) {
+        long brands = documents.stream().map(d -> settlements.get(d.getSettlementId())).filter(Objects::nonNull)
+                .map(s -> s.getMarket().getId()).distinct().count();
+        LocalDate due = documents.stream().map(SettlementTaxDocument::getDueDate).filter(Objects::nonNull)
+                .min(Comparator.naturalOrder()).orElse(null);
+        return join(join(brands == 0 ? null : "브랜드 " + brands + "곳", "홈택스 수동"),
+                due == null ? null : due.format(MONTH_DAY) + " 마감");
     }
 
     /** 마감 있는 건 — 지났으면 기한 초과, 마감일이 다음 영업일 이내면 기한 임박(D-1 · 오늘 마감), 나머지는 대기 1행. */
@@ -327,6 +388,7 @@ public class AdminHomeQueueReader {
         LocalDate nextBusinessDay = businessCalendar.addBusinessDays(today, 1);
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         long itemized = 0;
+        long overdueCount = 0;
         LocalDateTime oldestWaiting = null;
         for (Dated item : items) {
             boolean overdue = item.dueAt().isBefore(now);
@@ -336,6 +398,7 @@ public class AdminHomeQueueReader {
                 continue;
             }
             itemized++;
+            overdueCount += overdue ? 1 : 0;
             if (rows.size() >= ROW_LIMIT) {
                 continue;
             }
@@ -351,10 +414,25 @@ public class AdminHomeQueueReader {
         }
         long waiting = Math.max(0, count - itemized);
         if (waiting > 0) {
-            rows.add(row(TodoUrgency.WAITING, "대기", key, label, null, menu, ageText(oldestWaiting, now), null,
-                    new AdminHomeDto.Target("QUEUE", null, filter), waiting));
+            rows.add(row(TodoUrgency.WAITING, "대기", key, label, aboveDetail(overdueCount, itemized - overdueCount), menu,
+                    ageText(oldestWaiting, now), null, new AdminHomeDto.Target("QUEUE", null, filter), waiting));
         }
         return new Queue(key, menu, count, rows);
+    }
+
+    /**
+     * 대기 행 보조줄(55 계획서 A3) — 같은 큐의 건별 행이 위에 올라가 있으면 「기한 초과 1건 · 기한 임박 1건은 위에」. 시안 「D-1 1건은 위
+     * 기한 임박에」를 일반화했다 — 기한 임박에는 오늘 마감도 들어 「D-1」로 못 박지 않는다.
+     */
+    private static String aboveDetail(long overdue, long dueSoon) {
+        List<String> parts = new ArrayList<>();
+        if (overdue > 0) {
+            parts.add("기한 초과 " + overdue + "건");
+        }
+        if (dueSoon > 0) {
+            parts.add("기한 임박 " + dueSoon + "건");
+        }
+        return parts.isEmpty() ? null : String.join(" · ", parts) + "은 위에";
     }
 
     private LocalDateTime dueAt(LocalDate base, int slaBusinessDays) {
@@ -373,7 +451,7 @@ public class AdminHomeQueueReader {
         List<Queue> queues = new ArrayList<>();
         for (AdminContractQueue queue : AdminContractQueue.values()) {
             long count = counts.getOrDefault(queue, 0L);
-            queues.add(waiting("CONTRACT_" + queue.name(), CONTRACTS, contractLabel(queue), count,
+            queues.add(waiting("CONTRACT_" + queue.name(), CONTRACTS, contractLabel(queue), contractDetail(queue), count,
                     count == 0 ? null : contractQueryService.oldestInQueue(queue, now), "/contracts?queue=" + queue.name(),
                     now));
         }
@@ -391,10 +469,21 @@ public class AdminHomeQueueReader {
         };
     }
 
-    private static Queue waiting(String key, String menu, String label, long count, LocalDateTime oldest, String filter,
-                                 LocalDateTime now) {
+    /** 보조줄 — 01-contracts rev.9 조치 큐 카드의 설명. 재발송 · 해지 요청은 시안에 카드가 없어 null. */
+    private static String contractDetail(AdminContractQueue queue) {
+        return switch (queue) {
+            case REVIEW -> "브랜드 제출 · 승인 또는 반려";
+            case CONCLUSION -> "양측 서명 완료 · PDF 업로드";
+            case EXPIRY -> "서명 기한 경과 · 수동 종결";
+            case RESEND, TERMINATION -> null;
+        };
+    }
+
+    /** @param detail 보조줄(55 계획서 A3) — 시안에 「—」인 큐는 null. */
+    private static Queue waiting(String key, String menu, String label, String detail, long count, LocalDateTime oldest,
+                                 String filter, LocalDateTime now) {
         List<AdminHomeDto.TodoRow> rows = count == 0 ? List.of()
-                : List.of(row(TodoUrgency.WAITING, "대기", key, label, null, menu, ageText(oldest, now), null,
+                : List.of(row(TodoUrgency.WAITING, "대기", key, label, detail, menu, ageText(oldest, now), null,
                 new AdminHomeDto.Target("QUEUE", null, filter), count));
         return new Queue(key, menu, count, rows);
     }

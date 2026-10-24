@@ -79,6 +79,10 @@ public class AdminChangeRequestService {
     public AdminChangeRequestDto.SummaryResponse getSummary() {
         return AdminChangeRequestDto.SummaryResponse.builder()
                 .pendingCount(changeRequestRepository.countByStatus(ChangeRequestStatus.PENDING))
+                .brandPendingCount(changeRequestRepository.countByStatusAndRequesterType(ChangeRequestStatus.PENDING,
+                        ChangeRequesterType.BRAND))
+                .creatorPendingCount(changeRequestRepository.countByStatusAndRequesterType(ChangeRequestStatus.PENDING,
+                        ChangeRequesterType.CREATOR))
                 .build();
     }
 

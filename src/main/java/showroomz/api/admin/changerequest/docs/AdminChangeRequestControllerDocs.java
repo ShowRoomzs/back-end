@@ -137,7 +137,8 @@ public interface AdminChangeRequestControllerDocs {
 
     @Operation(
             summary = "GNB 배지용 검토 대기 건수",
-            description = "§16-0 상위 '입점 관리' 배지 합산에 쓰인다. `pendingCount`만 반환한다.\n\n**권한:** ADMIN"
+            description = "§16-0 상위 '입점 관리' 배지 합산에 쓰인다. `pendingCount`는 검토 대기 전체이고, "
+                    + "`brandPendingCount` · `creatorPendingCount`는 요청자별 내역이다(어드민 홈 「브랜드 N · 인플루언서 N」 · 55 계획서 A3).\n\n**권한:** ADMIN"
     )
     @ApiResponses({
             @ApiResponse(
@@ -148,7 +149,7 @@ public interface AdminChangeRequestControllerDocs {
                             schema = @Schema(implementation = AdminChangeRequestDto.SummaryResponse.class),
                             examples = @ExampleObject(
                                     name = "성공",
-                                    value = "{\n  \"pendingCount\": 2\n}"
+                                    value = "{\n  \"pendingCount\": 4,\n  \"brandPendingCount\": 2,\n  \"creatorPendingCount\": 2\n}"
                             )
                     )
             ),

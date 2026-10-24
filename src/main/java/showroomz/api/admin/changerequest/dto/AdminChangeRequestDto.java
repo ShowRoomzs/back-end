@@ -90,8 +90,12 @@ public class AdminChangeRequestDto {
     @Builder
     @Schema(description = "GNB 배지용 검토 대기 건수")
     public static class SummaryResponse {
-        @Schema(description = "검토 대기 건수", example = "2")
+        @Schema(description = "검토 대기 건수", example = "4")
         private long pendingCount;
+        @Schema(description = "검토 대기 중 브랜드 요청 — 어드민 홈 「브랜드 N」(55 계획서 A3)", example = "2")
+        private long brandPendingCount;
+        @Schema(description = "검토 대기 중 인플루언서 요청 — 어드민 홈 「인플루언서 N」", example = "2")
+        private long creatorPendingCount;
     }
 
     @Getter

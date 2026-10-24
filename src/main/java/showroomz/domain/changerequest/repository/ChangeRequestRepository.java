@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import showroomz.domain.changerequest.entity.ChangeRequest;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequestType;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
 
 import java.util.Collection;
 import java.util.List;
@@ -84,6 +85,9 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, Lo
     List<Object[]> countByStatusGroup(@Param("keyword") String keyword);
 
     long countByStatus(ChangeRequestStatus status);
+
+    /** 요청자별 건수 — 어드민 홈 「변경 요청 검토」 행의 「브랜드 N · 인플루언서 N」(55 계획서 A3). */
+    long countByStatusAndRequesterType(ChangeRequestStatus status, ChangeRequesterType requesterType);
 
     /** 어드민 브랜드 상세 — 정산 정보 카드 「변경 요청 대기 N건」(52 설계서 2-2). 유형 무관 · 오래된 순. */
     List<ChangeRequest> findByMarket_IdAndStatusOrderByRequestedAtAsc(Long marketId, ChangeRequestStatus status);

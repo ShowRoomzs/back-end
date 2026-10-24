@@ -36,7 +36,9 @@ public class AdminClawbackRows {
     private final SettlementClawbackViews clawbackViews;
     private final showroomz.domain.settlement.repository.SettlementHistoryRepository historyRepository;
 
-    public record Rows(List<AdminSettlementDto.ClawbackItem> items, long unrecoverableCount, long unrecoverableAmount) {
+    /** @param unrecoverableNumbers 미회수가 있는 차감 번호 — 어드민 홈 「차감 미회수」 행이 1건이면 번호를 보인다(55 계획서 A3). */
+    public record Rows(List<AdminSettlementDto.ClawbackItem> items, long unrecoverableCount, long unrecoverableAmount,
+                       List<String> unrecoverableNumbers) {
     }
 
     public Rows build(String keyword) {
@@ -50,6 +52,7 @@ public class AdminClawbackRows {
         List<AdminSettlementDto.ClawbackItem> items = new ArrayList<>();
         long unrecoverableCount = 0;
         long unrecoverableAmount = 0;
+        List<String> unrecoverableNumbers = new ArrayList<>();
         for (Map.Entry<String, List<SettlementClawbackViews.Row>> entry : byNumber.entrySet()) {
             List<SettlementClawbackViews.Row> group = entry.getValue();
             SettlementClawbackViews.Row head = group.stream()
@@ -61,6 +64,7 @@ public class AdminClawbackRows {
             if (unrecoverable > 0) {
                 unrecoverableCount++;
                 unrecoverableAmount += unrecoverable;
+                unrecoverableNumbers.add(entry.getKey());
             }
             SettlementClawback lastApplied = group.stream().map(SettlementClawbackViews.Row::clawback)
                     .filter(c -> c.getAppliedSettlementId() != null)
@@ -91,7 +95,7 @@ public class AdminClawbackRows {
         if (pattern != null) {
             items = items.stream().filter(item -> matches(item, pattern)).toList();
         }
-        return new Rows(items, unrecoverableCount, unrecoverableAmount);
+        return new Rows(items, unrecoverableCount, unrecoverableAmount, unrecoverableNumbers);
     }
 
     /**

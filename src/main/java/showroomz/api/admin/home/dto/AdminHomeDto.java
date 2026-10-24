@@ -51,7 +51,8 @@ public final class AdminHomeDto {
             @Schema(description = "상태 배지 문구", example = "D-1") String badge,
             @Schema(description = "큐 코드", example = "OPEN_REVIEW") String queue,
             @Schema(example = "오픈 승인 · 밤 리페어 크림 공구") String title,
-            @Schema(nullable = true) String detail,
+            @Schema(description = "보조줄 — 건별 행은 건의 요약, 대기 행은 큐 요약(「추적 정지 2 · 집화 확인 필요 1」 · 「브랜드 2 · 인플루언서 2」 · "
+                    + "「기한 초과 1건은 위에」). 시안에 「—」인 큐는 null", example = "브랜드 2 · 인플루언서 2", nullable = true) String detail,
             @Schema(description = "사이드바 메뉴 — ONBOARDING · MEMBERS · CONTRACTS · GROUP_BUYS · TRANSACTIONS · SETTLEMENTS · CS · POSTS",
                     example = "GROUP_BUYS") String menu,
             @Schema(description = "경과 — 가장 오래된 건 기준", example = "2일 경과", nullable = true) String ageText,

@@ -3,8 +3,11 @@ package showroomz.api.admin.home;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import showroomz.api.common.settlement.SettlementTestSupport;
+import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.service.SettlementClawbackService;
 import showroomz.domain.settlement.type.SettlementStatus;
 
 import java.time.LocalDate;
@@ -18,13 +21,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 어드민 홈 세부(1017 설계서 6절 · 9절) — 마감 있는 큐의 기한 초과 · D-1 · 대기 분리(영업일) · 건별 행 20건 상한과 「외 N건」 ·
- * 세금계산서 발행 마감 5영업일 승격 · 오늘 일정 · 회원 수 · 탈퇴 승인 큐 · 오늘 지표의 어제 같은 시각 · PG 연동 경고.
+ * 세금계산서 발행 마감 5영업일 승격 · 오늘 일정 · 회원 수 · 탈퇴 승인 큐 · 오늘 지표의 어제 같은 시각 · PG 연동 경고 ·
+ * 대기 행 보조줄(55 계획서 A3).
  */
 @DisplayName("1017 어드민 홈 세부")
 class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
 
     private static final String HOME = "/v1/admin/home";
     private static final DateTimeFormatter MD = DateTimeFormatter.ofPattern("MM.dd");
+
+    @Autowired private SettlementClawbackService clawbackService;
 
     @Test
     @DisplayName("AD-01 입점 심사 — 마감(신청 + 3영업일)이 지났으면 기한 초과 · 다음 영업일이면 D-1 · 나머지는 대기 1행")
@@ -48,6 +54,8 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get(1).get("dueText").asText()).isEqualTo("마감 " + nextBusinessDay.format(MD));
         assertThat(rows.get(1).get("title").asText()).isEqualTo("인플루언서 입점 심사 · due-soon-app");
         assertThat(rows.get(2).get("count").asLong()).isEqualTo(1);
+        // 55 계획서 A3 — 대기 행 보조줄은 위로 올라간 건별 행을 가리킨다.
+        assertThat(rows.get(2).get("detail").asText()).isEqualTo("기한 초과 1건 · 기한 임박 1건은 위에");
 
         JsonNode badges = json(adminGet("/v1/admin/badges").andExpect(status().isOk()));
         assertThat(badges.at("/onboarding/creator").asLong()).isEqualTo(3);
@@ -88,6 +96,9 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get(0).get("title").asText()).startsWith("세금계산서 발행 · STL-");
         assertThat(rows.get(1).get("dueText").asText()).isEqualTo("마감 " + businessCalendar.addBusinessDays(today, 2).format(MD));
         assertThat(rows.get(2).get("count").asLong()).isEqualTo(1);
+        // 55 계획서 A3 — 대기 행이 대표하는 문서(여유 공구 1건)의 브랜드 수 · 가장 빠른 마감
+        assertThat(rows.get(2).get("detail").asText())
+                .isEqualTo("브랜드 1곳 · 홈택스 수동 · " + today.plusDays(40).format(MD) + " 마감");
 
         JsonNode badges = json(adminGet("/v1/admin/badges").andExpect(status().isOk()));
         assertThat(badges.get("settlements").asLong())
@@ -182,7 +193,64 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         assertThat(integrations.get(2).get("message").asText()).isEqualTo("수동");
     }
 
+    @Test
+    @DisplayName("AD-08 대기 행 보조줄(55 계획서 A3) — 배송 예외 · 처리 지연은 유형별 건수 · 변경 요청은 요청자별 건수 · 고정 문구는 대조 · 신고")
+    void waitingRowDetails() throws Exception {
+        OrderDeliveryGroup stalled = shippingGroup(nextTrackingNumber());
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ? "
+                + "WHERE delivery_group_id = ?", LocalDateTime.now().minusDays(8), stalled.getId());
+        OrderDeliveryGroup late = purchase(creamVariant, 1).group();
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?",
+                LocalDateTime.now().minusDays(2), late.getId());
+        seedChangeRequest("CR-BRAND-1", "BRAND", "BUSINESS_INFO", brand.marketId(), null);
+        seedChangeRequest("CR-BRAND-2", "BRAND", "SETTLEMENT_ACCOUNT", brand.marketId(), null);
+        seedChangeRequest("CR-CREATOR-1", "CREATOR", "CREATOR_ACCOUNT", null, creator.getId());
+
+        JsonNode todo = json(adminGet(HOME).andExpect(status().isOk())).get("todo");
+        assertThat(rowsOf(todo, "DELIVERY_EXCEPTION").get(0).get("detail").asText()).isEqualTo("추적 정지 1");
+        assertThat(rowsOf(todo, "PROCESSING_DELAY").get(0).get("detail").asText()).isEqualTo("발송 기한 경과 1");
+        JsonNode changeRequest = rowsOf(todo, "CHANGE_REQUEST").get(0);
+        assertThat(changeRequest.get("count").asLong()).isEqualTo(3);
+        assertThat(changeRequest.get("detail").asText()).isEqualTo("브랜드 2 · 인플루언서 1");
+
+        JsonNode summary = json(adminGet("/v1/admin/change-requests/summary").andExpect(status().isOk()));
+        assertThat(summary.get("pendingCount").asLong()).isEqualTo(3);
+        assertThat(summary.get("brandPendingCount").asLong()).isEqualTo(2);
+        assertThat(summary.get("creatorPendingCount").asLong()).isEqualTo(1);
+
+        // 인플루언서 요청이 끝나면 0인 쪽은 빠진다.
+        jdbc.update("UPDATE brand_change_request SET status = 'APPROVED' WHERE request_code = 'CR-CREATOR-1'");
+        assertThat(rowsOf(json(adminGet(HOME)).get("todo"), "CHANGE_REQUEST").get(0).get("detail").asText())
+                .isEqualTo("브랜드 2");
+    }
+
+    @Test
+    @DisplayName("AD-09 차감 미회수 보조줄(55 계획서 A3) — 1건이면 「차감 번호 · 미회수액」")
+    void clawbackDetail() throws Exception {
+        OrderDeliveryGroup creamGroup = confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        confirm(generate(LocalDateTime.now().withNano(0)));
+        operatorRefund(creamGroup, "RECALL", 27_200);
+        jdbc.update("UPDATE users SET status = 'WITHDRAWN' WHERE user_id = ?", creator.getUser().getId());
+        assertThat(clawbackService.markUnrecoverable(LocalDateTime.now())).isEqualTo(1);
+        long unrecoverable = jdbc.queryForObject("SELECT SUM(amount) FROM settlement_clawback WHERE status = 'UNRECOVERABLE'",
+                Long.class);
+
+        JsonNode row = rowsOf(json(adminGet(HOME).andExpect(status().isOk())).get("todo"), "CLAWBACK_UNRECOVERABLE").get(0);
+        assertThat(row.get("count").asLong()).isEqualTo(1);
+        assertThat(row.get("detail").asText()).isEqualTo("CLW-0001 · " + String.format("%,d원", unrecoverable));
+    }
+
     // ------------------------------------------------------------------ 픽스처
+
+    private void seedChangeRequest(String code, String requesterType, String type, Long marketId, Long creatorId) {
+        LocalDateTime requestedAt = LocalDateTime.now().minusDays(1);
+        jdbc.update("INSERT INTO brand_change_request (request_code, requester_type, market_id, creator_id, type, status, "
+                        + "evidence_file_url, evidence_file_name, evidence_file_size, requested_at, version, created_at, "
+                        + "modified_at) VALUES (?, ?, ?, ?, ?, 'PENDING', 'https://cdn.showroomz.test/evidence.jpg', "
+                        + "'evidence.jpg', 1000, ?, 0, ?, ?)",
+                code, requesterType, marketId, creatorId, type, requestedAt, requestedAt, requestedAt);
+    }
 
     private static List<JsonNode> rowsOf(JsonNode todo, String queue) {
         List<JsonNode> rows = new ArrayList<>();
