@@ -18,10 +18,10 @@ final class AdminThreadDocsExamples {
                   "threadId": 55, "tab": "BRAND", "name": "무드코스메틱",
                   "imageUrl": "https://cdn.example.com/markets/1017/logo.png",
                   "memberNo": "BRD-1017", "memberId": 1017,
-                  "managerName": "이현", "businessType": null, "memberStatus": "ACTIVE",
-                  "lastMessagePreview": "여름 수분 세럼 계약 관련해 문의드립니다.",
+                  "managerName": "이현", "businessType": null, "memberStatus": "SUSPENDED",
+                  "lastMessagePreview": "배송 지연 경위와 재발 방지안 첨부합니다.",
                   "lastMessageByOperator": false, "lastMessageAt": "2026-08-14T10:05:00",
-                  "unreadCount": 2, "writable": true
+                  "unreadCount": 2, "writable": true, "appealUnconfirmed": true
                 },
                 {
                   "threadId": 58, "tab": "BRAND", "name": "글로우랩",
@@ -30,7 +30,7 @@ final class AdminThreadDocsExamples {
                   "managerName": "박서윤", "businessType": null, "memberStatus": "SUSPENDED",
                   "lastMessagePreview": "계약 직권 취소 처리됨",
                   "lastMessageByOperator": true, "lastMessageAt": "2026-08-13T17:40:00",
-                  "unreadCount": 0, "writable": true
+                  "unreadCount": 0, "writable": true, "appealUnconfirmed": false
                 },
                 {
                   "threadId": 61, "tab": "BRAND", "name": "오브제뷰티",
@@ -39,7 +39,7 @@ final class AdminThreadDocsExamples {
                   "managerName": "최민재", "businessType": null, "memberStatus": "ACTIVE",
                   "lastMessagePreview": null,
                   "lastMessageByOperator": false, "lastMessageAt": null,
-                  "unreadCount": 0, "writable": true
+                  "unreadCount": 0, "writable": true, "appealUnconfirmed": false
                 }
               ],
               "pageInfo": {"currentPage": 1, "totalPages": 1, "totalResults": 3, "limit": 20, "hasNext": false}
@@ -56,7 +56,7 @@ final class AdminThreadDocsExamples {
                   "managerName": null, "businessType": "BUSINESS", "memberStatus": "ACTIVE",
                   "lastMessagePreview": "요청 · 서명 안내 다시 받기",
                   "lastMessageByOperator": false, "lastMessageAt": "2026-08-14T08:50:00",
-                  "unreadCount": 1, "writable": true
+                  "unreadCount": 1, "writable": true, "appealUnconfirmed": false
                 },
                 {
                   "threadId": 74, "tab": "INFLUENCER", "name": "데일리_하나",
@@ -65,7 +65,7 @@ final class AdminThreadDocsExamples {
                   "managerName": null, "businessType": "INDIVIDUAL", "memberStatus": "WITHDRAWN",
                   "lastMessagePreview": "확인했습니다. 감사합니다!",
                   "lastMessageByOperator": false, "lastMessageAt": "2026-07-30T14:12:00",
-                  "unreadCount": 0, "writable": false
+                  "unreadCount": 0, "writable": false, "appealUnconfirmed": false
                 }
               ],
               "pageInfo": {"currentPage": 1, "totalPages": 1, "totalResults": 2, "limit": 20, "hasNext": false}

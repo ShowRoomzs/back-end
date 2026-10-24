@@ -14,6 +14,7 @@ import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.message.type.ThreadStatus;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -85,16 +86,45 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
     Optional<MessageThread> findWithPartiesById(@Param("threadId") Long threadId);
 
     /**
+     * 「소명 미확인」(55 계획서 A8) — 아래를 모두 만족하는 운영팀 채널. 목록 정렬과 행 표시가 이 한 문장을 같이 쓴다.
+     * <ul>
+     *   <li>열린 정지가 있다 — 별칭 {@code sx}(브랜드 · 인플루언서 정지 행, {@code releasedAt IS NULL}로 LEFT JOIN)</li>
+     *   <li>그 채널에 회원이 보낸 말풍선이 있다 — {@code TEXT ∧ senderType <> ADMIN}. 회원 쪽 시스템 카드(재발송 요청 등)는 뺀다</li>
+     *   <li>그 말풍선이 정지 카드보다 뒤다 — 정지 행의 카드 id(V193 · V199). 카드가 없으면 0</li>
+     *   <li>그 말풍선이 운영팀 공용 읽음 위치({@link #OPERATOR_TEAM_READ}, 별칭 {@code rp})보다 뒤다</li>
+     * </ul>
+     * ORDER BY 안의 상관 EXISTS 는 MySQL 8 · H2(MySQL 모드)가 같은 문장을 받는다 — Hibernate 가 CASE 식 그대로 내보낸다.
+     */
+    String APPEAL_UNCONFIRMED = "(sx.id IS NOT NULL AND EXISTS (SELECT 1 FROM Message am WHERE am.thread = t " +
+            "AND am.messageType = showroomz.domain.message.type.MessageType.TEXT " +
+            "AND am.senderType <> showroomz.domain.message.type.ParticipantType.ADMIN " +
+            "AND am.id > COALESCE(sx.suspendCardId, 0L) " +
+            "AND (rp.lastReadMessageId IS NULL OR am.id > rp.lastReadMessageId)))";
+
+    /** 운영팀 공용 읽음 위치(36 설계 0-5) — {@code ADMIN} · {@code teamParticipantId} 1행. 없으면 아무것도 읽지 않은 것이다. */
+    String OPERATOR_TEAM_READ = "LEFT JOIN ThreadParticipant rp ON rp.thread = t " +
+            "AND rp.participantType = showroomz.domain.message.type.ParticipantType.ADMIN " +
+            "AND rp.participantId = :teamParticipantId ";
+
+    String OPEN_BRAND_SANCTION = "LEFT JOIN BrandSanction sx ON sx.marketId = m.id AND sx.releasedAt IS NULL ";
+
+    String OPEN_CREATOR_SANCTION = "LEFT JOIN CreatorSanction sx ON sx.creatorId = cr.id AND sx.releasedAt IS NULL ";
+
+    /**
      * 어드민 소통 스레드 · 브랜드 탭(36 설계 3-1) — 브랜드당 1개인 운영팀 채널 전량. 메시지 0건 채널도 나온다.
      * {@code marketId}가 있으면 회원번호 검색이다. 검색어는 브랜드명 · 담당자 부분 일치다.
+     * 「소명 미확인」 채널이 맨 위에 고정되고({@link #APPEAL_UNCONFIRMED}), 그 안팎은 최근 메시지순이다.
+     * 정지 행 · 읽음 위치는 회원 · 채널당 최대 1행이라 행이 불어나지 않는다(count 쿼리는 그대로 둔다).
      */
     @Query(value = "SELECT t FROM MessageThread t JOIN FETCH t.connection c JOIN FETCH c.market m JOIN FETCH m.seller s " +
+                   OPEN_BRAND_SANCTION + OPERATOR_TEAM_READ +
                    "WHERE c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_MARKET " +
                    "AND t.kind = showroomz.domain.message.type.ThreadKind.CONNECTION " +
                    "AND (:marketId IS NULL OR m.id = :marketId) " +
                    "AND (:keyword IS NULL OR m.marketName LIKE CONCAT('%', :keyword, '%') " +
                    "     OR s.name LIKE CONCAT('%', :keyword, '%')) " +
-                   "ORDER BY t.lastMessageAt DESC NULLS LAST, t.id DESC",
+                   "ORDER BY CASE WHEN " + APPEAL_UNCONFIRMED + " THEN 0 ELSE 1 END, " +
+                   "t.lastMessageAt DESC NULLS LAST, t.id DESC",
            countQuery = "SELECT COUNT(t) FROM MessageThread t JOIN t.connection c JOIN c.market m JOIN m.seller s " +
                         "WHERE c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_MARKET " +
                         "AND t.kind = showroomz.domain.message.type.ThreadKind.CONNECTION " +
@@ -103,15 +133,18 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
                         "     OR s.name LIKE CONCAT('%', :keyword, '%'))")
     Page<MessageThread> findOperatorMarketChannels(@Param("marketId") Long marketId,
                                                    @Param("keyword") String keyword,
+                                                   @Param("teamParticipantId") Long teamParticipantId,
                                                    Pageable pageable);
 
-    /** 어드민 소통 스레드 · 인플루언서 탭(36 설계 3-1) — 검색어는 쇼룸명 부분 일치다. */
+    /** 어드민 소통 스레드 · 인플루언서 탭(36 설계 3-1) — 검색어는 쇼룸명 부분 일치다. 「소명 미확인」 고정은 브랜드 탭과 같다. */
     @Query(value = "SELECT t FROM MessageThread t JOIN FETCH t.connection c JOIN FETCH c.creator cr JOIN FETCH cr.user " +
+                   OPEN_CREATOR_SANCTION + OPERATOR_TEAM_READ +
                    "WHERE c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_CREATOR " +
                    "AND t.kind = showroomz.domain.message.type.ThreadKind.CONNECTION " +
                    "AND (:creatorId IS NULL OR cr.id = :creatorId) " +
                    "AND (:keyword IS NULL OR cr.showroomName LIKE CONCAT('%', :keyword, '%')) " +
-                   "ORDER BY t.lastMessageAt DESC NULLS LAST, t.id DESC",
+                   "ORDER BY CASE WHEN " + APPEAL_UNCONFIRMED + " THEN 0 ELSE 1 END, " +
+                   "t.lastMessageAt DESC NULLS LAST, t.id DESC",
            countQuery = "SELECT COUNT(t) FROM MessageThread t JOIN t.connection c JOIN c.creator cr " +
                         "WHERE c.type = showroomz.domain.connection.type.ConnectionType.OPERATOR_CREATOR " +
                         "AND t.kind = showroomz.domain.message.type.ThreadKind.CONNECTION " +
@@ -119,7 +152,22 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
                         "AND (:keyword IS NULL OR cr.showroomName LIKE CONCAT('%', :keyword, '%'))")
     Page<MessageThread> findOperatorCreatorChannels(@Param("creatorId") Long creatorId,
                                                     @Param("keyword") String keyword,
+                                                    @Param("teamParticipantId") Long teamParticipantId,
                                                     Pageable pageable);
+
+    /** 목록 페이지 중 「소명 미확인」 브랜드 채널 — 정렬과 같은 판정식({@link #APPEAL_UNCONFIRMED})으로 행 표시를 채운다. */
+    @Query("SELECT t.id FROM MessageThread t JOIN t.connection c JOIN c.market m " +
+           OPEN_BRAND_SANCTION + OPERATOR_TEAM_READ +
+           "WHERE t.id IN :threadIds AND " + APPEAL_UNCONFIRMED)
+    List<Long> findAppealUnconfirmedMarketChannelIds(@Param("threadIds") Collection<Long> threadIds,
+                                                     @Param("teamParticipantId") Long teamParticipantId);
+
+    /** {@link #findAppealUnconfirmedMarketChannelIds}의 인플루언서 쪽. */
+    @Query("SELECT t.id FROM MessageThread t JOIN t.connection c JOIN c.creator cr " +
+           OPEN_CREATOR_SANCTION + OPERATOR_TEAM_READ +
+           "WHERE t.id IN :threadIds AND " + APPEAL_UNCONFIRMED)
+    List<Long> findAppealUnconfirmedCreatorChannelIds(@Param("threadIds") Collection<Long> threadIds,
+                                                      @Param("teamParticipantId") Long teamParticipantId);
 
     /**
      * 정보 바의 「열린 이슈 스레드」(36 설계 3-4 · 44 이슈 스레드 설계서 4-6) — 그 회원이 당사자인 3자 스레드.

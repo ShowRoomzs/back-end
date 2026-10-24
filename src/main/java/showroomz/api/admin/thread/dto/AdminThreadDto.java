@@ -53,6 +53,9 @@ public final class AdminThreadDto {
             @Schema(description = "운영팀 기준 안 읽은 수 — 어느 운영자가 읽든 함께 줄어든다", example = "1") long unreadCount,
             @Schema(description = "메시지를 보낼 수 있는가 — 탈퇴 회원의 채널은 false(열람만)", example = "true")
             boolean writable,
+            @Schema(description = "「소명 미확인」 — 정지 회원이 정지 카드 뒤에 보낸 말풍선을 운영팀이 아직 읽지 않았다. "
+                    + "true 인 채널이 목록 맨 위에 고정되고 보조 줄에 경고 배지를 붙인다(55 계획서 A8). 이슈 탭은 항상 false",
+                    example = "false") boolean appealUnconfirmed,
             @Schema(description = "[이슈 탭] 정산 조정 협의 — tab = ISSUE 일 때만", nullable = true) IssueListItem issue) {
     }
 
