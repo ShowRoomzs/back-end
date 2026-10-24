@@ -63,6 +63,7 @@ class AdminThreadInfoIntegrationTest extends AdminThreadTestSupport {
     @Autowired private GroupBuyIssueRepository issues;
     @Autowired private GroupBuyAdminSuspensionRepository adminSuspensions;
     @Autowired private SettlementRepository settlements;
+    @Autowired private showroomz.domain.settlement.repository.SettlementPayoutRepository payouts;
     @Autowired private SettlementCalculator settlementCalculator;
     @Autowired private SettlementNumberGenerator settlementNumbers;
     @Autowired private BrandSanctionService brandSanctionService;
@@ -389,7 +390,7 @@ class AdminThreadInfoIntegrationTest extends AdminThreadTestSupport {
             SettlementAmounts amounts = settlementCalculator.calculate(new SettlementInput(1_000_000, 100_000, 0, 0, 0, 0,
                     CreatorBusinessType.INDIVIDUAL, new SettlementRates(new BigDecimal("0.03"), BigDecimal.ZERO,
                     new BigDecimal("0.10"), new BigDecimal("0.03"), new BigDecimal("0.003"))));
-            return settlements.save(Settlement.builder()
+            Long settlementId = settlements.save(Settlement.builder()
                     .settlementNumber(settlementNumbers.nextSettlementNumber(now))
                     .groupBuy(g).contract(g.getContract()).market(g.getMarket()).creator(g.getCreator())
                     .creatorBusinessType(CreatorBusinessType.INDIVIDUAL)
@@ -397,13 +398,31 @@ class AdminThreadInfoIntegrationTest extends AdminThreadTestSupport {
                     .createdAt(now.minusDays(1)).reviewDueAt(now.plusDays(3))
                     .breakdown(new Settlement.Breakdown(1_000_000, 0, 0, 0, 0, 0, 0, 0))
                     .amounts(amounts).build()).getId();
+            // 정산 생성과 같이 수취자 행 3개 — 브랜드 미정산은 브랜드 행 기준이다(51 설계서 1-5)
+            payouts.saveAll(java.util.List.of(
+                    showroomz.domain.settlement.entity.SettlementPayout.waiting(settlementId,
+                            showroomz.domain.settlement.type.SettlementPayee.BRAND, amounts.brandPayoutAmount()),
+                    showroomz.domain.settlement.entity.SettlementPayout.waiting(settlementId,
+                            showroomz.domain.settlement.type.SettlementPayee.CREATOR, amounts.creatorPayoutAmount()),
+                    showroomz.domain.settlement.entity.SettlementPayout.waiting(settlementId,
+                            showroomz.domain.settlement.type.SettlementPayee.PLATFORM, amounts.platformShareAmount())));
+            return settlementId;
         });
         setSettlementStatus(id, status);
         return id;
     }
 
+    /** 정산 상태와 함께 수취자 행을 운영 흐름의 상태로 맞춘다 — 분배 실패는 브랜드 몫도 실패로 둔다(브랜드 쪽 「분배 실패 포함」 확인용). */
     private void setSettlementStatus(Long settlementId, SettlementStatus status) {
         jdbc.update("UPDATE settlement SET status = ? WHERE settlement_id = ?", status.name(), settlementId);
+        String payout = switch (status) {
+            case REVIEWING -> "WAITING";
+            case ADJUSTING -> "HELD";
+            case PAYOUT_SCHEDULED -> "SCHEDULED";
+            case PAID -> "PAID";
+            case PAYOUT_FAILED -> "FAILED";
+        };
+        jdbc.update("UPDATE settlement_payout SET status = ? WHERE settlement_id = ?", payout, settlementId);
     }
 
     /** 직권 중단 사전 통지 — 집행 예정 = 소명 기한 + 1일. 공구는 운영 경로처럼 중단 예정으로 옮긴다. */

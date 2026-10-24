@@ -22,7 +22,8 @@ import showroomz.domain.member.creator.service.CreatorSanctionReader;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageThreadRepository;
-import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.repository.SettlementClawbackRepository;
+import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,8 @@ public class AdminChannelInfoReader {
     private final GroupBuyAdminSuspensionRepository adminSuspensions;
     private final ConnectionRepository connections;
     private final MessageThreadRepository threads;
-    private final SettlementRepository settlements;
+    private final SettlementPayoutRepository payouts;
+    private final SettlementClawbackRepository clawbacks;
     private final CreatorMemberQueryRepository creatorQueries;
     private final BrandSanctionReader brandSanctions;
     private final CreatorSanctionReader creatorSanctions;
@@ -88,11 +90,11 @@ public class AdminChannelInfoReader {
 
     /**
      * 두 화면(정보 바 · 회원 상세 탈퇴 조건)의 숫자가 같아야 하므로 미정산 판정식은 이 메서드와 {@link #creatorUnsettled}에만 둔다.
-     * 지금은 지급 완료(PAID)가 아닌 정산 — 확인 중 · 조정 협의 · 지급 예정 · 분배 실패(D22: 분배 실패 포함).
-     * 브랜드 탈퇴 조건이 「브랜드 몫 기준」으로 바뀌면(55 계획서 P5-1 · D5) 여기를 같은 판정식으로 바꾼다.
+     * 브랜드는 탈퇴 조건 ④와 같은 <b>브랜드 몫 기준</b>(51 설계서 1-5 · D-1) — 브랜드 지급 행이 지급 완료가 아닌 정산(분배 실패 · 지급 보류
+     * 포함 · D22) + 회수 대기 차감.
      */
     private long brandUnsettled(Long marketId) {
-        return settlements.countUnpaidForMarket(marketId);
+        return payouts.countBrandOpenForMarket(marketId) + clawbacks.countPendingForMarket(marketId);
     }
 
     /** 인플루언서 탈퇴 조건(미정산)과 같은 쿼리. */

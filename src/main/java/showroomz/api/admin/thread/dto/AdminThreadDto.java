@@ -217,7 +217,8 @@ public final class AdminThreadDto {
             @Schema(description = "[인플루언서] 종료 공구 수", nullable = true) Long groupBuyEnded,
             @Schema(description = "중단 예정 공구 수 — 직권 중단 사전 통지 뒤 집행 · 철회 전(NOTICED). 셀러의 중단 요청은 세지 않는다"
                     + "(55 계획서 A10 · D23)", nullable = true) Long groupBuySuspensionScheduled,
-            @Schema(description = "[브랜드] 미정산 건수 — 정산 모듈이 없어 항상 null", nullable = true) Long unsettledCount,
+            @Schema(description = "미정산 건수 — 회원 상세 탈퇴 조건 「미정산」과 같은 숫자. 브랜드는 브랜드 몫 기준(분배 실패 · 보류 포함) + 회수 대기 차감 · "
+                    + "인플루언서는 지급 완료 전 정산", example = "1") Long unsettledCount,
             @Schema(description = "[인플루언서] 연결 브랜드 수", nullable = true) Long connectedBrandCount) {
     }
 

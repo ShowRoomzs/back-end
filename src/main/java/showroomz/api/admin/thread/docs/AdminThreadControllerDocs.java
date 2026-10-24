@@ -175,7 +175,7 @@ public interface AdminThreadControllerDocs {
             | `groupBuyOngoing` | 진행중 공구 수 | 같음 |
             | `groupBuyEnded` | null | 종료 + 정산완료 공구 수 |
             | `groupBuySuspensionScheduled` | 중단 예정 공구 수 — 직권 중단 사전 통지 뒤 집행 · 철회 전 | 같음 |
-            | `unsettledCount` | 미정산 건수 — 지급 완료 전 정산(확인 중 · 조정 협의 · 지급 예정 · **분배 실패 포함**) | 같음(그 인플루언서의 정산) |
+            | `unsettledCount` | 미정산 건수 — **브랜드 몫**이 끝나지 않은 정산(확인 중 · 조정 협의 · 지급 예정 · 보류 · **분배 실패 포함**) + 회수 대기 차감 | 지급 완료 전 정산(분배 실패 포함) |
             | `connectedBrandCount` | null | 연결 중인 브랜드 수 |
 
             인플루언서의 계약 수는 스튜디오에 도착한 계약(서명 진행중 이후)만 셉니다 — 브랜드가 작성 · 검토 중인 계약은 세지 않습니다.
