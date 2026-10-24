@@ -199,7 +199,29 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
                 .endsWith(PostPolicyClause.POLICY_CHAPTER);
     }
 
+    @Test
+    @DisplayName("[56 D2] 공구 탭 분해 표 — 공구별 성과에 「브랜드 × 인플루언서」 열(핵심 탭 공구별 거래액과 같은 자리 · 같은 값)")
+    void groupBuyPerformanceHasPair() throws Exception {
+        purchase(creamVariant, 1);
+
+        JsonNode groupBuy = json(adminGet(METRICS + week() + "&tab=GROUP_BUY").andExpect(status().isOk()));
+        assertThat(groupBuy.at("/breakdown/title").asText()).isEqualTo("공구별 성과 상위 5");
+        assertThat(groupBuy.at("/breakdown/columns").toString())
+                .isEqualTo("[\"공구\",\"브랜드 × 인플루언서\",\"거래액\",\"물량 달성\",\"ROI\"]");
+        JsonNode first = groupBuy.at("/breakdown/rows/0");
+        assertThat(first.toString()).isEqualTo("[\"글로우 크림 앵콜 공구\",\"글로우랩 × 글로우_지민\",\"27,200원\",\"—\",\"—\"]");
+
+        JsonNode core = json(adminGet(METRICS + week() + "&tab=CORE").andExpect(status().isOk()));
+        assertThat(core.at("/breakdown/columns/1").asText()).isEqualTo("브랜드 × 인플루언서");
+        assertThat(core.at("/breakdown/rows/0/1").asText()).isEqualTo(first.get(1).asText());
+    }
+
     // ------------------------------------------------------------------ 픽스처
+
+    /** 지난 7일 + 오늘 — 자정 경계에 걸리지 않는 기간. */
+    private static String week() {
+        return "?preset=CUSTOM&from=" + LocalDate.now().minusDays(6) + "&to=" + LocalDate.now();
+    }
 
     private Map<String, JsonNode> rows(String preset, String tab) throws Exception {
         return rows(json(adminGet(METRICS + "?preset=" + preset + "&tab=" + tab).andExpect(status().isOk())));

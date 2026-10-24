@@ -207,8 +207,7 @@ public class AdminMetricsQueryService {
                 .map(e -> {
                     GroupBuyLine g = groupBuys.get(e.getKey());
                     long delivered = f.delivered.getOrDefault(e.getKey(), 0L);
-                    return List.of(g == null ? "#" + e.getKey() : g.name(),
-                            g == null ? "" : g.brandName() + " × " + g.creatorName(),
+                    return List.of(g == null ? "#" + e.getKey() : g.name(), pair(g),
                             String.valueOf(orders.getOrDefault(e.getKey(), Set.of()).size()), won(e.getValue()),
                             delivered == 0 ? "—" : percent(claims.getOrDefault(e.getKey(), 0L) * 100.0 / delivered));
                 })
@@ -238,7 +237,10 @@ public class AdminMetricsQueryService {
                 rows);
     }
 
-    /** 공구 — 공구별 성과 상위 5(거래액 · 물량 달성 · ROI). 물량 · ROI 는 기간 중 종료된 공구만 판정한다. */
+    /**
+     * 공구 — 공구별 성과 상위 5(브랜드 × 인플루언서 · 거래액 · 물량 달성 · ROI). 둘째 열은 핵심 탭 「공구별 거래액」과 같다(시안 21 K3).
+     * 물량 · ROI 는 기간 중 종료된 공구만 판정한다.
+     */
     private AdminMetricsDto.Breakdown groupBuyPerformance(Facts f, Map<Long, GroupBuyLine> groupBuys) {
         List<List<String>> rows = f.gmvByGroupBuy.entrySet().stream()
                 .sorted(Map.Entry.<Long, Long>comparingByValue().reversed()).limit(TOP)
@@ -246,12 +248,18 @@ public class AdminMetricsQueryService {
                     GroupBuyLine g = groupBuys.get(e.getKey());
                     Double achievement = f.achievement.get(e.getKey());
                     Double roi = f.roi.get(e.getKey());
-                    return List.of(g == null ? "#" + e.getKey() : g.name(), won(e.getValue()),
+                    return List.of(g == null ? "#" + e.getKey() : g.name(), pair(g), won(e.getValue()),
                             achievement == null ? "—" : percent(achievement) + (achievement < 100 ? " · 미달" : ""),
                             roi == null ? "—" : roi + "배");
                 })
                 .toList();
-        return new AdminMetricsDto.Breakdown("공구별 성과 상위 5", List.of("공구", "거래액", "물량 달성", "ROI"), rows);
+        return new AdminMetricsDto.Breakdown("공구별 성과 상위 5",
+                List.of("공구", "브랜드 × 인플루언서", "거래액", "물량 달성", "ROI"), rows);
+    }
+
+    /** 「브랜드 × 인플루언서」 — 공구를 모르면 빈 칸. */
+    private static String pair(GroupBuyLine g) {
+        return g == null ? "" : g.brandName() + " × " + g.creatorName();
     }
 
     /**
