@@ -134,6 +134,33 @@ class Design1021FeePolicyUnitTest {
         }
 
         @Test
+        @DisplayName("[55 P3-08] 결제 시점 스냅샷이 0 인 옛 주문 — 그때 「모든 주문 무료배송」이었으므로 남는 금액과 무관하게 차감하지 않는다(마켓 현재 해석을 쓰지 않는다)")
+        void legacyZeroSnapshotKeepsNoDeduction() {
+            OrderDeliveryGroup group = group(true, 0, 0);
+
+            assertThat(policy.returnDeduction(ClaimType.RETURN, ClaimFeeBearer.CONSUMER, group,
+                    new ReturnContext(0, false))).isZero();
+            assertThat(policy.returnDeductionForFullReturn(ClaimType.RETURN, ClaimFeeBearer.CONSUMER, group, false))
+                    .isZero();
+        }
+
+        @Test
+        @DisplayName("[55 P3-08] 배송 그룹 스냅샷 — 결제 때 넘긴 0 은 0 그대로 · 넘기지 않으면 마켓 현재 값을 해석해 0 은 null(무료배송 없음)")
+        void deliveryGroupSnapshotOfThreshold() {
+            Market market = new Market();
+            market.setFreeShippingThreshold(0);
+
+            OrderDeliveryGroup legacy = OrderDeliveryGroup.builder().market(market).freeShippingThreshold(0).build();
+            OrderDeliveryGroup fresh = OrderDeliveryGroup.builder().market(market).build();
+            market.setFreeShippingThreshold(50_000);
+            OrderDeliveryGroup normal = OrderDeliveryGroup.builder().market(market).build();
+
+            assertThat(legacy.getFreeShippingThreshold()).isZero();
+            assertThat(fresh.getFreeShippingThreshold()).isNull();
+            assertThat(normal.getFreeShippingThreshold()).isEqualTo(50_000);
+        }
+
+        @Test
         @DisplayName("신청 화면 미리보기 — 전량 반품 기준 최대 차감액")
         void previewForFullReturn() {
             assertThat(policy.returnDeductionForFullReturn(ClaimType.RETURN, ClaimFeeBearer.CONSUMER,

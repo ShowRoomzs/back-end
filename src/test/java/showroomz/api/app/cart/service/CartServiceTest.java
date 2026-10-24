@@ -854,6 +854,35 @@ class CartServiceTest {
             assertThat(products.get(1).getHelpsFreeShipping()).isFalse();
         }
 
+        /** 0 은 「무료배송 기준 없음」이다(55 계획서 D1) — 「합계 ≥ 0」으로 읽어 늘 모자라지 않은 것으로 보거나, 「0원 더 담으면 무료」로 앞에 당기지 않는다. */
+        @Test
+        @DisplayName("[55 P3-06] 무료배송 기준이 0 인 쇼룸은 담겨 있어도 「무료배송까지 남은」 쇼룸이 아니다 — 앞으로 당기지 않는다")
+        void zeroThresholdMarketIsNotShortOfFreeShipping() {
+            Market zero = market(5L, "제니의 뷰티룸", 3000, 0);
+            Market other = market(7L, "미아 스킨노트", 3000, 30000);
+            Cart held = cart(10L, variant(1L, product(zero, ProductGroupBuyStatus.IN_PROGRESS, 10),
+                    38000, 24900, 10), 1);
+
+            given(userRepository.findByUsername(USERNAME)).willReturn(Optional.of(user));
+            given(creatorFollowRepository.findCreatorIdsByUserId(1L)).willReturn(List.of(3L));
+            given(cartRepository.findAllByUser(user)).willReturn(List.of(held));
+            given(productRepository.findOngoingGroupBuyProductsOfShowrooms(
+                    eq(List.of(3L)),
+                    anyCollection(),
+                    any(Pageable.class)))
+                    .willReturn(List.of(
+                            recommended(2049L, other, 24000, 16800),
+                            recommended(2050L, zero, 20000, 15000)));
+
+            List<CartDto.RecommendedProduct> products =
+                    cartService.getRecommendations(USERNAME, 10).getProducts();
+
+            assertThat(products).extracting(CartDto.RecommendedProduct::getProductId)
+                    .containsExactly(2049L, 2050L);
+            assertThat(products).extracting(CartDto.RecommendedProduct::getHelpsFreeShipping)
+                    .containsOnly(false);
+        }
+
         @Test
         @DisplayName("이미 담은 상품은 추천에서 뺀다")
         void heldProductsAreExcluded() {

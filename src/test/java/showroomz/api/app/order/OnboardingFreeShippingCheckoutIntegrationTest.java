@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +66,32 @@ class OnboardingFreeShippingCheckoutIntegrationTest extends OrderPaymentTestSupp
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.groups[0].shipping.isFreeShipping").value(false))
                 .andExpect(jsonPath("$.summary.deliveryFeeTotal").value(DELIVERY_FEE));
+    }
+
+    /** 화면은 이 값으로 「○○원 이상 구매시 무료배송」을 조립한다 — 0 을 그대로 내리면 「0원 이상 무료배송」이 그려진다. */
+    @Test
+    @DisplayName("[55 P3-07] DB 에 0 이 남은 마켓 — 상품 상세 delivery · 어드민 브랜드 상세 deliveryPolicy 의 freeShippingThreshold 는 null · 대조군 50,000 은 그대로")
+    void storedZeroIsShownAsNoThreshold() throws Exception {
+        onboardWithoutFreeShippingThreshold();
+        jdbc.update("UPDATE market SET free_shipping_threshold = 0 WHERE market_id = ?", brand.marketId());
+        String productDetail = "/v1/common/products/" + creamVariant.getProduct().getProductId();
+        String brandDetail = "/v1/admin/brands/" + brand.marketId();
+        String adminToken = adminToken(fixture.createAdmin("ops-p307@showroomz.test", "김운영"));
+
+        mockMvc.perform(get(productDetail).param("groupBuyId", String.valueOf(groupBuy.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.delivery.deliveryFee").value(DELIVERY_FEE))
+                .andExpect(jsonPath("$.delivery.freeShippingThreshold").doesNotExist());
+        mockMvc.perform(get(brandDetail).header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.deliveryPolicy.defaultDeliveryFee").value(DELIVERY_FEE))
+                .andExpect(jsonPath("$.deliveryPolicy.freeShippingThreshold").doesNotExist());
+
+        jdbc.update("UPDATE market SET free_shipping_threshold = ? WHERE market_id = ?", 50_000, brand.marketId());
+        mockMvc.perform(get(productDetail).param("groupBuyId", String.valueOf(groupBuy.getId())))
+                .andExpect(jsonPath("$.delivery.freeShippingThreshold").value(50_000));
+        mockMvc.perform(get(brandDetail).header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(jsonPath("$.deliveryPolicy.freeShippingThreshold").value(50_000));
     }
 
     // ------------------------------------------------------------------ helpers
