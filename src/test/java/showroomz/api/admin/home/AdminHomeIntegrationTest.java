@@ -31,6 +31,7 @@ class AdminHomeIntegrationTest extends SettlementTestSupport {
 
     private static final String HOME = "/v1/admin/home";
     private static final String BADGES = "/v1/admin/badges";
+    private static final String CONTRACT_SUMMARY = "/v1/admin/contracts/summary";
 
     @Autowired
     private IntegrationHealthRegistry healthRegistry;
@@ -51,7 +52,7 @@ class AdminHomeIntegrationTest extends SettlementTestSupport {
         JsonNode home = json(adminGet(HOME).andExpect(status().isOk()));
         JsonNode badges = json(adminGet(BADGES).andExpect(status().isOk()));
         long badgeSum = badges.at("/onboarding/total").asLong() + badges.at("/members/todo").asLong()
-                + badges.get("groupBuys").asLong() + badges.get("transactions").asLong()
+                + badges.get("contracts").asLong() + badges.get("groupBuys").asLong() + badges.get("transactions").asLong()
                 + badges.get("settlements").asLong() + badges.at("/cs/total").asLong() + badges.at("/posts/total").asLong();
         JsonNode todo = home.get("todo");
         assertThat(todo.get("total").asLong()).isEqualTo(badgeSum).isPositive();
@@ -65,6 +66,8 @@ class AdminHomeIntegrationTest extends SettlementTestSupport {
 
         assertThat(badges.get("groupBuys").asLong())
                 .isEqualTo(json(adminGet("/v1/admin/group-buys/summary")).get("actionRequiredCount").asLong()).isEqualTo(1);
+        assertThat(badges.get("contracts").asLong())
+                .isEqualTo(json(adminGet(CONTRACT_SUMMARY)).get("actionRequiredCount").asLong());
         assertThat(badges.get("settlements").asLong())
                 .isEqualTo(json(adminGet("/v1/admin/settlements/summary")).get("gnbBadge").asLong());
         assertThat(badges.at("/cs/inquiries").asLong())
@@ -171,6 +174,38 @@ class AdminHomeIntegrationTest extends SettlementTestSupport {
         healthRegistry.recordTrackingSuccess(LocalDateTime.now());
         assertThat(json(adminGet("/v1/admin/order-exceptions/summary")).at("/kindCounts/TRACKING_STALLED").asLong())
                 .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("A-06 계약 큐(55 계획서 A1 · A2) — 해지 요청 · 검토 대기는 대기 행(경과 = 큐 기준 열) · 계약 배지 = 계약 요약 actionRequiredCount · 할 일 합계에 든다")
+    void contractQueues() throws Exception {
+        long totalBefore = json(adminGet(HOME).andExpect(status().isOk())).at("/todo/total").asLong();
+        jdbc.update("INSERT INTO contract_termination_request (contract_id, requester_type, requester_id, reason_code, "
+                        + "status, requested_at) VALUES (?, 'SELLER', ?, 'QUALITY_ISSUE', 'PENDING', ?)",
+                groupBuy.getContract().getId(), brand.seller().getId(), LocalDateTime.now().minusDays(2));
+        GroupBuy reviewing = seedIn(GroupBuyStatus.PREPARING);
+        jdbc.update("UPDATE contract SET status = 'REVIEW_PENDING', review_requested_at = ? WHERE contract_id = ?",
+                LocalDateTime.now().minusDays(3), reviewing.getContract().getId());
+
+        JsonNode todo = json(adminGet(HOME).andExpect(status().isOk())).get("todo");
+        JsonNode termination = rowOf(todo, "CONTRACT_TERMINATION");
+        assertThat(termination.get("urgency").asText()).isEqualTo("WAITING");
+        assertThat(termination.get("menu").asText()).isEqualTo("CONTRACTS");
+        assertThat(termination.get("title").asText()).isEqualTo("계약 해지 요청");
+        assertThat(termination.get("count").asLong()).isEqualTo(1);
+        assertThat(termination.get("ageText").asText()).isEqualTo("2일 경과");
+        assertThat(termination.at("/target/type").asText()).isEqualTo("QUEUE");
+        assertThat(termination.at("/target/filter").asText()).isEqualTo("/contracts?queue=TERMINATION");
+        JsonNode review = rowOf(todo, "CONTRACT_REVIEW");
+        assertThat(review.get("ageText").asText()).isEqualTo("3일 경과");
+        assertThat(review.at("/target/filter").asText()).isEqualTo("/contracts?queue=REVIEW");
+        assertThat(todo.get("total").asLong()).isEqualTo(totalBefore + 2);
+
+        JsonNode summary = json(adminGet(CONTRACT_SUMMARY).andExpect(status().isOk()));
+        assertThat(summary.at("/queues/TERMINATION").asLong()).isEqualTo(1);
+        assertThat(summary.at("/queues/REVIEW").asLong()).isEqualTo(1);
+        assertThat(json(adminGet(BADGES).andExpect(status().isOk())).get("contracts").asLong())
+                .isEqualTo(summary.get("actionRequiredCount").asLong()).isEqualTo(2);
     }
 
     // ------------------------------------------------------------------ 픽스처

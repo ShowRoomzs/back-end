@@ -27,9 +27,10 @@ public interface AdminContractControllerDocs {
             - `CONCLUSION`: 공구 생성 대기, 서명 확인 기준 시각이 오래된 순
             - `EXPIRY`: 서명 기한이 지난 서명 진행중 계약, 기한이 오래된 순
             - `RESEND`: 미처리 재발송 요청이 있는 서명 진행중 계약, 최초 미처리 요청이 오래된 순
+            - `TERMINATION`: 처리 대기 해지 요청이 있는 계약(1021 설계서 1-4). 정렬은 `sort`를 따릅니다
 
             큐가 없으면 `tab`(기본 `ALL`)과 `sort`(기본 `REVIEW_REQUESTED_ASC`)를 적용합니다.
-            `CLOSED` 탭은 `DECLINED`·`EXPIRED`·`CANCELED`를 포함합니다. `page`는 1부터 시작하고 `size`는 20 또는 50입니다.
+            `CLOSED` 탭은 `DECLINED`·`EXPIRED`·`CANCELED`·`TERMINATED`를 포함합니다. `page`는 1부터 시작하고 `size`는 20 또는 50입니다.
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "목록과 페이지 정보",
@@ -49,11 +50,11 @@ public interface AdminContractControllerDocs {
             @Parameter(description = "일반 목록 정렬. 기본 REVIEW_REQUESTED_ASC", example = "REVIEW_REQUESTED_ASC") AdminContractSort sort,
             PagingRequest paging);
 
-    @Operation(summary = "조치 큐·상태 탭 건수", description = "검색어와 무관한 전체 계약 기준입니다. `actionRequiredCount`는 네 조치 큐의 건수를 합한 값이며, 같은 계약이 여러 큐에 속하면 각각 셉니다. 작성중·삭제된 계약은 제외합니다.")
+    @Operation(summary = "조치 큐·상태 탭 건수", description = "검색어와 무관한 전체 계약 기준입니다. `actionRequiredCount`는 다섯 조치 큐의 건수를 합한 값이며, 같은 계약이 여러 큐에 속하면 각각 셉니다. 사이드바 「계약 관리」 배지(`GET /v1/admin/badges`의 `contracts`)와 같은 값입니다. 작성중·삭제된 계약은 제외합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "큐·탭별 건수",
                     content = @Content(schema = @Schema(implementation = Summary.class), examples = @ExampleObject(value = """
-                            {"queues":{"REVIEW":3,"CONCLUSION":2,"EXPIRY":1,"RESEND":1},"tabCounts":{"ALL":18,"REVIEW_PENDING":3,"SIGNING":5,"CONCLUSION_PENDING":2,"CONCLUDED":4,"CLOSED":4},"actionRequiredCount":7}
+                            {"queues":{"REVIEW":3,"CONCLUSION":2,"EXPIRY":1,"RESEND":1,"TERMINATION":1},"tabCounts":{"ALL":18,"REVIEW_PENDING":3,"SIGNING":5,"CONCLUSION_PENDING":2,"CONCLUDED":4,"CLOSED":4},"actionRequiredCount":8}
                             """))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))

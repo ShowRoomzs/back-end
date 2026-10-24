@@ -161,9 +161,9 @@ public final class AdminContractDto {
             @Schema(description = "정지 보류 — 당사자 정지면 운영자가 검토 · 체결을 진행하지 않는다(1017 설계서 8-4)", nullable = true) SanctionHoldView sanctionHold) {}
     @Schema(description = "검색 조건과 무관한 관리자 계약 현황")
     public record Summary(
-            @Schema(description = "조치 큐별 건수: REVIEW·CONCLUSION·EXPIRY·RESEND") Map<AdminContractQueue, Long> queues,
+            @Schema(description = "조치 큐별 건수: REVIEW·CONCLUSION·EXPIRY·RESEND·TERMINATION") Map<AdminContractQueue, Long> queues,
             @Schema(description = "상태 탭별 건수: ALL·REVIEW_PENDING·SIGNING·CONCLUSION_PENDING·CONCLUDED·CLOSED") Map<AdminContractTab, Long> tabCounts,
-            @Schema(description = "네 조치 큐 건수의 합. 계약 중복 가능", example = "7") long actionRequiredCount) {}
+            @Schema(description = "다섯 조치 큐 건수의 합 = 사이드바 「계약 관리」 배지. 계약 중복 가능", example = "8") long actionRequiredCount) {}
     /** @param email 모두싸인 수신자 등록용 — 브랜드 계정 이메일({@code Seller.email}). 계약서 PDF의 「브랜드_이메일」과 같은 값 */
     public record Brand(Long marketId, String name, String link,
                         @Schema(description = "모두싸인 수신자 등록용 브랜드 이메일(계정 이메일)", example = "contact@glowlab.kr")

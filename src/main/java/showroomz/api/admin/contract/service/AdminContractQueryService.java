@@ -68,6 +68,11 @@ public class AdminContractQueryService {
         return new Summary(queues, tabs, queues.values().stream().mapToLong(Long::longValue).sum());
     }
 
+    /** 큐에서 가장 오래 기다린 건의 기준 시각 — 어드민 홈 대기 행의 경과(55 계획서 A1). 비면 null. */
+    public LocalDateTime oldestInQueue(AdminContractQueue queue, LocalDateTime now) {
+        return adminContracts.oldestInQueue(queue, now);
+    }
+
     /** 서명 기한 제안값(1021 설계서 1-7) — 공구 시작 N일 전 그날 지정 시각. 이미 지났으면 제안하지 않는다. */
     LocalDateTime suggestedDeadline(Contract c, LocalDateTime now) {
         if (c.getGroupBuyStartAt() == null) {

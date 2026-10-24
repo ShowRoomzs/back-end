@@ -52,7 +52,7 @@ public final class AdminHomeDto {
             @Schema(description = "큐 코드", example = "OPEN_REVIEW") String queue,
             @Schema(example = "오픈 승인 · 밤 리페어 크림 공구") String title,
             @Schema(nullable = true) String detail,
-            @Schema(description = "사이드바 메뉴 — ONBOARDING · MEMBERS · GROUP_BUYS · TRANSACTIONS · SETTLEMENTS · CS · POSTS",
+            @Schema(description = "사이드바 메뉴 — ONBOARDING · MEMBERS · CONTRACTS · GROUP_BUYS · TRANSACTIONS · SETTLEMENTS · CS · POSTS",
                     example = "GROUP_BUYS") String menu,
             @Schema(description = "경과 — 가장 오래된 건 기준", example = "2일 경과", nullable = true) String ageText,
             @Schema(description = "기한 문구", example = "마감 10.23", nullable = true) String dueText,
@@ -103,6 +103,8 @@ public final class AdminHomeDto {
     public record Badges(
             Onboarding onboarding,
             Members members,
+            @Schema(description = "계약 — 검토 대기 · 공구 생성 대기 · 만료 확인 · 재발송 요청 · 해지 요청(계약 요약 actionRequiredCount 와 같다)",
+                    example = "5") long contracts,
             @Schema(description = "공구 — 오픈 승인 · 중단 요청 · 조기 마감 요청 · 소명 검토") long groupBuys,
             @Schema(description = "거래 — 환불 실패 · 사유 환불 집행 대기 · 처리 지연 · 배송 예외(배지 범위 ALL 일 때) · 반려 이의") long transactions,
             @Schema(description = "정산 — 분배 실패 · 세금계산서 발행 · 대조 · 차감 미회수") long settlements,

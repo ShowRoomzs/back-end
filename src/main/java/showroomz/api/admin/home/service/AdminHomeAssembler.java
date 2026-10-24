@@ -54,6 +54,7 @@ public class AdminHomeAssembler {
                 new AdminHomeDto.Onboarding(brand + creator + changeRequests, brand, creator, changeRequests),
                 new AdminHomeDto.Members(snapshot.menuTotal(AdminHomeQueueReader.MEMBERS), brandMembers(),
                         opsRepository.countCreatorMembers(), opsRepository.countUserMembers()),
+                snapshot.menuTotal(AdminHomeQueueReader.CONTRACTS),
                 snapshot.menuTotal(AdminHomeQueueReader.GROUP_BUYS),
                 snapshot.menuTotal(AdminHomeQueueReader.TRANSACTIONS),
                 snapshot.menuTotal(AdminHomeQueueReader.SETTLEMENTS),

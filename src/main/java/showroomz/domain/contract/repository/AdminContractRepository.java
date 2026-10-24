@@ -51,6 +51,34 @@ public class AdminContractRepository {
         return count == null ? 0 : count;
     }
 
+    /**
+     * 큐에서 가장 오래 기다린 건의 기준 시각(55 계획서 A1 — 어드민 홈 대기 행의 경과). 큐 정의는 {@link #filter}를 그대로 쓰고, 기준 열은
+     * 큐별 고정 정렬({@link #search})과 같다 — 검토 요청 · 서명 확인 기준 · 서명 기한 · 미처리 재발송 요청 · 처리 대기 해지 요청. 비면 null.
+     */
+    public LocalDateTime oldestInQueue(AdminContractQueue queue, LocalDateTime now) {
+        BooleanBuilder inQueue = filter(AdminContractTab.ALL, queue, now);
+        return switch (queue) {
+            case REVIEW -> queries.select(c.reviewRequestedAt.min()).from(c).where(inQueue).fetchOne();
+            case CONCLUSION -> queries.select(c.signatureAsOf.min()).from(c).where(inQueue).fetchOne();
+            case EXPIRY -> queries.select(c.signatureDeadlineAt.min()).from(c).where(inQueue).fetchOne();
+            // 요청 행 기준 — 큐 조건의 EXISTS 가 r · t 별칭을 쓰므로 바깥 요청 행은 별칭을 따로 둔다.
+            case RESEND -> {
+                QContractResendRequest oldest = new QContractResendRequest("oldestResend");
+                yield queries.select(oldest.requestedAt.min()).from(oldest)
+                        .where(oldest.contract.id.in(JPAExpressions.select(c.id).from(c).where(inQueue)),
+                                oldest.handledAt.isNull())
+                        .fetchOne();
+            }
+            case TERMINATION -> {
+                QContractTerminationRequest oldest = new QContractTerminationRequest("oldestTermination");
+                yield queries.select(oldest.requestedAt.min()).from(oldest)
+                        .where(oldest.contract.id.in(JPAExpressions.select(c.id).from(c).where(inQueue)),
+                                oldest.status.eq(ContractTerminationRequestStatus.PENDING))
+                        .fetchOne();
+            }
+        };
+    }
+
     private BooleanBuilder filter(AdminContractTab tab, AdminContractQueue queue, LocalDateTime now) {
         BooleanBuilder where = new BooleanBuilder(c.status.ne(ContractStatus.DRAFT)).and(c.deletedAt.isNull());
         // Queue selection overrides the tab and sort, as each queue has its own status definition.

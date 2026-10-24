@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.changerequest.service.AdminChangeRequestService;
+import showroomz.api.admin.contract.service.AdminContractQueryService;
 import showroomz.api.admin.groupbuy.service.AdminGroupBuyQueryService;
 import showroomz.api.admin.home.dto.AdminHomeDto;
 import showroomz.api.admin.home.type.TodoUrgency;
@@ -15,6 +16,7 @@ import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto;
 import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminOrderExceptionService;
 import showroomz.api.admin.transaction.service.AdminRefundService;
+import showroomz.domain.contract.type.AdminContractQueue;
 import showroomz.domain.groupbuy.type.AdminGroupBuyQueue;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
@@ -47,7 +49,7 @@ import java.util.stream.Collectors;
 
 /**
  * 어드민 운영 큐(1017 설계서 6-1) — 홈 할 일과 사이드바 배지가 <b>같은 큐 계산</b>을 쓴다(「할 일 합계 = 사이드바 배지 합」).
- * 큐 건수는 각 모듈 요약(환불 · 예외 · 공구 · 문의 · 변경 요청 · 게시물 · 정산 증빙)과 같은 값이고, 여기서는 건수를 급한 정도별 행으로
+ * 큐 건수는 각 모듈 요약(환불 · 예외 · 계약 · 공구 · 문의 · 변경 요청 · 게시물 · 정산 증빙)과 같은 값이고, 여기서는 건수를 급한 정도별 행으로
  * 나누기만 한다 — 실패 · 기한 초과 · 집행 대기 · 기한 임박은 건별 행, 나머지는 큐별 대기 행 하나.
  */
 @Component
@@ -61,6 +63,7 @@ public class AdminHomeQueueReader {
 
     static final String ONBOARDING = "ONBOARDING";
     static final String MEMBERS = "MEMBERS";
+    static final String CONTRACTS = "CONTRACTS";
     static final String GROUP_BUYS = "GROUP_BUYS";
     static final String TRANSACTIONS = "TRANSACTIONS";
     static final String SETTLEMENTS = "SETTLEMENTS";
@@ -69,6 +72,7 @@ public class AdminHomeQueueReader {
 
     private final AdminRefundService refundService;
     private final AdminOrderExceptionService exceptionService;
+    private final AdminContractQueryService contractQueryService;
     private final AdminGroupBuyQueryService groupBuyQueryService;
     private final AdminInquiryService inquiryService;
     private final AdminChangeRequestService changeRequestService;
@@ -120,6 +124,7 @@ public class AdminHomeQueueReader {
         queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청",
                 productInquiryService.getSummary().getDeleteRequestedCount(), null,
                 "/product-inquiries?status=DELETE_REQUESTED", now));
+        queues.addAll(contracts(now));
         queues.add(waiting("SUSPEND_REQUEST", GROUP_BUYS, "중단 요청",
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.SUSPEND_REQUEST, 0L),
                 opsRepository.oldestPendingGroupBuyChangeRequest(ChangeRequestType.SUSPEND),
@@ -357,6 +362,34 @@ public class AdminHomeQueueReader {
     }
 
     // ------------------------------------------------------------------ 대기 큐 — 큐별 1행
+
+    /**
+     * 계약 조치 큐 5종(55 계획서 A1 · D19) — 사이드바 「계약 관리」 숫자는 계약 요약 {@code actionRequiredCount}(다섯 큐의 합)라 다섯을 다
+     * 올린다(해지 요청만 올리면 사이드바와 어긋난다). 해지 요청 · 만료 확인에는 SLA 가 없어 기한 행 없이 대기 1행씩이다. 경과는 큐별 고정
+     * 정렬의 기준 열(검토 요청 · 서명 확인 기준 · 서명 기한 · 재발송 요청 · 해지 요청).
+     */
+    private List<Queue> contracts(LocalDateTime now) {
+        Map<AdminContractQueue, Long> counts = contractQueryService.summary().queues();
+        List<Queue> queues = new ArrayList<>();
+        for (AdminContractQueue queue : AdminContractQueue.values()) {
+            long count = counts.getOrDefault(queue, 0L);
+            queues.add(waiting("CONTRACT_" + queue.name(), CONTRACTS, contractLabel(queue), count,
+                    count == 0 ? null : contractQueryService.oldestInQueue(queue, now), "/contracts?queue=" + queue.name(),
+                    now));
+        }
+        return queues;
+    }
+
+    /** 큐 이름 — 01-contracts rev.9 조치 큐(검토 대기 · 공구 생성 대기 · 만료 확인) · 1021 16절 「해지 요청」. */
+    private static String contractLabel(AdminContractQueue queue) {
+        return switch (queue) {
+            case REVIEW -> "계약 검토 대기";
+            case CONCLUSION -> "공구 생성 대기";
+            case EXPIRY -> "계약 만료 확인";
+            case RESEND -> "서명 안내 재발송 요청";
+            case TERMINATION -> "계약 해지 요청";
+        };
+    }
 
     private static Queue waiting(String key, String menu, String label, long count, LocalDateTime oldest, String filter,
                                  LocalDateTime now) {

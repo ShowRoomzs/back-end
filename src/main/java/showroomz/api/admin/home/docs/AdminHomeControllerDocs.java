@@ -53,6 +53,7 @@ public interface AdminHomeControllerDocs {
                     |---|---|
                     | `onboarding` | 브랜드 · 인플루언서 입점 심사 대기 + 정보 변경 요청 검토 |
                     | `members.todo` | 탈퇴 승인 검토(브랜드 + 인플루언서) — `brandCount · creatorCount · userCount` 는 회원 수(탈퇴 제외) |
+                    | `contracts` | 계약 검토 대기 · 공구 생성 대기 · 만료 확인 · 서명 안내 재발송 요청 · 해지 요청(계약 요약 `actionRequiredCount` 와 같다) |
                     | `groupBuys` | 오픈 승인 · 중단 요청 · 조기 마감 요청 · 소명 검토(공구 요약 `actionRequiredCount` 와 같다) |
                     | `transactions` | 환불 실패 · 사유 환불 집행 대기 · 처리 지연 · 배송 예외(배지 범위 ALL 일 때) · 반려 이의 |
                     | `settlements` | 분배 실패 · 세금계산서 발행 · 대조 · 차감 미회수(정산 요약 배지와 같다) |
@@ -68,7 +69,7 @@ public interface AdminHomeControllerDocs {
                                     {
                                       "onboarding": {"total": 5, "brand": 2, "creator": 2, "changeRequests": 1},
                                       "members": {"todo": 1, "brandCount": 42, "creatorCount": 130, "userCount": 5210},
-                                      "groupBuys": 4, "transactions": 9, "settlements": 3,
+                                      "contracts": 5, "groupBuys": 4, "transactions": 9, "settlements": 3,
                                       "cs": {"total": 7, "inquiries": 6},
                                       "posts": {"total": 2, "general": 2}
                                     }"""))),
