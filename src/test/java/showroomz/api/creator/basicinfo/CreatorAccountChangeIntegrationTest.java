@@ -111,6 +111,11 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
         creatorGet(BASE + "/settlement")
                 .andExpect(jsonPath("$.account.verification.status").value("FAILED"))
                 .andExpect(jsonPath("$.account.verification.failReason").value("예금주 불일치"));
+        // [55 M10-07] 스튜디오 알림함 — 「정산 계좌 확인에 실패했어요 · {사유}」(D11 · 「실명」 없음) · 정산 정보 탭으로 이동
+        assertThat(verificationFailedTitles()).containsExactly("정산 계좌 확인에 실패했어요 · 예금주 불일치");
+        assertThat(jdbc.queryForObject("SELECT target_sub FROM notification WHERE recipient_type = 'CREATOR' "
+                + "AND recipient_id = ? AND type = 'ACCOUNT_VERIFICATION_FAILED'", String.class, creator.getId()))
+                .isEqualTo("SETTLEMENT");
 
         payoutService.releaseBlocked(LocalDate.now());
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
@@ -292,7 +297,8 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("[AX-06] 계좌 사유 실패 전수 — 형식 오류 · 미지원 은행 · 등록 계좌 없음 · 은행 거절(라벨 없음 → 「계좌 확인 실패」) 모두 「확인 실패」")
+    @DisplayName("[AX-06 · 55 M10-07] 계좌 사유 실패 전수 — 형식 오류 · 미지원 은행 · 등록 계좌 없음 · 은행 거절(라벨 없음 → 「계좌 확인 실패」) 모두 「확인 실패」 · "
+            + "알림 문구 「정산 계좌 확인에 실패했어요 · {사유}」는 화면 사유와 같은 라벨")
     void accountFailureCodes() throws Exception {
         Map<String, String> labels = new LinkedHashMap<>();
         labels.put(PayoutBlockReason.ACCOUNT_INVALID.name(), "계좌 형식 오류");
@@ -308,7 +314,10 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
                     .andExpect(jsonPath("$.account.verification.status").value("FAILED"))
                     .andExpect(jsonPath("$.account.verification.failReason").value(label.getValue()));
             assertThat(creator().getAccountVerificationCode()).isEqualTo(label.getKey());
+            assertThat(verificationFailedTitles()).as(label.getKey()).last()
+                    .isEqualTo("정산 계좌 확인에 실패했어요 · " + label.getValue());
         }
+        assertThat(verificationFailedTitles()).hasSize(labels.size());
     }
 
     @Test
@@ -565,5 +574,11 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
 
     private Creator creator() {
         return creatorRepository.findById(creator.getId()).orElseThrow();
+    }
+
+    /** 스튜디오 알림함의 계좌 확인 실패 알림 제목 — 쌓인 순. */
+    private List<String> verificationFailedTitles() {
+        return jdbc.queryForList("SELECT title FROM notification WHERE recipient_type = 'CREATOR' AND recipient_id = ? "
+                + "AND type = 'ACCOUNT_VERIFICATION_FAILED' ORDER BY notification_id", String.class, creator.getId());
     }
 }
