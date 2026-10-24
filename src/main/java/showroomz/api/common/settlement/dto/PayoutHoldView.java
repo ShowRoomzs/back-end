@@ -19,7 +19,9 @@ public record PayoutHoldView(
         @Schema(description = "PayoutBlockReason 코드", example = "BRAND_SUSPENDED") String reason,
         @Schema(example = "계정 이용 정지 · 지급 정지") String label,
         @Schema(example = "정지 해제 다음 영업일 지급") String scheduleLabel,
-        @Schema(nullable = true) LocalDate originalDueDate,
+        @Schema(description = "원래 지급 예정일 「원래 2026.09.09」 — 보류가 행의 예정일을 지워 정산의 지급 예정일(확정일 + N영업일)로 채운다. "
+                + "사업자 인플루언서 몫은 세금계산서 확인일 + N영업일 · 확인 전이면 null", example = "2026-09-09", nullable = true)
+        LocalDate originalDueDate,
         @Schema(description = "계정 이용 정지로 인한 보류인가") boolean sanction) {
 
     /** @param payoutBusinessDays 세금계산서 확인 후 지급까지의 영업일(「발행 확인 후 + N영업일」) */

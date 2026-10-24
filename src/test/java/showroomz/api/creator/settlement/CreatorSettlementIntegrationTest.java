@@ -266,6 +266,32 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("[56 A3] 사업자 원래 예정일 — 계산서 확인 전 보류는 null · 확인 뒤 정지로 보류되면 확인일 + 3영업일(보류 전 행 예정일)")
+    void businessOriginalDueDate() throws Exception {
+        makeCreatorBusiness();
+        Settlement s = confirm(reviewing());
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.reason").value("TAX_INVOICE_UNVERIFIED"))
+                .andExpect(jsonPath("$.settlement.payoutHold.originalDueDate").value(org.hamcrest.Matchers.nullValue()));
+
+        submitInvoice(s, "20261007-41000012-38475920", null).andExpect(status().isOk());
+        Long invoiceId = jdbc.queryForObject("SELECT document_id FROM settlement_tax_document WHERE settlement_id = ? "
+                + "AND type = 'CREATOR_TAX_INVOICE'", Long.class, s.getId());
+        adminPost("/v1/admin/settlements/" + s.getId() + "/tax-documents/" + invoiceId + "/verify",
+                Map.of("result", "MATCH")).andExpect(status().isOk());
+        java.time.LocalDate scheduled = payout(s.getId(), SettlementPayee.CREATOR).getDueDate();
+        assertThat(scheduled).isNotNull().isNotEqualTo(s.getPayoutDueDate());
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getDueDate()).isNull();
+
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.reason").value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.settlement.payoutHold.originalDueDate").value(scheduled.toString()))
+                .andExpect(jsonPath("$.payouts.rows[0].hold.originalDueDate").value(scheduled.toString()));
+    }
+
+    @Test
     @DisplayName("[56 A2] 사업자 · 계산서 제출 전 계좌 확인 중 — 내 행 「정산 계좌 확인 중」 · 「계좌 확인 후 지급」 · 세금계산서 카드는 그대로 발행 필요")
     void businessAccountCheckBeforeInvoice() throws Exception {
         makeCreatorBusiness();

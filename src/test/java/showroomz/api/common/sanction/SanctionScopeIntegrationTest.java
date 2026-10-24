@@ -329,6 +329,37 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.payouts[1].hold").value(nullValue()));
     }
 
+    @Test
+    @DisplayName("[56 A3] 보류 행의 원래 예정일 — 보류가 행 예정일을 지워도 정산의 지급 예정일로 「원래 09.09」 · 스튜디오 S6 · 파트너 S5 같은 값")
+    void originalDueDateSurvivesHold() throws Exception {
+        // 스튜디오 S6 — 정지 중 확정: 인플루언서 행은 처음부터 예정일 없이 보류된다.
+        Settlement reviewing = seedSettlement("가을 공구", 1_000_000, SettlementStatus.REVIEWING);
+        suspendCreator("SETTLEMENT_INFO_MISMATCH", null);
+        Settlement s = confirm(reviewing);
+        assertThat(s.getPayoutDueDate()).isNotNull();
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getDueDate()).isNull();
+        String due = s.getPayoutDueDate().toString();
+
+        creatorGet("/v1/creator/settlements/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.originalDueDate").value(due))
+                .andExpect(jsonPath("$.payouts.rows[0].hold.originalDueDate").value(due));
+        creatorGet("/v1/creator/settlements")
+                .andExpect(jsonPath("$.content[?(@.settlementId == " + s.getId() + ")].payoutHold.originalDueDate")
+                        .value(due));
+
+        // 파트너 S5 — 예정이던 브랜드 몫이 정지로 보류되면 행 예정일이 지워진다.
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getDueDate()).isEqualTo(s.getPayoutDueDate());
+        suspendBrand("SETTLEMENT_INFO_MISMATCH", null);
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getDueDate()).isNull();
+
+        sellerGet("/v1/seller/settlements/" + s.getId())
+                .andExpect(jsonPath("$.payoutHold.originalDueDate").value(due))
+                .andExpect(jsonPath("$.payouts[0].hold.originalDueDate").value(due));
+        sellerGet("/v1/seller/settlements")
+                .andExpect(jsonPath("$.content[?(@.settlementId == " + s.getId() + ")].payoutHold.originalDueDate")
+                        .value(due));
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private record BrandRequest(Long marketId, Long connectionId) {
