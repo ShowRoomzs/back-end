@@ -461,7 +461,7 @@ class SellerPerformanceBlocksIntegrationTest extends SettlementTestSupport {
 
     /** 다른 공구의 정산 후 환불 차감(−24,150)이 이 공구 성과를 깎으면 안 된다 — 차감 후 금액은 정산 연결 breakdown 의 「이번 지급액」으로만 보인다. */
     @Test
-    @DisplayName("[56 A-1] 1021 시안 숫자 — 이전 정산 차감이 있어도 정산액은 브랜드 수취액 4,775,800 · 수익 1,287,200 · 23.5% · 이번 지급액 4,751,650 은 정산 연결에만")
+    @DisplayName("[56 P1] 1021 시안 숫자 — 이전 정산 차감이 있어도 정산액은 브랜드 수취액 4,775,800 · 수익 1,287,200 · 23.5% · 이번 지급액 4,751,650 은 정산 연결에만")
     void payoutIsBeforeClawback() throws Exception {
         confirmedGroup(creamVariant, 1);
         endGroupBuy();
