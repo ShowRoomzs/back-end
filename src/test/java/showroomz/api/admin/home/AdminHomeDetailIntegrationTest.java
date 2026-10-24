@@ -178,17 +178,24 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("AD-07 연동 — 결제 운영 지표가 임계를 넘으면 PG 경고(문구 · 영향 큐) · 택배 추적 꺼짐 · 전자서명 수동")
+    @DisplayName("AD-07 연동 — 결제 운영 지표가 임계를 넘으면 PG 경고(문구 · 영향 큐 · 장애 시작 = 걸린 건의 가장 이른 시각) · 택배 추적 꺼짐 · 전자서명 수동")
     void paymentIntegrationDegraded() throws Exception {
         Purchase purchase = purchase(creamVariant, 1);
-        jdbc.update("UPDATE payment SET status = 'CANCEL_FAILED' WHERE payment_id = ?", purchase.paymentId());
+        LocalDateTime failedSince = LocalDateTime.now().minusHours(5).withNano(0);
+        jdbc.update("UPDATE payment SET status = 'CANCEL_FAILED', cancel_requested_at = ? WHERE payment_id = ?",
+                failedSince, purchase.paymentId());
+        Purchase later = purchase(creamVariant, 1);
+        jdbc.update("UPDATE payment SET status = 'CANCEL_FAILED', cancel_requested_at = ? WHERE payment_id = ?",
+                failedSince.plusHours(2), later.paymentId());
 
         JsonNode integrations = json(adminGet(HOME).andExpect(status().isOk())).get("integrations");
         JsonNode pg = integrations.get(0);
         assertThat(pg.get("key").asText()).isEqualTo("PG");
         assertThat(pg.get("status").asText()).isEqualTo("DEGRADED");
-        assertThat(pg.get("message").asText()).contains("운영자 처리 대기(CANCEL_FAILED) 1건");
+        assertThat(pg.get("message").asText()).contains("운영자 처리 대기(CANCEL_FAILED) 2건");
         assertThat(pg.get("affectedQueues").get(0).asText()).isEqualTo("환불 실패");
+        // 55 계획서 A4 — since 는 메모리가 아니라 데이터(가장 이른 건)에서 구한다.
+        assertThat(LocalDateTime.parse(pg.get("since").asText().replace("Z", ""))).isEqualTo(failedSince);
         assertThat(integrations.get(1).get("status").asText()).isEqualTo("DISABLED");
         assertThat(integrations.get(2).get("message").asText()).isEqualTo("수동");
     }

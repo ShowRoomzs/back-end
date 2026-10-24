@@ -60,6 +60,23 @@ public interface PaymentRepository extends JpaRepository<Payment, String> {
 
     long countByStatusAndModifiedAtAfter(PaymentStatus status, LocalDateTime after);
 
+    // ------------------------------------------------------------------ 운영 지표의 가장 이른 시각(55 계획서 A4 — 어드민 홈 PG 장애 since)
+
+    @Query("SELECT MIN(p.cancelRequestedAt) FROM Payment p WHERE p.status = :status AND p.cancelRequestedAt < :before")
+    LocalDateTime findOldestCancelRequestedAtBefore(@Param("status") PaymentStatus status,
+                                                    @Param("before") LocalDateTime before);
+
+    /**
+     * 운영자 처리 대기(CANCEL_FAILED) — 전이가 벌크 UPDATE 라 {@code modifiedAt} 이 전이 시각을 담지 않는다. 실패는 취소 요청 뒤에만 나므로
+     * 취소 요청 시각을 쓰고, 없으면(직접 보정한 행) {@code modifiedAt}.
+     */
+    @Query("SELECT MIN(COALESCE(p.cancelRequestedAt, p.modifiedAt)) FROM Payment p WHERE p.status = :status")
+    LocalDateTime findOldestCancelFailedSince(@Param("status") PaymentStatus status);
+
+    /** 자동 취소 — 건수({@link #countByStatusAndModifiedAtAfter})와 같은 창 · 같은 열. */
+    @Query("SELECT MIN(p.modifiedAt) FROM Payment p WHERE p.status = :status AND p.modifiedAt > :after")
+    LocalDateTime findOldestModifiedAtAfter(@Param("status") PaymentStatus status, @Param("after") LocalDateTime after);
+
     // ------------------------------------------------------------------ 전이
 
     /** 상태만 바꾸는 범용 전이. */

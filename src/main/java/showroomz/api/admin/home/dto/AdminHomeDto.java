@@ -26,7 +26,8 @@ public final class AdminHomeDto {
             @Schema(example = "DELIVERY_TRACKING") String key,
             @Schema(example = "택배 추적") String label,
             @Schema(description = "OK · DEGRADED · DOWN · DISABLED · NOT_INTEGRATED", example = "DEGRADED") String status,
-            @Schema(description = "장애 시작 시각(DEGRADED)", nullable = true) LocalDateTime since,
+            @Schema(description = "장애 시작 시각(DEGRADED) — PG 는 임계를 넘은 결제 운영 지표에 걸린 가장 이른 건의 시각 · 택배 추적은 첫 실패 기록",
+                    nullable = true) LocalDateTime since,
             @Schema(example = "조회 실패", nullable = true) String message,
             @Schema(description = "영향받는 큐 — 배너 「배송 예외 판정 일시 중지」", example = "[\"배송 예외 확인\"]") List<String> affectedQueues
     ) {

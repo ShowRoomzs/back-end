@@ -281,6 +281,11 @@ class PaymentFlowIntegrationTest extends OrderPaymentTestSupport {
         assertThat(healthService.check(LocalDateTime.now()))
                 .extracting(PaymentHealthService.Metric::name)
                 .contains("운영자 처리 대기(CANCEL_FAILED)");
+        // 55 계획서 A4 — 어드민 홈 PG 장애 시작 시각은 전이 뒤에도 남는 취소 요청 시각이다(전이가 벌크 UPDATE 라 modifiedAt 은 따라오지 않는다).
+        PaymentHealthService.Metric cancelFailed = healthService.measure(LocalDateTime.now()).stream()
+                .filter(m -> m.name().equals("운영자 처리 대기(CANCEL_FAILED)")).findFirst().orElseThrow();
+        assertThat(cancelFailed.oldestAt()).isNotNull()
+                .isEqualTo(payment(created.paymentId()).getCancelRequestedAt());
     }
 
     @Test
