@@ -23,7 +23,7 @@ public enum MetricKey {
     BRAND_RECONTRACT_RATE("브랜드 재계약률", ValueType.RATE, BetterWhen.UP, "기간 중 체결한 브랜드 중 이전 체결이 있는 비율"),
     CONNECTION_CONVERSION("연결 → 체결 전환율", ValueType.RATE, BetterWhen.UP, "기간 중 요청된 연결 중 그 연결로 체결된 비율"),
     CONCLUDE_TO_OPEN_DAYS("체결 → 오픈 소요(중앙값)", ValueType.DAYS, BetterWhen.DOWN, "기간 중 오픈한 공구"),
-    NEW_ONBOARDING("신규 입점", ValueType.COUNT, BetterWhen.NONE, "입점 승인 — 브랜드 + 인플루언서"),
+    NEW_ONBOARDING("신규 입점", ValueType.COUNT, BetterWhen.NONE, "브랜드 · 인플루언서 입점 승인"),
     CONTRACTS_CONCLUDED("계약 체결", ValueType.COUNT, BetterWhen.UP, "체결 시각 기준"),
     // 공구
     GROUP_BUYS_RUN("진행한 공구", ValueType.COUNT, BetterWhen.UP, "기간 중 판매일이 있는 공구"),

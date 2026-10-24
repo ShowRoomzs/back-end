@@ -131,9 +131,10 @@ public class MetricsFactsCalculator {
                 .toList();
         f.put(MetricKey.CONCLUDE_TO_OPEN_DAYS, Value.nullable(medianDouble(leadDays)));
 
+        // 신규 입점 — 값 칸 「1곳 · 3명」(시안 21 K2). 비교 기간도 같은 Facts 계산이라 같은 형식으로 나뉜다. 설명은 정의 문구.
         long[] onboarding = repository.approvedOnboarding(f.from, f.to);
         f.put(MetricKey.NEW_ONBOARDING, Value.of(onboarding[0] + onboarding[1])
-                .withNote("브랜드 " + onboarding[0] + "곳 · 인플루언서 " + onboarding[1] + "명"));
+                .withBreakdown(onboarding[0] + "곳 · " + onboarding[1] + "명"));
     }
 
     // ------------------------------------------------------------------ 공구
@@ -346,23 +347,29 @@ public class MetricsFactsCalculator {
      *
      * @param numerator   비율의 분자(「4/6」의 4)
      * @param denominator 비율의 분모
+     * @param breakdown   값을 나눠 적는 지표의 표시 문구(신규 입점 「1곳 · 3명」) — 현재 · 비교 기간이 같은 형식이다
      */
-    public record Value(Double value, Long numerator, Long denominator, String note) {
+    public record Value(Double value, Long numerator, Long denominator, String note, String breakdown) {
 
         static Value of(long value) {
-            return new Value((double) value, null, null, null);
+            return new Value((double) value, null, null, null, null);
         }
 
         static Value nullable(Double value) {
-            return new Value(value, null, null, null);
+            return new Value(value, null, null, null, null);
         }
 
         static Value rate(long numerator, long denominator) {
-            return new Value(denominator == 0 ? null : round1(numerator * 100.0 / denominator), numerator, denominator, null);
+            return new Value(denominator == 0 ? null : round1(numerator * 100.0 / denominator), numerator, denominator,
+                    null, null);
         }
 
         Value withNote(String note) {
-            return new Value(value, numerator, denominator, note);
+            return new Value(value, numerator, denominator, note, breakdown);
+        }
+
+        Value withBreakdown(String breakdown) {
+            return new Value(value, numerator, denominator, note, breakdown);
         }
 
         public String countText() {

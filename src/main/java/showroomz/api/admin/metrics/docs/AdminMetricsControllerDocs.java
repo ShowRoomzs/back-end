@@ -38,6 +38,7 @@ public interface AdminMetricsControllerDocs {
                     **탭** — `CORE`(기본 · `cards` 4칸 포함) · `SUPPLY` · `GROUP_BUY` · `DEMAND` · `OPERATION`.
                     `rows[].deltaKind` 는 지표 방향(좋아지는 쪽이 UP 인지 DOWN 인지)으로 판정한 GOOD · BAD · NEUTRAL 입니다.
                     비율 지표는 `currentCount`(「4/6」)를 함께 내립니다. 분모가 0 이면 `current = null`.
+                    신규 입점처럼 값을 나눠 적는 지표는 `currentBreakdown` · `previousBreakdown`(「1곳 · 3명」)을 함께 내립니다 — 값 칸에 이 문구를 씁니다.
 
                     - 거래액 = 결제 시점 · 취소 포함 · 공구 주문만 / 반품 · 교환율 = 접수 ÷ 배송완료 / 공구당 지표 = 중앙값
                     - 재공구 판정 60일(`admin.metrics.regroupbuy-window-days`) · 수수료 수익 = 거래액 × `admin.metrics.standard-fee-rate`(예상)

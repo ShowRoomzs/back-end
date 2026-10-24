@@ -125,7 +125,7 @@ public class AdminMetricsQueryService {
         }
         String note = cur.note() != null ? cur.note() : key.getDefinition();
         return new AdminMetricsDto.Row(key.name(), key.getLabel(), note, key.getValueType().name(), cur.value(),
-                prev.value(), delta, kind, cur.countText(), prev.countText());
+                prev.value(), delta, kind, cur.countText(), prev.countText(), cur.breakdown(), prev.breakdown());
     }
 
     // ------------------------------------------------------------------ 차트

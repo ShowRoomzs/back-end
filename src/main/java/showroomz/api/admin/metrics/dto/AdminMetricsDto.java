@@ -64,7 +64,12 @@ public final class AdminMetricsDto {
             @Schema(description = "증감 — 비율은 %p", nullable = true) Double delta,
             @Schema(description = "GOOD · BAD · NEUTRAL — 지표 방향(betterWhen)으로 판정", example = "GOOD") String deltaKind,
             @Schema(description = "비율 지표의 분자/분모(「4/6」)", nullable = true) String currentCount,
-            @Schema(nullable = true) String previousCount
+            @Schema(nullable = true) String previousCount,
+            @Schema(description = "값을 나눠 적는 지표의 현재 기간 표시 문구 — 지금은 신규 입점(NEW_ONBOARDING) 「브랜드 N곳 · 인플루언서 M명」"
+                    + "을 「1곳 · 3명」으로 내린다. 있으면 값 칸에 `current` 숫자 대신 쓴다(`current` 는 합계)",
+                    example = "1곳 · 3명", nullable = true) String currentBreakdown,
+            @Schema(description = "`currentBreakdown` 의 비교 기간 값 — 같은 형식", example = "2곳 · 1명", nullable = true)
+            String previousBreakdown
     ) {
     }
 

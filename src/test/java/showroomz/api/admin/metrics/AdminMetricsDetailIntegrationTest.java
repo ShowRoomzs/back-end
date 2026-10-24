@@ -11,6 +11,8 @@ import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.creator.entity.CreatorFollow;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
+import showroomz.domain.member.seller.entity.SellerApplication;
+import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostReport;
@@ -18,6 +20,7 @@ import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.type.PostPolicyClause;
 import showroomz.domain.post.type.PostReportReason;
+import showroomz.support.BrandFixture;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -41,6 +44,7 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
     @Autowired private CreatorFollowRepository creatorFollowRepository;
     @Autowired private PostRepository postRepository;
     @Autowired private PostReportRepository postReportRepository;
+    @Autowired private SellerApplicationRepository sellerApplicationRepository;
 
     /** 지표는 같은 기간을 10분 캐시한다 — 테스트마다 데이터가 다르므로 비운다. */
     @BeforeEach
@@ -216,7 +220,48 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(core.at("/breakdown/rows/0/1").asText()).isEqualTo(first.get(1).asText());
     }
 
+    @Test
+    @DisplayName("[56 D3] 신규 입점 — 현재 · 비교 기간 모두 「N곳 · M명」으로 나눈다 · 설명은 정의 문구 · 증감은 회색")
+    void newOnboardingBreakdownBothPeriods() throws Exception {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDateTime current = yesterday.atTime(10, 0);
+        LocalDateTime previous = yesterday.minusDays(1).atTime(10, 0);
+        approvedSellerApplication("new-brand", "새브랜드", current.minusDays(3), current);
+        approvedCreatorApplication(createConsumer("new-creator-1", "새인플1"), current.minusDays(2), current);
+        approvedCreatorApplication(createConsumer("new-creator-2", "새인플2"), current.minusDays(2), current);
+        approvedSellerApplication("old-brand-1", "지난브랜드1", previous.minusDays(3), previous);
+        approvedSellerApplication("old-brand-2", "지난브랜드2", previous.minusDays(3), previous);
+
+        Map<String, JsonNode> rows = rows(json(adminGet(METRICS + "?preset=CUSTOM&from=" + yesterday + "&to=" + yesterday
+                + "&tab=SUPPLY").andExpect(status().isOk())));
+        JsonNode onboarding = rows.get("NEW_ONBOARDING");
+        assertThat(onboarding.get("current").asLong()).isEqualTo(3);
+        assertThat(onboarding.get("previous").asLong()).isEqualTo(2);
+        assertThat(onboarding.get("currentBreakdown").asText()).isEqualTo("1곳 · 2명");
+        assertThat(onboarding.get("previousBreakdown").asText()).isEqualTo("2곳 · 0명");
+        assertThat(onboarding.get("note").asText()).isEqualTo("브랜드 · 인플루언서 입점 승인");
+        assertThat(onboarding.get("deltaKind").asText()).isEqualTo("NEUTRAL");
+        assertThat(rows.get("ACTIVE_CREATORS").get("currentBreakdown").isNull()).isTrue(); // 나누지 않는 지표는 null
+    }
+
     // ------------------------------------------------------------------ 픽스처
+
+    /** 입점 승인된 브랜드 신청 — 신청 화면이 만드는 행에 상태 · 신청 · 처리 시각만 옮긴다. */
+    private void approvedSellerApplication(String account, String marketName, LocalDateTime createdAt,
+                                           LocalDateTime processedAt) {
+        BrandFixture.Brand applicant = fixture.createBrand(account + "@showroomz.test", marketName);
+        SellerApplication application = sellerApplicationRepository.save(
+                SellerApplication.createFrom(applicant.seller(), marketName, "02-1234-5678"));
+        jdbc.update("UPDATE seller_application SET status = 'APPROVED', created_at = ?, processed_at = ? "
+                + "WHERE seller_application_id = ?", createdAt, processedAt, application.getId());
+    }
+
+    private void approvedCreatorApplication(Users applicant, LocalDateTime createdAt, LocalDateTime processedAt) {
+        String accountId = applicant.getUsername();
+        jdbc.update("INSERT INTO CREATOR_APPLICATION (USER_ID, SNS_TYPE, CHANNEL_URL, ACCOUNT_ID, STATUS, PROCESSED_AT, "
+                        + "created_at, modified_at) VALUES (?, 'INSTAGRAM', ?, ?, 'APPROVED', ?, ?, ?)", applicant.getId(),
+                "https://instagram.com/" + accountId, accountId, processedAt, createdAt, processedAt);
+    }
 
     /** 지난 7일 + 오늘 — 자정 경계에 걸리지 않는 기간. */
     private static String week() {
