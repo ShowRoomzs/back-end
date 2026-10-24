@@ -7,9 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.admin.metrics.service.AdminMetricsQueryService;
+import showroomz.api.admin.metrics.type.MetricKey;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
+import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.creator.entity.CreatorFollow;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
@@ -121,7 +123,7 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get("SLA_RATE").get("current").asDouble()).isEqualTo(50.0);
         assertThat(rows.get("SLA_RATE").get("currentCount").asText()).isEqualTo("1/2");
         assertThat(rows.get("INQUIRY_FIRST_ANSWER_HOURS").get("current").asDouble()).isEqualTo(15.5);
-        assertThat(rows.get("INQUIRY_FIRST_ANSWER_HOURS").get("note").asText()).isEqualTo("초과 1건");
+        assertThat(rows.get("INQUIRY_FIRST_ANSWER_HOURS").get("note").asText()).isEqualTo("기한 24시간 · 초과 1건"); // 56 D5
         assertThat(rows.get("PROCESSED").get("current").asLong()).isEqualTo(2);
 
         JsonNode inquiryRow = body.at("/breakdown/rows/0");
@@ -182,12 +184,14 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
     void newVersusReturningCreators() throws Exception {
         purchase(creamVariant, 1); // 진행 중 공구는 3일 전에 열렸다
 
-        assertThat(rows("TODAY", "SUPPLY").get("ACTIVE_CREATORS").get("note").asText()).isEqualTo("신규 0 · 재공구 1");
+        // 설명 앞의 정의 「기간 중 공구 1건 이상」은 56 D5
+        assertThat(rows("TODAY", "SUPPLY").get("ACTIVE_CREATORS").get("note").asText())
+                .isEqualTo("기간 중 공구 1건 이상 · 신규 0 · 재공구 1");
         clearMetricsCache();
         Map<String, JsonNode> week = rows(json(adminGet(METRICS + "?preset=CUSTOM&from=" + LocalDate.now().minusDays(6)
                 + "&to=" + LocalDate.now() + "&tab=SUPPLY").andExpect(status().isOk())));
-        assertThat(week.get("ACTIVE_CREATORS").get("note").asText()).isEqualTo("신규 1 · 재공구 0");
-        assertThat(week.get("ACTIVE_BRANDS").get("note").asText()).isEqualTo("신규 1 · 재공구 0");
+        assertThat(week.get("ACTIVE_CREATORS").get("note").asText()).isEqualTo("기간 중 공구 1건 이상 · 신규 1 · 재공구 0");
+        assertThat(week.get("ACTIVE_BRANDS").get("note").asText()).isEqualTo("기간 중 공구 1건 이상 · 신규 1 · 재공구 0");
     }
 
     @Test
@@ -305,6 +309,27 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
                 .get("ADJUSTMENT_REQUEST_RATE");
         assertThat(rate.get("currentCount").asText()).isEqualTo("2/2");
         assertThat(rate.get("note").asText()).isEqualTo("2건 중 2건 · 합의 대기 1건");
+    }
+
+    @Test
+    @DisplayName("[56 D5] 동적 설명에 정의를 함께 — 「기간 중 공구 1건 이상 · 신규 …」 · 「SLA 3영업일 · 초과 0건」 · 「기한 24시간 · 초과 1건」 · 「하루 평균 N건」")
+    void dynamicNotesKeepDefinition() throws Exception {
+        purchase(creamVariant, 1);
+        seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false); // 제출 5시간 전 · 승인 2시간 전
+        LocalDateTime answeredAt = LocalDateTime.now().minusMinutes(30);
+        answeredInquiry(answeredAt.minusHours(30), answeredAt);
+
+        Map<String, JsonNode> supply = rows(json(adminGet(METRICS + week() + "&tab=SUPPLY").andExpect(status().isOk())));
+        assertThat(supply.get("ACTIVE_CREATORS").get("note").asText()).isEqualTo("기간 중 공구 1건 이상 · 신규 1 · 재공구 0");
+
+        Map<String, JsonNode> groupBuyTab = rows(json(adminGet(METRICS + week() + "&tab=GROUP_BUY").andExpect(status().isOk())));
+        assertThat(groupBuyTab.get("OPEN_REVIEW_DAYS").get("note").asText()).isEqualTo("SLA 3영업일 · 초과 0건");
+
+        Map<String, JsonNode> operation = rows(json(adminGet(METRICS + week() + "&tab=OPERATION").andExpect(status().isOk())));
+        assertThat(operation.get("INQUIRY_FIRST_ANSWER_HOURS").get("note").asText()).isEqualTo("기한 24시간 · 초과 1건");
+        assertThat(operation.get("PROCESSED").get("note").asText()).matches("하루 평균 \\d+\\.\\d건");
+        // 동적 값이 없는 지표는 정의 문구 그대로
+        assertThat(operation.get("SLA_RATE").get("note").asText()).isEqualTo(MetricKey.SLA_RATE.getDefinition());
     }
 
     // ------------------------------------------------------------------ 픽스처

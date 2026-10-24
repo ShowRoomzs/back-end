@@ -42,6 +42,8 @@ public class MetricsFactsCalculator {
 
     static final List<String> SLA_QUEUES = List.of("INQUIRY", "OPEN_REVIEW", "SELLER_APPLICATION", "CREATOR_APPLICATION",
             "CHANGE_REQUEST", "POST_REPORT");
+    /** 활성 인플루언서 · 브랜드 설명의 정의 부분(시안 21 K2) — 셈은 「기간 중 결제가 1건 이상 있는 공구」다({@link MetricKey}). */
+    static final String ACTIVE_LEAD = "기간 중 공구 1건 이상";
 
     private final MetricsQueryRepository repository;
     private final AdminOperationsQueryRepository operationsRepository;
@@ -94,10 +96,11 @@ public class MetricsFactsCalculator {
         Set<Long> returningCreators = repository.creatorsOpenedBefore(creators, f.from);
         Set<Long> returningBrands = repository.marketsOpenedBefore(brands, f.from);
         f.returningCreators = returningCreators;
-        f.put(MetricKey.ACTIVE_CREATORS, Value.of(creators.size())
-                .withNote("신규 " + (creators.size() - returningCreators.size()) + " · 재공구 " + returningCreators.size()));
-        f.put(MetricKey.ACTIVE_BRANDS, Value.of(brands.size())
-                .withNote("신규 " + (brands.size() - returningBrands.size()) + " · 재공구 " + returningBrands.size()));
+        // 설명 = 정의 + 이번 기간 값(시안 21 K2 「기간 중 공구 1건 이상 · 신규 1 · 재공구 4」)
+        f.put(MetricKey.ACTIVE_CREATORS, Value.of(creators.size()).withNote(ACTIVE_LEAD + " · 신규 "
+                + (creators.size() - returningCreators.size()) + " · 재공구 " + returningCreators.size()));
+        f.put(MetricKey.ACTIVE_BRANDS, Value.of(brands.size()).withNote(ACTIVE_LEAD + " · 신규 "
+                + (brands.size() - returningBrands.size()) + " · 재공구 " + returningBrands.size()));
 
         f.groupBuys = repository.openedGroupBuys();
         int window = adminProperties.getMetrics().getRegroupbuyWindowDays();
@@ -200,7 +203,8 @@ public class MetricsFactsCalculator {
         long over = reviews.stream().filter(p -> p[1].isAfter(dueAt(p[0], sla))).count();
         Double avg = reviews.isEmpty() ? null : round1(reviews.stream()
                 .mapToInt(p -> businessCalendar.businessDaysBetween(p[0].toLocalDate(), p[1].toLocalDate())).average().orElse(0));
-        f.put(MetricKey.OPEN_REVIEW_DAYS, Value.nullable(avg).withNote("SLA 초과 " + over + "건"));
+        // 시안 21 K3 「SLA 3영업일 · 초과 0건」 — 기한 정의와 초과 건수를 함께
+        f.put(MetricKey.OPEN_REVIEW_DAYS, Value.nullable(avg).withNote("SLA " + sla + "영업일 · 초과 " + over + "건"));
     }
 
     // ------------------------------------------------------------------ 수요
@@ -265,7 +269,7 @@ public class MetricsFactsCalculator {
         f.processedTimes = operationsRepository.processedTimes(f.from, f.to);
         double days = Math.max(1.0, Duration.between(f.from, f.to).toMinutes() / 1440.0);
         f.put(MetricKey.PROCESSED, Value.of(f.processedTimes.size())
-                .withNote("하루 평균 " + round1(f.processedTimes.size() / days)));
+                .withNote("하루 평균 " + round1(f.processedTimes.size() / days) + "건"));
 
         long within = 0;
         long total = 0;
@@ -285,7 +289,9 @@ public class MetricsFactsCalculator {
         long overInquiries = inquiries.stream().filter(p -> !withinSla("INQUIRY", p)).count();
         Double avgHours = inquiries.isEmpty() ? null
                 : round1(inquiries.stream().mapToLong(p -> Duration.between(p[0], p[1]).toMinutes()).average().orElse(0) / 60.0);
-        f.put(MetricKey.INQUIRY_FIRST_ANSWER_HOURS, Value.nullable(avgHours).withNote("초과 " + overInquiries + "건"));
+        // 시안 21 K5 「기한 24시간 · 초과 2건」 — 기한 정의와 초과 건수를 함께
+        f.put(MetricKey.INQUIRY_FIRST_ANSWER_HOURS, Value.nullable(avgHours)
+                .withNote("기한 " + adminProperties.getInquirySlaHours() + "시간 · 초과 " + overInquiries + "건"));
         List<String> refundFailures = repository.refundFailureReasons(f.from, f.to);
         f.put(MetricKey.REFUND_FAILURES, Value.of(refundFailures.size()).withNote(refundFailureNote(refundFailures)));
     }

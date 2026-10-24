@@ -57,7 +57,9 @@ public final class AdminMetricsDto {
     public record Row(
             @Schema(example = "RETURN_EXCHANGE_RATE") String key,
             @Schema(example = "반품 · 교환율") String label,
-            @Schema(description = "정의 · 보조 설명(「신규 2 · 재공구 3」 등)") String note,
+            @Schema(description = "지표 이름 아래 보조 설명 한 줄 — 이번 기간 값이 있으면 정의와 함께 적는다(「기간 중 공구 1건 이상 · 신규 1 · "
+                    + "재공구 4」 · 「SLA 3영업일 · 초과 0건」 · 「기한 24시간 · 초과 2건」), 없으면 정의 문구만",
+                    example = "기간 중 공구 1건 이상 · 신규 1 · 재공구 4") String note,
             @Schema(description = "COUNT · AMOUNT · RATE(%) · RATIO(배) · DAYS · HOURS", example = "RATE") String valueType,
             @Schema(description = "현재 값 — 계산할 수 없으면 null(분모 0)", nullable = true) Double current,
             @Schema(nullable = true) Double previous,

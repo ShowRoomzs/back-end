@@ -112,7 +112,9 @@ public class AdminMetricsQueryService {
         return facts;
     }
 
-    /** 증감 판정 — 지표 방향이 없거나 비교 값이 없으면 NEUTRAL. */
+    /**
+     * 증감 판정 — 지표 방향이 없거나 비교 값이 없으면 NEUTRAL. 설명은 계산이 만든 한 줄(정의 + 이번 기간 값)이 있으면 그것, 없으면 정의 문구다.
+     */
     static AdminMetricsDto.Row row(MetricKey key, Facts current, Facts previous) {
         Value cur = current.get(key);
         Value prev = previous.get(key);
