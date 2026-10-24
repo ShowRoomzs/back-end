@@ -13,6 +13,7 @@ import showroomz.domain.metrics.repository.MetricsQueryRepository.PaidLine;
 import showroomz.domain.post.type.PostPolicyClause;
 import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
+import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.BusinessCalendar;
 
 import java.math.BigDecimal;
@@ -27,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 /**
@@ -46,6 +48,7 @@ public class MetricsFactsCalculator {
     private final BusinessCalendar businessCalendar;
     private final AdminProperties adminProperties;
     private final GroupBuyProperties groupBuyProperties;
+    private final SettlementProperties settlementProperties;
 
     public Facts compute(LocalDateTime from, LocalDateTime to, LocalDateTime now) {
         Facts facts = new Facts(from, to);
@@ -70,9 +73,14 @@ public class MetricsFactsCalculator {
         long deliveredTotal = f.delivered.values().stream().mapToLong(Long::longValue).sum();
         f.put(MetricKey.GMV, Value.of(gmv));
         f.put(MetricKey.ORDERS, Value.of(f.lines.stream().map(PaidLine::orderId).distinct().count()));
-        f.put(MetricKey.GMV_MEDIAN, Value.nullable(median(gmvByGroupBuy.values())));
-        f.put(MetricKey.FEE_REVENUE, Value.of(BigDecimal.valueOf(gmv)
-                .multiply(adminProperties.getMetrics().getStandardFeeRate()).longValue()));
+        // 설명 「중앙값 · 8건」(시안 21 K1) — 건수 = 중앙값을 낸 공구 수(기간 중 결제가 있는 공구)
+        f.put(MetricKey.GMV_MEDIAN, Value.nullable(median(gmvByGroupBuy.values()))
+                .withNote("중앙값 · " + gmvByGroupBuy.size() + "건"));
+        // 설명 「베타 0% · 정상 요율 2% 적용 시」 — 베타 = 지금 정산에 적용되는 요율 · 정상 요율 = 이 예상 값의 계산 요율
+        BigDecimal standardFeeRate = adminProperties.getMetrics().getStandardFeeRate();
+        f.put(MetricKey.FEE_REVENUE, Value.of(BigDecimal.valueOf(gmv).multiply(standardFeeRate).longValue())
+                .withNote("베타 " + percentText(settlementProperties.getPlatformFeeRate()) + " · 정상 요율 "
+                        + percentText(standardFeeRate) + " 적용 시"));
         f.put(MetricKey.RETURN_EXCHANGE_RATE, Value.rate(f.claims.size(), deliveredTotal));
         long brandFault = f.claims.stream().filter(c -> "RETURN".equals(c.type()) && c.sellerFault()).count();
         f.put(MetricKey.BRAND_FAULT_RETURN_RATE, Value.rate(brandFault, deliveredTotal));
@@ -182,7 +190,9 @@ public class MetricsFactsCalculator {
         }
         f.put(MetricKey.MIN_QUANTITY_RATE, Value.rate(achieved, judged));
         f.put(MetricKey.BRAND_ROI, Value.nullable(medianDouble(rois)));
-        f.put(MetricKey.SUSPENSIONS, Value.of(repository.countSuspensions(f.from, f.to)));
+        long[] suspensions = repository.countSuspensionsByKind(f.from, f.to);
+        f.put(MetricKey.SUSPENSIONS, Value.of(suspensions[0] + suspensions[1])
+                .withNote("신청 " + suspensions[0] + " · 직권 " + suspensions[1]));
 
         List<LocalDateTime[]> reviews = repository.processedPairs("OPEN_REVIEW", f.from, f.to);
         f.pairs.put("OPEN_REVIEW", reviews);
@@ -237,8 +247,15 @@ public class MetricsFactsCalculator {
     // ------------------------------------------------------------------ 운영
 
     private void operation(Facts f) {
-        f.put(MetricKey.ADJUSTMENT_REQUEST_RATE, Value.rate(repository.countAdjustmentsOpened(f.from, f.to),
-                repository.countSettlementsCreated(f.from, f.to)));
+        // 정산 조정 설명 「6건 중 1건 · 합의 대기 1건」(시안 21 K5) — 합의 대기 = 기간 중 열린 협의 중 아직 협의 중(조회 시점)
+        long adjustments = repository.countAdjustmentsOpened(f.from, f.to);
+        long settlements = repository.countSettlementsCreated(f.from, f.to);
+        Value adjustmentRate = Value.rate(adjustments, settlements);
+        if (adjustments > 0 || settlements > 0) {
+            adjustmentRate = adjustmentRate.withNote(settlements + "건 중 " + adjustments + "건 · 합의 대기 "
+                    + repository.countAdjustmentsAwaitingAgreement(f.from, f.to) + "건");
+        }
+        f.put(MetricKey.ADJUSTMENT_REQUEST_RATE, adjustmentRate);
         // 신고율 설명 — 「신고 18 ÷ 게시물 2,010 · 근거 서비스 운영정책 — 커뮤니티 장」(55 계획서 A15). 근거는 노출 중지 조항과 같은 장이다.
         long postReports = repository.countPostReports(f.from, f.to);
         long publishedPosts = repository.countPublishedPosts(f.to);
@@ -269,7 +286,34 @@ public class MetricsFactsCalculator {
         Double avgHours = inquiries.isEmpty() ? null
                 : round1(inquiries.stream().mapToLong(p -> Duration.between(p[0], p[1]).toMinutes()).average().orElse(0) / 60.0);
         f.put(MetricKey.INQUIRY_FIRST_ANSWER_HOURS, Value.nullable(avgHours).withNote("초과 " + overInquiries + "건"));
-        f.put(MetricKey.REFUND_FAILURES, Value.of(repository.countRefundFailures(f.from, f.to)));
+        List<String> refundFailures = repository.refundFailureReasons(f.from, f.to);
+        f.put(MetricKey.REFUND_FAILURES, Value.of(refundFailures.size()).withNote(refundFailureNote(refundFailures)));
+    }
+
+    /**
+     * 환불 실패 설명(시안 21 K5 「모두 카드 유효기간 만료」) — 저장된 마지막 실패 사유만 쓴다. 모든 건이 같은 사유면 「모두 …」, 아니면 많은 순
+     * 두 사유 「… N건」 + 나머지 「외 K건」(사유가 지워진 건 포함). 사유가 하나도 남지 않았으면 {@code null}(정의 문구).
+     */
+    static String refundFailureNote(List<String> reasons) {
+        Map<String, Long> byReason = new TreeMap<>();
+        reasons.stream().filter(r -> r != null && !r.isBlank()).forEach(r -> byReason.merge(r.strip(), 1L, Long::sum));
+        if (byReason.isEmpty()) {
+            return null;
+        }
+        if (byReason.size() == 1 && byReason.values().iterator().next() == reasons.size()) {
+            return "모두 " + byReason.keySet().iterator().next();
+        }
+        List<Map.Entry<String, Long>> top = byReason.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed()).limit(2).toList();
+        long shown = top.stream().mapToLong(Map.Entry::getValue).sum();
+        String text = top.stream().map(e -> e.getKey() + " " + e.getValue() + "건").collect(Collectors.joining(" · "));
+        return shown < reasons.size() ? text + " 외 " + (reasons.size() - shown) + "건" : text;
+    }
+
+    /** 요율 표기 — 0.02 → 「2%」 · 0 → 「0%」 · 0.025 → 「2.5%」. */
+    static String percentText(BigDecimal rate) {
+        BigDecimal percent = rate.multiply(BigDecimal.valueOf(100)).stripTrailingZeros();
+        return (percent.signum() == 0 ? "0" : percent.toPlainString()) + "%";
     }
 
     boolean withinSla(String queue, LocalDateTime[] pair) {

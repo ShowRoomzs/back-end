@@ -229,14 +229,15 @@ public class MetricsQueryRepository {
                 .setParameter("ids", groupBuyIds).getResultList());
     }
 
-    /** 중단 — 승인된 중단 요청 + 집행된 직권 중단. */
-    public long countSuspensions(LocalDateTime from, LocalDateTime to) {
-        return count("SELECT COUNT(r) FROM GroupBuyChangeRequest r "
+    /** 중단 — [승인된 중단 요청(신청), 집행된 직권 중단(직권)]. 지표 값은 둘의 합이다. */
+    public long[] countSuspensionsByKind(LocalDateTime from, LocalDateTime to) {
+        long requested = count("SELECT COUNT(r) FROM GroupBuyChangeRequest r "
                 + "WHERE r.requestType = showroomz.domain.groupbuy.type.ChangeRequestType.SUSPEND "
                 + "AND r.status = showroomz.domain.groupbuy.type.ChangeRequestStatus.APPROVED "
-                + "AND r.decidedAt >= :from AND r.decidedAt < :to", from, to)
-                + count("SELECT COUNT(s) FROM GroupBuyAdminSuspension s WHERE s.executedAt >= :from AND s.executedAt < :to",
+                + "AND r.decidedAt >= :from AND r.decidedAt < :to", from, to);
+        long byAdmin = count("SELECT COUNT(s) FROM GroupBuyAdminSuspension s WHERE s.executedAt >= :from AND s.executedAt < :to",
                 from, to);
+        return new long[]{requested, byAdmin};
     }
 
     // ------------------------------------------------------------------ 운영
@@ -268,6 +269,12 @@ public class MetricsQueryRepository {
         return count("SELECT COUNT(a) FROM SettlementAdjustment a WHERE a.openedAt >= :from AND a.openedAt < :to", from, to);
     }
 
+    /** 기간 중 열린 조정 협의 중 지금 합의 대기(협의 중 · {@code OPEN})인 것 — 조회 시점 상태다. */
+    public long countAdjustmentsAwaitingAgreement(LocalDateTime from, LocalDateTime to) {
+        return count("SELECT COUNT(a) FROM SettlementAdjustment a WHERE a.openedAt >= :from AND a.openedAt < :to "
+                + "AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN", from, to);
+    }
+
     public long countSettlementsCreated(LocalDateTime from, LocalDateTime to) {
         return count("SELECT COUNT(s) FROM Settlement s WHERE s.createdAt >= :from AND s.createdAt < :to", from, to);
     }
@@ -283,8 +290,14 @@ public class MetricsQueryRepository {
                 .setParameter("before", before).getSingleResult();
     }
 
-    public long countRefundFailures(LocalDateTime from, LocalDateTime to) {
-        return count("SELECT COUNT(t) FROM OrderRefundTask t WHERE t.failedAt >= :from AND t.failedAt < :to", from, to);
+    /**
+     * 환불 실패 — 기간 중 실패한 환불 건마다 마지막 실패 사유({@code last_error} · PG 거절 문구 또는 집행 전 검사 문장) 한 줄. 건수 = 크기.
+     * 재시도가 성공하면 사유가 지워지므로 그 건은 {@code null} 이다.
+     */
+    public List<String> refundFailureReasons(LocalDateTime from, LocalDateTime to) {
+        return em.createQuery("SELECT t.lastError FROM OrderRefundTask t WHERE t.failedAt >= :from AND t.failedAt < :to",
+                        String.class)
+                .setParameter("from", from).setParameter("to", to).getResultList();
     }
 
     // ------------------------------------------------------------------

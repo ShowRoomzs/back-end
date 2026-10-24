@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.admin.metrics.service.AdminMetricsQueryService;
 import showroomz.api.common.settlement.SettlementTestSupport;
+import showroomz.domain.groupbuy.type.ChangeRequestType;
+import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.creator.entity.CreatorFollow;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
@@ -20,6 +22,8 @@ import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.type.PostPolicyClause;
 import showroomz.domain.post.type.PostReportReason;
+import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.support.BrandFixture;
 
 import java.math.BigDecimal;
@@ -244,7 +248,75 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get("ACTIVE_CREATORS").get("currentBreakdown").isNull()).isTrue(); // 나누지 않는 지표는 null
     }
 
+    @Test
+    @DisplayName("[56 D4] 보조 설명 값 — 공구 중단 「신청 1 · 직권 1」 · 공구당 거래액 「중앙값 · N건」 · 수수료 「베타 0% · 정상 요율 2% 적용 시」")
+    void suspensionsMedianAndFeeNotes() throws Exception {
+        purchase(creamVariant, 1);
+        LocalDateTime now = LocalDateTime.now();
+        Long requestId = seedPendingRequest(groupBuy.getId(), ChangeRequestType.SUSPEND, GroupBuyActorType.CREATOR,
+                "CREATOR_REASON").getId();
+        jdbc.update("UPDATE group_buy_change_request SET status = 'APPROVED', decided_at = ? WHERE change_request_id = ?",
+                now.minusMinutes(10), requestId);
+        Long suspensionId = seedNotice(groupBuy.getId(), now.plusDays(2)).getId();
+        jdbc.update("UPDATE group_buy_admin_suspension SET status = 'EXECUTED', executed_at = ? WHERE admin_suspension_id = ?",
+                now.minusMinutes(5), suspensionId);
+
+        Map<String, JsonNode> groupBuyTab = rows(json(adminGet(METRICS + week() + "&tab=GROUP_BUY").andExpect(status().isOk())));
+        assertThat(groupBuyTab.get("SUSPENSIONS").get("current").asLong()).isEqualTo(2);
+        assertThat(groupBuyTab.get("SUSPENSIONS").get("note").asText()).isEqualTo("신청 1 · 직권 1");
+        assertThat(groupBuyTab.get("GMV_MEDIAN").get("note").asText()).isEqualTo("중앙값 · 1건");
+
+        Map<String, JsonNode> core = rows(json(adminGet(METRICS + week() + "&tab=CORE").andExpect(status().isOk())));
+        assertThat(core.get("GMV_MEDIAN").get("note").asText()).isEqualTo("중앙값 · 1건");
+        assertThat(core.get("FEE_REVENUE").get("note").asText()).isEqualTo("베타 0% · 정상 요율 2% 적용 시");
+    }
+
+    @Test
+    @DisplayName("[56 D4] 환불 실패 설명 — 기간 중 실패 건의 저장된 사유 「모두 …」 · 재시도 성공으로 사유가 지워진 건은 「외 N건」")
+    void refundFailureReasons() throws Exception {
+        Long cream = operatorRefund(confirmedGroup(creamVariant, 1), "POST_CONFIRM_DEFECT", 1_000);
+        Long serum = operatorRefund(confirmedGroup(serumVariant, 1), "POST_CONFIRM_DEFECT", 1_000);
+        for (Long taskId : new Long[]{cream, serum}) {
+            jdbc.update("UPDATE order_refund_task SET status = 'FAILED', failed_at = ?, last_error = '카드 유효기간 만료' "
+                    + "WHERE refund_task_id = ?", LocalDateTime.now().minusMinutes(5), taskId);
+        }
+
+        JsonNode failures = rows(json(adminGet(METRICS + week() + "&tab=OPERATION").andExpect(status().isOk())))
+                .get("REFUND_FAILURES");
+        assertThat(failures.get("current").asLong()).isEqualTo(2);
+        assertThat(failures.get("note").asText()).isEqualTo("모두 카드 유효기간 만료");
+
+        clearMetricsCache();
+        jdbc.update("UPDATE order_refund_task SET status = 'DONE', last_error = NULL WHERE refund_task_id = ?", serum);
+        failures = rows(json(adminGet(METRICS + week() + "&tab=OPERATION").andExpect(status().isOk()))).get("REFUND_FAILURES");
+        assertThat(failures.get("current").asLong()).isEqualTo(2); // 실패 시각은 남는다
+        assertThat(failures.get("note").asText()).isEqualTo("카드 유효기간 만료 1건 외 1건");
+    }
+
+    @Test
+    @DisplayName("[56 D4] 정산 조정 설명 — 「정산 N건 중 M건 · 합의 대기 K건」(협의 중인 것만 합의 대기)")
+    void adjustmentAwaitingAgreement() throws Exception {
+        Settlement open = seedSettlement("조정 협의 중 공구", 1_000_000, SettlementStatus.REVIEWING);
+        Settlement agreed = seedSettlement("조정 합의 공구", 1_000_000, SettlementStatus.REVIEWING);
+        adjustment(open, "OPEN", pairThreadId);
+        adjustment(agreed, "AGREED", pairThreadId + 10_000);
+
+        JsonNode rate = rows(json(adminGet(METRICS + week() + "&tab=OPERATION").andExpect(status().isOk())))
+                .get("ADJUSTMENT_REQUEST_RATE");
+        assertThat(rate.get("currentCount").asText()).isEqualTo("2/2");
+        assertThat(rate.get("note").asText()).isEqualTo("2건 중 2건 · 합의 대기 1건");
+    }
+
     // ------------------------------------------------------------------ 픽스처
+
+    private void adjustment(Settlement settlement, String status, Long threadId) {
+        LocalDateTime openedAt = LocalDateTime.now().minusHours(3);
+        jdbc.update("INSERT INTO settlement_adjustment (settlement_id, settlement_number, group_buy_id, market_id, creator_id, "
+                        + "thread_id, requester_type, status, original_reward_amount, max_reward_amount, opened_at, deadline_at, "
+                        + "notice_due_at, created_at, modified_at) VALUES (?, ?, ?, ?, ?, ?, 'CREATOR', ?, 1000, 2000, ?, ?, ?, ?, ?)",
+                settlement.getId(), settlement.getSettlementNumber(), settlement.getGroupBuyId(), brand.marketId(),
+                creator.getId(), threadId, status, openedAt, openedAt.plusDays(3), openedAt.plusDays(2), openedAt, openedAt);
+    }
 
     /** 입점 승인된 브랜드 신청 — 신청 화면이 만드는 행에 상태 · 신청 · 처리 시각만 옮긴다. */
     private void approvedSellerApplication(String account, String marketName, LocalDateTime createdAt,
