@@ -61,6 +61,7 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
     @Autowired private UserSanctionService userSanctionService;
     @Autowired private UserSanctionRepository userSanctions;
     @Autowired private CreatorWithdrawalService creatorWithdrawalService;
+    @Autowired private showroomz.domain.connection.service.OperatorChannelService operatorChannels;
 
     // ------------------------------------------------------------------ 7-2 이의 신청 기한
 
@@ -320,7 +321,63 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.statusCard.sanction.term.periodDays").doesNotExist());
     }
 
+    // ------------------------------------------------------------------ 56 B1 운영팀 채널 정지 카드의 기간
+
+    @Test
+    @DisplayName("[56 B1] 운영팀 채널 정지 카드 — 스튜디오 · 어드민 카드에 종료일 · 자동 해제 시각(종료일 다음 날 00:00) · 기간 14일 · "
+            + "저장된 이의 신청 기한 / 해제 카드는 기간 · 기한이 없다 / 기간 없는 브랜드 정지 카드는 이의 신청 기한만 있다")
+    void suspensionCardCarriesTermAndAppealDeadline() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate endsOn = now.toLocalDate().plusDays(13);
+        CreatorSanction sanction = inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE, null, endsOn, operator.getId(), "운영자", now));
+        String appealDeadline = sanction.getAppealDeadlineAt().toLocalDate() + "T23:59:59";
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + creatorChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value("CREATOR"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value(endsOn.toString()))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").value(single(endsOn.plusDays(1) + "T00:00:00")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(14))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single(appealDeadline)));
+        }
+
+        inTransaction(() -> creatorSanctionService.release(creator.getId(), SanctionReleaseReason.RESOLVED, null,
+                operator.getId(), "운영자", now.plusMinutes(1)));
+        creatorGet("/v1/creator/threads/" + creatorChannel + "/messages").andExpect(status().isOk())
+                .andExpect(jsonPath(RELEASED_CARD + ".reasonCode").value("RESOLVED"))
+                .andExpect(jsonPath(RELEASED_CARD + ".endsOn").doesNotExist())
+                .andExpect(jsonPath(RELEASED_CARD + ".autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath(RELEASED_CARD + ".periodDays").doesNotExist())
+                .andExpect(jsonPath(RELEASED_CARD + ".appealDeadlineAt").doesNotExist())
+                // 정지 카드는 해제 뒤에도 그때의 기간을 그대로 보인다(스냅샷)
+                .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value(endsOn.toString()));
+
+        BrandSanction brandSanction = inTransaction(() -> brandSanctionService.suspend(brand.marketId(),
+                BrandSuspensionReason.REPEATED_SHIPPING_DELAY, null, null, operator.getId(), "운영자", now));
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+        sellerGet("/v1/seller/threads/" + brandChannel + "/messages").andExpect(status().isOk())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value("BRAND"))
+                .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt")
+                        .value(single(brandSanction.getAppealDeadlineAt().toLocalDate() + "T23:59:59")));
+    }
+
     // ------------------------------------------------------------------ helpers
+
+    private static final String SUSPENDED_CARD = "$.content[?(@.card.cardType == 'ACCOUNT_SUSPENDED')].card.detail.sanction";
+    private static final String RELEASED_CARD =
+            "$.content[?(@.card.cardType == 'ACCOUNT_SUSPENSION_RELEASED')].card.detail.sanction";
+
+    /** 필터 경로는 배열로 나온다 — 카드 한 장 · 시각은 프로젝트 포맷(yyyy-MM-dd'T'HH:mm:ss'Z')이라 앞부분으로 맞춘다. */
+    private static org.hamcrest.Matcher<Iterable<? extends String>> single(String dateTimePrefix) {
+        return org.hamcrest.Matchers.contains(org.hamcrest.Matchers.startsWith(dateTimePrefix));
+    }
 
     private String marketStatus() {
         return jdbc.queryForObject("SELECT status FROM market WHERE market_id = ?", String.class, brand.marketId());

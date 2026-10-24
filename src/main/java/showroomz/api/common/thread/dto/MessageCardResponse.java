@@ -2,6 +2,7 @@ package showroomz.api.common.thread.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
+import showroomz.domain.member.common.service.SanctionTermPolicy;
 import showroomz.domain.message.entity.MessageCardPayload;
 import showroomz.domain.message.service.MessageCardReader.AdjustmentCard;
 import showroomz.domain.message.service.MessageCardReader.CardView;
@@ -9,6 +10,7 @@ import showroomz.domain.message.type.MessageCardActionState;
 import showroomz.domain.message.type.MessageCardTone;
 import showroomz.domain.message.type.MessageCardType;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -47,7 +49,8 @@ public record MessageCardResponse(
             @Schema(description = "[직권 취소] 처리 시각", example = "2026-08-14T10:40:00") LocalDateTime processedAt,
             @Schema(description = "[직권 취소] 양측 통지 여부", example = "true") Boolean notifiedBothParties,
             @Schema(description = "[정산 조정] 카드의 사실 — 정산 조정 카드에만") AdjustmentDetail adjustment,
-            @Schema(description = "[계정 이용 정지 · 해제] 사유 코드 · 라벨 · 상세 · 지급 정지 여부 — 1017 이후 카드에만(옛 카드는 reasonLabel 한 줄)")
+            @Schema(description = "[계정 이용 정지 · 해제] 사유 코드 · 라벨 · 상세 · 지급 정지 여부 — 1017 이후 카드에만(옛 카드는 reasonLabel 한 줄). "
+                    + "정지 카드는 정지 기간 · 이의 신청 기한도(1021 이후)")
             SanctionDetail sanction,
             @Schema(description = "[취소 · 해지 동의 확인 · 해지 결과 · 직권 중단 사전 통지] 안내 카드의 사실(1021) — 버튼 없음 · 답글로 의견")
             NoticeDetail notice) {
@@ -80,6 +83,9 @@ public record MessageCardResponse(
     /**
      * 계정 이용 정지 · 해제 카드의 사실(ui-partner-15 S7 · ui-studio-13 S8). 차단 · 계속 이용 목록은 {@code memberType}별 고정 문구라 FE 가 든다.
      * 정산 줄 — {@code payoutHeld = true} 「정산은 확정까지 진행되며, 정지가 풀리면 다음 영업일에 지급됩니다」 · false 「이번 사유는 지급에 영향이 없습니다」.
+     *
+     * <p>정지 기간 · 이의 신청 기한(1021 설계서 7-2 · 스튜디오 S8 「정지 기간 2026.10.08 14:20 ~ 2026.10.22 00:00 (14일)」 · 「이의 신청 기한
+     * 2026.10.13까지」)은 정지 카드 스냅샷에서 읽는다 — 기간 시작은 카드의 {@code processedAt}. 1021 이전 정지 카드 · 해제 카드에는 없다.
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record SanctionDetail(
@@ -87,11 +93,23 @@ public record MessageCardResponse(
             @Schema(description = "정지 사유 코드(정지 카드) · 해제 사유 코드(해제 카드)", example = "SETTLEMENT_INFO_MISMATCH") String reasonCode,
             @Schema(example = "정산 정보 불일치") String reasonLabel,
             @Schema(description = "상세 사유 · 해제 메모 — 운영자가 적은 경우만") String reasonDetail,
-            @Schema(description = "[정지 카드] 지급 정지 사유인가") Boolean payoutHeld) {
+            @Schema(description = "[정지 카드] 지급 정지 사유인가") Boolean payoutHeld,
+            @Schema(description = "[정지 카드] 정지 종료일(포함) — 기간 없는 정지 · 1021 이전 카드 · 해제 카드는 없음",
+                    example = "2026-10-21", nullable = true) LocalDate endsOn,
+            @Schema(description = "[정지 카드] 자동 해제 시각 = 종료일 다음 날 00:00 — 「~ 2026.10.22 00:00」. 종료일이 없으면 없음",
+                    example = "2026-10-22T00:00:00", nullable = true) LocalDateTime autoReleaseAt,
+            @Schema(description = "[정지 카드] 정지 기간(일) — 정지일(processedAt 의 날짜) · 종료일 포함 「(14일)」. 종료일이 없으면 없음",
+                    example = "14", nullable = true) Integer periodDays,
+            @Schema(description = "[정지 카드] 이의 신청 기한 — 통지 + N영업일 23:59:59 · 정지 시점 스냅샷(기한 뒤에도 접수한다). "
+                    + "1021 이전 카드 · 해제 카드는 없음", example = "2026-10-13T23:59:59", nullable = true)
+            LocalDateTime appealDeadlineAt) {
 
-        public static SanctionDetail of(MessageCardPayload.Sanction s) {
+        /** @param processedAt 카드의 처리 시각 — 정지 카드면 정지 시각(기간 일수의 시작일) */
+        public static SanctionDetail of(MessageCardPayload.Sanction s, LocalDateTime processedAt) {
             return s == null ? null
-                    : new SanctionDetail(s.memberType(), s.reasonCode(), s.reasonLabel(), s.reasonDetail(), s.payoutHeld());
+                    : new SanctionDetail(s.memberType(), s.reasonCode(), s.reasonLabel(), s.reasonDetail(), s.payoutHeld(),
+                    s.endsOn(), SanctionTermPolicy.autoReleaseAt(s.endsOn()),
+                    SanctionTermPolicy.periodDays(processedAt, s.endsOn()), s.appealDeadlineAt());
         }
     }
 
@@ -172,7 +190,7 @@ public record MessageCardResponse(
                 ? new Detail(view.requesterType(), view.requesterName(), view.requestedAt(), view.reasonLabel(),
                         view.processedAt(), null, null, null, NoticeDetail.of(view.notice()))
                 : new Detail(null, null, null, view.reasonLabel(), view.processedAt(), true, null,
-                        SanctionDetail.of(view.sanction()), null);
+                        SanctionDetail.of(view.sanction(), view.processedAt()), null);
         Action action = view.actionState() == null ? null
                 : new Action(RESEND_NOTICE, view.actionState(), view.doneAt(), null, false);
         return new MessageCardResponse(view.cardType(), view.title(), view.tone(), view.contractId(),

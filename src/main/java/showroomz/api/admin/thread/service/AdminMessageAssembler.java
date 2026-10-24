@@ -113,7 +113,7 @@ public class AdminMessageAssembler {
                         MessageCardResponse.NoticeDetail.of(view.notice()))
                 : new CardDetail(null, null, null, view.reasonLabel(), view.processedAt(),
                         nameOf(view.processedBy(), operatorNames), true, null,
-                        MessageCardResponse.SanctionDetail.of(view.sanction()), null);
+                        MessageCardResponse.SanctionDetail.of(view.sanction(), view.processedAt()), null);
         CardAction action = view.actionState() == null ? null
                 : new CardAction(MessageCardResponse.RESEND_NOTICE, view.actionState(),
                         view.actionState() == MessageCardActionState.PENDING,
