@@ -22,8 +22,10 @@ import showroomz.domain.post.repository.PostReportRepository;
 import showroomz.domain.post.type.PostReportReason;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.service.SettlementClawbackService;
+import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.config.properties.AdminProperties;
+import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.support.BrandFixture;
 
 import java.math.BigDecimal;
@@ -32,6 +34,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -52,6 +55,7 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
     @Autowired private AdminProperties adminProperties;
     @Autowired private PostReportRepository postReportRepository;
     @Autowired private ProductInquiryRepository productInquiryRepository;
+    @Autowired private GroupBuyProperties groupBuyProperties;
 
     @Test
     @DisplayName("AD-01 입점 심사 — 마감(신청 + 3영업일)이 지났으면 기한 초과 · 다음 영업일이면 D-1 · 나머지는 대기 1행")
@@ -389,7 +393,87 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         assertThat(appeal.get("ageText").asText()).as("제출된 소명은 통지 · 기한이 아니라 제출 시각").isEqualTo("6일 경과");
     }
 
+    @Test
+    @DisplayName("[56 E2] 분배 실패 행 보조줄 — 「수취자 몫 금액 반환 · 실패 사유」(1017 6-1) · 실패 행이 둘이면 몫을 실패 순으로 잇고 사유는 첫 실패 행")
+    void payoutFailedRowDetail() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        Settlement failed = seedSettlement("분배 실패 공구", 1_000_000, SettlementStatus.PAYOUT_FAILED);
+        long creatorShare = payout(failed.getId(), SettlementPayee.CREATOR).getAmount();
+        long brandShare = payout(failed.getId(), SettlementPayee.BRAND).getAmount();
+        failPayout(failed, "CREATOR", now.minusDays(4), "예금주 불일치");
+
+        JsonNode row = rowsOf(json(adminGet(HOME).andExpect(status().isOk())).get("todo"), "PAYOUT_FAILED").get(0);
+        assertThat(row.get("title").asText()).isEqualTo("분배 실패 · " + failed.getSettlementNumber());
+        assertThat(row.get("detail").asText())
+                .isEqualTo("인플루언서 몫 " + String.format("%,d원", creatorShare) + " 반환 · 예금주 불일치");
+        assertThat(row.get("ageText").asText()).isEqualTo("4일 경과");
+
+        failPayout(failed, "BRAND", now.minusDays(1), "계좌 해지");
+        JsonNode both = rowsOf(json(adminGet(HOME)).get("todo"), "PAYOUT_FAILED").get(0);
+        assertThat(both.get("detail").asText()).isEqualTo("인플루언서 몫 " + String.format("%,d원", creatorShare)
+                + " · 브랜드 몫 " + String.format("%,d원", brandShare) + " 반환 · 예금주 불일치");
+    }
+
+    @Test
+    @DisplayName("[56 E2] 사유 환불 집행 대기 행 보조줄 — 「운영자 사유 · 금액」")
+    void operatorRefundRowDetail() throws Exception {
+        OrderDeliveryGroup group = confirmedGroup(creamVariant, 1);
+        adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/refund-tasks",
+                Map.of("reason", "POST_CONFIRM_DEFECT", "amount", 27_200, "detail", "구매확정 후 하자 확인"))
+                .andExpect(status().isOk());
+
+        JsonNode row = rowsOf(json(adminGet(HOME).andExpect(status().isOk())).get("todo"), "REFUND_EXECUTION").get(0);
+        assertThat(row.get("urgency").asText()).isEqualTo("EXECUTION_PENDING");
+        assertThat(row.get("detail").asText()).isEqualTo("구매확정 후 하자 · 27,200원");
+    }
+
+    @Test
+    @DisplayName("[56 E2] D-1 행 보조줄 — 오픈 승인은 「브랜드 × 쇼룸」 · 브랜드 입점 심사는 첨부된 서류 수 「서류 N종」 · 인플루언서 입점 심사는 없음")
+    void dueSoonRowDetails() throws Exception {
+        GroupBuy review = seedIn(GroupBuyStatus.PREPARING);
+        seedPost(review.getId(), GroupBuyPostReviewStatus.PENDING, false);
+        jdbc.update("UPDATE group_buy_post SET submitted_at = ? WHERE group_buy_id = ?",
+                dueSoonCreatedDate(groupBuyProperties.getOpenReview().getSlaBusinessDays()).atTime(9, 0), review.getId());
+        LocalDate onboardingDueSoon = dueSoonCreatedDate(adminProperties.getOnboardingSlaBusinessDays());
+        seedSellerApplication("docs-brand", "서류브랜드", onboardingDueSoon.atTime(9, 0));
+        jdbc.update("UPDATE seller_application SET business_license_url = ?, mail_order_reg_url = NULL, bankbook_url = ? "
+                        + "WHERE market_name = ?", "https://cdn.showroomz.test/license.jpg", "https://cdn.showroomz.test/bankbook.jpg",
+                "서류브랜드");
+        seedCreatorApplication("due-soon-creator", onboardingDueSoon.atTime(9, 0));
+
+        JsonNode todo = json(adminGet(HOME).andExpect(status().isOk())).get("todo");
+        JsonNode openReview = rowsOf(todo, "OPEN_REVIEW").get(0);
+        assertThat(openReview.get("badge").asText()).isEqualTo("D-1");
+        assertThat(openReview.get("detail").asText())
+                .isEqualTo(brand.market().getMarketName() + " × " + creator.getShowroomName());
+        JsonNode brandApplication = rowsOf(todo, "BRAND_APPLICATION").get(0);
+        assertThat(brandApplication.get("badge").asText()).isEqualTo("D-1");
+        assertThat(brandApplication.get("detail").asText()).isEqualTo("서류 2종");
+        JsonNode creatorApplication = rowsOf(todo, "CREATOR_APPLICATION").get(0);
+        assertThat(creatorApplication.get("badge").asText()).isEqualTo("D-1");
+        assertThat(textOrNull(creatorApplication, "detail")).isNull();
+    }
+
+    @Test
+    @DisplayName("[56 E2] 1:1 문의 기한 초과 행 보조줄 — 「INQ 번호 · 본문 앞부분」 · 번호는 1:1 문의 상세와 같다")
+    void overdueInquiryRowDetail() throws Exception {
+        seedInquiry(LocalDateTime.now().minusHours(30), "배송이 너무 늦어요");
+        Long inquiryId = jdbc.queryForObject("SELECT MAX(INQUIRY_ID) FROM ONE_TO_ONE_INQUIRY", Long.class);
+        String number = json(adminGet("/v1/admin/inquiries/" + inquiryId).andExpect(status().isOk()))
+                .get("inquiryNumber").asText();
+
+        JsonNode row = rowsOf(json(adminGet(HOME).andExpect(status().isOk())).get("todo"), "INQUIRY").get(0);
+        assertThat(row.get("urgency").asText()).isEqualTo("OVERDUE");
+        assertThat(number).matches("INQ-\\d{8}-\\d{3}");
+        assertThat(row.get("detail").asText()).isEqualTo(number + " · 배송이 너무 늦어요");
+    }
+
     // ------------------------------------------------------------------ 픽스처
+
+    private void failPayout(Settlement settlement, String payee, LocalDateTime failedAt, String reason) {
+        jdbc.update("UPDATE settlement_payout SET status = 'FAILED', failed_at = ?, fail_code = 'TRANSFER_FAILED', "
+                + "fail_reason = ? WHERE settlement_id = ? AND payee = ?", failedAt, reason, settlement.getId(), payee);
+    }
 
     private void seedChangeRequest(String code, String requesterType, String type, Long marketId, Long creatorId) {
         LocalDateTime requestedAt = LocalDateTime.now().minusDays(1);
@@ -445,7 +529,11 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
 
     /** 마감(신청 + 입점 SLA 영업일)이 다음 영업일이 되는 신청일 — 기한 임박(D-1) 행을 만든다. */
     private LocalDate dueSoonCreatedDate() {
-        int sla = adminProperties.getOnboardingSlaBusinessDays();
+        return dueSoonCreatedDate(adminProperties.getOnboardingSlaBusinessDays());
+    }
+
+    /** 마감(기준일 + {@code sla} 영업일)이 다음 영업일이 되는 기준일. */
+    private LocalDate dueSoonCreatedDate(int sla) {
         LocalDate nextBusinessDay = businessCalendar.addBusinessDays(LocalDate.now(), 1);
         LocalDate created = LocalDate.now();
         for (int guard = 0; !businessCalendar.addBusinessDays(created, sla).equals(nextBusinessDay); guard++) {

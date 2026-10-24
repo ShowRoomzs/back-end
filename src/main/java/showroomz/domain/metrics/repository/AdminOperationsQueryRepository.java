@@ -9,9 +9,11 @@ import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.order.entity.OrderRefundTask;
 import showroomz.domain.settlement.adjustment.entity.SettlementAdjustment;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.entity.SettlementPayout;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BinaryOperator;
 
@@ -59,6 +61,17 @@ public class AdminOperationsQueryRepository {
                 .setMaxResults(limit).getResultList();
     }
 
+    /** 분배 실패 행 보조줄(56 E2) — 정산들의 실패 지급 행 · 실패가 오래된 순. */
+    public List<SettlementPayout> findFailedPayouts(Collection<Long> settlementIds) {
+        if (settlementIds.isEmpty()) {
+            return List.of();
+        }
+        return em.createQuery("SELECT p FROM SettlementPayout p WHERE p.settlementId IN :ids "
+                        + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.FAILED "
+                        + "ORDER BY p.failedAt ASC, p.id ASC", SettlementPayout.class)
+                .setParameter("ids", settlementIds).getResultList();
+    }
+
     /** 1:1 문의 기한 초과 — 접수가 {@code createdBefore} 이전인 답변 대기. */
     public List<OneToOneInquiry> findInquiriesWaitingBefore(LocalDateTime createdBefore, int limit) {
         return em.createQuery("SELECT i FROM OneToOneInquiry i "
@@ -74,18 +87,23 @@ public class AdminOperationsQueryRepository {
                 .setParameter("before", createdBefore).getSingleResult();
     }
 
-    /** 오픈 승인 대기(어드민 공구 OPEN_REVIEW 큐와 같은 조건) — [공구 id, 공구명, 제출 시각]. */
+    /** 오픈 승인 대기(어드민 공구 OPEN_REVIEW 큐와 같은 조건) — [공구 id, 공구명, 제출 시각, 브랜드명, 쇼룸명]. */
     public List<Object[]> findOpenReviews() {
-        return em.createQuery("SELECT g.id, c.title, gp.submittedAt FROM GroupBuyPost gp JOIN gp.groupBuy g JOIN g.contract c "
+        return em.createQuery("SELECT g.id, c.title, gp.submittedAt, m.marketName, cr.showroomName "
+                        + "FROM GroupBuyPost gp JOIN gp.groupBuy g JOIN g.contract c JOIN g.market m JOIN g.creator cr "
                         + "WHERE g.status = showroomz.domain.groupbuy.type.GroupBuyStatus.PREPARING "
                         + "AND gp.reviewStatus = showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus.PENDING "
                         + "ORDER BY gp.submittedAt ASC, g.id ASC", Object[].class)
                 .getResultList();
     }
 
-    /** 브랜드 입점 신청 대기 — [신청 id, 브랜드명, 신청 시각]. 어드민 입점 심사 목록과 같은 범위(판매자 역할). */
+    /**
+     * 브랜드 입점 신청 대기 — [신청 id, 브랜드명, 신청 시각, 사업자등록증 · 통신판매업 신고증 · 통장 사본 URL]. 어드민 입점 심사 목록과 같은
+     * 범위(판매자 역할).
+     */
     public List<Object[]> findPendingSellerApplications() {
-        return em.createQuery("SELECT a.id, a.marketName, a.createdAt FROM SellerApplication a JOIN a.seller s "
+        return em.createQuery("SELECT a.id, a.marketName, a.createdAt, a.businessLicenseImageUrl, a.mailOrderRegImageUrl, "
+                        + "a.bankbookImageUrl FROM SellerApplication a JOIN a.seller s "
                         + "WHERE a.status = showroomz.api.seller.auth.type.SellerStatus.PENDING "
                         + "AND s.roleType = showroomz.api.app.auth.entity.RoleType.SELLER "
                         + "ORDER BY a.createdAt ASC, a.id ASC", Object[].class)

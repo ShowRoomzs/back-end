@@ -21,11 +21,14 @@ import showroomz.domain.contract.type.AdminContractQueue;
 import showroomz.domain.groupbuy.type.AdminGroupBuyQueue;
 import showroomz.domain.groupbuy.type.ChangeRequestType;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
+import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.inquiry.support.OneToOneInquiryNumber;
 import showroomz.domain.member.brand.repository.BrandWithdrawalRequestRepository;
 import showroomz.domain.metrics.repository.AdminOperationsQueryRepository;
 import showroomz.domain.order.entity.OrderRefundTask;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.entity.SettlementTaxDocument;
 import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
@@ -84,6 +87,7 @@ public class AdminHomeQueueReader {
     private final SettlementTaxDocumentRepository taxDocumentRepository;
     private final OrderClaimRepository claimRepository;
     private final BrandWithdrawalRequestRepository brandWithdrawalRepository;
+    private final OneToOneInquiryRepository inquiryRepository;
     private final AdminOperationsQueryRepository opsRepository;
     private final BusinessCalendar businessCalendar;
     private final AdminProperties adminProperties;
@@ -211,10 +215,15 @@ public class AdminHomeQueueReader {
         }
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         if (count > 0) {
-            for (Object[] row : opsRepository.findPayoutFailedSettlements(ROW_LIMIT)) {
+            List<Object[]> failed = opsRepository.findPayoutFailedSettlements(ROW_LIMIT);
+            Map<Long, List<SettlementPayout>> payouts = opsRepository.findFailedPayouts(
+                            failed.stream().map(row -> ((Settlement) row[0]).getId()).toList()).stream()
+                    .collect(Collectors.groupingBy(SettlementPayout::getSettlementId));
+            for (Object[] row : failed) {
                 Settlement settlement = (Settlement) row[0];
                 rows.add(row(TodoUrgency.FAILED, "실패", "PAYOUT_FAILED", "분배 실패 · " + settlement.getSettlementNumber(),
-                        settlement.getContract().getTitle(), SETTLEMENTS, ageText((LocalDateTime) row[1], now), null,
+                        payoutFailureDetail(payouts.get(settlement.getId()), settlement), SETTLEMENTS,
+                        ageText((LocalDateTime) row[1], now), null,
                         new AdminHomeDto.Target("SETTLEMENT", settlement.getId(), null), 1));
             }
         }
@@ -222,13 +231,32 @@ public class AdminHomeQueueReader {
                 "/settlements?tab=PAYOUT_FAILED");
     }
 
+    /**
+     * 분배 실패 보조줄(1017 설계서 6-1 「수취자 · 금액」 · 56 E2) — 「인플루언서 몫 259,930원 반환 · 예금주 불일치」. 실패 행이 여럿이면 몫을
+     * 잇고(실패가 오래된 순), 사유는 첫 실패 행(정산 상세 레일 {@code failedPayout}과 같은 행)의 것이다. 실패 행이 읽히지 않으면 계약 제목.
+     */
+    private static String payoutFailureDetail(List<SettlementPayout> payouts, Settlement settlement) {
+        if (payouts == null || payouts.isEmpty()) {
+            return settlement.getContract().getTitle();
+        }
+        List<SettlementPayout> ordered = payouts.stream()
+                .sorted(Comparator.comparing(SettlementPayout::getFailedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                        .thenComparing(SettlementPayout::getId))
+                .toList();
+        String shares = ordered.stream().map(p -> p.getPayee().getLabel() + " 몫 " + won(p.getAmount()))
+                .collect(Collectors.joining(" · "));
+        return join(shares + " 반환", ordered.getFirst().getFailReason());
+    }
+
     private Queue operatorRefunds(long count, LocalDateTime now) {
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         if (count > 0) {
             for (OrderRefundTask task : opsRepository.findOperatorPendingRefunds(
                     showroomz.domain.order.type.RefundMethod.PG_CANCEL, ROW_LIMIT)) {
+                // 보조줄(56 E2) — 「구매확정 후 하자 · 27,200원」. 사유는 편입 때 고른 운영자 사유 라벨.
                 rows.add(row(TodoUrgency.EXECUTION_PENDING, "집행 대기", "REFUND_EXECUTION",
-                        "사유 환불 집행 대기 · " + task.getOrder().getOrderNumber(), won(task.getRefundAmount()),
+                        "사유 환불 집행 대기 · " + task.getOrder().getOrderNumber(),
+                        join(task.getReasonCode() == null ? null : task.getReasonCode().getLabel(), won(task.getRefundAmount())),
                         TRANSACTIONS, ageText(task.getCreatedAt(), now), null,
                         new AdminHomeDto.Target("REFUND", task.getId(), null), 1));
             }
@@ -264,9 +292,11 @@ public class AdminHomeQueueReader {
         if (overdue > 0) {
             for (OneToOneInquiry inquiry : opsRepository.findInquiriesWaitingBefore(threshold, ROW_LIMIT)) {
                 long overHours = Duration.between(inquiry.getCreatedAt(), threshold).toHours();
+                // 보조줄(56 E2) — 「INQ-20261015-031 · 본문 앞부분」. 번호 규칙은 1:1 문의 관리와 같은 한 곳.
                 rows.add(row(TodoUrgency.OVERDUE, "기한 초과", "INQUIRY",
                         "1:1 문의 · " + (inquiry.getType() == null ? "기타" : inquiry.getType().getDescription()),
-                        snippet(inquiry.getContent()), CS, ageText(inquiry.getCreatedAt(), now), "+" + overHours + "시간",
+                        join(OneToOneInquiryNumber.of(inquiry, inquiryRepository), snippet(inquiry.getContent())), CS,
+                        ageText(inquiry.getCreatedAt(), now), "+" + overHours + "시간",
                         new AdminHomeDto.Target("INQUIRY", inquiry.getId(), null), 1));
             }
             fold(rows, overdue, TodoUrgency.OVERDUE, "INQUIRY", "1:1 문의 기한 초과", CS, "/inquiries?status=WAITING");
@@ -289,8 +319,8 @@ public class AdminHomeQueueReader {
             for (Object[] row : opsRepository.findOpenReviews()) {
                 LocalDateTime submittedAt = (LocalDateTime) row[2];
                 LocalDateTime base = submittedAt != null ? submittedAt : now;
-                items.add(new Dated((Long) row[0], "오픈 승인 · " + row[1], dueAt(base.toLocalDate(), sla), base,
-                        "GROUP_BUY"));
+                items.add(new Dated((Long) row[0], "오픈 승인 · " + row[1], pair((String) row[3], (String) row[4]),
+                        dueAt(base.toLocalDate(), sla), base, "GROUP_BUY"));
             }
         }
         return deadlined("OPEN_REVIEW", GROUP_BUYS, "오픈 승인", count, items, "/group-buys?queue=OPEN_REVIEW", now);
@@ -302,13 +332,14 @@ public class AdminHomeQueueReader {
         List<Dated> brand = new ArrayList<>();
         for (Object[] row : opsRepository.findPendingSellerApplications()) {
             LocalDateTime createdAt = (LocalDateTime) row[2];
-            brand.add(new Dated((Long) row[0], "브랜드 입점 심사 · " + row[1], dueAt(createdAt.toLocalDate(), sla), createdAt,
-                    "SELLER_APPLICATION"));
+            brand.add(new Dated((Long) row[0], "브랜드 입점 심사 · " + row[1], documentDetail(row[3], row[4], row[5]),
+                    dueAt(createdAt.toLocalDate(), sla), createdAt, "SELLER_APPLICATION"));
         }
         List<Dated> creator = new ArrayList<>();
+        // 인플루언서 입점 심사의 건별 행 보조줄은 없다 — 시안에 인플루언서 D-1 행이 없다(56 E2).
         for (Object[] row : opsRepository.findPendingCreatorApplications()) {
             LocalDateTime createdAt = (LocalDateTime) row[2];
-            creator.add(new Dated((Long) row[0], "인플루언서 입점 심사 · " + row[1], dueAt(createdAt.toLocalDate(), sla),
+            creator.add(new Dated((Long) row[0], "인플루언서 입점 심사 · " + row[1], null, dueAt(createdAt.toLocalDate(), sla),
                     createdAt, "CREATOR_APPLICATION"));
         }
         return List.of(
@@ -410,7 +441,7 @@ public class AdminHomeQueueReader {
                 continue;
             }
             String badge = overdue ? "기한 초과" : item.dueAt().toLocalDate().equals(today) ? "오늘 마감" : "D-1";
-            rows.add(row(overdue ? TodoUrgency.OVERDUE : TodoUrgency.DUE_SOON, badge, key, item.title(), null, menu,
+            rows.add(row(overdue ? TodoUrgency.OVERDUE : TodoUrgency.DUE_SOON, badge, key, item.title(), item.detail(), menu,
                     ageText(item.enteredAt(), now), "마감 " + item.dueAt().format(MONTH_DAY),
                     new AdminHomeDto.Target(item.targetType(), item.id(), null), 1));
         }
@@ -440,6 +471,22 @@ public class AdminHomeQueueReader {
             parts.add("기한 임박 " + dueSoon + "건");
         }
         return parts.isEmpty() ? null : String.join(" · ", parts) + "은 위에";
+    }
+
+    /** 오픈 승인 건별 행 보조줄(56 E2) — 「글로우랩 × 하린_뷰티랩」(오늘 일정의 공구 표기와 같다). 비어 있는 쪽은 뺀다. */
+    private static String pair(String marketName, String showroomName) {
+        String pair = java.util.stream.Stream.of(marketName, showroomName).filter(s -> s != null && !s.isBlank())
+                .collect(Collectors.joining(" × "));
+        return pair.isEmpty() ? null : pair;
+    }
+
+    /**
+     * 브랜드 입점 심사 건별 행 보조줄(56 E2) — 「서류 3종」. 신청에 첨부된 서류(사업자등록증 · 통신판매업 신고증 · 통장 사본) 수이고, 하나도
+     * 없으면 null.
+     */
+    private static String documentDetail(Object... urls) {
+        long attached = java.util.Arrays.stream(urls).filter(u -> u instanceof String s && !s.isBlank()).count();
+        return attached == 0 ? null : "서류 " + attached + "종";
     }
 
     private LocalDateTime dueAt(LocalDate base, int slaBusinessDays) {
@@ -542,6 +589,10 @@ public class AdminHomeQueueReader {
         return amount == null ? null : String.format("%,d원", amount);
     }
 
+    private static String won(long amount) {
+        return String.format("%,d원", amount);
+    }
+
     private static String join(String a, String b) {
         if (a == null || a.isBlank()) {
             return b;
@@ -557,7 +608,9 @@ public class AdminHomeQueueReader {
         return flat.length() > 40 ? flat.substring(0, 40) + "…" : flat;
     }
 
-    private record Dated(Long id, String title, LocalDateTime dueAt, LocalDateTime enteredAt, String targetType) {
+    /** @param detail 건별 행(기한 초과 · 기한 임박) 보조줄(56 E2) — 대기 1행에는 쓰지 않는다 */
+    private record Dated(Long id, String title, String detail, LocalDateTime dueAt, LocalDateTime enteredAt,
+                         String targetType) {
     }
 
     /** 큐 하나 — {@code rows} 의 건수 합 = {@code count}. */
