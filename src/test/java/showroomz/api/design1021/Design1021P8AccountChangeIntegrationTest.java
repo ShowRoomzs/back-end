@@ -9,6 +9,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
+import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
@@ -30,6 +32,9 @@ class Design1021P8AccountChangeIntegrationTest extends SettlementTestSupport {
 
     private static final String BASE = "/v1/creator/basic-info";
     private static final String NEW_ACCOUNT = "1101234567";
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private SettlementTaxDocumentRepository documentRepository;
 
     @BeforeEach
     void setUpBanks() {
@@ -105,6 +110,67 @@ class Design1021P8AccountChangeIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("[55 S1-05] 사업자 — 요청 중에 운영자가 세금계산서를 대조(M4)해도 보류는 풀리지 않는다 · 요청을 거두면 그때 풀린다")
+    void taxInvoiceVerificationKeepsHoldWhilePending() throws Exception {
+        makeCreatorBusiness();
+        Settlement s = confirm(generatedSettlement());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        requestChange().andExpect(status().isOk());
+        Long invoiceId = documentRepository.findBySettlementIdAndTypeAndClawbackIdIsNull(s.getId(),
+                TaxDocumentType.CREATOR_TAX_INVOICE).orElseThrow().getId();
+
+        submitTaxInvoice(s).andExpect(status().isOk());
+        adminPost("/v1/admin/settlements/" + s.getId() + "/tax-documents/" + invoiceId + "/verify",
+                Map.of("result", "MATCH")).andExpect(status().isOk());
+
+        // 세금계산서 사유는 풀렸지만 계좌 확인 중 사유가 남는다 — 확인 전 기존 계좌로 지급하지 않는다(1021 8-0 ②).
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        payoutService.releaseBlocked(LocalDate.now());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+
+        cancel().andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+    }
+
+    @Test
+    @DisplayName("[55 S1-06] 요청 중에 새로 확정되는 정산 — 인플루언서 행이 처음부터 보류 · 어드민 상세 보류 사유는 「정산 계좌 확인 중」 · 브랜드 행은 예정")
+    void settlementConfirmedWhilePendingIsHeld() throws Exception {
+        requestChange().andExpect(status().isOk());
+
+        Settlement s = confirm(seedSettlement("요청 중 확정", 1_000_000, SettlementStatus.REVIEWING));
+
+        // 확정 때의 정책 보류는 사유 코드 없이 저장된다(includeUncoded) — 화면의 사유는 판정식이 계산해 내린다.
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        assertThat(json(adminGet("/v1/admin/settlements/" + s.getId())).at("/rail/blockReasons/0/code").asText())
+                .isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+        payoutService.releaseBlocked(LocalDate.now());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+
+        cancel().andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+    }
+
+    @Test
+    @DisplayName("[55 S1-07] 사업자 구분 변경 요청만 열려 있으면 계좌 확인 중이 아니다 — 지급 배치가 남은 계좌 보류를 푼다")
+    void businessTypeChangeDoesNotHoldPayout() throws Exception {
+        Settlement s = seedSettlement("구분 변경 중", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
+        jdbc.update("UPDATE settlement_payout SET status = 'BLOCKED', fail_code = 'CREATOR_ACCOUNT_UNVERIFIED', due_date = ? "
+                + "WHERE settlement_id = ? AND payee = 'CREATOR'", LocalDate.now().plusDays(2), s.getId());
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post(BASE + "/business-type-change-requests").header(HttpHeaders.AUTHORIZATION, creatorToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(Map.of("targetType", "BUSINESS",
+                                "businessRegistrationNumber", "123-45-67890",
+                                "evidenceFileUrl", "https://cdn.showroomz.test/creator-document/license.pdf",
+                                "evidenceFileName", "사업자등록증.pdf", "evidenceFileSize", 1_048_576))))
+                .andExpect(status().isCreated());
+
+        payoutService.releaseBlocked(LocalDate.now());
+
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+    }
+
+    @Test
     @DisplayName("취소 — 확인 중 요청을 거두면 보류가 풀리고 계좌 그대로 · 열린 요청이 없으면 400(CHANGE_REQUEST_NOT_PENDING)")
     void cancelRequest() throws Exception {
         Settlement scheduled = seedSettlement("예정 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
@@ -149,5 +215,23 @@ class Design1021P8AccountChangeIntegrationTest extends SettlementTestSupport {
     private long latestRequestId() {
         return jdbc.queryForObject("SELECT MAX(request_id) FROM brand_change_request WHERE creator_id = ? "
                 + "AND type = 'CREATOR_ACCOUNT'", Long.class, creator.getId());
+    }
+
+    /** 실제 주문으로 만든 정산(생성까지) — 확정은 테스트가 한다. */
+    private Settlement generatedSettlement() {
+        confirmedGroup(creamVariant, 1);
+        confirmedGroup(serumVariant, 1);
+        endGroupBuy();
+        return generate(java.time.LocalDateTime.of(2026, 9, 30, 10, 0));
+    }
+
+    /** 스튜디오 세금계산서 승인번호 제출(첨부 포함). */
+    private ResultActions submitTaxInvoice(Settlement s) throws Exception {
+        return mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .multipart("/v1/creator/settlements/" + s.getId() + "/tax-invoice")
+                .file(new org.springframework.mock.web.MockMultipartFile("attachment", "invoice.pdf", "application/pdf",
+                        "%PDF-1.4 test".getBytes(java.nio.charset.StandardCharsets.US_ASCII)))
+                .param("approvalNumber", "20261007-41000012-38475920")
+                .header(HttpHeaders.AUTHORIZATION, creatorToken));
     }
 }

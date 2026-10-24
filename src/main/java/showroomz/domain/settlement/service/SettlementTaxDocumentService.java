@@ -192,10 +192,21 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
         }
         LocalDate dueDate = calendar.addBusinessDays(now.toLocalDate(), properties.getPayoutBusinessDays());
         // 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 확인은 남기되 보류는 유지한다. 정지 해제가 다시 판정해 올린다.
-        Long creatorId = settlementRepository.findById(settlementId).map(Settlement::getCreatorId).orElse(null);
+        Settlement settlement = settlementRepository.findById(settlementId).orElse(null);
+        Long creatorId = settlement == null ? null : settlement.getCreatorId();
         if (blockPolicy.isCreatorSuspended(creatorId)) {
             historyRecorder.record(settlementId, SettlementEventType.TAX_INVOICE_VERIFIED, SettlementActorType.ADMIN,
                     operatorId, "승인번호 확인 · 계정 이용 정지 중 — 정지 해제 후 지급", now);
+            AfterCommit.run(() -> notifier.taxInvoiceVerified(settlementId));
+            return;
+        }
+        // 세금계산서 말고도 보류 사유가 남아 있으면(정산 계좌 확인 중 · 확인 실패 — 1021 8-0 ②) 확인만 남기고 보류는 유지한다. 그 사유를 푸는
+        // 경로(계좌 확인 완료 · 요청 취소 · 반려)가 같은 판정으로 다시 올린다(55 계획서 S1-05).
+        java.util.List<showroomz.domain.settlement.type.PayoutBlockReason> remaining =
+                settlement == null ? java.util.List.of() : blockPolicy.blockReasons(settlement);
+        if (!remaining.isEmpty()) {
+            historyRecorder.record(settlementId, SettlementEventType.TAX_INVOICE_VERIFIED, SettlementActorType.ADMIN,
+                    operatorId, "승인번호 확인 · " + remaining.get(0).getLabel() + " — 해소 후 지급", now);
             AfterCommit.run(() -> notifier.taxInvoiceVerified(settlementId));
             return;
         }
