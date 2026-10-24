@@ -35,9 +35,9 @@ public interface CreatorHomeControllerDocs {
                     |---|---|---|
                     | `TAX_INVOICE_ISSUE` | 세금계산서 입력 대기 · 반려(정산 건별) | 허용 |
                     | `CONTRACT_SIGN` | 서명 진행중 · 내 서명 전 — 체결 보류 중이면 `dueLabel = 보류 중` | 허용 |
-                    | `EXTENSION_RESPOND` | 진행 중 공구의 응답 대기 연장 요청 | 수락만 막힘(`blocked`) |
-                    | `GROUP_BUY_POST_WRITE` | 준비중 · 게시물 미작성 · 작성중 | 등록 막힘 |
-                    | `GROUP_BUY_POST_RESUBMIT` | 준비중 · 게시물 반려 | 재등록 막힘 |
+                    | `EXTENSION_RESPOND` | 진행 중 공구의 응답 대기 연장 요청 | 수락만 막힘 — 거절은 할 수 있어 `blocked = null` · `extra.acceptBlocked = true` · `extra.acceptBlockedMessage` |
+                    | `GROUP_BUY_POST_WRITE` | 준비중 · 게시물 미작성 · 작성중 — `dueAt` = 오픈일 | 등록 막힘 |
+                    | `GROUP_BUY_POST_RESUBMIT` | 준비중 · 게시물 반려 — `dueAt` = 오픈일 | 재등록 막힘 |
                     | `GROUP_BUY_POST_HIDDEN_FIX` | 준비완료 · 진행중 · 운영자 숨김 게시물 | 허용 |
                     | `CONNECTION_REQUESTS` | 받은 연결 요청 ≥ 1 → 한 장(상위 2곳 이름 · `extra.count`) | 수락 막힘 |
 

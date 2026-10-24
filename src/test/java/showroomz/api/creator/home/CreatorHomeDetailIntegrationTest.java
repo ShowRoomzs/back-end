@@ -127,6 +127,25 @@ class CreatorHomeDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("CD-05b 정지 중 연장 요청 응답 — 카드는 막지 않는다(거절 허용) · 수락만 extra.acceptBlocked · 해제되면 사유가 사라진다(55 S9)")
+    void suspendedExtensionCardBlocksAcceptOnly() throws Exception {
+        seedExtensionRequest(groupBuy);
+        jdbc.update("UPDATE creator SET status = 'SUSPENDED' WHERE creator_id = ?", creator.getId());
+
+        JsonNode card = todo(json(creatorGet(HOME).andExpect(status().isOk())).get("todos"), "EXTENSION_RESPOND");
+        assertThat(card.get("blocked").isNull()).isTrue();
+        assertThat(card.get("actionLabel").asText()).isEqualTo("응답하기");
+        assertThat(card.at("/extra/acceptBlocked").asBoolean()).isTrue();
+        assertThat(card.at("/extra/acceptBlockedMessage").asText()).isEqualTo("연장 수락은 정지 해제 후 할 수 있어요");
+
+        jdbc.update("UPDATE creator SET status = 'ACTIVE' WHERE creator_id = ?", creator.getId());
+        JsonNode released = todo(json(creatorGet(HOME).andExpect(status().isOk())).get("todos"), "EXTENSION_RESPOND");
+        assertThat(released.get("blocked").isNull()).isTrue();
+        assertThat(released.at("/extra/acceptBlocked").asBoolean()).isFalse();
+        assertThat(released.at("/extra").has("acceptBlockedMessage")).isFalse();
+    }
+
+    @Test
     @DisplayName("CD-06 가이드 체크리스트 — 계좌 3필드 · 프로필 3필드 · 공개 게시물 1건이면 완료 3 · 검증 중 계좌도 완료")
     void guideChecklist() throws Exception {
         Creator newbie = createCreator("체크쇼룸", "check-room");

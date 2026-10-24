@@ -41,8 +41,9 @@ import java.util.stream.Collectors;
  * 스튜디오 홈 할 일(1017 설계서 5-1) — 할 일 한 건 = 카드 한 장 · 버튼 하나. 정렬 · 문구 · 정지 중 막힘을 서버가 정한다
  * (H1 · H2 · H4 · H5 에서 같은 카드가 같은 말을 해야 한다).
  *
- * <p>정렬 — 세금계산서 「지급 대기」 맨 위 → 기한(게시물 작성은 오픈일) 이른 순 → 기한 없는 일 → 연결 요청 맨 아래.
- * 정지 중에도 할 일을 숨기지 않는다 — 막히는 카드만 {@code blocked}(연결 수락 · 게시물 등록 · 재등록 · 연장 수락).
+ * <p>정렬 — 세금계산서 「지급 대기」 맨 위 → 기한(게시물 작성 · 재등록은 오픈일) 이른 순 → 기한 없는 일 → 연결 요청 맨 아래.
+ * 정지 중에도 할 일을 숨기지 않는다 — 막히는 카드만 {@code blocked}(연결 수락 · 게시물 등록 · 재등록).
+ * 연장 응답 카드는 거절이 허용되므로 {@code blocked} 를 두지 않고 {@code extra.acceptBlocked} 로 수락만 막는다(55 계획서 S9 · 1017 H5).
  * 계약 서명 · 세금계산서 · 숨김 게시물 수정은 그대로 할 수 있다(진행 중 공구를 지키는 일).
  */
 @Component
@@ -58,6 +59,7 @@ public class CreatorHomeTodoBuilder {
     static final String GROUP_BUY_POST_RESUBMIT = "GROUP_BUY_POST_RESUBMIT";
     static final String GROUP_BUY_POST_HIDDEN_FIX = "GROUP_BUY_POST_HIDDEN_FIX";
     static final String CONNECTION_REQUESTS = "CONNECTION_REQUESTS";
+    static final String EXTENSION_ACCEPT_BLOCKED = "연장 수락은 정지 해제 후 할 수 있어요";
     /** 게시물 할 일을 볼 공구 — 작성 · 재등록은 준비중, 숨김 수정은 준비완료 · 진행중(공구 GNB 배지 판정과 같다). */
     static final EnumSet<GroupBuyStatus> POST_TODO_STATUSES =
             EnumSet.of(GroupBuyStatus.PREPARING, GroupBuyStatus.READY, GroupBuyStatus.IN_PROGRESS);
@@ -141,18 +143,24 @@ public class CreatorHomeTodoBuilder {
                 new CreatorHomeDto.Target("CONTRACT", contract.getId()), null, extra);
     }
 
-    /** 응답 기한 = 공구 종료 전. 정지 중에는 수락만 막힌다(거절은 허용). */
+    /**
+     * 응답 기한 = 공구 종료 전. 정지 중에는 수락만 막힌다 — 거절은 허용되므로(SanctionScopeIntegrationTest) 카드 버튼은 막지 않는다
+     * ({@code blocked = null}). 수락 버튼만 {@code extra.acceptBlocked} · {@code acceptBlockedMessage} 로 끈다(55 계획서 S9).
+     */
     private static CreatorHomeDto.Todo extensionRespond(GroupBuyExtensionRequest request, boolean suspended) {
         GroupBuy groupBuy = request.getGroupBuy();
         String brandName = groupBuy.getMarket().getMarketName();
         Map<String, Object> extra = new LinkedHashMap<>();
         extra.put("extensionDays", request.getExtensionDays());
         extra.put("brandName", brandName);
+        extra.put("acceptBlocked", suspended);
+        if (suspended) {
+            extra.put("acceptBlockedMessage", EXTENSION_ACCEPT_BLOCKED);
+        }
         return new CreatorHomeDto.Todo(EXTENSION_RESPOND, groupBuy.getEndAt(),
                 "응답 기한 " + groupBuy.getEndAt().format(MONTH_DAY), "연장 요청 응답 · " + groupBuy.getContract().getTitle(),
                 brandName + " 브랜드가 " + request.getExtensionDays() + "일 연장을 요청했어요 · 공구 종료 전에 응답해 주세요",
-                "응답하기", new CreatorHomeDto.Target("GROUP_BUY", groupBuy.getId()),
-                suspended ? new CreatorHomeDto.Blocked("연장 수락은 정지 해제 후 할 수 있어요") : null, extra);
+                "응답하기", new CreatorHomeDto.Target("GROUP_BUY", groupBuy.getId()), null, extra);
     }
 
     // ------------------------------------------------------------------ 공구 게시물
@@ -172,7 +180,9 @@ public class CreatorHomeTodoBuilder {
             String openLabel = "오픈 " + groupBuy.getStartAt().format(MONTH_DAY);
             if (groupBuy.getStatus() == GroupBuyStatus.PREPARING
                     && (postStatus == GroupBuyPostStatus.NOT_WRITTEN || postStatus == GroupBuyPostStatus.WRITING)) {
-                dated.add(new Dated(groupBuy.getStartAt(), new CreatorHomeDto.Todo(GROUP_BUY_POST_WRITE, null, openLabel,
+                // dueAt = 오픈일 — 재등록 카드와 같다. 제출 마감 규칙은 없어 달력에는 넣지 않는다(55 계획서 S10 · 시안 「카드에는 오픈일」).
+                dated.add(new Dated(groupBuy.getStartAt(), new CreatorHomeDto.Todo(GROUP_BUY_POST_WRITE,
+                        groupBuy.getStartAt(), openLabel,
                         "공구 게시물 작성 · " + name, "오픈 전에 게시물을 등록하면 운영팀 검토 후 공개돼요", "작성하기", target,
                         postBlocked ? new CreatorHomeDto.Blocked("정지 해제 후 등록할 수 있어요") : null, null)));
             } else if (groupBuy.getStatus() == GroupBuyStatus.PREPARING && postStatus == GroupBuyPostStatus.REJECTED) {

@@ -53,15 +53,19 @@ public final class CreatorHomeDto {
             @Schema(description = "TAX_INVOICE_ISSUE · CONTRACT_SIGN · EXTENSION_RESPOND · GROUP_BUY_POST_WRITE · "
                     + "GROUP_BUY_POST_RESUBMIT · GROUP_BUY_POST_HIDDEN_FIX · CONNECTION_REQUESTS", example = "CONTRACT_SIGN")
             String kind,
-            @Schema(description = "기한 — 없으면 null", nullable = true) LocalDateTime dueAt,
+            @Schema(description = "기한 — 게시물 작성 · 재등록은 오픈일(제출 마감 규칙 없음 · 달력에는 넣지 않는다). 없으면 null", nullable = true)
+            LocalDateTime dueAt,
             @Schema(description = "기한 칩 문구", example = "서명 기한 10.24", nullable = true) String dueLabel,
             @Schema(example = "계약 서명 · 밤 리페어 크림 공구") String title,
             @Schema(example = "메일 · 문자로 받은 링크에서 서명해 주세요") String description,
             @Schema(example = "계약 보기") String actionLabel,
             Target target,
-            @Schema(description = "정지 중 막힌 카드 — 버튼 비활성 + 이유. 막히지 않으면 null", nullable = true) Blocked blocked,
+            @Schema(description = "정지 중 막힌 카드 — 버튼 비활성 + 이유. 막히지 않으면 null. "
+                    + "연장 응답은 거절이 허용돼 항상 null(수락만 extra.acceptBlocked)", nullable = true) Blocked blocked,
             @Schema(description = "종류별 보조 값 — TAX_INVOICE_ISSUE: settlementId · groupBuyName · confirmedAt · amount · rejected / "
-                    + "CONTRACT_SIGN: brandSigned · brandName / EXTENSION_RESPOND: extensionDays · brandName / CONNECTION_REQUESTS: count",
+                    + "CONTRACT_SIGN: brandSigned · brandName / EXTENSION_RESPOND: extensionDays · brandName · acceptBlocked"
+                    + "(정지 중 true — [수락]만 비활성) · acceptBlockedMessage(acceptBlocked 일 때만 「연장 수락은 정지 해제 후 할 수 있어요」) / "
+                    + "CONNECTION_REQUESTS: count",
                     nullable = true)
             Map<String, Object> extra
     ) {

@@ -70,9 +70,13 @@ class CreatorHomeIntegrationTest extends SettlementTestSupport {
         assertThat(sign.get("dueLabel").asText()).startsWith("서명 기한 ");
 
         assertThat(todos.get(2).at("/target/id").asLong()).isEqualTo(groupBuy.getId());
+        assertThat(todos.get(2).at("/extra/acceptBlocked").asBoolean()).isFalse();
         assertThat(todos.get(3).at("/target/id").asLong()).isEqualTo(toWrite.getId());
         assertThat(todos.get(3).get("dueLabel").asText()).startsWith("오픈 ");
+        // 작성 카드 dueAt = 오픈일 — 재등록 카드와 같다(55 S10).
+        assertThat(LocalDateTime.parse(todos.get(3).get("dueAt").asText().replace("Z", ""))).isEqualTo(toWrite.getStartAt());
         assertThat(todos.get(4).at("/target/id").asLong()).isEqualTo(rejected.getId());
+        assertThat(LocalDateTime.parse(todos.get(4).get("dueAt").asText().replace("Z", ""))).isEqualTo(rejected.getStartAt());
 
         JsonNode connections = todos.get(5);
         assertThat(connections.get("title").asText()).isEqualTo("연결 요청 · 모닝랩 · 데일리랩 외 1곳");
@@ -81,7 +85,7 @@ class CreatorHomeIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("S-02 정지 중 — 할 일은 숨기지 않고 막힌 카드만 blocked(연장 수락 · 게시물 등록 · 연결 수락) · 서명은 그대로")
+    @DisplayName("S-02 정지 중 — 할 일은 숨기지 않고 막힌 카드만 blocked(게시물 등록 · 연결 수락) · 연장 응답은 수락만 막힘(거절 허용) · 서명은 그대로")
     void suspendedBlocksOnlySomeTodos() throws Exception {
         seedSigningContract("수분 앰플 공구", LocalDateTime.now().plusDays(3), false);
         seedExtensionRequest(groupBuy);
@@ -96,8 +100,12 @@ class CreatorHomeIntegrationTest extends SettlementTestSupport {
             boolean blocked = !todo.get("blocked").isNull();
             switch (kind) {
                 case "CONTRACT_SIGN" -> assertThat(blocked).as(kind).isFalse();
-                case "EXTENSION_RESPOND" -> assertThat(todo.at("/blocked/message").asText())
-                        .isEqualTo("연장 수락은 정지 해제 후 할 수 있어요");
+                case "EXTENSION_RESPOND" -> {
+                    // 거절은 허용 — 카드 버튼은 막지 않고 수락만 끈다(55 S9 · 1017 H5).
+                    assertThat(blocked).as(kind).isFalse();
+                    assertThat(todo.at("/extra/acceptBlocked").asBoolean()).isTrue();
+                    assertThat(todo.at("/extra/acceptBlockedMessage").asText()).isEqualTo("연장 수락은 정지 해제 후 할 수 있어요");
+                }
                 case "GROUP_BUY_POST_WRITE" -> assertThat(todo.at("/blocked/message").asText())
                         .isEqualTo("정지 해제 후 등록할 수 있어요");
                 case "CONNECTION_REQUESTS" -> assertThat(blocked).as(kind).isTrue();
