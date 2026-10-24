@@ -59,6 +59,7 @@ public interface AdminHomeControllerDocs {
                     | `settlements` | 분배 실패 · 세금계산서 발행 · 대조 · 차감 미회수(정산 요약 배지와 같다) |
                     | `cs` | 1:1 문의 답변 대기 + 상품 문의 삭제 요청 |
                     | `posts` | 신고 접수 + 이의 신청 심사 중 |
+                    | `posts.threads` | 소통 스레드 — 브랜드 · 인플루언서 운영팀 채널의 운영팀 기준 **안 읽은 메시지 합**(채널 수 아님 · 이슈 탭 제외 · 소통 스레드 탭 배지 `unreadCount` 의 합). 할 일이 아니라 `posts.total` · 홈 할 일 합계에는 **더하지 않습니다** |
 
                     **권한:** ADMIN"""
     )
@@ -71,7 +72,7 @@ public interface AdminHomeControllerDocs {
                                       "members": {"todo": 1, "brandCount": 42, "creatorCount": 130, "userCount": 5210},
                                       "contracts": 5, "groupBuys": 4, "transactions": 9, "settlements": 3,
                                       "cs": {"total": 7, "inquiries": 6},
-                                      "posts": {"total": 2, "general": 2}
+                                      "posts": {"total": 2, "general": 2, "threads": 3}
                                     }"""))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class))),

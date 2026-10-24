@@ -5,10 +5,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import showroomz.api.common.settlement.SettlementTestSupport;
+import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.type.SettlementStatus;
@@ -19,8 +22,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -35,6 +40,8 @@ class AdminHomeIntegrationTest extends SettlementTestSupport {
 
     @Autowired
     private IntegrationHealthRegistry healthRegistry;
+    @Autowired
+    private OperatorChannelService operatorChannels;
 
     @AfterEach
     void resetTracking() {
@@ -206,6 +213,32 @@ class AdminHomeIntegrationTest extends SettlementTestSupport {
         assertThat(summary.at("/queues/REVIEW").asLong()).isEqualTo(1);
         assertThat(json(adminGet(BADGES).andExpect(status().isOk())).get("contracts").asLong())
                 .isEqualTo(summary.get("actionRequiredCount").asLong()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("A-07 소통 스레드 배지(55 계획서 A12 · D24) — 운영팀 채널에 회원 답글이 오면 threads +1(메시지 수) · posts.total · 할 일 합계는 그대로 · 읽으면 빠진다")
+    void operatorThreadBadge() throws Exception {
+        MessageThread channel = inTransaction(() -> operatorChannels.requireMarketChannel(brand.market()));
+        JsonNode before = json(adminGet(BADGES).andExpect(status().isOk()));
+        long totalBefore = json(adminGet(HOME).andExpect(status().isOk())).at("/todo/total").asLong();
+
+        for (String content : List.of("정산 일정 문의드립니다.", "확인 부탁드립니다.")) {
+            sellerPost("/v1/seller/threads/" + channel.getId() + "/messages",
+                    Map.of("clientMessageId", UUID.randomUUID().toString(), "content", content))
+                    .andExpect(status().isCreated());
+        }
+
+        JsonNode after = json(adminGet(BADGES).andExpect(status().isOk()));
+        assertThat(after.at("/posts/threads").asLong()).isEqualTo(before.at("/posts/threads").asLong() + 2);
+        assertThat(after.at("/posts/total").asLong()).isEqualTo(before.at("/posts/total").asLong());
+        assertThat(json(adminGet(HOME)).at("/todo/total").asLong()).isEqualTo(totalBefore);
+        JsonNode tabs = json(adminGet("/v1/admin/connections/summary").andExpect(status().isOk()));
+        assertThat(after.at("/posts/threads").asLong())
+                .isEqualTo(tabs.at("/brand/unreadCount").asLong() + tabs.at("/influencer/unreadCount").asLong());
+
+        mockMvc.perform(post("/v1/admin/threads/" + channel.getId() + "/read").header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isNoContent());
+        assertThat(json(adminGet(BADGES)).at("/posts/threads").asLong()).isEqualTo(before.at("/posts/threads").asLong());
     }
 
     // ------------------------------------------------------------------ 픽스처

@@ -137,8 +137,10 @@ public final class AdminHomeDto {
 
     @Schema(name = "AdminBadgesPosts")
     public record Posts(
-            @Schema(description = "게시물 조치 필요 합") long total,
-            @Schema(description = "일반 게시물 — 신고 접수 + 이의 신청 심사 중") long general
+            @Schema(description = "게시물 조치 필요 합 — 홈 할 일에 드는 큐만(소통 스레드 threads 는 더하지 않는다)") long total,
+            @Schema(description = "일반 게시물 — 신고 접수 + 이의 신청 심사 중") long general,
+            @Schema(description = "소통 스레드 — 브랜드 · 인플루언서 운영팀 채널의 운영팀 기준 안 읽은 메시지 합(채널 수 아님 · 이슈 탭 제외). "
+                    + "할 일이 아니라 total 과 홈 할 일 합계에는 들지 않는다(55 계획서 A12 · D24)", example = "3") long threads
     ) {
     }
 }
