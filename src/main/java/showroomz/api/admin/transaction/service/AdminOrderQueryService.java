@@ -437,7 +437,7 @@ public class AdminOrderQueryService {
     private static AdminOrderSearchCondition condition(AdminOrderDto.SearchParams params, LocalDate from,
                                                        LocalDate to) {
         return new AdminOrderSearchCondition(params.tab() == null ? AdminOrderTab.ALL : params.tab(), params.status(),
-                params.marketId(), params.groupBuyId(), params.creatorId(), params.paymentMethod(),
+                params.marketId(), params.groupBuyId(), params.creatorId(), params.userId(), params.paymentMethod(),
                 params.trackingAlert(), params.searchType(), params.keyword(), params.sort(),
                 from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59));
     }

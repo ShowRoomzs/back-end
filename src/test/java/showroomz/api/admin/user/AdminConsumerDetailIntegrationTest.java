@@ -4,6 +4,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.HttpHeaders;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
@@ -12,11 +13,32 @@ import showroomz.domain.address.entity.DeliveryAddress;
 import showroomz.domain.address.repository.DeliveryAddressRepository;
 import showroomz.domain.category.entity.Category;
 import showroomz.domain.category.repository.CategoryRepository;
+import showroomz.domain.cs.type.CsCategory;
+import showroomz.domain.history.entity.LoginHistory;
+import showroomz.domain.history.entity.UserConsentHistory;
+import showroomz.domain.history.repository.LoginHistoryRepository;
+import showroomz.domain.history.repository.UserConsentHistoryRepository;
+import showroomz.domain.history.type.ConsentType;
+import showroomz.domain.history.type.LoginStatus;
+import showroomz.domain.inquiry.entity.OneToOneInquiry;
+import showroomz.domain.inquiry.entity.ProductInquiry;
+import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.inquiry.repository.ProductInquiryRepository;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.user.entity.UserSanction;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.repository.UserSanctionRepository;
+import showroomz.domain.member.user.type.UserReleaseReason;
+import showroomz.domain.member.user.type.UserSuspensionReason;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.notification.entity.DeviceToken;
+import showroomz.domain.notification.repository.DeviceTokenRepository;
+import showroomz.domain.notification.type.DevicePlatform;
 import showroomz.domain.order.entity.Order;
+import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.repository.OrderRepository;
 import showroomz.domain.order.type.OrderProductStatus;
@@ -29,6 +51,10 @@ import showroomz.support.OrderFixture;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,8 +65,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>구매액은 순결제액이다 — 결제된 주문 총액에서 <b>그 주문 결제의</b> PG 취소 성공액만 뺀다. 실패한 취소 · 다른 결제(중복 결제 자동 취소)의
  * 취소 · 결제 대기 주문은 섞이지 않아야 한다.
+ *
+ * <p>시안 필드 보강(M3-2) — 회원번호 · 이전/다음 · 최근 로그인 · 알림 수신 · 본인확인 마스킹 · 최근 주문 · 최근 문의 · 배송지 · 진행 중 칩 ·
+ * 판단 메타. 마스킹은 서버가 끝내므로 원본이 응답에 없는지까지 본다.
  */
-@DisplayName("[통합] 55 M3-1 어드민 소비자 상세 — 거래 지표 · 기본 배송지")
+@DisplayName("[통합] 55 M3 어드민 소비자 상세 — 거래 지표 · 시안 필드 보강")
 class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
 
     private static final String PATH = "/v1/admin/users/";
@@ -54,16 +83,25 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     @Autowired private OrderProductRepository orderProductRepository;
     @Autowired private DeliveryAddressRepository deliveryAddressRepository;
     @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
+    @Autowired private OrderDeliveryGroupRepository deliveryGroupRepository;
+    @Autowired private LoginHistoryRepository loginHistoryRepository;
+    @Autowired private UserConsentHistoryRepository consentHistoryRepository;
+    @Autowired private DeviceTokenRepository deviceTokenRepository;
+    @Autowired private OneToOneInquiryRepository oneToOneInquiryRepository;
+    @Autowired private ProductInquiryRepository productInquiryRepository;
+    @Autowired private UserSanctionRepository sanctionRepository;
 
     private String adminToken;
+    private Seller admin;
+    private Market market;
     private ProductVariant variant;
     private OrderFixture orders;
 
     @BeforeEach
     void setUp() {
-        Seller admin = fixture.createAdmin("admin@showroomz.test", "김운영");
+        admin = fixture.createAdmin("admin@showroomz.test", "김운영");
         adminToken = adminToken(admin);
-        Market market = fixture.createBrand("brand@showroomz.test", "제니의 뷰티룸").market();
+        market = fixture.createBrand("brand@showroomz.test", "제니의 뷰티룸").market();
         variant = createVariant(market);
         orders = new OrderFixture(orderRepository, orderProductRepository, transactionTemplate);
     }
@@ -137,7 +175,323 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.defaultAddress").doesNotExist());
     }
 
+    // ------------------------------------------------------------------ M3-2 시안 필드 보강
+
+    @Test
+    @DisplayName("계정 정보 — 회원번호 · 이전/다음(GUEST 건너뜀 · 양 끝 null) · 최근 로그인 · 기기 · 알림 수신(토큰 ∧ 토글)")
+    void accountInfo() throws Exception {
+        Users first = createConsumer("first", UserStatus.NORMAL);
+        createUser("guest", RoleType.GUEST, UserStatus.NORMAL);
+        Users middle = createConsumer("middle", UserStatus.NORMAL);
+        Users last = createConsumer("last", UserStatus.NORMAL);
+        LocalDateTime loginAt = LocalDateTime.now().minusHours(3).withNano(0);
+        jdbc.update("UPDATE users SET last_login_at = ? WHERE user_id = ?", loginAt, middle.getId());
+        loginHistoryRepository.save(LoginHistory.builder().user(middle).clientIp("127.0.0.1")
+                .userAgent("Mozilla/5.0 (iPhone; CPU iPhone OS 17_6 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148")
+                .status(LoginStatus.SUCCESS).build());
+
+        detail(middle)
+                .andExpect(jsonPath("$.memberNo").value("CST-" + middle.getId()))
+                .andExpect(jsonPath("$.navigation.previousId").value(first.getId()))
+                .andExpect(jsonPath("$.navigation.nextId").value(last.getId()))
+                .andExpect(jsonPath("$.lastLoginAt", org.hamcrest.Matchers.startsWith(iso(loginAt))))
+                .andExpect(jsonPath("$.lastLoginDevice").value("IPHONE"))
+                .andExpect(jsonPath("$.notification.destroyed").value(false))
+                .andExpect(jsonPath("$.notification.deviceRegistered").value(false))
+                .andExpect(jsonPath("$.notification.appPushOn").value(false))
+                .andExpect(jsonPath("$.notification.toggles.length()").value(4))
+                .andExpect(jsonPath("$.notification.toggles[1].toggle").value("FOLLOW_POST"))
+                .andExpect(jsonPath("$.notification.toggles[1].on").value(true))
+                .andExpect(jsonPath("$.notification.toggles[3].toggle").value("BENEFIT"))
+                .andExpect(jsonPath("$.notification.marketingAgree").value(false));
+        detail(first).andExpect(jsonPath("$.navigation.previousId").doesNotExist())
+                .andExpect(jsonPath("$.lastLoginDevice").doesNotExist());
+        detail(last).andExpect(jsonPath("$.navigation.nextId").doesNotExist());
+
+        deviceTokenRepository.save(new DeviceToken(middle, "middle-device", DevicePlatform.IOS, LocalDateTime.now()));
+        detail(middle).andExpect(jsonPath("$.notification.deviceRegistered").value(true))
+                .andExpect(jsonPath("$.notification.appPushOn").value(true));
+        // 토큰이 있어도 토글이 모두 꺼져 있으면 「끔」
+        jdbc.update("UPDATE users SET follow_post_push_agree = false WHERE user_id = ?", middle.getId());
+        detail(middle).andExpect(jsonPath("$.notification.appPushOn").value(false));
+    }
+
+    @Test
+    @DisplayName("본인확인 — 서버 마스킹(원본 미포함) · 성별은 그대로 · 최상위 birthday 도 마스킹 · 재인증하면 최초 인증 대신 최근 갱신")
+    void identityIsMaskedByServer() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        LocalDateTime verifiedAt = LocalDateTime.now().minusDays(30).withNano(0);
+        jdbc.update("UPDATE users SET birthday = ?, gender = ?, identity_verified_at = ? WHERE user_id = ?",
+                "1990-03-17", "FEMALE", verifiedAt, hong.getId());
+
+        String body = detail(hong)
+                .andExpect(jsonPath("$.identity.destroyed").value(false))
+                .andExpect(jsonPath("$.identity.unmasked").value(false))
+                .andExpect(jsonPath("$.identity.name").value("홍*동"))
+                .andExpect(jsonPath("$.identity.birthday").value("1990.**.**"))
+                .andExpect(jsonPath("$.identity.age").doesNotExist())
+                .andExpect(jsonPath("$.identity.phone").value("010-****-1234"))
+                .andExpect(jsonPath("$.identity.gender").value("FEMALE"))
+                .andExpect(jsonPath("$.identity.genderLabel").value("여성"))
+                .andExpect(jsonPath("$.identity.nationality").doesNotExist())
+                .andExpect(jsonPath("$.identity.carrier").doesNotExist())
+                .andExpect(jsonPath("$.identity.firstVerifiedAt", org.hamcrest.Matchers.startsWith(iso(verifiedAt))))
+                .andExpect(jsonPath("$.identity.renewedAt").doesNotExist())
+                .andExpect(jsonPath("$.birthday").value("1990.**.**"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body).doesNotContain("홍길동").doesNotContain("1990-03-17").doesNotContain("1111");
+
+        consentHistoryRepository.save(UserConsentHistory.builder().user(hong)
+                .consentType(ConsentType.IDENTITY_VERIFICATION).agreed(true).build());
+        detail(hong).andExpect(jsonPath("$.identity.firstVerifiedAt").doesNotExist())
+                .andExpect(jsonPath("$.identity.renewedAt", org.hamcrest.Matchers.startsWith(iso(verifiedAt))));
+    }
+
+    @Test
+    @DisplayName("탈퇴 회원 — 본인확인 · 배송지 · 알림 수신 파기 · 최근 로그인 null · 판단 메타 거래 값 null(가입 후 경과 · 정지 이력은 남음)")
+    void withdrawnShowsDestroyed() throws Exception {
+        Users gone = createConsumer("gone", UserStatus.WITHDRAWN);
+        jdbc.update("UPDATE users SET last_login_at = ? WHERE user_id = ?", LocalDateTime.now(), gone.getId());
+        address(gone, "서울특별시 마포구 월드컵로 12", true);
+        orders.paidOrder(gone, variant, 1, PRICE, OrderProductStatus.PURCHASE_CONFIRMED);
+
+        detail(gone)
+                .andExpect(jsonPath("$.identity.destroyed").value(true))
+                .andExpect(jsonPath("$.identity.name").doesNotExist())
+                .andExpect(jsonPath("$.addresses.destroyed").value(true))
+                .andExpect(jsonPath("$.addresses.content.length()").value(0))
+                .andExpect(jsonPath("$.notification.destroyed").value(true))
+                .andExpect(jsonPath("$.notification.appPushOn").doesNotExist())
+                .andExpect(jsonPath("$.lastLoginAt").doesNotExist())
+                .andExpect(jsonPath("$.judgement.orderCount").doesNotExist())
+                .andExpect(jsonPath("$.judgement.purchaseAmount").doesNotExist())
+                .andExpect(jsonPath("$.judgement.claimRate").doesNotExist())
+                .andExpect(jsonPath("$.judgement.sinceJoined.totalDays").value(0))
+                .andExpect(jsonPath("$.judgement.sanctions.count").value(0));
+    }
+
+    @Test
+    @DisplayName("최근 주문 5건 — 어드민 주문 목록(userId)과 같은 행 · 결제일 최신순 · total 은 그 목록 건수 · 다른 소비자 주문 제외")
+    void recentOrdersReuseAdminOrderList() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        Users other = createConsumer("other", UserStatus.NORMAL);
+        List<Long> ids = new ArrayList<>();
+        LocalDateTime base = LocalDateTime.now().minusDays(10).withNano(0);
+        for (int i = 0; i < 6; i++) {
+            Order order = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PAID);
+            paidAt(order, base.plusDays(i));
+            group(order, "PREPARING");
+            ids.add(order.getId());
+        }
+        group(orders.paidOrder(other, variant, 1, PRICE, OrderProductStatus.PAID), "PREPARING");
+
+        detail(hong)
+                .andExpect(jsonPath("$.recentOrders.total").value(6))
+                .andExpect(jsonPath("$.recentOrders.content.length()").value(5))
+                .andExpect(jsonPath("$.recentOrders.content[0].orderId").value(ids.get(5)))
+                .andExpect(jsonPath("$.recentOrders.content[4].orderId").value(ids.get(1)))
+                .andExpect(jsonPath("$.recentOrders.content[0].totalAmount").value(PRICE))
+                .andExpect(jsonPath("$.recentOrders.content[0].groups[0].brandName").value("제니의 뷰티룸"))
+                .andExpect(jsonPath("$.recentOrders.content[0].groups[0].status").value("PREPARING"))
+                .andExpect(jsonPath("$.recentOrders.content[0].groups[0].itemSummary").value("시카 리페어 앰플 30ml 단품"));
+        // 「전체 주문 내역 보기」 — 같은 목록 API 가 userId 로 거른다
+        mockMvc.perform(get("/v1/admin/orders").param("userId", String.valueOf(hong.getId()))
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(6))
+                .andExpect(jsonPath("$.content[0].orderId").value(ids.get(5)));
+        mockMvc.perform(get("/v1/admin/orders/summary").param("userId", String.valueOf(other.getId()))
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.tabCounts.ALL").value(1));
+    }
+
+    @Test
+    @DisplayName("최근 문의 3건 — 1:1 · 상품 문의 최신순 합산 · 삭제 집행 제외 · 번호(INQ- · QNA-) · 제목 = 본문 앞 40자 · 상태 라벨")
+    void recentInquiriesMergeBothKinds() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        Product product = variant.getProduct();
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        OneToOneInquiry oldOne = oneToOne(hong, CsCategory.DELIVERY, "세럼 배송이 언제 오나요?", now.minusDays(4));
+        OneToOneInquiry newOne = oneToOne(hong, CsCategory.CANCEL_EXCHANGE_RETURN, "크림 반품 회수가 안 와요", now.minusDays(1));
+        ProductInquiry oldProduct = productInquiry(hong, product, "토너를 화장솜 없이 써도 되나요?", now.minusDays(3));
+        String longContent = "앰플을 아침 저녁으로 바르는데 피부가 따끔거려요.\n민감성 피부에도 괜찮은 성분인지 알고 싶어요. 사용 순서도 알려 주세요.";
+        ProductInquiry newProduct = productInquiry(hong, product, longContent, now.minusHours(2));
+        ProductInquiry deleted = productInquiry(hong, product, "삭제된 문의", now.minusHours(1));
+        jdbc.update("UPDATE product_inquiry SET exposure_status = 'DELETED' WHERE product_inquiry_id = ?", deleted.getId());
+        jdbc.update("UPDATE one_to_one_inquiry SET status = 'ANSWERED' WHERE inquiry_id = ?", newOne.getId());
+
+        JsonNode inquiries = json(detail(hong)).path("recentInquiries");
+        assertThat(inquiries.path("total").asLong()).isEqualTo(4);
+        JsonNode content = inquiries.path("content");
+        assertThat(content).hasSize(3);
+        assertThat(content.get(0).path("kind").asText()).isEqualTo("PRODUCT");
+        assertThat(content.get(0).path("inquiryId").asLong()).isEqualTo(newProduct.getId());
+        assertThat(content.get(0).path("kindLabel").asText()).isEqualTo("상품");
+        assertThat(content.get(0).path("inquiryNumber").asText()).startsWith("QNA-");
+        assertThat(content.get(0).path("typeLabel").asText()).isEqualTo(ProductInquiryType.INGREDIENT_USAGE.getDescription());
+        assertThat(content.get(0).path("title").asText()).hasSize(41).endsWith("…").doesNotContain("\n");
+        assertThat(content.get(0).path("statusLabel").asText()).isEqualTo("답변 대기");
+        assertThat(content.get(1).path("kind").asText()).isEqualTo("ONE_TO_ONE");
+        assertThat(content.get(1).path("inquiryId").asLong()).isEqualTo(newOne.getId());
+        assertThat(content.get(1).path("inquiryNumber").asText()).startsWith("INQ-");
+        assertThat(content.get(1).path("typeLabel").asText()).isEqualTo(CsCategory.CANCEL_EXCHANGE_RETURN.getDescription());
+        assertThat(content.get(1).path("statusLabel").asText()).isEqualTo("답변 완료");
+        assertThat(content.get(2).path("inquiryId").asLong()).isEqualTo(oldProduct.getId());
+        // 두 문의는 id 공간이 따로라 (구분, id) 쌍으로 본다 — 4번째 1:1 · 삭제 집행된 상품 문의는 빠진다
+        List<String> keys = new ArrayList<>();
+        content.forEach(row -> keys.add(row.path("kind").asText() + ":" + row.path("inquiryId").asLong()));
+        assertThat(keys).doesNotContain("ONE_TO_ONE:" + oldOne.getId(), "PRODUCT:" + deleted.getId());
+    }
+
+    @Test
+    @DisplayName("배송지 — 기본 먼저 · 시 · 군 · 구까지만(구가 있는 시는 구까지) · 상세 · 우편번호 null · 수령인 · 연락처 마스킹 · 최근 사용일 null")
+    void addressesAreMaskedToDistrict() throws Exception {
+        Users mia = createConsumer("mia", UserStatus.NORMAL);
+        address(mia, "서울특별시 강남구 테헤란로 123", false);
+        address(mia, "경기도 고양시 일산동구 중앙로 1", false);
+        address(mia, "서울특별시 마포구 월드컵로 12", true);
+
+        String body = detail(mia)
+                .andExpect(jsonPath("$.addresses.destroyed").value(false))
+                .andExpect(jsonPath("$.addresses.total").value(3))
+                .andExpect(jsonPath("$.addresses.content[0].defaultAddress").value(true))
+                .andExpect(jsonPath("$.addresses.content[0].address").value("서울특별시 마포구"))
+                .andExpect(jsonPath("$.addresses.content[0].detailAddress").doesNotExist())
+                .andExpect(jsonPath("$.addresses.content[0].zipCode").doesNotExist())
+                .andExpect(jsonPath("$.addresses.content[0].recipientName").value("김*민"))
+                .andExpect(jsonPath("$.addresses.content[0].phoneNumber").value("010-****-5678"))
+                .andExpect(jsonPath("$.addresses.content[0].lastUsedOrderAt").doesNotExist())
+                .andExpect(jsonPath("$.addresses.content[*].address", org.hamcrest.Matchers.containsInAnyOrder(
+                        "서울특별시 마포구", "서울특별시 강남구", "경기도 고양시 일산동구")))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(body).doesNotContain("월드컵로").doesNotContain("테헤란로").doesNotContain("06234").doesNotContain("3층");
+    }
+
+    @Test
+    @DisplayName("진행 중 칩 — 1건 이상만 · 열린 문의(WARNING) · 배송중(주문 수) · 반품·교환(박스 수) · 없으면 빈 배열")
+    void pendingChips() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        detail(hong).andExpect(jsonPath("$.pendingChips.length()").value(0));
+
+        oneToOne(hong, CsCategory.DELIVERY, "배송 문의", LocalDateTime.now().minusHours(1));
+        Order shipping = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PAID);
+        group(shipping, "SHIPPING");
+        Order returned = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PAID);
+        OrderDeliveryGroup returnedGroup = group(returned, "DELIVERED");
+        claim(returned, returnedGroup, hong, "RETURN", "REQUESTED", null);
+
+        detail(hong)
+                .andExpect(jsonPath("$.pendingChips.length()").value(3))
+                .andExpect(jsonPath("$.pendingChips[0].key").value("OPEN_INQUIRY"))
+                .andExpect(jsonPath("$.pendingChips[0].tone").value("WARNING"))
+                .andExpect(jsonPath("$.pendingChips[0].count").value(1))
+                .andExpect(jsonPath("$.pendingChips[0].target").value("INQUIRIES"))
+                .andExpect(jsonPath("$.pendingChips[1].key").value("SHIPPING"))
+                .andExpect(jsonPath("$.pendingChips[1].tone").value("NEUTRAL"))
+                .andExpect(jsonPath("$.pendingChips[1].count").value(1))
+                .andExpect(jsonPath("$.pendingChips[2].key").value("RETURN_EXCHANGE"))
+                .andExpect(jsonPath("$.pendingChips[2].target").value("CLAIMS"));
+    }
+
+    @Test
+    @DisplayName("판단 메타 — 반품 · 교환률 = 접수된 주문 ÷ 누적 주문(요청 취소 제외 · 반려 포함) · 정지 이력 횟수 · 직전 정지 · 가입 후 경과")
+    void judgementMeta() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        jdbc.update("UPDATE users SET created_at = ? WHERE user_id = ?",
+                LocalDate.now().minusMonths(6).minusDays(13).atTime(10, 20), hong.getId());
+        Order a = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.RETURNED);
+        claim(a, group(a, "DELIVERED"), hong, "RETURN", "COMPLETED", "REFUNDED");
+        Order b = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PURCHASE_CONFIRMED);
+        claim(b, group(b, "CONFIRMED"), hong, "EXCHANGE", "COMPLETED", "CANCELLED");   // 소비자가 거둬들인 요청 — 세지 않는다
+        Order c = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PURCHASE_CONFIRMED);
+        claim(c, group(c, "CONFIRMED"), hong, "RETURN", "COMPLETED", "REJECTED");      // 반려 종결 — 센다
+        orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PURCHASE_CONFIRMED);
+
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        UserSanction first = UserSanction.suspend(hong.getId(), UserSuspensionReason.RETURN_ABUSE, null, admin.getId(),
+                "김운영", now.minusMonths(3));
+        first.release(UserReleaseReason.RESOLVED, admin.getId(), "김운영", now.minusMonths(2));
+        sanctionRepository.save(first);
+        sanctionRepository.save(UserSanction.suspend(hong.getId(), UserSuspensionReason.ABUSIVE_LANGUAGE, null, admin.getId(),
+                "김운영", now.minusDays(1)));
+
+        detail(hong)
+                .andExpect(jsonPath("$.judgement.orderCount").value(4))
+                .andExpect(jsonPath("$.judgement.claimOrderCount").value(2))
+                .andExpect(jsonPath("$.judgement.claimRate").value(50.0))
+                .andExpect(jsonPath("$.judgement.purchaseAmount").value(4L * PRICE))
+                .andExpect(jsonPath("$.judgement.sanctions.count").value(2))
+                .andExpect(jsonPath("$.judgement.sanctions.last.sanctionId").value(first.getId()))
+                .andExpect(jsonPath("$.judgement.sanctions.last.reason").value("RETURN_ABUSE"))
+                .andExpect(jsonPath("$.judgement.sanctions.last.reasonLabel").value("반품 남용"))
+                .andExpect(jsonPath("$.judgement.sinceJoined.months").value(6))
+                .andExpect(jsonPath("$.judgement.sinceJoined.days").value(13));
+
+        Users fresh = createConsumer("fresh", UserStatus.NORMAL);
+        detail(fresh).andExpect(jsonPath("$.judgement.orderCount").value(0))
+                .andExpect(jsonPath("$.judgement.claimRate").doesNotExist())
+                .andExpect(jsonPath("$.judgement.sanctions.count").value(0))
+                .andExpect(jsonPath("$.judgement.sanctions.last").doesNotExist());
+    }
+
     // ------------------------------------------------------------------ helpers
+
+    private org.springframework.test.web.servlet.ResultActions detail(Users user) throws Exception {
+        return mockMvc.perform(get(PATH + user.getId()).header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk());
+    }
+
+    private JsonNode json(org.springframework.test.web.servlet.ResultActions result) throws Exception {
+        return objectMapper.readTree(result.andReturn().getResponse().getContentAsString());
+    }
+
+    private static String iso(LocalDateTime at) {
+        return at.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+    }
+
+    /** 하위주문 1건 — 상태는 결제 훅 대신 바로 쓴다. 주문 상품을 그 하위주문에 붙여 목록 「항목 요약」이 나오게 한다. */
+    private OrderDeliveryGroup group(Order order, String fulfillmentStatus) {
+        OrderDeliveryGroup group = deliveryGroupRepository.save(OrderDeliveryGroup.builder()
+                .order(order).market(market).productTotal(PRICE).deliveryFee(0).freeShippingApplied(false)
+                .marketName("제니의 뷰티룸").build());
+        jdbc.update("UPDATE order_delivery_group SET fulfillment_status = ?, sub_order_number = ? WHERE delivery_group_id = ?",
+                fulfillmentStatus, "SUB-" + group.getId(), group.getId());
+        jdbc.update("UPDATE order_product SET delivery_group_id = ? WHERE order_id = ?", group.getId(), order.getId());
+        return deliveryGroupRepository.findById(group.getId()).orElseThrow();
+    }
+
+    /** 반품 · 교환 1건(박스 1 + 클레임 1) — H2 는 컬럼 DEFAULT 를 쓰지 않아 NOT NULL 컬럼을 모두 채운다. */
+    private void claim(Order order, OrderDeliveryGroup group, Users user, String type, String claimStatus, String result) {
+        LocalDateTime now = LocalDateTime.now();
+        Long orderProductId = jdbc.queryForObject("SELECT MIN(order_product_id) FROM order_product WHERE order_id = ?",
+                Long.class, order.getId());
+        jdbc.update("INSERT INTO order_claim_collection (order_id, delivery_group_id, market_id, user_id, type, reason_code, "
+                        + "fee_bearer, invoice_due_at, return_deduction, auto_received, created_at) "
+                        + "VALUES (?, ?, ?, ?, ?, 'CHANGE_OF_MIND', 'CONSUMER', ?, 0, false, ?)",
+                order.getId(), group.getId(), market.getId(), user.getId(), type, now.plusDays(3), now);
+        Long collectionId = jdbc.queryForObject("SELECT MAX(collection_id) FROM order_claim_collection", Long.class);
+        jdbc.update("INSERT INTO order_claim (collection_id, order_id, delivery_group_id, order_product_id, market_id, user_id, "
+                        + "type, quantity, reason_code, fee_bearer, status, stage_entered_at, requested_at, collect_due_at, "
+                        + "notice_count, inspect_notice_count, fault_changed_to_seller, opened_by, result) "
+                        + "VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'CHANGE_OF_MIND', 'CONSUMER', ?, ?, ?, ?, 0, 0, false, 'CONSUMER', ?)",
+                collectionId, order.getId(), group.getId(), orderProductId, market.getId(), user.getId(), type, claimStatus,
+                now, now, now.plusDays(3), result);
+    }
+
+    private OneToOneInquiry oneToOne(Users user, CsCategory type, String content, LocalDateTime createdAt) {
+        OneToOneInquiry inquiry = oneToOneInquiryRepository.save(OneToOneInquiry.builder()
+                .user(user).type(type).content(content).build());
+        jdbc.update("UPDATE one_to_one_inquiry SET created_at = ? WHERE inquiry_id = ?", createdAt, inquiry.getId());
+        return inquiry;
+    }
+
+    private ProductInquiry productInquiry(Users user, Product product, String content, LocalDateTime createdAt) {
+        ProductInquiry inquiry = productInquiryRepository.save(ProductInquiry.builder()
+                .user(user).product(product).type(ProductInquiryType.INGREDIENT_USAGE).content(content).secret(false).build());
+        jdbc.update("UPDATE product_inquiry SET created_at = ? WHERE product_inquiry_id = ?", createdAt, inquiry.getId());
+        return inquiry;
+    }
 
     private void paidAt(Order order, LocalDateTime paidAt) {
         jdbc.update("UPDATE orders SET paid_at = ? WHERE order_id = ?", paidAt, order.getId());
@@ -172,9 +526,13 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     }
 
     private Users createConsumer(String username, UserStatus status) {
+        return createUser(username, RoleType.USER, status);
+    }
+
+    private Users createUser(String username, RoleType roleType, UserStatus status) {
         LocalDateTime now = LocalDateTime.now();
         Users user = new Users(username, username, username + "@showroomz.test", "Y", null,
-                ProviderType.KAKAO, RoleType.USER, now, now);
+                ProviderType.KAKAO, roleType, now, now);
         user.setName("홍길동");
         user.setPhoneNumber("010-1111-1234");
         user.setStatus(status);

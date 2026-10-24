@@ -2,6 +2,9 @@ package showroomz.api.admin.common;
 
 import showroomz.global.utils.MaskingUtils;
 
+import java.time.LocalDate;
+import java.time.Period;
+
 /**
  * 어드민 회원 관리의 마스킹 — 소비자(§25-1) · 브랜드(§52-1) · 인플루언서(§53-2) 세 화면이 <b>한 클래스</b>를 쓴다(정합 계획서 R0-3 ·
  * R1-2). 같은 규칙을 화면마다 따로 구현하면 한쪽만 고쳐진다 — 계좌 마스킹이 브랜드 · 인플루언서에서 7자리 이하일 때 달랐던 것이 그 예다.
@@ -49,6 +52,21 @@ public final class AdminMemberMasker {
             return birthday;
         }
         return digits.substring(0, 4) + "." + digits.substring(4, 6) + "." + digits.substring(6, 8);
+    }
+
+    /** 만 나이 — 마스킹 해제 상태에서만 「1994.06.02 (32세)」로 붙인다. 값이 없거나 형식이 다르면 null. */
+    public static Integer age(String birthday, LocalDate today) {
+        String digits = digits(birthday);
+        if (digits == null || digits.length() < 8) {
+            return null;
+        }
+        try {
+            LocalDate born = LocalDate.of(Integer.parseInt(digits.substring(0, 4)), Integer.parseInt(digits.substring(4, 6)),
+                    Integer.parseInt(digits.substring(6, 8)));
+            return Period.between(born, today).getYears();
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 
     /** 01033918842 → 010-3391-8842 · 마스킹 해제 상태의 표기. 자릿수가 다르면 원문. */

@@ -53,9 +53,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -86,6 +84,7 @@ public class AdminCreatorQueryService {
     private final CreatorFollowRepository follows;
     private final CreatorWithdrawalEligibility eligibility;
     private final AdminCreatorQueryRepository queries;
+    private final showroomz.api.admin.common.AdminLoginDeviceReader loginDevices;
     private final CreatorAdminHistoryReader historyReader;
     private final AdminPrivilege privilege;
     private final SettlementPayoutRepository payouts;
@@ -173,9 +172,7 @@ public class AdminCreatorQueryService {
                 .map(CreatorApplication::getProcessedAt)
                 .max(Comparator.naturalOrder())
                 .orElse(null);
-        DeviceType device = queries.findLatestLogin(user.getId())
-                .map(login -> DeviceTypes.parse(login.getUserAgent()))
-                .orElse(null);
+        DeviceType device = loginDevices.lastDevice(user.getId());
         CreatorPrivacyAccessLog session = activeSession(creator.getId(), operatorId, now);
         boolean purged = creator.isPrivacyPurged();
         boolean unmasked = session != null && !purged;
@@ -201,7 +198,7 @@ public class AdminCreatorQueryService {
         }
         if (unmasked) {
             return new Identity(false, true, creator.getRealName(), AdminMemberMasker.formatBirthday(creator.getBirthday()),
-                    age(creator.getBirthday(), now.toLocalDate()), AdminMemberMasker.formatPhone(creator.getPhoneNumber()),
+                    AdminMemberMasker.age(creator.getBirthday(), now.toLocalDate()), AdminMemberMasker.formatPhone(creator.getPhoneNumber()),
                     null, user.getIdentityVerifiedAt(), null);
         }
         return new Identity(false, false, AdminMemberMasker.maskName(creator.getRealName()),
@@ -451,48 +448,5 @@ public class AdminCreatorQueryService {
         return privacyLogs.findFirstByCreatorIdAndOperatorIdOrderByAccessedAtDescIdDesc(creatorId, operatorId)
                 .filter(log -> log.isActive(now))
                 .orElse(null);
-    }
-
-    private static Integer age(String birthday, LocalDate today) {
-        if (birthday == null) {
-            return null;
-        }
-        String digits = birthday.replaceAll("[^0-9]", "");
-        if (digits.length() < 8) {
-            return null;
-        }
-        try {
-            LocalDate born = LocalDate.of(Integer.parseInt(digits.substring(0, 4)), Integer.parseInt(digits.substring(4, 6)),
-                    Integer.parseInt(digits.substring(6, 8)));
-            return Period.between(born, today).getYears();
-        } catch (RuntimeException e) {
-            return null;
-        }
-    }
-
-    /** User-Agent → 기기 — 로그인 이력 화면(기획 제외 패키지)의 판별과 같은 규칙을 여기에 둔다(그 패키지를 참조하지 않는다). */
-    static final class DeviceTypes {
-
-        private DeviceTypes() {
-        }
-
-        static DeviceType parse(String userAgent) {
-            if (userAgent == null || userAgent.isEmpty()) {
-                return DeviceType.UNKNOWN;
-            }
-            if (userAgent.contains("Android")) {
-                return DeviceType.ANDROID;
-            }
-            if (userAgent.contains("iPhone")) {
-                return DeviceType.IPHONE;
-            }
-            if (userAgent.contains("Edg")) {
-                return DeviceType.DESKTOP_EDGE;
-            }
-            if (userAgent.contains("Chrome") && !userAgent.contains("Mobile")) {
-                return DeviceType.DESKTOP_CHROME;
-            }
-            return DeviceType.UNKNOWN;
-        }
     }
 }

@@ -53,6 +53,7 @@ public class AdminUserService {
     private final AdminUserMemoService memoService;
     private final AdminUserHistoryReader historyReader;
     private final AdminUserTradeReader tradeReader;
+    private final AdminUserDetailAssembler detailAssembler;
 
     /**
      * 소비자 목록 (§25-3).
@@ -125,7 +126,9 @@ public class AdminUserService {
 
     /**
      * 유저 상세 정보 조회 — 현재 상태 카드 · 메모 최신 3건 · 처리 이력 최신 5건을 함께 싣는다(51-6 설계서 2-3). 메모의 {@code editable}은
-     * 요청 운영자 기준이다. 거래 지표 · 기본 배송지는 {@link AdminUserTradeReader}가 실제 주문 · 결제에서 낸다(55 계획서 M3-1).
+     * 요청 운영자 기준이다. 거래 지표 · 기본 배송지는 {@link AdminUserTradeReader}가 실제 주문 · 결제에서 낸다(55 계획서 M3-1). 시안 필드
+     * (회원번호 · 이전/다음 · 최근 로그인 · 알림 수신 · 본인확인 · 최근 주문 · 최근 문의 · 배송지 · 진행 중 · 판단 메타)는
+     * {@link AdminUserDetailAssembler}가 조립한다(M3-2).
      */
     public AdminUserDto.UserDetailResponse getUserDetail(Long userId, Long operatorId) {
         Users user = userRepository.findById(userId)
@@ -137,6 +140,8 @@ public class AdminUserService {
         long productInquiryCount = productInquiryRepository.countByUser_IdAndExposureStatusNot(userId, InquiryExposureStatus.DELETED);
         long oneToOneInquiryCount = oneToOneInquiryRepository.countByUser_Id(userId);
         long inquiryCount = productInquiryCount + oneToOneInquiryCount;
+        LocalDateTime now = LocalDateTime.now();
+        AdminUserTradeReader.Trade trade = tradeReader.read(user, now);
 
         return AdminUserDto.UserDetailResponse.of(
                 user,
@@ -144,7 +149,8 @@ public class AdminUserService {
                 followedShowroomCount,
                 reviewCount,
                 inquiryCount,
-                tradeReader.read(user, LocalDateTime.now()),
+                trade,
+                detailAssembler.assemble(user, trade, inquiryCount, operatorId, now),
                 statusCardAssembler.statusCard(user),
                 memoService.latest(user, operatorId, DETAIL_MEMO_LIMIT),
                 historyReader.summary(user, DETAIL_HISTORY_LIMIT)

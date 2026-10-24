@@ -97,22 +97,22 @@ public final class AdminOrderDto {
 
     /** 목록 · 요약 조건(37 설계서 2-1 · 8절 #1 · #2). 요약은 탭 · 상태 · 정렬을 무시한다. */
     public record SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, Long groupBuyId,
-                               Long creatorId, PaymentMethod paymentMethod, TrackingAlert trackingAlert,
+                               Long creatorId, Long userId, PaymentMethod paymentMethod, TrackingAlert trackingAlert,
                                AdminOrderSearchType searchType, String keyword, AdminOrderSort sort) {
 
         public SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, String keyword) {
-            this(tab, status, marketId, null, null, null, null, null, keyword, null);
+            this(tab, status, marketId, null, null, null, null, null, null, keyword, null);
         }
 
         /** 요약용 — 탭만 바꾼 같은 조건(상태 · 정렬은 뺀다). */
         public SearchParams forTab(AdminOrderTab tab) {
-            return new SearchParams(tab, null, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
+            return new SearchParams(tab, null, marketId, groupBuyId, creatorId, userId, paymentMethod, trackingAlert,
                     searchType, keyword, null);
         }
 
         /** 요약용 — 상태 셀렉트 하나를 고른 같은 조건. */
         public SearchParams withStatus(FulfillmentStatus status) {
-            return new SearchParams(tab, status, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
+            return new SearchParams(tab, status, marketId, groupBuyId, creatorId, userId, paymentMethod, trackingAlert,
                     searchType, keyword, null);
         }
     }

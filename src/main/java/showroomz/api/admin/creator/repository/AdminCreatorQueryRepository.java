@@ -11,7 +11,6 @@ import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.groupbuy.type.GroupBuyEventType;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
-import showroomz.domain.history.entity.LoginHistory;
 import showroomz.domain.member.creator.entity.CreatorApplication;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.type.ThreadKind;
@@ -56,15 +55,6 @@ public class AdminCreatorQueryRepository {
                         CreatorApplication.class)
                 .setParameter("userId", userId)
                 .getResultList();
-    }
-
-    public Optional<LoginHistory> findLatestLogin(Long userId) {
-        return em.createQuery("SELECT l FROM LoginHistory l WHERE l.user.id = :userId ORDER BY l.loginAt DESC, l.id DESC",
-                        LoginHistory.class)
-                .setParameter("userId", userId)
-                .setMaxResults(1)
-                .getResultStream()
-                .findFirst();
     }
 
     /** 운영팀 채널 스레드 id — 읽기 전용(조회에서 채널을 만들지 않는다). */

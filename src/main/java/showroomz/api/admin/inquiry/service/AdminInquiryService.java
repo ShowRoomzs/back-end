@@ -18,6 +18,7 @@ import showroomz.api.admin.inquiry.type.AdminInquiryStatusFilter;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.inquiry.support.OneToOneInquiryNumber;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.seller.entity.Seller;
@@ -29,7 +30,6 @@ import showroomz.global.error.exception.ErrorCode;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,8 +40,6 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class AdminInquiryService {
 
-    /** SLA 초과 기준 — 경과 3일 (§17-6) */
-    private static final DateTimeFormatter INQUIRY_NUMBER_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final String UNKNOWN_OPERATOR = "운영자";
 
     private final OneToOneInquiryRepository inquiryRepository;
@@ -234,14 +232,9 @@ public class AdminInquiryService {
                 .compareTo(Duration.ofHours(adminProperties.getInquirySlaHours())) > 0;
     }
 
-    /** INQ-YYYYMMDD-NNN — NNN은 접수 일자 내 순번 (§17-3) */
+    /** INQ-YYYYMMDD-NNN — 규칙은 {@link OneToOneInquiryNumber} 한 곳(소비자 상세 「최근 문의」와 같은 번호 · 55 계획서 M3-2) */
     private String inquiryNumber(OneToOneInquiry inquiry) {
-        LocalDateTime createdAt = inquiry.getCreatedAt();
-        LocalDateTime dayStart = createdAt.toLocalDate().atStartOfDay();
-        long sequence = inquiryRepository
-                .countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndIdLessThanEqual(
-                        dayStart, dayStart.plusDays(1), inquiry.getId());
-        return "INQ-" + createdAt.format(INQUIRY_NUMBER_DATE) + "-" + String.format("%03d", sequence);
+        return OneToOneInquiryNumber.of(inquiry, inquiryRepository);
     }
 
     private String resolveOperatorName(Long operatorId) {

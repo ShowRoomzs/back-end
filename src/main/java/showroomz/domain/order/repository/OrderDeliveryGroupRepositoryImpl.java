@@ -159,6 +159,9 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         if (condition.creatorId() != null) {
             where.and(g.groupBuy.creator.id.eq(condition.creatorId()));
         }
+        if (condition.userId() != null) {
+            where.and(o.user.id.eq(condition.userId()));
+        }
         if (condition.paymentMethod() != null) {
             QPayment p = QPayment.payment;
             where.and(JPAExpressions.selectOne().from(p)

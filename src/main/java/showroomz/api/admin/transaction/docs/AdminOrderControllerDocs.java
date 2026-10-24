@@ -46,6 +46,7 @@ public interface AdminOrderControllerDocs {
             **조건** — 모두 AND 이고, 하위주문 조건은 **하위주문 하나라도 맞으면** 그 주문이 나옵니다.
             - `status` — 상태 셀렉트. `PENDING`(결제 대기)은 목록에 오지 않으므로 고르지 않습니다.
             - `marketId` — 브랜드 상세의 「이 브랜드 진행 주문 보기」 진입 · `groupBuyId` · `creatorId`(공구를 연 인플루언서) · `paymentMethod` — 상세 조건
+            - `userId` — 소비자 상세의 「최근 주문」 · 「전체 주문 내역 보기」 진입(주문한 소비자 · 55 계획서 M3-2)
             - `trackingAlert` — 배송 이상 탭의 「이상 유형」(`PICKUP_UNCONFIRMED` 집화 확인 필요 · `STALLED` 추적 정지)
             - `from` · `to` — **결제일** 기준(양 끝 포함, `yyyy-MM-dd`)
 
@@ -99,6 +100,7 @@ public interface AdminOrderControllerDocs {
             @Parameter(description = "브랜드(마켓) ID", example = "17") Long marketId,
             @Parameter(description = "공구 ID", example = "312") Long groupBuyId,
             @Parameter(description = "공구를 연 인플루언서(크리에이터) ID", example = "3021") Long creatorId,
+            @Parameter(description = "주문한 소비자 ID — 소비자 상세의 「전체 주문 내역 보기」", example = "88231") Long userId,
             @Parameter(description = "결제수단 — CARD · EASY_PAY", example = "CARD") PaymentMethod paymentMethod,
             @Parameter(description = "[배송 이상 탭] 이상 유형 — PICKUP_UNCONFIRMED · STALLED", example = "STALLED") TrackingAlert trackingAlert,
             @Parameter(description = "검색 대상 — ALL(기본) · ORDER_NUMBER · SUB_ORDER_NUMBER · RECIPIENT · BRAND · TRACKING_NUMBER · PG_TX_ID",
@@ -135,6 +137,7 @@ public interface AdminOrderControllerDocs {
             @Parameter(description = "브랜드(마켓) ID", example = "17") Long marketId,
             @Parameter(description = "공구 ID", example = "312") Long groupBuyId,
             @Parameter(description = "인플루언서(크리에이터) ID", example = "3021") Long creatorId,
+            @Parameter(description = "주문한 소비자 ID", example = "88231") Long userId,
             @Parameter(description = "결제수단 — CARD · EASY_PAY", example = "CARD") PaymentMethod paymentMethod,
             @Parameter(description = "검색 대상 — 목록과 같은 값", example = "ALL") AdminOrderSearchType searchType,
             @Parameter(description = "검색어 — 목록과 같은 값", example = "20261003-000123") String keyword,

@@ -4,12 +4,20 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import showroomz.api.admin.common.AdminMemberNavigation;
 import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.transaction.dto.AdminOrderDto;
+import showroomz.api.admin.user.service.AdminUserDetailAssembler;
 import showroomz.api.admin.user.service.AdminUserTradeReader;
+import showroomz.api.admin.user.type.AdminUserInquiryKind;
 import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.domain.history.type.DeviceType;
+import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserAdminActorType;
 import showroomz.domain.member.user.type.UserAdminEventType;
+import showroomz.domain.member.user.type.NotificationToggle;
+import showroomz.domain.member.user.type.UserPendingChip;
 import showroomz.domain.member.user.type.UserReleaseReason;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.type.UserSuspensionReason;
@@ -72,6 +80,123 @@ public class AdminUserDto {
             @Schema(description = "정지 사유 6종 — 소비자 정지는 지급과 무관해 holdsPayout 은 null") List<AdminReasonOption> suspensionReasons,
             @Schema(description = "해제 사유 3종 — TERM_ENDED(제재 기간 종료)를 운영자도 고른다(D18 · 브랜드 · 인플루언서에는 없다)")
             List<AdminReasonOption> releaseReasons) {
+    }
+
+    // ------------------------------------------------------------------ 상세 보강(55 계획서 M3-2 · ui-admin-13 rev.7)
+
+    @Schema(name = "AdminUserNotificationStatus",
+            description = "알림 수신 — 「알림을 못 받았다」 문의에 답할 근거(CS 응대 보강 ③). 탈퇴는 파기라 destroyed = true · 값은 null(「— 파기됨」)")
+    public record NotificationStatus(
+            boolean destroyed,
+            @Schema(description = "앱 푸시 켬 = 기기 토큰 있음 ∧ 아래 토글 중 하나라도 켬(D15). false 면 경고색", nullable = true) Boolean appPushOn,
+            @Schema(description = "푸시를 받을 기기 토큰이 있는가 — 앱에서 알림 권한을 허용하면 등록된다", nullable = true) Boolean deviceRegistered,
+            @Schema(description = "C15 알림 설정 토글 4개(화면 순서) — 모두 광고성이다. 주문 · 배송 · 문의 답변 알림은 끌 수 없어 없다") List<NotificationToggleState> toggles,
+            @Schema(description = "광고성 정보 수신 동의(가입 [선택] · 「혜택 · 이벤트」 토글과 같은 값)", nullable = true) Boolean marketingAgree,
+            @Schema(description = "광고성 동의 변경 시각 — 켜져 있으면 동의 일시(「광고성 수신 동의 2026.02.01 10:23」), 꺼져 있으면 철회 일시",
+                    nullable = true) LocalDateTime marketingAgreeChangedAt) {
+    }
+
+    @Schema(name = "AdminUserNotificationToggle")
+    public record NotificationToggleState(NotificationToggle toggle, @Schema(example = "팔로우 쇼룸 새 공구") String label, boolean on,
+                                          @Schema(description = "켠 시각 — 꺼져 있으면 null", nullable = true) LocalDateTime agreedAt) {
+    }
+
+    @Schema(name = "AdminUserIdentity",
+            description = "본인확인 정보 — 기본 마스킹(서버가 끝낸다). 탈퇴는 파기라 destroyed = true · 값은 전부 null. 「— 파기됨」은 값이 있었다가 지워졌다는 뜻이라 "
+                    + "애초에 수집하지 않은 항목(내외국인 · 통신사 · 갱신 전 최초 인증 시각)은 null 이어도 파기 표시를 하지 않는다")
+    public record Identity(
+            @Schema(description = "탈퇴 파기") boolean destroyed,
+            @Schema(description = "실값으로 열렸는가 — 이 운영자의 유효한 열람 세션이 있을 때만") boolean unmasked,
+            @Schema(example = "홍*동", nullable = true) String name,
+            @Schema(description = "마스킹 중 연도만 · 해제 시 전체", example = "1990.**.**", nullable = true) String birthday,
+            @Schema(description = "만 나이 — 해제 상태에서만", example = "36", nullable = true) Integer age,
+            @Schema(description = "MALE · FEMALE — 해제 대상이 아니다(시안 A1 마스킹 상태에서도 보인다)", example = "FEMALE", nullable = true) String gender,
+            @Schema(example = "여성", nullable = true) String genderLabel,
+            @Schema(description = "내외국인 — PASS 미연동이라 수집하지 않는다(항상 null · 인플루언서와 같다)", nullable = true) String nationality,
+            @Schema(example = "010-****-1234", nullable = true) String phone,
+            @Schema(description = "통신사 — 수집하지 않는다(항상 null)", nullable = true) String carrier,
+            @Schema(description = "최초 인증 — 재인증한 적이 없을 때만(재인증은 시각을 덮어써 최초 시각이 남지 않는다)", nullable = true) LocalDateTime firstVerifiedAt,
+            @Schema(description = "최근 갱신 — C15-2 재인증 시각. 재인증한 적이 없으면 null", nullable = true) LocalDateTime renewedAt) {
+    }
+
+    @Schema(name = "AdminUserRecentOrders",
+            description = "최근 주문 5건 — 어드민 주문 목록(GET /v1/admin/orders?userId=)과 같은 행 · 같은 집합이다. 「전체 주문 내역 보기 ›」는 그 목록으로 간다. "
+                    + "total 은 결제된 주문 전부(전액 취소 포함)라 누적 주문 수(취소만 남은 주문 제외)와 다를 수 있다. 탈퇴 회원도 보존 기록이라 그대로 내린다")
+    public record RecentOrders(@Schema(example = "14") long total, List<AdminOrderDto.ListItem> content) {
+    }
+
+    @Schema(name = "AdminUserRecentInquiries",
+            description = "최근 문의 3건 — 1:1 문의와 상품 문의(삭제 집행 제외)를 접수일 최신순으로 합친다. total 은 두 문의 합(inquiryCount 와 같다). "
+                    + "탈퇴 후에도 문의 기록은 보존이라 그대로 내린다")
+    public record RecentInquiries(@Schema(example = "3") long total, List<RecentInquiry> content) {
+    }
+
+    @Schema(name = "AdminUserRecentInquiry")
+    public record RecentInquiry(
+            @Schema(description = "ONE_TO_ONE(1:1 문의 관리) · PRODUCT(상품 문의 모니터링) — 행 클릭 시 이동할 화면") AdminUserInquiryKind kind,
+            @Schema(example = "1:1") String kindLabel,
+            Long inquiryId,
+            @Schema(description = "1:1 은 INQ- · 상품 문의는 QNA- — 각 관리 화면과 같은 번호", example = "INQ-20260813-041") String inquiryNumber,
+            @Schema(description = "유형 — 1:1 은 FAQ 분류 · 상품 문의는 문의 유형", example = "배송") String typeLabel,
+            @Schema(description = "제목 — 제목 열이 없어 본문 앞부분(40자 · 줄바꿈 접음)을 쓴다", example = "세럼 배송이 언제 오나요?") String title,
+            InquiryStatus status,
+            @Schema(example = "답변 대기") String statusLabel,
+            LocalDateTime createdAt) {
+    }
+
+    @Schema(name = "AdminUserAddresses",
+            description = "배송지 — 기본 배송지 먼저 · 나머지는 최근 수정순(최근 사용 순서는 주문에 배송지 id 가 없어 낼 수 없다). 마스킹 중에는 시 · 군 · 구까지만 · "
+                    + "상세주소 · 우편번호는 null · 수령인 · 연락처는 마스킹(「해제 후 조회」 · 본인확인 정보와 같은 열람 통제). 운영자는 수정 · 삭제하지 않는다. "
+                    + "탈퇴는 파기라 destroyed = true · 목록은 빈 배열")
+    public record Addresses(boolean destroyed, @Schema(example = "3") int total, List<Address> content) {
+    }
+
+    @Schema(name = "AdminUserAddress")
+    public record Address(
+            Long addressId,
+            @Schema(description = "기본 배송지 여부") boolean defaultAddress,
+            @Schema(description = "주소 — 마스킹 중 시 · 군 · 구까지", example = "서울특별시 마포구") String address,
+            @Schema(description = "상세주소 — 해제 상태에서만", nullable = true) String detailAddress,
+            @Schema(description = "우편번호 — 해제 상태에서만", nullable = true) String zipCode,
+            @Schema(example = "홍*동") String recipientName,
+            @Schema(example = "010-****-1234") String phoneNumber,
+            @Schema(description = "최근 사용 주문일 — 주문에 배송지 id 가 없어 낼 수 없다(보류 · 항상 null)", nullable = true) LocalDateTime lastUsedOrderAt) {
+    }
+
+    @Schema(name = "AdminUserPendingChip", description = "레일 「진행 중」 칩 — 1건 이상만 내린다. 나머지는 FE 가 「그 외 0건」으로 접는다")
+    public record PendingChip(
+            @Schema(example = "OPEN_INQUIRY") UserPendingChip key,
+            @Schema(example = "열린 문의") String label,
+            @Schema(description = "열린 문의만 WARNING · 나머지 NEUTRAL", example = "WARNING") String tone,
+            @Schema(example = "1") long count,
+            @Schema(description = "이동할 화면 — INQUIRIES · ORDERS · CLAIMS · REFUNDS(FE 가 userId 를 붙인다)", example = "INQUIRIES") String target) {
+    }
+
+    @Schema(name = "AdminUserJudgement",
+            description = "판단 메타 — 조치(정지) 근거라 우측 레일 액션 버튼 위에 둔다. 탈퇴 회원은 조치가 없어 거래 값이 null(「—」)이고 가입 후 경과 · 정지 이력만 남는다")
+    public record Judgement(
+            @Schema(description = "누적 주문 — totalOrderCount 와 같은 식", example = "14", nullable = true) Integer orderCount,
+            @Schema(description = "누적 구매액 — totalPurchaseAmount 와 같은 순결제액", example = "842000", nullable = true) Long purchaseAmount,
+            @Schema(description = "반품 · 교환이 접수된 주문 수(요청 취소 · 재발송비 결제 대기 제외 · 반려 종결 포함)", example = "2", nullable = true) Long claimOrderCount,
+            @Schema(description = "반품 · 교환률(%) = claimOrderCount ÷ 누적 주문 · 소수 1자리. 주문이 없으면 null", example = "14.3", nullable = true) Double claimRate,
+            SanctionHistory sanctions,
+            Elapsed sinceJoined) {
+    }
+
+    @Schema(name = "AdminUserSanctionHistory", description = "정지 이력 「2회 · 직전 2026.05 · 반품 남용」 — user_sanction 행 기준(D15 · 옛 상태 변경 API 정지는 빠진다)")
+    public record SanctionHistory(
+            @Schema(description = "정지 횟수 — 지금 열린 정지 포함 · 0 이면 「없음」", example = "2") long count,
+            @Schema(description = "직전 정지 — 해제된 정지 중 가장 최근 것(지금 열린 정지는 상태 카드가 보여 준다). 없으면 null", nullable = true) PastSanction last) {
+    }
+
+    @Schema(name = "AdminUserPastSanction")
+    public record PastSanction(Long sanctionId, UserSuspensionReason reason, @Schema(example = "반품 남용") String reasonLabel,
+                               LocalDateTime suspendedAt, LocalDateTime releasedAt) {
+    }
+
+    @Schema(name = "AdminUserElapsed", description = "가입 후 경과 「6개월 13일」 — 가입일 기준 달력 계산")
+    public record Elapsed(@Schema(example = "6") int months, @Schema(example = "13") int days,
+                          @Schema(description = "총 경과 일수", example = "196") long totalDays) {
     }
 
     // ------------------------------------------------------------------ 메모 · 처리 이력(51-6 설계서 7절)
@@ -192,6 +317,12 @@ public class AdminUserDto {
         @Schema(description = "유저 ID", example = "1")
         private Long userId;
 
+        @Schema(description = "회원번호 — 목록 첫 열과 같은 번호", example = "CST-88231")
+        private String memberNo;
+
+        @Schema(description = "「‹ 이전 · 다음 ›」 — 회원번호 순 인접 소비자(목록 필터 · 정렬과 무관 · 약관 동의 전 GUEST 제외)")
+        private AdminMemberNavigation navigation;
+
         @Schema(description = "닉네임", example = "홍길동")
         private String nickname;
 
@@ -201,7 +332,8 @@ public class AdminUserDto {
         @Schema(description = "활동 상태", example = "NORMAL")
         private UserStatus status;
 
-        @Schema(description = "생년월일", example = "1990-01-01")
+        @Schema(description = "생년월일 — identity.birthday 와 같은 값(마스킹 · 55 계획서 M3-2부터 원본을 내리지 않는다). identity 를 쓴다",
+                example = "1990.**.**", deprecated = true)
         private String birthday;
 
         @Schema(description = "성별", example = "MALE")
@@ -212,6 +344,19 @@ public class AdminUserDto {
 
         @Schema(description = "최초 로그인 시간(가입일)", example = "2024-01-01T10:00:00")
         private LocalDateTime createdAt;
+
+        @Schema(description = "최근 로그인 — 탈퇴는 파기라 null(「— 파기됨」)", example = "2026-08-14T09:41:00", nullable = true)
+        private LocalDateTime lastLoginAt;
+
+        @Schema(description = "최근 로그인 기기 — 가장 최근 로그인 이력의 User-Agent 로 판별(인플루언서 상세와 같은 규칙). 이력이 없거나 탈퇴면 null",
+                example = "IPHONE", nullable = true)
+        private DeviceType lastLoginDevice;
+
+        @Schema(description = "알림 수신 — 앱 푸시 켬/끔 · 광고성 수신 동의")
+        private NotificationStatus notification;
+
+        @Schema(description = "본인확인 정보 — 기본 마스킹")
+        private Identity identity;
 
         @Schema(description = "마케팅 동의 여부", example = "true")
         private boolean marketingAgree;
@@ -258,6 +403,21 @@ public class AdminUserDto {
         @Schema(description = "문의 내역 수", example = "2")
         private Long inquiryCount;
 
+        @Schema(description = "최근 주문 5건")
+        private RecentOrders recentOrders;
+
+        @Schema(description = "최근 문의 3건(1:1 · 상품 문의 합산)")
+        private RecentInquiries recentInquiries;
+
+        @Schema(description = "배송지 목록")
+        private Addresses addresses;
+
+        @Schema(description = "레일 「진행 중」 칩 — 1건 이상만. 빈 배열이면 「진행 중인 건 없음」")
+        private List<PendingChip> pendingChips;
+
+        @Schema(description = "레일 판단 메타 — 누적 주문 · 구매액 · 반품 · 교환률 · 가입 후 경과 · 정지 이력")
+        private Judgement judgement;
+
         public static UserDetailResponse of(
                 Users user,
                 Long wishlistCount,
@@ -265,19 +425,26 @@ public class AdminUserDto {
                 Long reviewCount,
                 Long inquiryCount,
                 AdminUserTradeReader.Trade trade,
+                AdminUserDetailAssembler.Extras extras,
                 StatusCard statusCard,
                 MemoPage memos,
                 HistorySummary histories) {
 
             return UserDetailResponse.builder()
                     .userId(user.getId())
+                    .memberNo(extras.memberNo())
+                    .navigation(extras.navigation())
                     .nickname(user.getNickname())
                     .providerType(user.getProviderType())
                     .status(user.getStatus())
-                    .birthday(user.getBirthday())
+                    .birthday(extras.identity().birthday())
                     .gender(user.getGender())
                     .defaultAddress(trade.defaultAddress())
                     .createdAt(user.getCreatedAt())
+                    .lastLoginAt(extras.lastLoginAt())
+                    .lastLoginDevice(extras.lastLoginDevice())
+                    .notification(extras.notification())
+                    .identity(extras.identity())
                     .marketingAgree(user.isMarketingAgree())
                     .profileImageUrl(user.getProfileImageUrl())
                     .statusCard(statusCard)
@@ -293,6 +460,11 @@ public class AdminUserDto {
                     .followedShowroomCount(followedShowroomCount)
                     .writtenReviewCount(reviewCount)
                     .inquiryCount(inquiryCount)
+                    .recentOrders(extras.recentOrders())
+                    .recentInquiries(extras.recentInquiries())
+                    .addresses(extras.addresses())
+                    .pendingChips(extras.pendingChips())
+                    .judgement(extras.judgement())
                     .build();
         }
     }

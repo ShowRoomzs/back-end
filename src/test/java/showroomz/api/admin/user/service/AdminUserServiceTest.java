@@ -40,6 +40,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -81,6 +82,8 @@ class AdminUserServiceTest {
     private AdminUserHistoryReader historyReader;
     @Mock
     private AdminUserTradeReader tradeReader;
+    @Mock
+    private AdminUserDetailAssembler detailAssembler;
 
     @InjectMocks
     private AdminUserService adminUserService;
@@ -88,7 +91,12 @@ class AdminUserServiceTest {
     @org.junit.jupiter.api.BeforeEach
     void givenNoTrade() {
         given(tradeReader.read(any(), any())).willReturn(
-                new AdminUserTradeReader.Trade(0, 0, 0, 0, 0, null, null));
+                new AdminUserTradeReader.Trade(0, 0, 0, 0, 0, null, null, 0, null));
+        // 시안 필드 보강(55 계획서 M3-2)은 AdminConsumerDetailIntegrationTest 가 본다 — 여기서는 빈 값으로 둔다
+        given(detailAssembler.assemble(any(), any(), anyLong(), any(), any())).willReturn(
+                new AdminUserDetailAssembler.Extras(null, null, null, null, null,
+                        new AdminUserDto.Identity(false, false, null, null, null, null, null, null, null, null, null, null),
+                        null, null, null, List.of(), null));
     }
 
     private Users user(UserStatus status) {
