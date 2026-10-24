@@ -107,6 +107,21 @@ class AdminCreatorDetailIntegrationTest extends AdminCreatorTestSupport {
     }
 
     @Test
+    @DisplayName("[55 M4] 이전 · 다음 — 회원번호 순 인접 인플루언서 · 끝이면 null · 조치 응답(정지)에도 실린다")
+    void navigationByMemberNumber() throws Exception {
+        Creator second = createCreator("이웃_둘", "nav2");
+        Creator third = createCreator("이웃_셋", "nav3");
+
+        adminGet(base).andExpect(jsonPath("$.navigation.nextId").value(second.getId()));
+        adminGet(CREATORS + second.getId()).andExpect(jsonPath("$.navigation.previousId").value(creator.getId()))
+                .andExpect(jsonPath("$.navigation.nextId").value(third.getId()));
+        adminGet(CREATORS + third.getId()).andExpect(jsonPath("$.navigation.previousId").value(second.getId()))
+                .andExpect(jsonPath("$.navigation.nextId").value(nullValue()));
+        adminPost(CREATORS + second.getId() + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.navigation.nextId").value(third.getId()));
+    }
+
+    @Test
     @DisplayName("[AU-04 · AU-05] 사유 목록 경로는 상세로 해석되지 않는다 · 남의 메모 · 남의 탈퇴 신청은 다른 인플루언서 경로로 404")
     void crossCreatorResourcesAre404() throws Exception {
         adminGet(CREATORS + "reason-options").andExpect(status().isOk());

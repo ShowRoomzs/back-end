@@ -21,6 +21,7 @@ public interface AdminCreatorControllerDocs {
     String DETAIL_EXAMPLE = """
             {
               "creatorId": 3018, "memberNo": "INF-3018", "status": "SUSPENDED", "statusLabel": "정지", "statusTone": "DANGER",
+              "navigation": { "previousId": 3017, "nextId": 3019 },
               "basic": {
                 "showroomName": "소연 쇼룸", "profileImageUrl": "https://cdn…/profile/3018.jpg",
                 "showroomAddress": "soyeon_showroom", "showroomUrl": "https://showroomz.kr/soyeon_showroom", "showroomPublic": true,

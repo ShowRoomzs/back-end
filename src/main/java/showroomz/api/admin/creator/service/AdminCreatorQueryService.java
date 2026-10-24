@@ -125,7 +125,10 @@ public class AdminCreatorQueryService {
                 approvedAt, user.getLastLoginAt(), device);
 
         return new Detail(creator.getId(), MemberNumber.format(MemberType.CREATOR, creator.getId()), creator.getStatus(),
-                creator.getStatus().getLabel(), creator.getStatus().getTone(), basic,
+                creator.getStatus().getLabel(), creator.getStatus().getTone(),
+                new showroomz.api.admin.common.AdminMemberNavigation(creators.findPreviousMemberId(creator.getId()),
+                        creators.findNextMemberId(creator.getId())),
+                basic,
                 identity(creator, user, unmasked, purged, now), unmask(creator, operatorId, session, purged, now),
                 business(creator, purged), settlementAccount(creator, purged),
                 rail(creator, user, approvedAt, now));

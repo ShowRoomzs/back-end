@@ -54,6 +54,13 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
     @Query("SELECT c FROM Creator c JOIN FETCH c.user WHERE c.id = :creatorId")
     Optional<Creator> findWithUserById(@Param("creatorId") Long creatorId);
 
+    /** 어드민 상세의 「이전 · 다음」 — 회원번호 순 인접 인플루언서(55 계획서 M4). 행은 입점 승인 때만 생기므로 필터가 없다. */
+    @Query("SELECT MAX(c.id) FROM Creator c WHERE c.id < :id")
+    Long findPreviousMemberId(@Param("id") Long id);
+
+    @Query("SELECT MIN(c.id) FROM Creator c WHERE c.id > :id")
+    Long findNextMemberId(@Param("id") Long id);
+
     /** 계좌 확인 재시도 대상(50 설계서 6-4) — 「확인 중」으로 남은 인플루언서. */
     @Query("SELECT c.id FROM Creator c WHERE c.accountVerificationStatus = :status ORDER BY c.id ASC")
     List<Long> findIdsByAccountVerificationStatus(

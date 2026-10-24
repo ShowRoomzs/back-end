@@ -42,6 +42,7 @@ public final class AdminCreatorDto {
             @Schema(description = "회원 상태 — 목록 상태 열과 같은 값") CreatorStatus status,
             @Schema(example = "활성") String statusLabel,
             @Schema(description = "배지 톤 — SUCCESS · DANGER · NEUTRAL", example = "SUCCESS") String statusTone,
+            @Schema(description = "「‹ 이전 · 다음 ›」 — 회원번호 순 인접 인플루언서") showroomz.api.admin.common.AdminMemberNavigation navigation,
             Basic basic,
             Identity identity,
             Unmask unmask,
