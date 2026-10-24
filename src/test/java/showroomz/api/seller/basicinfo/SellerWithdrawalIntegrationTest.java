@@ -130,6 +130,27 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
+    @DisplayName("[55 P5-04] 사업자 정보 허위 기재 정지로 브랜드 몫 보류 — BLOCKED 행 BRAND_SUSPENDED · 내 응답 필요 · 이동 대상은 정산 정보가 아니라 "
+            + "사업자 정보(BUSINESS_INFO) · 정지 사유 라벨")
+    void businessInfoSuspensionTargetsBusinessInfo() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("사업자허위");
+        Settlement s = settlementOf(owner, SettlementStatus.PAYOUT_SCHEDULED);
+        setPayout(s.getId(), SettlementPayee.BRAND, PayoutStatus.SCHEDULED, 900_000, null, LocalDate.now().plusDays(3));
+        suspend(owner.marketId(), "BUSINESS_INFO_FALSIFIED", null).andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+
+        JsonNode account = json(getAs(sellerToken(owner.seller()), ACCOUNT).andExpect(status().isOk()));
+        assertThat(account.at("/withdrawal/state").asText()).isEqualTo("BLOCKED");
+        JsonNode blocked = row(condition(account, "UNSETTLED"), "BLOCKED");
+        assertThat(blocked.path("count").asLong()).isEqualTo(1);
+        assertThat(blocked.path("reasonCode").asText()).isEqualTo("BRAND_SUSPENDED");
+        assertThat(blocked.path("group").asText()).isEqualTo("MY_ACTION");
+        assertThat(blocked.path("target").asText()).isEqualTo("BUSINESS_INFO");
+        assertThat(blocked.path("reasonLabel").asText()).contains("사업자 정보 허위 기재");
+        assertInvariant(owner, account);
+    }
+
+    @Test
     @DisplayName("55 계획서 S11 — 정지 중 탈퇴 설정을 끄면 조건 4/4 여도 BLOCKED + 사유 · 신청 409 BRAND_SUSPENDED · 켜면 AVAILABLE · 신청 201")
     void suspendedWithdrawalFollowsSetting() throws Exception {
         BrandFixture.Brand owner = cleanBrand("정지설정");
@@ -156,6 +177,30 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
         assertThat(account.at("/withdrawal/state").asText()).isEqualTo("AVAILABLE");
         assertThat(account.at("/withdrawal/suspensionBlockedReason").isNull()).isTrue();
         postAs(token, WITHDRAWALS, null).andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("[55 S11-05] 대기 중인 신청이 있는 채 정지되고 정지 중 탈퇴 설정이 꺼져 있어도 — 접수된 신청은 그대로 · 계정 탭 PENDING 유지 · "
+            + "suspensionBlockedReason null(1021 7-3)")
+    void pendingRequestSurvivesSuspensionWhenSettingOff() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("대기후정지");
+        String token = sellerToken(owner.seller());
+        long requestId = json(postAs(token, WITHDRAWALS, null).andExpect(status().isCreated())).path("requestId").asLong();
+        suspend(owner.marketId(), "PRODUCT_INFO_FALSIFIED", null).andExpect(status().isOk());
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            JsonNode account = json(getAs(token, ACCOUNT).andExpect(status().isOk()));
+            assertThat(account.at("/withdrawal/state").asText()).isEqualTo("PENDING");
+            JsonNode reason = account.at("/withdrawal/suspensionBlockedReason");
+            assertThat(reason.isNull() || reason.isMissingNode()).as("suspensionBlockedReason = " + reason).isTrue();
+            assertThat(account.at("/withdrawal/pendingRequest/requestId").asLong()).isEqualTo(requestId);
+            assertThat(account.path("identityLock").asText()).isEqualTo("WITHDRAWAL_PENDING");
+            assertInvariant(owner, account);
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(withdrawalRepository.findById(requestId).orElseThrow().isPending()).isTrue();
     }
 
     @Test
