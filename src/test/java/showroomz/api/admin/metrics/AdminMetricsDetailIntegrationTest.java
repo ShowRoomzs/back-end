@@ -57,9 +57,20 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         follow(createConsumer("fan-1", "팬하나"));
         follow(createConsumer("fan-2", "팬둘"));
 
-        Map<String, JsonNode> rows = rows("TODAY", "DEMAND");
+        JsonNode body = json(adminGet(METRICS + "?preset=TODAY&tab=DEMAND").andExpect(status().isOk()));
+        Map<String, JsonNode> rows = rows(body);
         assertThat(rows.get("FOLLOWER_CONVERSION").get("current").asDouble()).isEqualTo(33.3);
         assertThat(rows.get("FOLLOWER_CONVERSION").get("currentCount").asText()).isEqualTo("1/3");
+        // 정의 문구 · 분해 표에 「구매자」가 없다(55 계획서 A14)
+        assertThat(rows.get("FOLLOWER_CONVERSION").get("note").asText()).isEqualTo("공구 구매 소비자 ÷ 진행 쇼룸 팔로워");
+        assertThat(body.at("/breakdown/title").asText()).isEqualTo("쇼룸별 전환 · 구매 소비자 순 · 상위 5곳");
+        assertThat(body.at("/breakdown/columns").toString())
+                .isEqualTo("[\"인플루언서(쇼룸)\",\"팔로워\",\"구매 소비자\",\"전환율\"]");
+        JsonNode first = body.at("/breakdown/rows/0");
+        assertThat(first.get(1).asText()).isEqualTo("3");
+        assertThat(first.get(2).asText()).isEqualTo("1");
+        assertThat(first.get(3).asText()).isEqualTo("33.3%");
+        assertThat(body.toString()).doesNotContain("구매자");
     }
 
     @Test
@@ -87,6 +98,7 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get("BUYERS_MEDIAN").get("current").asDouble()).isEqualTo(1.0);
         assertThat(rows.get("REPURCHASE_RATE").get("current").asDouble()).isEqualTo(100.0);
         assertThat(rows.get("REPURCHASE_RATE").get("currentCount").asText()).isEqualTo("1/1");
+        assertThat(rows.get("REPURCHASE_RATE").get("note").asText()).isEqualTo("이전 구매 이력이 있는 구매 소비자");
     }
 
     @Test

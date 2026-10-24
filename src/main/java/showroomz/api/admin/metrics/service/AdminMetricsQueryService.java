@@ -180,7 +180,7 @@ public class AdminMetricsQueryService {
         return switch (tab) {
             case SUPPLY -> creatorsTop(f, groupBuys);
             case GROUP_BUY -> groupBuyPerformance(f, groupBuys);
-            case DEMAND -> showroomConversion(f, groupBuys);
+            case DEMAND -> showroomConversion(f);
             case OPERATION -> queueBreakdown(f);
             default -> groupBuysTop(f, groupBuys);
         };
@@ -244,8 +244,11 @@ public class AdminMetricsQueryService {
         return new AdminMetricsDto.Breakdown("공구별 성과 상위 5", List.of("공구", "거래액", "물량 달성", "ROI"), rows);
     }
 
-    /** 수요 — 쇼룸별 전환 상위 5(팔로워 · 구매자 · 전환율). 한 사람이 여러 쇼룸에서 사면 쇼룸마다 센다. */
-    private AdminMetricsDto.Breakdown showroomConversion(Facts f, Map<Long, GroupBuyLine> groupBuys) {
+    /**
+     * 수요 — 쇼룸별 전환(팔로워 · 구매 소비자 · 전환율) · <b>구매 소비자 순</b> 상위 5곳(시안 21 · 55 계획서 A14). 한 사람이 여러 쇼룸에서
+     * 사면 쇼룸마다 센다. 같은 수면 인플루언서 id 순이다.
+     */
+    static AdminMetricsDto.Breakdown showroomConversion(Facts f) {
         Map<Long, Set<Long>> buyers = new HashMap<>();
         f.lines.forEach(l -> buyers.computeIfAbsent(l.creatorId(), k -> new HashSet<>()).add(l.userId()));
         Map<Long, String> names = f.groupBuys.stream()
@@ -253,13 +256,14 @@ public class AdminMetricsQueryService {
         List<List<String>> rows = buyers.keySet().stream()
                 .map(id -> new Object[]{id, f.followers.getOrDefault(id, 0L), (long) buyers.get(id).size(),
                         f.convertedByCreator.getOrDefault(id, 0L)})
-                .sorted(Comparator.comparingDouble((Object[] r) -> (long) r[1] == 0 ? -1 : (long) r[3] * 1.0 / (long) r[1])
-                        .reversed())
+                .sorted(Comparator.comparingLong((Object[] r) -> (long) r[2]).reversed()
+                        .thenComparingLong(r -> (Long) r[0]))
                 .limit(TOP)
                 .map(r -> List.of(names.getOrDefault((Long) r[0], "#" + r[0]), String.valueOf(r[1]), String.valueOf(r[2]),
                         (long) r[1] == 0 ? "—" : percent((long) r[3] * 100.0 / (long) r[1])))
                 .toList();
-        return new AdminMetricsDto.Breakdown("쇼룸별 전환 상위 5", List.of("쇼룸", "팔로워", "구매자", "전환율"), rows);
+        return new AdminMetricsDto.Breakdown("쇼룸별 전환 · 구매 소비자 순 · 상위 5곳",
+                List.of("인플루언서(쇼룸)", "팔로워", "구매 소비자", "전환율"), rows);
     }
 
     /** 운영 — 큐별 처리(처리 수 · 평균 소요 · 기한 초과). 배송 예외는 처리 시각이 없어 「—」. */

@@ -32,11 +32,12 @@ public enum MetricKey {
     SUSPENSIONS("중단", ValueType.COUNT, BetterWhen.DOWN, "승인된 중단 요청 + 집행된 직권 중단"),
     OPEN_REVIEW_DAYS("오픈 승인 소요", ValueType.DAYS, BetterWhen.DOWN, "제출 → 승인 영업일 평균"),
     SELLING_GROUP_BUYS("판매 중인 공구", ValueType.COUNT, BetterWhen.UP, "버킷 시작 시점에 판매 중인 공구 수"),
-    // 수요
+    // 수요 — 정의 문구는 시안 표기(「구매 소비자」)다. 어드민 응답에 「구매자」를 쓰지 않는다(55 계획서 A14).
+    // 전환은 결제 전에 팔로우한 사람만 센다 — 셈법은 MetricsFactsCalculator.demand 가 소유한다.
     BUYERS("구매 소비자", ValueType.COUNT, BetterWhen.UP, "결제한 소비자(중복 제거)"),
     BUYERS_MEDIAN("공구당 구매 소비자(중앙값)", ValueType.COUNT, BetterWhen.UP, "공구별 구매 소비자 수의 중앙값"),
-    FOLLOWER_CONVERSION("팔로워 → 구매 전환율", ValueType.RATE, BetterWhen.UP, "결제 전에 그 인플루언서를 팔로우한 구매자 ÷ 진행 쇼룸 팔로워"),
-    REPURCHASE_RATE("재구매율", ValueType.RATE, BetterWhen.UP, "기간 구매자 중 이전 결제 이력이 있는 비율"),
+    FOLLOWER_CONVERSION("팔로워 → 구매 전환율", ValueType.RATE, BetterWhen.UP, "공구 구매 소비자 ÷ 진행 쇼룸 팔로워"),
+    REPURCHASE_RATE("재구매율", ValueType.RATE, BetterWhen.UP, "이전 구매 이력이 있는 구매 소비자"),
     NEW_CONSUMERS("신규 소비자", ValueType.COUNT, BetterWhen.UP, "가입 — 경로별"),
     CONSUMER_WITHDRAWALS("소비자 탈퇴", ValueType.COUNT, BetterWhen.DOWN, "상태 이력 기준"),
     // 운영
