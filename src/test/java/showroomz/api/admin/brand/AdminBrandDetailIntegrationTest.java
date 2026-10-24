@@ -388,6 +388,10 @@ class AdminBrandDetailIntegrationTest extends AdminBrandTestSupport {
                 .andExpect(jsonPath("$.rail.withdrawalReview.reason").value("OTHER_CHANNEL_FOCUS"))
                 .andExpect(jsonPath("$.rail.withdrawalReview.reasonLabel").value("다른 채널에 집중"))
                 .andExpect(jsonPath("$.rail.withdrawalReview.message").value("자사몰 운영에 집중하기 위해 입점을 종료합니다."))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.activeGroupBuys").value(0))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.contractsBeforeConclusion").value(0))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.unclosedOrders").value(0))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.unsettled").value(0))
                 .andExpect(jsonPath("$.rail.histories.items.length()").value(2))
                 .andExpect(jsonPath("$.rail.histories.total").value(4));
 
@@ -400,6 +404,24 @@ class AdminBrandDetailIntegrationTest extends AdminBrandTestSupport {
         brandDetail(unselected.marketId()).andExpect(jsonPath("$.rail.withdrawalReview.reason").doesNotExist())
                 .andExpect(jsonPath("$.rail.withdrawalReview.reasonLabel").value("선택하지 않음"))
                 .andExpect(jsonPath("$.rail.histories.items[0].detail").value("사유: 선택하지 않음"));
+    }
+
+    @Test
+    @DisplayName("55 M6 승인 모달 조건 건수 — 신청 뒤 생긴 체결 전 계약 · 정산이 심사 카드에 다시 보이고 판정식과 같다")
+    void withdrawalReviewConditions() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("모달조건");
+        withdrawalService.request(owner.marketId(), null, null, LocalDateTime.now());
+        contractIn(owner, creator, ContractStatus.SIGNING, false);
+        contractIn(owner, creator, ContractStatus.REVIEW_PENDING, false);
+        settlementOf(owner, SettlementStatus.REVIEWING);
+
+        brandDetail(owner.marketId())
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.activeGroupBuys").value(0))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.contractsBeforeConclusion").value(2))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.unclosedOrders").value(0))
+                .andExpect(jsonPath("$.rail.withdrawalReview.conditions.unsettled").value(1));
+        assertThat(eligibility.evaluate(owner.marketId()).get(
+                showroomz.domain.member.brand.type.BrandWithdrawalCondition.CONTRACTS_BEFORE_CONCLUSION)).isEqualTo(2);
     }
 
     @Test

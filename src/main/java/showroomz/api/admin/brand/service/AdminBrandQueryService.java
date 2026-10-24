@@ -38,9 +38,11 @@ import showroomz.domain.member.brand.repository.BrandSanctionRepository;
 import showroomz.domain.member.brand.repository.BrandWithdrawalRequestRepository;
 import showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository;
 import showroomz.domain.member.brand.service.BrandAdminHistoryReader;
+import showroomz.domain.member.brand.service.BrandWithdrawalEligibility;
 import showroomz.domain.member.brand.type.BrandMemberStatus;
 import showroomz.domain.member.brand.type.BrandPendingChip;
 import showroomz.domain.member.brand.type.BrandSuspensionReason;
+import showroomz.domain.member.brand.type.BrandWithdrawalCondition;
 import showroomz.domain.member.brand.type.BrandWithdrawalRejectReason;
 import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
@@ -110,6 +112,7 @@ public class AdminBrandQueryService {
     private final SettlementRepository settlementRepository;
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementTaxDocumentRepository taxDocumentRepository;
+    private final BrandWithdrawalEligibility withdrawalEligibility;
 
     /** 모달 셀렉트 사유 목록(정합 계획서 R1-9) — enum 단일 소스. 인플루언서 상세와 같은 조립식이다. */
     public AdminBrandDto.ReasonOptions reasonOptions() {
@@ -448,10 +451,17 @@ public class AdminBrandQueryService {
         return chips;
     }
 
-    private static AdminBrandDto.WithdrawalReview withdrawalReview(BrandWithdrawalRequest r, LocalDateTime now) {
+    /** 심사 카드 · 승인 모달(M2) — 조건 건수는 대기 중일 때만 판정식을 돌려 싣는다(55 계획서 M6). */
+    private AdminBrandDto.WithdrawalReview withdrawalReview(BrandWithdrawalRequest r, LocalDateTime now) {
         long elapsedDays = Math.max(0, Duration.between(r.getRequestedAt(), now).toDays());
+        Map<BrandWithdrawalCondition, Long> counts = withdrawalEligibility.evaluate(r.getMarketId());
         return new AdminBrandDto.WithdrawalReview(r.getId(), r.getRequestedAt(), elapsedDays, r.getRequesterName(),
-                r.getReason() == null ? null : r.getReason().name(), r.reasonLabel(), r.getMessage());
+                r.getReason() == null ? null : r.getReason().name(), r.reasonLabel(), r.getMessage(),
+                new AdminBrandDto.WithdrawalConditions(
+                        counts.getOrDefault(BrandWithdrawalCondition.ACTIVE_GROUP_BUYS, 0L),
+                        counts.getOrDefault(BrandWithdrawalCondition.CONTRACTS_BEFORE_CONCLUSION, 0L),
+                        counts.getOrDefault(BrandWithdrawalCondition.UNCLOSED_ORDERS, 0L),
+                        counts.getOrDefault(BrandWithdrawalCondition.UNSETTLED, 0L)));
     }
 
     private AdminBrandDto.Histories histories(Market market, int limit) {

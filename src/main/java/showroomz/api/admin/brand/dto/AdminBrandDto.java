@@ -192,7 +192,19 @@ public final class AdminBrandDto {
 
     @Schema(name = "AdminBrandWithdrawalReview")
     public record WithdrawalReview(Long requestId, LocalDateTime requestedAt, long elapsedDays, String requesterName,
-                                   String reason, String reasonLabel, String message) {
+                                   String reason, String reasonLabel, String message,
+                                   @Schema(description = "승인 모달(M2)이 다시 보여 주는 조건 4종 건수 — 승인 직전 재검증과 같은 판정식. "
+                                           + "하나라도 0 이 아니면 승인은 409 BRAND_WITHDRAWAL_CONDITION_UNMET")
+                                   WithdrawalConditions conditions) {
+    }
+
+    /** 탈퇴 조건 4종 건수(55 계획서 M6) — 인플루언서 상세 {@code withdrawalReview.conditions}와 같은 자리. */
+    @Schema(name = "AdminBrandWithdrawalConditions")
+    public record WithdrawalConditions(@Schema(description = "진행 중 · 준비 중 공구", example = "0") long activeGroupBuys,
+                                       @Schema(description = "체결 전 계약", example = "0") long contractsBeforeConclusion,
+                                       @Schema(description = "미종결 주문", example = "0") long unclosedOrders,
+                                       @Schema(description = "진행 중 정산 — 브랜드 몫 기준 + 회수 대기 차감", example = "0")
+                                       long unsettled) {
     }
 
     @Schema(name = "AdminBrandHistories")

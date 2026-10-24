@@ -109,7 +109,8 @@ public interface AdminBrandControllerDocs {
                     - `rail.currentStatus.actions` — `canSuspend`(활성일 때) · `canRelease`(정지일 때) · `canReviewWithdrawal`(대기 신청이 있을 때). 탈퇴 계정은 모두 false.
                     - `rail.pendingChips` 는 1건 이상인 칩만 — `SHIP_OVERDUE` · `CANCEL_RESPONSE_PENDING` · `INSPECTION_PENDING` · `RESHIP_PENDING` ·
                       `PRODUCT_INQUIRY_UNANSWERED` · `OPERATOR_THREAD_UNREAD` · `SETTLEMENT_ADJUSTING` · `BRAND_TAX_INVOICE_PENDING`. `target` 이 이동할 화면이다.
-                    - `rail.withdrawalReview` — 탈퇴 신청이 대기 중일 때만(신청일 · 경과일 · 신청자 · 사유 · 남기실 말씀).
+                    - `rail.withdrawalReview` — 탈퇴 신청이 대기 중일 때만(신청일 · 경과일 · 신청자 · 사유 · 남기실 말씀 · 승인 모달 M2 의 조건 4종 건수
+                      `conditions` — 승인 직전 재검증과 같은 판정식이라 0 이 아닌 값이 있으면 승인은 409).
                     - `rail.histories` 는 최신 3건(탈퇴 심사 중이면 2건) · `memos` 는 최신 1건 + 전체 건수입니다.
 
                     **탈퇴 계정** — `purged=true` 이고 파기된 값은 `null` 입니다(「— 파기됨」). 배송 · 반품 정책 · 브랜드명 · 가입일 · 입점 승인일은 보존됩니다.
@@ -155,7 +156,9 @@ public interface AdminBrandControllerDocs {
                                         "pendingChips": [],
                                         "withdrawalReview": { "requestId": 31, "requestedAt": "2026-10-14T14:20:00", "elapsedDays": 2,
                                                               "requesterName": "김담당", "reason": "BUSINESS_CLOSED", "reasonLabel": "사업 종료",
-                                                              "message": "그동안 감사했습니다." },
+                                                              "message": "그동안 감사했습니다.",
+                                                              "conditions": { "activeGroupBuys": 0, "contractsBeforeConclusion": 0,
+                                                                              "unclosedOrders": 0, "unsettled": 0 } },
                                         "histories": { "items": [
                                           { "type": "WITHDRAWAL_REQUESTED", "label": "탈퇴 신청 접수", "tone": "WARNING", "actorType": "BRAND",
                                             "actorName": "김담당", "detail": "사유: 사업 종료", "refType": "BRAND_WITHDRAWAL_REQUEST", "refId": 31,
