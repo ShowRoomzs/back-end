@@ -1,5 +1,7 @@
 package showroomz.domain.member.common.service;
 
+import java.time.LocalDateTime;
+
 import showroomz.domain.member.common.type.MemberType;
 
 /**
@@ -14,10 +16,15 @@ public interface MemberNotifier {
 
     void released(MemberType type, Long memberId);
 
-    /** 탈퇴 승인 — 수신처는 파기 전에 읽은 값이다(브랜드 로그인 이메일 · 인플루언서 업무 이메일). */
-    void withdrawalApproved(MemberType type, Long memberId, String recipient);
+    /**
+     * 탈퇴 승인 — 수신처 · 이름은 파기 전에 읽은 값이다(브랜드 로그인 이메일 · 마켓명 / 인플루언서 업무 이메일 · 쇼룸명). 알림함은 볼 수 없으니
+     * 메일로만 알린다(51 설계서 8절 D-3).
+     */
+    void withdrawalApproved(MemberType type, Long memberId, String recipient, String memberName, LocalDateTime processedAt);
 
-    void withdrawalRejected(MemberType type, Long memberId, String reasonLabel);
+    /** 탈퇴 반려 — 알림함 + 메일(사유 · 운영자 안내). 수신처가 없으면 메일은 건너뛴다. */
+    void withdrawalRejected(MemberType type, Long memberId, String recipient, String memberName, String reasonLabel,
+                            String note, LocalDateTime processedAt);
 
     /** 스튜디오 계좌 변경 뒤 실명 확인 실패(50 설계서 6-7). */
     void accountVerificationFailed(Long creatorId, String reasonLabel);

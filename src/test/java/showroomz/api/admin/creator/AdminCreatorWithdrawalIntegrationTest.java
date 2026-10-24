@@ -66,6 +66,10 @@ class AdminCreatorWithdrawalIntegrationTest extends AdminCreatorTestSupport {
         moveTo(groupBuy.getId(), GroupBuyStatus.ENDED);
         CreatorWithdrawalRequest request = withdrawalService.request(creator.getId(), "콘텐츠 활동을 중단합니다",
                 LocalDateTime.now());
+        String businessEmail = jdbc.queryForObject("SELECT business_email FROM creator WHERE creator_id = ?", String.class,
+                creator.getId());
+        String showroomName = jdbc.queryForObject("SELECT showroom_name FROM creator WHERE creator_id = ?", String.class,
+                creator.getId());
 
         String body = bodyOf(adminPost(approveUrl(request.getId()), Map.of()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("WITHDRAWN"))
@@ -143,6 +147,15 @@ class AdminCreatorWithdrawalIntegrationTest extends AdminCreatorTestSupport {
                 CreatorAdminEventType.WITHDRAWAL_REQUESTED, CreatorAdminEventType.MEMO_CREATED);
         adminGet(base + "/histories").andExpect(jsonPath("$.content[1].detail").value("탈퇴 승인 · 연결 2건 일괄 종료"))
                 .andExpect(jsonPath("$.content[1].actorName").value("시스템"));
+        verifyApprovedMail(businessEmail, showroomName);
+    }
+
+    private void verifyApprovedMail(String businessEmail, String showroomName) {
+        // 55 계획서 M10 — 결과 메일은 파기 전에 읽은 업무 이메일 · 쇼룸명으로 간다.
+        org.mockito.Mockito.verify(mailService).sendMemberWithdrawalApprovedEmail(
+                org.mockito.ArgumentMatchers.eq(businessEmail),
+                org.mockito.ArgumentMatchers.eq(showroomz.global.service.MailService.WithdrawalAudience.CREATOR),
+                org.mockito.ArgumentMatchers.eq(showroomName), org.mockito.ArgumentMatchers.any(LocalDateTime.class));
     }
 
     @Test
@@ -265,7 +278,7 @@ class AdminCreatorWithdrawalIntegrationTest extends AdminCreatorTestSupport {
     // ------------------------------------------------------------------ 12-3. 반려
 
     @Test
-    @DisplayName("[WR-03 · WR-04] 사유만으로 반려(안내 NULL · 이력은 라벨만) · 정지 중 반려는 정지 그대로")
+    @DisplayName("[WR-03 · WR-04 · 55 M10] 사유만으로 반려(안내 NULL · 이력은 라벨만) · 정지 중 반려는 정지 그대로 · 반려 메일(사유 · 안내)")
     void rejectionVariants() throws Exception {
         CreatorWithdrawalRequest first = savePendingRequest("본업 집중", LocalDateTime.now().minusDays(1));
         reject(first.getId(), Map.of("reason", "GROUP_BUY_REMAINING")).andExpect(status().isOk())
@@ -286,6 +299,14 @@ class AdminCreatorWithdrawalIntegrationTest extends AdminCreatorTestSupport {
         assertThat(sanctions.existsByCreatorIdAndReleasedAtIsNull(creator.getId())).isTrue();
         adminGet(base + "/histories").andExpect(jsonPath("$.content[0].detail")
                 .value("기타(직접 입력) — 분쟁 종결 후 다시 신청해 주세요"));
+        String businessEmail = jdbc.queryForObject("SELECT business_email FROM creator WHERE creator_id = ?", String.class,
+                creator.getId());
+        org.mockito.Mockito.verify(mailService).sendMemberWithdrawalRejectedEmail(
+                org.mockito.ArgumentMatchers.eq(businessEmail),
+                org.mockito.ArgumentMatchers.eq(showroomz.global.service.MailService.WithdrawalAudience.CREATOR),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("기타(직접 입력)"),
+                org.mockito.ArgumentMatchers.eq("분쟁 종결 후 다시 신청해 주세요"),
+                org.mockito.ArgumentMatchers.any(LocalDateTime.class));
     }
 
     @Test

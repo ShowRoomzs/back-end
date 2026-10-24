@@ -82,13 +82,14 @@ public class BrandWithdrawalService {
 
         Seller seller = market.getSeller();
         String recipient = seller.getEmail();
+        String marketName = market.getMarketName();
         request.approve(operatorId, operatorName, now);
         sanctionService.closeByWithdrawal(marketId, now);
         market.markWithdrawn();
         purger.purge(seller, market, now);
         historyRecorder.byAdmin(marketId, BrandAdminEventType.WITHDRAWAL_APPROVED, operatorId, operatorName,
                 "사유: " + request.reasonLabel(), BrandAdminHistoryRecorder.REF_WITHDRAWAL, request.getId(), now);
-        AfterCommit.run(() -> notifier.withdrawalApproved(MemberType.BRAND, marketId, recipient));
+        AfterCommit.run(() -> notifier.withdrawalApproved(MemberType.BRAND, marketId, recipient, marketName, now));
         log.info("브랜드 탈퇴 승인 - marketId: {}, requestId: {}", marketId, requestId);
         return request;
     }
@@ -98,13 +99,16 @@ public class BrandWithdrawalService {
                                          Long operatorId, String operatorName, LocalDateTime now) {
         String normalized = MemberSanctionRules.requireDetail(reason, note,
                 ErrorCode.BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED);
-        sanctionService.lockBrand(marketId);
+        Market market = sanctionService.lockBrand(marketId);
         BrandWithdrawalRequest request = lockPending(marketId, requestId);
         request.reject(reason, normalized, operatorId, operatorName, now);
+        String recipient = market.getSeller() == null ? null : market.getSeller().getEmail();
+        String marketName = market.getMarketName();
         historyRecorder.byAdmin(marketId, BrandAdminEventType.WITHDRAWAL_REJECTED, operatorId, operatorName,
                 MemberSanctionRules.reasonText(reason, normalized),
                 BrandAdminHistoryRecorder.REF_WITHDRAWAL, request.getId(), now);
-        AfterCommit.run(() -> notifier.withdrawalRejected(MemberType.BRAND, marketId, reason.getLabel()));
+        AfterCommit.run(() -> notifier.withdrawalRejected(MemberType.BRAND, marketId, recipient, marketName,
+                reason.getLabel(), normalized, now));
         return request;
     }
 

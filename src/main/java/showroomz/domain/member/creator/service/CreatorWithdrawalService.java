@@ -135,6 +135,7 @@ public class CreatorWithdrawalService {
         }
 
         String businessEmail = creator.getBusinessEmail();
+        String showroomName = creator.getShowroomName();
         creator.purgeOnWithdrawal(operatorId, now);
         // 스튜디오 자격만 해지 — 소비자 계정(users.status)은 그대로다(§51-5). 쇼룸 노출 · 스튜디오 로그인이 이 값과 creator.status 를 본다.
         if (creator.getUser().getRoleType() == RoleType.CREATOR) {
@@ -142,7 +143,8 @@ public class CreatorWithdrawalService {
         }
         history.byOperator(creatorId, CreatorAdminEventType.WITHDRAWAL_APPROVED, operatorId, operatorName,
                 request.getReasonText(), CreatorAdminHistoryRecorder.REF_WITHDRAWAL_REQUEST, requestId, now);
-        AfterCommit.run(() -> notifier.withdrawalApproved(MemberType.CREATOR, creatorId, businessEmail));
+        AfterCommit.run(() -> notifier.withdrawalApproved(MemberType.CREATOR, creatorId, businessEmail, showroomName,
+                now));
         log.info("인플루언서 탈퇴 승인 - creatorId: {}, requestId: {}, connectionsEnded: {}", creatorId, requestId, ended);
         return creator;
     }
@@ -160,7 +162,10 @@ public class CreatorWithdrawalService {
                 MemberSanctionRules.reasonText(reason, normalized), CreatorAdminHistoryRecorder.REF_WITHDRAWAL_REQUEST,
                 requestId, now);
         String reasonLabel = reason.getLabel();
-        AfterCommit.run(() -> notifier.withdrawalRejected(MemberType.CREATOR, creatorId, reasonLabel));
+        String businessEmail = creator.getBusinessEmail();
+        String showroomName = creator.getShowroomName();
+        AfterCommit.run(() -> notifier.withdrawalRejected(MemberType.CREATOR, creatorId, businessEmail, showroomName,
+                reasonLabel, normalized, now));
         return creator;
     }
 

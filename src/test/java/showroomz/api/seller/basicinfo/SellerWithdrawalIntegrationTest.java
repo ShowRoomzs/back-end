@@ -12,6 +12,7 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.service.MailService;
 import showroomz.support.BrandFixture;
 
 import java.time.LocalDate;
@@ -21,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -200,6 +204,23 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
         long requestId = json(postAs(sellerToken(owner.seller()), WITHDRAWALS, null).andExpect(status().isCreated()))
                 .path("requestId").asLong();
         approve(owner.marketId(), requestId).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("WD-15 (D-3) 결과 메일 — 반려는 로그인 이메일 · 마켓명 · 사유 · 안내 · 승인은 파기 전에 읽은 이메일 · 마켓명")
+    void resultMails() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("결과메일");
+        String token = sellerToken(owner.seller());
+        long first = json(postAs(token, WITHDRAWALS, null).andExpect(status().isCreated())).path("requestId").asLong();
+        reject(owner.marketId(), first, Map.of("reason", "UNSETTLED", "note", "정산이 끝난 뒤 다시 신청해 주세요."))
+                .andExpect(status().isOk());
+        verify(mailService).sendMemberWithdrawalRejectedEmail(eq(owner.email()), eq(MailService.WithdrawalAudience.BRAND),
+                eq("결과메일"), eq("진행 중 정산 잔존"), eq("정산이 끝난 뒤 다시 신청해 주세요."), any(LocalDateTime.class));
+
+        long second = json(postAs(token, WITHDRAWALS, null).andExpect(status().isCreated())).path("requestId").asLong();
+        approve(owner.marketId(), second).andExpect(status().isOk());
+        verify(mailService).sendMemberWithdrawalApprovedEmail(eq(owner.email()), eq(MailService.WithdrawalAudience.BRAND),
+                eq("결과메일"), any(LocalDateTime.class));
     }
 
     // ------------------------------------------------------------------ helpers

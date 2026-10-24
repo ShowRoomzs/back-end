@@ -1,6 +1,7 @@
 package showroomz.domain.member.common.service;
 
 import lombok.RequiredArgsConstructor;
+import showroomz.global.service.MailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,9 +17,12 @@ import showroomz.domain.notification.type.NotificationActorType;
 import showroomz.domain.notification.type.NotificationTargetType;
 import showroomz.domain.notification.type.NotificationType;
 
+import java.time.LocalDateTime;
+
 /**
  * {@link MemberNotifier}의 알림함 구현(1017 설계서 1-4 · 1-5) — 브랜드 · 인플루언서 조치 결과를 파트너센터 · 쇼룸 스튜디오 알림함에 쓴다.
- * 메일 · 문자 외부 발송은 결정 대기(12절 Q1)라 하지 않는다(변경 요청 승인 메일은 기존 경로가 따로 보낸다).
+ * 메일은 탈퇴 승인 · 반려 결과만 보낸다(시안 4-I 「결과는 이메일로 안내됩니다」 · 51 설계서 D-3 · 55 계획서 M10). 그 밖의 메일 · 문자
+ * 외부 발송은 결정 대기(12절 Q1)다(변경 요청 승인 메일은 기존 경로가 따로 보낸다).
  *
  * <p>정지 · 해제 알림은 운영팀 채널의 정지 카드로 보낸다(파트너 알림 표 「연결·소통 › 운영팀 채널 · 정지 카드」). 호출은 커밋 뒤다.
  */
@@ -33,6 +37,7 @@ public class InboxMemberNotifier implements MemberNotifier {
     private final BrandSanctionRepository brandSanctions;
     private final CreatorSanctionRepository creatorSanctions;
     private final OperatorChannelService operatorChannels;
+    private final MailService mailService;
 
     @Override
     @Transactional(readOnly = true)
@@ -54,23 +59,39 @@ public class InboxMemberNotifier implements MemberNotifier {
     }
 
     @Override
-    public void withdrawalApproved(MemberType type, Long memberId, String recipient) {
-        // 탈퇴 승인으로 계정이 해지됐다 — 알림함을 볼 수 없다. 메일 경로만 남는다(외부 발송 결정 대기).
-        log.info("[알림] {} 탈퇴 승인 - id: {}, hasRecipient: {}", type.getLabel(), memberId, recipient != null);
+    public void withdrawalApproved(MemberType type, Long memberId, String recipient, String memberName,
+                                   LocalDateTime processedAt) {
+        // 탈퇴 승인으로 계정이 해지됐다 — 알림함을 볼 수 없다. 메일로만 알린다.
+        if (recipient == null || recipient.isBlank()) {
+            log.warn("[알림] {} 탈퇴 승인 메일 수신처 없음 - id: {}", type.getLabel(), memberId);
+            return;
+        }
+        mailService.sendMemberWithdrawalApprovedEmail(recipient, audience(type), memberName, processedAt);
     }
 
     @Override
-    public void withdrawalRejected(MemberType type, Long memberId, String reasonLabel) {
+    public void withdrawalRejected(MemberType type, Long memberId, String recipient, String memberName,
+                                   String reasonLabel, String note, LocalDateTime processedAt) {
         publish(type, memberId, NotificationType.WITHDRAWAL_REJECTED,
                 type == MemberType.BRAND ? "탈퇴 신청이 반려되었습니다 · 사유: " + reasonLabel
                         : "탈퇴 신청이 반려됐어요 · 사유: " + reasonLabel,
-                NotificationTargetType.BASIC_INFO_TAB, null, type == MemberType.BRAND ? "ACCOUNT" : "ACCOUNT");
+                NotificationTargetType.BASIC_INFO_TAB, null, "ACCOUNT");
+        if (recipient == null || recipient.isBlank()) {
+            log.warn("[알림] {} 탈퇴 반려 메일 수신처 없음 - id: {}", type.getLabel(), memberId);
+            return;
+        }
+        mailService.sendMemberWithdrawalRejectedEmail(recipient, audience(type), memberName, reasonLabel, note,
+                processedAt);
+    }
+
+    private static MailService.WithdrawalAudience audience(MemberType type) {
+        return type == MemberType.BRAND ? MailService.WithdrawalAudience.BRAND : MailService.WithdrawalAudience.CREATOR;
     }
 
     @Override
     public void accountVerificationFailed(Long creatorId, String reasonLabel) {
         publish(MemberType.CREATOR, creatorId, NotificationType.ACCOUNT_VERIFICATION_FAILED,
-                "정산 계좌 실명 확인에 실패했어요 · " + reasonLabel, NotificationTargetType.BASIC_INFO_TAB, null,
+                "정산 계좌 확인에 실패했어요 · " + reasonLabel, NotificationTargetType.BASIC_INFO_TAB, null,
                 "SETTLEMENT");
     }
 
