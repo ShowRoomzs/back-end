@@ -130,11 +130,12 @@ public record MessageCardResponse(
     public record Action(
             @Schema(description = "액션 종류 — RESEND_NOTICE(재발송 요청) · ADJUSTMENT_RESPOND(정산 조정 제안)", example = "RESEND_NOTICE")
             String type,
-            @Schema(description = "PENDING(조치 전 · 응답 대기) · DONE(처리됨 · 응답됨) · CLOSED(닫힘 · 응답 없이 만료)",
+            @Schema(description = "PENDING(조치 전 · 응답 대기) · DONE(처리됨 · 응답됨) · CLOSED(닫힘 · 응답 없이 만료 · 요청 철회)",
                     example = "PENDING") MessageCardActionState state,
             @Schema(description = "알림 전송 시각 · 제안 응답 시각 — DONE일 때", example = "2026-08-14T08:55:00", nullable = true)
             LocalDateTime doneAt,
-            @Schema(description = "[정산 조정] 결과 문구 — 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」", nullable = true)
+            @Schema(description = "[정산 조정] 결과 문구 — 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」 · 「요청 철회」"
+                    + "(CLOSED 는 협의가 철회로 끝났으면 「요청 철회」, 그 밖은 「기한 만료」)", nullable = true)
             String resultLabel,
             @Schema(description = "[정산 조정] 뷰어가 지금 이 카드에 답할 수 있는가 — 최신 제안 ∧ 동의 · 반대 · 다른 금액 제안 중 하나라도 가능. "
                     + "버튼 종류는 GET …/threads/{threadId}/adjustment 의 permissions", example = "false")

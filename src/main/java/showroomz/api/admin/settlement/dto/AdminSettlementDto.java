@@ -200,7 +200,7 @@ public final class AdminSettlementDto {
     public record Adjustment(
             Long adjustmentId,
             @Schema(description = "20b 이슈 스레드 — 어드민 소통 스레드 이슈 탭으로 연다") Long threadId,
-            @Schema(description = "OPEN · AGREED · EXPIRED") String status,
+            @Schema(description = "OPEN · AGREED · EXPIRED · WITHDRAWN") String status,
             String statusLabel,
             @Schema(description = "SELLER · CREATOR") String requesterType,
             LocalDateTime openedAt,

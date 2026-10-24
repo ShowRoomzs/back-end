@@ -49,8 +49,7 @@ public class SettlementAdjustmentCards {
 
     /** 요청(seq 1) · 다른 금액 제안(seq n) — 보낸 사람 = 제안자. */
     public Message proposal(SettlementAdjustment a, AdjustableSettlement s, SettlementAdjustmentProposal p) {
-        MessageCardType type = p.getSeq() == 1
-                ? MessageCardType.SETTLEMENT_ADJUSTMENT_REQUEST : MessageCardType.SETTLEMENT_ADJUSTMENT_COUNTER;
+        MessageCardType type = MessageCardType.forProposalSeq(p.getSeq());
         return post(a, s, p.getProposerType().participantType(), p.getProposerId(),
                 "stl-adj-%d-proposal-%d".formatted(a.getId(), p.getSeq()), type,
                 MessageRefType.SETTLEMENT_ADJUSTMENT_PROPOSAL, p.getId(),

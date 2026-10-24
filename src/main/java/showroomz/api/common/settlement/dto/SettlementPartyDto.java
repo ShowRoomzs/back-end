@@ -39,7 +39,7 @@ public final class SettlementPartyDto {
     public record AdjustmentBlock(
             Long adjustmentId,
             @Schema(description = "3자 이슈 스레드 — 연결·소통 화면으로 이동") Long threadId,
-            @Schema(description = "OPEN · AGREED · EXPIRED") String status,
+            @Schema(description = "OPEN · AGREED · EXPIRED · WITHDRAWN") String status,
             @Schema(example = "협의 중") String statusLabel,
             @Schema(description = "처음 요청한 쪽 — SELLER · CREATOR") String requesterType,
             LocalDateTime openedAt,

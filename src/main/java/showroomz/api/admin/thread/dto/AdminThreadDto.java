@@ -58,7 +58,7 @@ public final class AdminThreadDto {
     @Schema(description = "이슈 탭 행 — 정산 조정 협의(44 이슈 스레드 설계서 4-1). 행의 name = 공구명")
     public record IssueListItem(
             @Schema(example = "77") Long adjustmentId,
-            @Schema(description = "OPEN · AGREED · EXPIRED", example = "OPEN") String status,
+            @Schema(description = "OPEN · AGREED · EXPIRED · WITHDRAWN", example = "OPEN") String status,
             @Schema(example = "협의 중") String statusLabel,
             @Schema(description = "운영자 기준 배지 — 응답 대기 · 합의 · 금액 변경 · 기한 만료 · 원래 금액", example = "응답 대기")
             String badgeLabel,
@@ -88,7 +88,7 @@ public final class AdminThreadDto {
             @Schema(example = "0") long unreadCount,
             @Schema(example = "0") long pendingCardCount,
             @Schema(description = "진행 중(OPEN) 협의 수", example = "1") long openCount,
-            @Schema(description = "종결(AGREED · EXPIRED) 협의 수", example = "8") long closedCount) {
+            @Schema(description = "종결(AGREED · EXPIRED · WITHDRAWN) 협의 수", example = "8") long closedCount) {
     }
 
     public record TabSummary(
@@ -117,7 +117,7 @@ public final class AdminThreadDto {
     @Schema(description = "이슈 패널(44 이슈 스레드 설계서 4-3) — 정산 영향 · 이슈 정보 · 진행 단계 · 참고 링크")
     public record IssuePanel(
             Long adjustmentId,
-            @Schema(description = "OPEN · AGREED · EXPIRED", example = "OPEN") String status,
+            @Schema(description = "OPEN · AGREED · EXPIRED · WITHDRAWN", example = "OPEN") String status,
             @Schema(example = "협의 중") String statusLabel,
             @Schema(example = "응답 대기") String badgeLabel,
             @Schema(example = "INFO") String badgeTone,
@@ -286,7 +286,7 @@ public final class AdminThreadDto {
             @Schema(description = "알림을 보낸 운영자 — 어드민에만 내려간다", example = "김운영", nullable = true)
             String doneByName,
             @Schema(description = "자동 안내 말풍선의 메시지 ID", nullable = true) Long noticeMessageId,
-            @Schema(description = "[정산 조정] 결과 문구 — 동의 · 반대 · 다른 금액 제안으로 응답됨 · 기한 만료", nullable = true)
+            @Schema(description = "[정산 조정] 결과 문구 — 동의 · 반대 · 다른 금액 제안으로 응답됨 · 기한 만료 · 요청 철회", nullable = true)
             String resultLabel,
             @Schema(description = "[정산 조정] 운영자는 답하지 않는다 — 항상 false", example = "false") boolean respondable) {
     }

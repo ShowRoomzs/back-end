@@ -67,8 +67,9 @@ public class MessageCardReader {
      * 정산 조정 카드의 읽기값(5-4) — 스냅샷 + 참조 객체(협의 · 제안)의 지금 상태.
      *
      * @param actionState 제안 카드(요청 · 다른 금액 제안)만 — PENDING(응답 대기) · DONE(동의 · 반대 · 다른 금액 제안으로 응답됨) ·
-     *                    CLOSED(응답 없이 만료). 그 밖은 null
-     * @param resultLabel DONE · CLOSED 일 때 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」
+     *                    CLOSED(응답 없이 만료 · 요청자 철회). 그 밖은 null
+     * @param resultLabel DONE · CLOSED 일 때 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」 · 「요청 철회」
+     *                    (CLOSED 는 협의 상태로 고른다 · {@link ProposalStatus#closedLabel})
      */
     public record AdjustmentCard(MessageCardPayload.Adjustment snapshot, AdjustmentStatus adjustmentStatus,
                                  Long proposalId, Integer seq, ProposalStatus proposalStatus,
@@ -168,7 +169,8 @@ public class MessageCardReader {
                     || (proposal.getStatus() == ProposalStatus.PENDING && adjustment != null
                     && adjustment.getStatus().isClosed())) {
                 state = MessageCardActionState.CLOSED;
-                resultLabel = ProposalStatus.CLOSED.getLabel();
+                // 철회 · 만료는 제안 행이 같다(CLOSED) — 협의 상태로 문구를 고른다(55 계획서 S4).
+                resultLabel = ProposalStatus.closedLabel(adjustment == null ? null : adjustment.getStatus());
             } else if (proposal.getStatus() == ProposalStatus.PENDING) {
                 state = MessageCardActionState.PENDING;
             } else {

@@ -77,7 +77,7 @@ public final class SettlementAdjustmentDto {
     public record AdjustmentView(
             Long adjustmentId,
             Long threadId,
-            @Schema(description = "OPEN · AGREED · EXPIRED") String status,
+            @Schema(description = "OPEN · AGREED · EXPIRED · WITHDRAWN") String status,
             @Schema(example = "협의 중") String statusLabel,
             @Schema(description = "MY_TURN · THEIR_TURN · OPEN_FLOOR · CLOSED") String turn,
             @Schema(example = "내 응답 필요") String turnLabel,
@@ -121,7 +121,7 @@ public final class SettlementAdjustmentDto {
             long rewardAmount,
             @Schema(description = "원래 리워드 대비 — 양수 증액 · 음수 감액") long deltaAmount,
             @Schema(nullable = true) String reason,
-            @Schema(description = "PENDING · ACCEPTED · REJECTED · COUNTERED · CLOSED") String status,
+            @Schema(description = "PENDING · ACCEPTED · REJECTED · COUNTERED · CLOSED(응답 없이 종결 — 기한 만료 · 요청 철회)") String status,
             LocalDateTime proposedAt,
             @Schema(nullable = true) LocalDateTime respondedAt,
             @Schema(nullable = true) Long cardMessageId

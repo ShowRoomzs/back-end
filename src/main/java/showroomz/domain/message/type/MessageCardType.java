@@ -54,4 +54,9 @@ public enum MessageCardType {
     public boolean isAdjustmentProposal() {
         return this == SETTLEMENT_ADJUSTMENT_REQUEST || this == SETTLEMENT_ADJUSTMENT_COUNTER;
     }
+
+    /** 제안 순번 → 카드 종류 — seq 1 은 요청, 그 뒤는 다른 금액 제안. 카드 등록과 목록 줄 배지가 같이 쓴다(55 계획서 S5). */
+    public static MessageCardType forProposalSeq(int seq) {
+        return seq == 1 ? SETTLEMENT_ADJUSTMENT_REQUEST : SETTLEMENT_ADJUSTMENT_COUNTER;
+    }
 }

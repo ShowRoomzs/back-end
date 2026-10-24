@@ -145,6 +145,14 @@ class Design1021SettlementDetailIntegrationTest extends SettlementTestSupport {
                 PayoutStatus.BLOCKED);
         assertThat(messagesOf(threadId).stream().filter(Message::isCard).map(Message::getCardType).toList())
                 .contains(MessageCardType.SETTLEMENT_ADJUSTMENT_WITHDRAWN);
+        // 철회된 요청 카드 — 닫힘(CLOSED) · 「기한 만료」가 아니라 「요청 철회」(55 S4 · D10). 세 화면이 같은 문구다.
+        for (JsonNode messages : List.of(json(sellerGet("/v1/seller/threads/" + threadId + "/messages")),
+                json(creatorGet("/v1/creator/threads/" + threadId + "/messages")),
+                json(adminGet("/v1/admin/threads/" + threadId + "/messages")))) {
+            JsonNode requestCard = proposalCardActions(messages).get(1);
+            assertThat(requestCard.get("state").asText()).isEqualTo("CLOSED");
+            assertThat(requestCard.get("resultLabel").asText()).isEqualTo("요청 철회");
+        }
         assertThat(notices(NotificationType.ADJUSTMENT_WITHDRAWN)).singleElement()
                 .satisfies(n -> assertThat(n.getRecipientType()).isEqualTo(NotificationRecipientType.SELLER));
 
@@ -173,6 +181,14 @@ class Design1021SettlementDetailIntegrationTest extends SettlementTestSupport {
         sellerPost("/v1/seller/settlement-adjustments/" + adjustmentId + "/withdraw", Map.of())
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("WITHDRAWN"));
         assertThat(settlement(s.getId()).getRewardAmount()).isEqualTo(settlement(s.getId()).getOriginalRewardAmount());
+
+        // 카드 결과 — seq 1 은 응답된 그대로 · 철회로 닫힌 seq 2 만 「요청 철회」(55 S4).
+        Map<Integer, JsonNode> cards = proposalCardActions(json(creatorGet("/v1/creator/threads/"
+                + requested.get("threadId").asLong() + "/messages")));
+        assertThat(cards.get(1).get("state").asText()).isEqualTo("DONE");
+        assertThat(cards.get(1).get("resultLabel").asText()).isEqualTo("다른 금액 제안으로 응답됨");
+        assertThat(cards.get(2).get("state").asText()).isEqualTo("CLOSED");
+        assertThat(cards.get(2).get("resultLabel").asText()).isEqualTo("요청 철회");
     }
 
     // ------------------------------------------------------------------ 6-1 분해 줄 API
@@ -208,6 +224,19 @@ class Design1021SettlementDetailIntegrationTest extends SettlementTestSupport {
 
     private List<Notification> notices(NotificationType type) {
         return notificationRepository.findAll().stream().filter(n -> n.getType() == type).toList();
+    }
+
+    /** 메시지 목록의 제안 카드(요청 · 다른 금액 제안) — 제안 seq → card.action. */
+    private static Map<Integer, JsonNode> proposalCardActions(JsonNode messages) {
+        Map<Integer, JsonNode> actions = new java.util.TreeMap<>();
+        for (JsonNode m : messages.get("content")) {
+            String type = m.path("card").path("cardType").asText();
+            if ("SETTLEMENT_ADJUSTMENT_REQUEST".equals(type) || "SETTLEMENT_ADJUSTMENT_COUNTER".equals(type)) {
+                actions.put(m.path("card").path("detail").path("adjustment").path("seq").asInt(),
+                        m.get("card").get("action"));
+            }
+        }
+        return actions;
     }
 
     private org.springframework.test.web.servlet.ResultActions creatorPost(String url, Object body) throws Exception {

@@ -384,6 +384,12 @@ class SettlementAdjustmentIntegrationTest extends SettlementTestSupport {
         assertThat(sellerRow.get("adjustment").get("turn").asText()).isEqualTo("MY_TURN");
         JsonNode creatorRow = threadRow(json(creatorGet(CREATOR + "/connections/threads")), threadId);
         assertThat(creatorRow.get("adjustment").get("turn").asText()).isEqualTo("THEIR_TURN");
+        // 요청 직후 — 양쪽 줄 앞말은 「정산 조정 요청」 · seq 1(55 S5).
+        for (JsonNode row : List.of(sellerRow, creatorRow)) {
+            assertThat(row.get("adjustment").get("latestProposalSeq").asInt()).isEqualTo(1);
+            assertThat(row.get("adjustment").get("latestProposalKind").asText()).isEqualTo("REQUEST");
+            assertThat(row.get("adjustment").get("latestProposalKindLabel").asText()).isEqualTo("정산 조정 요청");
+        }
 
         assertThat(requestCardAction(sellerGet(SELLER + "/threads/" + threadId + "/messages"))
                 .get("respondable").asBoolean()).isTrue();
@@ -401,6 +407,25 @@ class SettlementAdjustmentIntegrationTest extends SettlementTestSupport {
         JsonNode closedRow = threadRow(json(sellerGet(SELLER + "/connections/threads")), threadId);
         assertThat(closedRow.get("adjustment").get("status").asText()).isEqualTo("AGREED");
         assertThat(closedRow.get("adjustment").get("turn").asText()).isEqualTo("CLOSED");
+    }
+
+    @Test
+    @DisplayName("SA-14 목록 배지 — 줄 앞말은 최신 제안: 셀러가 다른 금액을 제안하면 스튜디오 줄은 「다른 금액 제안 · 내 응답 필요」(55 S5)")
+    void listBadgeFollowsLatestProposal() throws Exception {
+        JsonNode requested = json(creatorRequest(settlement, 130_000).andExpect(status().isCreated()));
+        long threadId = requested.get("threadId").asLong();
+        sellerPost(SELLER + "/settlement-adjustments/" + requested.get("adjustmentId").asLong() + "/proposals",
+                Map.of("rewardAmount", 110_000)).andExpect(status().isCreated());
+
+        JsonNode creatorBadge = threadRow(json(creatorGet(CREATOR + "/connections/threads")), threadId).get("adjustment");
+        assertThat(creatorBadge.get("turn").asText()).isEqualTo("MY_TURN");
+        assertThat(creatorBadge.get("turnLabel").asText()).isEqualTo("내 응답 필요");
+        assertThat(creatorBadge.get("latestProposalSeq").asInt()).isEqualTo(2);
+        assertThat(creatorBadge.get("latestProposalKind").asText()).isEqualTo("COUNTER");
+        assertThat(creatorBadge.get("latestProposalKindLabel").asText()).isEqualTo("다른 금액 제안");
+        JsonNode sellerBadge = threadRow(json(sellerGet(SELLER + "/connections/threads")), threadId).get("adjustment");
+        assertThat(sellerBadge.get("turn").asText()).isEqualTo("THEIR_TURN");
+        assertThat(sellerBadge.get("latestProposalKind").asText()).isEqualTo("COUNTER");
     }
 
     // ------------------------------------------------------------------ 어드민 20b(SA-15 ~ SA-19)
@@ -619,6 +644,11 @@ class SettlementAdjustmentIntegrationTest extends SettlementTestSupport {
                 SettlementEventType.CONFIRMED_BY_EXPIRY);
         List<MessageCardType> cards = cardTypes(requested.get("threadId").asLong());
         assertThat(cards.get(cards.size() - 1)).isEqualTo(MessageCardType.SETTLEMENT_ADJUSTMENT_EXPIRED);
+        // 만료로 닫힌 제안 카드는 「기한 만료」 그대로 — 철회(「요청 철회」)와 구분된다(55 S4 회귀).
+        JsonNode expiredCounter = cardAction(creatorGet(CREATOR + "/threads/" + requested.get("threadId").asLong()
+                + "/messages"), "SETTLEMENT_ADJUSTMENT_COUNTER");
+        assertThat(expiredCounter.get("state").asText()).isEqualTo("CLOSED");
+        assertThat(expiredCounter.get("resultLabel").asText()).isEqualTo("기한 만료");
     }
 
     @Test
@@ -699,12 +729,16 @@ class SettlementAdjustmentIntegrationTest extends SettlementTestSupport {
     }
 
     private JsonNode requestCardAction(ResultActions messages) throws Exception {
+        return cardAction(messages, "SETTLEMENT_ADJUSTMENT_REQUEST");
+    }
+
+    private JsonNode cardAction(ResultActions messages, String cardType) throws Exception {
         for (JsonNode m : json(messages.andExpect(status().isOk())).get("content")) {
-            if ("SETTLEMENT_ADJUSTMENT_REQUEST".equals(m.path("card").path("cardType").asText())) {
+            if (cardType.equals(m.path("card").path("cardType").asText())) {
                 return m.get("card").get("action");
             }
         }
-        throw new AssertionError("요청 카드 없음");
+        throw new AssertionError("카드 없음: " + cardType);
     }
 
     private static List<String> stepStates(JsonNode issue) {

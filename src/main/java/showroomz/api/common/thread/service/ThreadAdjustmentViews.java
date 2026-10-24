@@ -5,9 +5,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.thread.dto.ThreadAdjustmentBadge;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.type.MessageCardType;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader;
 import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader.AdjustmentSummary;
+import showroomz.domain.settlement.adjustment.service.SettlementAdjustmentReader.ProposalView;
 import showroomz.domain.settlement.adjustment.type.AdjustmentTurn;
 import showroomz.domain.settlement.adjustment.type.SettlementParty;
 
@@ -57,8 +59,14 @@ public class ThreadAdjustmentViews {
 
     private static ThreadAdjustmentBadge badge(AdjustmentSummary summary, SettlementParty viewer) {
         AdjustmentTurn turn = SettlementAdjustmentReader.turnFor(summary, viewer);
+        // 줄 앞말 = 최신 제안의 카드 종류(55 계획서 S5) — seq 규칙은 카드 등록과 같은 MessageCardType.forProposalSeq.
+        ProposalView latest = summary.latestProposal();
+        MessageCardType kind = latest == null ? null : MessageCardType.forProposalSeq(latest.seq());
         return new ThreadAdjustmentBadge(summary.adjustmentId(), summary.status().name(), summary.status().getLabel(),
                 turn.name(), turn.getLabel(), turn.getTone().name(), summary.deadlineAt(),
-                summary.remainingBusinessDays());
+                summary.remainingBusinessDays(),
+                latest == null ? null : latest.seq(),
+                kind == null ? null : kind == MessageCardType.SETTLEMENT_ADJUSTMENT_REQUEST ? "REQUEST" : "COUNTER",
+                kind == null ? null : kind.getTitle());
     }
 }
