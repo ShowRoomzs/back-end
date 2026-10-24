@@ -17,6 +17,9 @@ public interface CreatorApplicationRepository extends JpaRepository<CreatorAppli
 
     Optional<CreatorApplication> findTopByUser_IdOrderByCreatedAtDesc(Long userId);
 
+    /** 그 소비자 계정의 입점 신청 전부(오래된 순) — 처리 이력의 가입 신청 · 입점 승인 파생 행. */
+    List<CreatorApplication> findByUser_IdOrderByCreatedAtAscIdAsc(Long userId);
+
     Optional<CreatorApplication> findTopByUser_IdAndStatusOrderByCreatedAtDesc(
             Long userId, CreatorApplicationStatus status);
 

@@ -48,6 +48,18 @@ public class AdminContractController implements AdminContractControllerDocs {
     }
     @PostMapping("/{id}/conclude")
     public ProcessResponse conclude(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) { return commands.conclude(id, operator(principal)); }
+    @PostMapping("/{id}/group-buy")
+    public ProcessResponse createGroupBuy(@PathVariable Long id, @AuthenticationPrincipal UserPrincipal principal) {
+        return commands.createGroupBuy(id, operator(principal));
+    }
+    @PostMapping("/{id}/terminate")
+    public ProcessResponse terminate(@PathVariable Long id, @Valid @RequestBody TerminateRequest request, @AuthenticationPrincipal UserPrincipal principal) {
+        return commands.terminate(id, operator(principal), request);
+    }
+    @PostMapping("/{id}/close-consent-card")
+    public CardResponse sendCancelConsentCard(@PathVariable Long id, @Valid @RequestBody CancelConsentCardRequest request, @AuthenticationPrincipal UserPrincipal principal) {
+        return commands.sendCancelConsentCard(id, operator(principal), request);
+    }
     @PostMapping("/{id}/expire")
     public ProcessResponse expire(@PathVariable Long id, @Valid @RequestBody ExpireRequest request, @AuthenticationPrincipal UserPrincipal principal) {
         return commands.expire(id, operator(principal), request);

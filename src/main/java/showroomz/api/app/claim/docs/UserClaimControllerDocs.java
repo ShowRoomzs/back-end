@@ -20,8 +20,7 @@ import showroomz.api.app.order.dto.OrderDto;
 import showroomz.api.app.order.dto.UserOrderDto;
 import showroomz.domain.order.type.ClaimType;
 
-@Tag(name = "User - Claim", description = "반품 · 교환 요청 · 상세 · 회수 송장 · 철회 · 회수 조회 · 재발송 배송 조회 "
-        + "(C10-2 · C10-3 · C10-4 · C10-5)")
+@Tag(name = "User - Claim", description = "사용자 반품·교환 API")
 public interface UserClaimControllerDocs {
 
     @Operation(

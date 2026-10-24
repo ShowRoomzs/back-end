@@ -91,9 +91,12 @@ public class UserClaimQueryService {
     private final OrderClaimPaymentRepository claimPaymentRepository;
     private final ClaimExchangeOptionReader exchangeOptionReader;
     private final ClaimFeePolicy feePolicy;
+    private final showroomz.domain.order.service.ClaimFeeContextReader feeContextReader;
     private final ClaimStoragePolicy storagePolicy;
     private final OrderProperties orderProperties;
     private final PaymentMethodCatalog paymentMethodCatalog;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
+    private final showroomz.domain.order.repository.OrderRefundTaskRepository refundTaskRepository;
 
     // ------------------------------------------------------------------ 폼(3-1)
 
@@ -154,7 +157,8 @@ public class UserClaimQueryService {
                 .reshipTo(type != ClaimType.EXCHANGE ? null : new UserClaimDto.ReshipTo(order.getRecipientName(),
                         order.getRecipientPhone(), order.getZipCode(), order.getAddress(), order.getDetailAddress(),
                         order.getDeliveryMemo()))
-                .fees(new UserClaimDto.Fees(consumerFee(type, ClaimFeeBearer.CONSUMER, group), 0))
+                .fees(new UserClaimDto.Fees(consumerFee(type, ClaimFeeBearer.CONSUMER, group), 0,
+                        deductionRule(type, group)))
                 .courierPayment(new UserClaimDto.CourierPayments(CourierPayment.PREPAID, CourierPayment.COLLECT))
                 // 고객 귀책 교환은 요청할 때 재발송비를 결제한다 — 주문서와 같은 목록(반품은 결제가 없다).
                 .paymentMethods(type != ClaimType.EXCHANGE ? null : paymentMethodCatalog.available())
@@ -213,10 +217,43 @@ public class UserClaimQueryService {
                 address.getZipCode(), address.getAddress(), address.getDetailAddress(), address.getMemo());
     }
 
-    /** 앱이 다루는 배송비 — 반품은 환불액에서 빼는 최초 배송비, 교환은 요청할 때 결제하는 재발송 배송비. */
+    /**
+     * 앱이 다루는 배송비 — 반품은 환불액에서 빼는 최초 배송비(전량 반품 기준 · 일부 반품은 {@link #deductionRule}로 FE 가 다시 판정),
+     * 교환은 요청할 때 결제하는 재발송 배송비(편도 + 권역 추가비).
+     */
     private int consumerFee(ClaimType type, ClaimFeeBearer feeBearer, OrderDeliveryGroup group) {
         return type == ClaimType.EXCHANGE ? feePolicy.exchangeReshipFee(feeBearer, group)
-                : feePolicy.returnDeduction(type, feeBearer, group);
+                : feePolicy.returnDeductionForFullReturn(type, feeBearer, group, feeContextReader.alreadyDeducted(group));
+    }
+
+    /**
+     * 일부 반품 판정 재료(1021 설계서 3-3) — 「선택한 상품액을 빼고 남는 금액(keptAmount − 선택 금액)이 freeShippingThreshold 아래면
+     * deductibleFee 를 뺀다」. 반품이 아니거나 차감 대상이 아니면 null.
+     */
+    private UserClaimDto.DeductionRule deductionRule(ClaimType type, OrderDeliveryGroup group) {
+        if (type != ClaimType.RETURN || !group.isFreeShippingApplied()) {
+            return null;
+        }
+        boolean alreadyDeducted = feeContextReader.alreadyDeducted(group);
+        return new UserClaimDto.DeductionRule(alreadyDeducted ? 0 : group.getBaseDeliveryFee(),
+                group.getFreeShippingThreshold(), feeContextReader.keptAmount(group), alreadyDeducted);
+    }
+
+    /** 접수 직전 — 선택한 수량으로 반품 차감액을 다시 계산한다(미리보기 금액 확인용). */
+    public int returnFeeFor(Long userId, Long deliveryGroupId, ClaimFeeBearer feeBearer, long returningAmount) {
+        OrderDeliveryGroup group = deliveryGroupRepository.findById(deliveryGroupId)
+                .filter(found -> found.getOrder().isOwnedBy(userId))
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
+        return feePolicy.returnDeduction(ClaimType.RETURN, feeBearer, group,
+                feeContextReader.contextFor(group, returningAmount));
+    }
+
+    /** 항목 판매가 — 반품 금액 계산용(내 하위주문의 항목만). */
+    public Map<Long, Integer> unitPricesOf(Long deliveryGroupId) {
+        Map<Long, Integer> prices = new java.util.HashMap<>();
+        orderProductRepository.findByDeliveryGroupIds(List.of(deliveryGroupId))
+                .forEach(product -> prices.put(product.getId(), product.getPrice()));
+        return prices;
     }
 
     /** 사유의 괄호 설명 — 시안 문구. 브랜드 화면에는 옮기지 않는다(§35-3). */
@@ -254,7 +291,8 @@ public class UserClaimQueryService {
                 .toList();
         List<OrderClaimCharge> charges = chargeRepository.findByCollectionId(collection.getId());
         OrderClaimCharge rejectCharge = charges.stream()
-                .filter(charge -> charge.getType() == ClaimChargeType.REJECT_RESHIP)
+                .filter(charge -> charge.getType() == ClaimChargeType.REJECT_RESHIP
+                        || charge.getType() == ClaimChargeType.OVERTURN_RESHIP)
                 .reduce((first, second) -> second).orElse(null);
         Map<Long, List<String>> evidences = attachmentRepository
                 .findByClaimIds(shown.stream().map(OrderClaim::getId).toList()).stream()
@@ -304,6 +342,88 @@ public class UserClaimQueryService {
                 .exchangePayment(collection.getType() == ClaimType.EXCHANGE ? exchangePayment(charges) : null)
                 .reshipFee(reshipFee(collection, shown, rejectCharge, today))
                 .purchaseConfirm(purchaseConfirm(focused.getDeliveryGroup(), collection.getType(), shown))
+                .inspection(inspection(collection, rejectCharge, evidences, today))
+                .build();
+    }
+
+    /**
+     * 검수 판정 블록(1021 설계서 4-4 · C10-5) — 사유 번복 · 귀책 변경이 있었을 때만. 운임은 운임 정산 행(브랜드 정산과 같은 행)에서 읽고,
+     * 환불 수단은 운임 환급 큐 행에서 PG 취소분과 계좌 송금분을 나눠 보인다.
+     */
+    private UserClaimDto.Inspection inspection(OrderClaimCollection collection, OrderClaimCharge charge,
+                                               Map<Long, List<String>> evidences, LocalDate today) {
+        List<showroomz.domain.order.entity.OrderClaimFreightAdjustment> rows =
+                freightAdjustmentRepository.findByClaimCollectionIdOrderByIdAsc(collection.getId()).stream()
+                        .filter(row -> row.getTrigger() != showroomz.domain.order.type.FreightAdjustmentTrigger.REJECT_WITH_COLLECT)
+                        .toList();
+        boolean overturned = collection.getInspectionResult()
+                == showroomz.domain.order.type.ClaimInspectionResult.REASON_OVERTURNED;
+        if (rows.isEmpty() && !overturned) {
+            return null;
+        }
+        int collectFreight = rows.stream().mapToInt(showroomz.domain.order.entity.OrderClaimFreightAdjustment::getCollectFreight).sum();
+        int prepaid = rows.stream().mapToInt(showroomz.domain.order.entity.OrderClaimFreightAdjustment::getPrepaidFreight).sum();
+        int restored = rows.stream().mapToInt(showroomz.domain.order.entity.OrderClaimFreightAdjustment::getInitialFeeRestored).sum();
+        boolean overturnCharge = charge != null && charge.getType() == ClaimChargeType.OVERTURN_RESHIP;
+        String state;
+        String headline;
+        if (overturned && overturnCharge && charge.isPending()) {
+            state = "OVERTURN_PAYMENT_PENDING";
+            headline = "교환 사유가 변경되었어요 · 재발송 배송비와 착불 운임을 결제해 주세요";
+        } else if (overturned) {
+            state = "REASON_OVERTURNED";
+            headline = collection.getType() == ClaimType.EXCHANGE ? "교환 사유가 변경되었어요"
+                    : "반품 사유가 변경되었어요 · 착불 운임과 최초 배송비가 차감돼요";
+        } else {
+            state = "FAULT_CHANGED";
+            int refund = rows.stream().mapToInt(showroomz.domain.order.service.OrderClaimService::freightRefundOf).sum();
+            headline = restored > 0 && refund == prepaid
+                    ? String.format("판매자 귀책으로 변경되었어요 · 최초 배송비 차감 취소 · 운임 환급 +%,d원", refund)
+                    : String.format("판매자 귀책으로 변경되었어요 · 운임 환급 +%,d원", refund);
+        }
+        UserClaimDto.OverturnPayment payment = null;
+        if (overturnCharge) {
+            int total = charge.getAmount() == null ? 0 : charge.getAmount();
+            LocalDate dueDate = charge.getDueAt() == null ? null : charge.getDueAt().toLocalDate();
+            payment = UserClaimDto.OverturnPayment.builder()
+                    .reshipFee(Math.max(0, total - collectFreight))
+                    .collectFreight(collectFreight)
+                    .total(total)
+                    .status(charge.getStatus())
+                    .dueDate(charge.isPending() ? dueDate : null)
+                    .overdue(charge.isPending() && dueDate != null && dueDate.isBefore(today))
+                    .build();
+        }
+        List<showroomz.domain.order.entity.OrderRefundTask> freightRefunds = refundTaskRepository
+                .findByDeliveryGroupIdOrderByIdAsc(collection.getDeliveryGroup().getId()).stream()
+                .filter(task -> task.getSource() == showroomz.domain.order.type.RefundTaskSource.FREIGHT_REFUND
+                        && collection.getId().equals(task.getSourceId())
+                        && task.getStatus() != showroomz.domain.order.type.RefundTaskStatus.VOID)
+                .toList();
+        UserClaimDto.RefundSplit split = null;
+        if (!freightRefunds.isEmpty()) {
+            showroomz.domain.order.entity.OrderRefundTask transfer = freightRefunds.stream()
+                    .filter(showroomz.domain.order.entity.OrderRefundTask::isBankTransfer)
+                    .reduce((first, second) -> second).orElse(null);
+            split = UserClaimDto.RefundSplit.builder()
+                    .pgCancel(freightRefunds.stream().filter(task -> !task.isBankTransfer())
+                            .mapToInt(showroomz.domain.order.entity.OrderRefundTask::getRefundAmount).sum())
+                    .bankTransfer(transfer == null ? 0 : transfer.getRefundAmount())
+                    .bankTransferStatus(transfer == null ? null : transfer.isTransferable() ? "송금 대기" : "송금 완료")
+                    .bankTransferRefundTaskId(transfer == null ? null : transfer.getId())
+                    .inquiryNeeded(transfer != null && transfer.isTransferable())
+                    .build();
+        }
+        return UserClaimDto.Inspection.builder()
+                .result(collection.getInspectionResult())
+                .resultLabel(collection.getInspectionResult() == null ? null : collection.getInspectionResult().getLabel())
+                .state(state)
+                .headline(headline)
+                .explanation(overturned ? collection.getInspectionNote() : null)
+                .attachments(overturned ? evidences.values().stream().flatMap(List::stream).toList() : List.of())
+                .freight(new UserClaimDto.Freight(collectFreight, prepaid, restored))
+                .payment(payment)
+                .refundSplit(split)
                 .build();
     }
 
@@ -452,10 +572,12 @@ public class UserClaimQueryService {
     private UserClaimDto.ReshipFee reshipFee(OrderClaimCollection collection, List<OrderClaim> shown,
                                              OrderClaimCharge rejectCharge, LocalDate today) {
         OrderClaim rejected = shown.stream().filter(claim -> claim.getRejectedAt() != null).findFirst().orElse(null);
-        if (rejected == null) {
+        // 사유 번복 청구(1021 설계서 4-4)도 같은 [결제] 블록이다 — 반려가 아니라 판정 종료를 기다리지 않는다.
+        boolean overturn = rejectCharge != null && rejectCharge.getType() == ClaimChargeType.OVERTURN_RESHIP;
+        if (rejected == null && !overturn) {
             return null;
         }
-        if (collection.getFinalizedAt() == null || rejectCharge == null) {
+        if (!overturn && (collection.getFinalizedAt() == null || rejectCharge == null)) {
             return UserClaimDto.ReshipFee.builder().state(ReshipFeeState.WAITING)
                     .amount(rejectCharge == null ? null : rejectCharge.getAmount()).build();
         }
@@ -478,7 +600,7 @@ public class UserClaimQueryService {
                 .methodLabel(state != ReshipFeeState.PAID || rejectCharge.getPaidPaymentId() == null ? null
                         : claimPaymentRepository.findById(rejectCharge.getPaidPaymentId())
                         .map(OrderClaimPayment::methodLabel).orElse(null))
-                .storage(!overdue ? null : new UserClaimDto.Storage(rejected.getNoticeCount(),
+                .storage(!overdue || rejected == null ? null : new UserClaimDto.Storage(rejected.getNoticeCount(),
                         storagePolicy.storageDueAt(rejected.getNoticeCount(), rejected.getLastNoticeAt()),
                         storagePolicy.phase(rejected.getNoticeCount(), rejected.getLastNoticeAt(), now)))
                 .build();

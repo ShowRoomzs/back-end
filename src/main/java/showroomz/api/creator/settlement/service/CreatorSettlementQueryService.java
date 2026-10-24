@@ -1,5 +1,6 @@
 package showroomz.api.creator.settlement.service;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.PayoutHoldViews;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.creator.settlement.dto.CreatorSettlementDto;
 import showroomz.domain.member.creator.entity.Creator;
@@ -52,6 +54,8 @@ public class CreatorSettlementQueryService {
     private static final int MAX_PAGE_SIZE = 100;
     private static final int PREVIEW_SIZE = 5;
     private static final String PLATFORM_NAME = "SHOWROOMZ";
+    /** 지급 조건 「세금계산서 확인 후」 — 스튜디오 홈 H4 리워드 카드. */
+    static final String PAYOUT_CONDITION_TAX_INVOICE = "TAX_INVOICE_UNVERIFIED";
 
     private final UserRepository userRepository;
     private final CreatorRepository creatorRepository;
@@ -63,6 +67,7 @@ public class CreatorSettlementQueryService {
     private final SettlementStatementExcel statementExcel;
     private final SettlementProperties properties;
     private final CreatorSettlementBlocks blocks;
+    private final PayoutHoldViews holdViews;
 
     // ------------------------------------------------------------------ 진입
 
@@ -114,14 +119,18 @@ public class CreatorSettlementQueryService {
                     SettlementPartyViews.rewardRateLabel(rates.get(s.getId())), s.getRewardAmount(),
                     s.getRewardClawbackAmount(), s.getWithholdingAmount(), s.getCreatorVatAmount(),
                     s.getCreatorPayoutAmount(), status, status.getLabel(), status.getTone(), payoutDate,
-                    payoutDateKind);
+                    payoutDateKind, holdViews.of(s, mine));
         }).toList(), page);
     }
 
     // ------------------------------------------------------------------ 요약(2-3)
 
     public CreatorSettlementDto.Summary getSummary(String creatorEmail) {
-        Creator creator = resolveCreator(creatorEmail);
+        return summarize(resolveCreator(creatorEmail));
+    }
+
+    /** 요약 — 스튜디오 홈 리워드 카드(1017 설계서 5-1 {@code reward})도 같은 값을 쓴다. */
+    public CreatorSettlementDto.Summary summarize(Creator creator) {
         LocalDateTime now = LocalDateTime.now();
         Map<SettlementStatus, Long> counts = SettlementPartyViews.partyStatusCounts(
                 settlementRepository.countByStatusForCreator(creator.getId()));
@@ -160,7 +169,8 @@ public class CreatorSettlementQueryService {
                 new SettlementPartyDto.StatusCounts(counts.get(SettlementStatus.REVIEWING),
                         counts.get(SettlementStatus.ADJUSTING), counts.get(SettlementStatus.PAYOUT_SCHEDULED),
                         counts.get(SettlementStatus.PAID)),
-                openReview + blocks.taxInvoiceAttentionCount(creator.getId()));
+                openReview + blocks.taxInvoiceAttentionCount(creator.getId()),
+                payoutRepository.existsBlockedByUnverifiedTaxInvoice(creator.getId()) ? PAYOUT_CONDITION_TAX_INVOICE : null);
     }
 
     // ------------------------------------------------------------------ 상세(2-4)
@@ -173,6 +183,7 @@ public class CreatorSettlementQueryService {
         SettlementStatus status = s.getStatus().toPartyStatus();
         Map<SettlementPayee, SettlementPayout> payouts = views.payoutsOf(s.getId());
         SettlementPayout mine = payouts.get(SettlementPayee.CREATOR);
+        PayoutHoldView hold = holdViews.of(s, mine);
         SettlementPartyDto.AdjustmentBlock adjustment = blocks.adjustmentOf(s);
         List<SettlementPartyViews.RewardRate> rates = views.rewardRatesOf(List.of(s.getId())).get(s.getId());
 
@@ -180,8 +191,8 @@ public class CreatorSettlementQueryService {
         String payoutDueNote = null;
         if (confirmed && mine != null) {
             if (mine.getStatus() == PayoutStatus.BLOCKED) {
-                payoutDueNote = s.isBusinessCreator()
-                        ? blocks.businessBlockedNote(s, properties.getPayoutBusinessDays()) : "주민등록번호 등록 후 지급";
+                // 보류 사유를 따른다 — 사업자라도 정지 · 계좌 확인 보류면 세금계산서 문구가 아니다(56 A2).
+                payoutDueNote = blocks.blockedNote(s, hold, properties.getPayoutBusinessDays());
             } else {
                 payoutDueDate = mine.getDueDate();
                 payoutDueNote = views.payoutBasis(s.getId());
@@ -202,13 +213,13 @@ public class CreatorSettlementQueryService {
                 new CreatorSettlementDto.SettlementHeader(s.getId(), s.getSettlementNumber(), s.getGroupBuyId(),
                         s.getContract().getTitle(), s.getMarket().getMarketName(), s.getMarketId(),
                         s.getPeriodStartAt(), s.getPeriodEndAt(), status, status.getLabel(), status.getTone(),
-                        s.getCreatorBusinessType(), s.isBusinessCreator()),
+                        s.getCreatorBusinessType(), s.isBusinessCreator(), hold),
                 new CreatorSettlementDto.Timeline(s.getCreatedAt(), s.getOrdersClosedAt(), s.getReviewDueAt(),
                         s.getConfirmedAt(), s.getConfirmReason(),
                         s.getConfirmReason() == null ? null : s.getConfirmReason().getLabel(), payoutDueDate,
                         payoutDueNote, paidAt),
                 review, breakdown(s, rates), blocks.clawbacksOf(s),
-                new CreatorSettlementDto.Payouts(!confirmed, payoutRows(s, payouts)),
+                new CreatorSettlementDto.Payouts(!confirmed, payoutRows(s, payouts, hold)),
                 payment(s, mine, payoutDueDate, payoutDueNote), adjustment, withholding,
                 s.isBusinessCreator() && confirmed ? blocks.taxInvoiceOf(s) : null,
                 new CreatorSettlementDto.Items(preview.getContent().stream().map(CreatorSettlementQueryService::item)
@@ -229,7 +240,8 @@ public class CreatorSettlementQueryService {
     }
 
     /** 3자 분배 — 내 행 첫 줄. 내 행 실패는 「지급 확인 중」 · 브랜드 행 실패는 「지급 예정」으로 접는다(어드민 설계서 0-4 · §46 A-4). */
-    private List<CreatorSettlementDto.PayoutRow> payoutRows(Settlement s, Map<SettlementPayee, SettlementPayout> payouts) {
+    private List<CreatorSettlementDto.PayoutRow> payoutRows(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
+                                                            PayoutHoldView myHold) {
         String withholdingRate = SettlementPartyViews.percent(
                 s.getWithholdingIncomeRate().add(s.getWithholdingLocalRate()).movePointRight(2));
         return List.of(SettlementPayee.CREATOR, SettlementPayee.BRAND, SettlementPayee.PLATFORM).stream()
@@ -255,17 +267,18 @@ public class CreatorSettlementQueryService {
                     LocalDate date = shown == PayoutStatus.PAID && payout.getPaidAt() != null
                             ? payout.getPaidAt().toLocalDate() : payout.getDueDate();
                     return new CreatorSettlementDto.PayoutRow(payee, payee.getLabel(), name, payout.getAmount(), note,
-                            shown, statusLabel(s, payee, shown, date), date);
+                            shown, statusLabel(s, payee, shown, date, myHold), date,
+                            mine ? myHold : null);
                 }).toList();
     }
 
-    private String statusLabel(Settlement s, SettlementPayee payee, PayoutStatus status, LocalDate date) {
+    private String statusLabel(Settlement s, SettlementPayee payee, PayoutStatus status, LocalDate date,
+                               PayoutHoldView myHold) {
         String day = date == null ? "" : date.format(SettlementSchedule.DAY) + " ";
         return switch (status) {
             case WAITING -> "확인 기간 후 지급";
             case HELD -> "보류 중";
-            case BLOCKED -> payee == SettlementPayee.CREATOR && s.isBusinessCreator()
-                    ? blocks.businessBlockedLabel(s) : "주민등록번호 등록 필요";
+            case BLOCKED -> payee == SettlementPayee.CREATOR ? blocks.blockedLabel(s, myHold) : "지급 보류";
             case SCHEDULED, REQUESTED -> day + "지급 예정";
             case PAID -> day + "지급 완료";
             case FAILED -> "지급 확인 중";

@@ -153,7 +153,8 @@ public interface ShowroomFollowControllerDocs {
                     "**권한:** USER/CREATOR (로그인 필수)\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}",
             parameters = {
-                    @Parameter(name = "sort", description = "정렬 기준 (기본값 DEFAULT)", required = false,
+                    @Parameter(name = "sort", description = "정렬 기준 (기본값 DEFAULT) — DEFAULT: 최근 게시물 순 · "
+                            + "FOLLOW_LATEST: 팔로우 최신순 · FOLLOW_OLDEST: 팔로우 오래된순", required = false,
                             example = "DEFAULT", in = ParameterIn.QUERY,
                             schema = @Schema(implementation = FollowingShowroomSort.class))
             }
@@ -215,6 +216,10 @@ public interface ShowroomFollowControllerDocs {
     })
     ResponseEntity<PageResponse<FollowingShowroomResponse>> getFollowedShowrooms(
             @Parameter(hidden = true) UserPrincipal userPrincipal,
+            @Parameter(description = "정렬 기준 (기본값 DEFAULT) — DEFAULT: 최근 게시물 순 · "
+                    + "FOLLOW_LATEST: 팔로우 최신순 · FOLLOW_OLDEST: 팔로우 오래된순", required = false,
+                    example = "DEFAULT", in = ParameterIn.QUERY,
+                    schema = @Schema(implementation = FollowingShowroomSort.class))
             @RequestParam(name = "sort", required = false, defaultValue = "DEFAULT") FollowingShowroomSort sort,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest
     );

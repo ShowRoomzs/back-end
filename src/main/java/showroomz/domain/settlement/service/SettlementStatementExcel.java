@@ -107,6 +107,8 @@ public class SettlementStatementExcel {
         rows.put("리워드 부가세", -s.getRewardVatAmount());
         rows.put("재발송비", s.getReshipFeeAmount());
         rows.put("소비자 결제 배송비", s.getConsumerDeliveryFeeAmount());
+        rows.put("반품 시 차감한 최초 배송비", s.getReturnDeductionFeeAmount());
+        rows.put("운임 정산", s.getFreightAdjustmentAmount());
         rows.put("브랜드 차감", -s.getBrandClawbackAmount());
         rows.put("브랜드 수취액", s.getBrandPayoutAmount());
         rows.put("리워드 차감", -s.getRewardClawbackAmount());

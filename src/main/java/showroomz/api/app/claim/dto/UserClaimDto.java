@@ -200,6 +200,23 @@ public class UserClaimDto {
         private Integer consumerFault;
         @Schema(description = "브랜드 귀책 사유일 때 — 항상 0", example = "0")
         private Integer sellerFault;
+        @Schema(description = "[반품 · 무료배송 주문] 일부 반품 판정 재료(1021 기-18) — 선택한 상품액을 빼고 남는 금액이 기준 아래면 차감. "
+                + "그 밖은 null", nullable = true)
+        private DeductionRule deductionRule;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    @Schema(description = "최초 배송비 차감 판정 — deduct = (keptAmount − 선택 상품액) < freeShippingThreshold. 기준이 null 이면 항상 차감")
+    public static class DeductionRule {
+        @Schema(description = "차감액(편도 기본 배송비) — 같은 주문에서 이미 뺐으면 0", example = "3000")
+        private Integer deductibleFee;
+        @Schema(description = "결제 시점 무료배송 기준금액", example = "30000", nullable = true)
+        private Integer freeShippingThreshold;
+        @Schema(description = "지금 남아 있는 상품액(취소 · 반품 · 진행 중 클레임 제외)", example = "41000")
+        private Long keptAmount;
+        @Schema(description = "같은 주문의 다른 반품에서 이미 최초 배송비를 뺐는가")
+        private Boolean alreadyDeducted;
     }
 
     @Getter
@@ -359,6 +376,85 @@ public class UserClaimDto {
         private ReshipFee reshipFee;
         @Schema(description = "신청 정보의 「구매확정」 줄 — 진행 중 · 교환 완료일 때만", nullable = true)
         private PurchaseConfirm purchaseConfirm;
+        @Schema(description = "검수 판정 블록 — 사유 번복 · 귀책 변경이 있었을 때만(1021 설계서 4-4 · C10-5)", nullable = true)
+        private Inspection inspection;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "검수 판정 블록(1021 설계서 4-4) — 반품 1b 사유 번복 · 귀책 변경 운임 환급 · 교환 1c 사유 번복 결제")
+    public static class Inspection {
+        @Schema(description = "검수 판정 — PASSED · REASON_OVERTURNED · REJECTED", example = "REASON_OVERTURNED", nullable = true)
+        private showroomz.domain.order.type.ClaimInspectionResult result;
+        @Schema(example = "사유 번복", nullable = true)
+        private String resultLabel;
+        @Schema(description = "화면 분기 — REASON_OVERTURNED(사유 번복) · FAULT_CHANGED(판매자 귀책으로 변경 · 운임 환급) · "
+                + "OVERTURN_PAYMENT_PENDING(교환 사유 번복 · 결제 필요)", example = "REASON_OVERTURNED")
+        private String state;
+        @Schema(description = "블록 제목 — 서버 문장", example = "반품 사유가 변경되었어요 · 착불 운임과 최초 배송비가 차감돼요")
+        private String headline;
+        @Schema(description = "브랜드 설명 — 사유 번복만", nullable = true)
+        private String explanation;
+        @Schema(description = "브랜드 증빙 사진 — 사유 번복만 · 없으면 빈 배열")
+        private List<String> attachments;
+        private Freight freight;
+        @Schema(description = "교환 사유 번복 결제 — 재발송 배송비 + 착불 운임. 결제는 [재발송 배송비 결제]와 같은 API", nullable = true)
+        private OverturnPayment payment;
+        @Schema(description = "운임 환급 수단 — PG 취소분과 원래 결제액을 넘어 계좌로 보내는 몫. 환급이 없으면 null", nullable = true)
+        private RefundSplit refundSplit;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Schema(description = "운임 — 전부 그 상품의 기본 배송비(편도) 정액")
+    public static class Freight {
+        @Schema(description = "착불 운임 — 사유 번복으로 소비자 부담(환불액 차감 · 결제)", example = "3000")
+        private int collectFreight;
+        @Schema(description = "선불 운임 환급 — 귀책 변경", example = "3000")
+        private int prepaidFreightRefund;
+        @Schema(description = "차감했던 최초 배송비 환원 — 귀책 변경", example = "3000")
+        private int initialFeeRestored;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "교환 사유 번복 결제 — 금액 줄 3(재발송 배송비 · 착불 운임 · 합계)")
+    public static class OverturnPayment {
+        @Schema(example = "3000")
+        private int reshipFee;
+        @Schema(example = "3000")
+        private int collectFreight;
+        @Schema(example = "6000")
+        private int total;
+        @Schema(description = "청구 상태 — PENDING(결제 필요) · PAID", example = "PENDING")
+        private showroomz.domain.order.type.ClaimChargeStatus status;
+        @Schema(description = "결제 기한 — 결제 필요일 때만", nullable = true)
+        private LocalDate dueDate;
+        @Schema(description = "결제 기한이 지났다")
+        private boolean overdue;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Schema(description = "운임 환급 수단 — 「PG 취소 N원 + 계좌 송금 N원」")
+    public static class RefundSplit {
+        @Schema(description = "원 결제 취소로 돌려받는 운임 환급", example = "2000")
+        private int pgCancel;
+        @Schema(description = "원래 결제액을 넘어 계좌로 보내는 몫 — 없으면 0", example = "4000")
+        private int bankTransfer;
+        @Schema(description = "송금 대기 · 송금 완료 — 계좌 송금 몫이 없으면 null", nullable = true, example = "송금 대기")
+        private String bankTransferStatus;
+        @Schema(description = "계좌 송금 환급 건 — [1:1 문의]의 `refundTaskId` 로 보낸다", nullable = true, example = "905")
+        private Long bankTransferRefundTaskId;
+        @Schema(description = "계좌 안내가 필요하다 — 송금 대기일 때 「1:1 문의로 환불 받을 계좌를 알려주세요」 안내 · [1:1 문의]")
+        private boolean inquiryNeeded;
     }
 
     @Getter

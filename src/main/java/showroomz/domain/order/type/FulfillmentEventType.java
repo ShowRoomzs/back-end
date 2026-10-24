@@ -38,8 +38,14 @@ public enum FulfillmentEventType {
     REFUND_VOIDED("운영자 사유 환불 편입 철회"),
     /** PG 콘솔 등 밖에서 돌려준 환불의 수동 완료 기록(어드민 06c · 41 보고 2번) — PG 를 부르지 않는다. */
     REFUND_RECORDED_MANUALLY("환불 수동 완료 기록"),
+    /** 원래 결제액 초과 환급의 계좌 송금 완료 기록(1021 설계서 4-5 · 06c M3) — 시스템은 송금하지 않는다. */
+    REFUND_TRANSFERRED("계좌 송금 완료"),
     /** 추적 정지 N일 뒤 운영자 분실 판정(어드민 06a · 41 보고 3번) — 하위주문 취소 · PG 자동 환불. */
-    LOST_RESOLVED("배송 분실 처리 · PG 자동 환불");
+    LOST_RESOLVED("배송 분실 처리 · PG 자동 환불"),
+    /** 추적 정지 소비자 선택(1021 기-15) — detail = 재발송 · 환불. 브랜드에 알림이 간다. */
+    STALL_CHOICE_MADE("추적 정지 · 소비자 선택"),
+    /** 추적 정지 뒤 새 송장으로 다시 보냈다(1021 기-15 · 소비자 재발송 선택의 처리). */
+    RESHIPPED_AFTER_STALL("추적 정지 후 재발송");
 
     private final String label;
 }

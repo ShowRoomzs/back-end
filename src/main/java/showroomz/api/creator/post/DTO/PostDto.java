@@ -203,9 +203,9 @@ public class PostDto {
     public static class SuspensionResponse {
         @Schema(description = "조치 ID", example = "5")
         private Long suspensionId;
-        @Schema(description = "사유 코드", example = "AD_DISCLOSURE")
+        @Schema(description = "사유 코드", example = "MISLEADING_INFO")
         private PostSuspensionReason reasonCode;
-        @Schema(description = "사유 표시명", example = "대가관계 미표시")
+        @Schema(description = "사유 표시명", example = "허위 · 과장 정보")
         private String reasonLabel;
         @Schema(description = "사유 상세")
         private String reasonDetail;

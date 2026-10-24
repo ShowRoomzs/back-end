@@ -25,8 +25,8 @@ public class PostProperties {
     /** 심사 예상 소요 — 표시용이다. 로직에 쓰지 않는다 (§24-8 ⓑ) */
     private int appealReviewBusinessDays = 3;
 
-    /** 반려 후 원본 내려받기 유예 (§24-8 ⓒ) */
-    private int downloadGraceDays = 30;
+    /** 반려 후 원본 내려받기 유예 — 스튜디오 · 어드민 시안 모두 7일(§24-8 ⓒ · §54-5 · 가정값) */
+    private int downloadGraceDays = 7;
 
     /** 삭제 게시물 비공개 보관 기간 (§24-6 · §24-8 ⓓ) */
     private int retentionMonths = 6;

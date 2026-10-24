@@ -4,12 +4,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.creator.auth.DTO.CreatorCompleteRegistrationRequest;
@@ -59,5 +61,13 @@ public class CreatorAuthController implements CreatorAuthControllerDocs {
         String registerToken = HeaderUtil.getAccessToken(request);
         TokenResponse tokenResponse = creatorAuthService.completeRegistration(registerToken, registrationRequest);
         return ResponseEntity.ok(tokenResponse);
+    }
+
+    @Override
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestBody RefreshTokenRequest refreshRequest) {
+        creatorAuthService.logout(refreshRequest.getRefreshToken());
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.noContent().build();
     }
 }

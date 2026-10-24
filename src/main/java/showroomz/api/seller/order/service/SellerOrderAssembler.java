@@ -143,7 +143,10 @@ public class SellerOrderAssembler {
                 actions(group, pendingCancel),
                 history.stream().map(h -> new SellerOrderDetailResponse.HistoryItem(
                         h.getEventType().name(), h.getEventType().getLabel(), h.getActorType().name(),
-                        h.getActorType().getLabel(), h.getDetail(), h.getOccurredAt())).toList());
+                        h.getActorType().getLabel(), h.getDetail(), h.getOccurredAt())).toList(),
+                SellerOrderDetailResponse.StallChoice.of(
+                        showroomz.domain.order.service.OrderStallChoiceService.view(group, now),
+                        status == FulfillmentStatus.SHIPPING));
     }
 
     // ------------------------------------------------------------------ 내부

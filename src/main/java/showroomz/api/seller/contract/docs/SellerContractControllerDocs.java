@@ -22,6 +22,8 @@ import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
 import showroomz.api.seller.contract.dto.ContractDocumentDownloadResponse;
 import showroomz.api.seller.contract.dto.ContractDuplicateResponse;
+import showroomz.api.seller.contract.dto.ContractDraftApprovalRequest;
+import showroomz.api.seller.contract.dto.ContractTerminationRequestRequest;
 import showroomz.api.seller.contract.dto.ContractFormSourcesResponse;
 import showroomz.api.seller.contract.dto.ContractListItem;
 import showroomz.api.seller.contract.dto.ContractResendRequestResponse;
@@ -37,7 +39,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Contract", description = "파트너센터 계약 작성·조회·검토 요청 API.")
+@Tag(name = "Seller - Contract", description = "파트너센터 계약 관리 API")
 public interface SellerContractControllerDocs {
 
     @Operation(
@@ -47,7 +49,7 @@ public interface SellerContractControllerDocs {
 
                     **권한:** SELLER
 
-                    - `tab`: `ALL`(기본) · `DRAFT` · `REVIEW`(검토 대기+반려) · `SIGNING`(서명 진행중+체결 처리 대기) · `CONCLUDED` · `CLOSED`(거절+만료+취소).
+                    - `tab`: `ALL`(기본) · `DRAFT` · `REVIEW`(검토 대기+반려) · `SIGNING`(서명 진행중+공구 생성 대기) · `CONCLUDED` · `CLOSED`(거절+만료+취소).
                       탭은 필터일 뿐이며 응답의 `status`는 항상 9종 중 하나로 내려간다.
                     - `page`는 1부터 시작하고 `size` 기본값은 20이다. 응답은 `content`와 `pageInfo`를 갖는다.
                     - `entryMode`로 행 클릭 시 진입 모드(EDIT/VIEW)를 서버가 판정해 내려준다. FE가 상태표를 다시 들 필요가 없다.
@@ -93,15 +95,23 @@ public interface SellerContractControllerDocs {
                     - `REVIEW_REJECTED` — 브랜드 조치로만 풀리는 유일한 진행 상태
                     - `SIGNING` 이면서 상대만 서명을 마친 상태(B4c)
 
-                    검토 대기·체결 처리 대기는 공이 상대에게 있는 정상 대기라 넣지 않는다 —
+                    검토 대기·공구 생성 대기는 공이 상대에게 있는 정상 대기라 넣지 않는다 —
                     브랜드가 할 수 없는 일로 배지가 켜지면 안 된다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "6개 탭 건수와 조치 필요 건수",
-            content = @Content(schema = @Schema(implementation = ContractSummaryResponse.class),
-                    examples = @ExampleObject(value = """
-                            {"tabCounts":{"ALL":14,"DRAFT":2,"REVIEW":2,"SIGNING":2,"CONCLUDED":5,"CLOSED":3},
-                             "actionRequiredCount":1}
-                            """))))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "6개 탭 건수와 조치 필요 건수",
+                    content = @Content(schema = @Schema(implementation = ContractSummaryResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"tabCounts":{"ALL":14,"DRAFT":2,"REVIEW":2,"SIGNING":2,"CONCLUDED":5,"CLOSED":3},
+                                     "actionRequiredCount":1}
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 (`FORBIDDEN`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 · 브랜드(마켓) 없음 (`SELLER_NOT_FOUND` · `MARKET_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<ContractSummaryResponse> getSummary();
 
     @Operation(
@@ -119,16 +129,24 @@ public interface SellerContractControllerDocs {
                     옵션 행에는 **최소 물량만** 입력한다. 공구가·리워드율은 상품 단위다. `stock`은 참고값이며
                     서버는 최소 물량 ≤ 재고를 판정하지 않는다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "연결된 상대와 진열 상품 전체",
-            content = @Content(schema = @Schema(implementation = ContractFormSourcesResponse.class),
-                    examples = @ExampleObject(value = """
-                            {"counterparties":[{"creatorId":31,"showroomName":"글로우_지민",
-                              "connectionId":54,"profileImageUrl":null}],
-                             "products":[{"productId":87,"productName":"수분진정 세럼 30ml",
-                              "regularPrice":32000,"thumbnailUrl":null,
-                              "options":[{"variantId":301,"variantName":"단품","regularPrice":32000,"stock":420,"isRepresentative":true},
-                                         {"variantId":302,"variantName":"2개 세트","regularPrice":60000,"stock":180,"isRepresentative":false}]}]}
-                            """))))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "연결된 상대와 진열 상품 전체",
+                    content = @Content(schema = @Schema(implementation = ContractFormSourcesResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {"counterparties":[{"creatorId":31,"showroomName":"글로우_지민",
+                                      "connectionId":54,"profileImageUrl":null}],
+                                     "products":[{"productId":87,"productName":"수분진정 세럼 30ml",
+                                      "regularPrice":32000,"thumbnailUrl":null,
+                                      "options":[{"variantId":301,"variantName":"단품","regularPrice":32000,"stock":420,"isRepresentative":true},
+                                                 {"variantId":302,"variantName":"2개 세트","regularPrice":60000,"stock":180,"isRepresentative":false}]}]}
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "SELLER · CREATOR 가 아님 (`FORBIDDEN`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "판매자 · 브랜드(마켓) 없음 (`SELLER_NOT_FOUND` · `MARKET_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<ContractFormSourcesResponse> getFormSources();
 
     @Operation(
@@ -531,4 +549,64 @@ public interface SellerContractControllerDocs {
     })
     ResponseEntity<ContractDuplicateResponse> duplicateContract(
             @Parameter(description = "복사할 원본 계약 ID", example = "128") @PathVariable Long contractId);
+
+    @Operation(summary = "해지 요청(B5 · C9)", description = """
+            1021 결정 노트 기-05 【잠정】 — 계약 성립 뒤(공구 생성 대기 · 체결완료) **공구가 오픈되기 전**에만 해지를 요청합니다.
+
+            - 요청만으로 계약은 바뀌지 않습니다(체결완료 유지). 운영자가 상대 의사를 운영팀 채널에서 확인해 해지 처리하면 종결됩니다
+            - 인플루언서 운영팀 채널에 「계약 취소 · 해지 동의 확인」 카드가 붙습니다(메모가 그대로 보입니다)
+            - 공구가 오픈되면 요청은 닫힙니다 — 그 뒤는 공구 관리의 중단 요청입니다
+            - 사유는 공구 중단 요청과 같은 4종 · ETC 면 memo 필수
+            - 계정 이용 정지 중에도 요청할 수 있습니다""")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "요청 완료 — 상세(terminationRequest.status = PENDING)",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "400", description = "ETC 메모 누락(GROUP_BUY_REASON_MEMO_REQUIRED)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "해지 불가 구간(CONTRACT_TERMINATION_NOT_ALLOWED) · 이미 요청 중(CONTRACT_TERMINATION_ALREADY_PENDING) · "
+                    + "공구 변경 요청 검토 중(GROUP_BUY_REQUEST_ALREADY_PENDING)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ContractDetailResponse> requestTermination(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @Valid @RequestBody ContractTerminationRequestRequest request);
+
+    @Operation(summary = "해지 요청 철회", description = "처리 대기(PENDING) 해지 요청을 거둡니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "철회 완료",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "409", description = "처리 대기 요청 없음(CONTRACT_TERMINATION_REQUEST_NOT_PENDING)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ContractDetailResponse> withdrawTermination(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
+
+    @Operation(summary = "초안 승인 기록 추가", description = """
+            1021 결정 노트 기-30 — 인플루언서 콘텐츠 초안을 브랜드가 승인한 사실을 기록합니다(체결완료 상세의 「초안 승인 기록」 카드).
+            기록 전용입니다 — 계약 · 공구 상태를 바꾸지 않습니다. 계약 성립(양측 서명 완료) 이후에만.""")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "기록 완료 — 상세(draftApprovals)",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "409", description = "계약 성립 전(CONTRACT_STATUS_CONFLICT)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ContractDetailResponse> recordDraftApproval(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @Valid @RequestBody ContractDraftApprovalRequest request);
+
+    @Operation(summary = "초안 승인 기록 삭제", description = "잘못 적은 기록을 지웁니다(행은 남습니다).")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "삭제 완료 — 상세(draftApprovals)",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "다른 브랜드의 계약(CONTRACT_NOT_OWNED_BY_SELLER) · SELLER · CREATOR 가 아님(FORBIDDEN)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 · 이 계약의 기록이 아니거나 이미 삭제됨(CONTRACT_NOT_FOUND) · "
+                    + "판매자 · 브랜드 없음(SELLER_NOT_FOUND · MARKET_NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ContractDetailResponse> deleteDraftApproval(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @Parameter(description = "기록 ID", example = "3") @PathVariable Long approvalId);
 }

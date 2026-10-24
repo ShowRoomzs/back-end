@@ -9,6 +9,8 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.type.PayoutBlockReason;
+import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 
@@ -208,7 +210,8 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
 
         JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
         assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("PENDING_INPUT");
-        assertThat(detail.at("/taxInvoice/supplier/name").asText()).isEqualTo("SHOWROOMZ TEST");
+        // 공급받는자 = 운영자 사업자 정보(company.* · 1021 기-35 — settlement.platform.* 는 그 별칭).
+        assertThat(detail.at("/taxInvoice/supplier/name").asText()).isEqualTo("쇼룸즈");
         assertThat(detail.at("/taxInvoice/supplyAmount").asLong()).isEqualTo(s.getRewardAfterClawback());
         assertThat(detail.at("/taxInvoice/vatAmount").asLong()).isEqualTo(s.getCreatorVatAmount());
         assertThat(detail.at("/timeline/payoutDueDate").isNull()).isTrue();
@@ -216,6 +219,170 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("발행 필요");
         assertThat(detail.at("/withholding").isNull()).isTrue();
         creatorGet(SETTLEMENTS + "/summary").andExpect(jsonPath("$.attentionCount").value(1));
+    }
+
+    @Test
+    @DisplayName("[56 A1] 계좌 확인 중 확정 — 사유 코드 없이 보류된 내 행도 목록 · 상세 · 분배 행에 「정산 계좌 확인 중」 · 「계좌 확인 후 지급」 · 정지 아님")
+    void accountCheckHoldAtConfirm() throws Exception {
+        registerCreatorAccount();
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFYING' WHERE creator_id = ?", creator.getId());
+        Settlement s = confirm(reviewing());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isNull();
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/settlement/payoutHold/reason").asText()).isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+        assertThat(detail.at("/settlement/payoutHold/label").asText()).isEqualTo("정산 계좌 확인 중");
+        assertThat(detail.at("/settlement/payoutHold/scheduleLabel").asText()).isEqualTo("계좌 확인 후 지급");
+        assertThat(detail.at("/settlement/payoutHold/sanction").asBoolean()).isFalse();
+        assertThat(detail.at("/payouts/rows/0/hold/reason").asText()).isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+        creatorGet(SETTLEMENTS)
+                .andExpect(jsonPath("$.content[0].settlementId").value(s.getId()))
+                .andExpect(jsonPath("$.content[0].payoutHold.reason").value("CREATOR_ACCOUNT_UNVERIFIED"));
+    }
+
+    @Test
+    @DisplayName("[56 A2] 사업자 · 계산서 확인 뒤 정지 — 내 행 「발행 필요」 대신 정지 사유 라벨 · 지급 예정일 「정지 해제 다음 영업일 지급」")
+    void businessSuspendedAfterInvoiceVerified() throws Exception {
+        makeCreatorBusiness();
+        registerCreatorAccount();
+        Settlement s = confirm(reviewing());
+        submitInvoice(s, "20261007-41000012-38475920", null).andExpect(status().isOk());
+        Long invoiceId = jdbc.queryForObject("SELECT document_id FROM settlement_tax_document WHERE settlement_id = ? "
+                + "AND type = 'CREATOR_TAX_INVOICE'", Long.class, s.getId());
+        adminPost("/v1/admin/settlements/" + s.getId() + "/tax-documents/" + invoiceId + "/verify",
+                Map.of("result", "MATCH")).andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("CREATOR_SUSPENDED");
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("VERIFIED");
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText())
+                .isEqualTo(PayoutBlockReason.CREATOR_SUSPENDED.getLabel());
+        assertThat(detail.at("/payment/dueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+    }
+
+    @Test
+    @DisplayName("[56 A3] 사업자 원래 예정일 — 계산서 확인 전 보류는 null · 확인 뒤 정지로 보류되면 확인일 + 3영업일(보류 전 행 예정일)")
+    void businessOriginalDueDate() throws Exception {
+        makeCreatorBusiness();
+        Settlement s = confirm(reviewing());
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.reason").value("TAX_INVOICE_UNVERIFIED"))
+                .andExpect(jsonPath("$.settlement.payoutHold.originalDueDate").value(org.hamcrest.Matchers.nullValue()));
+
+        submitInvoice(s, "20261007-41000012-38475920", null).andExpect(status().isOk());
+        Long invoiceId = jdbc.queryForObject("SELECT document_id FROM settlement_tax_document WHERE settlement_id = ? "
+                + "AND type = 'CREATOR_TAX_INVOICE'", Long.class, s.getId());
+        adminPost("/v1/admin/settlements/" + s.getId() + "/tax-documents/" + invoiceId + "/verify",
+                Map.of("result", "MATCH")).andExpect(status().isOk());
+        java.time.LocalDate scheduled = payout(s.getId(), SettlementPayee.CREATOR).getDueDate();
+        assertThat(scheduled).isNotNull().isNotEqualTo(s.getPayoutDueDate());
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getDueDate()).isNull();
+
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.reason").value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.settlement.payoutHold.originalDueDate").value(scheduled.toString()))
+                .andExpect(jsonPath("$.payouts.rows[0].hold.originalDueDate").value(scheduled.toString()));
+    }
+
+    @Test
+    @DisplayName("[56 A2] 사업자 · 계산서 제출 전 계좌 확인 중 — 내 행 「정산 계좌 확인 중」 · 「계좌 확인 후 지급」 · 세금계산서 카드는 그대로 발행 필요")
+    void businessAccountCheckBeforeInvoice() throws Exception {
+        makeCreatorBusiness();
+        registerCreatorAccount();
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFYING' WHERE creator_id = ?", creator.getId());
+        Settlement s = confirm(reviewing());
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("PENDING_INPUT");
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("계좌 확인 후 지급");
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("정산 계좌 확인 중");
+
+        // 계좌 확인이 끝나면 남은 사유(세금계산서)로 돌아간다.
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFIED' WHERE creator_id = ?", creator.getId());
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.timeline.payoutDueNote").value("발행 확인 후 + 3영업일"))
+                .andExpect(jsonPath("$.payouts.rows[0].statusLabel").value("발행 필요"));
+    }
+
+    @Test
+    @DisplayName("[56 A2-04] 비사업자 · 정지 중 확정 — 내 행 「지급 보류」 대신 정지 사유 라벨 · 지급 예정일 「정지 해제 다음 영업일 지급」 · 해제 뒤 정지 문구가 사라진다")
+    void nonBusinessSuspendedLabels() throws Exception {
+        registerCreatorAccount();
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        Settlement s = confirm(reviewing());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo(PayoutBlockReason.CREATOR_SUSPENDED.getLabel());
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+        assertThat(detail.at("/payment/dueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+        assertThat(detail.at("/settlement/payoutHold/sanction").asBoolean()).isTrue();
+        assertThat(detail.toString()).doesNotContain("지급 보류", "보류 사유 해소 후 지급");
+
+        adminPost("/v1/admin/creators/" + creator.getId() + "/release", Map.of("reason", "RESOLVED"))
+                .andExpect(status().isOk());
+        JsonNode released = json(creatorGet(SETTLEMENTS + "/" + s.getId()));
+        assertThat(released.at("/settlement/payoutHold").isNull() || released.at("/settlement/payoutHold").isMissingNode()).isTrue();
+        assertThat(released.at("/payouts/rows/0/statusLabel").asText()).isNotEqualTo(PayoutBlockReason.CREATOR_SUSPENDED.getLabel());
+    }
+
+    @Test
+    @DisplayName("[56 A2-05] 사업자 · 계산서 제출 전 정지 — 사유 우선순위(정지 → 계좌 → 계산서)로 지급 예정일 문구는 정지 기준 · 세금계산서 카드는 그대로 발행 필요")
+    void businessSuspendedBeforeInvoice() throws Exception {
+        makeCreatorBusiness();
+        registerCreatorAccount();
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        Settlement s = confirm(reviewing());
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("PENDING_INPUT");
+        assertThat(detail.at("/settlement/payoutHold/reason").asText()).isEqualTo("CREATOR_SUSPENDED");
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo(PayoutBlockReason.CREATOR_SUSPENDED.getLabel());
+    }
+
+    /** 56 수정 기록 5-1 — 행에 사유 코드가 이미 있으면 판정보다 코드가 이긴다. */
+    @Test
+    @DisplayName("[56 A1-05] 계좌 확인 사유 코드로 보류된 뒤 정지 — 코드가 이긴다: 「정산 계좌 확인 중」 · sanction false")
+    void codedHoldWinsOverLaterSuspension() throws Exception {
+        registerCreatorAccount();
+        Settlement s = confirm(reviewing());
+        jdbc.update("UPDATE settlement_payout SET status = 'BLOCKED', fail_code = 'CREATOR_ACCOUNT_UNVERIFIED', due_date = NULL "
+                + "WHERE settlement_id = ? AND payee = 'CREATOR'", s.getId());
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.reason").value("CREATOR_ACCOUNT_UNVERIFIED"))
+                .andExpect(jsonPath("$.settlement.payoutHold.sanction").value(false))
+                .andExpect(jsonPath("$.payouts.rows[0].statusLabel").value("정산 계좌 확인 중"));
+    }
+
+    @Test
+    @DisplayName("[56 A1-06] 원인이 풀렸는데 재판정 전인 코드 없는 보류 — payoutHold null · 예전 문구 「지급 보류」 · 「보류 사유 해소 후 지급」")
+    void uncodedHoldWithoutCurrentReason() throws Exception {
+        registerCreatorAccount();
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFYING' WHERE creator_id = ?", creator.getId());
+        Settlement s = confirm(reviewing());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isNull();
+        // 배치가 다시 판정하기 전 — 계좌 확인만 끝났다(행은 아직 BLOCKED).
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFIED' WHERE creator_id = ?", creator.getId());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/settlement/payoutHold").isNull() || detail.at("/settlement/payoutHold").isMissingNode()).isTrue();
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("지급 보류");
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("보류 사유 해소 후 지급");
     }
 
     @Test

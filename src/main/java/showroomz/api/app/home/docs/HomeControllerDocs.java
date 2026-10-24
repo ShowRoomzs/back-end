@@ -13,7 +13,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.home.dto.HomeSummaryResponse;
 
-@Tag(name = "User - Home", description = "C1 홈 화면 API")
+@Tag(name = "User - Home", description = "사용자 홈 API")
 public interface HomeControllerDocs {
 
     @Operation(

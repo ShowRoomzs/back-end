@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
 import showroomz.api.app.auth.service.AuthService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
@@ -53,6 +54,7 @@ public class CreatorAuthService {
     private final AuthTokenProvider tokenProvider;
     private final PersonalDataCipher personalDataCipher;
     private final OperatorChannelService operatorChannelService;
+    private final UserRefreshTokenRepository userRefreshTokenRepository;
 
     @Transactional
     public TokenResponse socialLogin(HttpServletRequest request, SocialLoginRequest socialLoginRequest) {
@@ -115,9 +117,8 @@ public class CreatorAuthService {
         // §13-6 — 연결코드는 등록 완료 시 쇼룸별로 고정 발급된다(재발급은 §14-1 연결·소통 영역에서 별도 처리).
         creator.reissueConnectionCode(ConnectionCodeGenerator.generateUnique(creatorRepository::existsByConnectionCode));
 
-        // §22-1 — 쇼룸 주소는 쇼룸명이 확정되는 이 시점에 자동 생성되고, 이후 쇼룸명을 바꿔도 따라 바뀌지 않는다.
-        creator.assignShowroomAddressIfAbsent(ShowroomAddressGenerator.generateUnique(
-                request.getShowroomName(), creatorRepository::existsByShowroomAddress));
+        // §22-1 · 온보딩 rev.3 [정정] — 쇼룸 주소는 계정 아이디(인스타그램 핸들) 기준으로 이 시점에 발급되고 이후 바뀌지 않는다.
+        creator.assignShowroomAddressIfAbsent(showroomAddressFor(creator));
         // §22-1 — 공개용 인스타그램 URL의 기본값은 온보딩 채널 주소다(쇼룸 관리에서 독립 수정한다).
         creator.initializeInstagramUrlFromChannel();
 
@@ -132,8 +133,20 @@ public class CreatorAuthService {
         );
     }
 
+    /**
+     * 온보딩 화면의 읽기 전용 값 — 계정 아이디 · 예금주(본인 인증 실명 마스킹) · 쇼룸 주소 미리보기. 주소는 계정 아이디로 정해지므로
+     * 쇼룸명을 입력하기 전에도 보여줄 수 있다. 미리보기는 선점이 아니다 — 제출 사이에 같은 핸들이 쓰이면 제출 때 꼬리표가 붙는다.
+     */
     public CreatorRegistrationInfoResponse getRegistrationInfo(String registerTokenStr) {
-        return CreatorRegistrationInfoResponse.from(resolveNewCreatorFromRegisterToken(registerTokenStr));
+        Creator creator = resolveNewCreatorFromRegisterToken(registerTokenStr);
+        return CreatorRegistrationInfoResponse.from(creator, showroomAddressFor(creator));
+    }
+
+    private String showroomAddressFor(Creator creator) {
+        if (creator.getShowroomAddress() != null && !creator.getShowroomAddress().isBlank()) {
+            return creator.getShowroomAddress();
+        }
+        return ShowroomAddressGenerator.generateUnique(creator.getAccountId(), creatorRepository::existsByShowroomAddress);
     }
 
     private Creator resolveNewCreatorFromRegisterToken(String registerTokenStr) {
@@ -190,7 +203,7 @@ public class CreatorAuthService {
             return new ShowroomNameCheckResponse(
                     false,
                     "DUPLICATE",
-                    "이미 사용 중인 쇼룸명입니다."
+                    ErrorCode.DUPLICATE_SHOWROOM_NAME.getMessage()
             );
         }
 
@@ -261,7 +274,11 @@ public class CreatorAuthService {
         response.setTokenType(null);
         response.setCode(ErrorCode.ACCOUNT_REJECTED.getCode());
         response.setRejectReasonType(application.getRejectReasonType());
-        response.setRejectReasonDetail(application.getRejectReasonDetail());
+        // 상세 사유는 내부 기록 — 신청자에게 내리지 않는다(1021 기-36). 사유는 통지 라벨로만.
+        response.setRejectReasonLabel(showroomz.api.admin.creator.type.CreatorRejectionReasonType
+                .fromCode(application.getRejectReasonType())
+                .map(showroomz.api.admin.creator.type.CreatorRejectionReasonType::getNoticeLabel).orElse(null));
+        response.setRejectedAt(application.getProcessedAt());
         response.setReapplyAvailableAt(application.resolveReapplyAvailableAt());
         return response;
     }
@@ -314,5 +331,18 @@ public class CreatorAuthService {
         if (creatorRepository.existsByShowroomName(showroomName)) {
             throw new BusinessException(ErrorCode.DUPLICATE_SHOWROOM_NAME);
         }
+    }
+
+    /**
+     * 스튜디오 로그아웃(1017 설계서 5-4) — 이 세션의 refresh token 만 폐기한다. 인플루언서 로그인도 소비자 계정 refresh token 을 쓰므로
+     * {@code /v1/user/auth/logout} 과 같은 저장소다. <b>앱 기기 푸시 토큰은 건드리지 않는다</b> — 스튜디오(웹)에서 로그아웃했다고
+     * 소비자 앱 알림이 끊기면 안 된다. 토큰이 없거나 이미 폐기된 경우에도 성공으로 본다(멱등).
+     */
+    @Transactional
+    public void logout(String refreshToken) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN_LOGOUT);
+        }
+        userRefreshTokenRepository.deleteByRefreshToken(refreshToken);
     }
 }

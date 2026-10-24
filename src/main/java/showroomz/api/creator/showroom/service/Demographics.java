@@ -1,6 +1,7 @@
 package showroomz.api.creator.showroom.service;
 
 import showroomz.api.creator.showroom.dto.DistributionItem;
+import showroomz.global.utils.Percent;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -87,8 +88,9 @@ public final class Demographics {
         return items;
     }
 
+    /** 분포 비율 — 쇼룸 현황은 표본 0 을 0% 로 그린다(분포 막대가 비어 보이게). 반올림은 공용 {@link Percent}. */
     public static Double ratio(long value, long total) {
-        return total == 0 ? 0.0 : round(value * 100.0 / total);
+        return total == 0 ? 0.0 : Percent.oneDecimal(value, total);
     }
 
     public static Double round(double value) {

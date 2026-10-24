@@ -1,5 +1,10 @@
 package showroomz.api.admin.product.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -38,6 +43,7 @@ public class AdminProductService {
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
     private final ProductProcessingHistoryService processingHistoryService;
+    private final NotificationPublisher notificationPublisher;
 
     /**
      * 관리자 상품 목록 조회 (전체 브랜드)
@@ -315,6 +321,7 @@ public class AdminProductService {
         applyDisplayStatusChange(product, request.getDisplayStatus(), request.getHideReasonType(),
                 request.getHideDetail(), adminSellerId);
         productRepository.save(product);
+        notifyBrand(product);
 
         return AdminProductDto.UpdateDisplayStatusResponse.builder()
                 .productId(product.getProductId())
@@ -347,6 +354,7 @@ public class AdminProductService {
             applyDisplayStatusChange(product, request.getDisplayStatus(), request.getHideReasonType(),
                     request.getHideDetail(), adminSellerId);
             productRepository.save(product);
+            notifyBrand(product);
             processed.add(product.getProductId());
         }
 
@@ -356,6 +364,19 @@ public class AdminProductService {
                 .displayStatus(request.getDisplayStatus())
                 .message(buildMessage(request.getDisplayStatus(), processed.size()))
                 .build();
+    }
+
+    /** 파트너 알림 「상품 › 직권 미진열」(16 알림 표) — 상품 수정 화면으로 간다. */
+    private void notifyBrand(Product product) {
+        if (product.getMarket() == null) {
+            return;
+        }
+        boolean hidden = product.getDisplayStatus() == ProductDisplayStatus.HIDDEN;
+        notificationPublisher.publish(NotificationCommand.toSeller(product.getMarket().getId(),
+                        hidden ? NotificationType.PRODUCT_UNLISTED_BY_ADMIN : NotificationType.PRODUCT_RELISTED_BY_ADMIN)
+                .actorType(NotificationActorType.OPERATOR)
+                .title("「" + product.getName() + "」 상품이 " + (hidden ? "운영팀에 의해 미진열 처리되었습니다" : "다시 진열되었습니다"))
+                .targetType(NotificationTargetType.PRODUCT).targetId(product.getProductId()).build());
     }
 
     private void applyDisplayStatusChange(

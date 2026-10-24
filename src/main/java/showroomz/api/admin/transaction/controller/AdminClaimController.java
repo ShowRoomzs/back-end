@@ -47,9 +47,11 @@ public class AdminClaimController implements AdminClaimControllerDocs {
             @RequestParam(value = "marketName", required = false) String marketName,
             @RequestParam(value = "consumerName", required = false) String consumerName,
             @RequestParam(value = "sort", required = false) ClaimSort sort,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "openOnly", defaultValue = "false") boolean openOnly,
             @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(claimService.getClaims(marketId, tab, types, reason, from, to, keyword, marketName,
-                consumerName, sort, pagingRequest));
+                consumerName, sort, userId, openOnly, pagingRequest));
     }
 
     @Override

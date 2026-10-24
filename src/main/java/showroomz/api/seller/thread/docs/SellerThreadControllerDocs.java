@@ -31,7 +31,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Seller - Thread", description = "파트너센터 연결·소통 스레드/메시지 API (§13)")
+@Tag(name = "Seller - Thread", description = "파트너센터 소통 스레드 API")
 public interface SellerThreadControllerDocs {
 
     @Operation(

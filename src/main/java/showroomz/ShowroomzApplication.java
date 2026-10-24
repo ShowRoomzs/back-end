@@ -9,14 +9,19 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.client.RestTemplate;
 
 import io.sentry.SentryOptions;
+import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.AppProperties;
+import showroomz.global.config.properties.CompanyProperties;
+import showroomz.global.config.properties.ContractProperties;
 import showroomz.global.config.properties.CorsProperties;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
-import showroomz.global.config.properties.PortOnePlatformProperties;
+import showroomz.global.config.properties.TossPayoutsProperties;
 import showroomz.global.config.properties.FcmProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.payment.portone.PortOneProperties;
+import showroomz.global.config.properties.MemberProperties;
+import showroomz.global.config.properties.NotificationProperties;
 import showroomz.global.config.properties.PostProperties;
 import showroomz.global.config.properties.S3Properties;
 import showroomz.global.config.properties.SettlementProperties;
@@ -28,7 +33,8 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 @EnableAsync
 @EnableConfigurationProperties({ AppProperties.class, CorsProperties.class, S3Properties.class, PostProperties.class,
 		FcmProperties.class, GroupBuyProperties.class, OrderProperties.class, PortOneProperties.class,
-		DeliveryTrackerProperties.class, SettlementProperties.class, PortOnePlatformProperties.class })
+		DeliveryTrackerProperties.class, SettlementProperties.class, TossPayoutsProperties.class, MemberProperties.class,
+		AdminProperties.class, NotificationProperties.class, CompanyProperties.class, ContractProperties.class })
 public class ShowroomzApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ShowroomzApplication.class, args);

@@ -1,6 +1,7 @@
 package showroomz.domain.connection.service;
 
 import lombok.RequiredArgsConstructor;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.connection.entity.Connection;
@@ -9,7 +10,9 @@ import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.service.MessageThreadService;
+import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.message.type.ParticipantType;
 
 /**
@@ -46,6 +49,7 @@ public class OperatorChannelService {
 
     private final ConnectionRepository connectionRepository;
     private final MessageThreadService messageThreadService;
+    private final MessageThreadRepository messageThreadRepository;
 
     /** 입점 승인 시 호출 — 이미 채널이 있으면 아무것도 하지 않는다. 안내 메시지 없이 빈 스레드로 연다. */
     @Transactional
@@ -74,6 +78,22 @@ public class OperatorChannelService {
                 .orElseGet(() -> connectionRepository.save(Connection.createOperatorCreator(creator)));
 
         openWithWelcome(connection, CREATOR_WELCOME_MESSAGE.formatted(creator.getShowroomName()));
+    }
+
+    /** 브랜드 운영팀 채널의 스레드 id — 읽기 전용(만들지 않는다). 정지 배너의 [운영팀에 소명하기] 목적지다. */
+    @Transactional(readOnly = true)
+    public Optional<Long> findMarketChannelThreadId(Market market) {
+        return connectionRepository.findByTypeAndMarket(ConnectionType.OPERATOR_MARKET, market)
+                .flatMap(c -> messageThreadRepository.findByConnectionAndKind(c, ThreadKind.CONNECTION))
+                .map(MessageThread::getId);
+    }
+
+    /** 인플루언서 운영팀 채널의 스레드 id — 읽기 전용. */
+    @Transactional(readOnly = true)
+    public Optional<Long> findCreatorChannelThreadId(Creator creator) {
+        return connectionRepository.findByTypeAndCreator(ConnectionType.OPERATOR_CREATOR, creator)
+                .flatMap(c -> messageThreadRepository.findByConnectionAndKind(c, ThreadKind.CONNECTION))
+                .map(MessageThread::getId);
     }
 
     /**

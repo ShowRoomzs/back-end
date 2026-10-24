@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.Map;
 
-@Tag(name = "User - Auth", description = "User Auth API")
+@Tag(name = "User - Auth", description = "사용자 인증 API")
 public interface AuthControllerDocs {
 
     @Operation(
@@ -641,7 +641,9 @@ public interface AuthControllerDocs {
                     "**요청 헤더:** Authorization: Bearer {accessToken}\n\n" +
                     "**탈퇴 전 차단 조건:**\n" +
                     "- 진행 중인 주문이 하나라도 있으면 409 `WITHDRAWAL_BLOCKED_BY_ORDER`로 거절합니다. " +
-                    "배송과 교환·환불이 모두 끝난 뒤에 탈퇴할 수 있습니다.\n\n" +
+                    "배송과 교환·환불이 모두 끝난 뒤에 탈퇴할 수 있습니다.\n" +
+                    "- 정지 중 탈퇴는 설정 `member.sanction.allow-withdrawal-while-suspended`(기본 true = 허용)에 따릅니다. " +
+                    "false 이면 정지 중에는 409 `USER_SUSPENDED`로 거절합니다(`GET /v1/user/withdrawal`의 `suspensionBlockedReason`과 같은 문장).\n\n" +
                     "**탈퇴 처리 내용:**\n" +
                     "- 사용자 상태를 WITHDRAWN(탈퇴)으로 변경 (논리 삭제)\n" +
                     "- 관련 리프레시 토큰 삭제\n" +
@@ -753,7 +755,7 @@ public interface AuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "진행 중인 주문이 있어 탈퇴할 수 없음",
+                    description = "진행 중인 주문이 있어 탈퇴할 수 없음 · 정지 중(설정 false)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -765,6 +767,14 @@ public interface AuthControllerDocs {
                                                     "  \"message\": \"진행 중인 주문이 있어 지금은 탈퇴할 수 없습니다.\"\n" +
                                                     "}",
                                             description = "배송과 교환·환불이 모두 끝난 뒤에 탈퇴할 수 있습니다"
+                                    ),
+                                    @ExampleObject(
+                                            name = "정지 중(설정 false)",
+                                            value = "{\n" +
+                                                    "  \"code\": \"USER_SUSPENDED\",\n" +
+                                                    "  \"message\": \"이용 정지 중에는 탈퇴할 수 없어요.\"\n" +
+                                                    "}",
+                                            description = "member.sanction.allow-withdrawal-while-suspended = false 일 때만 — 기본은 정지 중에도 탈퇴할 수 있습니다"
                                     )
                             }
                     )

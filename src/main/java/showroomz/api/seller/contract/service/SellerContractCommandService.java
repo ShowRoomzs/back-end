@@ -7,6 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.seller.contract.dto.ContractCreateRequest;
 import showroomz.api.seller.contract.dto.ContractCreateResponse;
 import showroomz.api.seller.contract.dto.ContractDetailResponse;
+import showroomz.api.seller.contract.dto.ContractDraftApprovalRequest;
+import showroomz.api.seller.contract.dto.ContractTerminationRequestRequest;
 import showroomz.api.seller.contract.dto.ContractDuplicateResponse;
 import showroomz.api.seller.contract.dto.ContractResendRequestResponse;
 import showroomz.api.seller.contract.dto.ContractReviewRequestRequest;
@@ -23,10 +25,10 @@ import showroomz.domain.contract.event.ContractReviewRequestedEvent;
 import showroomz.domain.contract.repository.ContractClauseVersionRepository;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.repository.ContractResendRequestRepository;
-import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.service.ContractHistoryRecorder;
 import showroomz.domain.contract.service.ContractNotifier;
 import showroomz.domain.contract.service.ContractNumberGenerator;
+import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractClauseVersionStatus;
 import showroomz.domain.contract.type.ContractEventType;
@@ -34,7 +36,9 @@ import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.ContractViolation;
 import showroomz.domain.contract.type.ContractViolationCode;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.repository.ProductRepository;
@@ -70,11 +74,17 @@ import java.util.stream.Collectors;
 public class SellerContractCommandService {
 
     private final ContractAccessGuard accessGuard;
+    private final BrandSanctionGuard brandSanctionGuard;
+    private final showroomz.domain.member.brand.service.BrandWithdrawalGuard brandWithdrawalGuard;
     private final ContractValidator contractValidator;
     private final ContractDetailAssembler detailAssembler;
     private final ContractRepository contractRepository;
     private final ContractResendRequestRepository resendRequestRepository;
     private final ContractChannelGateway channelGateway;
+    private final showroomz.domain.contract.repository.ContractTerminationRequestRepository terminationRequestRepository;
+    private final showroomz.domain.contract.repository.ContractDraftApprovalRepository draftApprovalRepository;
+    private final showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuyRepository;
+    private final showroomz.domain.groupbuy.repository.GroupBuyChangeRequestRepository groupBuyChangeRequestRepository;
     private final ContractClauseVersionRepository clauseVersionRepository;
     private final ConnectionRepository connectionRepository;
     private final ProductRepository productRepository;
@@ -83,12 +93,19 @@ public class SellerContractCommandService {
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
     private final ApplicationEventPublisher eventPublisher;
+    private final CreatorSanctionGuard creatorSanctionGuard;
 
     // ── P3 · 작성 · 임시저장 ────────────────────────────────────────────────
 
     /** 빈 초안 생성(B1). 조건은 여기서 받지 않는다 — 작성 화면이 열린 뒤 PUT으로 채운다. */
     public ContractCreateResponse create(String sellerEmail, ContractCreateRequest request) {
         Market market = accessGuard.resolveMarket(sellerEmail);
+        // 브랜드 정지 중에는 새 계약을 시작하지 않는다(§51-1 · 52 설계서 7절) — 작성중 계약의 수정 · 삭제는 그대로다.
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
+        // 탈퇴 신청 심사 중에도 새 계약을 시작하지 않는다(51 설계서 7-2 · 시안 4-I).
+        brandWithdrawalGuard.requireNoPending(market.getId(),
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Creator creator = null;
         Connection connection = null;
@@ -111,6 +128,9 @@ public class SellerContractCommandService {
         Contract contract = accessGuard.loadOwned(contractId, market);
 
         requireEditable(contract);
+        // 정지 중 초안은 열람 · 삭제만 — 작성 · 수정 · 임시저장을 막는다(ui-partner-15 S4a · 1017 설계서 8-1).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_UPDATE);
 
         // 버전 검사와 증가를 조건부 UPDATE 하나로 한다(설계서 3-3·3-4). 읽어서 비교만 하면
         // ① 동시 요청 둘이 같은 버전을 보고 나란히 통과하고 ② 항목만 바꾼 저장은 계약 행을
@@ -182,6 +202,13 @@ public class SellerContractCommandService {
         Market market = accessGuard.resolveMarket(sellerEmail);
         Contract contract = accessGuard.loadOwned(contractId, market);
         requireEditable(contract);
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_REVIEW_REQUEST);
+        // 탈퇴 신청 심사 중 검토 요청은 새 의무(서명 → 공구)를 만든다 — 잠금의 실질 관문(51 설계서 7-2).
+        brandWithdrawalGuard.requireNoPending(market.getId(),
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_REVIEW_REQUEST);
+        // 정지 · 탈퇴 심사 중인 인플루언서에게는 새 계약을 보내지 않는다(§51-1 · S7 · 53 설계서 4-2).
+        creatorSanctionGuard.requireCanReceiveContract(contract.getCreator());
 
         LocalDateTime now = LocalDateTime.now();
 
@@ -269,6 +296,9 @@ public class SellerContractCommandService {
         if (contract.getStatus() != ContractStatus.SIGNING) {
             throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
         }
+        // 정지 중에는 체결로 가는 재발송도 요청하지 않는다(ui-partner-15 S4b).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_RESEND_REQUEST);
         // 내가 이미 서명했으면 다시 받을 안내가 없다(§26-B4a) — 상대의 안내를 브랜드가 대신
         // 요청하는 경로는 시안에 없다. 스튜디오의 [서명 안내 다시 받기]와 같은 판정이다.
         if (contract.getBrandSignedAt() != null) {
@@ -291,6 +321,95 @@ public class SellerContractCommandService {
                     contractNotifier.notifyAdmin(contract, ContractEventType.RESEND_REQUESTED.name());
                     return new ContractResendRequestResponse(saved.getId(), saved.getRequestedAt(), false);
                 });
+    }
+
+    /**
+     * [해지 요청](파트너 08 B5 · 09 C4 · 1021 설계서 1-4 · 결정 노트 기-05 【잠정】) — 성립 뒤 · 공구 오픈 전에만. 계약은 그대로 체결완료다 —
+     * 운영자가 상대방 동의를 운영팀 채널에서 확인해 [해지 처리]를 하면 종결된다. 상대(인플루언서) 운영팀 채널에 「동의 확인」 카드가 붙는다.
+     *
+     * <p>내 계정 이용 정지 중에도 받는다 — 해지는 새로 벌이는 일이 아니라 거두는 일이다(1021 설계서 14절 Q3).
+     */
+    public ContractDetailResponse requestTermination(String sellerEmail, Long contractId,
+                                                     ContractTerminationRequestRequest request) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        if (request.reasonCode().requiresMemo() && (request.memo() == null || request.memo().isBlank())) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_REASON_MEMO_REQUIRED);
+        }
+        showroomz.domain.groupbuy.entity.GroupBuy groupBuy = contract.getGroupBuyId() == null ? null
+                : groupBuyRepository.findForUpdate(contract.getGroupBuyId()).orElse(null);
+        if (!showroomz.domain.contract.service.ContractTerminationPolicy.isTerminable(contract, groupBuy)) {
+            throw new BusinessException(ErrorCode.CONTRACT_TERMINATION_NOT_ALLOWED);
+        }
+        // 검토 중인 공구 변경 요청(중단 · 조기 마감)과 겹치지 않게 한다.
+        if (groupBuy != null && groupBuyChangeRequestRepository.findByGroupBuyIdOrderByRequestedAtDescIdDesc(groupBuy.getId())
+                .stream().anyMatch(showroomz.domain.groupbuy.entity.GroupBuyChangeRequest::isPending)) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_REQUEST_ALREADY_PENDING);
+        }
+        if (terminationRequestRepository.findPending(contract.getId()).isPresent()) {
+            throw new BusinessException(ErrorCode.CONTRACT_TERMINATION_ALREADY_PENDING);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        String memo = request.memo() == null || request.memo().isBlank() ? null : request.memo().trim();
+        showroomz.domain.contract.entity.ContractTerminationRequest saved = terminationRequestRepository.save(
+                showroomz.domain.contract.entity.ContractTerminationRequest.of(contract, ContractActorType.SELLER,
+                        market.getId(), request.reasonCode(), memo, contract.getGroupBuyId(), now));
+        ContractChannelGateway.ChannelCard card = channelGateway.postTerminationConsentCard(contract, saved);
+        saved.attachConsentCard(card.messageId());
+        historyRecorder.recordBySeller(contract, ContractEventType.TERMINATION_REQUESTED,
+                request.reasonCode().getLabel(), now);
+        contractNotifier.notifyCounterparty(contract, "TERMINATION_REQUESTED");
+        contractNotifier.notifyAdmin(contract, ContractEventType.TERMINATION_REQUESTED.name());
+        terminationRequestRepository.flush();
+        return detailAssembler.assemble(contract);
+    }
+
+    /** 해지 요청 철회 — 처리 전(PENDING)만. */
+    public ContractDetailResponse withdrawTermination(String sellerEmail, Long contractId) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        showroomz.domain.contract.entity.ContractTerminationRequest pending = terminationRequestRepository
+                .findPending(contract.getId())
+                .filter(r -> r.getRequesterType() == ContractActorType.SELLER)
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONTRACT_TERMINATION_REQUEST_NOT_PENDING));
+        LocalDateTime now = LocalDateTime.now();
+        pending.close(showroomz.domain.contract.type.ContractTerminationRequestStatus.WITHDRAWN, market.getId(), now);
+        historyRecorder.recordBySeller(contract, ContractEventType.TERMINATION_REQUEST_WITHDRAWN, null, now);
+        terminationRequestRepository.flush();
+        return detailAssembler.assemble(contract);
+    }
+
+    /** 초안 승인 기록 추가(1021 설계서 1-8 · 기-30) — 계약 성립 이후 · 기록 전용(정지 중에도 받는다). */
+    public ContractDetailResponse recordDraftApproval(String sellerEmail, Long contractId,
+                                                      ContractDraftApprovalRequest request) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        if (contract.getEstablishedAt() == null) {
+            throw new BusinessException(ErrorCode.CONTRACT_STATUS_CONFLICT);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime approvedAt = request.approvedAt() == null ? now : request.approvedAt();
+        if (approvedAt.isAfter(now)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "승인 일시는 지금 이전이어야 합니다.");
+        }
+        String note = request.note() == null || request.note().isBlank() ? null : request.note().trim();
+        draftApprovalRepository.save(showroomz.domain.contract.entity.ContractDraftApproval.of(contract.getId(),
+                market.getId(), request.title().trim(), approvedAt, request.threadMessageId(), note, now));
+        historyRecorder.recordBySeller(contract, ContractEventType.DRAFT_APPROVAL_RECORDED, request.title().trim(), now);
+        draftApprovalRepository.flush();
+        return detailAssembler.assemble(contract);
+    }
+
+    /** 초안 승인 기록 삭제(잘못 적은 기록) — 행은 남긴다. */
+    public ContractDetailResponse deleteDraftApproval(String sellerEmail, Long contractId, Long approvalId) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        showroomz.domain.contract.entity.ContractDraftApproval approval = draftApprovalRepository
+                .findByIdAndContractIdAndDeletedAtIsNull(approvalId, contract.getId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.CONTRACT_NOT_FOUND));
+        approval.delete(LocalDateTime.now());
+        draftApprovalRepository.flush();
+        return detailAssembler.assemble(contract);
     }
 
     /**
@@ -337,6 +456,11 @@ public class SellerContractCommandService {
         if (!ContractStatus.DUPLICABLE.contains(source.getStatus())) {
             throw new BusinessException(ErrorCode.CONTRACT_NOT_DUPLICABLE);
         }
+        // 복제도 새 계약의 시작이다 — create 와 같은 가드(이 경로가 가드를 우회하지 않게 · 1017 설계서 8-1).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
+        brandWithdrawalGuard.requireNoPending(market.getId(),
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Contract copy = Contract.createDraft(market, source.getCreator(), source.getConnection());
         copy.updateTerms(

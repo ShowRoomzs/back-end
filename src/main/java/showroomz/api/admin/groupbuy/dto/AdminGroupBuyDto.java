@@ -39,7 +39,7 @@ public final class AdminGroupBuyDto {
     ) {
     }
 
-    @Schema(description = "게시물 숨김(M5)")
+    @Schema(description = "게시물 노출 중지(M5)")
     public record PostHideRequest(
             @NotNull GroupBuyPostHideReason reasonCode,
             @Schema(description = "인플루언서에게 전달할 설명 · 필수 · 1,000자") @Size(max = 1000) String detail,
@@ -49,7 +49,7 @@ public final class AdminGroupBuyDto {
     ) {
     }
 
-    @Schema(description = "숨김 해제 — 읽은 판본을 돌려준다. 그사이 수정됐으면 409 GROUP_BUY_POST_CHANGED_SINCE_VIEW")
+    @Schema(description = "노출 중지 해제 — 읽은 판본을 돌려준다. 그사이 수정됐으면 409 GROUP_BUY_POST_CHANGED_SINCE_VIEW")
     public record PostUnhideRequest(
             @Schema(description = "상세의 post.latestRevisionNo") @NotNull Integer expectedRevisionNo
     ) {
@@ -111,7 +111,7 @@ public final class AdminGroupBuyDto {
             GroupBuyPostStatus postStatus,
             String postStatusLabel,
             @Schema(description = "준비완료가 됐으면 시작 일시", nullable = true) LocalDateTime openAt,
-            @Schema(description = "숨김 — 운영자가 본 판본 이후 수정이 있었다. 최신 본문을 확인하라고 띄운다", nullable = true)
+            @Schema(description = "노출 중지 — 운영자가 본 판본 이후 수정이 있었다. 최신 본문을 확인하라고 띄운다", nullable = true)
             Boolean revisionAdvanced,
             @Schema(description = "통지 3호 — C2_POST_ALTERATION: 게시물 변경을 이유로 삼으면 브랜드가 소명할 수 없는 사유다",
                     nullable = true)
@@ -130,8 +130,8 @@ public final class AdminGroupBuyDto {
             String content,
             LocalDateTime createdAt,
             @Schema(description = "운영자가 승인한 판") boolean approved,
-            @Schema(description = "현재·마지막 숨김의 기준 판") boolean hiddenBasis,
-            @Schema(description = "숨김 해제 판단에 쓴 판") boolean unhiddenBasis,
+            @Schema(description = "현재·마지막 노출 중지의 기준 판") boolean hiddenBasis,
+            @Schema(description = "노출 중지 해제 판단에 쓴 판") boolean unhiddenBasis,
             @Schema(description = "최근 직권 중단 통지의 기준 판") boolean noticeBasis,
             @Schema(description = "최신 판") boolean latest
     ) {

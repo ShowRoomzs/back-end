@@ -58,6 +58,8 @@ public enum ErrorCode {
     // C15-4 탈퇴 확인 — 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다
     WITHDRAWAL_BLOCKED_BY_ORDER(HttpStatus.CONFLICT, "WITHDRAWAL_BLOCKED_BY_ORDER", "진행 중인 주문이 있어 지금은 탈퇴할 수 없습니다."),
     WITHDRAWAL_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "WITHDRAWAL_CONSENT_REQUIRED", "계정과 활동 기록이 삭제되는 데 동의해야 합니다."),
+    // 인플루언서는 스튜디오 탈퇴 신청 → 운영자 승인(§51-5) — 소비자 탈퇴로 심사를 우회하지 않는다(정합 계획서 E-2)
+    USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW(HttpStatus.CONFLICT, "USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW", "인플루언서 계정은 쇼룸 스튜디오 기본정보에서 탈퇴를 신청해 주세요."),
     // C15-2 회원정보 변경 — 재인증은 가입 시 동의와 별개의 새 수집 행위라 매번 다시 동의를 받는다
     IDENTITY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "IDENTITY_CONSENT_REQUIRED", "본인확인을 위한 개인정보 수집·이용에 동의해야 합니다."),
     UNAUTHORIZED_ACCESS(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "인증 정보가 유효하지 않습니다."),
@@ -82,7 +84,7 @@ public enum ErrorCode {
     /* * 6. 마켓 (Market) 
      */
     DUPLICATE_MARKET_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_MARKET_NAME", "이미 사용 중인 마켓명입니다."),
-    DUPLICATE_SHOWROOM_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_SHOWROOM_NAME", "이미 사용 중인 쇼룸명입니다."),
+    DUPLICATE_SHOWROOM_NAME(HttpStatus.BAD_REQUEST, "DUPLICATE_SHOWROOM_NAME", "이미 사용 중인 쇼룸명입니다. 다른 이름을 입력해 주세요."),
     MARKET_NOT_FOUND(HttpStatus.NOT_FOUND, "MARKET_NOT_FOUND", "존재하지 않는 마켓입니다."),
     SELLER_NOT_FOUND(HttpStatus.NOT_FOUND, "SELLER_NOT_FOUND", "존재하지 않는 판매자입니다."),
 
@@ -144,6 +146,8 @@ public enum ErrorCode {
     INQUIRY_DELETE_NOT_REQUESTED(HttpStatus.BAD_REQUEST, "INQUIRY_DELETE_NOT_REQUESTED", "삭제 요청이 없는 문의입니다."),
     INQUIRY_DELETE_REASON_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "기타(직접 입력) 사유는 상세 설명이 필요합니다."),
     INQUIRY_ALREADY_DELETED(HttpStatus.BAD_REQUEST, "INQUIRY_ALREADY_DELETED", "이미 삭제된 문의입니다."),
+    // 1017 알림함
+    NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_NOT_FOUND", "존재하지 않는 알림입니다."),
 
     /* 12. 쿠폰 (Coupon)
      */
@@ -199,6 +203,12 @@ public enum ErrorCode {
    POST_REPORT_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "POST_REPORT_ALREADY_SUBMITTED", "이미 신고한 게시물입니다."),
    POST_REPORT_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_REPORT_NOT_FOUND", "존재하지 않는 신고입니다."),
    POST_REPORT_ALREADY_HANDLED(HttpStatus.CONFLICT, "POST_REPORT_ALREADY_HANDLED", "이미 처리가 끝난 신고입니다."),
+   // 어드민 일반 게시물 모니터링 (§54 · 54 설계 2-5)
+   POST_POLICY_CLAUSE_REQUIRED(HttpStatus.BAD_REQUEST, "POST_POLICY_CLAUSE_REQUIRED", "근거 규정을 선택해 주세요."),
+   POST_APPEAL_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "POST_APPEAL_REJECT_REASON_REQUIRED", "반려 사유를 입력해 주세요."),
+   POST_REPORT_NOTHING_TO_CLOSE(HttpStatus.CONFLICT, "POST_REPORT_NOTHING_TO_CLOSE", "종결할 신고가 없습니다."),
+   POST_SUSPENSION_NOT_CANCELABLE(HttpStatus.CONFLICT, "POST_SUSPENSION_NOT_CANCELABLE", "노출 중지 상태인 게시물만 조치를 취소할 수 있습니다."),
+   POST_IMAGE_NOT_FOUND(HttpStatus.NOT_FOUND, "POST_IMAGE_NOT_FOUND", "게시물에서 사진을 찾을 수 없습니다."),
 
    /* 15. 위시리스트 (Wishlist)
     */
@@ -249,6 +259,10 @@ public enum ErrorCode {
     CHANGE_REQUEST_EVIDENCE_REQUIRED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_EVIDENCE_REQUIRED", "증빙 서류를 첨부해주세요."),
     CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH", "해당 유형에 사용할 수 없는 반려 사유입니다."),
     CHANGE_REQUEST_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_REJECT_DETAIL_REQUIRED", "기타 사유를 선택한 경우 상세 사유는 필수입니다."),
+    // 인플루언서 사업자 구분 변경 편입(16 rev.7 · 50 설계서 10절 · 구현 계획서 2-2)
+    CHANGE_REQUEST_TYPE_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "CHANGE_REQUEST_TYPE_NOT_ALLOWED", "요청할 수 없는 변경 유형입니다."),
+    CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH(HttpStatus.CONFLICT, "CHANGE_REQUEST_BUSINESS_TYPE_MISMATCH", "현재 사업자 구분에서는 요청할 수 없습니다. 새로고침 후 다시 시도해 주세요."),
+    CHANGE_REQUEST_PG_RESYNC_PENDING(HttpStatus.CONFLICT, "CHANGE_REQUEST_PG_RESYNC_PENDING", "PG 셀러가 연결된 인플루언서의 사업자 구분 변경은 PG 재등록 절차가 준비된 뒤 승인할 수 있습니다."),
     EMAIL_CHANGE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "EMAIL_CHANGE_LIMIT_EXCEEDED", "로그인 이메일은 월 1회만 변경할 수 있습니다."),
     NEW_PASSWORD_CONFIRM_MISMATCH(HttpStatus.BAD_REQUEST, "NEW_PASSWORD_CONFIRM_MISMATCH", "비밀번호가 일치하지 않습니다."),
 
@@ -329,12 +343,16 @@ public enum ErrorCode {
     GROUP_BUY_THREAD_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "GROUP_BUY_THREAD_UNAVAILABLE", "지금은 스레드를 열 수 없습니다. 운영자에게 문의해 주세요."),
 
     // 쇼룸 스튜디오 공구 관리(31 설계 7절)
-    // 남의 공구는 403이 아니라 404다 — 공구번호가 추측 가능해 403은 「그 번호의 공구가 있다」를 알려준다(31 설계 0-4).
-    // 문구가 GROUP_BUY_NOT_FOUND와 같은 것이 의도다. 코드는 서버 로그에서만 구분하려고 나눈다.
-    GROUP_BUY_NOT_OWNED_BY_CREATOR(HttpStatus.NOT_FOUND, "GROUP_BUY_NOT_OWNED_BY_CREATOR", "존재하지 않는 공구입니다."),
+    // 남의 공구는 403이 아니라 404 GROUP_BUY_NOT_FOUND 다 — 공구번호가 추측 가능해 403이나 별도 코드는 「그 번호의 공구가 있다」를
+    // 알려준다(31 설계 0-4). 구분은 CreatorGroupBuyReader 의 서버 로그로만 한다.
     GROUP_BUY_POST_NOT_WRITABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_WRITABLE", "지금은 게시물을 작성할 수 없습니다."),
     GROUP_BUY_POST_UNDER_REVIEW(HttpStatus.CONFLICT, "GROUP_BUY_POST_UNDER_REVIEW", "검토 중에는 게시물을 수정할 수 없습니다."),
     GROUP_BUY_POST_NOT_EDITABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_EDITABLE", "지금 상태에서는 게시물을 수정할 수 없습니다."),
+    CLAIM_OVERTURN_NOT_APPLICABLE(HttpStatus.CONFLICT, "CLAIM_OVERTURN_NOT_APPLICABLE", "착불(브랜드 귀책)로 신청한 건만 사유를 번복할 수 있습니다."),
+    CLAIM_OVERTURN_EVIDENCE_REQUIRED(HttpStatus.BAD_REQUEST, "CLAIM_OVERTURN_EVIDENCE_REQUIRED", "판정 근거 설명과 증빙 사진을 입력해 주세요."),
+    REFUND_TRANSFER_ACCOUNT_REQUIRED(HttpStatus.BAD_REQUEST, "REFUND_TRANSFER_ACCOUNT_REQUIRED", "송금한 계좌(은행 · 계좌번호 · 예금주)와 송금 완료 확인이 필요합니다."),
+    REFUND_TRANSFER_NOT_PENDING(HttpStatus.CONFLICT, "REFUND_TRANSFER_NOT_PENDING", "송금 대기 중인 환급 항목이 아닙니다."),
+    GROUP_BUY_POST_TITLE_LOCKED(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_TITLE_LOCKED", "진행 중인 공구 게시물은 본문만 수정할 수 있습니다."),
     GROUP_BUY_POST_EMPTY_DRAFT(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_EMPTY_DRAFT", "제목이나 본문 중 하나는 입력해 주세요."),
     GROUP_BUY_POST_REQUIRED_FIELD(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_REQUIRED_FIELD", "제목과 본문을 모두 입력해 주세요."),
     GROUP_BUY_POST_TOO_LONG(HttpStatus.BAD_REQUEST, "GROUP_BUY_POST_TOO_LONG", "제목은 40자, 본문은 2,000자까지 입력할 수 있습니다."),
@@ -347,8 +365,8 @@ public enum ErrorCode {
     GROUP_BUY_OPEN_REVIEW_NOT_PENDING(HttpStatus.CONFLICT, "GROUP_BUY_OPEN_REVIEW_NOT_PENDING", "오픈 승인 대기 중인 게시물이 아닙니다."),
     GROUP_BUY_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "GROUP_BUY_REJECT_DETAIL_REQUIRED", "인플루언서에게 전달할 설명을 입력해 주세요."),
     GROUP_BUY_POST_NOT_HIDEABLE(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_HIDEABLE", "지금 상태에서는 게시물을 숨길 수 없습니다."),
-    GROUP_BUY_POST_ALREADY_HIDDEN(HttpStatus.CONFLICT, "GROUP_BUY_POST_ALREADY_HIDDEN", "이미 숨김 처리된 게시물입니다."),
-    GROUP_BUY_POST_NOT_HIDDEN(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_HIDDEN", "숨김 상태인 게시물이 아닙니다."),
+    GROUP_BUY_POST_ALREADY_HIDDEN(HttpStatus.CONFLICT, "GROUP_BUY_POST_ALREADY_HIDDEN", "이미 노출 중지된 게시물입니다."),
+    GROUP_BUY_POST_NOT_HIDDEN(HttpStatus.CONFLICT, "GROUP_BUY_POST_NOT_HIDDEN", "노출 중지 상태인 게시물이 아닙니다."),
     GROUP_BUY_POST_CHANGED_SINCE_VIEW(HttpStatus.CONFLICT, "GROUP_BUY_POST_CHANGED_SINCE_VIEW", "확인하신 뒤 게시물이 수정되었습니다. 최신 본문을 확인한 후 다시 시도해 주세요."),
     GROUP_BUY_REQUEST_DECIDE_FIRST(HttpStatus.CONFLICT, "GROUP_BUY_REQUEST_DECIDE_FIRST", "검토 중인 요청을 먼저 판정해 주세요."),
     GROUP_BUY_SUSPENSION_ALREADY_NOTICED(HttpStatus.CONFLICT, "GROUP_BUY_SUSPENSION_ALREADY_NOTICED", "이미 진행 중인 직권 중단 통지가 있습니다."),
@@ -403,6 +421,13 @@ public enum ErrorCode {
     /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
     ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요."),
     ORDER_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "ORDER_ADDRESS_NOT_CHANGEABLE", "배송 준비가 시작되어 배송지를 변경할 수 없습니다."),
+    SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED", "요청을 철회할 수 없습니다. 내가 보낸 요청에 상대가 아직 응답하지 않았을 때만 철회할 수 있어요."),
+    ORDER_STALL_CHOICE_NOT_OPEN(HttpStatus.CONFLICT, "ORDER_STALL_CHOICE_NOT_OPEN", "아직 선택할 수 없는 주문입니다. 배송 추적이 멈추고 일정 기간이 지나면 선택할 수 있어요."),
+    ORDER_STALL_CHOICE_ALREADY_MADE(HttpStatus.CONFLICT, "ORDER_STALL_CHOICE_ALREADY_MADE", "이미 처리 방법을 선택했습니다."),
+    ORDER_ADDRESS_REGION_CHANGED(HttpStatus.CONFLICT, "ORDER_ADDRESS_REGION_CHANGED", "제주 · 도서산간 추가 배송비가 달라지는 배송지로는 변경할 수 없습니다. 주문을 취소한 뒤 다시 주문해 주세요."),
+    // 추가 배송비 권역 우편번호 운영 등록(55 계획서 P4 · D4)
+    REMOTE_AREA_POSTCODE_NOT_FOUND(HttpStatus.NOT_FOUND, "REMOTE_AREA_POSTCODE_NOT_FOUND", "등록된 우편번호 범위를 찾을 수 없습니다."),
+    REMOTE_AREA_POSTCODE_OVERLAP(HttpStatus.CONFLICT, "REMOTE_AREA_POSTCODE_OVERLAP", "이미 등록된 우편번호 범위와 겹칩니다."),
 
     // 반품·교환(35 설계서 · 앱 클레임 설계서 3-8)
     CLAIM_NOT_FOUND(HttpStatus.NOT_FOUND, "CLAIM_NOT_FOUND", "반품·교환 요청을 찾을 수 없습니다."),
@@ -441,6 +466,79 @@ public enum ErrorCode {
     SETTLEMENT_TAX_INVOICE_NOT_OPEN(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_OPEN", "지금은 세금계산서를 제출할 수 없습니다."),
     SETTLEMENT_TAX_INVOICE_NOT_ISSUED(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_ISSUED", "세금계산서가 아직 발행되지 않았습니다."),
     SETTLEMENT_RECEIPT_NOT_READY(HttpStatus.CONFLICT, "SETTLEMENT_RECEIPT_NOT_READY", "원천징수영수증이 아직 준비되지 않았습니다."),
+
+    // 성과 관리(49 스튜디오 성과 설계서 5절)
+    /** 진행 중 · 중단 공구 — 성과는 종료 공구 전용이다(§47-0). */
+    PERFORMANCE_NOT_READY(HttpStatus.CONFLICT, "PERFORMANCE_NOT_READY", "공구가 종료되면 성과를 열람할 수 있습니다."),
+    // 파트너 성과 원가(48 파트너 성과 설계서 8절)
+    /** 집계 중(정산 전) 원가 저장 — 확정 수량이 바뀌면 소계도 달라진다(D2). */
+    PERFORMANCE_COST_LOCKED(HttpStatus.CONFLICT, "PERFORMANCE_COST_LOCKED", "집계가 끝나면 원가를 입력할 수 있습니다."),
+    PERFORMANCE_COST_ITEM_MISMATCH(HttpStatus.BAD_REQUEST, "PERFORMANCE_COST_ITEM_MISMATCH", "계약 상품 목록과 원가 항목이 일치하지 않습니다."),
+
+    // 어드민 회원 관리 — 브랜드 상세 · 제재 · 탈퇴 심사(52 설계서 9-2)
+    BRAND_WITHDRAWN(HttpStatus.CONFLICT, "BRAND_WITHDRAWN", "탈퇴한 브랜드입니다."),
+    BRAND_ALREADY_SUSPENDED(HttpStatus.CONFLICT, "BRAND_ALREADY_SUSPENDED", "이미 정지된 브랜드입니다."),
+    BRAND_NOT_SUSPENDED(HttpStatus.CONFLICT, "BRAND_NOT_SUSPENDED", "정지 상태가 아닌 브랜드입니다."),
+    BRAND_SUSPEND_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "BRAND_SUSPEND_DETAIL_REQUIRED", "기타 사유를 선택하면 상세 사유를 입력해야 합니다."),
+    BRAND_SUSPENDED(HttpStatus.CONFLICT, "BRAND_SUSPENDED", "계정 이용 정지 중에는 이용할 수 없는 기능입니다."),
+    BRAND_STATE_CHANGED(HttpStatus.CONFLICT, "BRAND_STATE_CHANGED", "브랜드 상태가 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    BRAND_WITHDRAWAL_NOT_FOUND(HttpStatus.NOT_FOUND, "BRAND_WITHDRAWAL_NOT_FOUND", "존재하지 않는 탈퇴 신청입니다."),
+    BRAND_WITHDRAWAL_NOT_PENDING(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_NOT_PENDING", "승인 대기 중인 탈퇴 신청이 아닙니다."),
+    BRAND_WITHDRAWAL_ALREADY_PENDING(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_ALREADY_PENDING", "이미 승인 대기 중인 탈퇴 신청이 있습니다."),
+    BRAND_WITHDRAWAL_CONDITION_UNMET(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_CONDITION_UNMET", "탈퇴 조건이 충족되지 않았습니다."),
+    BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "BRAND_WITHDRAWAL_REJECT_DETAIL_REQUIRED", "기타 사유를 선택하면 브랜드에 전달할 안내를 입력해야 합니다."),
+    BRAND_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중에는 이용할 수 없는 기능입니다."),
+    BRAND_WITHDRAWAL_REQUIRES_REQUEST(HttpStatus.CONFLICT, "BRAND_WITHDRAWAL_REQUIRES_REQUEST", "브랜드는 즉시 탈퇴할 수 없습니다. 기본정보 관리에서 탈퇴를 신청해 주세요."),
+    BRAND_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "BRAND_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
+    BRAND_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "BRAND_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
+    BRAND_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "BRAND_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+
+    // 어드민 회원 관리 — 인플루언서 상세 · 제재 · 탈퇴 심사(53 설계서 6절 · 구현 메모 12절 — CREATOR_ 접두)
+    CREATOR_STATE_CHANGED(HttpStatus.CONFLICT, "CREATOR_STATE_CHANGED", "인플루언서 상태가 이미 변경되었습니다. 새로고침 후 다시 확인해 주세요."),
+    CREATOR_WITHDRAWN(HttpStatus.CONFLICT, "CREATOR_WITHDRAWN", "탈퇴한 인플루언서입니다. 조치할 수 없습니다."),
+    CREATOR_ALREADY_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_ALREADY_SUSPENDED", "이미 정지된 인플루언서입니다."),
+    CREATOR_NOT_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_NOT_SUSPENDED", "정지 상태가 아닌 인플루언서입니다."),
+    CREATOR_SUSPEND_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_SUSPEND_DETAIL_REQUIRED", "기타 사유를 선택하면 상세 사유를 입력해야 합니다."),
+    CREATOR_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_SUSPENDED", "계정 이용 정지 중에는 이용할 수 없는 기능입니다."),
+    CREATOR_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중에는 이용할 수 없는 기능입니다."),
+    CREATOR_COUNTERPARTY_SUSPENDED(HttpStatus.CONFLICT, "CREATOR_COUNTERPARTY_SUSPENDED", "이용이 정지된 인플루언서에게는 서명 요청을 보낼 수 없습니다."),
+    CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING(HttpStatus.CONFLICT, "CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING", "탈퇴 신청 심사 중인 인플루언서에게는 서명 요청을 보낼 수 없습니다."),
+    // 1017 설계서 8-3 · 8-6 — 당사자 정지 보류 · 상대 정지
+    BRAND_COUNTERPARTY_SUSPENDED(HttpStatus.CONFLICT, "BRAND_COUNTERPARTY_SUSPENDED", "현재 수락할 수 없는 요청입니다."),
+    CONTRACT_TERMINATION_NOT_ALLOWED(HttpStatus.CONFLICT, "CONTRACT_TERMINATION_NOT_ALLOWED", "계약 성립 후 공구 오픈 전에만 해지할 수 있습니다. 오픈한 공구는 공구 관리에서 중단을 요청해 주세요."),
+    CONTRACT_TERMINATION_ALREADY_PENDING(HttpStatus.CONFLICT, "CONTRACT_TERMINATION_ALREADY_PENDING", "처리 대기 중인 해지 요청이 있습니다."),
+    CONTRACT_TERMINATION_REQUEST_NOT_PENDING(HttpStatus.CONFLICT, "CONTRACT_TERMINATION_REQUEST_NOT_PENDING", "처리 대기 중인 해지 요청이 없습니다."),
+    CONTRACT_HELD_BY_SANCTION(HttpStatus.CONFLICT, "CONTRACT_HELD_BY_SANCTION", "계정 이용 정지 중인 당사자가 있어 계약을 진행할 수 없습니다. 정지가 해제되면 이어서 처리해 주세요."),
+    GROUP_BUY_HELD_BY_SANCTION(HttpStatus.CONFLICT, "GROUP_BUY_HELD_BY_SANCTION", "계정 이용 정지 중인 당사자가 있어 오픈을 승인할 수 없습니다. 정지가 해제되면 이어서 처리해 주세요."),
+    CREATOR_WITHDRAWAL_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_WITHDRAWAL_NOT_FOUND", "존재하지 않는 탈퇴 신청입니다."),
+    CREATOR_WITHDRAWAL_NOT_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_NOT_PENDING", "이미 처리된 탈퇴 신청입니다."),
+    CREATOR_WITHDRAWAL_ALREADY_PENDING(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_ALREADY_PENDING", "처리 중인 탈퇴 신청이 있습니다."),
+    CREATOR_WITHDRAWAL_CONDITION_UNMET(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_CONDITION_UNMET", "탈퇴 조건이 충족되지 않았습니다."),
+    CREATOR_WITHDRAWAL_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_WITHDRAWAL_REASON_REQUIRED", "탈퇴 사유를 입력해 주세요."),
+    CREATOR_WITHDRAWAL_REJECT_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "CREATOR_WITHDRAWAL_REJECT_DETAIL_REQUIRED", "기타 사유를 선택하면 인플루언서에게 전달할 안내를 입력해야 합니다."),
+    // 스튜디오 기본정보 관리(50 설계서 10절)
+    CREATOR_WITHDRAWAL_NOT_REJECTED(HttpStatus.CONFLICT, "CREATOR_WITHDRAWAL_NOT_REJECTED", "반려된 탈퇴 신청만 확인 처리할 수 있습니다."),
+    CREATOR_ACCOUNT_UNCHANGED(HttpStatus.BAD_REQUEST, "CREATOR_ACCOUNT_UNCHANGED", "현재 등록된 계좌와 같습니다."),
+    CREATOR_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "CREATOR_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
+    CREATOR_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "CREATOR_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
+    CREATOR_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "CREATOR_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+    CREATOR_PRIVACY_UNMASK_FORBIDDEN(HttpStatus.FORBIDDEN, "CREATOR_PRIVACY_UNMASK_FORBIDDEN", "마스킹 해제 권한이 없습니다."),
+    CREATOR_PRIVACY_UNMASK_NOT_AVAILABLE(HttpStatus.CONFLICT, "CREATOR_PRIVACY_UNMASK_NOT_AVAILABLE", "파기된 정보는 해제할 수 없습니다."),
+
+    // 소비자 계정 이용 정지(C20) · 어드민 소비자 제재 · 메모(51-6 설계서 9-3)
+    USER_SUSPENDED(HttpStatus.CONFLICT, "USER_SUSPENDED", "이용 정지 중에는 이용할 수 없는 기능이에요."),
+    USER_ALREADY_SUSPENDED(HttpStatus.CONFLICT, "USER_ALREADY_SUSPENDED", "이미 정지된 회원입니다."),
+    USER_NOT_SUSPENDED(HttpStatus.CONFLICT, "USER_NOT_SUSPENDED", "정지 상태가 아닌 회원입니다."),
+    USER_SANCTION_WITHDRAWN(HttpStatus.CONFLICT, "USER_SANCTION_WITHDRAWN", "탈퇴한 회원입니다. 조치할 수 없습니다."),
+    USER_SUSPEND_DETAIL_REQUIRED(HttpStatus.BAD_REQUEST, "USER_SUSPEND_DETAIL_REQUIRED", "기타 사유를 선택하면 상세 사유를 입력해야 합니다."),
+    USER_RELEASE_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "USER_RELEASE_REASON_REQUIRED", "해제 사유를 선택해 주세요."),
+    USER_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
+    USER_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "USER_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
+    USER_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "USER_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+    USER_PRIVACY_UNMASK_FORBIDDEN(HttpStatus.FORBIDDEN, "USER_PRIVACY_UNMASK_FORBIDDEN", "마스킹 해제 권한이 없습니다."),
+    USER_PRIVACY_UNMASK_NOT_AVAILABLE(HttpStatus.CONFLICT, "USER_PRIVACY_UNMASK_NOT_AVAILABLE", "파기된 정보는 해제할 수 없습니다."),
+    SANCTION_APPEAL_NOT_AVAILABLE(HttpStatus.CONFLICT, "SANCTION_APPEAL_NOT_AVAILABLE", "이용 정지 중일 때만 정지에 대한 문의를 남길 수 있어요."),
+    SANCTION_APPEAL_ALREADY_EXISTS(HttpStatus.CONFLICT, "SANCTION_APPEAL_ALREADY_EXISTS", "이미 접수된 정지 문의가 있어요. 답변 전에는 기존 문의를 수정해 주세요."),
 
     // 정산 조정 협의(44 정산조정 이슈스레드 설계서 8-1)
     SETTLEMENT_ADJUSTMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_ADJUSTMENT_NOT_FOUND", "정산 조정 협의를 찾을 수 없습니다."),

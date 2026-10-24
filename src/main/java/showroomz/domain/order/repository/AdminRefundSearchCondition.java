@@ -19,6 +19,7 @@ import java.util.Set;
  * @param noMatch       검색어가 환불번호 형식인데 읽을 수 없다({@code RFD-abc}) — 결과 0건(전체로 떨어지지 않는다)
  * @param dateColumn    탭의 「일시」 열 — 최신순 정렬 기준
  * @param amountDesc    환불액 높은순(동률은 id 역순)
+ * @param userId        주문한 소비자 — 소비자 상세 「환불 실패」 칩 진입(56 C1 · 주문 목록 {@code userId}와 같은 축). null 이면 전체
  */
 public record AdminRefundSearchCondition(
         Set<RefundTaskStatus> statuses,
@@ -29,7 +30,8 @@ public record AdminRefundSearchCondition(
         String keyword,
         boolean noMatch,
         DateColumn dateColumn,
-        boolean amountDesc
+        boolean amountDesc,
+        Long userId
 ) {
 
     /** 「일시」 열 — 집행 대기 = 편입 시각 · 실패 = 마지막 실패 시각 · 완료 = 집행 시각. */

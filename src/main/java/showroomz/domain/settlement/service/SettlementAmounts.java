@@ -18,7 +18,23 @@ public record SettlementAmounts(SettlementRates rates, CreatorBusinessType busin
                                 long rewardClawbackAmount, long creatorBaseAmount, long withholdingIncomeAmount,
                                 long withholdingLocalAmount, long withholdingAmount, long creatorVatAmount,
                                 long creatorPayoutAmount, long platformShareAmount,
-                                long brandClawbackCarryover, long rewardClawbackCarryover) {
+                                long brandClawbackCarryover, long rewardClawbackCarryover,
+                                long returnDeductionFeeAmount, long freightAdjustmentAmount) {
+
+    /** 1021 이전 모양 — 최초 배송비 · 운임 정산 0(테스트 · 저장 행 재구성용). */
+    public SettlementAmounts(SettlementRates rates, CreatorBusinessType businessType,
+                             long confirmedSalesAmount, long pgFeeAmount, long platformFeeAmount,
+                             long rewardAmount, long rewardVatAmount, long reshipFeeAmount,
+                             long consumerDeliveryFeeAmount, long brandClawbackAmount, long brandPayoutAmount,
+                             long rewardClawbackAmount, long creatorBaseAmount, long withholdingIncomeAmount,
+                             long withholdingLocalAmount, long withholdingAmount, long creatorVatAmount,
+                             long creatorPayoutAmount, long platformShareAmount,
+                             long brandClawbackCarryover, long rewardClawbackCarryover) {
+        this(rates, businessType, confirmedSalesAmount, pgFeeAmount, platformFeeAmount, rewardAmount, rewardVatAmount,
+                reshipFeeAmount, consumerDeliveryFeeAmount, brandClawbackAmount, brandPayoutAmount, rewardClawbackAmount,
+                creatorBaseAmount, withholdingIncomeAmount, withholdingLocalAmount, withholdingAmount, creatorVatAmount,
+                creatorPayoutAmount, platformShareAmount, brandClawbackCarryover, rewardClawbackCarryover, 0, 0);
+    }
 
     /** 「차감 전 브랜드 수취액」 — 07b D3-b · 파트너 분해. */
     public long brandPayoutBeforeClawback() {

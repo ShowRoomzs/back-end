@@ -20,6 +20,10 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("SELECT s FROM Settlement s WHERE s.groupBuy.id = :groupBuyId")
     Optional<Settlement> findByGroupBuyId(@Param("groupBuyId") Long groupBuyId);
 
+    /** 성과 목록 · KPI(48 파트너 설계서 7-2) — 공구 여럿의 정산을 한 번에. */
+    @Query("SELECT s FROM Settlement s WHERE s.groupBuy.id IN :groupBuyIds")
+    List<Settlement> findByGroupBuyIdIn(@Param("groupBuyIds") Collection<Long> groupBuyIds);
+
     /** 상세 — 공구 · 계약 · 브랜드 · 인플루언서를 함께 올린다. */
     @Query("SELECT s FROM Settlement s "
             + "JOIN FETCH s.groupBuy g "
@@ -133,4 +137,31 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
     @Query("SELECT COUNT(s) > 0 FROM Settlement s WHERE s.market.id = :marketId "
             + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
     boolean existsUnpaidForMarket(@Param("marketId") Long marketId);
+
+    /** 마켓의 이 상태 정산 id — 탈퇴 조건 내역의 조정 협의 행(51 설계서 4-4 · 이슈 스레드 링크). */
+    @Query("SELECT s.id FROM Settlement s WHERE s.market.id = :marketId AND s.status = :status ORDER BY s.id ASC")
+    List<Long> findIdsByMarketAndStatus(@Param("marketId") Long marketId,
+                                        @Param("status") showroomz.domain.settlement.type.SettlementStatus status);
+
+    /**
+     * 지급 완료 전 정산 건수(정산 상태 기준). 브랜드 탈퇴 조건 ④는 브랜드 몫 기준({@code SettlementPayoutRepository#countBrandOpenForMarket})으로
+     * 바뀌었다(51 설계서 1-5 · D-1).
+     */
+    @Query("SELECT COUNT(s) FROM Settlement s WHERE s.market.id = :marketId "
+            + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
+    long countUnpaidForMarket(@Param("marketId") Long marketId);
+
+    /**
+     * 사업자 구분 변경 「승인하면」 카드(16 설계서 3-5 · 구현 계획서 2-2 #21) — 기존 구분으로 끝나는 정산: 그 인플루언서 · 생성 시점 구분 스냅샷이
+     * 지금 구분 · 지급 완료가 아님(분배 실패 포함 — 기존 구분으로 다시 나간다).
+     */
+    @Query("SELECT s FROM Settlement s WHERE s.creator.id = :creatorId AND s.creatorBusinessType = :businessType "
+            + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID ORDER BY s.settlementNumber ASC")
+    List<Settlement> findRetainedForBusinessTypeChange(@Param("creatorId") Long creatorId,
+                                                       @Param("businessType") showroomz.domain.member.creator.type.CreatorBusinessType businessType);
+
+    /** 재계산(1021 설계서 6-3) — 원래 리워드는 갱신 불가 열이라 여기서만 바꾼다. */
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE Settlement s SET s.originalRewardAmount = :amount WHERE s.id = :settlementId")
+    int updateOriginalReward(@Param("settlementId") Long settlementId, @Param("amount") long amount);
 }

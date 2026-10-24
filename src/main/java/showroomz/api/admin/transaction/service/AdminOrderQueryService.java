@@ -38,6 +38,9 @@ import showroomz.domain.order.service.port.OrderSettlementReader;
 import showroomz.domain.order.type.AdminOrderTab;
 import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimPaymentStatus;
+import showroomz.domain.order.type.ClaimResult;
+import showroomz.domain.order.type.ClaimStatus;
+import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.FulfillmentActorType;
 import showroomz.domain.order.type.FulfillmentEventType;
 import showroomz.domain.order.type.FulfillmentStatus;
@@ -113,6 +116,10 @@ public class AdminOrderQueryService {
         // 행 확장(46 수정계획 4-1) — 페이지의 하위주문 전체로 항목 · 공구를 한 번씩 읽는다.
         Map<Long, List<OrderProduct>> itemsByGroup = itemsByGroup(pageGroups);
         Map<Long, GroupBuy> groupBuys = groupBuys(pageGroups);
+        // 반품 · 교환 요약(56 C2) — 페이지 주문들의 클레임을 IN 한 번으로 읽어 하위주문별로 나눈다.
+        Map<Long, List<OrderClaim>> claimsByGroup = orderIds.isEmpty() ? Map.of()
+                : claimRepository.findByOrderIdsWithCollection(orderIds).stream()
+                .collect(Collectors.groupingBy(claim -> claim.getDeliveryGroup().getId()));
         Map<Long, Order> orders = orderRepository.findAllById(orderIds).stream()
                 .collect(Collectors.toMap(Order::getId, order -> order));
         List<AdminOrderDto.ListItem> rows = orderIds.stream().map(id -> {
@@ -120,7 +127,8 @@ public class AdminOrderQueryService {
             List<OrderDeliveryGroup> entities = groupsByOrder.getOrDefault(id, List.of());
             List<AdminOrderDto.GroupSummary> groups = entities.stream()
                     .map(group -> summary(group, itemsByGroup.getOrDefault(group.getId(), List.of()),
-                            groupBuyOf(groupBuys, group), pendingGroupIds.contains(group.getId()), now))
+                            groupBuyOf(groupBuys, group), pendingGroupIds.contains(group.getId()),
+                            claimSummary(claimsByGroup.getOrDefault(group.getId(), List.of())), now))
                     .toList();
             int attention = (int) entities.stream()
                     .filter(group -> needsAttention(group, pendingGroupIds.contains(group.getId()), now)).count();
@@ -207,8 +215,43 @@ public class AdminOrderQueryService {
 
     // ------------------------------------------------------------------ 조립
 
+    /**
+     * 하위주문의 반품 · 교환 요약(56 C2) — 접수된 클레임(결제 대기 · 요청 취소 제외) 중 가장 최근에 신청한 것. 한 주문에 여러 클레임이 있으면
+     * 신청 시각이 늦은 것(같으면 클레임 id 가 큰 것)이 상태 칸을 차지하고, 건수는 {@code count}로 따로 준다. 없으면 null.
+     */
+    static AdminOrderDto.ClaimSummary claimSummary(List<OrderClaim> claims) {
+        List<OrderClaim> received = claims.stream()
+                .filter(claim -> claim.getStatus() != ClaimStatus.PAYMENT_PENDING)
+                .filter(claim -> claim.getResult() != ClaimResult.CANCELLED)
+                .toList();
+        OrderClaim latest = received.stream()
+                .max(Comparator.comparing(OrderClaim::getRequestedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(OrderClaim::getId))
+                .orElse(null);
+        if (latest == null) {
+            return null;
+        }
+        return new AdminOrderDto.ClaimSummary(latest.getId(), latest.claimNumber(), latest.getType(),
+                latest.getStatus(), latest.getResult(), claimLabel(latest), latest.getRequestedAt(), received.size());
+    }
+
+    /** 상태 칸 문구 — 종결은 결과로, 진행 중은 유형 + 「진행중」. 교환을 환불로 닫은 경우(검수 무응답 운영자 환불 등)는 「환불완료」. */
+    private static String claimLabel(OrderClaim claim) {
+        String type = claim.getType().getLabel();
+        if (claim.getStatus() != ClaimStatus.COMPLETED || claim.getResult() == null) {
+            return type + " 진행중";
+        }
+        return switch (claim.getResult()) {
+            case REFUNDED -> claim.getType() == ClaimType.RETURN ? "반품완료" : "환불완료";
+            case EXCHANGED -> "교환완료";
+            case REJECTED -> type + " 반려";
+            case CANCELLED -> type + " 취소";
+        };
+    }
+
     private AdminOrderDto.GroupSummary summary(OrderDeliveryGroup group, List<OrderProduct> items, GroupBuy groupBuy,
-                                               boolean cancelRequested, LocalDateTime now) {
+                                               boolean cancelRequested, AdminOrderDto.ClaimSummary claim,
+                                               LocalDateTime now) {
         FulfillmentStatus status = group.getFulfillmentStatus();
         Issue issue = issue(group, now);
         return new AdminOrderDto.GroupSummary(group.getId(), group.getSubOrderNumber(), group.getMarketName(), status,
@@ -219,7 +262,7 @@ public class AdminOrderQueryService {
                 group.getProductTotal() + group.getDeliveryFee(), group.getCarrier(),
                 group.getCarrier() == null ? null : group.getCarrier().getLabel(), group.getTrackingNumber(),
                 groupBuy == null ? null : groupBuy.getContract().getTitle(),
-                issue == null ? null : issue.since(), issue == null ? null : issue.label());
+                issue == null ? null : issue.since(), issue == null ? null : issue.label(), claim);
     }
 
     private AdminOrderDto.GroupDetail detail(OrderDeliveryGroup group, List<OrderProduct> items, GroupBuy groupBuy,
@@ -284,7 +327,8 @@ public class AdminOrderQueryService {
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
                 settlementReader.readByDeliveryGroup(group.getId()).map(AdminOrderQueryService::settlement).orElse(null),
-                actions(group, pendingRequest != null, refundable, now));
+                actions(group, pendingRequest != null, refundable, now),
+                AdminOrderDto.StallChoice.of(showroomz.domain.order.service.OrderStallChoiceService.view(group, now)));
     }
 
     private static AdminOrderDto.Settlement settlement(OrderSettlementReader.GroupSettlement s) {
@@ -436,8 +480,9 @@ public class AdminOrderQueryService {
     private static AdminOrderSearchCondition condition(AdminOrderDto.SearchParams params, LocalDate from,
                                                        LocalDate to) {
         return new AdminOrderSearchCondition(params.tab() == null ? AdminOrderTab.ALL : params.tab(), params.status(),
-                params.marketId(), params.groupBuyId(), params.creatorId(), params.paymentMethod(),
+                params.marketId(), params.groupBuyId(), params.creatorId(), params.userId(), params.paymentMethod(),
                 params.trackingAlert(), params.searchType(), params.keyword(), params.sort(),
-                from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59));
+                from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59),
+                params.cancelRequested());
     }
 }

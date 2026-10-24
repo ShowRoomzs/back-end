@@ -69,6 +69,12 @@ public class CreatorSettlementAdjustmentController implements CreatorSettlementA
     }
 
     @Override
+    @PostMapping("/settlement-adjustments/{adjustmentId}/withdraw")
+    public ResponseEntity<SettlementAdjustmentDto.AdjustmentView> withdraw(@PathVariable Long adjustmentId) {
+        return ResponseEntity.ok(adjustmentApiService.withdraw(SettlementParty.CREATOR, creatorId(), adjustmentId));
+    }
+
+    @Override
     @PostMapping("/settlement-adjustments/{adjustmentId}/proposals/{proposalId}/reject")
     public ResponseEntity<SettlementAdjustmentDto.AdjustmentView> reject(@PathVariable Long adjustmentId,
                                                                         @PathVariable Long proposalId) {

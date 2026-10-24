@@ -7,7 +7,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.api.app.auth.DTO.RefreshTokenRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
 import showroomz.api.app.auth.entity.RoleType;
@@ -31,6 +30,7 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
+import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.global.config.properties.AppProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -374,17 +374,14 @@ public class SellerService {
         market.setShippingAddress(request.getAddress());
         market.setShippingDetailAddress(request.getDetailAddress());
         market.setDefaultDeliveryFee(request.getDefaultDeliveryFee());
-        market.setFreeShippingThreshold(
-                request.getFreeShippingThreshold() != null ? request.getFreeShippingThreshold() : 0
-        );
+        // 비우거나 0 이면 무료배송 없음(null) — 기본정보 관리와 같은 규칙(55 계획서 P3 · 시안 06).
+        market.setFreeShippingThreshold(FreeShippingPolicy.effective(request.getFreeShippingThreshold()));
+        market.setJejuSurcharge(request.getJejuSurcharge() != null ? request.getJejuSurcharge() : 0);
         market.setRemoteAreaSurcharge(
                 request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0
         );
-        // 발송 기한 N(공구 마감 후 N영업일) — 생략하면 기본 3(1009 기획 수정본 1-4).
-        market.setShippingLeadDays(request.getShippingLeadDays() != null
-                ? request.getShippingLeadDays() : ShipDuePolicy.DEFAULT_BUSINESS_DAYS);
-        market.setReturnFee(request.getReturnFee() != null ? request.getReturnFee() : 3000);
-        market.setExchangeFee(request.getExchangeFee() != null ? request.getExchangeFee() : 6000);
+        // 발송 기한 N(공구 마감 후 N영업일) — 필수(§6-6 · 06 설계서 2-2).
+        market.setShippingLeadDays(request.getShippingLeadDays());
 
         seller.setIsNewMember(false);
         seller.setModifiedAt(LocalDateTime.now());
@@ -590,6 +587,11 @@ public class SellerService {
         // 3. 관리자 정보 조회
         Seller user = adminRepository.findByEmail(email)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+
+        // 브랜드는 셀프 즉시 탈퇴가 없다 — 신청 → 운영자 승인(§51-5 · 52 설계서 0-5). 하드 삭제하면 배송할 주문 · 정산할 금액이 주인 없이 남는다.
+        if (user.getRoleType() == RoleType.SELLER) {
+            throw new BusinessException(ErrorCode.BRAND_WITHDRAWAL_REQUIRES_REQUEST);
+        }
 
         // 4. Refresh Token 삭제
         SellerRefreshToken adminRefreshToken = adminRefreshTokenRepository.findByAdminEmail(email);

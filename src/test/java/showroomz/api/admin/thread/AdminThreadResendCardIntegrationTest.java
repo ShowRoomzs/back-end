@@ -430,7 +430,9 @@ class AdminThreadResendCardIntegrationTest extends AdminThreadTestSupport {
 
         cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, null).andExpect(status().isOk());
 
-        adminMessages(creatorChannel).andExpect(jsonPath("$.content[1].card.action.state").value("DONE"));
+        // 취소 결과 카드가 양측 채널 맨 위에 붙는다(1021 기-06) — 재발송 카드는 위치가 아니라 id 로 찾는다.
+        adminMessages(creatorChannel).andExpect(jsonPath("$.content[?(@.messageId == " + cardId + ")].card.action.state")
+                .value(org.hamcrest.Matchers.contains("DONE")));
         resendNotice(creatorChannel, cardId, otherAdminToken).andExpect(status().isOk())
                 .andExpect(jsonPath("$.alreadyNotified").value(true));
     }

@@ -1,10 +1,11 @@
 package showroomz.global.scheduler;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import showroomz.global.health.IntegrationHealthRegistry;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
@@ -28,13 +29,27 @@ import java.util.Optional;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 @ConditionalOnProperty(prefix = "delivery.tracker", name = "enabled", havingValue = "true")
 public class OrderDeliveryTrackingScheduler {
 
     private final OrderFulfillmentService fulfillmentService;
     private final DeliveryTrackerPort tracker;
     private final DeliveryTrackerProperties properties;
+    private final IntegrationHealthRegistry healthRegistry;
+
+    public OrderDeliveryTrackingScheduler(OrderFulfillmentService fulfillmentService, DeliveryTrackerPort tracker,
+                                          DeliveryTrackerProperties properties) {
+        this(fulfillmentService, tracker, properties, new IntegrationHealthRegistry());
+    }
+
+    @Autowired
+    public OrderDeliveryTrackingScheduler(OrderFulfillmentService fulfillmentService, DeliveryTrackerPort tracker,
+                                          DeliveryTrackerProperties properties, IntegrationHealthRegistry healthRegistry) {
+        this.fulfillmentService = fulfillmentService;
+        this.tracker = tracker;
+        this.properties = properties;
+        this.healthRegistry = healthRegistry;
+    }
 
     @Scheduled(cron = "${delivery.tracker.poll-cron:0 0 0,6-22/2 * * *}", zone = "Asia/Seoul")
     public void tick() {
@@ -48,8 +63,14 @@ public class OrderDeliveryTrackingScheduler {
             for (OrderDeliveryGroup target : targets) {
                 try {
                     Optional<TrackSnapshot> snapshot = tracker.track(target.getCarrier(), target.getTrackingNumber());
-                    fulfillmentService.applyTracking(target, snapshot, now,
-                            properties.getPickupAlertHours(), properties.getStallAlertDays());
+                    if (healthRegistry.isTrackingDegraded(LocalDateTime.now())) {
+                        // 연동 장애 중 — 「이벤트 없음」이 장애 때문일 수 있어 배송 이상 판정(집화 확인 · 추적 정지)을 멈춘다(1017 설계서 6-3).
+                        fulfillmentService.applyTracking(target, snapshot, now, properties.getPickupAlertHours(),
+                                properties.getStallAlertDays(), false);
+                    } else {
+                        fulfillmentService.applyTracking(target, snapshot, now,
+                                properties.getPickupAlertHours(), properties.getStallAlertDays());
+                    }
                 } catch (DeliveryTrackerBlockedException e) {
                     // 키 단위 차단 — 남은 건을 불러도 전부 실패한다. 다음 회차가 처음부터 다시 돈다.
                     log.error("배송 추적 회차 중단 - 배송완료 자동 전환이 멈춘 상태입니다. deliveryGroupId: {}, cause: {}",

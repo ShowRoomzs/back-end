@@ -2,6 +2,8 @@ package showroomz.domain.changerequest.service;
 
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.type.ResidentRegistrationNumber;
 import showroomz.domain.member.seller.entity.Seller;
 
 /**
@@ -24,6 +26,18 @@ public final class ChangeRequestFieldResolver {
             case BANK_CODE -> seller.getBankName();
             case ACCOUNT_NUMBER -> seller.getAccountNumber();
             case ACCOUNT_HOLDER -> seller.getAccountHolder();
+            case CREATOR_BUSINESS_TYPE, CREATOR_BUSINESS_REG_NUMBER, CREATOR_RESIDENT_NUMBER, CREATOR_ACCOUNT_BANK,
+                 CREATOR_ACCOUNT_NUMBER -> throw new IllegalArgumentException("인플루언서 항목은 브랜드 현재값이 없다: " + field);
+        };
+    }
+
+    /** 인플루언서 사업자 구분 변경 항목의 현재값(16 설계서 2-3) — 사업자 구분은 코드로 저장한다(표시 라벨은 조회 시). */
+    public static String currentValue(ChangeRequestField field, Creator creator) {
+        return switch (field) {
+            case CREATOR_BUSINESS_TYPE -> creator.getBusinessType() == null ? null : creator.getBusinessType().name();
+            case CREATOR_BUSINESS_REG_NUMBER -> creator.getBusinessRegistrationNumber();
+            case CREATOR_RESIDENT_NUMBER -> ResidentRegistrationNumber.display(creator.getResidentRegistrationNumberMasked());
+            default -> throw new IllegalArgumentException("브랜드 항목은 인플루언서 현재값이 없다: " + field);
         };
     }
 

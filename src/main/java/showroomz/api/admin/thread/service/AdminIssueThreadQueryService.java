@@ -97,7 +97,7 @@ public class AdminIssueThreadQueryService {
                 a.getDeadlineAt(), summary == null ? null : summary.remainingBusinessDays());
         return new ChannelListItem(a.getThreadId(), AdminChannelTab.ISSUE, title, null, null, null, null, null, null,
                 thread == null ? null : thread.getLastMessagePreview(), false,
-                thread == null ? null : thread.getLastMessageAt(), 0, false, issue);
+                thread == null ? null : thread.getLastMessageAt(), 0, false, false, issue);
     }
 
     private static List<Long> ids(Collection<SettlementAdjustment> rows, Function<SettlementAdjustment, Long> key) {

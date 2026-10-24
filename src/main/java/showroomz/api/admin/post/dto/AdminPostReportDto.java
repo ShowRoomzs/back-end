@@ -16,10 +16,9 @@ import java.time.LocalDateTime;
 /**
  * 운영자 신고 대기열의 응답.
  *
- * <p><b>신고자를 싣지 않는다.</b> 운영자가 조치 여부를 판단하는 데 필요한 것은 무엇이 문제라고
- * 지목됐는지이지 누가 눌렀는지가 아니고, 어드민 화면에 뜬 값은 문의·분쟁 과정에서 인플루언서
- * 쪽으로 옮겨 갈 수 있다. 허위 신고 반복 판단이 필요해지면 그때는 이 목록이 아니라 계정 조회
- * 경로로 따로 만든다.
+ * <p><b>신고자는 마스킹해서 싣는다</b>(§54-3 rev.3 — 54 설계 5-2에서 이전 결정을 뒤집었다). 소비자에게 「상대에게 알리지
+ * 않는다」를 고지했으므로 이름은 가리고(한*준), 허위 신고 누적 판단(§54-7 ⓕ)을 위해 회원 상세로 가는 id만 함께 준다.
+ * 스튜디오 · 앱 응답과 조치 통지에는 여전히 신고자 정보가 없다.
  */
 public class AdminPostReportDto {
 
@@ -43,7 +42,7 @@ public class AdminPostReportDto {
          * 공구 게시물 신고는 이 큐의 조치(노출 중지)로 처리할 수 없다 — 공구 게시물은 어드민 공구관리의 숨김으로 내린다
          * (공구 게시물 설계 7-2 · 31 설계 S0). 운영자가 그쪽으로 가도록 타입을 싣는다. 연동은 미결 ⑤.
          */
-        @Schema(description = "게시물 타입 — GROUP_BUY면 이 화면이 아니라 어드민 공구관리의 게시물 숨김으로 처리한다",
+        @Schema(description = "게시물 타입 — GROUP_BUY면 이 화면이 아니라 어드민 공구관리의 게시물 노출 중지으로 처리한다",
                 example = "GENERAL")
         private PostType postType;
 
@@ -53,14 +52,14 @@ public class AdminPostReportDto {
         @Schema(description = "본문 미리보기 — 목록에서 무엇이 지목됐는지 바로 읽히도록 함께 내려준다")
         private String contentPreview;
 
-        @Schema(description = "신고 사유 코드", example = "AD_DISCLOSURE")
+        @Schema(description = "신고 사유 코드", example = "MISLEADING_INFO")
         private PostReportReason reasonCode;
 
-        @Schema(description = "신고 사유 문구 — 신고자가 본 그대로", example = "광고인데 표시가 없어요")
+        @Schema(description = "신고 사유 문구 — 신고자가 본 그대로", example = "허위 · 과장 정보")
         private String reasonLabel;
 
         @Schema(description = "노출 중지 사유 코드 — 이 신고를 받아 내릴 때 그대로 쓰는 값",
-                example = "AD_DISCLOSURE")
+                example = "MISLEADING_INFO")
         private PostSuspensionReason suspensionReasonCode;
 
         @Schema(description = "상세 사유 — 기타일 때만 채워진다", nullable = true)
@@ -82,5 +81,14 @@ public class AdminPostReportDto {
 
         @Schema(description = "처리자(운영자) ID — 미처리면 null", nullable = true)
         private Long handledBy;
+
+        @Schema(description = "처리 운영자 이름 — 미처리면 null", nullable = true)
+        private String handledByName;
+
+        @Schema(description = "신고자 회원 ID — 회원 상세 링크 재료", example = "5521")
+        private Long reporterUserId;
+
+        @Schema(description = "신고자 마스킹 이름 — 가운데를 가린다", example = "한*준")
+        private String reporterMaskedName;
     }
 }

@@ -2,6 +2,7 @@ package showroomz.domain.contract.service.port;
 
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractResendRequest;
+import showroomz.domain.contract.entity.ContractTerminationRequest;
 import showroomz.domain.contract.type.ContractActorType;
 
 /**
@@ -13,6 +14,11 @@ import showroomz.domain.contract.type.ContractActorType;
  */
 public interface ContractChannelGateway {
 
+    /** 상대 당사자 — 운영팀 채널의 「요청하지 않은 쪽」. */
+    static ContractActorType counterpartOf(ContractActorType party) {
+        return party == ContractActorType.SELLER ? ContractActorType.CREATOR : ContractActorType.SELLER;
+    }
+
     /** [서명 안내 다시 받기] — <b>요청자의</b> 운영팀 채널에 요청 카드를 등록한다. */
     ChannelCard postResendRequestCard(Contract contract, ContractResendRequest request);
 
@@ -21,6 +27,24 @@ public interface ContractChannelGateway {
      * 운영팀 채널에 결과 카드를 등록한다. 채널은 회원당 하나라 요청자가 정해지면 유도된다.
      */
     ChannelCard postAdminCanceledCard(Contract contract, ContractActorType requesterType, Long operatorId);
+
+    /**
+     * 해지 요청의 「동의 확인」 카드(1021 설계서 1-6) — <b>요청하지 않은 쪽</b> 운영팀 채널. 보낸 사람은 요청자다. 버튼은 없다.
+     */
+    ChannelCard postTerminationConsentCard(Contract contract, ContractTerminationRequest request);
+
+    /**
+     * 취소 요청의 「동의 확인」 카드(1021 설계서 1-5) — 운영자가 보낸다. 요청자가 아닌 쪽 채널에 붙는다.
+     *
+     * @param requesterType SELLER · CREATOR
+     * @param reasonSummary 요청 요지(운영자가 적는다)
+     */
+    ChannelCard postCancelConsentCard(Contract contract, ContractActorType requesterType, String reasonSummary,
+                                      Long operatorId);
+
+    /** 해지 결과 카드(1021 설계서 1-4) — 양측 운영팀 채널. @return 브랜드 · 인플루언서 순 */
+    java.util.List<ChannelCard> postTerminatedCards(Contract contract, String reasonLabel, String explanation,
+                                                    boolean groupBuyClosed, Long operatorId);
 
     record ChannelCard(Long threadId, Long messageId) {
     }

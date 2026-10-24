@@ -1,6 +1,8 @@
 package showroomz.api.app.order.service;
 
 import showroomz.domain.order.service.ShipDuePolicy;
+import showroomz.domain.order.service.DeliveryRegionResolver;
+import showroomz.domain.order.type.DeliveryRegion;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +21,8 @@ import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.service.GroupBuyPriceResolver.GroupBuyPrice;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.entity.OrderProduct;
@@ -87,6 +91,7 @@ public class CheckoutService {
     private final PaymentMethodCatalog paymentMethodCatalog;
     private final ShipDuePolicy shipDuePolicy;
     private final OrderProperties orderProperties;
+    private final DeliveryRegionResolver regionResolver;
 
     // ------------------------------------------------------------------ 주문서
 
@@ -94,18 +99,47 @@ public class CheckoutService {
     @Transactional(readOnly = true)
     public OrderDto.CheckoutResponse checkout(Long userId, OrderDto.CheckoutRequest request) {
         Users user = requireUser(userId);
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PURCHASE);
         LocalDateTime now = LocalDateTime.now();
         Prepared prepared = prepare(user, request.getCartItemIds(), request.getDirect(), now);
 
         DeliveryAddress address = resolveAddress(user, request.getDeliveryAddressId(), false);
+        Regional regional = regional(prepared, address);
         return OrderDto.CheckoutResponse.builder()
                 .deliveryAddress(address != null ? toAddressInfo(address) : null)
                 .memoPresets(OrderDto.MEMO_PRESETS)
-                .groups(prepared.groups().stream().map(group -> toGroupDto(group, prepared.pricing())).toList())
-                .summary(toSummary(prepared.summary(), prepared.lines().size()))
+                .groups(prepared.groups().stream()
+                        .map(group -> toGroupDto(group, prepared.pricing(), regional.region(), regional.surchargeOf(group)))
+                        .toList())
+                .summary(toSummary(regional.summary(), prepared.lines().size()))
                 .paymentMethods(paymentMethodCatalog.available())
-                .ctaLabel(OrderAssembler.ctaLabel(prepared.summary().finalTotal()))
+                .ctaLabel(OrderAssembler.ctaLabel(regional.summary().finalTotal()))
                 .build();
+    }
+
+    /**
+     * 권역 추가비(1021 설계서 3-2) — 배송지 우편번호로 제주 · 도서산간을 가려 그룹마다 마켓의 편도 추가비를 더한다. 무료배송이어도 부과한다
+     * (파트너 06 「제주 · 도서산간 추가비 별도」). 배송지를 모르면 일반(0원).
+     */
+    private Regional regional(Prepared prepared, DeliveryAddress address) {
+        DeliveryRegion region = address == null ? DeliveryRegion.STANDARD : regionResolver.resolve(address.getZipCode());
+        Map<LineGroup, Integer> surcharges = new java.util.IdentityHashMap<>();
+        long total = 0;
+        for (LineGroup group : prepared.groups()) {
+            int surcharge = DeliveryRegionResolver.surchargeOf(group.market(), region);
+            surcharges.put(group, surcharge);
+            total += surcharge;
+        }
+        Summary base = prepared.summary();
+        Summary summary = total == 0 ? base : new Summary(base.regularTotal(), base.saleTotal(), base.discountTotal(),
+                base.deliveryFeeTotal() + total, base.finalTotal() + total);
+        return new Regional(region, surcharges, summary);
+    }
+
+    private record Regional(DeliveryRegion region, Map<LineGroup, Integer> surcharges, Summary summary) {
+        int surchargeOf(LineGroup group) {
+            return surcharges.getOrDefault(group, 0);
+        }
     }
 
     // ------------------------------------------------------------------ 주문 생성(T2)
@@ -118,11 +152,13 @@ public class CheckoutService {
     @Transactional
     public CreatedOrder createOrderTx(Long userId, OrderDto.CreateOrderRequest request, LocalDateTime now) {
         Users user = requireUser(userId);
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PURCHASE);
         PaymentChoice choice = requirePaymentChoice(request.getPayment());
         Prepared prepared = prepare(user, request.getCartItemIds(), request.getDirect(), now);
         DeliveryAddress address = resolveAddress(user, request.getDeliveryAddressId(), true);
+        Regional regional = regional(prepared, address);
 
-        Summary summary = prepared.summary();
+        Summary summary = regional.summary();
         if (request.getExpectedTotalAmount() != null && request.getExpectedTotalAmount() != summary.finalTotal()) {
             throw new BusinessException(ErrorCode.ORDER_AMOUNT_CHANGED);
         }
@@ -146,15 +182,20 @@ public class CheckoutService {
 
         for (LineGroup group : prepared.groups()) {
             GroupShipping shipping = group.shipping();
+            int surcharge = regional.surchargeOf(group);
             OrderDeliveryGroup deliveryGroup = deliveryGroupRepository.save(OrderDeliveryGroup.builder()
                     .order(order)
                     .groupBuy(group.groupBuy())
                     .market(group.market())
                     .productTotal((int) shipping.selectedProductTotal())
-                    .deliveryFee(shipping.chargedDeliveryFee())
+                    .deliveryFee(shipping.chargedDeliveryFee() + surcharge)
                     // 무료배송이어도 원래 배송비를 남긴다 — 반품 차감 · 재발송비가 주문 시점 값을 쓴다(앱 클레임 설계서 1-4).
                     .baseDeliveryFee(shipping.deliveryFee())
                     .freeShippingApplied(shipping.isFreeShipping())
+                    // 결제 시점 조건 스냅샷(1021 기-20) — 일부 반품 재판정 · 재발송 배송비의 권역 추가비가 이 값을 쓴다.
+                    .freeShippingThreshold(shipping.freeShippingThreshold())
+                    .deliveryRegion(regional.region())
+                    .regionSurcharge(surcharge)
                     .marketName(group.market() != null ? group.market().getMarketName() : null)
                     .groupBuyNumber(group.groupBuy().getGroupBuyNumber())
                     .build());
@@ -189,6 +230,8 @@ public class CheckoutService {
         Order order = orderRepository.findForUpdate(orderId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_NOT_FOUND));
         requireOwner(order, userId);
+        // 새 결제창을 여는 일이라 정지 중엔 막는다 — 이미 열린 결제창의 승인(complete)은 막지 않는다(51-6 설계서 4-1).
+        UserSanctionGuard.requireNotSuspended(requireUser(userId), UserBlockedAction.PURCHASE);
         if (order.getStatus() == OrderStatus.PAID) {
             throw new BusinessException(ErrorCode.PAYMENT_ALREADY_IN_PROGRESS);
         }
@@ -266,6 +309,13 @@ public class CheckoutService {
         List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderIdForUpdate(orderId);
         if (!OrderAssembler.isAddressChangeable(order, groups)) {
             throw new BusinessException(ErrorCode.ORDER_ADDRESS_NOT_CHANGEABLE);
+        }
+        // 결제한 배송비의 권역 추가비가 달라지는 배송지로는 바꾸지 않는다(1021 설계서 3-2) — 결제 금액을 다시 매길 길이 없다.
+        DeliveryRegion newRegion = regionResolver.resolve(address.getZipCode());
+        for (OrderDeliveryGroup group : groups) {
+            if (DeliveryRegionResolver.surchargeOf(group.getMarket(), newRegion) != group.getRegionSurcharge()) {
+                throw new BusinessException(ErrorCode.ORDER_ADDRESS_REGION_CHANGED);
+            }
         }
         order.changeDeliveryAddress(new Order.AddressSnapshot(address.getRecipientName(), address.getPhoneNumber(),
                 address.getZipCode(), address.getAddress(), address.getDetailAddress()), address.getMemo());
@@ -419,7 +469,7 @@ public class CheckoutService {
         return new PaymentChoice(method, cardIssuer, provider, channelKey);
     }
 
-    private OrderDto.Group toGroupDto(LineGroup group, Pricing pricing) {
+    private OrderDto.Group toGroupDto(LineGroup group, Pricing pricing, DeliveryRegion region, int surcharge) {
         GroupShipping shipping = group.shipping();
         return OrderDto.Group.builder()
                 .marketId(group.market() != null ? group.market().getId() : null)
@@ -429,9 +479,11 @@ public class CheckoutService {
                 .items(group.lines().stream().map(line -> toItemDto(line, pricing)).toList())
                 .shipping(OrderDto.Shipping.builder()
                         .productTotal(shipping.selectedProductTotal())
-                        .deliveryFee(shipping.chargedDeliveryFee())
+                        .deliveryFee(shipping.chargedDeliveryFee() + surcharge)
                         .freeShippingThreshold(shipping.freeShippingThreshold())
                         .isFreeShipping(shipping.isFreeShipping())
+                        .deliveryRegion(region.name())
+                        .regionSurcharge(surcharge)
                         .build())
                 // 결제 전 발송 시기 고지(1009 기획 · C9) — 지금 계산한 예상값. 주문 뒤에는 하위주문의 스냅샷이 정본이다.
                 .expectedShipDueDate(expectedShipDueDate(group.groupBuy(), ShipDuePolicy.businessDaysOf(group.market())))

@@ -27,13 +27,15 @@ public enum GroupBuyStatus {
     ENDED("종료", GroupBuyTone.INFO),
     SETTLED("정산완료", GroupBuyTone.SUCCESS),
     /** 재개 불가(제16조③). */
-    SUSPENDED("중단", GroupBuyTone.DANGER);
+    SUSPENDED("중단", GroupBuyTone.DANGER),
+    /** 계약 해지로 오픈 전 종결(1021 결정 노트 기-05 · 설계서 1-4) — 주문이 없어 정산 · 성과가 생기지 않는다. */
+    TERMINATED("해지", GroupBuyTone.NEUTRAL);
 
     private final String label;
     private final GroupBuyTone tone;
 
-    /** 종결 3종 — 나가는 전이는 ENDED → SETTLED 하나뿐이다. */
-    public static final Set<GroupBuyStatus> TERMINAL = Set.of(ENDED, SETTLED, SUSPENDED);
+    /** 종결 4종 — 나가는 전이는 ENDED → SETTLED 하나뿐이다. */
+    public static final Set<GroupBuyStatus> TERMINAL = Set.of(ENDED, SETTLED, SUSPENDED, TERMINATED);
 
     /** 소비자가 살 수 있는 상태 — 중단 예정은 아직 팔린다. */
     public static final Set<GroupBuyStatus> SELLING = Set.of(IN_PROGRESS, SUSPENSION_SCHEDULED);

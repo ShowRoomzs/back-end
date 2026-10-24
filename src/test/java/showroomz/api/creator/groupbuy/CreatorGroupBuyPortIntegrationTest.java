@@ -74,7 +74,7 @@ class CreatorGroupBuyPortIntegrationTest extends CreatorGroupBuyTestSupport {
 
         when(salesReader.countOrdersSince(eq(groupBuy.getId()), any(LocalDateTime.class)))
                 .thenReturn(Optional.empty());
-        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.post.status").value("HIDDEN"))
+        studioDetail(groupBuy.getId()).andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"))
                 .andExpect(jsonPath("$.sales.ordersSinceHidden").doesNotExist());
 
         when(salesReader.countOrdersSince(eq(groupBuy.getId()), any(LocalDateTime.class)))

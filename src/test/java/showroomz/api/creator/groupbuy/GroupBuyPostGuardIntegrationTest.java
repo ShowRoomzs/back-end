@@ -60,7 +60,7 @@ class GroupBuyPostGuardIntegrationTest extends CreatorGroupBuyTestSupport {
         mockMvc.perform(post("/v1/admin/posts/" + postId + "/suspend")
                         .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reasonCode\":\"AD_DISCLOSURE\"}"))
+                        .content("{\"reasonCode\":\"MISLEADING_INFO\",\"policyClause\":\"ARTICLE_3_2\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("POST_NOT_EDITABLE"));
         mockMvc.perform(get("/v1/admin/posts").header(HttpHeaders.AUTHORIZATION, token))

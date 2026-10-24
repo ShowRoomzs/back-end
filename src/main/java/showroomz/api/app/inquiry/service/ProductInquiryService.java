@@ -18,6 +18,8 @@ import showroomz.domain.inquiry.type.ProductInquiryHistoryType;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductImage;
 import showroomz.domain.product.repository.ProductRepository;
@@ -39,6 +41,7 @@ public class ProductInquiryService {
     public Long registerInquiry(Long userId, Long productId, ProductInquiryRegisterRequest request) {
         Users user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PRODUCT_INQUIRY);
 
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PRODUCT_NOT_FOUND));
@@ -82,6 +85,8 @@ public class ProductInquiryService {
     @Transactional
     public void updateInquiry(Long userId, Long inquiryId, ProductInquiryUpdateRequest request) {
         ProductInquiry inquiry = getMyInquiry(userId, inquiryId);
+        // 쓰기는 쓰기다 — 정지 중엔 기존 문의 수정도 막는다. 삭제는 허용(51-6 설계서 4-1).
+        UserSanctionGuard.requireNotSuspended(inquiry.getUser(), UserBlockedAction.PRODUCT_INQUIRY);
 
         if (inquiry.getStatus() == InquiryStatus.ANSWERED) {
             throw new BusinessException(ErrorCode.INQUIRY_ALREADY_ANSWERED);

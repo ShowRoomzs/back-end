@@ -76,7 +76,10 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
 
         assertThat(payoutGateway.calls()).singleElement()
                 .satisfies(call -> assertThat(call.lines()).hasSize(3));
-        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.REQUESTED);
+        // 수취자 2행은 결과 모름(REQUESTED) · 플랫폼 몫은 PG 에 가지 않으므로 즉시 PAID(토스 설계서 — 결과 조회가 닫을 수 없는 행을 남기지 않는다).
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(payout(s.getId(), SettlementPayee.PLATFORM).getStatus()).isEqualTo(PayoutStatus.PAID);
         assertThat(payout(s.getId(), SettlementPayee.BRAND).getBankName()).isEqualTo("신한은행");
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getAccountHolder()).isEqualTo("김지민");
         Settlement after = settlement(s.getId());
@@ -84,8 +87,8 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         assertThat(after.getPaidAt()).isNull();
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.ENDED);
         assertThat(settlementEvents(s.getId())).filteredOn(SettlementEventType.PAYOUT_REQUESTED::equals).hasSize(3);
-        assertThat(settlementEvents(s.getId())).doesNotContain(SettlementEventType.PAYOUT_PAID,
-                SettlementEventType.PAYOUT_FAILED);
+        assertThat(settlementEvents(s.getId())).filteredOn(SettlementEventType.PAYOUT_PAID::equals).hasSize(1);   // 플랫폼 몫
+        assertThat(settlementEvents(s.getId())).doesNotContain(SettlementEventType.PAYOUT_FAILED);
         assertThat(payoutService.findSettlementIdsDue(PAYOUT_DUE, 200)).doesNotContain(s.getId());
         // 운영자 화면 — 분배 실패가 아니므로 재분배 대상도 아니다(결과는 PG 결과 조회가 닫는다).
         adminGet("/v1/admin/settlements/" + s.getId()).andExpect(status().isOk())
@@ -99,12 +102,13 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         scheduler.run(PAYOUT_DUE.plusDays(1).atTime(10, 0));
 
         assertThat(payoutGateway.calls()).isEmpty();
-        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.REQUESTED);
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus)
+                .containsExactlyInAnyOrder(PayoutStatus.REQUESTED, PayoutStatus.REQUESTED, PayoutStatus.PAID);
         assertThat(settlementEvents(s.getId())).filteredOn(SettlementEventType.PAYOUT_REQUESTED::equals).hasSize(3);
     }
 
     @Test
-    @DisplayName("PY-04 결과 조회 배치 — SIMULATED 면 PG 를 묻지 않는다(REQUESTED 그대로) · 포트원 모드는 조회만 하고 PG 가 아직 지급 전이면 상태 불변 · 재지시 없음")
+    @DisplayName("PY-04 결과 조회 배치 — SIMULATED 면 PG 를 묻지 않는다(REQUESTED 그대로) · PG 모드는 조회만 하고 PG 가 아직 지급 전이면 상태 불변 · 재지시 없음")
     void payoutResultTickOnlyPollsInPortOneMode() {
         readyToPay();
         Settlement s = confirm(generated());
@@ -121,7 +125,8 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         assertThat(payoutGateway.lookups()).hasSize(1);
 
         assertThat(payoutGateway.calls()).isEmpty();
-        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.REQUESTED);
+        assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus)
+                .containsExactlyInAnyOrder(PayoutStatus.REQUESTED, PayoutStatus.REQUESTED, PayoutStatus.PAID);
         assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.PAYOUT_SCHEDULED);
         assertThat(settlementEvents(s.getId())).isEqualTo(eventsBefore);
     }

@@ -15,7 +15,8 @@ public record SellerClaimDetailResponse(
         @Schema(description = "하위주문 id — 주문 상세로 가는 키", example = "1024") Long deliveryGroupId,
         @Schema(description = "소비자 연락처 — 마스킹", example = "010-****-4412", nullable = true) String consumerPhone,
         @Schema(description = "소비자가 적은 상세 내용 — 브랜드 부담 사유는 필수", nullable = true) String reasonDetail,
-        @Schema(description = "교환 재발송비 청구 여부 — 교환만. 고객 귀책이면 요청 때 결제했다", nullable = true)
+        @Schema(description = "[호환 · 1회 릴리스 뒤 제거] `reshipFeeCharged` 와 같은 값 — 1021 결정 노트 기-18 로 「교환비」가 없어졌다",
+                nullable = true, deprecated = true)
         Boolean exchangeFeeCharged,
         @Schema(description = "환불 예정 — 반품만", nullable = true) Refund refund,
         @Schema(description = "소비자 첨부 사진") List<String> consumerAttachments,
@@ -27,8 +28,40 @@ public record SellerClaimDetailResponse(
         @Schema(description = "처리 결과 — 완료 탭 단계만", nullable = true) Result result,
         @Schema(description = "미결제 고지 회차 — 반려 보류만") List<Notice> notices,
         @Schema(description = "처리 이력 — 최신순") List<HistoryItem> history,
-        Actions actions
+        Actions actions,
+        @Schema(description = "교환 재발송 배송비 청구 여부 — 교환만. 고객 귀책이면 요청 때 결제했다(1021 기-18 · 구 `exchangeFeeCharged`)",
+                nullable = true) Boolean reshipFeeCharged,
+        @Schema(description = "검수 판정 · 운임 정산 — 판정이 기록됐거나 운임 정산 행이 있을 때만(1021 설계서 4-3 · 4-4)", nullable = true)
+        Inspection inspection
 ) {
+
+    @Schema(name = "SellerClaimInspection")
+    public record Inspection(
+            @Schema(description = "PASSED · REASON_OVERTURNED · REJECTED", example = "REASON_OVERTURNED", nullable = true)
+            showroomz.domain.order.type.ClaimInspectionResult result,
+            @Schema(example = "사유 번복", nullable = true) String resultLabel,
+            @Schema(description = "사유 번복 설명 — 소비자에게 그대로 보인다", nullable = true) String explanation,
+            @Schema(description = "자동 입고 — 택배 도착 후 N영업일 동안 입고 확인이 없어 시스템이 입고 처리했다") boolean autoReceived,
+            @Schema(description = "사유 번복 결제 금액(재발송 배송비 + 착불 운임) — 교환 사유 번복만", nullable = true, example = "6000")
+            Integer overturnFee,
+            @Schema(description = "운임 정산 — 브랜드 정산 「± 운임 정산」과 같은 행") List<FreightRow> freight
+    ) {
+    }
+
+    @Schema(name = "SellerClaimFreightRow")
+    public record FreightRow(
+            showroomz.domain.order.type.FreightAdjustmentTrigger trigger,
+            @Schema(example = "사유 번복") String triggerLabel,
+            @Schema(description = "CHARGE_CONSUMER(소비자 부담 · 정산 +) · REFUND_CONSUMER(소비자 환급 · 정산 −)", example = "CHARGE_CONSUMER")
+            showroomz.domain.order.type.FreightAdjustmentDirection direction,
+            @Schema(example = "3000") int collectFreight,
+            @Schema(example = "0") int prepaidFreight,
+            @Schema(description = "차감했던 최초 배송비 환원 — 표시용(정산 금액에는 들어가지 않는다)", example = "0") int initialFeeRestored,
+            @Schema(description = "정산 반영 금액(부호 있음)", example = "3000") long signedAmount,
+            @Schema(description = "REFUND_DEDUCTION · CHARGE · REFUND_ADDITION · BANK_TRANSFER", example = "REFUND_DEDUCTION")
+            showroomz.domain.order.type.FreightSettledVia settledVia
+    ) {
+    }
 
     @Schema(name = "SellerClaimRejection")
     public record Rejection(
@@ -98,7 +131,8 @@ public record SellerClaimDetailResponse(
             boolean canPass,
             boolean canReject,
             boolean canRegisterReshipment,
-            boolean canUpdateReshipment
+            boolean canUpdateReshipment,
+            @Schema(description = "[사유 번복] 가능 — 입고 확인 뒤 · 착불(브랜드 귀책)로 신청한 건(1021 설계서 4-4)") boolean canOverturn
     ) {
     }
 }

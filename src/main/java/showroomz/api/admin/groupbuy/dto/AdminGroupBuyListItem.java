@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
@@ -48,6 +49,9 @@ public record AdminGroupBuyListItem(
 
         @Schema(description = "조치 큐 해당 — 배지·요약과 같은 판정식. 경고 배경은 FE가 탭으로 끈다(조치 필요 탭에서는 그리지 않는다)",
                 example = "true")
-        boolean actionRequired
+        boolean actionRequired,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 }

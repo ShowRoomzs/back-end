@@ -1,6 +1,5 @@
 package showroomz.api.app.order.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,7 +29,6 @@ import showroomz.global.dto.PageResponse;
 @RestController
 @RequestMapping("/v1/user/orders")
 @RequiredArgsConstructor
-@Tag(name = "User - Order", description = "주문서 · 주문 생성 · 주문 내역 · 주문 상세 · 취소 (C9 · C10)")
 public class OrderController implements OrderControllerDocs {
 
     private final CheckoutService checkoutService;
@@ -38,6 +36,7 @@ public class OrderController implements OrderControllerDocs {
     private final UserOrderQueryService userOrderQueryService;
     private final UserDeliveryTrackingService userDeliveryTrackingService;
     private final UserCancelService userCancelService;
+    private final showroomz.api.app.order.service.UserStallChoiceService stallChoiceService;
 
     @Override
     @GetMapping
@@ -86,6 +85,23 @@ public class OrderController implements OrderControllerDocs {
             @PathVariable("orderProductId") Long orderProductId) {
         return ResponseEntity.ok(
                 userDeliveryTrackingService.trackOrderItem(principal.getUserId(), orderId, orderProductId));
+    }
+
+    @Override
+    @GetMapping("/groups/{deliveryGroupId}/stall-choice")
+    public ResponseEntity<UserOrderDto.StallChoiceResponse> getStallChoice(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("deliveryGroupId") Long deliveryGroupId) {
+        return ResponseEntity.ok(stallChoiceService.get(principal.getUserId(), deliveryGroupId));
+    }
+
+    @Override
+    @PostMapping("/groups/{deliveryGroupId}/stall-choice")
+    public ResponseEntity<UserOrderDto.StallChoiceResponse> chooseStall(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable("deliveryGroupId") Long deliveryGroupId,
+            @Valid @RequestBody UserOrderDto.StallChoiceRequest request) {
+        return ResponseEntity.ok(stallChoiceService.choose(principal.getUserId(), deliveryGroupId, request));
     }
 
     @Override

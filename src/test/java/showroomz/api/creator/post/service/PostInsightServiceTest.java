@@ -5,7 +5,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -24,6 +23,7 @@ import showroomz.domain.post.repository.PostImpressionRepository;
 import showroomz.domain.post.repository.PostLikeRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
+import showroomz.domain.post.service.PostMetricsService;
 import showroomz.domain.post.type.PostDeleteReason;
 import showroomz.domain.post.type.PostSuspensionReason;
 import showroomz.domain.showroom.repository.ShowroomVisitRepository;
@@ -89,13 +89,16 @@ class PostInsightServiceTest {
     @Mock
     private CreatorRepository creatorRepository;
 
-    @InjectMocks
+    /** 지표는 실제 {@link PostMetricsService}(리포지토리만 목)로 낸다 — 숫자가 목에서 나오지 않게(정합 계획서 R5-1). */
     private PostInsightService postInsightService;
 
     private Creator me;
 
     @BeforeEach
     void setUp() {
+        postInsightService = new PostInsightService(postRepository, postImpressionRepository, postSuspensionRepository,
+                creatorRepository, new PostMetricsService(postImpressionRepository, postLikeRepository,
+                showroomVisitRepository, creatorFollowRepository));
         me = creator(CREATOR_ID);
         given(creatorRepository.findByUser_Id(USER_ID)).willReturn(Optional.of(me));
         given(postRepository.findById(POST_ID)).willReturn(Optional.of(publishedPost(me)));
@@ -597,7 +600,7 @@ class PostInsightServiceTest {
 
     private void givenOpenSuspension(LocalDateTime suspendedAt) {
         PostSuspension suspension = new PostSuspension(
-                publishedPost(me), PostSuspensionReason.AD_DISCLOSURE, null, "운영정책 제12조",
+                publishedPost(me), PostSuspensionReason.MISLEADING_INFO, null, "운영정책 제12조",
                 9L, suspendedAt, suspendedAt.plusDays(7));
         given(postSuspensionRepository.findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(POST_ID))
                 .willReturn(Optional.of(suspension));

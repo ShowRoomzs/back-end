@@ -25,6 +25,18 @@ public enum AdminChannelMemberStatus {
         };
     }
 
+    /** 인플루언서 — 회원 상태 축은 {@code creator.status}다(53 설계서 0-1 · 소비자 계정 상태와 다른 축). */
+    public static AdminChannelMemberStatus of(showroomz.domain.member.creator.type.CreatorStatus status) {
+        if (status == null) {
+            return ACTIVE;
+        }
+        return switch (status) {
+            case ACTIVE -> ACTIVE;
+            case SUSPENDED -> SUSPENDED;
+            case WITHDRAWN -> WITHDRAWN;
+        };
+    }
+
     public static AdminChannelMemberStatus of(UserStatus status) {
         if (status == null) {
             return ACTIVE;

@@ -1,10 +1,12 @@
 package showroomz.api.creator.groupbuy.service;
 
+import showroomz.domain.member.creator.type.CreatorBlockedAction;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.creator.groupbuy.dto.CreatorExtensionRejectRequest;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.api.creator.groupbuy.dto.CreatorFulfillmentCheckRequest;
 import showroomz.api.creator.groupbuy.dto.CreatorGroupBuyDetailResponse;
 import showroomz.api.creator.groupbuy.dto.CreatorGroupBuyPostRequest;
@@ -79,6 +81,7 @@ public class CreatorGroupBuyCommandService {
     private final GroupBuyNotifier notifier;
     private final GroupBuySalesReader salesReader;
     private final GroupBuyFulfillmentService fulfillmentService;
+    private final CreatorSanctionGuard sanctionGuard;
 
     // ── C3 · C4 게시물 임시저장 · 등록하고 검토 요청 ────────────────────────────────
 
@@ -113,6 +116,8 @@ public class CreatorGroupBuyCommandService {
                                                     CreatorGroupBuyPostRequest request) {
         Locked locked = lockForPostWrite(creatorEmail, groupBuyId);
         requireWritable(locked);
+        // 정지 시 공구 게시물 제출 차단은 플래그(§55 B-11 미정 · 기본 꺼짐 · 53 설계서 4-2).
+        sanctionGuard.requireCanSubmitGroupBuyPost(locked.groupBuy().getCreator());
 
         String title = normalizeTitle(request.title());
         String content = normalizeContent(request.content());
@@ -133,6 +138,7 @@ public class CreatorGroupBuyCommandService {
         historyRecorder.recordByCreator(locked.groupBuy(), GroupBuyEventType.POST_SUBMITTED,
                 resubmission ? "재등록" : null, null, now);
         notifier.notifyAdmin(locked.groupBuy(), "POST_SUBMITTED");
+        notifier.notifySeller(locked.groupBuy(), "POST_SUBMITTED");
         return detailAssembler.assemble(locked.groupBuy(), null);
     }
 
@@ -152,12 +158,20 @@ public class CreatorGroupBuyCommandService {
             throw new BusinessException(ErrorCode.GROUP_BUY_POST_NOT_EDITABLE);
         }
 
+        GroupBuyPost post = locked.post();
         String title = normalizeTitle(request.title());
+        // 진행 중에는 본문만 고친다(1021 기-08) — 제목을 비워 보내면 지금 제목을 쓰고, 바꿔 보내면 400.
+        if (GroupBuyPostPolicy.isTitleLocked(post, locked.groupBuy())) {
+            if (title == null) {
+                title = post.getTitle();
+            } else if (!title.equals(post.getTitle())) {
+                throw new BusinessException(ErrorCode.GROUP_BUY_POST_TITLE_LOCKED);
+            }
+        }
         String content = normalizeContent(request.content());
         GroupBuyPostPolicy.validateRequired(title, content);
 
         LocalDateTime now = LocalDateTime.now();
-        GroupBuyPost post = locked.post();
         post.rewrite(title, content, now);
         postPolicies.of(post.getPost()).validateEditable(post.getPost());
         post.markEdited(now);
@@ -221,6 +235,8 @@ public class CreatorGroupBuyCommandService {
         GroupBuyFacts facts = factsLoader.load(groupBuy);
         LocalDateTime now = LocalDateTime.now();
         GroupBuyExtensionRequest extension = requireRespondable(facts, now);
+        // 정지 중 연장 수락은 막는다 — 판매 기간을 늘리는 일이다. 연장 거절 · 중단 요청은 허용(ui-studio-13 S4a).
+        sanctionGuard.requireNotSuspended(creator, CreatorBlockedAction.GROUP_BUY_EXTENSION_ACCEPT);
 
         if (extensionRequestRepository.respond(extension.getId(), ExtensionRequestStatus.ACCEPTED,
                 GroupBuyActorType.CREATOR, null, null, now) != 1) {

@@ -55,6 +55,7 @@ public class WithholdingReceiptGenerator {
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementTaxDocumentStorage storage;
     private final SettlementHistoryRecorder historyRecorder;
+    private final showroomz.domain.settlement.repository.SettlementHistoryRepository historyRepository;
     private final ContractPdfRenderer renderer;
     private final PersonalDataCipher cipher;
     private final SettlementProperties properties;
@@ -66,6 +67,7 @@ public class WithholdingReceiptGenerator {
                                        SettlementPayoutRepository payoutRepository,
                                        SettlementTaxDocumentStorage storage,
                                        SettlementHistoryRecorder historyRecorder,
+                                       showroomz.domain.settlement.repository.SettlementHistoryRepository historyRepository,
                                        ContractPdfRenderer renderer,
                                        PersonalDataCipher cipher,
                                        SettlementProperties properties,
@@ -75,6 +77,7 @@ public class WithholdingReceiptGenerator {
         this.payoutRepository = payoutRepository;
         this.storage = storage;
         this.historyRecorder = historyRecorder;
+        this.historyRepository = historyRepository;
         this.renderer = renderer;
         this.cipher = cipher;
         this.properties = properties;
@@ -136,7 +139,13 @@ public class WithholdingReceiptGenerator {
         }
         Creator creator = s.getCreator();
         if (creator.getResidentRegistrationNumberEnc() == null) {
-            throw new IllegalStateException("주민등록번호 미등록 — 원천징수영수증을 만들 수 없다");
+            // 지급은 이미 나갔다(1021 기-12) — 영수증만 건너뛰고 생성 대기로 둔다. 번호가 등록되면 재생성 배치가 만든다. 이력은 한 번만.
+            if (!historyRepository.existsBySettlementIdAndEventType(s.getId(),
+                    SettlementEventType.WITHHOLDING_RECEIPT_SKIPPED)) {
+                historyRecorder.recordBySystem(s.getId(), SettlementEventType.WITHHOLDING_RECEIPT_SKIPPED,
+                        "주민등록번호 미등록 · 원천징수영수증 생성 보류(지급은 진행)", LocalDateTime.now());
+            }
+            return null;
         }
         LocalDate paidDate = payoutRepository.findBySettlementIdAndPayee(s.getId(), SettlementPayee.CREATOR)
                 .map(SettlementPayout::getPaidAt).map(LocalDateTime::toLocalDate).orElse(LocalDate.now());

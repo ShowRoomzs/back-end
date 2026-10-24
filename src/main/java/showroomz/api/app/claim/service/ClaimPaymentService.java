@@ -51,6 +51,7 @@ public class ClaimPaymentService {
     private static final int BATCH_LIMIT = 200;
     private static final String EXCHANGE_ORDER_NAME = "교환 재발송 배송비";
     private static final String REJECT_ORDER_NAME = "반려 상품 재발송 배송비";
+    private static final String OVERTURN_ORDER_NAME = "교환 재발송 배송비 · 착불 운임";
 
     private final OrderClaimPaymentRepository paymentRepository;
     private final OrderClaimChargeRepository chargeRepository;
@@ -115,7 +116,11 @@ public class ClaimPaymentService {
             OrderClaimPayment payment = paymentRepository.save(OrderClaimPayment.ready(chargeId, collection.getId(),
                     userId, attempt, method, cardIssuer, provider, charge.getAmount(), channelKey, now));
             return new Opened(payment.getPaymentId(), charge.getAmount(), channelKey, method, cardIssuer, provider,
-                    charge.getType() == ClaimChargeType.EXCHANGE_RESHIP ? EXCHANGE_ORDER_NAME : REJECT_ORDER_NAME,
+                    switch (charge.getType()) {
+                        case EXCHANGE_RESHIP -> EXCHANGE_ORDER_NAME;
+                        case OVERTURN_RESHIP -> OVERTURN_ORDER_NAME;
+                        default -> REJECT_ORDER_NAME;
+                    },
                     collection.getReshipRecipient(), collection.getReshipPhone());
         });
 
@@ -231,28 +236,31 @@ public class ClaimPaymentService {
     /**
      * 취소가 선점된 결제를 포트원에서 취소한다 — 「이미 취소됨」도 성공이다. 결과를 모르거나 거절되면 상태를 그대로 두고
      * 정리 배치가 다시 시도한다(돈이 걸린 일이라 조용히 포기하지 않는다).
+     *
+     * <p>결제 행을 잠근 채 상태를 다시 보고 포트원을 부른다 — 자동 취소 · 커밋 뒤 정리 · 배치가 같은 결제를 동시에 집어도 외부 호출은
+     * 한 번이고, 뒤에 온 호출은 잠금이 풀린 뒤 {@code CANCELLED} 를 보고 물러난다.
      */
     public void executeCancel(String paymentId) {
-        OrderClaimPayment payment = paymentRepository.findById(paymentId).orElse(null);
-        if (payment == null || payment.getStatus() != ClaimPaymentStatus.CANCEL_REQUESTED) {
-            return;
-        }
-        try {
-            PortOneCancelResult result = gateway.cancel(paymentId, payment.getAmount(), "재발송 배송비 결제 취소");
-            if (result.isCancelled()) {
-                LocalDateTime now = LocalDateTime.now();
-                transaction.executeWithoutResult(tx -> {
+        transaction.executeWithoutResult(tx -> {
+            OrderClaimPayment payment = paymentRepository.findForUpdate(paymentId).orElse(null);
+            if (payment == null || payment.getStatus() != ClaimPaymentStatus.CANCEL_REQUESTED) {
+                return;
+            }
+            try {
+                PortOneCancelResult result = gateway.cancel(paymentId, payment.getAmount(), "재발송 배송비 결제 취소");
+                if (result.isCancelled()) {
+                    LocalDateTime now = LocalDateTime.now();
                     // 처음 닫는 호출만 기록 행을 남긴다 — 어드민 환불 관리 완료 탭의 「재발송비 환불」(39 설계서 0-4).
                     if (paymentRepository.markCancelled(paymentId, now) == 1) {
                         claimService.recordClaimPaymentRefund(paymentId, now);
                     }
-                });
+                }
+            } catch (PaymentGatewayException e) {
+                log.warn("클레임 결제 취소 결과 미상 - 재시도 대기 - paymentId: {} - {}", paymentId, e.getMessage());
+            } catch (PaymentGatewayRejectedException e) {
+                log.error("클레임 결제 취소 거절 - 운영자 확인 필요 - paymentId: {} - {}", paymentId, e.getMessage());
             }
-        } catch (PaymentGatewayException e) {
-            log.warn("클레임 결제 취소 결과 미상 - 재시도 대기 - paymentId: {} - {}", paymentId, e.getMessage());
-        } catch (PaymentGatewayRejectedException e) {
-            log.error("클레임 결제 취소 거절 - 운영자 확인 필요 - paymentId: {} - {}", paymentId, e.getMessage());
-        }
+        });
     }
 
     /** 취소가 선점된 채 남은 결제를 전부 집행한다 — 철회 직후와 정리 배치가 부른다. */

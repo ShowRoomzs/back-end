@@ -158,8 +158,17 @@ public abstract class AdminThreadTestSupport extends AdminContractTestSupport {
         jdbc.update("UPDATE market SET status = ? WHERE market_id = ?", status, target.marketId());
     }
 
+    /**
+     * 인플루언서 회원 상태 — 운영팀 채널은 {@code creator.status}를 읽는다(53 설계서 0-1 · 소비자 계정 상태와 다른 축). 이전 테스트가
+     * 소비자 계정 상태로 표현하던 값을 두 축에 함께 둔다(NORMAL · DORMANT 는 인플루언서 ACTIVE).
+     */
     protected void setUserStatus(Creator target, String status) {
         jdbc.update("UPDATE users SET status = ? WHERE user_id = ?", status, target.getUser().getId());
+        String creatorStatus = switch (status) {
+            case "SUSPENDED", "WITHDRAWN" -> status;
+            default -> "ACTIVE";
+        };
+        jdbc.update("UPDATE creator SET status = ? WHERE creator_id = ?", creatorStatus, target.getId());
     }
 
     /**

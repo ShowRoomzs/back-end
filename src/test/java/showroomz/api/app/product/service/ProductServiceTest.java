@@ -386,6 +386,8 @@ class ProductServiceTest {
             assertThat(delivery.getShippingLeadDays()).isEqualTo(2);
             assertThat(delivery.getDeliveryFee()).isEqualTo(3000);
             assertThat(delivery.getFreeShippingThreshold()).isEqualTo(30000);
+            // [OB-11] 제주 · 도서산간은 따로 내린다(06 설계서 1-5 · C7 「제주 +3,000원 · 도서산간 +5,000원」)
+            assertThat(delivery.getJejuSurcharge()).isEqualTo(3000);
             assertThat(delivery.getRemoteAreaSurcharge()).isEqualTo(5000);
             assertThat(delivery.getReturnFee()).isEqualTo(3000);
             assertThat(delivery.getExchangeFee()).isEqualTo(3000);
@@ -574,9 +576,8 @@ class ProductServiceTest {
         market.setShippingLeadDays(2);
         market.setDefaultDeliveryFee(3000);
         market.setFreeShippingThreshold(30000);
+        market.setJejuSurcharge(3000);
         market.setRemoteAreaSurcharge(5000);
-        market.setReturnFee(3000);
-        market.setExchangeFee(6000);
         return market;
     }
 }

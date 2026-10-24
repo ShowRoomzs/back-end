@@ -30,7 +30,7 @@ import java.util.List;
 
 import static showroomz.api.admin.groupbuy.docs.AdminGroupBuyDocsExamples.*;
 
-@Tag(name = "Admin - GroupBuy", description = "관리자 공구 목록·상세 조회와 운영 판정 API.")
+@Tag(name = "Admin - GroupBuy", description = "관리자 공구 관리 API")
 public interface AdminGroupBuyControllerDocs {
 
     // ── 조회 ────────────────────────────────────────────────────────────────
@@ -105,9 +105,15 @@ public interface AdminGroupBuyControllerDocs {
                     - `marketId`를 주면 그 브랜드와 공구를 연 인플루언서만. 시안은 인플루언서를 브랜드에 종속시키지 않았다 — 기본은 없이 부른다.
                     - 쇼룸명순 · 페이지 없음. 이름은 공구 목록 `creatorName`과 같은 쇼룸명이다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공",
-            content = @Content(array = @ArraySchema(schema = @Schema(implementation = AdminGroupBuyDto.CreatorOption.class)),
-                    examples = @ExampleObject(value = CREATOR_OPTIONS))))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(array = @ArraySchema(schema = @Schema(implementation = AdminGroupBuyDto.CreatorOption.class)),
+                            examples = @ExampleObject(value = CREATOR_OPTIONS))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<List<AdminGroupBuyDto.CreatorOption>> getCreatorOptions(
             @Parameter(description = "브랜드(마켓) ID — 그 브랜드와 공구를 연 인플루언서만", example = "7")
             @RequestParam(required = false) Long marketId);
@@ -137,11 +143,17 @@ public interface AdminGroupBuyControllerDocs {
                     - `settlementWatch` — 조치와 다른 축. 정산이 끝나지 않은 종료(ENDED) 공구를 센다. 기한(종료 +30일)을 넘겨도
                       `actionRequiredCount`에 더하지 않는다(누를 버튼이 없다). 톤은 `nearest.reached`로 고른다. 중단 공구는 세지 않는다.
                     """)
-    @ApiResponses(@ApiResponse(responseCode = "200", description = "조회 성공",
-            content = @Content(schema = @Schema(implementation = AdminGroupBuySummaryResponse.class), examples = {
-                    @ExampleObject(name = "조치 3건", summary = "오픈 승인 1 · 조기 마감 요청 1 · 소명 검토 1 / 정산 감시 1", value = SUMMARY),
-                    @ExampleObject(name = "처리할 것 없음", summary = "FE는 GNB 배지를 그리지 않는다", value = SUMMARY_EMPTY)
-            })))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(schema = @Schema(implementation = AdminGroupBuySummaryResponse.class), examples = {
+                            @ExampleObject(name = "조치 3건", summary = "오픈 승인 1 · 조기 마감 요청 1 · 소명 검토 1 / 정산 감시 1", value = SUMMARY),
+                            @ExampleObject(name = "처리할 것 없음", summary = "FE는 GNB 배지를 그리지 않는다", value = SUMMARY_EMPTY)
+                    })),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<AdminGroupBuySummaryResponse> getSummary();
 
     @Operation(

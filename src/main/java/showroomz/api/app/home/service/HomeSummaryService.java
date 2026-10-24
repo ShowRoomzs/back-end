@@ -1,5 +1,6 @@
 package showroomz.api.app.home.service;
 
+import showroomz.api.app.notification.service.UserNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +26,7 @@ public class HomeSummaryService {
     private final UserRepository userRepository;
     private final CartRepository cartRepository;
     private final CreatorFollowRepository creatorFollowRepository;
+    private final UserNotificationService userNotificationService;
 
     public HomeSummaryResponse getSummary(String username) {
         Users user = userRepository.findByUsername(username)
@@ -33,6 +35,7 @@ public class HomeSummaryService {
         return HomeSummaryResponse.builder()
                 .cartCount(cartRepository.countByUser(user))
                 .followingCount(creatorFollowRepository.countByUser(user))
+                .notificationBadgeCount(userNotificationService.badgeCount(user))
                 .build();
     }
 }

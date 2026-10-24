@@ -39,9 +39,10 @@ public class AdminInquiryController implements AdminInquiryControllerDocs {
             @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
             @RequestParam(value = "type", required = false) CsCategory type,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "userId", required = false) Long userId,
             @ModelAttribute PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
-        return ResponseEntity.ok(adminInquiryService.getList(status, type, keyword, pageable));
+        return ResponseEntity.ok(adminInquiryService.getList(status, type, keyword, userId, pageable));
     }
 
     @Override
@@ -62,8 +63,9 @@ public class AdminInquiryController implements AdminInquiryControllerDocs {
             @PathVariable("inquiryId") Long inquiryId,
             @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
             @RequestParam(value = "type", required = false) CsCategory type,
-            @RequestParam(value = "keyword", required = false) String keyword) {
-        return ResponseEntity.ok(adminInquiryService.getDetail(inquiryId, status, type, keyword));
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        return ResponseEntity.ok(adminInquiryService.getDetail(inquiryId, status, type, keyword, userId));
     }
 
     @Override

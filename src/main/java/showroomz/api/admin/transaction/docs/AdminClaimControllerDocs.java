@@ -25,7 +25,7 @@ import java.util.Set;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Claim", description = "관리자 거래 관리 · 반품·교환 API (06b)")
+@Tag(name = "Admin - Claim", description = "관리자 반품·교환 관리 API")
 public interface AdminClaimControllerDocs {
 
     @Operation(summary = "반품·교환 목록 (06b A1)", description = """
@@ -52,6 +52,9 @@ public interface AdminClaimControllerDocs {
             - `keyword` — 파트너 목록과 같은 검색(접수번호 · 주문번호 · 상품명 등)
             - `marketId` — 그 브랜드만 · `marketName` — 브랜드명 부분 일치 · `consumerName` — 소비자명 부분 일치 *(어드민 전용)*
             - `sort` — `REQUESTED_DESC`(신청 최신순) · `ELAPSED_ASC`(현재 단계 경과 오래된순). 없으면 **탭 기본 정렬** *(어드민 전용)*
+            - `userId` — 주문한 소비자만(주문 목록 `userId`와 같은 축) *(어드민 전용)*. **`from` · `to`를 둘 다 비우면 기본 1개월을 걸지 않고 전체 기간**입니다
+            - `openOnly` — `true`면 진행 중만(종결 `COMPLETED` 제외 · 기본 `false`) *(어드민 전용)*. 소비자 상세 「반품·교환」 칩은
+              `tab=ALL&openOnly=true&userId=`로 들어오고, 그 `pageInfo.totalResults`가 칩 건수와 같습니다(`pendingChips[].links[].query` 그대로)
 
             **정렬 고정** — 전체 탭은 **검수 지연(입고 · 기한 경과)을 맨 위에 고정**합니다(페이지를 넘어서도).
 
@@ -96,6 +99,9 @@ public interface AdminClaimControllerDocs {
             @Parameter(description = "[어드민] 브랜드명 부분 일치", example = "데일리") String marketName,
             @Parameter(description = "[어드민] 소비자명 부분 일치", example = "김민지") String consumerName,
             @Parameter(description = "[어드민] 정렬 — REQUESTED_DESC · ELAPSED_ASC. 없으면 탭 기본 정렬", example = "ELAPSED_ASC") ClaimSort sort,
+            @Parameter(description = "[어드민] 주문한 소비자 ID — 소비자 상세에서 넘어온 진입. from · to 를 둘 다 비우면 기간 조건 없음", example = "88231")
+            Long userId,
+            @Parameter(description = "[어드민] 진행 중만(종결 COMPLETED 제외) — 기본 false", example = "true") boolean openOnly,
             PagingRequest pagingRequest);
 
     @Operation(summary = "반품·교환 요약", description = """

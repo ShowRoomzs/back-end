@@ -73,11 +73,11 @@ public class SellerOrderQueryService {
     /** 목록 — 행마다 항목·취소 요청이 필요하다. 페이지의 그룹 id 로 테이블당 IN 쿼리 1번씩 모아 조립한다. */
     public PageResponse<SellerOrderListItem> getOrders(String sellerEmail, OrderTab tab, OrderDateBasis dateBasis,
                                                        LocalDate from, LocalDate to, OrderSearchType searchType,
-                                                       String keyword, OrderSortType sort,
+                                                       String keyword, OrderSortType sort, boolean shipOverdue,
                                                        PagingRequest pagingRequest) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         SellerOrderSearchCondition condition = buildCondition(scope.market().getId(), tab, dateBasis, from, to,
-                searchType, keyword, sort, LocalDateTime.now());
+                searchType, keyword, sort, shipOverdue, LocalDateTime.now());
         // page 는 1 미만이면 첫 페이지로 보정하지만, size 는 보정하지 않는다 — 0 이하는 PageRequest 가 500 으로 터지고
         // 상한이 없으면 한 번에 마켓 전체를 끌어온다.
         int size = pagingRequest.getSize();
@@ -94,7 +94,11 @@ public class SellerOrderQueryService {
     /** 요약 바 5칸 + 탭 카운트 9종 — 한 응답(동시 갱신 요구). 검색 결과 없음에도 요약 바는 전체 기준이라 숫자가 유지된다(§34-2). */
     public SellerOrderSummaryResponse getSummary(String sellerEmail) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
-        Long marketId = scope.market().getId();
+        return summarize(scope.market().getId());
+    }
+
+    /** 요약 — 파트너 홈 처리 대기 · GNB 배지(1017 설계서 4-1 · 4-7)가 같은 값을 쓴다. */
+    public SellerOrderSummaryResponse summarize(Long marketId) {
 
         Map<FulfillmentStatus, Long> byStatus = new EnumMap<>(FulfillmentStatus.class);
         for (Object[] row : deliveryGroupRepository.countByStatus(marketId)) {
@@ -136,7 +140,7 @@ public class SellerOrderQueryService {
         }
         return new SellerOrderSummaryResponse(
                 new SellerOrderSummaryResponse.ActionBar(newCount, preparingCount, deliveryIssue, incomingCheck,
-                        reshipExchange),
+                        reshipExchange, deliveryGroupRepository.countShipOverdue(marketId, LocalDateTime.now())),
                 tabCounts);
     }
 
@@ -168,6 +172,12 @@ public class SellerOrderQueryService {
     SellerOrderSearchCondition buildCondition(Long marketId, OrderTab tab, OrderDateBasis dateBasis, LocalDate from,
                                               LocalDate to, OrderSearchType searchType, String keyword,
                                               OrderSortType sort, LocalDateTime now) {
+        return buildCondition(marketId, tab, dateBasis, from, to, searchType, keyword, sort, false, now);
+    }
+
+    SellerOrderSearchCondition buildCondition(Long marketId, OrderTab tab, OrderDateBasis dateBasis, LocalDate from,
+                                              LocalDate to, OrderSearchType searchType, String keyword,
+                                              OrderSortType sort, boolean shipOverdue, LocalDateTime now) {
         OrderTab resolvedTab = tab == null ? OrderTab.ALL : tab;
         LocalDate resolvedTo = to != null ? to : now.toLocalDate();
         LocalDate resolvedFrom = from != null ? from : resolvedTo.minusDays(resolvedTab.getDefaultPeriodDays());
@@ -186,7 +196,9 @@ public class SellerOrderQueryService {
                 resolvedTo.atTime(LocalTime.MAX),
                 searchType,
                 keyword,
-                sort == null ? resolvedTab.defaultSort() : sort);
+                sort == null ? resolvedTab.defaultSort() : sort,
+                shipOverdue,
+                now);
     }
 
     List<SellerOrderListItem> assembleRows(List<SellerOrderRow> rows) {

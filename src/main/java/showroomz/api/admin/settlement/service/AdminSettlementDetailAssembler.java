@@ -112,8 +112,10 @@ public class AdminSettlementDetailAssembler {
                 s.getOriginalRewardAmount(), s.getRewardAmount(),
                 new AdminSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
                 new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
-                s.getConsumerDeliveryFeeAmount(), s.getBrandPayoutBeforeClawback(), s.getBrandClawbackAmount(),
-                s.getBrandPayoutAmount());
+                s.getConsumerDeliveryFeeAmount(),
+                new SettlementPartyDto.AmountCount(s.getReturnDeductionFeeAmount(), s.getReturnDeductionCount()),
+                new SettlementPartyDto.AmountCount(s.getFreightAdjustmentAmount(), s.getFreightAdjustmentCount()),
+                s.getBrandPayoutBeforeClawback(), s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
         AdminSettlementDto.CreatorAxis creator = new AdminSettlementDto.CreatorAxis(s.getCreatorBusinessType(),
                 s.getRewardAmount(), s.getRewardClawbackAmount(),
                 s.isBusinessCreator() ? null : new AdminSettlementDto.Withholding(s.getWithholdingAmount(),
@@ -167,7 +169,9 @@ public class AdminSettlementDetailAssembler {
                 .toList();
         long payoutTotal = payouts.values().stream().mapToLong(SettlementPayout::getAmount).sum();
         long total = payoutTotal + s.getPgFeeAmount() + s.getWithholdingAmount();
-        long inflow = s.getConfirmedSalesAmount() + s.getReshipFeeAmount() + s.getConsumerDeliveryFeeAmount();
+        // 생성 검산(SettlementCalculator.verify)과 같은 식 — 1021 6-1 「반품 시 차감한 최초 배송비 · ± 운임 정산」도 재원이다.
+        long inflow = s.getConfirmedSalesAmount() + s.getReshipFeeAmount() + s.getConsumerDeliveryFeeAmount()
+                + s.getReturnDeductionFeeAmount() + s.getFreightAdjustmentAmount();
         return new AdminSettlementDto.Payouts(rows, s.getPgFeeAmount(),
                 new AdminSettlementDto.Check(total, inflow, s.getConfirmedSalesAmount(), s.getWithholdingAmount(),
                         total == inflow));
@@ -237,7 +241,7 @@ public class AdminSettlementDetailAssembler {
         if (confirmed && creatorPayout != null && creatorPayout.getStatus() == PayoutStatus.BLOCKED) {
             blockPolicy.blockReasons(s).forEach(r -> blockReasons.add(new AdminSettlementDto.BlockReason(r.name(), r.getLabel())));
         }
-        // PG 파트너 사유(포트원 설계서 4-3)는 수취자 행의 fail_code 로 남는다 — 브랜드 행도 보류될 수 있다.
+        // PG 셀러 사유(토스 설계서 4-3 · 본인인증 · KYC 포함)는 수취자 행의 fail_code 로 남는다 — 브랜드 행도 보류될 수 있다.
         for (SettlementPayout p : payouts.values()) {
             if (p.getStatus() == PayoutStatus.BLOCKED && p.getFailCode() != null) {
                 showroomz.domain.settlement.type.PayoutBlockReason.fromCode(p.getFailCode())

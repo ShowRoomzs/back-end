@@ -1,5 +1,6 @@
 package showroomz.api.seller.groupbuy.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyRemarkCode;
@@ -29,7 +30,7 @@ public record GroupBuyListItem(
 
         @Schema(description = "게시물 상태 8종 — 저장하지 않고 공구 상태에서 파생한다. "
                 + "NOT_WRITTEN(미작성) · WRITING(작성중) · PENDING_APPROVAL(승인대기) · REJECTED(반려) · "
-                + "SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · HIDDEN(숨김) · CLOSED(종료)", example = "EXPOSED")
+                + "SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · CLOSED(종료)", example = "EXPOSED")
         GroupBuyPostStatus postStatus,
 
         @Schema(description = "게시물 상태 배지 문구 — FE가 그대로 쓴다", example = "노출중") String postStatusLabel,
@@ -49,7 +50,10 @@ public record GroupBuyListItem(
         GroupBuyTone statusTone,
 
         @Schema(description = "비고 — 상태만으로 알 수 없는 예외만 최대 1개. 대부분 행은 null이다", nullable = true)
-        Remark remark
+        Remark remark,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 
     @Schema(description = "비고 — 코드만 내린다. 문구는 FE가 고른다(설계서 4-2)")

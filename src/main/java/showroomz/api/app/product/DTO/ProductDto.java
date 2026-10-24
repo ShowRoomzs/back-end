@@ -265,14 +265,17 @@ public class ProductDto {
         @Schema(description = "무료배송 기준 금액 — null이면 무료배송 기준이 없다", example = "30000")
         private Integer freeShippingThreshold;
 
-        @Schema(description = "도서산간 추가 배송비", example = "5000")
+        @Schema(description = "제주 추가 배송비", example = "3000")
+        private Integer jejuSurcharge;
+
+        @Schema(description = "도서산간 추가 배송비 — 제주 제외", example = "5000")
         private Integer remoteAreaSurcharge;
 
         @Schema(description = "단순 변심 반품 때 부담하는 최초 배송비 — 기본 배송비와 같은 값. 무료배송으로 받은 주문은 환불액에서 "
-                + "빼고, 배송비를 내고 받은 주문은 낸 배송비를 돌려받지 않는다. 불량·오배송은 0원. 반송 택배비는 별도", example = "3000")
+                + "빼고(일부 반품은 남는 금액이 무료배송 기준 아래로 내려갈 때만 · 1021 기-18), 배송비를 내고 받은 주문은 낸 배송비를 돌려받지 않는다. 불량·오배송은 0원. 반송 택배비는 별도. 결제 시점의 조건이 적용된다(기-20)", example = "3000")
         private Integer returnFee;
 
-        @Schema(description = "단순 변심 교환의 재발송 배송비(편도) — 기본 배송비와 같은 값. 교환을 요청할 때 결제한다. "
+        @Schema(description = "단순 변심 교환의 재발송 배송비(편도) — 기본 배송비와 같은 값(제주 · 도서산간이면 권역 추가비가 더해진다 · 1021 기-18). 교환을 요청할 때 결제한다. "
                 + "불량·오배송은 0원. 반송 택배비는 별도", example = "3000")
         private Integer exchangeFee;
     }

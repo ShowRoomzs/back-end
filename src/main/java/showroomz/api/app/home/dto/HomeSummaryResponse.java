@@ -39,4 +39,11 @@ public class HomeSummaryResponse {
      */
     @Schema(description = "팔로우 중인 쇼룸 수 — 0이면 빈 상태(발견 피드)를 그린다", example = "12")
     private Long followingCount;
+
+    /**
+     * C1 종 아이콘 배지(1017 · 디자인 시스템 「장바구니 · 알림 배지」) — C11 목록에 마지막으로 들어간 뒤 새로 온 알림 수.
+     * 장바구니처럼 실제 수를 내리고 99+ 표기는 앱이 한다. 목록에 들어가면 {@code POST /v1/user/notifications/badge/seen}으로 0이 된다.
+     */
+    @Schema(description = "종 배지 — C11 목록 진입 뒤 새로 온 알림 수. 0이면 배지 없음 · 99 초과는 99+", example = "5")
+    private Long notificationBadgeCount;
 }

@@ -58,9 +58,10 @@ public class SellerOrderController implements SellerOrderControllerDocs {
             @RequestParam(value = "searchType", required = false) OrderSearchType searchType,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "sort", required = false) OrderSortType sort,
+            @RequestParam(value = "shipOverdue", defaultValue = "false") boolean shipOverdue,
             @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(queryService.getOrders(getCurrentSellerEmail(), tab, dateBasis, from, to, searchType,
-                keyword, sort, pagingRequest));
+                keyword, sort, shipOverdue, pagingRequest));
     }
 
     @Override
@@ -128,6 +129,12 @@ public class SellerOrderController implements SellerOrderControllerDocs {
     public ResponseEntity<SellerOrderDetailResponse> updateShipment(
             @PathVariable Long deliveryGroupId, @Valid @RequestBody ShipmentUpdateRequest request) {
         return ResponseEntity.ok(commandService.updateShipment(getCurrentSellerEmail(), deliveryGroupId, request));
+    }
+
+    @Override
+    @PostMapping("/{deliveryGroupId}/stall-refund")
+    public ResponseEntity<SellerOrderDetailResponse> refundStallChoice(@PathVariable Long deliveryGroupId) {
+        return ResponseEntity.ok(commandService.refundStallChoice(getCurrentSellerEmail(), deliveryGroupId));
     }
 
     // ── 취소 ────────────────────────────────────────────────────────────────

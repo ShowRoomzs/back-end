@@ -28,6 +28,11 @@ public final class ContractCloseReasonLabels {
         try {
             return ContractDeclineReason.valueOf(reasonCode).getLabel();
         } catch (IllegalArgumentException ignored) {
+            // 거절 사유도 아니면 해지 사유다(1021 기-05).
+        }
+        try {
+            return ContractTerminationReasonCode.valueOf(reasonCode).getLabel();
+        } catch (IllegalArgumentException ignored) {
             return null;
         }
     }

@@ -42,6 +42,10 @@ public interface PostReportRepository extends JpaRepository<PostReport, Long> {
 
     long countByPost_IdAndStatus(Long postId, PostReportStatus status);
 
+    /** 어드민 상세의 신고 내역 · 처리 이력 — 처리분까지 접수 순으로 (§54-3) */
+    @Query("SELECT r FROM PostReport r JOIN FETCH r.reporter WHERE r.post.id = :postId ORDER BY r.reportedAt ASC, r.id ASC")
+    List<PostReport> findAllByPostIdWithReporter(@Param("postId") Long postId);
+
     /** 파기 배치 — 게시물 물리 삭제 전에 자식부터 지운다 */
     @Modifying
     @Query("DELETE FROM PostReport r WHERE r.post.id = :postId")

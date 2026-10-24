@@ -14,7 +14,7 @@ import showroomz.api.common.settlement.dto.SettlementAdjustmentDto;
 
 import static showroomz.api.creator.settlement.docs.CreatorSettlementDocsExamples.*;
 
-@Tag(name = "Creator - Settlement Adjustment", description = "쇼룸 스튜디오 정산 조정 협의 API (#12)")
+@Tag(name = "Creator - Settlement Adjustment", description = "쇼룸 스튜디오 정산 조정 협의 API")
 public interface CreatorSettlementAdjustmentControllerDocs {
 
     String TURN_RULE = """
@@ -233,6 +233,32 @@ public interface CreatorSettlementAdjustmentControllerDocs {
     ResponseEntity<SettlementAdjustmentDto.AdjustmentView> accept(
             @Parameter(description = "협의 id", example = "4", required = true) Long adjustmentId,
             @Parameter(description = "최신 제안 id — latestProposal.proposalId", example = "12", required = true) Long proposalId);
+
+    @Operation(summary = "요청 철회 (1021 기-14)",
+            description = """
+                    내가 처음 보낸 조정 요청을 상대가 응답하기 전에 거둡니다 — **원래 금액으로 확정 · 이슈 종결 · 재요청 불가**(정산당 협의 1건).
+                    정산은 「지급 예정」(철회 확정 · 확정일 = 철회일 · 지급 예정일 = +N영업일)이 되고 상대에게 알림이 갑니다.
+
+                    **권한:** CREATOR
+
+                    - `permissions.canWithdraw = true` 일 때만 — 처음 요청한 쪽 ∧ 최신 제안이 내 것 ∧ 응답 대기
+                    - 상대가 반대 · 다른 금액을 낸 뒤면 철회가 아니라 협의입니다 — 409 `SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED`
+                    - 종결 · 기한 경과는 다른 응답과 같은 409
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "철회 · 종결 — 갱신된 고정 카드(`status = WITHDRAWN`)",
+                    content = @Content(schema = @Schema(implementation = SettlementAdjustmentDto.AdjustmentView.class))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_UNAUTHORIZED))),
+            @ApiResponse(responseCode = "403", description = "협의 당사자 아님 (`SETTLEMENT_ADJUSTMENT_ACCESS_DENIED`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_ADJUSTMENT_ACCESS_DENIED))),
+            @ApiResponse(responseCode = "404", description = "없는 협의 (`SETTLEMENT_ADJUSTMENT_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_ADJUSTMENT_NOT_FOUND))),
+            @ApiResponse(responseCode = "409", description = "철회 불가(상대 응답 뒤 · 내 요청 아님) · 종결 · 기한 경과",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SettlementAdjustmentDto.AdjustmentView> withdraw(
+            @Parameter(description = "협의 id", example = "4", required = true) Long adjustmentId);
 
     @Operation(summary = "반대 (11 C3)",
             description = """

@@ -22,8 +22,13 @@ import showroomz.domain.history.repository.UserConsentHistoryRepository;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.history.type.ConsentType;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
+import showroomz.domain.member.common.service.SuspendedWithdrawalPolicy;
+import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
+import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.type.WithdrawalReason;
 import showroomz.domain.member.user.vo.RefundAccount;
@@ -45,8 +50,12 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final showroomz.domain.order.repository.OrderClaimRepository claimRepository;
+    private final showroomz.domain.order.repository.OrderClaimChargeRepository claimChargeRepository;
+    private final showroomz.domain.order.repository.OrderRefundTaskRepository refundTaskRepository;
     private final BankRepository bankRepository;
     private final CreatorFollowRepository creatorFollowRepository;
+    private final CreatorRepository creatorRepository;
     private final WithdrawalHistoryRepository withdrawalHistoryRepository;
     private final UserStatusHistoryRepository userStatusHistoryRepository;
     private final UserConsentHistoryRepository userConsentHistoryRepository;
@@ -54,6 +63,7 @@ public class UserService {
     private final CartRepository cartRepository;
     private final OrderProductRepository orderProductRepository;
     private final DeviceTokenService deviceTokenService;
+    private final SuspendedWithdrawalPolicy suspendedWithdrawal;
 
     /**
      * 더 이상 진행 중이 아닌 주문 상태 — 이 셋을 뺀 나머지가 탈퇴를 막는다. 전량 반품(RETURNED)도 항목의 종결이다.
@@ -61,9 +71,10 @@ public class UserService {
      * <p>결제 대기(PENDING)도 막는다. 결제창이 열린 사이 탈퇴하면 뒤늦게 도착한 웹훅이 결제를 확정할 사용자가 없다.
      * 결제하지 않은 주문은 만료 스케줄러가 30분 뒤 CANCELLED로 내리므로 오래 막히지 않는다(결제 계획서 4-1 · 선행 수정 계획서 3-4).
      */
+    /** 탈퇴를 막지 않는 항목 — 종결 · 결제 전(1021 기-31 · 14절 Q22 결제 대기는 진행 중 주문이 아니다). */
     private static final Set<OrderProductStatus> FINISHED_ORDER_STATUSES =
             EnumSet.of(OrderProductStatus.PURCHASE_CONFIRMED, OrderProductStatus.CANCELLED,
-                    OrderProductStatus.RETURNED);
+                    OrderProductStatus.RETURNED, OrderProductStatus.PENDING);
 
     public Optional<Users> getUser(String username) {
         return userRepository.findByUsername(username);
@@ -122,6 +133,11 @@ public class UserService {
         // 탈퇴 회원 체크
         if (user.getStatus() == UserStatus.WITHDRAWN) {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
+        }
+
+        // 이용 정지 중에는 닉네임 · 프로필 사진을 바꿀 수 없다(C20 1f · C15-1)
+        if (request.getNickname() != null || request.getProfileImageUrl() != null) {
+            UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PROFILE_UPDATE);
         }
 
         // 닉네임 업데이트
@@ -272,20 +288,48 @@ public class UserService {
             throw new BusinessException(ErrorCode.USER_WITHDRAWN);
         }
 
-        long ongoingOrderCount = orderProductRepository.countOngoingByUserId(user.getId(), FINISHED_ORDER_STATUSES);
+        WithdrawalInfoResponse.Blockers blockers = withdrawalBlockers(user.getId());
+        long ongoingOrderCount = blockers.getOngoingOrders();
 
         List<WithdrawalInfoResponse.WithdrawalReasonOption> reasons = Arrays.stream(WithdrawalReason.values())
                 .map(r -> new WithdrawalInfoResponse.WithdrawalReasonOption(r.name(), r.getDescription()))
                 .toList();
 
+        boolean creatorReviewRequired = isUnwithdrawnCreator(user);
+        // 정지 중 ∧ 설정 false 면 탈퇴 불가 — 탈퇴 409 와 같은 판정 · 같은 문장(55 계획서 S11 · 1021 7-3).
+        String suspensionBlockedReason = suspendedWithdrawal.blockedReason(MemberType.CONSUMER,
+                UserSanctionGuard.isSuspended(user));
         return new WithdrawalInfoResponse(
-                ongoingOrderCount == 0,
+                !blockers.any() && !creatorReviewRequired && suspensionBlockedReason == null,
                 ongoingOrderCount,
                 creatorFollowRepository.countByUser(user),
                 wishlistRepository.countByUser_Id(user.getId()),
                 cartRepository.countByUser(user),
-                reasons
+                reasons,
+                creatorReviewRequired,
+                blockers,
+                suspensionBlockedReason
         );
+    }
+
+    /** 탈퇴 차단 사유(1021 기-31 【잠정】) — 진행 중 주문 · 반품 · 교환 · 미결제 재발송비 · 송금 대기 운임 환급. */
+    private WithdrawalInfoResponse.Blockers withdrawalBlockers(Long userId) {
+        return new WithdrawalInfoResponse.Blockers(
+                orderProductRepository.countOngoingByUserId(userId, FINISHED_ORDER_STATUSES),
+                claimRepository.countOpenCollectionsByUser(userId),
+                claimChargeRepository.countPendingByUser(userId),
+                refundTaskRepository.countPendingTransfersByUser(userId));
+    }
+
+    /**
+     * 탈퇴하지 않은 인플루언서인가(활성 · 정지) — 인플루언서 탈퇴는 스튜디오 신청 → 운영자 승인이다(§51-5). 소비자 탈퇴로 빠져나가면
+     * {@code users.status}만 WITHDRAWN 이 되고 {@code creator.status}는 그대로라 미정산 · 진행 중 공구를 둔 채 활성으로 남는다
+     * (정합 계획서 E-2 · 50 설계서 Q7). 정지 중인 인플루언서도 막는다 — 정지를 피하려는 탈퇴 길을 두지 않는다(§51-3).
+     */
+    private boolean isUnwithdrawnCreator(Users user) {
+        return creatorRepository.findByUser_Id(user.getId())
+                .map(creator -> !creator.isWithdrawn())
+                .orElse(false);
     }
 
     /**
@@ -310,10 +354,30 @@ public class UserService {
             throw new BusinessException(ErrorCode.WITHDRAWAL_CONSENT_REQUIRED);
         }
 
+        // 1-1. 정지 중 탈퇴는 설정(member.sanction.allow-withdrawal-while-suspended)에 따라 — 기본 허용 · 끄면 409 USER_SUSPENDED
+        //      (55 계획서 S11 · 1021 7-3). 허용이면 정지는 탈퇴 → 재가입 시 복원된다(restoreOnRejoin).
+        suspendedWithdrawal.requireCanRequest(MemberType.CONSUMER, UserSanctionGuard.isSuspended(user));
+
         // 2. 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다.
         //    화면에서 이미 비활성이지만, 조회 후 주문이 생겼거나 API를 직접 호출한 경우를 여기서 거른다.
-        if (orderProductRepository.countOngoingByUserId(user.getId(), FINISHED_ORDER_STATUSES) > 0) {
+        WithdrawalInfoResponse.Blockers blockers = withdrawalBlockers(user.getId());
+        if (blockers.getOngoingOrders() > 0) {
             throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER);
+        }
+        // 반품 · 교환 진행 · 미결제 재발송비 · 송금 대기 운임 환급도 막는다(1021 기-31) — 같은 코드 · 사유 문장만 다르다.
+        if (blockers.getOpenClaims() > 0) {
+            throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER, "진행 중인 반품 · 교환이 있어 지금은 탈퇴할 수 없습니다.");
+        }
+        if (blockers.getUnpaidCharges() > 0) {
+            throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER, "결제하지 않은 재발송 배송비가 있어 지금은 탈퇴할 수 없습니다.");
+        }
+        if (blockers.getPendingTransfers() > 0) {
+            throw new BusinessException(ErrorCode.WITHDRAWAL_BLOCKED_BY_ORDER, "아직 송금되지 않은 환급금이 있어 지금은 탈퇴할 수 없습니다.");
+        }
+
+        // 2-1. 인플루언서는 스튜디오에서 탈퇴를 신청해 운영자 승인을 받아야 한다 — 소비자 탈퇴로 심사를 우회하지 않는다.
+        if (isUnwithdrawnCreator(user)) {
+            throw new BusinessException(ErrorCode.USER_WITHDRAWAL_REQUIRES_CREATOR_REVIEW);
         }
 
         // 기존 상태 임시 저장 (히스토리 기록용)

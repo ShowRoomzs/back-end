@@ -15,7 +15,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.post.DTO.PostImpressionRequest;
 
-@Tag(name = "User - Post Impression", description = "게시물 노출 적재 API (§24-7)")
+@Tag(name = "User - Post Impression", description = "사용자 게시물 노출 적재 API")
 public interface UserPostImpressionControllerDocs {
 
     @Operation(

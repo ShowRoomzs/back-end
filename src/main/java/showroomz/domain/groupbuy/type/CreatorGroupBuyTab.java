@@ -20,7 +20,7 @@ public enum CreatorGroupBuyTab {
     /** 중단 예정은 탭에 없고 진행중 탭에 배지로만 들어간다. */
     IN_PROGRESS(EnumSet.of(GroupBuyStatus.IN_PROGRESS, GroupBuyStatus.SUSPENSION_SCHEDULED)),
     /** 종료·정산 — 중단도 여기 들어간다(종결 3종 전부). */
-    ENDED(EnumSet.of(GroupBuyStatus.ENDED, GroupBuyStatus.SETTLED, GroupBuyStatus.SUSPENDED));
+    ENDED(EnumSet.of(GroupBuyStatus.ENDED, GroupBuyStatus.SETTLED, GroupBuyStatus.SUSPENDED, GroupBuyStatus.TERMINATED));
 
     private final Set<GroupBuyStatus> statuses;
 

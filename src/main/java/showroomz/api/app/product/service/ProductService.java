@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.product.DTO.ProductDto;
+import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
@@ -489,7 +490,8 @@ public class ProductService {
                 .shippingLeadDays(ShipDuePolicy.businessDaysOf(market))
                 .shipDueText(ShipDuePolicy.noticeText(ShipDuePolicy.businessDaysOf(market)))
                 .deliveryFee(market.getDefaultDeliveryFee())
-                .freeShippingThreshold(market.getFreeShippingThreshold())
+                .freeShippingThreshold(FreeShippingPolicy.thresholdOf(market))
+                .jejuSurcharge(market.getJejuSurcharge())
                 .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
                 .returnFee(claimFee)
                 .exchangeFee(claimFee)

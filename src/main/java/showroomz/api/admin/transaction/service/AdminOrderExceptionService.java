@@ -7,6 +7,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.global.health.IntegrationHealthRegistry;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionKind;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionTab;
@@ -28,10 +29,13 @@ import showroomz.global.error.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 어드민 예외 관리(06d · 40 설계서) — 처리 지연(당사자 기한 경과)과 배송 예외(택배 · 추적 이상)의 모니터. <b>쓰기가 없다</b> — [열기]로
@@ -57,6 +61,7 @@ public class AdminOrderExceptionService {
     private final OrderProperties orderProperties;
     private final DeliveryTrackerProperties trackerProperties;
     private final StalledPolicy stalledPolicy;
+    private final IntegrationHealthRegistry healthRegistry;
 
     public AdminOrderExceptionDto.ExceptionPage getExceptions(ExceptionTab tab, ExceptionKind kind, String keyword,
                                                               PagingRequest paging) {
@@ -88,9 +93,24 @@ public class AdminOrderExceptionService {
 
     /** 탭 · 유형 건수 · 대행 가능 · 배지 — 폴링 대상이라 문장 조립을 건너뛴다(40 설계서 7-3 #2). */
     public AdminOrderExceptionDto.ExceptionSummary getSummary() {
+        return getSummaryWithOldest().summary();
+    }
+
+    /**
+     * 요약 + 탭별 가장 오래된 경과 기준 시각 — 어드민 홈 대기 행의 경과(56 E1). 목록 「경과」 열 · 정렬과 같은 기준({@link Row#basisAt()}:
+     * 처리 지연은 기한, 배송 예외는 유형별 기준 시각)이고 요약과 같은 한 번의 계산이라 홈이 따로 세지 않는다.
+     */
+    public SummaryWithOldest getSummaryWithOldest() {
         LocalDateTime now = LocalDateTime.now();
         List<Row> delays = delays(now);
         List<Row> deliveries = deliveryExceptions(now);
+        Map<ExceptionTab, LocalDateTime> oldest = new EnumMap<>(ExceptionTab.class);
+        oldestBasisAt(delays).ifPresent(at -> oldest.put(ExceptionTab.DELAY, at));
+        oldestBasisAt(deliveries).ifPresent(at -> oldest.put(ExceptionTab.DELIVERY, at));
+        return new SummaryWithOldest(summarize(now, delays, deliveries), oldest);
+    }
+
+    private AdminOrderExceptionDto.ExceptionSummary summarize(LocalDateTime now, List<Row> delays, List<Row> deliveries) {
         Map<String, Long> kindCounts = new LinkedHashMap<>();
         for (ExceptionKind kind : ExceptionKind.values()) {
             kindCounts.put(kind.name(), 0L);
@@ -104,6 +124,19 @@ public class AdminOrderExceptionService {
         long badge = "DELAY".equals(scope) ? delays.size() : delays.size() + deliveries.size();
         return new AdminOrderExceptionDto.ExceptionSummary(now, tabCounts, kindCounts,
                 delays.stream().filter(Row::actOnBehalf).count(), badge, scope);
+    }
+
+    private static Optional<LocalDateTime> oldestBasisAt(List<Row> rows) {
+        return rows.stream().map(Row::basisAt).filter(Objects::nonNull).min(Comparator.naturalOrder());
+    }
+
+    /** @param oldestBasisAt 탭별 가장 오래된 경과 기준 시각 — 그 탭이 비었거나 기준 시각이 모두 없으면 키가 없다 */
+    public record SummaryWithOldest(AdminOrderExceptionDto.ExceptionSummary summary,
+                                    Map<ExceptionTab, LocalDateTime> oldestBasisAt) {
+
+        public LocalDateTime oldest(ExceptionTab tab) {
+            return oldestBasisAt.get(tab);
+        }
     }
 
     // ------------------------------------------------------------------ 처리 지연(40 설계서 1-1)
@@ -143,12 +176,14 @@ public class AdminOrderExceptionService {
         List<Row> rows = new ArrayList<>();
         List<OrderDeliveryGroup> groups = deliveryGroupRepository.findDeliveryExceptionsForAdmin(cap);
         warnIfCapped(ExceptionKind.TRACKING_STALLED, groups.size());
+        // 추적 연동 장애 중에는 「추적 정지」가 장애 때문일 수 있다 — 판정과 함께 집계에서도 뺀다(1017 설계서 6-3 · 어드민 홈 배너).
+        boolean trackingDegraded = healthRegistry.isTrackingDegraded(now);
         for (OrderDeliveryGroup group : groups) {
             if (group.getFulfillmentStatus() == FulfillmentStatus.RETURNING) {
                 rows.add(new Row(ExceptionKind.RETURNING, group, null, null, group.getReturnDetectedAt(), false));
             } else if (group.getTrackingAlert() == TrackingAlert.PICKUP_UNCONFIRMED) {
                 rows.add(new Row(ExceptionKind.PICKUP_UNCONFIRMED, group, null, null, group.getShippedAt(), false));
-            } else if (group.getTrackingAlert() == TrackingAlert.STALLED) {
+            } else if (group.getTrackingAlert() == TrackingAlert.STALLED && !trackingDegraded) {
                 // 종결 조건(41 보고 3번) — N일 경과면 운영자가 분실 · 배송완료를 판정할 수 있다(조건 표시만 · 06a 레일에서 고른다).
                 rows.add(new Row(ExceptionKind.TRACKING_STALLED, group, null, null,
                         group.getLastTrackingAt() != null ? group.getLastTrackingAt() : group.getShippedAt(),

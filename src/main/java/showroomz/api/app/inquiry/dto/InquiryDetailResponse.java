@@ -36,6 +36,13 @@ public class InquiryDetailResponse {
     @Schema(description = "반려 이의 대상 클레임 ID — 「이의 제기」로 쓴 문의만, 아니면 null")
     private Long claimId;
 
+    @Schema(description = "계정 이용 정지 소명 문의인가 — true 면 typeName 이 「계정 이용 정지」이고 유형 · 주문은 고칠 수 없다(C20 1d)")
+    private boolean sanctionAppeal;
+
+    @Schema(description = "운임 환급 계좌 안내 대상 환불 건 — 「환불 계좌 안내」 문의만(typeName 도 그 문장), 아니면 null(1021 설계서 4-5)",
+            example = "905")
+    private Long refundTaskId;
+
     @Schema(description = "연결된 주문 요약 — 상세 상단 주문 카드용. 주문을 연결하지 않았으면 null (블록 자체를 노출하지 않는다)")
     private InquiryOrderSummary order;
 
@@ -69,13 +76,15 @@ public class InquiryDetailResponse {
         return InquiryDetailResponse.builder()
                 .id(inquiry.getId())
                 .type(type.name())
-                .typeName(type.getDescription())
+                .typeName(inquiry.typeName())
                 .content(inquiry.getContent())
                 // 지연 로딩 컬렉션(@ElementCollection)이라 트랜잭션 안에서 복사해 넘긴다 —
                 // 원본을 그대로 실으면 직렬화 시점에 세션이 닫혀 응답 쓰기가 실패한다.
                 .imageUrls(List.copyOf(inquiry.getImageUrls()))
                 .orderId(inquiry.getOrderId())
                 .claimId(inquiry.getClaimId())
+                .sanctionAppeal(inquiry.isSanctionAppeal())
+                .refundTaskId(inquiry.getRefundTaskId())
                 .order(order)
                 .writerNickname(writer.getNickname())
                 .writerProfileImageUrl(writer.getProfileImageUrl())

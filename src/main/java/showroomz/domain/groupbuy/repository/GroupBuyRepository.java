@@ -144,6 +144,12 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
     @Query("SELECT g.status, COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId GROUP BY g.status")
     List<Object[]> countByStatus(@Param("marketId") Long marketId);
 
+    /** 판매 중(진행중 · 중단 예정) 공구 수를 인플루언서별로 — [creatorId, count]. 어드민 브랜드 상세 연결 인플루언서 행(52 설계서 2-4). */
+    @Query("SELECT g.creator.id, COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId "
+            + "AND g.status IN (showroomz.domain.groupbuy.type.GroupBuyStatus.IN_PROGRESS, "
+            + "    showroomz.domain.groupbuy.type.GroupBuyStatus.SUSPENSION_SCHEDULED) GROUP BY g.creator.id")
+    List<Object[]> countSellingByCreatorForMarket(@Param("marketId") Long marketId);
+
     /** GNB 배지 ① — 최소 물량 확인 대기(B1 「내 차례인 줄만 경고 톤」). */
     @Query("SELECT COUNT(g) FROM GroupBuy g WHERE g.market.id = :marketId "
             + "AND g.status = showroomz.domain.groupbuy.type.GroupBuyStatus.PREPARING "
@@ -236,4 +242,29 @@ public interface GroupBuyRepository extends JpaRepository<GroupBuy, Long>, Group
         }
         return titles;
     }
+
+    /** 첫 공구 가이드(1017 설계서 4-1) — 한 번이라도 오픈된 공구가 있는가. */
+    boolean existsByMarket_IdAndOpenedAtIsNotNull(Long marketId);
+
+    /** 홈 — 마켓의 공구를 상태별로(진행 중 실시간 · 오픈 예정 · 달력). 계약을 함께 읽는다. */
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.contract JOIN FETCH g.creator WHERE g.market.id = :marketId "
+            + "AND g.status IN :statuses ORDER BY g.startAt ASC, g.id ASC")
+    List<GroupBuy> findByMarketAndStatuses(@Param("marketId") Long marketId,
+                                           @Param("statuses") Collection<GroupBuyStatus> statuses);
+
+    /** 홈 달력 — 기간이 [from, to) 와 겹치는 마켓의 공구. */
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.contract WHERE g.market.id = :marketId "
+            + "AND g.startAt < :to AND g.endAt >= :from ORDER BY g.startAt ASC, g.id ASC")
+    List<GroupBuy> findOverlappingForMarket(@Param("marketId") Long marketId, @Param("from") LocalDateTime from,
+                                            @Param("to") LocalDateTime to);
+
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.contract JOIN FETCH g.market WHERE g.creator.id = :creatorId "
+            + "AND g.status IN :statuses ORDER BY g.startAt ASC, g.id ASC")
+    List<GroupBuy> findByCreatorAndStatuses(@Param("creatorId") Long creatorId,
+                                            @Param("statuses") Collection<GroupBuyStatus> statuses);
+
+    @Query("SELECT g FROM GroupBuy g JOIN FETCH g.contract WHERE g.creator.id = :creatorId "
+            + "AND g.startAt < :to AND g.endAt >= :from ORDER BY g.startAt ASC, g.id ASC")
+    List<GroupBuy> findOverlappingForCreator(@Param("creatorId") Long creatorId, @Param("from") LocalDateTime from,
+                                             @Param("to") LocalDateTime to);
 }

@@ -39,7 +39,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.time.LocalDate;
 
-@Tag(name = "Seller - Order", description = "파트너센터 주문 관리 API (§34)")
+@Tag(name = "Seller - Order", description = "파트너센터 주문 관리 API")
 public interface SellerOrderControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -107,6 +107,9 @@ public interface SellerOrderControllerDocs {
             @Parameter(description = "정렬 — OLDEST_FIRST(작업 큐 기본) · LATEST_FIRST(조회 탭 기본) · SHIP_DUE_ASC(발송기한 빠른순)",
                     example = "OLDEST_FIRST")
             @RequestParam(required = false) OrderSortType sort,
+            @Parameter(description = "발송 기한 경과만 — 신규 · 상품준비중 중 발송기한이 지난 건(홈 「발송 기한 경과」 진입 · `tab=ALL&shipOverdue=true`)",
+                    example = "false")
+            @RequestParam(required = false) boolean shipOverdue,
             @ModelAttribute PagingRequest pagingRequest);
 
     @Operation(
@@ -124,6 +127,8 @@ public interface SellerOrderControllerDocs {
                     - `incomingCheck` · `reshipExchange`는 반품·교환 **클레임(항목) 건수**다 — 하위주문 수가 아니다.
                       `incomingCheck` = 검수 단계(브랜드 도착 + 입고 확인 후 검수 대기), `reshipExchange` = 재발송 대기.
                       각각 `GET /v1/seller/claims/summary` 의 `tabCounts.INSPECTION` · `tabCounts.RESHIP` 과 같은 수다.
+                    - `shipOverdue` = 신규 · 상품준비중 중 발송기한이 지난 건(취소 요청 건 포함) — 위 칸들에 이미 든 건이라 따로 더하지 않는다.
+                      목록 진입은 `tab=ALL&shipOverdue=true`(파트너 홈 「발송 기한 경과」).
                     - 「배송완료 처리」 칸은 없다 — 자동 전환이라 상시 대기 항목이 아니다.
                     """)
     @ApiResponses({
@@ -136,7 +141,8 @@ public interface SellerOrderControllerDocs {
                                         "invoiceRegister": 7,
                                         "deliveryIssue": 3,
                                         "incomingCheck": 4,
-                                        "reshipExchange": 2
+                                        "reshipExchange": 2,
+                                        "shipOverdue": 1
                                       },
                                       "tabCounts": {
                                         "ALL": 128, "NEW": 12, "PREPARING": 7, "CANCEL_REQUESTED": 2, "SHIPPING": 21,
@@ -533,8 +539,14 @@ public interface SellerOrderControllerDocs {
 
                     **권한:** SELLER
                     """)
-    @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
-            content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary")))
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "xlsx 바이너리(Content-Disposition attachment)",
+                    content = @Content(mediaType = XLSX, schema = @Schema(type = "string", format = "binary"))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "FORBIDDEN — SELLER 가 아님(CREATOR 포함)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
     ResponseEntity<byte[]> shipmentTemplate();
 
     @Operation(
@@ -583,6 +595,26 @@ public interface SellerOrderControllerDocs {
     ResponseEntity<SellerOrderDetailResponse> updateShipment(
             @Parameter(description = "하위주문 id", example = "1024") @PathVariable Long deliveryGroupId,
             @Valid @RequestBody ShipmentUpdateRequest request);
+
+    @Operation(summary = "소비자 환불 선택 처리 (10c C7b · 1021 기-15)", description = """
+            추적 정지 건에서 소비자가 **환불**을 골랐을 때(`stallChoice.choice = REFUND` · `canRefund = true`) 처리한다.
+            분실 판정과 같은 효과 — 하위주문 취소(재고 원복 없음) · 항목 + 배송비 PG 자동 환불 · 이력 「배송 분실 처리」.
+            운영자 분실 판정의 「추적 정지 N일」 조건은 면제된다(소비자 선택이 근거).
+
+            소비자가 **재발송**을 골랐으면 이 API 가 아니라 송장 수정(`PATCH /{deliveryGroupId}/shipment`)으로 새 송장을 등록한다 — 이력
+            「추적 정지 후 재발송」이 남는다.
+
+            **권한:** SELLER (내 브랜드 주문만)
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "처리 후 상세"),
+            @ApiResponse(responseCode = "404", description = "ORDER_GROUP_NOT_FOUND — 없는 주문 · 타 브랜드 주문",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "ORDER_STATE_CHANGED — 소비자가 환불을 고르지 않았거나 추적 정지 · 배송중이 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<SellerOrderDetailResponse> refundStallChoice(
+            @Parameter(description = "하위주문 id", example = "1024") @PathVariable Long deliveryGroupId);
 
     // ── 취소 ────────────────────────────────────────────────────────────────
 
@@ -678,9 +710,9 @@ public interface SellerOrderControllerDocs {
             summary = "취소 요청 거부",
             description = """
                     E7 — 사유 필수(소비자에게 그대로 전달 · 약관 제18조①). 사유는 드롭다운 `reasonCode` —
-                    `ALREADY_PACKED`(이미 포장·출고가 완료됨) · `PICKED_UP`(택배사 집화가 완료됨) · `MADE_TO_ORDER`(주문 제작·맞춤 상품) ·
+                    `ALREADY_PACKED`(이미 포장·출고가 완료됨) · `PICKED_UP`(택배사 집화가 완료됨) · (`MADE_TO_ORDER` 는 1021 기-33 으로 삭제 — 400) ·
                     `ETC`(기타 — `detail` 필수). **환불은 일어나지 않는다.** 전 항목 배송이 진행되고 소비자는 수령 후 반품으로만 돌릴 수
-                    있다(반품비 발생).
+                    있다(단순 변심 반품이면 반송 배송비는 소비자 부담 · 기-18).
 
                     **응답 기한 1영업일**(주말·공휴일 제외) — 요청 + 1영업일의 끝까지 승인·거부하지 않으면 **자동 승인**되고 PG 가 즉시
                     환불한다. 목록 · 상세의 `cancelRequest.respondDueAt` 가 그 시각이다.

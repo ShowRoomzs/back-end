@@ -22,4 +22,10 @@ public interface SettlementHistoryRepository extends JpaRepository<SettlementHis
                                                    @Param("types") Collection<SettlementEventType> types);
 
     long countBySettlementIdAndEventType(Long settlementId, SettlementEventType eventType);
+
+    /** 07a 차감 탭의 재계산 가상 행(1021 설계서 6-3) — 최신순. */
+    List<SettlementHistory> findByEventTypeOrderByOccurredAtDescIdDesc(SettlementEventType eventType);
+
+    boolean existsBySettlementIdAndEventType(Long settlementId,
+                                             showroomz.domain.settlement.type.SettlementEventType eventType);
 }

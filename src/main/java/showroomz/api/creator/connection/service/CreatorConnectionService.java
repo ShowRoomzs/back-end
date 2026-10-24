@@ -1,10 +1,17 @@
 package showroomz.api.creator.connection.service;
 
+import showroomz.domain.message.entity.MessageThread;
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.api.creator.connection.dto.ConnectionCodeResponse;
 import showroomz.api.creator.connection.dto.ConnectionRequestItem;
 import showroomz.api.creator.connection.type.ConnectionRequestStatusFilter;
@@ -27,10 +34,12 @@ import showroomz.global.utils.ConnectionCodeGenerator;
 @Transactional(readOnly = true)
 public class CreatorConnectionService {
 
+    private final NotificationPublisher notificationPublisher;
     private final ConnectionRepository connectionRepository;
     private final UserRepository userRepository;
     private final CreatorRepository creatorRepository;
     private final MessageThreadService messageThreadService;
+    private final CreatorSanctionGuard sanctionGuard;
 
     /**
      * §14-3 요청함 탭 — 받은 연결 요청 목록(브랜드가 발신 주체, §13-6).
@@ -52,7 +61,8 @@ public class CreatorConnectionService {
                         c.getMarket().getMarketName(),
                         c.getMarket().getMarketImageUrl(),
                         c.getStatus(),
-                        c.getRequestedAt()));
+                        c.getRequestedAt(),
+                        !c.getMarket().isSuspended()));
         return PageResponse.of(page);
     }
 
@@ -67,8 +77,15 @@ public class CreatorConnectionService {
     @Transactional
     public void accept(String creatorEmail, Long connectionId) {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
+        // 탈퇴 신청 심사 중에는 새 연결 수락 차단(스튜디오 S7 · 53 설계서 4-2).
+        sanctionGuard.requireCanAcceptConnection(connection.getCreator());
+        // 요청한 브랜드가 정지 중이면 수락하지 않는다 — 상대 사정은 밝히지 않는다(ui-studio-13 rev.1 · 1017 설계서 8-6).
+        if (connection.getMarket().isSuspended()) {
+            throw new BusinessException(ErrorCode.BRAND_COUNTERPARTY_SUSPENDED);
+        }
         connection.markConnected();
-        messageThreadService.activateThread(connection);
+        MessageThread thread = messageThreadService.activateThread(connection);
+        notifyBrand(connection, NotificationType.CONNECTION_ACCEPTED, "연결 요청을 수락했습니다", thread.getId());
     }
 
     /** §14-4 거절 — 해제(거절) 상태로 전이. */
@@ -76,6 +93,15 @@ public class CreatorConnectionService {
     public void reject(String creatorEmail, Long connectionId) {
         Connection connection = getMyRequestedConnection(creatorEmail, connectionId);
         connection.markRejected();
+        notifyBrand(connection, NotificationType.CONNECTION_REJECTED, "연결 요청을 거절했습니다", null);
+    }
+
+    /** 파트너 알림 「연결·소통 › 해당 인플루언서 스레드」(16 알림 표). */
+    private void notifyBrand(Connection connection, NotificationType type, String sentence, Long threadId) {
+        String showroom = connection.getCreator().getShowroomName();
+        notificationPublisher.publish(NotificationCommand.toSeller(connection.getMarket().getId(), type)
+                .actorType(NotificationActorType.CREATOR).actorName(showroom).title(sentence)
+                .targetType(NotificationTargetType.THREAD).targetId(threadId).build());
     }
 
     public ConnectionCodeResponse getMyConnectionCode(String creatorEmail) {

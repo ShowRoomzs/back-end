@@ -25,7 +25,7 @@ import showroomz.api.creator.showroom.type.StatsPeriod;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Creator - Post", description = "쇼룸 스튜디오 게시물 관리 API (§24)")
+@Tag(name = "Creator - Post", description = "쇼룸 스튜디오 게시물 관리 API")
 public interface PostControllerDocs {
 
     @Operation(
@@ -104,7 +104,13 @@ public interface PostControllerDocs {
                                         { "status": "DRAFT", "label": "작성중", "count": 2 }
                                       ]
                                     }
-                                    """)))
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "권한 없음 (CREATOR 아님)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "크리에이터 정보를 찾을 수 없음 (CREATOR_NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<PostDto.PostPageResponse> getPostList(
             @AuthenticationPrincipal UserPrincipal userPrincipal,

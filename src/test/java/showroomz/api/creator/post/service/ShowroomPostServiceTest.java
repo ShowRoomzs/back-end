@@ -13,6 +13,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.creator.post.DTO.PostDto;
 import showroomz.api.creator.post.type.PostSaveAction;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostAppeal;
@@ -21,6 +22,7 @@ import showroomz.domain.post.policy.GeneralPostPolicy;
 import showroomz.domain.post.policy.PostPolicies;
 import showroomz.domain.post.repository.PostAppealRepository;
 import showroomz.domain.post.repository.PostImageRepository;
+import showroomz.domain.post.repository.PostOriginalDownloadRepository;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.post.repository.PostSuspensionRepository;
 import showroomz.domain.post.service.PostNotificationService;
@@ -73,6 +75,10 @@ class ShowroomPostServiceTest {
     private CreatorRepository creatorRepository;
     @Mock
     private PostNotificationService postNotificationService;
+    @Mock
+    private PostOriginalDownloadRepository postOriginalDownloadRepository;
+    @Mock
+    private CreatorSanctionGuard sanctionGuard;
 
     private final PostProperties postProperties = new PostProperties();
     private final PostPolicies postPolicies = new PostPolicies(List.of(new GeneralPostPolicy()));
@@ -85,7 +91,8 @@ class ShowroomPostServiceTest {
         me = Creator.builder().id(CREATOR_ID).showroomName("뷰티 소연").build();
         showroomPostService = new ShowroomPostService(
                 postRepository, postImageRepository, postSuspensionRepository, postAppealRepository,
-                creatorRepository, postPolicies, postNotificationService, postProperties);
+                creatorRepository, postPolicies, postNotificationService, postProperties, sanctionGuard,
+                postOriginalDownloadRepository);
 
         given(creatorRepository.findByUser_Id(USER_ID)).willReturn(Optional.of(me));
         given(postRepository.save(any(Post.class))).willAnswer(invocation -> {
@@ -241,7 +248,7 @@ class ShowroomPostServiceTest {
     void rejectsAppealAfterDeadline() {
         Post post = publishedPost();
         post.suspend();
-        PostSuspension expired = new PostSuspension(post, PostSuspensionReason.AD_DISCLOSURE, null, null,
+        PostSuspension expired = new PostSuspension(post, PostSuspensionReason.MISLEADING_INFO, null, (String) null,
                 9L, LocalDateTime.now().minusDays(10), LocalDateTime.now().minusDays(3));
         given(postRepository.findById(POST_ID)).willReturn(Optional.of(post));
         given(postSuspensionRepository.findFirstByPost_IdAndResolutionIsNullOrderBySuspendedAtDesc(POST_ID))
@@ -579,7 +586,7 @@ class ShowroomPostServiceTest {
     }
 
     private PostSuspension suspension(Post post) {
-        return new PostSuspension(post, PostSuspensionReason.AD_DISCLOSURE, null, "운영정책 제12조",
+        return new PostSuspension(post, PostSuspensionReason.MISLEADING_INFO, null, "운영정책 제12조",
                 9L, LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(6));
     }
 

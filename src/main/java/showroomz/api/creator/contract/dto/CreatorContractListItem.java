@@ -1,5 +1,6 @@
 package showroomz.api.creator.contract.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.api.creator.contract.type.CreatorDeadlineDisplayType;
 import showroomz.domain.contract.entity.Contract;
@@ -61,7 +62,10 @@ public record CreatorContractListItem(
         ContractStatusTone statusTone,
 
         @Schema(description = "「내 서명 기한」 열의 판정 결과")
-        Deadline deadline
+        Deadline deadline,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 
     /**
@@ -101,7 +105,8 @@ public record CreatorContractListItem(
                 status,
                 status.getLabel(),
                 status.getTone(),
-                deadlineOf(contract, now));
+                deadlineOf(contract, now),
+                SanctionHoldView.forCreator(contract));
     }
 
     /** 설계서 2-2의 여섯 갈래 표를 그대로 옮긴 곳 — 이 판정이 사는 유일한 자리다. */

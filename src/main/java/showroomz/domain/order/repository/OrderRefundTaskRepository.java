@@ -71,4 +71,13 @@ public interface OrderRefundTaskRepository extends JpaRepository<OrderRefundTask
             + "AND t.status = showroomz.domain.order.type.RefundTaskStatus.DONE ORDER BY t.id ASC")
     List<OrderRefundTask> findDoneByGroupBuyAndSource(@Param("groupBuyId") Long groupBuyId,
                                                       @Param("source") showroomz.domain.order.type.RefundTaskSource source);
+
+    /** 송금 대기 건수(1021 설계서 4-5 · 06c 요약 · 어드민 홈 큐). */
+    long countByMethodAndStatus(showroomz.domain.order.type.RefundMethod method, RefundTaskStatus status);
+
+    /** 소비자 탈퇴 차단(1021 기-31) — 아직 송금하지 않은 운임 환급(받을 돈이 남아 있다). */
+    @Query("SELECT COUNT(t) FROM OrderRefundTask t WHERE t.order.user.id = :userId "
+            + "AND t.method = showroomz.domain.order.type.RefundMethod.BANK_TRANSFER "
+            + "AND t.status = showroomz.domain.order.type.RefundTaskStatus.PENDING")
+    long countPendingTransfersByUser(@Param("userId") Long userId);
 }

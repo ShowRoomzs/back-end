@@ -22,7 +22,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.settlement.docs.AdminSettlementDocsExamples.*;
 
-@Tag(name = "Admin - Settlement", description = "관리자 정산 관리 API (07a · 07b)")
+@Tag(name = "Admin - Settlement", description = "관리자 정산 관리 API")
 public interface AdminSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -200,7 +200,7 @@ public interface AdminSettlementControllerDocs {
                     - 계좌는 **전체 노출**(기본정보 정책). `accountSource` — `SNAPSHOT`(지급 지시 때 찍은 값) · `CURRENT_PROFILE`(지시 전 — 회원 정보의 현재 계좌) · `NONE`(플랫폼 · 계좌 없음)
                     - `status` — `SCHEDULED`(지급 예정) · `REQUESTED`(지급 처리 중) · `PAID` · `FAILED`(분배 실패) · `BLOCKED`(증빙 · 주민번호 보류) · `NOT_APPLICABLE`(0원 행 「—」)
                     - 재분배 뒤에도 지난 실패 기록(`failedAt` · `failCode` · `failReason`)은 남고 `attempt` 가 늘어납니다
-                    - `check` — tfoot 검산: 수취자 합 + PG 수수료 + 원천징수(`total`) = 확정 거래액 + 재발송비 + 소비자 배송비(`inflowAmount`) → `balanced`
+                    - `check` — tfoot 검산: 수취자 합 + PG 수수료 + 원천징수(`total`) = 확정 거래액 + 재발송비 + 소비자 배송비 + 반품 시 차감한 최초 배송비 ± 운임 정산(`inflowAmount`) → `balanced`
 
                     **증빙 `taxDocuments[]`** — 브랜드 세금계산서(기한 = 확정 다음 달 10일) · 사업자면 인플루언서 세금계산서 · 지급 완료 뒤 원천징수영수증.
                     승인번호는 앞 8 · 뒤 4 만 보입니다. 문서별 `actions.canVerify`(M4) · `canRegister`(M5)가 버튼입니다.

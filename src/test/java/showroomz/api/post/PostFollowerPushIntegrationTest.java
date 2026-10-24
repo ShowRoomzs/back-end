@@ -1,5 +1,9 @@
 package showroomz.api.post;
 
+import showroomz.domain.notification.service.NotificationSchedule;
+import showroomz.domain.notification.service.NotificationMaintenanceService;
+import showroomz.domain.notification.repository.NotificationRepository;
+import showroomz.domain.notification.repository.NotificationPushOutboxRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -43,7 +47,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * §24-3 "크리에이터가 게시하면 팔로워에게 알림이 간다"를 <b>HTTP 요청 한 번에서 FCM 호출까지</b>
- * 통째로 태운다.
+ * 통째로 태운다. 1017 C15 부터 팔로워 새 게시물은 <b>광고성 하루 묶음</b>이다 — 게시 시점에는 팔로워별 알림함 행 · 지연 푸시가
+ * 쌓이고, 묶음 시각에 지연 푸시 배치가 보낸다(야간 21~08시 미발송). 테스트는 배치를 묶음 시각 직후로 직접 부른다.
  *
  * <p>단위 테스트로는 이 기능이 동작한다고 말할 수 없다. 게시 → 이력 적재 → 커밋 → 이벤트 →
  * 비동기 발송의 다섯 단계가 스프링의 서로 다른 장치(트랜잭션 이벤트·{@code @Async}·프록시)에
@@ -53,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>발송 어댑터만 대역으로 바꾼다. FCM 서버를 부르지 않으면서 <b>누구에게 갔는지</b>는 그대로 본다.
  */
-@DisplayName("[통합] §24-3 게시 → 팔로워 푸시")
+@DisplayName("[통합] §24-3 게시 → 팔로워 하루 묶음 푸시(1017 C15)")
 class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
 
     private static final String CREATOR_POSTS = "/v1/creator/posts";
@@ -73,6 +78,14 @@ class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
     private DeviceTokenRepository deviceTokenRepository;
     @Autowired
     private PostNotificationLogRepository postNotificationLogRepository;
+    @Autowired
+    private NotificationPushOutboxRepository outboxRepository;
+    @Autowired
+    private NotificationRepository notificationRepository;
+    @Autowired
+    private NotificationMaintenanceService maintenanceService;
+    @Autowired
+    private NotificationSchedule notificationSchedule;
 
     @MockitoBean
     private PushSender pushSender;
@@ -113,11 +126,15 @@ class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
 
         assertThat(pushedTokens).containsExactly("token-mia");
         assertThat(pushedMessages).hasSize(1);
-        assertThat(pushedMessages.get(0).title()).isEqualTo("제니의 뷰티룸");
-        assertThat(pushedMessages.get(0).body()).isEqualTo("아침 루틴 정리했어요");
+        // 광고성 — 제목 앞 (광고) · 본문 끝 수신거부 방법(정보통신망법 §50 · C11)
+        assertThat(pushedMessages.get(0).title()).isEqualTo("(광고) 제니의 뷰티룸에 새 게시물이 올라왔어요");
+        assertThat(pushedMessages.get(0).body()).isEqualTo("아침 루틴 정리했어요\n수신거부: 마이 > 설정 > 알림");
         assertThat(pushedMessages.get(0).data())
-                .containsEntry("type", PostNotificationEvent.PUBLISHED_TO_FOLLOWERS.name())
-                .containsEntry("postId", String.valueOf(postId));
+                .containsEntry("type", "NOTIFICATION")
+                .containsEntry("notificationType", "FOLLOW_POST_PUBLISHED")
+                .containsEntry("targetType", "SHOWROOM")
+                .containsEntry("targetId", String.valueOf(showroom.getId()));
+        assertThat(postId).isNotNull();
     }
 
     /**
@@ -192,6 +209,7 @@ class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
         createPost("아직 다듬는 중", "DRAFT");
 
         Thread.sleep(300);
+        assertThat(outboxRepository.count()).isZero();
         assertThat(pushedTokens).isEmpty();
     }
 
@@ -202,7 +220,7 @@ class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
      * 아무도 모르다가, 정작 신고가 들어왔을 때 이력을 믿을 수 없게 된다. 그래서 여기서 못 박는다.
      */
     @Test
-    @DisplayName("발송에 성공하면 이력의 전달 여부가 true로 갱신된다")
+    @DisplayName("팔로워 묶음 대기열에 오르면 이력의 전달 여부가 true로 갱신된다")
     void deliveredFlagIsPersisted() throws Exception {
         registerDevice(follower("mia", "미아"), "token-mia");
 
@@ -254,6 +272,39 @@ class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
                 .satisfies(entry -> assertThat(entry.getDelivered()).isTrue());
     }
 
+    /** C15 「같은 쇼룸 소식은 하루에 한 번 묶어서」 — 두 게시물은 알림함 1행 · 푸시 1건이다. */
+    @Test
+    @DisplayName("같은 쇼룸의 게시물은 하루 묶음 1건(새 게시물 2개)으로 간다")
+    void postsAreDigestedPerDay() throws Exception {
+        Users follower = follower("mia", "미아");
+        registerDevice(follower, "token-mia");
+
+        createPost("첫 번째 글", "PUBLISH");
+        await(() -> notificationRepository.count() == 1, "첫 게시물 알림이 적재되지 않았다");
+        createPost("두 번째 글", "PUBLISH");
+        await(() -> notificationRepository.findAll().stream().anyMatch(n -> n.getDigestCount() == 2),
+                "두 번째 게시물이 묶음에 합쳐지지 않았다");
+
+        awaitPush();
+
+        assertThat(notificationRepository.count()).isEqualTo(1);
+        assertThat(pushedMessages).singleElement()
+                .satisfies(m -> assertThat(m.title()).isEqualTo("(광고) 제니의 뷰티룸에 새 게시물 2개가 올라왔어요"));
+    }
+
+    /** C15 「밤 9시~아침 8시에는 보내지 않아요」 — 배치가 야간에 돌아도 보내지 않는다. */
+    @Test
+    @DisplayName("야간(21~08시)에는 묶음 푸시를 보내지 않는다")
+    void quietHoursHoldBackPush() throws Exception {
+        registerDevice(follower("mia", "미아"), "token-mia");
+        createPost("야간 테스트", "PUBLISH");
+        await(() -> outboxRepository.count() > 0, "팔로워 묶음 푸시가 적재되지 않았다");
+
+        LocalDateTime night = LocalDateTime.now().plusDays(1).withHour(23).withMinute(0);
+        assertThat(maintenanceService.sendDue(night)).isZero();
+        assertThat(pushedTokens).isEmpty();
+    }
+
     // ------------------------------------------------------------------ 스텝
 
     private Long createPost(String content, String action) throws Exception {
@@ -271,8 +322,12 @@ class PostFollowerPushIntegrationTest extends IntegrationTestSupport {
         return objectMapper.readTree(body).get("postId").asLong();
     }
 
-    /** 발송은 커밋 이후 별도 스레드에서 일어난다 — 요청이 끝났다고 끝난 것이 아니다 */
+    /**
+     * 적재는 커밋 이후 별도 스레드에서 일어난다 — 요청이 끝났다고 끝난 것이 아니다. 지연 푸시 행이 생기면 묶음 시각 직후로 배치를 돌린다.
+     */
     private void awaitPush() throws InterruptedException {
+        await(() -> outboxRepository.count() > 0, "팔로워 묶음 푸시가 적재되지 않았다");
+        maintenanceService.sendDue(notificationSchedule.digestSlot(LocalDateTime.now()).plusMinutes(1));
         await(() -> !pushedTokens.isEmpty(), "푸시가 발송되지 않았다");
     }
 

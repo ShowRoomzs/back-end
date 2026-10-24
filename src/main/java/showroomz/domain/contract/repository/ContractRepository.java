@@ -1,5 +1,6 @@
 package showroomz.domain.contract.repository;
 
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -50,6 +51,12 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     int softDelete(@Param("contractId") Long contractId,
                    @Param("statuses") Collection<ContractStatus> statuses,
                    @Param("now") LocalDateTime now);
+
+    /** 브랜드 탈퇴 승인 — 작성중(보내지 않은 초안)은 함께 삭제한다(§51-5 · 52 설계서 4-3). 영속성 컨텍스트는 비우지 않는다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.deletedAt = :now WHERE c.market.id = :marketId "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.DRAFT AND c.deletedAt IS NULL")
+    int softDeleteDraftsOfMarket(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
 
     @Query("SELECT c.status, COUNT(c) FROM Contract c WHERE c.status <> showroomz.domain.contract.type.ContractStatus.DRAFT "
             + "AND c.deletedAt IS NULL GROUP BY c.status")
@@ -124,7 +131,7 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     /**
      * GNB 배지 — 브랜드가 지금 조치해야 하는 건수(설계서 4-4).
      * 검토 반려(브랜드 조치로만 풀리는 유일한 진행 상태)와 B4c(상대만 서명 완료)만 센다.
-     * 검토 대기·체결 처리 대기·B4는 공이 상대에게 있는 정상 대기라 넣지 않는다.
+     * 검토 대기·공구 생성 대기·B4는 공이 상대에게 있는 정상 대기라 넣지 않는다.
      */
     @Query("SELECT COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL AND ("
             + "  c.status = showroomz.domain.contract.type.ContractStatus.REVIEW_REJECTED"
@@ -230,4 +237,87 @@ public interface ContractRepository extends JpaRepository<Contract, Long>, Contr
     @Query("UPDATE Contract c SET c.creatorViewedAt = :now "
             + "WHERE c.id = :contractId AND c.creatorViewedAt IS NULL")
     int markCreatorViewed(@Param("contractId") Long contractId, @Param("now") LocalDateTime now);
+
+    // ── 당사자 정지 보류(1017 설계서 8-4) — bulk UPDATE 라 버전을 올리지 않는다. 영속성 컨텍스트는 비우지 않는다(정지 서비스가 같은
+    //    트랜잭션에서 정지 행 · 마켓을 계속 고친다).
+
+    /** 그 브랜드의 진행 중 계약 중 아직 보류가 아닌 것 — 보류 시작. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldSince = :now, c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BRAND "
+            + "WHERE c.market.id = :marketId AND c.status IN :statuses AND c.deletedAt IS NULL AND c.sanctionHoldSince IS NULL")
+    int holdForMarket(@Param("marketId") Long marketId, @Param("statuses") Collection<ContractStatus> statuses,
+                      @Param("now") LocalDateTime now);
+
+    /** 이미 인플루언서 정지로 보류 중인 계약 — 양측 보류로 넓힌다(시작 시각은 그대로 — 먼저 멈춘 시각부터 멈춰 있다). */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BOTH "
+            + "WHERE c.market.id = :marketId AND c.status IN :statuses AND c.deletedAt IS NULL "
+            + "AND c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.CREATOR")
+    int widenHoldForMarket(@Param("marketId") Long marketId, @Param("statuses") Collection<ContractStatus> statuses);
+
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldSince = :now, c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.CREATOR "
+            + "WHERE c.creator.id = :creatorId AND c.status IN :statuses AND c.deletedAt IS NULL AND c.sanctionHoldSince IS NULL")
+    int holdForCreator(@Param("creatorId") Long creatorId, @Param("statuses") Collection<ContractStatus> statuses,
+                       @Param("now") LocalDateTime now);
+
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BOTH "
+            + "WHERE c.creator.id = :creatorId AND c.status IN :statuses AND c.deletedAt IS NULL "
+            + "AND c.sanctionHoldParty = showroomz.domain.contract.type.SanctionHoldParty.BRAND")
+    int widenHoldForCreator(@Param("creatorId") Long creatorId, @Param("statuses") Collection<ContractStatus> statuses);
+
+    /** 해제 대상 — 그 브랜드 몫 보류가 걸린 계약(상태 무관 — 보류 중 거절 · 취소된 계약도 표시를 지운다). */
+    @Query("SELECT c FROM Contract c WHERE c.market.id = :marketId AND c.sanctionHoldSince IS NOT NULL "
+            + "AND c.sanctionHoldParty IN (showroomz.domain.contract.type.SanctionHoldParty.BRAND, "
+            + "showroomz.domain.contract.type.SanctionHoldParty.BOTH)")
+    List<Contract> findHeldForMarket(@Param("marketId") Long marketId);
+
+    @Query("SELECT c FROM Contract c WHERE c.creator.id = :creatorId AND c.sanctionHoldSince IS NOT NULL "
+            + "AND c.sanctionHoldParty IN (showroomz.domain.contract.type.SanctionHoldParty.CREATOR, "
+            + "showroomz.domain.contract.type.SanctionHoldParty.BOTH)")
+    List<Contract> findHeldForCreator(@Param("creatorId") Long creatorId);
+
+    /** 보류 종료 — 남은 당사자가 없으면 기한을 민 값으로 바꾸고 표시를 지운다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldSince = NULL, c.sanctionHoldParty = NULL, c.signatureDeadlineAt = :deadline "
+            + "WHERE c.id = :contractId")
+    int endHold(@Param("contractId") Long contractId, @Param("deadline") LocalDateTime deadline);
+
+    /** 한쪽만 풀렸다 — 남은 당사자로 줄인다(기한은 계속 멈춰 있다). */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE Contract c SET c.sanctionHoldParty = :party WHERE c.id = :contractId")
+    int narrowHold(@Param("contractId") Long contractId,
+                   @Param("party") showroomz.domain.contract.type.SanctionHoldParty party);
+
+    /** 파트너 홈 「내 서명 필요」(1017 설계서 4-1) — 상대만 서명을 마친 서명 진행중. {@link #countActionRequired}의 서명 쪽 절반. */
+    @Query("SELECT COUNT(c) FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING "
+            + "AND c.creatorSignedAt IS NOT NULL AND c.brandSignedAt IS NULL")
+    long countSigningAwaitingBrand(@Param("marketId") Long marketId);
+
+    /** 파트너 홈 「계약 진행」(1017 설계서 4-1) — 체결 전 진행 상태 · 공구 시작일 순. 상대 쇼룸을 함께 읽는다. */
+    @Query("SELECT c FROM Contract c JOIN FETCH c.creator WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "AND c.status IN :statuses ORDER BY c.groupBuyStartAt ASC, c.id ASC")
+    List<Contract> findInProgressForMarket(@Param("marketId") Long marketId,
+                                           @Param("statuses") Collection<ContractStatus> statuses,
+                                           Pageable pageable);
+
+    /** 파트너 홈 달력 「서명 기한」(1017 설계서 4-3) — 서명 진행중 · 정지 보류 아님(보류 중이면 기한이 멈춰 있다). */
+    @Query("SELECT c FROM Contract c WHERE c.market.id = :marketId AND c.deletedAt IS NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING AND c.sanctionHoldSince IS NULL "
+            + "AND c.signatureDeadlineAt >= :from AND c.signatureDeadlineAt < :to "
+            + "ORDER BY c.signatureDeadlineAt ASC, c.id ASC")
+    List<Contract> findSignatureDeadlinesForMarket(@Param("marketId") Long marketId, @Param("from") LocalDateTime from,
+                                                   @Param("to") LocalDateTime to);
+
+    /**
+     * 스튜디오 홈 할 일 「계약 서명」 · 달력 「서명 기한」(1017 설계서 5-1 · 5-3) — 서명 요청됐고 내 서명이 아직 없는 서명 진행중
+     * ({@link #countCreatorActionRequired}의 행). 브랜드를 함께 읽는다.
+     */
+    @Query("SELECT c FROM Contract c JOIN FETCH c.market WHERE c.creator.id = :creatorId "
+            + "AND c.signatureRequestedAt IS NOT NULL "
+            + "AND c.status = showroomz.domain.contract.type.ContractStatus.SIGNING AND c.creatorSignedAt IS NULL "
+            + "ORDER BY c.signatureDeadlineAt ASC, c.id ASC")
+    List<Contract> findCreatorSignatureTodos(@Param("creatorId") Long creatorId);
 }

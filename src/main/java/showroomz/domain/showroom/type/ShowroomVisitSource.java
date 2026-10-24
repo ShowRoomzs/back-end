@@ -12,6 +12,8 @@ public enum ShowroomVisitSource {
     INSTAGRAM_LINK("인스타그램 링크", "ig"),
     APP_SEARCH("앱 검색", "search"),
     GROUP_BUY_POST("공구 게시물", "post"),
+    /** 상품 상세 딥링크로 들어와 쇼룸에 닿은 방문(49 스튜디오 성과 설계서 0-7) — 성과 「상품 상세 직접 링크」. */
+    PRODUCT_DIRECT_LINK("상품 상세 링크", "product"),
     DIRECT("직접 유입", "direct");
 
     private final String label;

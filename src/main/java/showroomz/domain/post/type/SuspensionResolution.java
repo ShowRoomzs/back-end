@@ -18,5 +18,12 @@ public enum SuspensionResolution {
     DELETED_BY_EXPIRE,
 
     /** 중지 기간 중 본인 삭제 — 다투지 않고 나가는 출구다 (§24-5) */
-    DELETED_BY_SELF
+    DELETED_BY_SELF,
+    /**
+     * 운영자가 조치를 거둠 → 재게시 (§54-4 C5 「조치 취소 · 재게시」).
+     *
+     * <p>이의 승인과 결과(재게시)는 같지만 주체와 계기가 다르다 — 작성자가 다툰 결과가 아니라 운영자가
+     * 스스로 판단을 거둔 것이라, 작성자 조치 이력(노출 중지 N회)에서 빠진다.
+     */
+    CANCELED_BY_ADMIN
 }

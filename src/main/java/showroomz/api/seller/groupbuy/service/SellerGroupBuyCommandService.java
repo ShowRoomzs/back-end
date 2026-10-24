@@ -15,6 +15,8 @@ import showroomz.api.seller.groupbuy.dto.GroupBuyIssueOpenRequest;
 import showroomz.api.seller.groupbuy.dto.GroupBuyIssueOpenResponse;
 import showroomz.api.seller.groupbuy.dto.GroupBuySuspensionRequestRequest;
 import showroomz.api.seller.groupbuy.service.GroupBuyAccessGuard.SellerScope;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
+import showroomz.domain.member.brand.type.BrandBlockedAction;
 import showroomz.domain.contract.entity.ContractItem;
 import showroomz.domain.contract.entity.ContractItemOption;
 import showroomz.domain.groupbuy.entity.GroupBuy;
@@ -85,6 +87,7 @@ public class SellerGroupBuyCommandService {
     private final GroupBuyFulfillmentService fulfillmentService;
     private final GroupBuyAppealAttachmentStorage appealStorage;
     private final GroupBuyProperties properties;
+    private final BrandSanctionGuard brandSanctionGuard;
 
     // ── B1 [확보 완료] ────────────────────────────────────────────────────────
 
@@ -156,6 +159,8 @@ public class SellerGroupBuyCommandService {
         LocalDateTime now = LocalDateTime.now();
 
         requireStatus(groupBuy, GroupBuyStatus.IN_PROGRESS);
+        // 판매 기간을 늘리는 일은 정지 중 막는다 — 조기 마감 · 중단 요청은 허용(ui-partner-15 S3a).
+        brandSanctionGuard.requireNotSuspended(scope.market(), BrandBlockedAction.GROUP_BUY_EXTENSION_REQUEST);
         requireRequestable(facts);
         if (facts.extension() != null) {
             throw new BusinessException(ErrorCode.GROUP_BUY_EXTENSION_ALREADY_USED);

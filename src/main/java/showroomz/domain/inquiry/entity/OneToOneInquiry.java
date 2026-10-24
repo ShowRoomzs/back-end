@@ -64,6 +64,21 @@ public class OneToOneInquiry extends BaseTimeEntity {
     @Column(name = "CLAIM_ID")
     private Long claimId;
 
+    /**
+     * 계정 이용 정지 소명 대상 정지 행 — 앱 정지 안내 시트의 「1:1 문의로 이의 신청」으로 쓴 문의만 값이 있다(V204 · 51-6 설계서 0-8).
+     * 유형은 {@link CsCategory#ACCOUNT}로 고정되고 관련 주문이 없다. 「계정 이용 정지」는 FAQ 와 공유하는 5종을 깨지 않도록 유형 값이 아니라
+     * 이 표식으로 구분한다. 작성 때 정해지고 수정으로 바뀌지 않는다.
+     */
+    @Column(name = "SANCTION_ID")
+    private Long sanctionId;
+
+    /**
+     * 운임 환급 계좌 안내 대상 환불 큐 행 — 앱 C10-5 「귀책 변경 · 운임 환급」의 [1:1 문의]로 쓴 문의만 값이 있다(V210 · 1021 설계서 4-5).
+     * 원래 결제액을 넘는 환급을 계좌로 보내야 해 계좌를 이 문의로 받는다. 어드민 06c M3 이 「1:1 문의 #N 로 받은 계좌」로 찾는다.
+     */
+    @Column(name = "REFUND_TASK_ID")
+    private Long refundTaskId;
+
     // 답변 관련 필드
     @Column(name = "ANSWER_CONTENT", columnDefinition = "TEXT")
     private String answerContent;
@@ -81,7 +96,7 @@ public class OneToOneInquiry extends BaseTimeEntity {
 
     @Builder
     public OneToOneInquiry(Users user, CsCategory type, String content, List<String> imageUrls, Long orderId,
-                           Long claimId) {
+                           Long claimId, Long sanctionId, Long refundTaskId) {
         this.user = user;
         this.type = type;
         this.content = content;
@@ -90,7 +105,30 @@ public class OneToOneInquiry extends BaseTimeEntity {
         }
         this.orderId = orderId;
         this.claimId = claimId;
+        this.sanctionId = sanctionId;
+        this.refundTaskId = refundTaskId;
         this.status = InquiryStatus.WAITING;
+    }
+
+    /** 화면에 보이는 유형명 — 「계정 이용 정지」 소명 문의(C20 1d)는 유형 값이 아니라 표식으로 구분한다. */
+    public static final String SANCTION_APPEAL_TYPE_NAME = "계정 이용 정지";
+
+    public boolean isSanctionAppeal() {
+        return sanctionId != null;
+    }
+
+    /** 운임 환급 계좌 안내 문의의 유형명(1021 설계서 4-5) — 「계정 이용 정지」와 같은 방식으로 유형 값이 아니라 표식으로 구분한다. */
+    public static final String REFUND_ACCOUNT_TYPE_NAME = "환불 계좌 안내";
+
+    public boolean isRefundAccountNotice() {
+        return refundTaskId != null;
+    }
+
+    public String typeName() {
+        if (isSanctionAppeal()) {
+            return SANCTION_APPEAL_TYPE_NAME;
+        }
+        return isRefundAccountNotice() ? REFUND_ACCOUNT_TYPE_NAME : type.getDescription();
     }
 
     /** 운영자 답변 등록 — 1회만 가능하며 등록 즉시 답변완료로 전환된다 (§17-4) */

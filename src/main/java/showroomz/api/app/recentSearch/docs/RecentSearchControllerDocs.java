@@ -22,7 +22,7 @@ import showroomz.api.app.recentSearch.DTO.RecentSearchSyncRequest;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "User - Search", description = "검색 관련 API")
+@Tag(name = "User - Search", description = "사용자 검색 API")
 public interface RecentSearchControllerDocs {
 
     @Operation(

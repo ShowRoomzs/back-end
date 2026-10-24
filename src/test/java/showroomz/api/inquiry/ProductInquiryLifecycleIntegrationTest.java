@@ -64,6 +64,7 @@ class ProductInquiryLifecycleIntegrationTest extends IntegrationTestSupport {
     private CategoryRepository categoryRepository;
 
     private String consumerToken;
+    private Long consumerId;
     private String brandToken;
     private String otherBrandToken;
     private String operatorToken;
@@ -72,6 +73,7 @@ class ProductInquiryLifecycleIntegrationTest extends IntegrationTestSupport {
     @BeforeEach
     void setUpParties() {
         Users consumer = createConsumer("mia");
+        consumerId = consumer.getId();
         consumerToken = bearerToken(consumer.getUsername(), RoleType.USER, consumer.getId());
 
         BrandFixture.Brand brand = fixture.createBrand("brand@showroomz.test", "소연뷰티");
@@ -443,6 +445,48 @@ class ProductInquiryLifecycleIntegrationTest extends IntegrationTestSupport {
                     .andExpect(jsonPath("$.deleteRequestedCount").value(1));
         }
 
+        /**
+         * 소비자 상세 「열린 문의」 칩의 상품 문의 몫이 이 목록으로 온다(56 C1) — 다른 소비자 문의는 빠지고, 탭 건수 · 상세의 이전 · 다음도 그
+         * 소비자 안에서만 센다. 삭제 요청 건이 답변대기 탭에서 빠지는 규칙은 그대로다.
+         */
+        @Test
+        @DisplayName("[56 C1] userId — 그 소비자 문의만 · 탭 건수도 그 소비자 기준(삭제 요청은 답변대기 밖) · 상세 이전 · 다음도 그 소비자 안에서")
+        void filtersByConsumer() throws Exception {
+            Users other = createConsumer("noah");
+            String otherToken = bearerToken(other.getUsername(), RoleType.USER, other.getId());
+            Long mine = registerInquiry("재입고 언제 되나요?", false);
+            Long others = registerInquiry(otherToken, "용량이 어떻게 되나요?");
+            Long mineDeleteRequested = registerInquiry("삭제 요청될 건", false);
+            requestDelete(mineDeleteRequested, "ABUSE", null);
+            Long mineUserId = consumerId;
+
+            mockMvc.perform(get(ADMIN_LIST).param("userId", String.valueOf(mineUserId))
+                            .header(HttpHeaders.AUTHORIZATION, operatorToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.pageInfo.totalResults").value(2))
+                    .andExpect(jsonPath("$.content[*].inquiryId",
+                            org.hamcrest.Matchers.containsInAnyOrder(mine.intValue(), mineDeleteRequested.intValue())))
+                    .andExpect(jsonPath("$.statusCounts.all").value(2))
+                    .andExpect(jsonPath("$.statusCounts.waiting").value(1))
+                    .andExpect(jsonPath("$.statusCounts.deleteRequested").value(1))
+                    .andExpect(jsonPath("$.deleteRequestedCount").value(1));
+            mockMvc.perform(get(ADMIN_LIST).param("status", "WAITING").param("userId", String.valueOf(mineUserId))
+                            .header(HttpHeaders.AUTHORIZATION, operatorToken))
+                    .andExpect(jsonPath("$.pageInfo.totalResults").value(1))
+                    .andExpect(jsonPath("$.content[0].inquiryId").value(mine));
+            mockMvc.perform(get(ADMIN_LIST).header(HttpHeaders.AUTHORIZATION, operatorToken))
+                    .andExpect(jsonPath("$.pageInfo.totalResults").value(3));
+
+            // 목록 순서는 접수 최신순 — 소비자로 좁히면 사이에 낀 다른 소비자 문의를 건너뛴다
+            mockMvc.perform(get(ADMIN_DETAIL.formatted(mineDeleteRequested)).param("userId", String.valueOf(mineUserId))
+                            .header(HttpHeaders.AUTHORIZATION, operatorToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.prevInquiryId").doesNotExist())
+                    .andExpect(jsonPath("$.nextInquiryId").value(mine));
+            mockMvc.perform(get(ADMIN_DETAIL.formatted(mineDeleteRequested)).header(HttpHeaders.AUTHORIZATION, operatorToken))
+                    .andExpect(jsonPath("$.nextInquiryId").value(others));
+        }
+
         /** 반려로 노출이 정상으로 돌아오면 원래 답변 축의 탭으로 복귀한다. */
         @Test
         @DisplayName("반려하면 답변대기 탭으로 돌아온다")
@@ -490,8 +534,17 @@ class ProductInquiryLifecycleIntegrationTest extends IntegrationTestSupport {
     // ------------------------------------------------------------------ 단계 (steps)
 
     private Long registerInquiry(String content, boolean secret) throws Exception {
+        return registerInquiry(consumerToken, content, secret);
+    }
+
+    /** 다른 소비자의 문의 — 공개글. */
+    private Long registerInquiry(String token, String content) throws Exception {
+        return registerInquiry(token, content, false);
+    }
+
+    private Long registerInquiry(String token, String content, boolean secret) throws Exception {
         MvcResult result = mockMvc.perform(post(CONSUMER_REGISTER.formatted(productId))
-                        .header(HttpHeaders.AUTHORIZATION, consumerToken)
+                        .header(HttpHeaders.AUTHORIZATION, token)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(toJson(Map.of(
                                 "type", "RESTOCK",
@@ -503,6 +556,7 @@ class ProductInquiryLifecycleIntegrationTest extends IntegrationTestSupport {
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
         return body.get("inquiryId").asLong();
     }
+
 
     private void answer(Long inquiryId, String answerContent) throws Exception {
         mockMvc.perform(post(SELLER_ANSWER.formatted(inquiryId))

@@ -2,12 +2,13 @@ package showroomz.api.seller.product.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import showroomz.global.error.exception.BusinessException;
-import showroomz.global.error.exception.ErrorCode;
 import showroomz.api.common.product.service.ProductProcessingHistoryService;
+import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.domain.category.entity.Category;
@@ -17,6 +18,8 @@ import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
+import showroomz.domain.member.brand.type.BrandBlockedAction;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.product.entity.*;
@@ -26,11 +29,9 @@ import showroomz.domain.product.type.ProductDisplayStatus;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.product.type.ProductHideReasonType;
 import showroomz.domain.product.type.ProductListSortType;
-import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.global.dto.PagingRequest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -44,6 +45,7 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final BrandSanctionGuard brandSanctionGuard;
     private final ProductVariantRepository productVariantRepository;
     private final CategoryRepository categoryRepository;
     private final SellerRepository adminRepository;
@@ -64,6 +66,9 @@ public class ProductService {
         
         Market market = marketRepository.findBySeller(admin)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        // 정지 중에는 새 상품을 등록하지 않는다(§51-1 · 52 설계서 7절) — 기존 상품 수정 · 품절 처리는 그대로다.
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.PRODUCT_CREATE);
 
         // 3. 상품 번호 생성 (SRZ-YYYYMMDD-XXX 형식)
         String productNumber = generateProductNumber();
@@ -1042,6 +1047,12 @@ public class ProductService {
         }
         if (next == previous) {
             return;
+        }
+        // 미진열 → 진열 복귀는 정지 중 막는다 — 사실상 새 상품을 내놓는 일이다(ui-partner-15 S2c · 1017 설계서 8-1).
+        // 진열 → 미진열 · 품절 · 재고 · 일반 수정은 그대로다.
+        if (next == ProductDisplayStatus.DISPLAY
+                && (previous == ProductDisplayStatus.HIDDEN || previous == ProductDisplayStatus.HIDE_REQUEST)) {
+            brandSanctionGuard.requireNotSuspended(product.getMarket(), BrandBlockedAction.PRODUCT_REDISPLAY);
         }
         product.setDisplayStatus(next);
         if (next == ProductDisplayStatus.HIDDEN) {

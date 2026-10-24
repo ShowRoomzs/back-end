@@ -562,7 +562,7 @@ class PostInsightIntegrationTest extends IntegrationTestSupport {
     /** 운영자 조치 1건 — {@code resolution}이 null인 행이 진행 중인 조치다(§24-5). */
     private void suspend(Long postId, LocalDateTime suspendedAt, SuspensionResolution resolution) {
         PostSuspension suspension = new PostSuspension(
-                postRepository.getReferenceById(postId), PostSuspensionReason.AD_DISCLOSURE, null, "운영정책 제12조",
+                postRepository.getReferenceById(postId), PostSuspensionReason.MISLEADING_INFO, null, "운영정책 제12조",
                 1L, suspendedAt, suspendedAt.plusDays(7));
         if (resolution != null) {
             suspension.resolve(resolution, suspendedAt.plusDays(1));

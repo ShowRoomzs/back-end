@@ -10,7 +10,9 @@ import showroomz.domain.settlement.type.SettlementTone;
 public enum AdjustmentStatus {
     OPEN("협의 중", SettlementTone.WARNING),
     AGREED("합의 · 금액 변경", SettlementTone.SUCCESS),
-    EXPIRED("기한 만료 · 원래 금액", SettlementTone.NEUTRAL);
+    EXPIRED("기한 만료 · 원래 금액", SettlementTone.NEUTRAL),
+    /** 요청자가 상대 응답 전에 거뒀다(1021 기-14) — 원래 금액으로 확정 · 재요청 불가. */
+    WITHDRAWN("철회 · 원래 금액", SettlementTone.NEUTRAL);
 
     private final String label;
     private final SettlementTone tone;

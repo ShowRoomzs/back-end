@@ -1,7 +1,9 @@
 package showroomz.domain.order.repository;
 
 import org.springframework.data.domain.Pageable;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,6 +12,7 @@ import showroomz.domain.order.type.ClaimPaymentStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 클레임 결제의 상태 전이 — 전부 조건부 UPDATE 다(주문 결제와 같은 수법). 1행 확인이 경합의 방어선이다.
@@ -19,6 +22,11 @@ public interface OrderClaimPaymentRepository extends JpaRepository<OrderClaimPay
     long countByChargeId(Long chargeId);
 
     List<OrderClaimPayment> findByChargeIdOrderByAttemptDesc(Long chargeId);
+
+    /** 취소 집행 선점 — 같은 결제를 둘이 동시에 집행해도 포트원 취소는 한 번만 나가게 행을 잠그고 상태를 다시 본다. */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM OrderClaimPayment p WHERE p.paymentId = :paymentId")
+    Optional<OrderClaimPayment> findForUpdate(@Param("paymentId") String paymentId);
 
     /** READY(· 뒤늦게 결제된 FAILED) → PAID — 포트원 조회 결과가 결제 완료일 때. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

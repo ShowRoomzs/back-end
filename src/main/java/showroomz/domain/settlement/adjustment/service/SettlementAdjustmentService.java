@@ -211,6 +211,35 @@ public class SettlementAdjustmentService {
         AfterCommit.run(() -> notifier.adjustmentRejected(settlementId, proposer.name()));
     }
 
+    // ------------------------------------------------------------------ 요청 철회(1021 기-14)
+
+    /**
+     * 요청 철회 — 처음 요청한 쪽이 상대 응답 전에 거둔다. 원래 금액으로 확정(확정일 = 철회일 · 지급 예정일 재계산) · 이슈 종결 · 재요청 불가
+     * (정산당 협의 1건). 상대가 반대 · 수정 제안을 낸 뒤면 철회가 아니라 협의다 — 409.
+     */
+    @Transactional
+    public void withdraw(Long adjustmentId, SettlementParty party, Long partyId, LocalDateTime now) {
+        SettlementAdjustment adjustment = lockForParty(adjustmentId, party, partyId);
+        requireOpen(adjustment, now);
+        SettlementAdjustmentProposal latest = latestOf(adjustmentId);
+        if (!AdjustmentPermissionPolicy.permissions(adjustment.getStatus(), adjustment.getDeadlineAt(),
+                latest.getStatus(), latest.getProposerType(), adjustment.getRequesterType(), party, now).canWithdraw()) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED);
+        }
+        if (adjustmentRepository.closeAsWithdrawn(adjustmentId, now) != 1) {
+            throw new BusinessException(ErrorCode.SETTLEMENT_ADJUSTMENT_STATE_CHANGED);
+        }
+        proposalRepository.closeOpen(adjustmentId, now);
+        Long settlementId = adjustment.getSettlementId();
+        settlementPort.confirmByWithdrawal(settlementId, adjustmentId, now);
+        settlementPort.recordEvent(settlementId, SettlementEventType.ADJUSTMENT_WITHDRAWN, party, partyId,
+                "%s 요청 철회".formatted(party.getLabel()));
+        AdjustableSettlement s = settlementPort.find(settlementId).orElse(null);
+        cards.withdrawn(adjustment, s, party, now);
+        String by = party.name();
+        AfterCommit.run(() -> notifier.adjustmentWithdrawn(settlementId, by));
+    }
+
     // ------------------------------------------------------------------ 6절 배치
 
     @Transactional(readOnly = true)

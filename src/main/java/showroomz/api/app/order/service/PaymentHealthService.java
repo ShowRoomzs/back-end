@@ -13,6 +13,7 @@ import showroomz.domain.payment.type.WebhookEventResult;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * 운영 지표 5종(결제 계획서 4-8). 다섯이 0이면 결제 시스템이 스스로 수렴하고 있다는 뜻이고, 하나라도 0이 아니면 그 줄이
@@ -36,19 +37,30 @@ public class PaymentHealthService {
     @Transactional(readOnly = true)
     public List<Metric> measure(LocalDateTime now) {
         List<Metric> metrics = new ArrayList<>();
-        metrics.add(new Metric("취소 미수렴(CANCEL_REQUESTED 30분 초과)",
-                paymentRepository.countByStatusAndCancelRequestedAtBefore(PaymentStatus.CANCEL_REQUESTED,
-                        now.minusMinutes(CANCEL_STUCK_MINUTES)), 1));
-        metrics.add(new Metric("운영자 처리 대기(CANCEL_FAILED)",
-                paymentRepository.countByStatus(PaymentStatus.CANCEL_FAILED), 1));
-        metrics.add(new Metric("자동 취소 발생(최근 24시간)",
-                paymentRepository.countByStatusAndModifiedAtAfter(PaymentStatus.CANCELLED_MISMATCH,
-                        now.minusHours(MISMATCH_WINDOW_HOURS)), MISMATCH_THRESHOLD));
-        metrics.add(new Metric("웹훅 처리 실패(3회 이상)",
+        LocalDateTime stuckBefore = now.minusMinutes(CANCEL_STUCK_MINUTES);
+        metrics.add(metric("취소 미수렴(CANCEL_REQUESTED 30분 초과)",
+                paymentRepository.countByStatusAndCancelRequestedAtBefore(PaymentStatus.CANCEL_REQUESTED, stuckBefore), 1,
+                () -> paymentRepository.findOldestCancelRequestedAtBefore(PaymentStatus.CANCEL_REQUESTED, stuckBefore)));
+        metrics.add(metric("운영자 처리 대기(CANCEL_FAILED)",
+                paymentRepository.countByStatus(PaymentStatus.CANCEL_FAILED), 1,
+                () -> paymentRepository.findOldestCancelFailedSince(PaymentStatus.CANCEL_FAILED)));
+        LocalDateTime mismatchAfter = now.minusHours(MISMATCH_WINDOW_HOURS);
+        metrics.add(metric("자동 취소 발생(최근 24시간)",
+                paymentRepository.countByStatusAndModifiedAtAfter(PaymentStatus.CANCELLED_MISMATCH, mismatchAfter),
+                MISMATCH_THRESHOLD,
+                () -> paymentRepository.findOldestModifiedAtAfter(PaymentStatus.CANCELLED_MISMATCH, mismatchAfter)));
+        metrics.add(metric("웹훅 처리 실패(3회 이상)",
                 webhookEventRepository.countByResultAndAttemptsGreaterThanEqual(WebhookEventResult.FAILED,
-                        WEBHOOK_FAILED_ATTEMPTS), 1));
-        metrics.add(new Metric("대사 미해결", issueRepository.countByResolvedAtIsNull(), 1));
+                        WEBHOOK_FAILED_ATTEMPTS), 1,
+                () -> webhookEventRepository.findOldestReceivedAt(WebhookEventResult.FAILED, WEBHOOK_FAILED_ATTEMPTS)));
+        metrics.add(metric("대사 미해결", issueRepository.countByResolvedAtIsNull(), 1,
+                issueRepository::findOldestUnresolvedDetectedAt));
         return metrics;
+    }
+
+    /** 가장 이른 시각은 임계를 넘은 지표만 읽는다 — 정상일 때 쿼리를 늘리지 않는다(55 계획서 A4). */
+    private static Metric metric(String name, long value, long threshold, Supplier<LocalDateTime> oldestAt) {
+        return new Metric(name, value, threshold, value >= threshold ? oldestAt.get() : null);
     }
 
     /** 임계값을 넘는 지표마다 경고 1회. */
@@ -64,7 +76,11 @@ public class PaymentHealthService {
         return exceeded;
     }
 
-    public record Metric(String name, long value, long threshold) {
+    /**
+     * @param oldestAt 그 지표에 걸린 건 중 가장 이른 기준 시각 — 임계를 넘은 지표만 채운다(아니면 null). 어드민 홈 PG 장애 시작 시각
+     *                 (55 계획서 A4)이 이 값들의 최솟값이다. 데이터에서 구하므로 재기동 · 다중 인스턴스에도 같다.
+     */
+    public record Metric(String name, long value, long threshold, LocalDateTime oldestAt) {
         public boolean exceeded() {
             return value >= threshold;
         }

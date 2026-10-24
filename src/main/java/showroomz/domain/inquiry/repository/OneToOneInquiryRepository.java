@@ -9,6 +9,7 @@ import showroomz.domain.member.user.entity.Users;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry, Long> {
 
@@ -28,6 +29,18 @@ public interface OneToOneInquiryRepository extends JpaRepository<OneToOneInquiry
 
     /** 내 문의 내역 조회 — [답변 대기만] 필터 적용 (C12) */
     Page<OneToOneInquiry> findByUserAndStatusOrderByCreatedAtDesc(Users user, InquiryStatus status, Pageable pageable);
+
+    /** 이 정지에 답변 전 소명 문의 — 동시 1건 규칙(51-6 설계서 5-1) · 앱 시트의 「기존 문의로 이동」. */
+    Optional<OneToOneInquiry> findFirstBySanctionIdAndStatusOrderByIdDesc(Long sanctionId, InquiryStatus status);
+
+    /** 이 정지의 소명 문의 — 어드민 해제 모달의 「소명 문의 번호」(§25-4). */
+    List<OneToOneInquiry> findBySanctionIdOrderByCreatedAtDescIdDesc(Long sanctionId);
+
+    /** 운임 환급 계좌 안내 문의 최신 1건(1021 설계서 4-5 · 어드민 06c M3 「1:1 문의 #N 로 받은 계좌」). */
+    Optional<OneToOneInquiry> findFirstByRefundTaskIdOrderByIdDesc(Long refundTaskId);
+
+    /** 처리 이력 파생 행 「정지 소명 문의 접수」(7-2). */
+    List<OneToOneInquiry> findByUser_IdAndSanctionIdIsNotNull(Long userId);
 
     /** GNB 배지용 미답변(접수) 건수 (§17-7) */
     long countByStatus(InquiryStatus status);

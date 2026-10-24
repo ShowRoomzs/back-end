@@ -38,7 +38,8 @@ public record UserOrderClaimContext(Map<Long, List<OrderClaim>> byProduct,
                 .collect(Collectors.groupingBy(claim -> claim.getOrderProduct().getId()));
         Map<Long, OrderClaimCharge> rejectCharges = new HashMap<>();
         for (OrderClaimCharge charge : charges) {
-            if (charge.getType() == ClaimChargeType.REJECT_RESHIP) {
+            // 반려 재발송비와 사유 번복 청구(1021 설계서 4-4)는 같은 「재발송 배송비 결제」 할 일이다.
+            if (charge.getType() == ClaimChargeType.REJECT_RESHIP || charge.getType() == ClaimChargeType.OVERTURN_RESHIP) {
                 rejectCharges.merge(charge.getCollection().getId(), charge, (a, b) -> a.getId() > b.getId() ? a : b);
             }
         }

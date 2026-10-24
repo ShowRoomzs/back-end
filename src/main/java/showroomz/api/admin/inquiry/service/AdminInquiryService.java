@@ -1,5 +1,11 @@
 package showroomz.api.admin.inquiry.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationImageKind;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,17 +18,18 @@ import showroomz.api.admin.inquiry.type.AdminInquiryStatusFilter;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.inquiry.support.OneToOneInquiryNumber;
 import showroomz.domain.inquiry.type.InquiryStatus;
 import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.global.dto.PaginationInfo;
+import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -33,20 +40,21 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class AdminInquiryService {
 
-    /** SLA 초과 기준 — 경과 3일 (§17-6) */
-    private static final long SLA_DAYS = 3;
-
-    private static final DateTimeFormatter INQUIRY_NUMBER_DATE = DateTimeFormatter.ofPattern("yyyyMMdd");
     private static final String UNKNOWN_OPERATOR = "운영자";
 
     private final OneToOneInquiryRepository inquiryRepository;
+    /** 답변 기한 — 시안(어드민 00 · 21) 24시간. 홈 「기한 초과」와 같은 값이다(1017 설계서 6-0 ⑤). */
+    private final AdminProperties adminProperties;
+    private final NotificationPublisher notificationPublisher;
     private final AdminInquiryQueryRepository inquiryQueryRepository;
     private final SellerRepository sellerRepository;
 
+    /** @param userId 작성한 소비자로 좁힌다 — 소비자 상세에서 넘어온 진입(56 C1). 탭 건수도 같은 소비자 기준이다 */
     public AdminInquiryDto.ListResponse getList(AdminInquiryStatusFilter statusFilter, CsCategory type,
-                                                String keyword, Pageable pageable) {
+                                                String keyword, Long userId, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
-        Page<OneToOneInquiry> page = inquiryQueryRepository.search(statusFilter, type, normalizedKeyword, pageable);
+        Page<OneToOneInquiry> page = inquiryQueryRepository.search(statusFilter, type, normalizedKeyword, userId,
+                pageable);
 
         LocalDateTime now = LocalDateTime.now();
         List<AdminInquiryDto.ListItem> content = page.getContent().stream()
@@ -56,7 +64,7 @@ public class AdminInquiryService {
         return AdminInquiryDto.ListResponse.builder()
                 .content(content)
                 .pageInfo(new PaginationInfo(page))
-                .statusCounts(buildStatusCounts(type, normalizedKeyword))
+                .statusCounts(buildStatusCounts(type, normalizedKeyword, userId))
                 .build();
     }
 
@@ -76,12 +84,12 @@ public class AdminInquiryService {
     }
 
     public AdminInquiryDto.DetailResponse getDetail(Long inquiryId, AdminInquiryStatusFilter statusFilter,
-                                                    CsCategory type, String keyword) {
+                                                    CsCategory type, String keyword, Long userId) {
         OneToOneInquiry inquiry = getInquiry(inquiryId);
         Users user = inquiry.getUser();
         LocalDateTime now = LocalDateTime.now();
 
-        List<Long> orderedIds = inquiryQueryRepository.findOrderedIds(statusFilter, type, normalize(keyword));
+        List<Long> orderedIds = inquiryQueryRepository.findOrderedIds(statusFilter, type, normalize(keyword), userId);
         int index = orderedIds.indexOf(inquiryId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
@@ -92,13 +100,16 @@ public class AdminInquiryService {
                 .inquiryId(inquiry.getId())
                 .inquiryNumber(inquiryNumber(inquiry))
                 .type(inquiry.getType())
-                .typeName(inquiry.getType().getDescription())
+                .typeName(inquiry.typeName())
                 .status(inquiry.getStatus())
                 .slaExceeded(isSlaExceeded(inquiry, now))
                 .userId(user.getId())
                 .userName(writerName(user))
                 .orderId(inquiry.getOrderId())
                 .claimId(inquiry.getClaimId())
+                .sanctionAppeal(inquiry.isSanctionAppeal())
+                .sanctionId(inquiry.getSanctionId())
+                .refundTaskId(inquiry.getRefundTaskId())
                 .createdAt(inquiry.getCreatedAt())
                 .answeredAt(inquiry.getAnsweredAt())
                 .elapsedText(elapsedText(inquiry, now))
@@ -122,6 +133,11 @@ public class AdminInquiryService {
         }
 
         inquiry.registerAnswer(request.getContent().trim(), operatorId);
+        // 소비자 알림 「문의하신 내용에 답변이 등록됐어요」(C11) — 1:1 문의 상세로 간다.
+        notificationPublisher.publish(NotificationCommand.toUser(inquiry.getUser().getId(), NotificationType.INQUIRY_ANSWERED)
+                .actorType(NotificationActorType.OPERATOR).title("문의하신 내용에 답변이 등록됐어요").emphasis("답변")
+                .imageKind(NotificationImageKind.ICON)
+                .targetType(NotificationTargetType.INQUIRY).targetId(inquiry.getId()).targetSub("ONE_TO_ONE").build());
 
         return AdminInquiryDto.AnswerResponse.builder()
                 .inquiryId(inquiry.getId())
@@ -137,7 +153,7 @@ public class AdminInquiryService {
         return AdminInquiryDto.ListItem.builder()
                 .inquiryId(inquiry.getId())
                 .type(inquiry.getType())
-                .typeName(inquiry.getType().getDescription())
+                .typeName(inquiry.typeName())
                 .content(inquiry.getContent())
                 .writerName(writerName(inquiry.getUser()))
                 .createdAt(inquiry.getCreatedAt())
@@ -145,11 +161,12 @@ public class AdminInquiryService {
                 .elapsedText(elapsedText(inquiry, now))
                 .slaExceeded(isSlaExceeded(inquiry, now))
                 .status(inquiry.getStatus())
+                .sanctionAppeal(inquiry.isSanctionAppeal())
                 .build();
     }
 
-    private AdminInquiryDto.StatusCounts buildStatusCounts(CsCategory type, String keyword) {
-        Map<InquiryStatus, Long> counts = inquiryQueryRepository.countByStatus(type, keyword);
+    private AdminInquiryDto.StatusCounts buildStatusCounts(CsCategory type, String keyword, Long userId) {
+        Map<InquiryStatus, Long> counts = inquiryQueryRepository.countByStatus(type, keyword, userId);
         long waiting = counts.getOrDefault(InquiryStatus.WAITING, 0L);
         long answered = counts.getOrDefault(InquiryStatus.ANSWERED, 0L);
 
@@ -213,17 +230,13 @@ public class AdminInquiryService {
         if (inquiry.isAnswered()) {
             return false;
         }
-        return Duration.between(inquiry.getCreatedAt(), now).compareTo(Duration.ofDays(SLA_DAYS)) > 0;
+        return Duration.between(inquiry.getCreatedAt(), now)
+                .compareTo(Duration.ofHours(adminProperties.getInquirySlaHours())) > 0;
     }
 
-    /** INQ-YYYYMMDD-NNN — NNN은 접수 일자 내 순번 (§17-3) */
+    /** INQ-YYYYMMDD-NNN — 규칙은 {@link OneToOneInquiryNumber} 한 곳(소비자 상세 「최근 문의」와 같은 번호 · 55 계획서 M3-2) */
     private String inquiryNumber(OneToOneInquiry inquiry) {
-        LocalDateTime createdAt = inquiry.getCreatedAt();
-        LocalDateTime dayStart = createdAt.toLocalDate().atStartOfDay();
-        long sequence = inquiryRepository
-                .countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndIdLessThanEqual(
-                        dayStart, dayStart.plusDays(1), inquiry.getId());
-        return "INQ-" + createdAt.format(INQUIRY_NUMBER_DATE) + "-" + String.format("%03d", sequence);
+        return OneToOneInquiryNumber.of(inquiry, inquiryRepository);
     }
 
     private String resolveOperatorName(Long operatorId) {

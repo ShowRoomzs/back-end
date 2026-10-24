@@ -32,6 +32,13 @@ public class ImageService {
     private final S3Properties s3Properties;
 
     private static final long MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+    /**
+     * 쇼룸 스튜디오 서류(통장 사본 · 사업자등록증 — 온보딩 rev.3 「최대 10MB · jpg, png, pdf」). 화면이 먼저 막고 서버는 2차
+     * 검증이다 — 문구는 화면의 형식 · 용량 오류 문구 그대로 쓴다. 브랜드 서류는 기존 20MB 그대로.
+     */
+    private static final long CREATOR_DOCUMENT_MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final String CREATOR_DOCUMENT_SIZE_MESSAGE = "파일 크기가 10MB를 초과했습니다. 10MB 이하의 파일을 선택해 주세요.";
+    private static final String CREATOR_DOCUMENT_EXTENSION_MESSAGE = "jpg, png, pdf 파일만 업로드할 수 있습니다.";
     private static final List<String> ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "gif");
     /** 브랜드·인플루언서 가입/추가정보 서류 */
     private static final List<String> DOCUMENT_ALLOWED_EXTENSIONS = Arrays.asList("jpg", "jpeg", "png", "pdf");
@@ -50,8 +57,11 @@ public class ImageService {
         }
 
         // 2. 파일 크기 검증
-        if (file.getSize() > MAX_FILE_SIZE) {
-            throw new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED);
+        boolean creatorDocument = type == ImageType.CREATOR_DOCUMENT;
+        if (file.getSize() > (creatorDocument ? CREATOR_DOCUMENT_MAX_FILE_SIZE : MAX_FILE_SIZE)) {
+            throw creatorDocument
+                    ? new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED, CREATOR_DOCUMENT_SIZE_MESSAGE)
+                    : new BusinessException(ErrorCode.FILE_SIZE_EXCEEDED);
         }
 
         // 3. 파일 형식 검증
@@ -62,7 +72,9 @@ public class ImageService {
 
         String extension = getFileExtension(originalFilename);
         if (!getAllowedExtensions(type).contains(extension.toLowerCase())) {
-            throw new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
+            throw creatorDocument
+                    ? new BusinessException(ErrorCode.INVALID_FILE_EXTENSION, CREATOR_DOCUMENT_EXTENSION_MESSAGE)
+                    : new BusinessException(ErrorCode.INVALID_FILE_EXTENSION);
         }
 
         // 4. 대표 이미지(마켓·쇼룸 프로필)인 경우 해상도 및 비율 검증

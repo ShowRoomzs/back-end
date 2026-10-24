@@ -50,6 +50,7 @@ public class AdminOrderController implements AdminOrderControllerDocs {
             @RequestParam(value = "marketId", required = false) Long marketId,
             @RequestParam(value = "groupBuyId", required = false) Long groupBuyId,
             @RequestParam(value = "creatorId", required = false) Long creatorId,
+            @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "paymentMethod", required = false) PaymentMethod paymentMethod,
             @RequestParam(value = "trackingAlert", required = false) TrackingAlert trackingAlert,
             @RequestParam(value = "searchType", required = false) AdminOrderSearchType searchType,
@@ -57,9 +58,11 @@ public class AdminOrderController implements AdminOrderControllerDocs {
             @RequestParam(value = "sort", required = false) AdminOrderSort sort,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(value = "cancelRequested", defaultValue = "false") boolean cancelRequested,
             @ModelAttribute PagingRequest pagingRequest) {
         return ResponseEntity.ok(queryService.getOrders(new AdminOrderDto.SearchParams(tab, status, marketId, groupBuyId,
-                creatorId, paymentMethod, trackingAlert, searchType, keyword, sort), from, to, pagingRequest));
+                creatorId, userId, paymentMethod, trackingAlert, searchType, keyword, sort, cancelRequested), from, to,
+                pagingRequest));
     }
 
     @Override
@@ -68,13 +71,14 @@ public class AdminOrderController implements AdminOrderControllerDocs {
             @RequestParam(value = "marketId", required = false) Long marketId,
             @RequestParam(value = "groupBuyId", required = false) Long groupBuyId,
             @RequestParam(value = "creatorId", required = false) Long creatorId,
+            @RequestParam(value = "userId", required = false) Long userId,
             @RequestParam(value = "paymentMethod", required = false) PaymentMethod paymentMethod,
             @RequestParam(value = "searchType", required = false) AdminOrderSearchType searchType,
             @RequestParam(value = "keyword", required = false) String keyword,
             @RequestParam(value = "from", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(value = "to", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
         return ResponseEntity.ok(queryService.getSummary(new AdminOrderDto.SearchParams(null, null, marketId, groupBuyId,
-                creatorId, paymentMethod, null, searchType, keyword, null),
+                creatorId, userId, paymentMethod, null, searchType, keyword, null, false),
                 from, to));
     }
 

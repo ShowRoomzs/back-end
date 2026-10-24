@@ -33,9 +33,10 @@ public class AdminProductInquiryController implements AdminProductInquiryControl
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
             @RequestParam(value = "type", required = false) ProductInquiryType type,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "userId", required = false) Long userId,
             @ModelAttribute PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
-        return ResponseEntity.ok(adminProductInquiryService.getList(status, type, keyword, pageable));
+        return ResponseEntity.ok(adminProductInquiryService.getList(status, type, keyword, userId, pageable));
     }
 
     @Override
@@ -56,8 +57,9 @@ public class AdminProductInquiryController implements AdminProductInquiryControl
             @PathVariable("inquiryId") Long inquiryId,
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
             @RequestParam(value = "type", required = false) ProductInquiryType type,
-            @RequestParam(value = "keyword", required = false) String keyword) {
-        return ResponseEntity.ok(adminProductInquiryService.getDetail(inquiryId, status, type, keyword));
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        return ResponseEntity.ok(adminProductInquiryService.getDetail(inquiryId, status, type, keyword, userId));
     }
 
     @Override

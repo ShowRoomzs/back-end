@@ -205,8 +205,9 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
 
         Long consumerDeduction = jdbc.queryForObject("SELECT return_deduction FROM order_claim_collection "
                 + "WHERE delivery_group_id = ?", Long.class, partial.getId());
-        Integer returnFee = jdbc.queryForObject("SELECT return_fee FROM market WHERE market_id = ?", Integer.class,
-                brand.marketId());
+        // 브랜드 부담 = 착불 운임 = 주문 시점 편도 기본 배송비 스냅샷(1021 기-18 — 마켓 반품비 설정 폐기).
+        Integer returnFee = jdbc.queryForObject("SELECT base_delivery_fee FROM order_delivery_group WHERE delivery_group_id = ?",
+                Integer.class, defect.getId());
         sellerGet(SETTLEMENTS + "/" + s.getId())
                 .andExpect(jsonPath("$.claimShipping.consumer.count").value(1))
                 .andExpect(jsonPath("$.claimShipping.consumer.amount").value(consumerDeduction))

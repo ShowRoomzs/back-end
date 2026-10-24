@@ -32,6 +32,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -54,6 +55,9 @@ class SettingServiceTest {
     private UserConsentHistoryRepository userConsentHistoryRepository;
     @Mock
     private IdentityVerificationService identityVerificationService;
+    /** 1017 — 토글 변경 결과 알림(내용 검증은 통합 테스트). */
+    @Mock
+    private showroomz.domain.notification.service.NotificationPublisher notificationPublisher;
 
     @InjectMocks
     private SettingService settingService;
@@ -164,7 +168,9 @@ class SettingServiceTest {
 
             settingService.updateNotificationSettings(USERNAME, request(false, null));
 
-            verify(userConsentHistoryRepository, never()).save(any());
+            // 함께 보낸 「새 게시물」 토글은 자기 동의 이력(MARKETING_FOLLOW_POST)을 남긴다 — 혜택 · 이벤트(MARKETING)만 그대로다.
+            verify(userConsentHistoryRepository, never())
+                    .save(argThat(history -> history.getConsentType() == ConsentType.MARKETING));
             assertThat(user.isMarketingAgree()).isTrue();
         }
     }

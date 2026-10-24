@@ -55,9 +55,10 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
         mockMvc.perform(post("/v1/admin/group-buys/" + id + "/open-review/approve")
                         .header(HttpHeaders.AUTHORIZATION, adminToken(admin)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("READY"));
+        // 준비완료(예약) 게시물은 오픈 전까지 고치지 않는다(1021 기-08).
         studioDetail(id).andExpect(jsonPath("$.post.status").value("SCHEDULED"))
                 .andExpect(jsonPath("$.readiness.gates[*].state").value(contains("DONE", "DONE", "DONE")))
-                .andExpect(jsonPath("$.permissions.canEditPost").value(true));
+                .andExpect(jsonPath("$.permissions.canEditPost").value(false));
 
         GroupBuyPost post = groupBuyPostRepository.findByGroupBuyId(id).orElseThrow();
         assertThat(post.getPost().getStatus()).isEqualTo(PostStatus.DRAFT);
@@ -152,13 +153,13 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                         .content(toJson(Map.of("reasonCode", "AD_MEDICAL_CLAIM", "detail", "의약품 오인 표현"))))
                 .andExpect(status().isOk());
         studioDetail(groupBuy.getId()).andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
-                .andExpect(jsonPath("$.post.status").value("HIDDEN"))
+                .andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"))
                 .andExpect(jsonPath("$.post.hidden.detail").value("의약품 오인 표현"))
                 .andExpect(jsonPath("$.permissions.canEditPost").value(true));
         assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.DRAFT);
 
         editPost(groupBuy.getId(), Map.of("title", "수정 제목", "content", "오인 표현을 지웠습니다."))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("HIDDEN"));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSURE_SUSPENDED"));
         assertThat(postRepository.findById(post.getPostId()).orElseThrow().getStatus()).isEqualTo(PostStatus.DRAFT);
         assertThat(revisionRepository.findByGroupBuyPostPostIdOrderByRevisionNoAsc(post.getPostId())).hasSize(1);
 
@@ -326,7 +327,8 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
                 .andExpect(jsonPath("$.permissions.canRespondExtension").value(true));
         assertThat(reload(groupBuy.getId()).getEndAt()).isEqualTo(endAt);
 
-        editPost(groupBuy.getId(), Map.of("title", "정정된 제목", "content", "정정된 본문"))
+        // 진행 중이라 본문만 고친다(1021 기-08).
+        editPost(groupBuy.getId(), Map.of("title", "글로우 크림 앵콜 공구 오픈", "content", "정정된 본문"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.post.status").value("EXPOSED"));
         studioAction(groupBuy.getId(), "extension/acceptance", null).andExpect(status().isOk())
                 .andExpect(jsonPath("$.extension.status").value("ACCEPTED"));
@@ -422,7 +424,7 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
     }
 
     @Test
-    @DisplayName("B5: 승인된 노출 게시물은 수정 즉시 반영되고 새 심사 없이 판본이 남는다")
+    @DisplayName("B5: 승인된 노출 게시물은 수정 즉시 반영되고 새 심사 없이 판본이 남는다 · 진행 중 제목은 잠김(1021 기-08)")
     void exposedPostEditDoesNotRestartReview() throws Exception {
         GroupBuy groupBuy = seedIn(GroupBuyStatus.READY);
         GroupBuyPost post = seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
@@ -432,9 +434,13 @@ class CreatorGroupBuyScenarioIntegrationTest extends CreatorGroupBuyTestSupport 
         assertThat(lifecycleService.open(groupBuy.getId(), now)).isTrue();
 
         editPost(groupBuy.getId(), Map.of("title", "수정된 제목", "content", "새 본문"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_POST_TITLE_LOCKED"));
+        editPost(groupBuy.getId(), Map.of("title", "글로우 크림 앵콜 공구 오픈", "content", "새 본문"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.post.status").value("EXPOSED"))
-                .andExpect(jsonPath("$.post.title").value("수정된 제목"))
+                .andExpect(jsonPath("$.post.title").value("글로우 크림 앵콜 공구 오픈"))
+                .andExpect(jsonPath("$.post.content").value("새 본문"))
                 .andExpect(jsonPath("$.permissions.canEditPost").value(true));
         assertThat(groupBuyPostRepository.findByGroupBuyId(groupBuy.getId()).orElseThrow().getReviewStatus())
                 .isEqualTo(GroupBuyPostReviewStatus.APPROVED);

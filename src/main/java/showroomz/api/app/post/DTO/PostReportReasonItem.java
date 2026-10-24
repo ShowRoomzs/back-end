@@ -17,10 +17,10 @@ import showroomz.domain.post.type.PostReportReason;
 @Schema(description = "신고 사유 항목")
 public record PostReportReasonItem(
 
-        @Schema(description = "사유 코드", example = "AD_DISCLOSURE")
+        @Schema(description = "사유 코드", example = "MISLEADING_INFO")
         PostReportReason code,
 
-        @Schema(description = "표시 문구", example = "광고인데 표시가 없어요")
+        @Schema(description = "표시 문구", example = "허위 · 과장 정보")
         String label,
 
         @Schema(description = "상세 사유 필수 여부 — true면 입력란을 연다", example = "false")

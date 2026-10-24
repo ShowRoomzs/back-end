@@ -58,15 +58,18 @@ public class MessageCardReader {
                            String requesterType, String requesterName, LocalDateTime requestedAt,
                            String reasonLabel, LocalDateTime processedAt, Long processedBy,
                            MessageCardActionState actionState, LocalDateTime doneAt, Long doneBy,
-                           Long noticeMessageId, AdjustmentCard adjustment) {
+                           Long noticeMessageId, AdjustmentCard adjustment,
+                           MessageCardPayload.Sanction sanction,
+                           MessageCardPayload.Notice notice) {
     }
 
     /**
      * 정산 조정 카드의 읽기값(5-4) — 스냅샷 + 참조 객체(협의 · 제안)의 지금 상태.
      *
      * @param actionState 제안 카드(요청 · 다른 금액 제안)만 — PENDING(응답 대기) · DONE(동의 · 반대 · 다른 금액 제안으로 응답됨) ·
-     *                    CLOSED(응답 없이 만료). 그 밖은 null
-     * @param resultLabel DONE · CLOSED 일 때 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」
+     *                    CLOSED(응답 없이 만료 · 요청자 철회). 그 밖은 null
+     * @param resultLabel DONE · CLOSED 일 때 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」 · 「요청 철회」
+     *                    (CLOSED 는 협의 상태로 고른다 · {@link ProposalStatus#closedLabel})
      */
     public record AdjustmentCard(MessageCardPayload.Adjustment snapshot, AdjustmentStatus adjustmentStatus,
                                  Long proposalId, Integer seq, ProposalStatus proposalStatus,
@@ -126,9 +129,15 @@ public class MessageCardReader {
         MessageCardType type = card.getCardType();
         if (type != MessageCardType.CONTRACT_RESEND_REQUEST) {
             // 결과 카드는 종결이다 — 조치가 남지 않는다.
-            return new CardView(type, type.getTitle(), MessageCardTone.NEUTRAL,
-                    p.contractId(), p.contractNumber(), p.groupBuyTitle(), null, null, null,
-                    p.reasonLabel(), p.processedAt(), p.operatorId(), null, null, null, null, null);
+            // 동의 확인 · 사전 통지 카드는 요청자 · 요청 시각을 함께 보인다(1021 설계서 1-6 · 2-3).
+            return new CardView(type, type.getTitle(),
+                    type == MessageCardType.CONTRACT_CLOSE_CONSENT_REQUEST
+                            || type == MessageCardType.GROUP_BUY_SUSPENSION_NOTICE
+                            ? MessageCardTone.WARNING : MessageCardTone.NEUTRAL,
+                    p.contractId(), p.contractNumber(), p.groupBuyTitle(),
+                    p.requesterType(), p.requesterName(), p.requestedAt(),
+                    p.reasonLabel(), p.processedAt(), p.operatorId(), null, null, null, null, null, p.sanction(),
+                    p.notice());
         }
         MessageCardActionState state = actionState(resend);
         return new CardView(type, type.getTitle(),
@@ -138,7 +147,7 @@ public class MessageCardReader {
                 state,
                 resend == null ? null : resend.getHandledAt(),
                 resend == null ? null : resend.getHandledBy(),
-                resend == null ? null : resend.getNoticeMessageId(), null);
+                resend == null ? null : resend.getNoticeMessageId(), null, null, null);
     }
 
     /**
@@ -160,7 +169,8 @@ public class MessageCardReader {
                     || (proposal.getStatus() == ProposalStatus.PENDING && adjustment != null
                     && adjustment.getStatus().isClosed())) {
                 state = MessageCardActionState.CLOSED;
-                resultLabel = ProposalStatus.CLOSED.getLabel();
+                // 철회 · 만료는 제안 행이 같다(CLOSED) — 협의 상태로 문구를 고른다(55 계획서 S4).
+                resultLabel = ProposalStatus.closedLabel(adjustment == null ? null : adjustment.getStatus());
             } else if (proposal.getStatus() == ProposalStatus.PENDING) {
                 state = MessageCardActionState.PENDING;
             } else {
@@ -174,7 +184,7 @@ public class MessageCardReader {
                 proposal == null || proposal.getResponderType() == null ? null : proposal.getResponderType().name(),
                 proposal == null ? null : proposal.getRespondedAt(), state, resultLabel);
         return new CardView(type, type.getTitle(), MessageCardTone.NEUTRAL, p.contractId(), p.contractNumber(),
-                p.groupBuyTitle(), null, null, null, null, null, null, null, null, null, null, view);
+                p.groupBuyTitle(), null, null, null, null, null, null, null, null, null, null, view, null, null);
     }
 
     /**

@@ -15,6 +15,7 @@ import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminRefundService;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.service.RefundExecutor;
 import showroomz.global.payment.portone.FakePaymentGateway;
@@ -264,6 +265,58 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(detail.at("/additionalPayments/0/claimPaymentStatus").asText()).isEqualTo("CANCELLED");
         assertThat(detail.get("history")).extracting(h -> h.get("type").asText())
                 .contains("REFUND_ENQUEUED_BY_OPERATOR", "DISPUTE_ACCEPTED");
+    }
+
+    /** 소비자 상세 「환불 실패」 칩이 이 목록으로 온다(56 C1) — 소비자 축은 주문 목록과 같은 주문자(orders.user_id)다. */
+    @Test
+    @DisplayName("[56 C1] 목록 userId — 주문한 소비자만 · 탭 규칙 그대로(실패 탭 = 실패만 · 집행 대기 탭 = 운영자 사유만)")
+    void listByConsumer() throws Exception {
+        long mineFailed = failedRefund();
+        long othersFailed = failedRefund();
+        long minePending = operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+        long othersPending = operatorRefund(deliveredGroup(creamVariant, 1), 6_000);
+        Users other = createConsumer("noah", "노아");
+        for (long taskId : List.of(othersFailed, othersPending)) {
+            jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = "
+                    + "(SELECT order_id FROM order_refund_task WHERE refund_task_id = ?)", other.getId(), taskId);
+        }
+
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + consumer.getId()))).containsExactly(mineFailed);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + other.getId()))).containsExactly(othersFailed);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED"))).containsExactlyInAnyOrder(mineFailed, othersFailed);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?userId=" + consumer.getId()))).containsExactly(minePending);
+        adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + consumer.getId())
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(1));
+    }
+
+    /**
+     * 알려진 한계(56 수정 기록 5-2) — 요약은 userId 를 받지 않는다. 「환불 실패」 칩으로 들어와 목록을 그 소비자로 좁혀도 탭 숫자 · 배지는 전체 기준이다.
+     * 요약이 userId 를 받게 되면 이 테스트를 그 기대로 바꾼다.
+     */
+    @Test
+    @DisplayName("[56 C1-10] 알려진 한계 — 요약은 userId 를 받지 않는다(무시 · 400 아님) · 탭 숫자 · 배지는 전체 기준 · 목록만 그 소비자로 좁혀진다")
+    void summaryIgnoresUserId() throws Exception {
+        long mineFailed = failedRefund();
+        long othersFailed = failedRefund();
+        operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+        long othersPending = operatorRefund(deliveredGroup(creamVariant, 1), 6_000);
+        Users other = createConsumer("noah", "노아");
+        for (long taskId : List.of(othersFailed, othersPending)) {
+            jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = "
+                    + "(SELECT order_id FROM order_refund_task WHERE refund_task_id = ?)", other.getId(), taskId);
+        }
+
+        JsonNode all = json(adminGet(ADMIN_REFUNDS + "/summary").andExpect(status().isOk()));
+        JsonNode narrowed = json(adminGet(ADMIN_REFUNDS + "/summary?userId=" + consumer.getId())
+                .andExpect(status().isOk()));
+
+        assertThat(narrowed).isEqualTo(all);
+        assertThat(narrowed.at("/tabs/FAILED/count").asLong()).isEqualTo(2);
+        assertThat(narrowed.at("/tabs/PENDING/count").asLong()).isEqualTo(2);
+        assertThat(narrowed.at("/tabs/PENDING/amount").asLong()).isEqualTo(11_000);
+        assertThat(narrowed.get("badge").asLong()).isEqualTo(4);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + consumer.getId()))).containsExactly(mineFailed);
+        adminGet(ADMIN_REFUNDS + "?userId=" + consumer.getId()).andExpect(jsonPath("$.pageInfo.totalResults").value(1));
     }
 
     @Test

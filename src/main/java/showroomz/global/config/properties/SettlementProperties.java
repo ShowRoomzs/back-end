@@ -57,17 +57,23 @@ public class SettlementProperties {
     private Payout payout = new Payout();
     private Platform platform = new Platform();
     private Adjustment adjustment = new Adjustment();
+    private Clawback clawback = new Clawback();
 
     public enum PayoutMode {
-        /** 즉시 PAID · 참조번호 SIM- — 개발 · QA · 통합 테스트. 운영 프로필에서는 기동 실패. */
+        /** 즉시 PAID · 참조번호 SIM- — 개발 · QA · 통합 테스트. 런칭 게이트 켜진 운영 프로필에서는 기동 실패. */
         SIMULATED,
-        /** 포트원 파트너 정산 **테스트 모드**(전 호출 test=true · id 접두 t-) — 개발 서버. 운영 프로필에서는 기동 실패. */
+        /** 토스 지급대행 **테스트 키**(test_sk_ · 참조 id 접두 t-) — 개발 서버. 런칭 게이트 켜진 운영 프로필에서는 기동 실패. */
         PG_TEST,
-        /** 포트원 파트너 정산 운영 — 44_포트원_파트너정산_연동_BE_설계서.md. */
+        /** 토스 지급대행 운영(live_sk_) — 44_토스페이먼츠_지급대행_연동_BE_설계서.md. */
         PG;
 
-        public boolean isPortOne() {
+        /** 바깥 PG 를 부르는가 — 결과 폴링 · 잔액 선검사 · 셀러 연결 기록은 이 모드들만. */
+        public boolean isExternal() {
             return this != SIMULATED;
+        }
+
+        public boolean isTest() {
+            return this == PG_TEST;
         }
     }
 
@@ -75,8 +81,10 @@ public class SettlementProperties {
     @Setter
     public static class Payout {
         private PayoutMode mode = PayoutMode.SIMULATED;
-        /** 지시 뒤 N영업일이 지나도 PG 지급 id 가 없으면 「지급 미실행」 알림(포트원 설계서 9-2). */
+        /** 지시 뒤 N영업일이 지나도 REQUESTED 가 닫히지 않으면 「PG 처리 지연」 알림(토스 설계서 5-4). */
         private int resultStaleBusinessDays = 1;
+        /** PARTIALLY_APPROVED 셀러의 주당 지급 한도(토스 정책 · 1천만 원) — 넘기면 셀러가 KYC_REQUIRED 로 넘어가므로 우리가 먼저 센다(5-2 ①). */
+        private long weeklyLimitAmount = 10_000_000L;
     }
 
     /** SHOWROOMZ 사업자 정보 — 인플루언서 세금계산서의 공급받는자 · 원천징수영수증 발행자(13절 신규 #6). */
@@ -88,6 +96,15 @@ public class SettlementProperties {
         private String registrationNumber;
         private String address;
         private String taxEmail;
+    }
+
+    /** 지급 전 환불(1021 결정 노트 기-13 【잠정】 · 설계서 6-3). */
+    @Getter
+    @Setter
+    public static class Clawback {
+        /** 이 상태의 정산은 클로백 대신 재계산 · 확인 기간 재시작(14절 Q18 — 기본 확인 기간만). 비우면 언제나 클로백. */
+        private java.util.Set<showroomz.domain.settlement.type.SettlementStatus> recalculateStatuses =
+                java.util.EnumSet.of(showroomz.domain.settlement.type.SettlementStatus.REVIEWING);
     }
 
     /** 정산 조정 협의(이슈 스레드 설계서 1-8). */

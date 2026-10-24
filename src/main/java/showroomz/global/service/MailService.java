@@ -15,6 +15,7 @@ import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -135,6 +136,17 @@ public class MailService {
         sendEmail(to, subject, text);
     }
 
+    /**
+     * 인플루언서 입점 반려 통지(1021 기-36) — 정형 사유 · 반려일 · 재신청 가능일만. 상세 사유는 보내지 않는다.
+     * 문안은 {@code CreatorRejectionNotice} 가 만든다(어드민 미리보기와 같은 문안).
+     */
+    @Async
+    public void sendCreatorRejectionNotice(String to, String subject, String htmlBody) {
+        sendEmail(to, subject, htmlBody);
+    }
+
+    /** @deprecated 상세 사유를 신청자에게 보낸다 — 1021 기-36 으로 {@link #sendCreatorRejectionNotice} 로 대체. */
+    @Deprecated
     @Async
     public void sendCreatorRejectionEmail(String to, String nickname, LocalDateTime processedAt,
                                           String reasonSummary, String reasonDetail) {
@@ -246,6 +258,94 @@ public class MailService {
                 requestCode, when, OPS_TEAM, safeSummary, detailBlock, OPS_TEAM);
 
         sendEmail(to, subject, text);
+    }
+
+    /**
+     * 탈퇴 결과 메일의 받는 쪽(55 계획서 M10 · 51 설계서 8절 D-3) — 호칭 · 처리 뒤 안내만 다르다. 회원 유형별로 메서드를 다시 만들지 않는다.
+     * 브랜드 안내는 파트너 시안 M5 고지, 인플루언서 안내는 「스튜디오 자격만 해지 · 소비자 계정은 그대로」(§51-5)다.
+     */
+    public enum WithdrawalAudience {
+        BRAND("브랜드", "파트너센터", List.of(
+                "로그인이 차단되어 파트너센터에 접속할 수 없습니다.",
+                "상품과 공구 게시물은 비공개로 내려갔습니다.",
+                "거래 기록은 법정 보존 기간 동안 플랫폼에 남습니다(소비자 분쟁·세무 대응 근거).",
+                "같은 사업자등록번호로 재가입할 수 있으나 이전 데이터는 승계되지 않습니다.")),
+        CREATOR("인플루언서", "쇼룸 스튜디오", List.of(
+                "쇼룸 스튜디오에 로그인할 수 없고 쇼룸은 더 이상 노출되지 않습니다.",
+                "계약 · 정산 기록은 법정 보존 기간 동안 플랫폼에 남습니다.",
+                "SHOWROOMZ 앱 계정은 그대로 이용할 수 있습니다.",
+                "다시 활동하려면 쇼룸 스튜디오 입점을 새로 신청해 주세요."));
+
+        private final String label;
+        private final String service;
+        private final List<String> approvedNotes;
+
+        WithdrawalAudience(String label, String service, List<String> approvedNotes) {
+            this.label = label;
+            this.service = service;
+            this.approvedNotes = approvedNotes;
+        }
+    }
+
+    /** §51-5 탈퇴 승인 통지 — 시안 4-I 「결과는 이메일로 안내됩니다」. 수신처는 파기 전에 읽은 주소다. */
+    @Async
+    public void sendMemberWithdrawalApprovedEmail(String to, WithdrawalAudience audience, String memberName,
+                                                  LocalDateTime processedAt) {
+        String subject = "[SHOWROOMZ] " + audience.label + " 탈퇴가 처리되었습니다.";
+        StringBuilder notes = new StringBuilder();
+        for (String note : audience.approvedNotes) {
+            notes.append("· ").append(HtmlUtils.htmlEscape(note)).append("<br/>");
+        }
+        String text = String.format("""
+                <html>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요, %s 님.</p>
+                    <p>신청하신 %s 탈퇴가 처리되었습니다.</p>
+                    <p><strong>■ 처리 정보</strong><br/>
+                    처리일시: %s<br/>
+                    담당 관리자: %s</p>
+                    <p><strong>■ 안내</strong><br/>%s</p>
+                    <p>그동안 SHOWROOMZ 를 이용해 주셔서 감사합니다.<br/>%s 드림</p>
+                </body>
+                </html>
+                """,
+                HtmlUtils.htmlEscape(nameOrDefault(memberName, audience)), audience.service,
+                processedAt.format(SELLER_MAIL_DATETIME), OPS_TEAM, notes, OPS_TEAM);
+
+        sendEmail(to, subject, text);
+    }
+
+    /** §51-5 탈퇴 반려 통지 — 사유 · 운영자 안내가 가공 없이 실린다. 남은 항목을 정리한 뒤 바로 다시 신청할 수 있다. */
+    @Async
+    public void sendMemberWithdrawalRejectedEmail(String to, WithdrawalAudience audience, String memberName,
+                                                  String reasonLabel, String note, LocalDateTime processedAt) {
+        String subject = "[SHOWROOMZ] " + audience.label + " 탈퇴 신청이 반려되었습니다.";
+        String noteBlock = note != null && !note.isBlank()
+                ? "<p><strong>■ 운영팀 안내</strong><br/>" + HtmlUtils.htmlEscape(note.strip()) + "</p>" : "";
+        String text = String.format("""
+                <html>
+                <body style="font-family: sans-serif; line-height: 1.6; color: #222;">
+                    <p>안녕하세요, %s 님.</p>
+                    <p>신청하신 %s 탈퇴가 아래 사유로 반려되었습니다. 계정은 그대로 이용할 수 있습니다.</p>
+                    <p><strong>■ 반려 정보</strong><br/>
+                    반려일시: %s<br/>
+                    담당 관리자: %s</p>
+                    <p><strong>■ 반려 사유</strong> %s</p>
+                    %s
+                    <p>남은 항목을 정리한 뒤 %s 기본정보 관리에서 다시 신청할 수 있습니다.</p>
+                    <p>감사합니다.<br/>%s 드림</p>
+                </body>
+                </html>
+                """,
+                HtmlUtils.htmlEscape(nameOrDefault(memberName, audience)), audience.service,
+                processedAt.format(SELLER_MAIL_DATETIME), OPS_TEAM, HtmlUtils.htmlEscape(reasonLabel), noteBlock,
+                audience.service, OPS_TEAM);
+
+        sendEmail(to, subject, text);
+    }
+
+    private static String nameOrDefault(String memberName, WithdrawalAudience audience) {
+        return memberName == null || memberName.isBlank() ? audience.label + " 담당자" : memberName;
     }
 
     private void sendEmail(String to, String subject, String text) {

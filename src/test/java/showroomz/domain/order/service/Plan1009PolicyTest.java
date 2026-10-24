@@ -123,7 +123,11 @@ class Plan1009PolicyTest {
         assertThat(ResidentRegistrationNumber.normalize("900101-9234567")).isNull();
         assertThat(ResidentRegistrationNumber.normalize("900101-123456")).isNull();
         assertThat(ResidentRegistrationNumber.normalize(null)).isNull();
-        assertThat(ResidentRegistrationNumber.mask("9001011234567")).isEqualTo("900101-1******");
+        // 온보딩 rev.3 정합 — 뒤 7자리 전부(성별 자리 포함) 가린다. 이전 규칙으로 저장된 값도 표시할 때 같은 형식이 된다.
+        assertThat(ResidentRegistrationNumber.mask("9001011234567")).isEqualTo("900101-*******");
+        assertThat(ResidentRegistrationNumber.display("900101-1******")).isEqualTo("900101-*******");
+        assertThat(ResidentRegistrationNumber.display("900101-*******")).isEqualTo("900101-*******");
+        assertThat(ResidentRegistrationNumber.display(null)).isNull();
     }
 
     @Test

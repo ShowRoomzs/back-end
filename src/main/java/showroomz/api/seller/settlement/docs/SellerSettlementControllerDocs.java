@@ -20,7 +20,7 @@ import java.util.Set;
 
 import static showroomz.api.seller.settlement.docs.SellerSettlementDocsExamples.*;
 
-@Tag(name = "Seller - Settlement", description = "파트너센터 정산 관리 API (§13)")
+@Tag(name = "Seller - Settlement", description = "파트너센터 정산 관리 API")
 public interface SellerSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -87,6 +87,7 @@ public interface SellerSettlementControllerDocs {
                     | `adjustingCount` | 조정 협의 건수 |
                     | `statusCounts` | 상태 칩 숫자 — 분배 실패는 `PAID` 에 포함 |
                     | `attentionCount` | GNB 「정산 관리」 배지 = 요청 가능 창이 열린 정산 확인 중 건수. 조정 협의의 「내 응답 필요」는 연결·소통 배지가 센다 |
+                    | `adjustmentMyTurnCount` | 조정 협의 「내 응답 필요」 — 인플루언서 제안이 응답 대기인 열린 협의 수(홈 정산 카드 · `GET /v1/seller/badges`) |
 
                     `paid.count` 는 **브랜드 행** 건수라 `statusCounts.PAID` 와 다를 수 있습니다(인플루언서 행이 보류 중인 정산은 지급 예정이지만 브랜드 몫은 지급 완료).
                     """)

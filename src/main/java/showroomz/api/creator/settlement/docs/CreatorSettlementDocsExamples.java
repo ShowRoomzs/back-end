@@ -53,7 +53,8 @@ final class CreatorSettlementDocsExamples {
               "reviewing": {"count": 1, "nearestDueAt": "2026-10-13T23:59:59"},
               "adjusting": {"count": 0},
               "statusCounts": {"REVIEWING": 1, "ADJUSTING": 0, "PAYOUT_SCHEDULED": 1, "PAID": 3},
-              "attentionCount": 1
+              "attentionCount": 1,
+              "payoutCondition": null
             }
             """;
 

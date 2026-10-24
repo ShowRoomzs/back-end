@@ -1,0 +1,546 @@
+package showroomz.api.design1021;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.common.settlement.SettlementTestSupport;
+import showroomz.domain.member.brand.entity.BrandSanction;
+import showroomz.domain.member.brand.repository.BrandSanctionRepository;
+import showroomz.domain.member.brand.service.BrandSanctionService;
+import showroomz.domain.member.brand.type.BrandSuspensionReason;
+import showroomz.domain.member.brand.type.SanctionReleaseReason;
+import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.entity.CreatorSanction;
+import showroomz.domain.member.creator.repository.CreatorSanctionRepository;
+import showroomz.domain.member.creator.service.CreatorSanctionService;
+import showroomz.domain.member.creator.service.CreatorWithdrawalService;
+import showroomz.domain.member.creator.type.CreatorSuspensionReason;
+import showroomz.domain.member.user.entity.UserSanction;
+import showroomz.domain.member.user.repository.UserSanctionRepository;
+import showroomz.domain.member.user.service.UserSanctionService;
+import showroomz.domain.member.user.type.UserReleaseReason;
+import showroomz.domain.member.user.type.UserSuspensionReason;
+import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.type.PayoutStatus;
+import showroomz.domain.settlement.type.SettlementPayee;
+import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.config.properties.MemberProperties;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.scheduler.SanctionAutoReleaseScheduler;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+/**
+ * 1021 설계서 7절 — 정지 기간 · 자동 해제 · 이의 신청 기한 · 정지 중 탈퇴의 P7 기본 흐름 밖: 영업일 기한 계산 · 인플루언서 지급 보류 해제 ·
+ * 운영팀 해제 카드 · 소비자 해제 토스트 · 배치 · 계정 상태 기간 블록 · 정지 중 탈퇴 신청 성공 · 설정으로 막기(55 계획서 S11) · 운영자 해제와의 경계.
+ */
+@DisplayName("1021 7절 정지 상세 — 이의 기한 · 자동 해제 훅(지급 · 카드 · 토스트) · 배치 · 계정 상태 · 정지 중 탈퇴 신청")
+class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
+
+    private static final String CREATOR_ACCOUNT = "/v1/creator/basic-info/account";
+    private static final String CREATOR_ACCOUNT_WITHDRAWALS = "/v1/creator/basic-info/withdrawal-requests";
+
+    @Autowired private MemberProperties memberProperties;
+    @Autowired private BrandSanctionService brandSanctionService;
+    @Autowired private BrandSanctionRepository brandSanctions;
+    @Autowired private CreatorSanctionService creatorSanctionService;
+    @Autowired private CreatorSanctionRepository creatorSanctions;
+    @Autowired private UserSanctionService userSanctionService;
+    @Autowired private UserSanctionRepository userSanctions;
+    @Autowired private CreatorWithdrawalService creatorWithdrawalService;
+    @Autowired private showroomz.domain.connection.service.OperatorChannelService operatorChannels;
+
+    // ------------------------------------------------------------------ 7-2 이의 신청 기한
+
+    @Test
+    @DisplayName("이의 신청 기한 = 통지 + 3영업일 23:59:59 — 금요일 통지는 수요일 · 토요일 통지는 다음 영업일(월)부터 세어 목요일")
+    void appealDeadlineCountsBusinessDays() {
+        LocalDateTime friday = LocalDateTime.of(2026, 11, 6, 10, 0);
+        BrandSanction brandSanction = inTransaction(() -> brandSanctionService.suspend(brand.marketId(),
+                BrandSuspensionReason.PRODUCT_INFO_FALSIFIED, null, LocalDate.of(2026, 11, 12), operator.getId(), "운영자",
+                friday));
+        assertThat(brandSanction.getAppealDeadlineAt()).isEqualTo(LocalDateTime.of(2026, 11, 11, 23, 59, 59));
+        assertThat(brandSanction.getEndsOn()).isEqualTo(LocalDate.of(2026, 11, 12));
+
+        LocalDateTime saturday = LocalDateTime.of(2026, 11, 7, 10, 0);
+        UserSanction userSanction = inTransaction(() -> userSanctionService.suspend(consumer.getId(),
+                UserSuspensionReason.ABUSIVE_LANGUAGE, null, null, operator.getId(), "운영자", saturday));
+        assertThat(userSanction.getAppealDeadlineAt()).isEqualTo(LocalDateTime.of(2026, 11, 12, 23, 59, 59));
+        assertThat(userSanction.getEndsOn()).isNull();
+
+        String payload = jdbc.queryForObject("SELECT card_payload FROM message WHERE message_id = ?", String.class,
+                brandSanctions.findById(brandSanction.getId()).orElseThrow().getSuspendCardId());
+        assertThat(payload).contains("2026-11-12").contains("appealDeadlineAt");
+    }
+
+    @Test
+    @DisplayName("기간 없는 정지(종료일 비움)는 자동 해제 대상이 아니다 — 배치 후보에도 없다")
+    void indefiniteSuspensionStays() {
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.REPEATED_SHIPPING_DELAY,
+                null, null, operator.getId(), "운영자", now));
+
+        assertThat(brandSanctions.findMemberIdsToAutoRelease(now.toLocalDate().plusYears(1))).doesNotContain(brand.marketId());
+        assertThat(inTransaction(() -> brandSanctionService.releaseByTerm(brand.marketId(), now.plusYears(1)))).isNull();
+        assertThat(marketStatus()).isEqualTo("SUSPENDED");
+    }
+
+    // ------------------------------------------------------------------ 7-2 자동 해제 훅
+
+    @Test
+    @DisplayName("인플루언서 지급 정지 사유 · 기간 종료 — 시스템 해제 · 보류된 지급 예정 행 복귀 · 운영팀 해제 카드 · 처리 이력 주체 시스템 · 자동 해제 표식")
+    void creatorAutoReleaseRestoresPayout() throws Exception {
+        Settlement s = seedSettlement("정지 해제 정산", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
+        jdbc.update("UPDATE settlement_payout SET status = 'SCHEDULED', due_date = ? WHERE settlement_id = ? "
+                + "AND payee = 'CREATOR'", LocalDate.now().plusDays(2), s.getId());
+        LocalDateTime now = LocalDateTime.now();
+        CreatorSanction sanction = inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.SETTLEMENT_INFO_MISMATCH, null, now.toLocalDate(), operator.getId(), "운영자", now));
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("CREATOR_SUSPENDED");
+        // 55 계획서 M5 — 어드민 인플루언서 상세 정지 블록에도 기간 블록
+        adminGet("/v1/admin/creators/" + creator.getId())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.endsOn").value(now.toLocalDate().toString()))
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.periodDays").value(1));
+
+        assertThat(inTransaction(() -> creatorSanctionService.releaseByTerm(creator.getId(), now))).isNull();
+        LocalDateTime nextDay = now.toLocalDate().plusDays(1).atTime(0, 5);
+        assertThat(inTransaction(() -> creatorSanctionService.releaseByTerm(creator.getId(), nextDay))).isNotNull();
+
+        CreatorSanction released = creatorSanctions.findById(sanction.getId()).orElseThrow();
+        assertThat(released.getReleaseReason()).isEqualTo(SanctionReleaseReason.TERM_ENDED);
+        assertThat(released.isAutoReleased()).isTrue();
+        assertThat(released.getReleasedBy()).isNull();
+        assertThat(released.getReleaseCardId()).isNotNull();
+        assertThat(jdbc.queryForObject("SELECT status FROM creator WHERE creator_id = ?", String.class, creator.getId()))
+                .isEqualTo("ACTIVE");
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isNull();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM creator_admin_history WHERE creator_id = ? "
+                + "AND event_type = 'SUSPENSION_RELEASED' AND actor_type = 'SYSTEM'", Long.class, creator.getId()))
+                .isEqualTo(1L);
+        // 한 번 풀린 정지는 다시 풀지 않는다.
+        assertThat(inTransaction(() -> creatorSanctionService.releaseByTerm(creator.getId(), nextDay))).isNull();
+    }
+
+    @Test
+    @DisplayName("소비자 기간 종료 — 「제재 기간 종료」 해제 · 회원 정상 · 해제 토스트 · 이력 주체 시스템 · 계정 상태의 기간 블록")
+    void consumerAutoRelease() throws Exception {
+        LocalDate today = LocalDate.now();
+        adminPost("/v1/admin/users/" + consumer.getId() + "/suspend",
+                Map.of("reason", "RETURN_ABUSE", "endsOn", today.toString())).andExpect(status().isOk());
+        // 55 계획서 M5 — 어드민 소비자 상세 상태 카드에도 기간 블록
+        adminGet("/v1/admin/users/" + consumer.getId())
+                .andExpect(jsonPath("$.statusCard.sanction.term.endsOn").value(today.toString()))
+                .andExpect(jsonPath("$.statusCard.sanction.term.periodDays").value(1))
+                .andExpect(jsonPath("$.statusCard.sanction.term.autoReleaseAt").value(org.hamcrest.Matchers.startsWith(
+                        today.plusDays(1).toString())));
+        consumerAccountStatus().andExpect(jsonPath("$.status").value("SUSPENDED"))
+                .andExpect(jsonPath("$.suspension.term.endsOn").value(today.toString()))
+                .andExpect(jsonPath("$.suspension.term.periodDays").value(1))
+                .andExpect(jsonPath("$.suspension.term.autoReleaseAt").value(org.hamcrest.Matchers.startsWith(
+                        today.plusDays(1).toString())));
+
+        assertThat(inTransaction(() -> userSanctionService.releaseByTerm(consumer.getId(),
+                today.plusDays(1).atTime(0, 5)))).isNotNull();
+
+        UserSanction released = userSanctions.findAll().stream()
+                .filter(u -> u.getUserId().equals(consumer.getId())).findFirst().orElseThrow();
+        assertThat(released.getReleaseReason()).isEqualTo(UserReleaseReason.TERM_ENDED);
+        assertThat(released.isAutoReleased()).isTrue();
+        consumerAccountStatus().andExpect(jsonPath("$.status").value("NORMAL"))
+                .andExpect(jsonPath("$.releaseNotice.releasedAt").isNotEmpty());
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM user_admin_history WHERE user_id = ? "
+                + "AND event_type = 'SUSPENSION_RELEASED' AND actor_type = 'SYSTEM'", Long.class, consumer.getId()))
+                .isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("배치 1회 — 종료일이 지난 브랜드 · 인플루언서 정지만 해제 · 아직 남은 정지는 그대로")
+    void schedulerReleasesOnlyEndedTerms() {
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, now.toLocalDate(), operator.getId(), "운영자", now));
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.OTHER, "기간 남음",
+                now.toLocalDate().plusDays(5), operator.getId(), "운영자", now));
+        jdbc.update("UPDATE brand_sanction SET ends_on = ? WHERE market_id = ?", now.toLocalDate().minusDays(1),
+                brand.marketId());
+
+        new SanctionAutoReleaseScheduler(brandSanctions, creatorSanctions, userSanctions, brandSanctionService,
+                creatorSanctionService, userSanctionService).tick();
+
+        assertThat(marketStatus()).isEqualTo("ACTIVE");
+        assertThat(jdbc.queryForObject("SELECT status FROM creator WHERE creator_id = ?", String.class, creator.getId()))
+                .isEqualTo("SUSPENDED");
+    }
+
+    @Test
+    @DisplayName("운영자 해제가 먼저면 기간 종료 해제는 할 일이 없다 · 운영자 해제 사유로 「정지 기간 종료」는 고를 수 없다")
+    void operatorReleaseFirst() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.OTHER, "확인 필요",
+                now.toLocalDate(), operator.getId(), "운영자", now));
+
+        assertThatThrownBy(() -> inTransaction(() -> creatorSanctionService.release(creator.getId(),
+                SanctionReleaseReason.TERM_ENDED, null, operator.getId(), "운영자", now)))
+                .isInstanceOfSatisfying(BusinessException.class,
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorCode.INVALID_INPUT_VALUE));
+        inTransaction(() -> creatorSanctionService.release(creator.getId(), SanctionReleaseReason.RESOLVED, null,
+                operator.getId(), "운영자", now));
+
+        assertThat(inTransaction(() -> creatorSanctionService.releaseByTerm(creator.getId(), now.plusDays(2)))).isNull();
+    }
+
+    // ------------------------------------------------------------------ 계정 상태 · 정지 중 탈퇴
+
+    @Test
+    @DisplayName("스튜디오 계정 상태 — 기간 3일(오늘 포함) · 자동 해제 시각 · 이의 기한 · 소명 검토 영업일 미정 null")
+    void creatorAccountStatusTerm() throws Exception {
+        LocalDate today = LocalDate.now();
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE,
+                null, today.plusDays(2), operator.getId(), "운영자", LocalDateTime.now()));
+
+        creatorGet("/v1/creator/account-status").andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"))
+                .andExpect(jsonPath("$.sanction.term.endsOn").value(today.plusDays(2).toString()))
+                .andExpect(jsonPath("$.sanction.term.periodDays").value(3))
+                .andExpect(jsonPath("$.sanction.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.sanction.term.appealReviewBusinessDays").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("기-03 — 남은 정산 · 계약이 없는 인플루언서는 정지 중에도 탈퇴 신청이 접수된다")
+    void suspendedCreatorWithoutBlockersRequestsWithdrawal() {
+        Creator fresh = createCreator("정지_쇼룸", "suspended-fresh");
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> creatorSanctionService.suspend(fresh.getId(), CreatorSuspensionReason.FALSE_INFORMATION, null,
+                now.toLocalDate().plusDays(7), operator.getId(), "운영자", now));
+
+        var request = inTransaction(() -> creatorWithdrawalService.request(fresh.getId(), "활동을 그만둡니다", now));
+
+        assertThat(request.getId()).isNotNull();
+        assertThat(jdbc.queryForObject("SELECT status FROM creator WHERE creator_id = ?", String.class, fresh.getId()))
+                .isEqualTo("SUSPENDED");
+    }
+
+    @Test
+    @DisplayName("55 계획서 S11 — 정지 중 탈퇴 설정을 끄면 계정 탭 BLOCKED + 사유(조건 충족이어도) · 신청 409 CREATOR_SUSPENDED · 켜면 AVAILABLE · 접수")
+    void suspendedCreatorWithdrawalFollowsSetting() throws Exception {
+        Creator fresh = createCreator("정지_설정", "suspended-setting");
+        String token = bearerToken(fresh.getUser().getUsername(), RoleType.CREATOR, fresh.getUser().getId());
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> creatorSanctionService.suspend(fresh.getId(), CreatorSuspensionReason.FALSE_INFORMATION, null,
+                now.toLocalDate().plusDays(7), operator.getId(), "운영자", now));
+        String message = "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다.";
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            mockMvc.perform(get(CREATOR_ACCOUNT).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.withdrawal.state").value("BLOCKED"))
+                    .andExpect(jsonPath("$.withdrawal.satisfiedCount").value(3))
+                    .andExpect(jsonPath("$.withdrawal.suspensionBlockedReason").value(message));
+            requestCreatorWithdrawal(token).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
+                    .andExpect(jsonPath("$.message").value(message));
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM creator_withdrawal_request WHERE creator_id = ?", Long.class,
+                fresh.getId())).isZero();
+
+        mockMvc.perform(get(CREATOR_ACCOUNT).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.withdrawal.state").value("AVAILABLE"))
+                .andExpect(jsonPath("$.withdrawal.suspensionBlockedReason").doesNotExist());
+        requestCreatorWithdrawal(token).andExpect(status().isCreated());
+    }
+
+    @Test
+    @DisplayName("[55 S11-05] 대기 중인 신청이 있는 채 정지되고 정지 중 탈퇴 설정이 꺼져 있어도 — 접수된 신청은 그대로 · 스튜디오 계정 탭 PENDING 유지 · "
+            + "suspensionBlockedReason null(1021 7-3)")
+    void pendingCreatorWithdrawalSurvivesSuspensionWhenSettingOff() throws Exception {
+        Creator fresh = createCreator("대기_정지", "pending-suspended");
+        String token = bearerToken(fresh.getUser().getUsername(), RoleType.CREATOR, fresh.getUser().getId());
+        requestCreatorWithdrawal(token).andExpect(status().isCreated());
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> creatorSanctionService.suspend(fresh.getId(), CreatorSuspensionReason.FALSE_INFORMATION, null,
+                now.toLocalDate().plusDays(7), operator.getId(), "운영자", now));
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            mockMvc.perform(get(CREATOR_ACCOUNT).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.withdrawal.state").value("PENDING"))
+                    .andExpect(jsonPath("$.withdrawal.suspensionBlockedReason").doesNotExist());
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(jdbc.queryForObject("SELECT status FROM creator_withdrawal_request WHERE creator_id = ?", String.class,
+                fresh.getId())).isEqualTo("PENDING");
+    }
+
+    // ------------------------------------------------------------------ 55 M5 어드민 정지 블록 기간
+
+    @Test
+    @DisplayName("[55 M5-04] 종료일 없는 정지 — 브랜드 · 인플루언서 · 소비자 어드민 상세 정지 블록 term 의 endsOn · autoReleaseAt · periodDays null · "
+            + "이의 신청 기한은 있다")
+    void indefiniteSuspensionTermHasOnlyAppealDeadline() throws Exception {
+        adminPost("/v1/admin/brands/" + brand.marketId() + "/suspend", Map.of("reason", "REPEATED_SHIPPING_DELAY"))
+                .andExpect(status().isOk());
+        adminGet("/v1/admin/brands/" + brand.marketId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.endsOn").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.periodDays").doesNotExist());
+
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT"))
+                .andExpect(status().isOk());
+        adminGet("/v1/admin/creators/" + creator.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.endsOn").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.periodDays").doesNotExist());
+
+        adminPost("/v1/admin/users/" + consumer.getId() + "/suspend", Map.of("reason", "RETURN_ABUSE"))
+                .andExpect(status().isOk());
+        adminGet("/v1/admin/users/" + consumer.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCard.sanction.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.statusCard.sanction.term.endsOn").doesNotExist())
+                .andExpect(jsonPath("$.statusCard.sanction.term.autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath("$.statusCard.sanction.term.periodDays").doesNotExist());
+    }
+
+    // ------------------------------------------------------------------ 56 B1 운영팀 채널 정지 카드의 기간
+
+    @Test
+    @DisplayName("[56 B1] 운영팀 채널 정지 카드 — 스튜디오 · 어드민 카드에 종료일 · 자동 해제 시각(종료일 다음 날 00:00) · 기간 14일 · "
+            + "저장된 이의 신청 기한 / 해제 카드는 기간 · 기한이 없다 / 기간 없는 브랜드 정지 카드는 이의 신청 기한만 있다")
+    void suspensionCardCarriesTermAndAppealDeadline() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate endsOn = now.toLocalDate().plusDays(13);
+        CreatorSanction sanction = inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE, null, endsOn, operator.getId(), "운영자", now));
+        String appealDeadline = sanction.getAppealDeadlineAt().toLocalDate() + "T23:59:59";
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + creatorChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value("CREATOR"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value(endsOn.toString()))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").value(single(endsOn.plusDays(1) + "T00:00:00")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(14))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single(appealDeadline)));
+        }
+
+        inTransaction(() -> creatorSanctionService.release(creator.getId(), SanctionReleaseReason.RESOLVED, null,
+                operator.getId(), "운영자", now.plusMinutes(1)));
+        creatorGet("/v1/creator/threads/" + creatorChannel + "/messages").andExpect(status().isOk())
+                .andExpect(jsonPath(RELEASED_CARD + ".reasonCode").value("RESOLVED"))
+                .andExpect(jsonPath(RELEASED_CARD + ".endsOn").doesNotExist())
+                .andExpect(jsonPath(RELEASED_CARD + ".autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath(RELEASED_CARD + ".periodDays").doesNotExist())
+                .andExpect(jsonPath(RELEASED_CARD + ".appealDeadlineAt").doesNotExist())
+                // 정지 카드는 해제 뒤에도 그때의 기간을 그대로 보인다(스냅샷)
+                .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value(endsOn.toString()));
+
+        BrandSanction brandSanction = inTransaction(() -> brandSanctionService.suspend(brand.marketId(),
+                BrandSuspensionReason.REPEATED_SHIPPING_DELAY, null, null, operator.getId(), "운영자", now));
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+        sellerGet("/v1/seller/threads/" + brandChannel + "/messages").andExpect(status().isOk())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value("BRAND"))
+                .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt")
+                        .value(single(brandSanction.getAppealDeadlineAt().toLocalDate() + "T23:59:59")));
+    }
+
+    @Test
+    @DisplayName("[56 B1-02] 브랜드 정지(종료일 지정) → 파트너 운영팀 채널 정지 카드 — 10.08 14:20 통지 · 종료일 10.21 · 자동 해제 10.22 00:00 · "
+            + "14일 · 이의 신청 기한 10.14(한글날 제외 3영업일) · 어드민 카드도 같은 값")
+    void brandSuspensionCardCarriesTerm() throws Exception {
+        fixHolidays();
+        LocalDateTime notifiedAt = LocalDateTime.of(2026, 10, 8, 14, 20);
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, LocalDate.of(2026, 10, 21), operator.getId(), "운영자", notifiedAt));
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                sellerGet("/v1/seller/threads/" + brandChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + brandChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value("BRAND"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".reasonCode").value("PRODUCT_INFO_FALSIFIED"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value("2026-10-21"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").value(single("2026-10-22T00:00:00")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(14))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single("2026-10-14T23:59:59")));
+        }
+    }
+
+    @Test
+    @DisplayName("[56 B1-03] 종료일 없는 정지 카드 — 스튜디오 · 어드민(인플루언서 채널) · 어드민(브랜드 채널) 모두 종료일 · 자동 해제 · 기간 일수가 "
+            + "비고 이의 신청 기한(10.08 통지 → 10.14)만 있다")
+    void indefiniteSuspensionCardHasOnlyAppealDeadline() throws Exception {
+        fixHolidays();
+        LocalDateTime notifiedAt = LocalDateTime.of(2026, 10, 8, 14, 20);
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.CONSUMER_RESPONSE_NEGLECT, null, null, operator.getId(), "운영자", notifiedAt));
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.REPEATED_SHIPPING_DELAY,
+                null, null, operator.getId(), "운영자", notifiedAt));
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+
+        Map<String, org.springframework.test.web.servlet.ResultActions> surfaces = Map.of(
+                "CREATOR", creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"),
+                "CREATOR(admin)", adminGet("/v1/admin/threads/" + creatorChannel + "/messages"),
+                "BRAND(admin)", adminGet("/v1/admin/threads/" + brandChannel + "/messages"));
+        for (var surface : surfaces.entrySet()) {
+            surface.getValue().andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value(surface.getKey().replace("(admin)", "")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single("2026-10-14T23:59:59")));
+        }
+    }
+
+    @Test
+    @DisplayName("[56 B1-04] 해제 카드는 기간 칸이 빈 값(파트너 · 어드민) · 이 변경 전에 쌓인 정지 카드는 payload 에 저장된 값 그대로(지금 정지 행이 아니라 "
+            + "카드 스냅샷) · 기간을 담지 않던 1017 카드는 빈 값")
+    void releasedAndLegacySuspensionCards() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate brandEndsOn = now.toLocalDate().plusDays(6);
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, brandEndsOn, operator.getId(), "운영자", now));
+        inTransaction(() -> brandSanctionService.release(brand.marketId(), SanctionReleaseReason.RESOLVED, null,
+                operator.getId(), "운영자", now.plusMinutes(1)));
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                sellerGet("/v1/seller/threads/" + brandChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + brandChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(RELEASED_CARD + ".memberType").value("BRAND"))
+                    .andExpect(jsonPath(RELEASED_CARD + ".reasonCode").value("RESOLVED"))
+                    .andExpect(jsonPath(RELEASED_CARD + ".endsOn").doesNotExist())
+                    .andExpect(jsonPath(RELEASED_CARD + ".autoReleaseAt").doesNotExist())
+                    .andExpect(jsonPath(RELEASED_CARD + ".periodDays").doesNotExist())
+                    .andExpect(jsonPath(RELEASED_CARD + ".appealDeadlineAt").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value(brandEndsOn.toString()))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(7));
+        }
+
+        // 정지 행은 지금 기준(종료일 +13)이지만 카드는 1021 때 저장된 10.08 통지 스냅샷 — 저장된 값이 그대로 나온다
+        CreatorSanction sanction = inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE, null, now.toLocalDate().plusDays(13), operator.getId(),
+                "운영자", now));
+        String label = CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE.getLabel();
+        jdbc.update("UPDATE message SET card_payload = ? WHERE message_id = ?", ("{\"reasonLabel\":\"%s\","
+                + "\"processedAt\":\"2026-10-08T14:20:00\",\"operatorId\":%d,\"sanction\":{\"memberType\":\"CREATOR\","
+                + "\"reasonCode\":\"GROUP_BUY_NONPERFORMANCE\",\"reasonLabel\":\"%s\",\"payoutHeld\":true,"
+                + "\"endsOn\":\"2026-10-21\",\"appealDeadlineAt\":\"2026-10-14T23:59:59\"}}")
+                .formatted(label, operator.getId(), label), sanction.getSuspendCardId());
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + creatorChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".reasonCode").value("GROUP_BUY_NONPERFORMANCE"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value("2026-10-21"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").value(single("2026-10-22T00:00:00")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(14))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single("2026-10-14T23:59:59")));
+        }
+
+        // 1017 카드 — 사유 블록은 있지만 기간 · 기한을 담지 않았다
+        jdbc.update("UPDATE message SET card_payload = ? WHERE message_id = ?", ("{\"reasonLabel\":\"%s\","
+                + "\"processedAt\":\"2026-10-08T14:20:00\",\"operatorId\":%d,\"sanction\":{\"memberType\":\"CREATOR\","
+                + "\"reasonCode\":\"GROUP_BUY_NONPERFORMANCE\",\"reasonLabel\":\"%s\",\"payoutHeld\":true}}")
+                .formatted(label, operator.getId(), label), sanction.getSuspendCardId());
+        creatorGet("/v1/creator/threads/" + creatorChannel + "/messages").andExpect(status().isOk())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".reasonCode").value("GROUP_BUY_NONPERFORMANCE"))
+                .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[56 B1-05] 같은 정지의 운영팀 채널 카드 = 계정 상태 term — 파트너 · 스튜디오 각각 이의 신청 기한 · 종료일 · 자동 해제 · 기간 일수가 같다"
+            + "(어드민 카드도)")
+    void suspensionCardMatchesAccountStatusTerm() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, now.toLocalDate().plusDays(6), operator.getId(), "운영자", now));
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE,
+                null, now.toLocalDate().plusDays(2), operator.getId(), "운영자", now));
+
+        JsonNode brandAccount = json(sellerGet("/v1/seller/account-status").andExpect(status().isOk())).get("sanction");
+        Long brandChannel = brandAccount.get("operatorChannelThreadId").asLong();
+        assertCardMatchesTerm(brandAccount, sellerGet("/v1/seller/threads/" + brandChannel + "/messages"));
+        assertCardMatchesTerm(brandAccount, adminGet("/v1/admin/threads/" + brandChannel + "/messages"));
+
+        JsonNode creatorAccount = json(creatorGet("/v1/creator/account-status").andExpect(status().isOk())).get("sanction");
+        Long creatorChannel = creatorAccount.get("operatorChannelThreadId").asLong();
+        assertCardMatchesTerm(creatorAccount, creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"));
+        assertCardMatchesTerm(creatorAccount, adminGet("/v1/admin/threads/" + creatorChannel + "/messages"));
+    }
+
+    /** 계정 상태의 {@code suspendCardMessageId} 카드를 찾아 기간 네 값이 {@code term} 과 같은지 본다. */
+    private void assertCardMatchesTerm(JsonNode accountSanction,
+                                       org.springframework.test.web.servlet.ResultActions messages) throws Exception {
+        JsonNode term = accountSanction.get("term");
+        long cardId = accountSanction.get("suspendCardMessageId").asLong();
+        JsonNode card = null;
+        for (JsonNode message : json(messages.andExpect(status().isOk())).get("content")) {
+            if (message.get("messageId").asLong() == cardId) {
+                card = message.at("/card/detail/sanction");
+            }
+        }
+        assertThat(card).as("정지 카드 " + cardId).isNotNull();
+        assertThat(term.get("appealDeadlineAt").isNull()).isFalse();
+        assertThat(card.get("appealDeadlineAt").asText()).isEqualTo(term.get("appealDeadlineAt").asText());
+        assertThat(card.get("endsOn").asText()).isEqualTo(term.get("endsOn").asText());
+        assertThat(card.get("autoReleaseAt").asText()).isEqualTo(term.get("autoReleaseAt").asText());
+        assertThat(card.get("periodDays").asInt()).isEqualTo(term.get("periodDays").asInt());
+    }
+
+    // ------------------------------------------------------------------ helpers
+
+    private static final String SUSPENDED_CARD = "$.content[?(@.card.cardType == 'ACCOUNT_SUSPENDED')].card.detail.sanction";
+    private static final String RELEASED_CARD =
+            "$.content[?(@.card.cardType == 'ACCOUNT_SUSPENSION_RELEASED')].card.detail.sanction";
+
+    /** 필터 경로는 배열로 나온다 — 카드 한 장 · 시각은 프로젝트 포맷(yyyy-MM-dd'T'HH:mm:ss'Z')이라 앞부분으로 맞춘다. */
+    private static org.hamcrest.Matcher<Iterable<? extends String>> single(String dateTimePrefix) {
+        return org.hamcrest.Matchers.contains(org.hamcrest.Matchers.startsWith(dateTimePrefix));
+    }
+
+    private String marketStatus() {
+        return jdbc.queryForObject("SELECT status FROM market WHERE market_id = ?", String.class, brand.marketId());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions requestCreatorWithdrawal(String token) throws Exception {
+        return mockMvc.perform(post(CREATOR_ACCOUNT_WITHDRAWALS).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"활동을 그만둡니다\"}"));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions consumerAccountStatus() throws Exception {
+        return mockMvc.perform(get("/v1/user/account-status").header(HttpHeaders.AUTHORIZATION, consumerToken))
+                .andExpect(status().isOk());
+    }
+}

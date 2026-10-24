@@ -10,8 +10,8 @@ import org.springframework.test.util.ReflectionTestUtils;
 import showroomz.api.admin.changerequest.dto.AdminChangeRequestDto;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
 import showroomz.domain.changerequest.type.ChangeRequestType;
@@ -23,6 +23,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ class AdminChangeRequestServiceTest {
     private static final long PROCESSOR_ID = 99L;
 
     @Mock
-    private BrandChangeRequestRepository brandChangeRequestRepository;
+    private ChangeRequestRepository changeRequestRepository;
     @Mock
     private MarketRepository marketRepository;
     @Mock
@@ -56,16 +57,17 @@ class AdminChangeRequestServiceTest {
         seller.setRepresentativeName("김대표");
         market = new Market(seller, "코코브라운", "02-1234-5678");
 
-        adminChangeRequestService = new AdminChangeRequestService(
-                brandChangeRequestRepository, marketRepository, sellerRepository,
-                // PG 파트너 동기화 빈 없음 — 승인 뒤 훅은 ifAvailable 로 조용히 건너뛴다.
-                new ChangeRequestApplier(new org.springframework.beans.factory.support.DefaultListableBeanFactory()
-                        .getBeanProvider(showroomz.domain.settlement.service.SettlementPartnerSyncService.class)),
-                mailService);
+        adminChangeRequestService = new AdminChangeRequestService(changeRequestRepository, sellerRepository,
+                List.of(new BrandChangeRequestDetailAssembler()),
+                // PG 파트너 동기화 빈 없음 — 승인 뒤 훅은 ifAvailable 로 조용히 건너뛴다. 인플루언서 전략은 통합 테스트가 본다.
+                List.of(new BrandChangeRequestApplier(new org.springframework.beans.factory.support.DefaultListableBeanFactory()
+                        .getBeanProvider(showroomz.domain.settlement.service.SettlementPartnerSyncService.class),
+                        marketRepository, mailService,
+                        org.mockito.Mockito.mock(showroomz.domain.notification.service.NotificationPublisher.class))));
     }
 
-    private BrandChangeRequest pendingBusinessInfoRequest(String requestedName) {
-        BrandChangeRequest request = BrandChangeRequest.create(
+    private ChangeRequest pendingBusinessInfoRequest(String requestedName) {
+        ChangeRequest request = ChangeRequest.create(
                 "CHG-2026-0001", market, ChangeRequestType.BUSINESS_INFO,
                 "사유", "김담당", "https://cdn.example.com/a.jpg", "a.jpg", 1024L);
         request.addItem(ChangeRequestField.REPRESENTATIVE_NAME, "김대표", requestedName, 0);
@@ -76,8 +78,8 @@ class AdminChangeRequestServiceTest {
     @Test
     @DisplayName("승인하면 요청 항목이 Seller에 실제로 반영된다")
     void approveAppliesRequestedValuesToSeller() {
-        BrandChangeRequest request = pendingBusinessInfoRequest("이대표");
-        given(brandChangeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        ChangeRequest request = pendingBusinessInfoRequest("이대표");
+        given(changeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
 
         AdminChangeRequestDto.ProcessResponse response = adminChangeRequestService.approve(REQUEST_ID, PROCESSOR_ID);
 
@@ -89,13 +91,13 @@ class AdminChangeRequestServiceTest {
     @Test
     @DisplayName("브랜드명 변경 승인 시 다른 브랜드가 선점한 이름이면 승인을 거부한다")
     void approveRejectsWhenMarketNameTakenByAnother() {
-        BrandChangeRequest request = BrandChangeRequest.create(
+        ChangeRequest request = ChangeRequest.create(
                 "CHG-2026-0002", market, ChangeRequestType.BUSINESS_INFO,
                 "사유", "김담당", "https://cdn.example.com/a.jpg", "a.jpg", 1024L);
         request.addItem(ChangeRequestField.MARKET_NAME, "코코브라운", "새브랜드명", 0);
         ReflectionTestUtils.setField(request, "id", REQUEST_ID);
 
-        given(brandChangeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        given(changeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
         given(marketRepository.existsByMarketNameAndSellerStatusNotRejected(eq("새브랜드명"), eq(SellerStatus.REJECTED)))
                 .willReturn(true);
 
@@ -109,9 +111,9 @@ class AdminChangeRequestServiceTest {
     @Test
     @DisplayName("PENDING 상태가 아닌 요청은 승인/반려할 수 없다")
     void rejectsProcessingNonPendingRequest() {
-        BrandChangeRequest request = pendingBusinessInfoRequest("이대표");
+        ChangeRequest request = pendingBusinessInfoRequest("이대표");
         request.approve(PROCESSOR_ID); // 이미 처리 완료 상태로 전이
-        given(brandChangeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        given(changeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
 
         assertThatThrownBy(() -> adminChangeRequestService.approve(REQUEST_ID, PROCESSOR_ID))
                 .isInstanceOf(BusinessException.class)
@@ -122,8 +124,8 @@ class AdminChangeRequestServiceTest {
     @Test
     @DisplayName("반려 사유가 요청 유형에 맞지 않으면 거부한다")
     void rejectsRejectReasonNotSupportingType() {
-        BrandChangeRequest request = pendingBusinessInfoRequest("이대표");
-        given(brandChangeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        ChangeRequest request = pendingBusinessInfoRequest("이대표");
+        given(changeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
 
         AdminChangeRequestDto.RejectRequest rejectRequest =
                 new AdminChangeRequestDto.RejectRequest(ChangeRequestRejectReason.BANKBOOK_MISSING, null);
@@ -137,8 +139,8 @@ class AdminChangeRequestServiceTest {
     @Test
     @DisplayName("기타(OTHER) 사유를 선택하면 상세 사유가 필수다")
     void requiresDetailWhenReasonIsOther() {
-        BrandChangeRequest request = pendingBusinessInfoRequest("이대표");
-        given(brandChangeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        ChangeRequest request = pendingBusinessInfoRequest("이대표");
+        given(changeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
 
         AdminChangeRequestDto.RejectRequest rejectRequest =
                 new AdminChangeRequestDto.RejectRequest(ChangeRequestRejectReason.OTHER, "  ");
@@ -152,8 +154,8 @@ class AdminChangeRequestServiceTest {
     @Test
     @DisplayName("정형 사유 반려가 정상 처리되면 상태가 REJECTED로 바뀌고 사유가 기록된다")
     void rejectSucceedsWithSupportedReason() {
-        BrandChangeRequest request = pendingBusinessInfoRequest("이대표");
-        given(brandChangeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
+        ChangeRequest request = pendingBusinessInfoRequest("이대표");
+        given(changeRequestRepository.findById(REQUEST_ID)).willReturn(Optional.of(request));
 
         AdminChangeRequestDto.RejectRequest rejectRequest =
                 new AdminChangeRequestDto.RejectRequest(ChangeRequestRejectReason.REASON_INSUFFICIENT, null);

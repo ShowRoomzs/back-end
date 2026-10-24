@@ -12,8 +12,9 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * 정산 지급 배치(44 어드민 설계서 3-3) — 영업일 {@code settlement.payout-hour}시에 예정일이 된 수취자 행을 지시한다. 비영업일에는
- * 건너뛴다(예정일 자체가 영업일 계산이라 다음 영업일에 나간다). 앞단에서 주민등록번호가 등록된 보류 건을 다시 판정한다(5-4).
+ * 정산 지급 배치(44 어드민 설계서 3-3 · 토스 설계서 5-1) — 영업일 {@code settlement.payout-hour}시에 예정일이 된 수취자 행을 지시한다. 비영업일에는
+ * 건너뛴다(예정일 자체가 영업일 계산이라 다음 영업일에 나간다). 앞단에서 보류 건을 다시 판정하고, PG 모드에서는 잔액을 먼저 보아 들어가는
+ * 만큼만 지시한다(5-1 ①). 끝에 오늘 올린 건수 · 합계를 PG 와 대조해 운영자에게 요약을 보낸다(5-3).
  */
 @Slf4j
 @Component
@@ -42,19 +43,10 @@ public class SettlementPayoutScheduler {
         if (released > 0) {
             log.info("정산 지급 보류 해제 - {}건", released);
         }
-        int distributed = 0;
-        for (Long settlementId : payoutService.findSettlementIdsDue(today, MAX_PER_RUN)) {
-            try {
-                payoutService.distribute(settlementId, today, now);
-                distributed++;
-            } catch (Exception e) {
-                log.error("정산 지급 실패 - settlementId: {}", settlementId, e);
-            }
-        }
+        int distributed = payoutService.distributeDue(today, now, MAX_PER_RUN);
         if (distributed > 0) {
             log.info("정산 지급 지시 완료 - {}건", distributed);
         }
-        // 포트원 모드 — 올라간 정산건을 PG 와 대조하고 운영자에게 「콘솔에서 일괄 지급 실행」을 알린다(포트원 설계서 5-3). 시뮬레이터는 0건.
-        payoutService.notifyReadyForExecution(today);
+        payoutService.reconcileRequested(today);
     }
 }

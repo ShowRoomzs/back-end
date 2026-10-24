@@ -32,7 +32,12 @@ import showroomz.domain.payment.entity.Payment;
 import showroomz.domain.payment.entity.PaymentCancel;
 import showroomz.domain.payment.repository.PaymentCancelRepository;
 import showroomz.domain.payment.repository.PaymentRepository;
+import showroomz.domain.bank.entity.Bank;
+import showroomz.domain.bank.repository.BankRepository;
+import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.member.user.vo.RefundAccount;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.utils.PersonalDataCipher;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -61,7 +66,7 @@ public class AdminRefundAssembler {
     private static final Set<FulfillmentEventType> REFUND_EVENTS = EnumSet.of(
             FulfillmentEventType.REFUND_ENQUEUED_BY_OPERATOR, FulfillmentEventType.REFUND_EXECUTED,
             FulfillmentEventType.REFUND_FAILED, FulfillmentEventType.REFUND_VOIDED,
-            FulfillmentEventType.REFUND_RECORDED_MANUALLY);
+            FulfillmentEventType.REFUND_RECORDED_MANUALLY, FulfillmentEventType.REFUND_TRANSFERRED);
     private static final Set<ClaimEventType> CLAIM_REFUND_EVENTS = EnumSet.of(ClaimEventType.DISPUTE_ACCEPTED,
             ClaimEventType.REFUND_EXECUTED);
     private static final String ORIGINAL = "ORIGINAL";
@@ -80,6 +85,9 @@ public class AdminRefundAssembler {
     private final AdminOperatorResolver operatorResolver;
     private final OrderProperties orderProperties;
     private final OrderSettlementReader settlementReader;
+    private final BankRepository bankRepository;
+    private final OneToOneInquiryRepository inquiryRepository;
+    private final PersonalDataCipher cipher;
 
     /** 한 페이지의 연관 — 행마다 쿼리하지 않는다. */
     private record Context(Map<String, Payment> payments, Map<Long, OrderCancelRequest> cancelRequests,
@@ -114,7 +122,7 @@ public class AdminRefundAssembler {
                         .thenComparing(OrderFulfillmentHistory::getId))
                 .toList();
         Map<Long, String> names = operatorResolver.namesOf(Stream.concat(
-                Stream.of(task.getRequestedBy(), task.getExecutedBy()),
+                Stream.of(task.getRequestedBy(), task.getExecutedBy(), task.getTransferredBy()),
                 Stream.concat(groupHistory.stream().filter(h -> h.getActorType() == FulfillmentActorType.ADMIN)
                                 .map(OrderFulfillmentHistory::getActorId),
                         claimHistory.stream().filter(h -> h.getActorType() == FulfillmentActorType.ADMIN)
@@ -163,9 +171,45 @@ public class AdminRefundAssembler {
                         sourceLabel(task, context), sourceRef(task, context), claimId, cancelRequestId, collectionId),
                 task.getOrigin(), task.getOrigin().getLabel(), reason, target, additional,
                 settlement(task),
-                task.getStatus(), statusLabel(task.getStatus()), task.getAttempt(),
+                task.getStatus(), statusLabel(task), task.getAttempt(),
                 orderProperties.getRefundAutoMaxAttempts(), autoRetry(task, groupHistory), failure, execution,
-                executable(task), task.isVoidable(), task.isExecutable(), history);
+                executable(task), task.isVoidable(), manuallyCompletable(task), history, task.getMethod(),
+                transfer(task, names));
+    }
+
+    /**
+     * M3 계좌 송금(1021 설계서 4-5) — 폼 기본값은 소비자가 저장해 둔 환불 계좌, 「1:1 문의 #N 로 받은 계좌」는 이 환급 건으로 쓴 최신 문의다.
+     * 계좌 송금 행이 아니면 null.
+     */
+    private AdminTransactionDto.RefundTransfer transfer(OrderRefundTask task, Map<Long, String> names) {
+        if (!task.isBankTransfer()) {
+            return null;
+        }
+        RefundAccount saved = task.getOrder().getUser().getRefundAccount();
+        AdminTransactionDto.RefundTransferAccount suggested = saved == null || saved.getAccountNumber() == null
+                || saved.getBank() == null ? null
+                : new AdminTransactionDto.RefundTransferAccount(saved.getBank().getCode(), saved.getBank().getName(),
+                saved.getAccountNumber(), saved.getAccountHolder());
+        Long inquiryId = inquiryRepository.findFirstByRefundTaskIdOrderByIdDesc(task.getId())
+                .map(showroomz.domain.inquiry.entity.OneToOneInquiry::getId).orElse(null);
+        AdminTransactionDto.RefundTransferRecord record = task.getTransferredAt() == null ? null
+                : new AdminTransactionDto.RefundTransferRecord(task.getTransferBankCode(),
+                bankRepository.findById(task.getTransferBankCode()).map(Bank::getName).orElse(null),
+                maskAccount(cipher.decrypt(task.getTransferAccountEnc())), task.getTransferHolderName(),
+                task.getTransferredAt(), task.getTransferredBy(), names.get(task.getTransferredBy()));
+        return new AdminTransactionDto.RefundTransfer(task.isTransferable(), suggested, inquiryId, record);
+    }
+
+    /** 계좌번호 뒤 4자리만 — 숫자만 센다. */
+    static String maskAccount(String account) {
+        if (account == null) {
+            return null;
+        }
+        String digits = account.replaceAll("[^0-9]", "");
+        if (digits.length() <= 4) {
+            return digits;
+        }
+        return "*".repeat(digits.length() - 4) + digits.substring(digits.length() - 4);
     }
 
     /**
@@ -222,9 +266,9 @@ public class AdminRefundAssembler {
                 task.getOrigin().getLabel(), task.getReasonCode() == null ? null : task.getReasonCode().getLabel(),
                 task.getReasonDetail(), paymentKind, partial, payment == null ? null : payment.methodLabel(),
                 paymentLabel(task, payment, paymentKind, partial), task.getRefundAmount(), task.getStatus(),
-                statusLabel(task.getStatus()), statusNote(task, context.names()), task.getAttempt(), task.getLastError(),
+                statusLabel(task), statusNote(task, context.names()), task.getAttempt(), task.getLastError(),
                 displayAt(task), task.getCreatedAt(), task.getExecutedAt(), executable(task), task.isVoidable(),
-                task.isExecutable());
+                manuallyCompletable(task), task.getMethod(), task.isTransferable());
     }
 
     private Context context(List<OrderRefundTask> tasks) {
@@ -239,8 +283,9 @@ public class AdminRefundAssembler {
         Set<Long> adminCancelled = directGroups.isEmpty() ? Set.of()
                 : new HashSet<>(fulfillmentHistoryRepository.findGroupIdsWithEvent(directGroups,
                 FulfillmentEventType.CANCELLED_BY_SELLER, FulfillmentActorType.ADMIN));
-        List<Long> collectionIds = Stream.concat(sourceIds(tasks, RefundTaskSource.CLAIM_RETURN_PASSED).stream(),
-                sourceIds(tasks, RefundTaskSource.CLAIM_PAYMENT_CANCELLED).stream()).distinct().toList();
+        List<Long> collectionIds = Stream.of(RefundTaskSource.CLAIM_RETURN_PASSED, RefundTaskSource.CLAIM_PAYMENT_CANCELLED,
+                        RefundTaskSource.FREIGHT_REFUND)
+                .flatMap(source -> sourceIds(tasks, source).stream()).distinct().toList();
         Map<Long, List<OrderClaim>> claimsByCollection = collectionIds.isEmpty() ? Map.of()
                 : claimRepository.findByCollectionIds(collectionIds).stream()
                 .collect(Collectors.groupingBy(claim -> claim.getCollection().getId()));
@@ -284,6 +329,8 @@ public class AdminRefundAssembler {
                 yield withdrawn && exchange ? base + " · 교환 철회" : base;
             }
             case OPERATOR_REASON -> task.getReasonCode() == null ? "운영자 사유 환불" : task.getReasonCode().getLabel();
+            case FREIGHT_REFUND -> task.isBankTransfer() ? "운임 환급 · 계좌 송금" : "운임 환급";
+            case STALL_REFUND_CHOSEN -> "추적 정지 · 소비자 환불 선택";
         };
     }
 
@@ -293,7 +340,7 @@ public class AdminRefundAssembler {
         }
         return switch (task.getSource()) {
             case CANCEL_REQUEST_APPROVED -> "CRQ-" + task.getSourceId();
-            case CLAIM_RETURN_PASSED, CLAIM_PAYMENT_CANCELLED -> claimsOf(task, context).stream()
+            case CLAIM_RETURN_PASSED, CLAIM_PAYMENT_CANCELLED, FREIGHT_REFUND -> claimsOf(task, context).stream()
                     .min(Comparator.comparing(OrderClaim::getId)).map(OrderClaim::claimNumber).orElse(null);
             case OPERATOR_REASON -> {
                 OrderClaim claim = context.claimsById().get(task.getSourceId());
@@ -310,7 +357,7 @@ public class AdminRefundAssembler {
 
     private static Long collectionIdOf(OrderRefundTask task, Context context) {
         return switch (task.getSource()) {
-            case CLAIM_RETURN_PASSED, CLAIM_PAYMENT_CANCELLED -> task.getSourceId();
+            case CLAIM_RETURN_PASSED, CLAIM_PAYMENT_CANCELLED, FREIGHT_REFUND -> task.getSourceId();
             case OPERATOR_REASON -> {
                 OrderClaim claim = task.getSourceId() == null ? null : context.claimsById().get(task.getSourceId());
                 yield claim == null ? null : claim.getCollection().getId();
@@ -353,6 +400,9 @@ public class AdminRefundAssembler {
     }
 
     private String paymentLabel(OrderRefundTask task, Payment payment, String paymentKind, boolean partial) {
+        if (task.isBankTransfer()) {
+            return "계좌 송금";
+        }
         if (ADDITIONAL.equals(paymentKind)) {
             // 추가 결제는 원래 결제 테이블이 아니라 클레임 결제다 — 수단은 그 결제에서 읽는다.
             String method = task.getPaymentId() == null ? null : claimPaymentRepository.findById(task.getPaymentId())
@@ -365,8 +415,17 @@ public class AdminRefundAssembler {
         return payment.getMethod().getLabel() + " · 원래" + (partial ? " 부분" : "");
     }
 
-    private static String statusLabel(RefundTaskStatus status) {
-        return switch (status) {
+    private static String statusLabel(OrderRefundTask task) {
+        if (task.isBankTransfer()) {
+            // 계좌 송금은 집행이 아니라 운영자 송금 뒤 기록이다 — 대기 · 완료 문장이 다르다(1021 설계서 4-5 「송금 대기」).
+            if (task.getStatus() == RefundTaskStatus.PENDING) {
+                return "송금 대기";
+            }
+            if (task.getStatus() == RefundTaskStatus.DONE) {
+                return "송금 완료";
+            }
+        }
+        return switch (task.getStatus()) {
             case PENDING -> "집행 대기";
             case EXECUTING -> "환불 처리 중";
             case DONE -> "환불 완료";
@@ -385,7 +444,8 @@ public class AdminRefundAssembler {
                 String error = task.getLastError() == null ? "환불 실패" : task.getLastError();
                 yield task.getAttempt() > 1 ? error + " · 재시도 " + (task.getAttempt() - 1) + "회 실패" : error;
             }
-            case DONE -> task.getExecutedBy() == null ? null
+            case DONE -> task.getExecutedBy() == null ? null : task.isBankTransfer()
+                    ? "송금 기록 " + names.getOrDefault(task.getExecutedBy(), "운영자")
                     : "집행 " + names.getOrDefault(task.getExecutedBy(), "운영자") + " · 재확인";
             case VOID -> "편입 철회";
         };
@@ -402,6 +462,11 @@ public class AdminRefundAssembler {
 
     private static boolean executable(OrderRefundTask task) {
         return task.isExecutable() && task.getPaymentId() != null;
+    }
+
+    /** [수동 완료 기록] — 계좌 송금 행은 [송금 완료 기록]으로만 닫는다. */
+    private static boolean manuallyCompletable(OrderRefundTask task) {
+        return task.isExecutable() && !task.isBankTransfer();
     }
 
     /** 이력이 이 큐 행의 것인가 — detail 의 환불번호 접두로 가른다(39 설계서 7-2 #5). */

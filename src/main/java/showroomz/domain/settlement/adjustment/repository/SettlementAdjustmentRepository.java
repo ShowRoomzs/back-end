@@ -51,6 +51,13 @@ public interface SettlementAdjustmentRepository extends JpaRepository<Settlement
             + "AND a.deadlineAt < :now")
     int closeAsExpired(@Param("adjustmentId") Long adjustmentId, @Param("now") LocalDateTime now);
 
+    /** 요청자 철회(1021 기-14) — 원래 금액 · 협의 중일 때만. 0행이면 상대가 먼저 응답했거나 종결됐다. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementAdjustment a SET a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.WITHDRAWN, "
+            + "a.finalRewardAmount = a.originalRewardAmount, a.closedAt = :now "
+            + "WHERE a.id = :adjustmentId AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN")
+    int closeAsWithdrawn(@Param("adjustmentId") Long adjustmentId, @Param("now") LocalDateTime now);
+
     /** D-1 통지 표지(6-1 ①) — 멱등. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementAdjustment a SET a.noticeSentAt = :now WHERE a.id = :adjustmentId "
@@ -101,4 +108,22 @@ public interface SettlementAdjustmentRepository extends JpaRepository<Settlement
     @Query("SELECT MIN(a.deadlineAt) FROM SettlementAdjustment a "
             + "WHERE a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN")
     LocalDateTime findEarliestOpenDeadline();
+
+    /**
+     * 정산 조정 「내 응답 필요」 건수(1017 설계서 4-1 · 홈 정산 카드 · GNB 정산 배지) — 열린 협의 중 최신 제안이 응답 대기이고
+     * 제안자가 내가 아닌 것({@code AdjustmentPermissionPolicy.turnFor == MY_TURN}과 같은 판정).
+     */
+    @Query("SELECT COUNT(a) FROM SettlementAdjustment a, SettlementAdjustmentProposal p "
+            + "WHERE a.marketId = :marketId AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN "
+            + "AND p.adjustmentId = a.id AND p.status = showroomz.domain.settlement.adjustment.type.ProposalStatus.PENDING "
+            + "AND p.proposerType <> showroomz.domain.settlement.adjustment.type.SettlementParty.SELLER "
+            + "AND p.seq = (SELECT MAX(p2.seq) FROM SettlementAdjustmentProposal p2 WHERE p2.adjustmentId = a.id)")
+    long countSellerTurn(@Param("marketId") Long marketId);
+
+    @Query("SELECT COUNT(a) FROM SettlementAdjustment a, SettlementAdjustmentProposal p "
+            + "WHERE a.creatorId = :creatorId AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN "
+            + "AND p.adjustmentId = a.id AND p.status = showroomz.domain.settlement.adjustment.type.ProposalStatus.PENDING "
+            + "AND p.proposerType <> showroomz.domain.settlement.adjustment.type.SettlementParty.CREATOR "
+            + "AND p.seq = (SELECT MAX(p2.seq) FROM SettlementAdjustmentProposal p2 WHERE p2.adjustmentId = a.id)")
+    long countCreatorTurn(@Param("creatorId") Long creatorId);
 }

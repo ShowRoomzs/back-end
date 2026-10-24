@@ -77,6 +77,7 @@ public class SellerClaimQueryService {
     private final OrderProductRepository orderProductRepository;
     private final SellerClaimAssembler assembler;
     private final OrderProperties orderProperties;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
 
     public PageResponse<SellerClaimListItem> getClaims(String sellerEmail, ClaimTab tab, Set<ClaimType> types,
                                                        ClaimReason reason, LocalDate from, LocalDate to,
@@ -89,25 +90,31 @@ public class SellerClaimQueryService {
     public PageResponse<SellerClaimListItem> searchClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                           ClaimReason reason, LocalDate from, LocalDate to,
                                                           String keyword, PagingRequest pagingRequest) {
-        return searchClaims(marketId, tab, types, reason, from, to, keyword, null, null, null, pagingRequest);
+        return searchClaims(marketId, tab, types, reason, from, to, keyword, null, null, null, null, false,
+                pagingRequest);
     }
 
     /**
      * 어드민 06b — 파트너와 같은 조회에 브랜드명 · 소비자명 검색과 정렬 셀렉트를 더한다(38 설계서 7절 #2 · #3). 전체 탭은 검수
      * 지연을 상단에 고정한다(페이지를 넘어서도 고정되도록 서버 정렬).
+     *
+     * <p>소비자 상세에서 넘어온 진입(56 C1) — {@code userId}로 주문한 소비자만 남기고, {@code openOnly}면 종결(COMPLETED)을 뺀다.
+     * {@code userId}가 있고 기간을 둘 다 비웠으면 기본 1개월을 걸지 않는다 — 한 소비자의 클레임은 많지 않고, 「반품·교환」 칩
+     * 건수(기간 없음)와 목록 건수가 같아야 한다.
      */
     public PageResponse<SellerClaimListItem> searchClaims(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                           ClaimReason reason, LocalDate from, LocalDate to,
                                                           String keyword, String marketName, String consumerName,
-                                                          showroomz.domain.order.type.ClaimSort sort,
-                                                          PagingRequest pagingRequest) {
+                                                          showroomz.domain.order.type.ClaimSort sort, Long userId,
+                                                          boolean openOnly, PagingRequest pagingRequest) {
         LocalDateTime now = LocalDateTime.now();
+        boolean unbounded = userId != null && from == null && to == null;
         SellerClaimSearchCondition base = buildCondition(marketId, tab, types, reason, from, to, keyword, now);
         boolean admin = marketId == null;
         SellerClaimSearchCondition condition = new SellerClaimSearchCondition(base.marketId(), base.tab(), base.types(),
-                base.reason(), base.from(), base.to(), base.claimId(), base.orderNumber(),
-                admin ? marketName : null, admin ? consumerName : null, sort,
-                admin && base.tab() == ClaimTab.ALL, now);
+                base.reason(), unbounded ? null : base.from(), unbounded ? null : base.to(), base.claimId(),
+                base.orderNumber(), admin ? marketName : null, admin ? consumerName : null, sort,
+                admin && base.tab() == ClaimTab.ALL, now, userId, openOnly);
         int size = pagingRequest.getSize();
         if (size < 1 || size > orderProperties.getListPageSizeMax()) {
             throw new BusinessException(ErrorCode.ORDER_PAGE_SIZE_INVALID);
@@ -153,6 +160,11 @@ public class SellerClaimQueryService {
                 tabCounts, typeCounts);
     }
 
+    /** 검수 기한 경과만 — 파트너 홈 「입고·검수 지연」(1017 설계서 4-1). KPI {@code overdue} 는 회수 대기 방치를 합산한다. */
+    public long countInspectOverdue(Long marketId) {
+        return claimRepository.countInspectOverdueByMarket(marketId, LocalDateTime.now());
+    }
+
     public SellerClaimDetailResponse getClaim(String sellerEmail, Long claimId) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         OrderClaim claim = claimRepository.findOwned(claimId, scope.market().getId())
@@ -180,6 +192,9 @@ public class SellerClaimQueryService {
         List<String> sellerPhotos = urls(attachments, ClaimAttachmentOwner.SELLER);
         List<OrderClaimCharge> charges = chargeRepository.findByCollectionId(collection.getId());
         ClaimStatus status = claim.getStatus();
+        Boolean reshipFeeCharged = claim.getType() != ClaimType.EXCHANGE ? null
+                : charges.stream().anyMatch(charge -> charge.getType() == ClaimChargeType.EXCHANGE_RESHIP
+                && charge.getStatus() == ClaimChargeStatus.PAID);
 
         return new SellerClaimDetailResponse(
                 assembler.toListItem(claim, boxClaims, groupItems, consumerPhotos.size(), sellerPhotos.size(), charges,
@@ -188,10 +203,7 @@ public class SellerClaimQueryService {
                 group.getId(),
                 OrderAddressMasker.maskPhone(group.getOrder().getRecipientPhone()),
                 claim.getReasonDetail(),
-                claim.getType() != ClaimType.EXCHANGE ? null
-                        : charges.stream()
-                        .anyMatch(charge -> charge.getType() == ClaimChargeType.EXCHANGE_RESHIP
-                                && charge.getStatus() == ClaimChargeStatus.PAID),
+                reshipFeeCharged,
                 refund(claim, collection, boxClaims),
                 consumerPhotos,
                 sellerPhotos,
@@ -213,7 +225,31 @@ public class SellerClaimQueryService {
                                 h.getDetail(), h.getOccurredAt())).toList(),
                 new SellerClaimDetailResponse.Actions(assembler.canConfirmReceipt(status),
                         status == ClaimStatus.RECEIVED, status == ClaimStatus.RECEIVED,
-                        status == ClaimStatus.RESHIP_READY, status == ClaimStatus.RESHIPPING));
+                        status == ClaimStatus.RESHIP_READY, status == ClaimStatus.RESHIPPING,
+                        status == ClaimStatus.RECEIVED
+                                && collection.getFeeBearer() == showroomz.domain.order.type.ClaimFeeBearer.SELLER),
+                reshipFeeCharged,
+                inspection(collection, charges));
+    }
+
+    /** 검수 판정 · 운임 정산(1021 설계서 4-3 · 4-4) — 판정 기록도 운임 정산 행도 없으면 null. */
+    private SellerClaimDetailResponse.Inspection inspection(OrderClaimCollection collection, List<OrderClaimCharge> charges) {
+        List<SellerClaimDetailResponse.FreightRow> rows = freightAdjustmentRepository
+                .findByClaimCollectionIdOrderByIdAsc(collection.getId()).stream()
+                .map(row -> new SellerClaimDetailResponse.FreightRow(row.getTrigger(), row.getTrigger().getLabel(),
+                        row.getDirection(), row.getCollectFreight(), row.getPrepaidFreight(), row.getInitialFeeRestored(),
+                        row.signedAmount(), row.getSettledVia()))
+                .toList();
+        if (collection.getInspectionResult() == null && rows.isEmpty() && !collection.isAutoReceived()) {
+            return null;
+        }
+        Integer overturnFee = charges.stream().filter(charge -> charge.getType() == ClaimChargeType.OVERTURN_RESHIP)
+                .reduce((first, second) -> second).map(OrderClaimCharge::getAmount).orElse(null);
+        return new SellerClaimDetailResponse.Inspection(collection.getInspectionResult(),
+                collection.getInspectionResult() == null ? null : collection.getInspectionResult().getLabel(),
+                collection.getInspectionResult() == showroomz.domain.order.type.ClaimInspectionResult.REASON_OVERTURNED
+                        ? collection.getInspectionNote() : null,
+                collection.isAutoReceived(), overturnFee, rows);
     }
 
     // ------------------------------------------------------------------ 내부

@@ -4,6 +4,7 @@ import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.NumberExpression;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,19 +16,37 @@ import showroomz.api.admin.user.type.AdminUserSort;
 import showroomz.api.admin.user.type.AdminUserTab;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.history.entity.QUserConsentHistory;
 import showroomz.domain.history.entity.QUserStatusHistory;
+import showroomz.domain.history.type.ConsentType;
+import showroomz.domain.member.user.entity.QUserSanction;
 import showroomz.domain.member.user.entity.QUsers;
+import showroomz.domain.member.user.entity.UserSanction;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.notification.entity.QDeviceToken;
 import showroomz.domain.order.entity.QOrder;
+import showroomz.domain.order.entity.QOrderCancelRequest;
+import showroomz.domain.order.entity.QOrderClaim;
+import showroomz.domain.order.entity.QOrderDeliveryGroup;
 import showroomz.domain.order.entity.QOrderProduct;
+import showroomz.domain.order.entity.QOrderRefundTask;
+import showroomz.domain.order.type.CancelRequestStatus;
+import showroomz.domain.order.type.ClaimResult;
+import showroomz.domain.order.type.ClaimStatus;
+import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.OrderStatus;
+import showroomz.domain.order.type.RefundTaskStatus;
+import showroomz.domain.payment.entity.QPayment;
+import showroomz.domain.payment.entity.QPaymentCancel;
+import showroomz.domain.payment.type.PaymentCancelStatus;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * 어드민 소비자 목록 조회 (§25-3).
@@ -47,6 +66,15 @@ public class AdminUserQueryRepository {
     private static final QOrder order = QOrder.order;
     private static final QOrderProduct orderProduct = QOrderProduct.orderProduct;
     private static final QUserStatusHistory statusHistory = QUserStatusHistory.userStatusHistory;
+    private static final QPayment payment = QPayment.payment;
+    private static final QPaymentCancel paymentCancel = QPaymentCancel.paymentCancel;
+    private static final QOrderClaim claim = QOrderClaim.orderClaim;
+    private static final QOrderDeliveryGroup deliveryGroup = QOrderDeliveryGroup.orderDeliveryGroup;
+    private static final QOrderCancelRequest cancelRequest = QOrderCancelRequest.orderCancelRequest;
+    private static final QOrderRefundTask refundTask = QOrderRefundTask.orderRefundTask;
+    private static final QDeviceToken deviceToken = QDeviceToken.deviceToken;
+    private static final QUserConsentHistory consent = QUserConsentHistory.userConsentHistory;
+    private static final QUserSanction sanction = QUserSanction.userSanction;
 
     /** 정지 탭 요약의 "최근 30일 신규 정지" 기준 */
     private static final int NEW_SUSPENSION_WINDOW_DAYS = 30;
@@ -234,5 +262,184 @@ public class AdminUserQueryRepository {
 
     private boolean isPhoneSuffix(String keyword) {
         return keyword.length() == 4 && keyword.chars().allMatch(Character::isDigit);
+    }
+
+    // ------------------------------------------------------------------ 상세 거래 지표(55 계획서 M3-1)
+
+    /**
+     * 상세 거래 지표의 재료 — 금액은 결제 시점 총액과 PG 취소 성공액을 따로 담고, 순구매액은 서비스가 뺀다.
+     *
+     * @param orderCount      누적 주문 — 목록과 같은 식({@link #orderCount()})
+     * @param cancelledAmount 그 주문 <b>자신의 결제</b>에서 성공한 PG 취소 합(전액 · 부분 · 운임 환급 모두). 중복 결제 자동 취소는 주문 결제가
+     *                        아니라 빠진다 · 결제액을 넘는 계좌 송금 환급은 PG 취소가 아니라 빠진다
+     * @param claimOrderCount 반품 · 교환이 접수된 주문 수({@link #countClaimOrders} · 55 계획서 M3-2 판단 메타)
+     */
+    public record PurchaseTotals(long paidAmount, long thisMonthPaidAmount, long cancelledAmount,
+                                 long thisMonthCancelledAmount, long orderCount, long thisMonthOrderCount,
+                                 LocalDateTime lastOrderAt, long claimOrderCount) {
+    }
+
+    /**
+     * 한 소비자의 거래 지표. 회원 한 명의 주문은 많아야 수백 건이라 행을 읽어 합산한다. 「이번 달」은 <b>결제월</b> 기준이다 — 지난달 주문을 이번 달에
+     * 취소해도 지난달 몫에서 빠진다.
+     */
+    public PurchaseTotals purchaseTotals(Long userId, LocalDateTime monthStart) {
+        List<Tuple> paid = queryFactory
+                .select(order.totalAmount, order.paidAt)
+                .from(order)
+                .where(order.user.id.eq(userId), order.paidAt.isNotNull())
+                .fetch();
+        List<Tuple> cancels = queryFactory
+                .select(paymentCancel.amount, order.paidAt)
+                .from(paymentCancel)
+                .join(paymentCancel.payment, payment)
+                .join(payment.order, order)
+                .where(order.user.id.eq(userId),
+                        order.paidAt.isNotNull(),
+                        paymentCancel.status.eq(PaymentCancelStatus.SUCCEEDED),
+                        payment.paymentId.eq(order.paidPaymentId))
+                .fetch();
+        List<LocalDateTime> counted = queryFactory
+                .select(order.paidAt)
+                .from(order)
+                .where(order.user.id.eq(userId),
+                        order.status.in(OrderStatus.PAID_OR_LATER),
+                        JPAExpressions.selectOne().from(orderProduct)
+                                .where(orderProduct.order.id.eq(order.id),
+                                        orderProduct.status.ne(OrderProductStatus.CANCELLED))
+                                .exists())
+                .fetch();
+
+        long paidAmount = 0;
+        long thisMonthPaid = 0;
+        LocalDateTime lastOrderAt = null;
+        for (Tuple row : paid) {
+            long amount = amountOf(row.get(order.totalAmount));
+            LocalDateTime paidAt = row.get(order.paidAt);
+            paidAmount += amount;
+            if (isThisMonth(paidAt, monthStart)) {
+                thisMonthPaid += amount;
+            }
+            if (paidAt != null && (lastOrderAt == null || paidAt.isAfter(lastOrderAt))) {
+                lastOrderAt = paidAt;
+            }
+        }
+        long cancelled = 0;
+        long thisMonthCancelled = 0;
+        for (Tuple row : cancels) {
+            long amount = amountOf(row.get(paymentCancel.amount));
+            cancelled += amount;
+            if (isThisMonth(row.get(order.paidAt), monthStart)) {
+                thisMonthCancelled += amount;
+            }
+        }
+        long thisMonthOrders = counted.stream().filter(paidAt -> isThisMonth(paidAt, monthStart)).count();
+        return new PurchaseTotals(paidAmount, thisMonthPaid, cancelled, thisMonthCancelled, counted.size(),
+                thisMonthOrders, lastOrderAt, countClaimOrders(userId));
+    }
+
+    /**
+     * 반품 · 교환이 접수된 <b>주문</b> 수 — 시안 「반품·교환 2건 · 14.3%」(2 ÷ 누적 주문 14)의 분자. 재발송비 결제 대기(접수 전)와 소비자가
+     * 거둬들인 요청(요청 취소)은 세지 않고, 반려 종결은 센다 — 요청한 사실이 판단 근거다.
+     */
+    public long countClaimOrders(Long userId) {
+        Long count = queryFactory
+                .select(claim.orderId.countDistinct())
+                .from(claim)
+                .where(claim.userId.eq(userId),
+                        claim.status.ne(ClaimStatus.PAYMENT_PENDING),
+                        claim.result.isNull().or(claim.result.ne(ClaimResult.CANCELLED)))
+                .fetchOne();
+        return count != null ? count : 0L;
+    }
+
+    private static long amountOf(Integer amount) {
+        return amount != null ? amount : 0L;
+    }
+
+    private static boolean isThisMonth(LocalDateTime paidAt, LocalDateTime monthStart) {
+        return paidAt != null && !paidAt.isBefore(monthStart);
+    }
+
+    // ------------------------------------------------------------------ 상세 보강(55 계획서 M3-2)
+
+    /** 「‹ 이전」 — 회원번호(id) 순 바로 앞 소비자(roleType=USER). 약관 동의 전 GUEST 는 회원이 아니라 건너뛴다. 없으면 null. */
+    public Long findPreviousUserId(Long userId) {
+        return queryFactory.select(user.id.max()).from(user)
+                .where(user.roleType.eq(RoleType.USER), user.id.lt(userId))
+                .fetchOne();
+    }
+
+    /** 「다음 ›」 — 회원번호 순 바로 뒤 소비자. 없으면 null. */
+    public Long findNextUserId(Long userId) {
+        return queryFactory.select(user.id.min()).from(user)
+                .where(user.roleType.eq(RoleType.USER), user.id.gt(userId))
+                .fetchOne();
+    }
+
+    /** 푸시를 받을 기기 토큰이 하나라도 있는가 — 알림 수신 「앱 푸시」의 전제(D15). */
+    public boolean hasDeviceToken(Long userId) {
+        return queryFactory.selectOne().from(deviceToken).where(deviceToken.user.id.eq(userId)).fetchFirst() != null;
+    }
+
+    /**
+     * 본인인증 재인증 횟수 — C15-2 재인증은 동의 이력을 매번 남기고 {@code identity_verified_at}을 덮어쓴다. 0 이면 그 값이 가입 때의 최초
+     * 인증이고, 1 이상이면 최근 갱신이다(최초 시각은 남지 않는다).
+     */
+    public long countIdentityReverifications(Long userId) {
+        Long count = queryFactory.select(consent.count()).from(consent)
+                .where(consent.user.id.eq(userId), consent.consentType.eq(ConsentType.IDENTITY_VERIFICATION),
+                        consent.agreed.isTrue())
+                .fetchOne();
+        return count != null ? count : 0L;
+    }
+
+    /**
+     * 레일 「진행 중」 칩 중 주문 축 네 가지 — 배송 중 · 취소 요청 검토 중 · 반품 · 교환 진행 · 환불 실패. 각 값은 칩이 가리키는 목록을 그 조건 +
+     * {@code userId}로 부른 건수와 같아야 한다(56 C1) — 식을 목록 조건(같은 조인 · 같은 소비자 축 orders.user_id)에 맞춰 둔다.
+     *
+     * @param shippingOrders        배송 중 하위주문이 있는 주문 수 — 주문 목록 {@code status=SHIPPING&userId=}
+     * @param cancelRequestedOrders 브랜드가 검토 중인 취소 요청이 있는 주문 수 — 주문 목록 {@code tab=CANCEL&cancelRequested=true&userId=}
+     * @param openClaims            끝나지 않은 반품 · 교환 클레임(목록 행) 수 — 클레임 목록 {@code tab=ALL&openOnly=true&userId=}(기간 없음)
+     * @param refundFailed          실패한 환불 작업 수 — 환불 목록 {@code tab=FAILED&userId=}
+     */
+    public record PendingCounts(long shippingOrders, long cancelRequestedOrders, long openClaims, long refundFailed) {
+    }
+
+    public PendingCounts pendingCounts(Long userId) {
+        Long shipping = queryFactory.select(order.id.countDistinct()).from(deliveryGroup).join(deliveryGroup.order, order)
+                .where(order.user.id.eq(userId), order.paidAt.isNotNull(),
+                        deliveryGroup.fulfillmentStatus.eq(FulfillmentStatus.SHIPPING))
+                .fetchOne();
+        Long cancel = queryFactory.select(order.id.countDistinct()).from(cancelRequest)
+                .join(cancelRequest.deliveryGroup, deliveryGroup).join(deliveryGroup.order, order)
+                .where(order.user.id.eq(userId), order.paidAt.isNotNull(),
+                        cancelRequest.status.eq(CancelRequestStatus.PENDING))
+                .fetchOne();
+        // 결제 대기(접수 전)는 어느 탭에도 없고, 종결은 openOnly 가 뺀다 — 행 단위(클레임)다. 탈퇴 차단은 박스 단위라 0 여부만 같다.
+        Long claims = queryFactory.select(claim.count()).from(claim)
+                .join(claim.deliveryGroup, deliveryGroup).join(deliveryGroup.order, order)
+                .where(order.user.id.eq(userId),
+                        claim.status.notIn(ClaimStatus.PAYMENT_PENDING, ClaimStatus.COMPLETED))
+                .fetchOne();
+        Long failed = queryFactory.select(refundTask.count()).from(refundTask).join(refundTask.order, order)
+                .where(order.user.id.eq(userId), refundTask.status.eq(RefundTaskStatus.FAILED))
+                .fetchOne();
+        return new PendingCounts(shipping != null ? shipping : 0L, cancel != null ? cancel : 0L,
+                claims != null ? claims : 0L, failed != null ? failed : 0L);
+    }
+
+    /** 정지 이력 횟수 — user_sanction 행 기준(D15 · 옛 {@code PATCH /status} 정지는 행이 없어 빠진다). 열린 정지도 센다. */
+    public long countSanctions(Long userId) {
+        Long count = queryFactory.select(sanction.count()).from(sanction).where(sanction.userId.eq(userId)).fetchOne();
+        return count != null ? count : 0L;
+    }
+
+    /** 「직전」 정지 — 해제된 정지 중 가장 최근 것. 지금 열린 정지는 상태 카드가 보여 주므로 빼고 고른다. */
+    public Optional<UserSanction> findLastClosedSanction(Long userId) {
+        return Optional.ofNullable(queryFactory.selectFrom(sanction)
+                .where(sanction.userId.eq(userId), sanction.releasedAt.isNotNull())
+                .orderBy(sanction.suspendedAt.desc(), sanction.id.desc())
+                .fetchFirst());
     }
 }

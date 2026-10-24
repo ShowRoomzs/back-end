@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -87,7 +88,8 @@ public class CreatorGroupBuyQueryService {
                             status,
                             status.getLabel(),
                             status.getTone(),
-                            actionRequired.contains(groupBuy.getId()));
+                            actionRequired.contains(groupBuy.getId()),
+                SanctionHoldView.forCreator(groupBuy));
                 })
                 .toList();
         return PageResponse.of(new PageImpl<>(content, pageable, page.getTotalElements()));

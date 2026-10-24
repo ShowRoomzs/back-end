@@ -12,6 +12,7 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
 import showroomz.domain.settlement.type.ClawbackSide;
 import showroomz.domain.settlement.type.TaxDocumentStatus;
+import showroomz.global.config.properties.SettlementProperties;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -30,6 +31,30 @@ public class SellerSettlementBlocks {
     private final SettlementPartyViews views;
     private final SettlementTaxDocumentRepository documentRepository;
     private final SettlementClawbackViews clawbackViews;
+    private final SettlementProperties properties;
+
+    /**
+     * 정산 금액 분해 — 브랜드 축(계산 순서). 성과 관리(48 파트너 설계서 3-4 정산 연결)도 이 값을 그대로 싣는다 — 같은 숫자를 두 화면에서
+     * 따로 조립하지 않는다(§41-4).
+     */
+    public SellerSettlementDto.Breakdown breakdownOf(Settlement s) {
+        return new SellerSettlementDto.Breakdown(s.getGrossOrderAmount(),
+                new SettlementPartyDto.AmountCount(s.getCancelDeduction(), s.getCancelCount()),
+                new SettlementPartyDto.AmountCount(s.getReturnDeduction(), s.getReturnCount()),
+                new SettlementPartyDto.AmountCount(s.getDeliveryExceptionDeduction(), s.getDeliveryExceptionCount()),
+                s.getConfirmedSalesAmount(),
+                new SellerSettlementDto.RateAmount(s.getPgFeeRate(), s.getPgFeeAmount()),
+                new SellerSettlementDto.PlatformFee(s.getPlatformFeeRate(), s.getPlatformFeeAmount(),
+                        properties.getPlatformFeeNormalRate()),
+                s.getOriginalRewardAmount(), s.getRewardAmount(),
+                new SellerSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
+                new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
+                s.getConsumerDeliveryFeeAmount(),
+                new SettlementPartyDto.AmountCount(s.getReturnDeductionFeeAmount(), s.getReturnDeductionCount()),
+                new SettlementPartyDto.AmountCount(s.getFreightAdjustmentAmount(), s.getFreightAdjustmentCount()),
+                s.getBrandPayoutBeforeClawback(), clawbacksOf(s),
+                s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
+    }
 
     /** 조정 내역(D4) — 협의가 없으면 null. */
     public SettlementPartyDto.AdjustmentBlock adjustmentOf(Settlement settlement) {

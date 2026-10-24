@@ -1,6 +1,7 @@
 package showroomz.api.admin.productinquiry.docs;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -23,7 +24,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Product Inquiry Monitoring", description = "어드민 상품 문의 모니터링 API (§18) — 운영자는 답변하지 않는다")
+@Tag(name = "Admin - Product Inquiry", description = "관리자 상품 문의 모니터링 API")
 public interface AdminProductInquiryControllerDocs {
 
     @Operation(
@@ -42,9 +43,11 @@ public interface AdminProductInquiryControllerDocs {
                     "| `DELETED` | 삭제 | 위험 — 소비자 노출이 실제로 막힌 상태라 원칙 ②의 의도적 예외입니다 |\n\n" +
                     "**검색 조건**\n" +
                     "- `type`: 문의 유형 단일선택 (`OPTION`, `INGREDIENT_USAGE`, `RESTOCK`, `DELIVERY`, `ETC`)\n" +
-                    "- `keyword`: 상품명·브랜드·질문 통합 검색\n\n" +
+                    "- `keyword`: 상품명·브랜드·질문 통합 검색\n" +
+                    "- `userId`: 작성한 소비자만(정확 일치 · 선택) — 소비자 상세 진행 중 칩 「열린 문의」(`pendingChips[].links[].query` 그대로)에서 들어옵니다. " +
+                    "상세의 이전·다음도 같은 값을 넘기면 그 소비자 안에서 움직입니다\n\n" +
                     "**건수 필드**\n" +
-                    "`statusCounts`는 `type`·`keyword`는 반영하고 상태 탭 조건만 제외한 값입니다. " +
+                    "`statusCounts`는 `type`·`keyword`·`userId`는 반영하고 상태 탭 조건만 제외한 값입니다. " +
                     "`deleteRequestedCount`는 탭·필터와 무관한 **전체** 삭제 요청 건수로, " +
                     "운영자가 매번 확인해야 하는 유일한 수치이며 툴바의 `삭제 요청 N건`이 이 값입니다."
     )
@@ -57,9 +60,14 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<AdminProductInquiryDto.ListResponse> getList(
+            @Parameter(description = "상태 탭 — ALL(기본) · WAITING · ANSWERED · DELETE_REQUESTED · DELETED", example = "ALL")
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
+            @Parameter(description = "문의 유형 — OPTION · INGREDIENT_USAGE · RESTOCK · DELIVERY · ETC · 비우면 전체", example = "OPTION")
             @RequestParam(value = "type", required = false) ProductInquiryType type,
+            @Parameter(description = "상품명 · 브랜드명 · 질문 본문 부분 일치 검색어", example = "보습")
             @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "작성한 소비자 ID — 소비자 상세에서 넘어온 진입(선택)", example = "88231")
+            @RequestParam(value = "userId", required = false) Long userId,
             @ModelAttribute PagingRequest pagingRequest
     );
 
@@ -118,10 +126,16 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<AdminProductInquiryDto.DetailResponse> getDetail(
+            @Parameter(description = "상품 문의 ID", required = true, example = "101")
             @PathVariable("inquiryId") Long inquiryId,
+            @Parameter(description = "목록 상태 탭 — 이전·다음 계산용", example = "ALL")
             @RequestParam(value = "status", defaultValue = "ALL") AdminProductInquiryStatusFilter status,
+            @Parameter(description = "목록 문의 유형 — 이전·다음 계산용", example = "OPTION")
             @RequestParam(value = "type", required = false) ProductInquiryType type,
-            @RequestParam(value = "keyword", required = false) String keyword
+            @Parameter(description = "목록 검색어 — 이전·다음 계산용", example = "보습")
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "목록 소비자 ID — 이전·다음 계산용", example = "88231")
+            @RequestParam(value = "userId", required = false) Long userId
     );
 
     @Operation(
@@ -145,6 +159,7 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> executeDelete(
+            @Parameter(description = "상품 문의 ID", required = true, example = "101")
             @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody AdminProductInquiryDeleteDecision.ExecuteRequest request,
             @AuthenticationPrincipal UserPrincipal principal
@@ -172,6 +187,7 @@ public interface AdminProductInquiryControllerDocs {
             )
     })
     ResponseEntity<Void> rejectDeleteRequest(
+            @Parameter(description = "상품 문의 ID", required = true, example = "101")
             @PathVariable("inquiryId") Long inquiryId,
             @Valid @RequestBody AdminProductInquiryDeleteDecision.RejectRequest request,
             @AuthenticationPrincipal UserPrincipal principal

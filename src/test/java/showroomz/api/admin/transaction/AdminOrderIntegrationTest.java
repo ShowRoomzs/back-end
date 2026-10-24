@@ -199,6 +199,37 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
                 .andExpect(jsonPath("$.tabCounts.ALL").value(4));
     }
 
+    /**
+     * 소비자 상세 「취소 요청」 칩이 이 목록으로 온다(56 C1) — 취소 탭은 취소된 하위주문까지 담아서 칩 건수(검토 중 요청)와 어긋난다.
+     * cancelRequested 로 검토 중 요청만 남긴다. 요약은 이 값을 받지 않는다(탭 숫자는 그대로).
+     */
+    @Test
+    @DisplayName("[56 C1] cancelRequested — 검토 중 취소 요청 하위주문만(취소된 하위주문 · 응답 끝난 요청 제외) · userId 와 함께 · 요약 탭 숫자는 그대로")
+    void cancelRequestedFilter() throws Exception {
+        OrderDeliveryGroup requested = preparingGroup();
+        seedCancelRequest(requested, itemsOf(requested));
+        OrderDeliveryGroup cancelled = paidGroup();
+        directCancel(List.of(cancelled.getId()), "SOLD_OUT", "품절").andExpect(jsonPath("$.succeeded").value(1));
+        OrderDeliveryGroup rejected = preparingGroup();
+        rejectRequest(seedCancelRequest(rejected, itemsOf(rejected)), "이미 출고 준비 중입니다.")
+                .andExpect(status().isOk());
+        OrderDeliveryGroup others = preparingGroup();
+        seedCancelRequest(others, itemsOf(others));
+        showroomz.domain.member.user.entity.Users other = createConsumer("noah", "노아");
+        jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = ?", other.getId(), orderOf(others));
+
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL")))
+                .containsExactlyInAnyOrder(orderOf(requested), orderOf(cancelled), orderOf(others));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL&cancelRequested=true")))
+                .containsExactlyInAnyOrder(orderOf(requested), orderOf(others));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL&cancelRequested=true&userId=" + consumer.getId())))
+                .containsExactly(orderOf(requested));
+        assertThat(orderIds(adminGet(ADMIN_ORDERS + "?cancelRequested=true&userId=" + other.getId())))
+                .containsExactly(orderOf(others));
+        adminGet(ADMIN_ORDERS + "/summary?userId=" + consumer.getId())
+                .andExpect(jsonPath("$.tabCounts.CANCEL").value(2));
+    }
+
     // ------------------------------------------------------------------ T10 사유 환불 편입 가드
 
     @Test
@@ -519,6 +550,44 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
         assertThat(detail.at("/groups/0/activeClaims")).isEmpty();
         assertThat(detail.at("/groups/0/purchaseConfirm/paused").asBoolean()).isFalse();
         assertThat(groupRow(group).get("confirm_paused_at")).isNull();
+    }
+
+    /** 목록 행의 반품 · 교환 요약(56 C2) — 배송 이행 상태(status)는 그대로 두고 클레임 요약을 따로 싣는다. 실제 반품 경로로 진행 → 완료를 본다. */
+    @Test
+    @DisplayName("[56 C2] 목록 groups[].claim — 클레임 없으면 null · 진행 중 「반품 진행중」 · 검수 통과 환불 「반품완료」(결과 REFUNDED · 건수 1) · status 는 이행 상태 그대로")
+    void listRowClaimSummary() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup("400060017001", LocalDateTime.now().minusDays(1).withNano(0));
+        assertThat(rowGroup(group).get("claim").isNull()).isTrue();
+
+        long claimId = json(defect(group, itemsOf(group).get(0).getId(), "DAMAGED_OR_DEFECTIVE",
+                List.of("https://img.test/d.jpg")).andExpect(status().isOk())).get("claimIds").get(0).asLong();
+        JsonNode open = rowGroup(group);
+        assertThat(open.get("status").asText()).isEqualTo("DELIVERED");
+        assertThat(open.at("/claim/claimId").asLong()).isEqualTo(claimId);
+        assertThat(open.at("/claim/claimNumber").asText()).isEqualTo("CLM-" + claimId);
+        assertThat(open.at("/claim/type").asText()).isEqualTo("RETURN");
+        assertThat(open.at("/claim/result").isNull()).isTrue();
+        assertThat(open.at("/claim/label").asText()).isEqualTo("반품 진행중");
+        assertThat(open.at("/claim/count").asInt()).isEqualTo(1);
+
+        consumerPut("/v1/user/claims/" + claimId + "/collection-invoice", Map.of("carrier", "CJ", "trackingNumber", "500060017001"))
+                .andExpect(status().isOk());
+        sellerPost("/v1/seller/claims/receive", Map.of("claimIds", List.of(claimId))).andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost("/v1/seller/claims/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk());
+
+        JsonNode done = rowGroup(group);
+        assertThat(done.at("/claim/status").asText()).isEqualTo("COMPLETED");
+        assertThat(done.at("/claim/result").asText()).isEqualTo("REFUNDED");
+        assertThat(done.at("/claim/label").asText()).isEqualTo("반품완료");
+        assertThat(done.get("status").asText()).isEqualTo(groupRow(group).get("fulfillment_status"));
+    }
+
+    private JsonNode rowGroup(OrderDeliveryGroup group) throws Exception {
+        JsonNode rows = json(adminGet(ADMIN_ORDERS + "?size=100").andExpect(status().isOk())).get("content");
+        return StreamSupport.stream(rows.spliterator(), false)
+                .flatMap(row -> StreamSupport.stream(row.get("groups").spliterator(), false))
+                .filter(g -> g.get("deliveryGroupId").asLong() == group.getId())
+                .findFirst().orElseThrow();
     }
 
     @Test

@@ -15,7 +15,7 @@ import showroomz.global.dto.PagingRequest;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Order Exception", description = "관리자 거래 관리 · 예외 관리 API (06d)")
+@Tag(name = "Admin - Order Exception", description = "관리자 주문 예외 관리 API")
 public interface AdminOrderExceptionControllerDocs {
 
     @Operation(summary = "예외 목록 (06d A1 · A2)", description = """

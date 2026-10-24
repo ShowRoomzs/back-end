@@ -18,6 +18,24 @@ public interface OrderClaimCollectionRepository extends JpaRepository<OrderClaim
     /** 멱등 — 같은 키의 재시도가 요청을 둘 만들지 않는다(주문 생성과 같은 규약). */
     Optional<OrderClaimCollection> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey);
 
+    /**
+     * 같은 하위주문의 다른 반품에서 이미 최초 배송비를 뺐는가(1021 설계서 3-3 — 하위주문당 한 번). 취소로 끝난 요청 · 결제 전 초안은 세지 않는다.
+     */
+    @Query("SELECT COUNT(c) > 0 FROM OrderClaimCollection c "
+            + "WHERE c.deliveryGroup.id = :deliveryGroupId AND c.returnDeduction > 0 "
+            + "AND EXISTS (SELECT 1 FROM OrderClaim oc WHERE oc.collection = c "
+            + "AND (oc.result IS NULL OR oc.result <> showroomz.domain.order.type.ClaimResult.CANCELLED))")
+    boolean existsInitialFeeDeducted(@Param("deliveryGroupId") Long deliveryGroupId);
+
+    /**
+     * 공구의 「반품 시 차감한 최초 배송비」 — [건수, 합](1021 설계서 6-1). 판정이 끝났고 취소로 끝나지 않은 요청만 · 차감액이 있는 것만.
+     */
+    @Query("SELECT COUNT(k), COALESCE(SUM(k.returnDeduction), 0) FROM OrderClaimCollection k "
+            + "WHERE k.deliveryGroup.groupBuy.id = :groupBuyId AND k.finalizedAt IS NOT NULL AND k.returnDeduction > 0 "
+            + "AND EXISTS (SELECT c.id FROM OrderClaim c WHERE c.collection = k "
+            + "    AND (c.result IS NULL OR c.result <> showroomz.domain.order.type.ClaimResult.CANCELLED))")
+    List<Object[]> sumReturnDeductionByGroupBuy(@Param("groupBuyId") Long groupBuyId);
+
     /** 회수 송장 입력·정정·자동 취소가 같은 요청을 다툰다 — 요청 행을 잠가 줄을 세운다. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT k FROM OrderClaimCollection k WHERE k.id = :id")
@@ -74,7 +92,8 @@ public interface OrderClaimCollectionRepository extends JpaRepository<OrderClaim
      * 공구의 반품 · 교환 배송비 — [비용 부담, 유형, 건수, 반품 배송비 차감 합](파트너 정산 설계서 1-1). 판정이 끝난 요청만(검수 전에 사라진
      * 요청 — 전부 요청 취소 — 은 뺀다). 정산 생성 조건이 「미종결 0」이라 판정 대기 행은 생길 수 없다.
      */
-    @Query("SELECT k.feeBearer, k.type, COUNT(k), COALESCE(SUM(k.returnDeduction), 0) FROM OrderClaimCollection k "
+    @Query("SELECT k.feeBearer, k.type, COUNT(k), COALESCE(SUM(k.returnDeduction), 0), "
+            + "COALESCE(SUM(k.deliveryGroup.baseDeliveryFee), 0) FROM OrderClaimCollection k "
             + "WHERE k.deliveryGroup.groupBuy.id = :groupBuyId AND k.finalizedAt IS NOT NULL "
             + "AND EXISTS (SELECT c.id FROM OrderClaim c WHERE c.collection = k "
             + "    AND (c.result IS NULL OR c.result <> showroomz.domain.order.type.ClaimResult.CANCELLED)) "

@@ -12,6 +12,7 @@ import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.AdminOrderTab;
 import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimChargeType;
+import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.ClaimReason;
@@ -77,7 +78,27 @@ public final class AdminOrderDto {
             @Schema(description = "배송 이상 기준 시각 — 집화 확인 필요 = 송장 등록 · 추적 정지 = 마지막 추적 · 반송 중 = 반송 감지. 이상이 없으면 null",
                     nullable = true) LocalDateTime issueSince,
             @Schema(description = "배송 이상 경과 문구 — 「등록 후 26시간」 · 「8일 무갱신」 · 「감지 09.12」. 이상이 없으면 null",
-                    example = "8일 무갱신", nullable = true) String issueElapsedLabel
+                    example = "8일 무갱신", nullable = true) String issueElapsedLabel,
+            @Schema(description = "반품 · 교환 요약(56 C2) — 이 하위주문에 접수된 클레임 중 **가장 최근에 신청한 것**(신청 시각 · 클레임 id 최신). "
+                    + "결제 대기(접수 전)와 요청 취소(소비자 철회 · 송장 미등록 자동 취소 · 운영자 직권 취소)는 세지 않는다. 없으면 null. "
+                    + "`status`(배송 이행 상태)는 그대로이고, 소비자 상세 「최근 주문」의 「반품완료」 · 「교환완료」는 이 값으로 그린다",
+                    nullable = true)
+            ClaimSummary claim
+    ) {
+    }
+
+    @Schema(name = "AdminOrderClaimSummary", description = "하위주문의 반품 · 교환 요약 — 가장 최근에 신청한 클레임 1건 + 접수 건수")
+    public record ClaimSummary(
+            Long claimId,
+            @Schema(example = "CLM-3021") String claimNumber,
+            @Schema(example = "RETURN") ClaimType type,
+            @Schema(description = "클레임 단계", example = "COMPLETED") ClaimStatus status,
+            @Schema(description = "종결 결과 — 종결 전이면 null", example = "REFUNDED", nullable = true) ClaimResult result,
+            @Schema(description = "상태 칸 문구 — 종결: 반품 환불 「반품완료」 · 교환 「교환완료」 · 교환을 환불로 닫음 「환불완료」 · 반려 「반품 반려」 「교환 반려」 / "
+                    + "진행 중: 「반품 진행중」 「교환 진행중」", example = "반품완료") String label,
+            @Schema(description = "신청 시각") LocalDateTime requestedAt,
+            @Schema(description = "이 하위주문에 접수된 반품 · 교환 건수(항목 단위 · 결제 대기 · 요청 취소 제외) — 2 이상이면 「외 N건」", example = "1")
+            int count
     ) {
     }
 
@@ -95,25 +116,30 @@ public final class AdminOrderDto {
     ) {
     }
 
-    /** 목록 · 요약 조건(37 설계서 2-1 · 8절 #1 · #2). 요약은 탭 · 상태 · 정렬을 무시한다. */
+    /**
+     * 목록 · 요약 조건(37 설계서 2-1 · 8절 #1 · #2). 요약은 탭 · 상태 · 정렬을 무시한다.
+     *
+     * @param cancelRequested 검토 중 취소 요청이 있는 하위주문만(56 C1) — 요약은 이 값도 무시한다
+     */
     public record SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, Long groupBuyId,
-                               Long creatorId, PaymentMethod paymentMethod, TrackingAlert trackingAlert,
-                               AdminOrderSearchType searchType, String keyword, AdminOrderSort sort) {
+                               Long creatorId, Long userId, PaymentMethod paymentMethod, TrackingAlert trackingAlert,
+                               AdminOrderSearchType searchType, String keyword, AdminOrderSort sort,
+                               boolean cancelRequested) {
 
         public SearchParams(AdminOrderTab tab, FulfillmentStatus status, Long marketId, String keyword) {
-            this(tab, status, marketId, null, null, null, null, null, keyword, null);
+            this(tab, status, marketId, null, null, null, null, null, null, keyword, null, false);
         }
 
-        /** 요약용 — 탭만 바꾼 같은 조건(상태 · 정렬은 뺀다). */
+        /** 요약용 — 탭만 바꾼 같은 조건(상태 · 정렬 · 취소 요청 좁히기는 뺀다). */
         public SearchParams forTab(AdminOrderTab tab) {
-            return new SearchParams(tab, null, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
-                    searchType, keyword, null);
+            return new SearchParams(tab, null, marketId, groupBuyId, creatorId, userId, paymentMethod, trackingAlert,
+                    searchType, keyword, null, false);
         }
 
         /** 요약용 — 상태 셀렉트 하나를 고른 같은 조건. */
         public SearchParams withStatus(FulfillmentStatus status) {
-            return new SearchParams(tab, status, marketId, groupBuyId, creatorId, paymentMethod, trackingAlert,
-                    searchType, keyword, null);
+            return new SearchParams(tab, status, marketId, groupBuyId, creatorId, userId, paymentMethod, trackingAlert,
+                    searchType, keyword, null, cancelRequested);
         }
     }
 
@@ -221,8 +247,26 @@ public final class AdminOrderDto {
             @Schema(description = "④ 정산 반영(37 설계서 8절 #4) — 이 하위주문이 어느 정산에 얼마로 들어갔나. 정산 생성 전이면 null",
                     nullable = true)
             Settlement settlement,
-            Actions actions
+            Actions actions,
+            @Schema(description = "추적 정지 · 소비자 선택(06a · 06d · 1021 기-15) — 「선택 개방까지 N일」 · 소비자 선택. 없으면 null", nullable = true)
+            StallChoice stallChoice
     ) {
+    }
+
+    @Schema(name = "AdminOrderStallChoice")
+    public record StallChoice(
+            @Schema(description = "WAITING · OPEN · CHOSEN", example = "WAITING") String state,
+            @Schema(nullable = true) LocalDateTime opensAt,
+            @Schema(description = "선택 개방까지 N일", nullable = true, example = "3") Integer daysUntilOpen,
+            @Schema(nullable = true, example = "9") Integer daysStalled,
+            @Schema(nullable = true) showroomz.domain.order.type.StallChoice choice,
+            @Schema(example = "재발송", nullable = true) String choiceLabel,
+            @Schema(nullable = true) LocalDateTime chosenAt
+    ) {
+        public static StallChoice of(showroomz.domain.order.service.OrderStallChoiceService.View view) {
+            return view == null ? null : new StallChoice(view.state().name(), view.opensAt(), view.daysUntilOpen(),
+                    view.daysStalled(), view.choice(), view.choiceLabel(), view.chosenAt());
+        }
     }
 
     @Schema(name = "AdminOrderSettlement", description = "하위주문의 정산 반영(44 어드민 정산관리 설계서 8-3)")

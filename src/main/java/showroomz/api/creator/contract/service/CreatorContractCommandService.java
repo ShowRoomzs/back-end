@@ -1,5 +1,7 @@
 package showroomz.api.creator.contract.service;
 
+import showroomz.domain.member.creator.type.CreatorBlockedAction;
+import showroomz.domain.member.creator.service.CreatorSanctionGuard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -45,6 +47,7 @@ public class CreatorContractCommandService {
     private final CreatorContractDetailAssembler detailAssembler;
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
+    private final CreatorSanctionGuard sanctionGuard;
 
     /**
      * 거절(S5) — {@code SIGNING} → {@code DECLINED} · {@code close_actor_type = CREATOR}.
@@ -120,6 +123,8 @@ public class CreatorContractCommandService {
         if (contract.getStatus() != ContractStatus.SIGNING || contract.getCreatorSignedAt() != null) {
             throw new BusinessException(ErrorCode.CONTRACT_RESEND_NOT_ALLOWED);
         }
+        // 정지 중에는 체결로 가는 재발송을 요청하지 않는다 — 계약 거절은 허용(ui-studio-13 S3).
+        sanctionGuard.requireNotSuspended(creator, CreatorBlockedAction.CONTRACT_RESEND_REQUEST);
 
         return resendRequestRepository
                 .findFirstByContractIdAndRequesterTypeAndHandledAtIsNullOrderByRequestedAtDesc(

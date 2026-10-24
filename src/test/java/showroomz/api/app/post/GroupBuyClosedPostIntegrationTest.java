@@ -215,7 +215,7 @@ class GroupBuyClosedPostIntegrationTest extends GroupBuyPostTestSupport {
             mockMvc.perform(post("/v1/user/posts/" + target + "/reports")
                             .header(HttpHeaders.AUTHORIZATION, consumer)
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"reasonCode\":\"AD_DISCLOSURE\"}"))
+                            .content("{\"reasonCode\":\"MISLEADING_INFO\"}"))
                     .andExpect(status().isNoContent());
         }
 

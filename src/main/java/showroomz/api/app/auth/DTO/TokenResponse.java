@@ -31,8 +31,15 @@ public class TokenResponse {
     @Schema(description = "크리에이터 신청 반려 사유 유형 (반려 계정 로그인 시)", example = "SUSPECTED_FAKE_FOLLOWERS")
     private String rejectReasonType;
 
-    @Schema(description = "크리에이터 신청 반려 상세 사유 (반려 계정 로그인 시)", example = "제출하신 채널의 팔로워 수가 기준에 미달합니다.")
+    @Schema(description = "**폐지** — 상세 사유는 내부 기록이라 내리지 않는다(1021 기-36). 항상 null", nullable = true, deprecated = true)
     private String rejectReasonDetail;
+
+    @Schema(description = "크리에이터 신청 반려 사유 — 신청자 통지 라벨(반려 계정 로그인 시 · 화면 표시는 이 값). "
+            + "「허위 팔로워 의심」은 「채널 운영 기준 미충족」으로 내린다", example = "채널 운영 기준 미충족")
+    private String rejectReasonLabel;
+
+    @Schema(description = "크리에이터 신청 반려일시 (반려 계정 로그인 시)")
+    private LocalDateTime rejectedAt;
 
     @Schema(description = "크리에이터 재신청 가능 일시 (반려 계정 로그인 시, 반려 처리일 + 14일)")
     private LocalDateTime reapplyAvailableAt;

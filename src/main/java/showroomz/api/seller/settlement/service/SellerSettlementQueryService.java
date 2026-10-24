@@ -1,5 +1,6 @@
 package showroomz.api.seller.settlement.service;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.settlement.dto.SettlementFile;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.PayoutHoldViews;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.seller.settlement.dto.SellerSettlementDto;
 import showroomz.domain.contract.type.WithholdingType;
@@ -16,6 +18,7 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.repository.OrderClaimCollectionRepository;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.ClaimType;
+import showroomz.domain.settlement.adjustment.repository.SettlementAdjustmentRepository;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementItem;
 import showroomz.domain.settlement.entity.SettlementPayout;
@@ -69,6 +72,8 @@ public class SellerSettlementQueryService {
     private final SellerSettlementBlocks blocks;
     private final SettlementTaxDocumentRepository taxDocumentRepository;
     private final SettlementTaxDocumentService taxDocumentService;
+    private final SettlementAdjustmentRepository adjustmentRepository;
+    private final PayoutHoldViews holdViews;
 
     // ------------------------------------------------------------------ 목록(2-2)
 
@@ -95,7 +100,7 @@ public class SellerSettlementQueryService {
                 s.getContract().getTitle(), influencer(s), s.getPeriodStartAt(), s.getPeriodEndAt(),
                 s.getConfirmedSalesAmount(), s.getPgFeeAmount() + s.getPlatformFeeAmount(), s.getRewardAmount(),
                 s.getRewardVatAmount(), s.getBrandPayoutAmount(), status, status.getLabel(), status.getTone(),
-                schedule(s, brand));
+                schedule(s, brand), holdViews.of(s, brand));
     }
 
     /** 「지급(예정)일」 — 브랜드 행 기준. 사업자 인플루언서 건은 인플루언서 행과 날짜가 다르지만 브랜드는 자기 행만 본다. */
@@ -116,7 +121,11 @@ public class SellerSettlementQueryService {
     // ------------------------------------------------------------------ 요약(2-3)
 
     public SellerSettlementDto.Summary getSummary(String sellerEmail) {
-        Market market = accessGuard.resolveMarket(sellerEmail);
+        return summarize(accessGuard.resolveMarket(sellerEmail));
+    }
+
+    /** 요약 — 파트너 홈 정산 카드(1017 설계서 4-1)도 같은 값을 쓴다. */
+    public SellerSettlementDto.Summary summarize(Market market) {
         LocalDateTime now = LocalDateTime.now();
         Map<SettlementStatus, Long> counts = SettlementPartyViews.partyStatusCounts(
                 settlementRepository.countByStatusForMarket(market.getId()));
@@ -148,7 +157,12 @@ public class SellerSettlementQueryService {
                 new SettlementPartyDto.StatusCounts(counts.get(SettlementStatus.REVIEWING),
                         counts.get(SettlementStatus.ADJUSTING), counts.get(SettlementStatus.PAYOUT_SCHEDULED),
                         counts.get(SettlementStatus.PAID)),
-                reviewing);
+                reviewing, countAdjustmentMyTurn(market.getId()));
+    }
+
+    /** 조정 협의 「내 응답 필요」 — 최신 제안이 응답 대기이고 제안자가 인플루언서인 열린 협의(1017 설계서 4-1 · 4-7). */
+    public long countAdjustmentMyTurn(Long marketId) {
+        return adjustmentRepository.countSellerTurn(marketId);
     }
 
     // ------------------------------------------------------------------ 상세(2-4)
@@ -159,6 +173,7 @@ public class SellerSettlementQueryService {
         LocalDateTime now = LocalDateTime.now();
         Map<SettlementPayee, SettlementPayout> payouts = views.payoutsOf(s.getId());
         SettlementPayout brand = payouts.get(SettlementPayee.BRAND);
+        PayoutHoldView hold = holdViews.of(s, brand);
         boolean confirmed = s.getStatus().isConfirmed();
         SettlementStatus status = s.getStatus().toPartyStatus();
         SettlementPartyDto.AdjustmentBlock adjustment = blocks.adjustmentOf(s);
@@ -175,32 +190,18 @@ public class SellerSettlementQueryService {
                         brand == null ? null : brand.getDueDate(),
                         brand == null || brand.getStatus() != PayoutStatus.PAID ? null : brand.getPaidAt(),
                         views.payoutBasis(s.getId())),
-                adjustment, breakdown(s), confirmed ? payouts(s, payouts) : null,
+                adjustment, blocks.breakdownOf(s), confirmed ? payouts(s, payouts, hold) : null,
                 confirmed ? payment(s, brand) : null, taxDocuments, influencerTax(s), claimShipping(s, market),
                 preview.getContent().stream().map(SellerSettlementQueryService::item).toList(),
                 preview.getTotalElements(),
                 new SellerSettlementDto.Actions(canRequest, blocks.canRespond(adjustment), confirmed,
-                        taxDocuments != null && taxDocuments.stream().anyMatch(SellerSettlementDto.TaxDocument::downloadable)));
-    }
-
-    private SellerSettlementDto.Breakdown breakdown(Settlement s) {
-        return new SellerSettlementDto.Breakdown(s.getGrossOrderAmount(),
-                new SettlementPartyDto.AmountCount(s.getCancelDeduction(), s.getCancelCount()),
-                new SettlementPartyDto.AmountCount(s.getReturnDeduction(), s.getReturnCount()),
-                new SettlementPartyDto.AmountCount(s.getDeliveryExceptionDeduction(), s.getDeliveryExceptionCount()),
-                s.getConfirmedSalesAmount(),
-                new SellerSettlementDto.RateAmount(s.getPgFeeRate(), s.getPgFeeAmount()),
-                new SellerSettlementDto.PlatformFee(s.getPlatformFeeRate(), s.getPlatformFeeAmount(),
-                        properties.getPlatformFeeNormalRate()),
-                s.getOriginalRewardAmount(), s.getRewardAmount(),
-                new SellerSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
-                new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
-                s.getConsumerDeliveryFeeAmount(), s.getBrandPayoutBeforeClawback(), blocks.clawbacksOf(s),
-                s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
+                        taxDocuments != null && taxDocuments.stream().anyMatch(SellerSettlementDto.TaxDocument::downloadable)),
+                hold);
     }
 
     /** 3자 분배 — 브랜드 첫 행. 남의 행의 분배 실패는 「지급 예정」으로 접는다 · 브랜드 행 실패만 「지급 확인 중」(0-4 · §46 A-4). */
-    private List<SellerSettlementDto.Payout> payouts(Settlement s, Map<SettlementPayee, SettlementPayout> payouts) {
+    private List<SellerSettlementDto.Payout> payouts(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
+                                                     PayoutHoldView myHold) {
         String withholdingRate = SettlementPartyViews.percent(
                 s.getWithholdingIncomeRate().add(s.getWithholdingLocalRate()).movePointRight(2));
         return List.of(SettlementPayee.BRAND, SettlementPayee.CREATOR, SettlementPayee.PLATFORM).stream()
@@ -225,7 +226,8 @@ public class SellerSettlementQueryService {
                     };
                     return new SellerSettlementDto.Payout(payee, label, payout.getAmount(), note, shown,
                             statusLabel(s, payee, shown), payout.getDueDate(),
-                            payout.getStatus() == PayoutStatus.PAID ? payout.getPaidAt() : null);
+                            payout.getStatus() == PayoutStatus.PAID ? payout.getPaidAt() : null,
+                            mine ? myHold : null);
                 }).toList();
     }
 
@@ -263,7 +265,10 @@ public class SellerSettlementQueryService {
         return new SellerSettlementDto.InfluencerTax(s.getCreatorBusinessType(), type == null ? null : type.name(), label);
     }
 
-    /** 반품 · 교환 배송비(1-1) — 조회 시 계산 · 정산 행에 저장하지 않는다. 브랜드 부담은 요금표 값 그대로(왕복 · 편도 [미정]). */
+    /**
+     * 반품 · 교환 배송비(1-1) — 조회 시 계산 · 정산 행에 저장하지 않는다. 1021 기-18 — 브랜드 반품비 · 교환비 설정은 없다. 브랜드 부담 =
+     * 브랜드 귀책(착불) 요청의 착불 운임 = 주문 시점 편도 기본 배송비 스냅샷 합. 소비자 부담 = 반품 시 차감한 최초 배송비 합.
+     */
     private SellerSettlementDto.ClaimShipping claimShipping(Settlement s, Market market) {
         long consumerCount = 0, consumerAmount = 0, brandCount = 0, brandAmount = 0;
         for (Object[] row : claimCollectionRepository.sumFeesByGroupBuy(s.getGroupBuyId())) {
@@ -275,8 +280,7 @@ public class SellerSettlementQueryService {
                 consumerAmount += ((Number) row[3]).longValue();
             } else {
                 brandCount += count;
-                Integer fee = type == ClaimType.EXCHANGE ? market.getExchangeFee() : market.getReturnFee();
-                brandAmount += count * (fee == null ? 0 : fee);
+                brandAmount += ((Number) row[4]).longValue();
             }
         }
         return new SellerSettlementDto.ClaimShipping(

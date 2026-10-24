@@ -58,6 +58,12 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         applyPendingCancelFilter(where, condition, g);
         applyDateRange(where, condition, g, o);
         applySearch(where, condition, g, o);
+        if (condition.shipOverdueOnly()) {
+            // 판정은 목록 오버레이 shipOverdue · 홈 숫자(countShipOverdue)와 같다.
+            where.and(g.fulfillmentStatus.in(FulfillmentStatus.WORKABLE))
+                    .and(g.shipDueAt.isNotNull())
+                    .and(g.shipDueAt.lt(condition.now()));
+        }
 
         List<SellerOrderRow> content = queryFactory
                 .select(Projections.constructor(SellerOrderRow.class, g, o.orderNumber, o.paidAt, o.recipientName, c.title))
@@ -153,6 +159,9 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         if (condition.creatorId() != null) {
             where.and(g.groupBuy.creator.id.eq(condition.creatorId()));
         }
+        if (condition.userId() != null) {
+            where.and(o.user.id.eq(condition.userId()));
+        }
         if (condition.paymentMethod() != null) {
             QPayment p = QPayment.payment;
             where.and(JPAExpressions.selectOne().from(p)
@@ -163,6 +172,10 @@ public class OrderDeliveryGroupRepositoryImpl implements OrderDeliveryGroupRepos
         }
         if (condition.status() != null) {
             where.and(g.fulfillmentStatus.eq(condition.status()));
+        }
+        if (condition.cancelRequested()) {
+            where.and(JPAExpressions.selectOne().from(r)
+                    .where(r.deliveryGroup.eq(g).and(r.status.eq(CancelRequestStatus.PENDING))).exists());
         }
         if (condition.from() != null) {
             where.and(o.paidAt.goe(condition.from()));

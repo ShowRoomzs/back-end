@@ -1,5 +1,7 @@
 package showroomz.api.app.auth.controller;
 
+import java.util.List;
+import showroomz.domain.member.user.type.NotificationToggle;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -177,6 +179,19 @@ public class AuthController implements AuthControllerDocs {
                     .consentType(ConsentType.MARKETING)
                     .agreed(marketingAgree)
                     .build());
+        }
+        // C15 광고성 토글 3종(새 공구 · 새 게시물 · 마감 임박)도 가입 [선택] 동의를 따른다(1017 설계서 2-2) — 동의했으면 켜고 동의 일시 ·
+        // 이력을 남긴다. 동의하지 않았으면 끈 채로 둔다(가입 시점의 미동의는 철회가 아니라 이력이 없다).
+        LocalDateTime consentAt = LocalDateTime.now();
+        for (NotificationToggle toggle : List.of(NotificationToggle.FOLLOW_GROUP_BUY, NotificationToggle.FOLLOW_POST,
+                NotificationToggle.GROUP_BUY_ENDING)) {
+            if (user.updateNotificationToggle(toggle, marketingAgree, consentAt) && marketingAgree) {
+                userConsentHistoryRepository.save(UserConsentHistory.builder()
+                        .user(user)
+                        .consentType(toggle.getConsentType())
+                        .agreed(true)
+                        .build());
+            }
         }
         
         // 회원가입 완료: GUEST -> USER로 권한 변경

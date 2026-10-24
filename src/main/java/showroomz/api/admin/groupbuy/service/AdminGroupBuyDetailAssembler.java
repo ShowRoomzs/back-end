@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -99,6 +100,8 @@ public class AdminGroupBuyDetailAssembler {
     private final AdminGroupBuyPermissionPolicy permissionPolicy;
     private final BusinessCalendar businessCalendar;
     private final GroupBuyProperties properties;
+    private final showroomz.domain.connection.service.OperatorChannelService operatorChannelService;
+    private final showroomz.domain.message.repository.MessageRepository messageRepository;
 
     public AdminGroupBuyDetailResponse assemble(GroupBuy groupBuy, Navigation navigation) {
         LocalDateTime now = LocalDateTime.now();
@@ -132,7 +135,8 @@ public class AdminGroupBuyDetailAssembler {
                 closure(groupBuy, facts, sales, names),
                 permissionPolicy.evaluate(facts, now),
                 history(groupBuy, history, revisions),
-                navigation);
+                navigation,
+                SanctionHoldView.forAdmin(groupBuy));
     }
 
     private Summary summary(GroupBuy groupBuy, Contract contract) {
@@ -461,7 +465,21 @@ public class AdminGroupBuyDetailAssembler {
                 (int) ChronoUnit.DAYS.between(notice.getNoticedAt().toLocalDate(), now.toLocalDate()),
                 notice.getExecuteScheduledAt(), notice.getAppealDeadlineAt(), notice.getNoticeRevisionNo(),
                 sinceNotice, appeal,
-                notice.getAppealDeadlineAt() != null && now.isAfter(notice.getAppealDeadlineAt()));
+                notice.getAppealDeadlineAt() != null && now.isAfter(notice.getAppealDeadlineAt()),
+                creatorOpinion(facts.groupBuy(), notice));
+    }
+
+    /** 인플루언서 운영팀 채널의 통지 카드 뒤 답글 수(1021 설계서 2-3). */
+    private ChannelOpinion creatorOpinion(GroupBuy groupBuy, GroupBuyAdminSuspension notice) {
+        if (groupBuy.getCreator() == null) {
+            return null;
+        }
+        return operatorChannelService.findCreatorChannelThreadId(groupBuy.getCreator())
+                .flatMap(threadId -> messageRepository.findFirstByThread_IdAndRefTypeAndRefIdOrderByIdAsc(threadId,
+                                showroomz.domain.message.type.MessageRefType.GROUP_BUY_ADMIN_SUSPENSION, notice.getId())
+                        .map(card -> new ChannelOpinion(threadId, card.getId(), messageRepository.countAfter(threadId,
+                                card.getId(), showroomz.domain.message.type.ParticipantType.CREATOR))))
+                .orElse(null);
     }
 
     // ── 종료 이후 ────────────────────────────────────────────────────────────

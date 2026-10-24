@@ -1,7 +1,10 @@
 package showroomz.domain.member.creator.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.user.entity.Users;
 
@@ -22,6 +25,9 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
 
     Optional<Creator> findByConnectionCode(String connectionCode);
 
+    /** PG 지급대행 셀러 id 로 — 웹훅 {@code seller.changed}(44 토스 설계서 4-3). */
+    Optional<Creator> findByPgPartnerId(String pgPartnerId);
+
     boolean existsByConnectionCode(String connectionCode);
 
     /**
@@ -36,4 +42,28 @@ public interface CreatorRepository extends JpaRepository<Creator, Long> {
     @Query(value = "SELECT creator_id FROM creator " +
                    "WHERE connection_code = CONCAT('SZ', LPAD(creator_id, 8, '0'))", nativeQuery = true)
     List<Long> findIdsWithLegacyConnectionCode();
+
+    /**
+     * 조치(정지 · 해제 · 탈퇴 승인)의 직렬화(53 설계서 4-1) — 같은 인플루언서에 대한 동시 조치를 줄 세운다. 잠근 뒤 상태를 다시 보고
+     * 엔티티로 바꾼다(조건부 UPDATE 와 같은 효과 · 관리 중인 엔티티가 벌크 UPDATE 를 덮어쓰지 않게).
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Creator c JOIN FETCH c.user WHERE c.id = :creatorId")
+    Optional<Creator> findForUpdate(@Param("creatorId") Long creatorId);
+
+    @Query("SELECT c FROM Creator c JOIN FETCH c.user WHERE c.id = :creatorId")
+    Optional<Creator> findWithUserById(@Param("creatorId") Long creatorId);
+
+    /** 어드민 상세의 「이전 · 다음」 — 회원번호 순 인접 인플루언서(55 계획서 M4). 행은 입점 승인 때만 생기므로 필터가 없다. */
+    @Query("SELECT MAX(c.id) FROM Creator c WHERE c.id < :id")
+    Long findPreviousMemberId(@Param("id") Long id);
+
+    @Query("SELECT MIN(c.id) FROM Creator c WHERE c.id > :id")
+    Long findNextMemberId(@Param("id") Long id);
+
+    /** 계좌 확인 재시도 대상(50 설계서 6-4) — 「확인 중」으로 남은 인플루언서. */
+    @Query("SELECT c.id FROM Creator c WHERE c.accountVerificationStatus = :status ORDER BY c.id ASC")
+    List<Long> findIdsByAccountVerificationStatus(
+            @Param("status") showroomz.domain.member.creator.type.CreatorAccountVerificationStatus status,
+            org.springframework.data.domain.Pageable pageable);
 }

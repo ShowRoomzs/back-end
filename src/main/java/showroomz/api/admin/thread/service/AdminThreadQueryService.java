@@ -31,8 +31,10 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * 어드민 소통 스레드 조회(36 설계 3절) — 운영팀 1:1 채널의 목록 · 배지 · 정보 바 · 메시지.
@@ -59,7 +61,7 @@ public class AdminThreadQueryService {
     private final AdminIssuePanelAssembler issuePanels;
 
     /**
-     * 채널 목록 — 최근 메시지순, 메시지 0건 채널은 맨 아래다(정렬은 쿼리가 소유한다).
+     * 채널 목록 — 「소명 미확인」 채널이 맨 위(55 계획서 A8), 그 밖은 최근 메시지순, 메시지 0건 채널은 맨 아래다(정렬은 쿼리가 소유한다).
      * 검색어가 그 탭의 회원번호 접두로 시작하면 번호 축으로만 본다 — 숫자가 아니면 결과 0건이다.
      * 이슈 탭은 정산 조정 협의 목록이다({@code state} 는 이 탭에서만 쓴다 — 기본 OPEN).
      */
@@ -78,12 +80,26 @@ public class AdminThreadQueryService {
             }
             trimmed = null;
         }
+        long team = MessageThreadService.OPERATOR_TEAM_PARTICIPANT_ID;
         Page<MessageThread> page = tab == AdminChannelTab.BRAND
-                ? threads.findOperatorMarketChannels(memberId, trimmed, pageable)
-                : threads.findOperatorCreatorChannels(memberId, trimmed, pageable);
-        Map<Long, Long> unread = messageThreadService.countUnreadForOperatorTeam(
-                page.getContent().stream().map(MessageThread::getId).toList());
-        return PageResponse.of(page.map(thread -> toListItem(thread, unread.getOrDefault(thread.getId(), 0L))));
+                ? threads.findOperatorMarketChannels(memberId, trimmed, team, pageable)
+                : threads.findOperatorCreatorChannels(memberId, trimmed, team, pageable);
+        List<Long> threadIds = page.getContent().stream().map(MessageThread::getId).toList();
+        Map<Long, Long> unread = messageThreadService.countUnreadForOperatorTeam(threadIds);
+        Set<Long> appealUnconfirmed = appealUnconfirmed(tab, threadIds);
+        return PageResponse.of(page.map(thread -> toListItem(thread, unread.getOrDefault(thread.getId(), 0L),
+                appealUnconfirmed.contains(thread.getId()))));
+    }
+
+    /** 「소명 미확인」 표시 — 목록 고정과 같은 판정식이다(55 계획서 A8 · MessageThreadRepository.APPEAL_UNCONFIRMED). */
+    private Set<Long> appealUnconfirmed(AdminChannelTab tab, List<Long> threadIds) {
+        if (threadIds.isEmpty()) {
+            return Set.of();
+        }
+        long team = MessageThreadService.OPERATOR_TEAM_PARTICIPANT_ID;
+        return new HashSet<>(tab == AdminChannelTab.BRAND
+                ? threads.findAppealUnconfirmedMarketChannelIds(threadIds, team)
+                : threads.findAppealUnconfirmedCreatorChannelIds(threadIds, team));
     }
 
     /**
@@ -129,12 +145,14 @@ public class AdminThreadQueryService {
             return new ChannelInfo(thread.getId(), tab, market.getMarketName(), market.getMarketImageUrl(),
                     AdminChannelMemberNumber.format(tab, memberId), memberId, status, status.isWritable(),
                     infoReader.brandProfile(market), infoReader.brandProgress(market),
+                    infoReader.brandSanction(market.getId()),
                     infoReader.openIssueThreads(market.getId(), null), null, null);
         }
         Creator creator = connection.getCreator();
         return new ChannelInfo(thread.getId(), tab, creator.getShowroomName(), AdminThreadAccess.memberImageOf(thread),
                 AdminChannelMemberNumber.format(tab, memberId), memberId, status, status.isWritable(),
                 infoReader.creatorProfile(creator), infoReader.creatorProgress(creator),
+                infoReader.creatorSanction(creator.getId()),
                 infoReader.openIssueThreads(null, creator.getId()), null, null);
     }
 
@@ -148,7 +166,7 @@ public class AdminThreadQueryService {
         return new MessageList(messageAssembler.assemble(thread, page), nextCursor, hasNext);
     }
 
-    private ChannelListItem toListItem(MessageThread thread, long unread) {
+    private ChannelListItem toListItem(MessageThread thread, long unread, boolean appealUnconfirmed) {
         Connection connection = thread.getConnection();
         AdminChannelTab tab = AdminThreadAccess.tabOf(thread);
         AdminChannelMemberStatus status = AdminThreadAccess.memberStatusOf(thread);
@@ -160,6 +178,6 @@ public class AdminThreadQueryService {
                 brand ? null : connection.getCreator().getBusinessType(),
                 status, thread.getLastMessagePreview(),
                 thread.getLastMessageSenderType() == ParticipantType.ADMIN,
-                thread.getLastMessageAt(), unread, status.isWritable(), null);
+                thread.getLastMessageAt(), unread, status.isWritable(), appealUnconfirmed, null);
     }
 }

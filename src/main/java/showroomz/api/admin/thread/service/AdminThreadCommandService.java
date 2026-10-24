@@ -1,5 +1,10 @@
 package showroomz.api.admin.thread.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,6 +58,7 @@ public class AdminThreadCommandService {
     private final MessageAttachmentService attachmentService;
     private final ContractResendRequestRepository resendRequests;
     private final AdminMessageAssembler messageAssembler;
+    private final NotificationPublisher notificationPublisher;
 
     public record SendOutcome(MessageItem item, boolean created) {
     }
@@ -63,6 +69,16 @@ public class AdminThreadCommandService {
         MessageThread thread = access.requireWritableChannel(threadId);
         MessageThreadService.SendResult result = messageThreadService.sendMessage(thread, ParticipantType.ADMIN,
                 operatorId, request.clientMessageId(), request.content(), request.attachmentIds());
+        // 파트너 알림 「운영팀 채널 답장」(16 알림 표) — 스튜디오는 새 메시지를 알림으로 보내지 않는다(14 H1a · 연결·소통 배지가 맡는다).
+        if (result.created() && thread.getConnection() != null
+                && thread.getConnection().getType() == showroomz.domain.connection.type.ConnectionType.OPERATOR_MARKET) {
+            notificationPublisher.publish(NotificationCommand.toSeller(thread.getConnection().getMarket().getId(),
+                            NotificationType.OPERATOR_CHANNEL_REPLY)
+                    .actorType(NotificationActorType.OPERATOR).title("운영팀 채널에 답장이 도착했습니다")
+                    .body(preview(request.content()))
+                    .targetType(NotificationTargetType.THREAD).targetId(thread.getId())
+                    .targetSub(String.valueOf(result.message().getId())).build());
+        }
         return new SendOutcome(messageAssembler.assembleOne(thread, result.message()), result.created());
     }
 
@@ -70,6 +86,14 @@ public class AdminThreadCommandService {
      * 누가 열든 운영팀의 읽음 위치가 앞으로 간다(0-5). 이슈 쌍의 1:1 스레드는 no-op 이다 — PAIR 스레드에 운영팀 참가자 행을
      * 두지 않는다(44 이슈 스레드 설계서 4-5 · 13-14 §13-4 모니터링 열람 규칙).
      */
+    private static String preview(String content) {
+        if (content == null || content.isBlank()) {
+            return "첨부 파일";
+        }
+        String line = content.strip().replace('\n', ' ');
+        return line.length() > 80 ? line.substring(0, 80) + "…" : line;
+    }
+
     public void markRead(Long threadId) {
         MessageThread thread = access.requireReadable(threadId);
         if (AdminThreadAccess.isPairThread(thread)) {

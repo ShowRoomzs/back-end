@@ -16,7 +16,7 @@ import showroomz.api.app.setting.DTO.IdentityReverifyRequest;
 import showroomz.api.app.setting.DTO.NotificationSettingRequest;
 import showroomz.api.app.setting.DTO.NotificationSettingResponse;
 
-@Tag(name = "User - Settings", description = "C15 설정 API")
+@Tag(name = "User - Settings", description = "사용자 설정 API")
 public interface SettingControllerDocs {
 
     @Operation(

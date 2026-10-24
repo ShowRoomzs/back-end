@@ -1,5 +1,6 @@
 package showroomz.api.admin.terms.service;
 
+import showroomz.domain.notification.service.NotificationBroadcastService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,10 @@ class AdminTermsServiceTest {
     private static final long DOCUMENT_ID = 7L;
     private static final long OPERATOR_ID = 1L;
     private static final LocalDate TOMORROW = LocalDate.now(ZoneId.of("Asia/Seoul")).plusDays(1);
+
+    /** 1017 — 소비자 대상 약관 개정 공지(내용 검증은 통합 테스트). */
+    @Mock
+    private NotificationBroadcastService notificationBroadcast;
 
     @Mock
     private TermsDocumentRepository termsDocumentRepository;

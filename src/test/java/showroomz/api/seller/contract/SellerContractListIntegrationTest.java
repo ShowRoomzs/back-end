@@ -31,14 +31,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SellerContractListIntegrationTest extends SellerContractTestSupport {
 
     @Test
-    @DisplayName("탭은 6개지만 행의 status는 9종 그대로다 — 묶음은 필터일 뿐이다")
+    @DisplayName("탭은 6개지만 행의 status는 10종 그대로다 — 묶음은 필터일 뿐이다")
     void groupsNineStatusesIntoSixTabsWithoutRewritingRows() throws Exception {
         for (ContractStatus status : ContractStatus.values()) {
             seedInStatus(status);
         }
 
         list().andExpect(status().isOk())
-                .andExpect(jsonPath("$.pageInfo.totalResults").value(9));
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(10));
 
         list("tab", "DRAFT").andExpect(jsonPath("$.pageInfo.totalResults").value(1))
                 .andExpect(jsonPath("$.content[0].status").value("DRAFT"));
@@ -54,10 +54,10 @@ class SellerContractListIntegrationTest extends SellerContractTestSupport {
         list("tab", "CONCLUDED").andExpect(jsonPath("$.pageInfo.totalResults").value(1))
                 .andExpect(jsonPath("$.content[0].statusLabel").value("체결완료"));
 
-        // 종결 3종은 한 탭으로 접히지만 배지 문구는 각자의 것을 유지한다(§26-1).
-        list("tab", "CLOSED").andExpect(jsonPath("$.pageInfo.totalResults").value(3))
+        // 종결 4종(1021 해지 포함)은 한 탭으로 접히지만 배지 문구는 각자의 것을 유지한다(§26-1).
+        list("tab", "CLOSED").andExpect(jsonPath("$.pageInfo.totalResults").value(4))
                 .andExpect(jsonPath("$.content[*].status",
-                        containsInAnyOrder("DECLINED", "EXPIRED", "CANCELED")));
+                        containsInAnyOrder("DECLINED", "EXPIRED", "CANCELED", "TERMINATED")));
     }
 
     @Test

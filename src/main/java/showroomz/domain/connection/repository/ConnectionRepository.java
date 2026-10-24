@@ -37,7 +37,7 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
      * 탈퇴한 인플루언서는 검색 결과에서 제외한다.
      */
     @Query("SELECT new showroomz.api.seller.connection.dto.ConnectionCreatorSearchItem(" +
-           "cr.id, cr.showroomName, cr.followerCount, cr.user.profileImageUrl, c.status) " +
+           "cr.id, cr.showroomName, cr.followerCount, cr.user.profileImageUrl, c.status, cr.status) " +
            "FROM Creator cr " +
            "LEFT JOIN Connection c ON c.creator = cr AND c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
            "    AND c.market.id = :marketId " +
@@ -45,6 +45,7 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "                     showroomz.domain.connection.type.ConnectionStatus.CONNECTED) " +
            "WHERE cr.showroomName LIKE CONCAT('%', :keyword, '%') " +
            "AND cr.user.status <> :withdrawnStatus " +
+           "AND cr.status <> showroomz.domain.member.creator.type.CreatorStatus.WITHDRAWN " +
            "ORDER BY cr.showroomName ASC")
     Page<ConnectionCreatorSearchItem> searchConnectableCreators(
             @Param("marketId") Long marketId,
@@ -108,4 +109,48 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "AND c.market.id = :marketId AND c.creator.id = :creatorId " +
            "AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED")
     Optional<Connection> findConnectedPair(@Param("marketId") Long marketId, @Param("creatorId") Long creatorId);
+
+    // ------------------------------------------------------------------ 어드민 브랜드 상세(52 설계서 2-4)
+
+    @Query("SELECT COUNT(c) FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.market.id = :marketId AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED")
+    long countConnectedPairsByMarket(@Param("marketId") Long marketId);
+
+    /** 어드민 브랜드 목록 「연결 인플루언서」 — 상세 운영 현황과 같은 기준(연결중 PAIR · D13-3). [marketId, count]. */
+    @Query("SELECT c.market.id, COUNT(c) FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR "
+            + "AND c.market.id IN :marketIds AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED "
+            + "GROUP BY c.market.id")
+    List<Object[]> countConnectedPairsByMarketIn(@Param("marketIds") java.util.Collection<Long> marketIds);
+
+    /** 어드민 인플루언서 목록 「연결 브랜드」 — 상세 운영 현황과 같은 기준(연결중 PAIR · D13-3). [creatorId, count]. */
+    @Query("SELECT c.creator.id, COUNT(c) FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR "
+            + "AND c.creator.id IN :creatorIds AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED "
+            + "GROUP BY c.creator.id")
+    List<Object[]> countConnectedPairsByCreatorIn(@Param("creatorIds") java.util.Collection<Long> creatorIds);
+
+    /**
+     * 연결 인플루언서 카드 — 연결중 먼저(최근 연결순) → 연결 종료(최근 종료순). 요청중 · 거절은 연결이 성립한 적이 없어 내리지 않는다.
+     */
+    @Query(value = "SELECT c FROM Connection c JOIN FETCH c.creator cr " +
+           "WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR AND c.market.id = :marketId " +
+           "AND c.status IN (showroomz.domain.connection.type.ConnectionStatus.CONNECTED, " +
+           "                 showroomz.domain.connection.type.ConnectionStatus.DISCONNECTED) " +
+           "ORDER BY CASE WHEN c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED THEN 0 ELSE 1 END, " +
+           "COALESCE(c.disconnectedAt, c.respondedAt) DESC, c.id DESC",
+           countQuery = "SELECT COUNT(c) FROM Connection c " +
+           "WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR AND c.market.id = :marketId " +
+           "AND c.status IN (showroomz.domain.connection.type.ConnectionStatus.CONNECTED, " +
+           "                 showroomz.domain.connection.type.ConnectionStatus.DISCONNECTED)")
+    Page<Connection> findPairsForAdminByMarket(@Param("marketId") Long marketId, Pageable pageable);
+
+    /** 파트너 홈 첫 공구 가이드 H3a 「○○와 연결되었습니다」(1017 설계서 4-1) — 가장 최근에 연결된 쇼룸부터. */
+    @Query("SELECT c FROM Connection c JOIN FETCH c.creator WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.market.id = :marketId AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED " +
+           "ORDER BY c.respondedAt DESC, c.id DESC")
+    List<Connection> findLatestConnectedPairsByMarket(@Param("marketId") Long marketId, Pageable pageable);
+
+    /** 스튜디오 시작 가이드(1017 설계서 5-1 guide) — 브랜드 연결 요청을 한 번이라도 받았는가(상태 무관). 첫 요청이 오면 가이드가 사라진다. */
+    @Query("SELECT COUNT(c) > 0 FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR " +
+           "AND c.creator.id = :creatorId")
+    boolean existsPairForCreator(@Param("creatorId") Long creatorId);
 }

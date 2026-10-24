@@ -20,7 +20,7 @@ import showroomz.api.seller.product.DTO.ProductDto;
 import showroomz.api.seller.product.DTO.SellerProductSearchCondition;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller - Product", description = "Seller Product API")
+@Tag(name = "Seller - Product", description = "파트너센터 상품 관리 API")
 public interface ProductControllerDocs {
 
     @Operation(

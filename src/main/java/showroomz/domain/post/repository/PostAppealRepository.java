@@ -1,8 +1,10 @@
 package showroomz.domain.post.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -17,6 +19,11 @@ public interface PostAppealRepository extends JpaRepository<PostAppeal, Long> {
     Optional<PostAppeal> findByPost_Id(Long postId);
 
     boolean existsByPost_Id(Long postId);
+
+    /** 심사 동시 처리 차단 — 승인과 반려가 같은 신청에 동시에 들어오면 하나만 통과한다(54 설계 0-8) */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT a FROM PostAppeal a WHERE a.id = :appealId")
+    Optional<PostAppeal> findByIdForUpdate(@Param("appealId") Long appealId);
 
     Page<PostAppeal> findByStatusOrderBySubmittedAtAsc(PostAppealStatus status, Pageable pageable);
 

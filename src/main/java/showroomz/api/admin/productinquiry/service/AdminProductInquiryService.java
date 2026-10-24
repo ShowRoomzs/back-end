@@ -1,5 +1,10 @@
 package showroomz.api.admin.productinquiry.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,14 +51,18 @@ public class AdminProductInquiryService {
     private final ProductInquiryHistoryRepository productInquiryHistoryRepository;
     private final AdminProductInquiryQueryRepository adminProductInquiryQueryRepository;
     private final SellerRepository sellerRepository;
+    private final NotificationPublisher notificationPublisher;
 
+    /**
+     * @param userId 작성한 소비자로 좁힌다(56 C1) — 탭 건수도 같은 소비자 기준. 툴바 「삭제 요청 N건」은 지금처럼 전체다
+     */
     @Transactional(readOnly = true)
     public AdminProductInquiryDto.ListResponse getList(AdminProductInquiryStatusFilter statusFilter,
-                                                        ProductInquiryType type, String keyword,
+                                                        ProductInquiryType type, String keyword, Long userId,
                                                         Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
         Page<ProductInquiry> page = adminProductInquiryQueryRepository.search(
-                statusFilter, type, normalizedKeyword, pageable);
+                statusFilter, type, normalizedKeyword, userId, pageable);
 
         List<AdminProductInquiryDto.ListItem> content = page.getContent().stream()
                 .map(this::toListItem)
@@ -62,7 +71,7 @@ public class AdminProductInquiryService {
         return AdminProductInquiryDto.ListResponse.builder()
                 .content(content)
                 .pageInfo(new PaginationInfo(page))
-                .statusCounts(buildStatusCounts(type, normalizedKeyword))
+                .statusCounts(buildStatusCounts(type, normalizedKeyword, userId))
                 .deleteRequestedCount(adminProductInquiryQueryRepository.countAllDeleteRequested())
                 .build();
     }
@@ -86,11 +95,11 @@ public class AdminProductInquiryService {
 
     @Transactional(readOnly = true)
     public AdminProductInquiryDto.DetailResponse getDetail(Long inquiryId, AdminProductInquiryStatusFilter statusFilter,
-                                                            ProductInquiryType type, String keyword) {
+                                                            ProductInquiryType type, String keyword, Long userId) {
         ProductInquiry inquiry = getInquiry(inquiryId);
 
         List<Long> orderedIds = adminProductInquiryQueryRepository.findOrderedIds(
-                statusFilter, type, normalize(keyword));
+                statusFilter, type, normalize(keyword), userId);
         int index = orderedIds.indexOf(inquiryId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
@@ -118,9 +127,13 @@ public class AdminProductInquiryService {
             throw new BusinessException(ErrorCode.INQUIRY_DELETE_REASON_DETAIL_REQUIRED);
         }
 
+        boolean requestedByBrand = inquiry.isDeleteRequested();
         inquiry.executeDelete(reason, detail, operatorId);
         productInquiryHistoryRepository.save(new ProductInquiryHistory(
                 inquiry, ProductInquiryHistoryType.DELETE_EXECUTED, reason.getDescription(), operatorId));
+        if (requestedByBrand) {
+            notifyBrand(inquiry, NotificationType.INQUIRY_DELETE_APPROVED, "상품 문의 삭제 요청이 승인되었습니다");
+        }
     }
 
     /**
@@ -143,6 +156,18 @@ public class AdminProductInquiryService {
         inquiry.rejectDeleteRequest(reason, detail, operatorId);
         productInquiryHistoryRepository.save(new ProductInquiryHistory(
                 inquiry, ProductInquiryHistoryType.DELETE_REJECTED, reason.getDescription(), operatorId));
+        notifyBrand(inquiry, NotificationType.INQUIRY_DELETE_REJECTED,
+                "상품 문의 삭제 요청이 반려되었습니다 · 사유: " + reason.getDescription());
+    }
+
+    /** 파트너 알림 「문의 › 삭제 요청 승인 / 반려」(16 알림 표). */
+    private void notifyBrand(ProductInquiry inquiry, NotificationType type, String sentence) {
+        if (inquiry.getProduct() == null || inquiry.getProduct().getMarket() == null) {
+            return;
+        }
+        notificationPublisher.publish(NotificationCommand.toSeller(inquiry.getProduct().getMarket().getId(), type)
+                .actorType(NotificationActorType.OPERATOR).title(sentence)
+                .targetType(NotificationTargetType.INQUIRY).targetId(inquiry.getId()).targetSub("PRODUCT").build());
     }
 
     private AdminProductInquiryDto.ListItem toListItem(ProductInquiry inquiry) {
@@ -161,9 +186,9 @@ public class AdminProductInquiryService {
                 .build();
     }
 
-    private AdminProductInquiryDto.StatusCounts buildStatusCounts(ProductInquiryType type, String keyword) {
+    private AdminProductInquiryDto.StatusCounts buildStatusCounts(ProductInquiryType type, String keyword, Long userId) {
         Map<AdminProductInquiryStatusFilter, Long> counts =
-                adminProductInquiryQueryRepository.countByStatus(type, keyword);
+                adminProductInquiryQueryRepository.countByStatus(type, keyword, userId);
 
         return AdminProductInquiryDto.StatusCounts.builder()
                 .all(counts.get(AdminProductInquiryStatusFilter.ALL))

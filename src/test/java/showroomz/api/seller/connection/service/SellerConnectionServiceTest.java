@@ -1,5 +1,6 @@
 package showroomz.api.seller.connection.service;
 
+import showroomz.domain.notification.service.NotificationPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -7,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.api.seller.connection.dto.ConnectRequest;
@@ -18,6 +20,7 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -41,6 +44,10 @@ class SellerConnectionServiceTest {
 
     private static final String SELLER_EMAIL = "brand@showroomz.co.kr";
 
+    /** 1017 알림함 — 발생 지점이 알림을 낸다(내용 검증은 통합 테스트). */
+    @Mock
+    private NotificationPublisher notificationPublisher;
+
     @Mock
     private ConnectionRepository connectionRepository;
     @Mock
@@ -49,6 +56,9 @@ class SellerConnectionServiceTest {
     private MarketRepository marketRepository;
     @Mock
     private CreatorRepository creatorRepository;
+
+    @Spy
+    private BrandSanctionGuard brandSanctionGuard = new BrandSanctionGuard();
 
     @InjectMocks
     private SellerConnectionService sellerConnectionService;

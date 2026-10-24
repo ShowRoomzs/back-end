@@ -62,7 +62,9 @@ public class OrderFulfillmentService {
     private final OrderProperties orderProperties;
     private final ShipDuePolicy shipDuePolicy;
     private final ApplicationEventPublisher eventPublisher;
+    private final OrderNotificationService orderNotifications;
     private final showroomz.domain.payment.repository.PaymentRepository paymentRepository;
+    private final showroomz.global.config.properties.DeliveryTrackerProperties trackerProperties;
 
     // ------------------------------------------------------------------ 이력
 
@@ -78,6 +80,8 @@ public class OrderFulfillmentService {
                 .detail(detail)
                 .occurredAt(occurredAt)
                 .build());
+        // 알림함(1017 설계서 1-3 · 1-4) — 이력이 쌓이는 같은 지점이라 빠지는 전이가 없다. 알림은 커밋 뒤에 쓰인다.
+        orderNotifications.onFulfillment(deliveryGroupId, eventType, actorType);
     }
 
     // ------------------------------------------------------------------ PAID 훅(설계서 5-1)
@@ -253,6 +257,31 @@ public class OrderFulfillmentService {
     }
 
     /** 원래 결제의 부분 취소인가 — 어드민 06c 결제 열 「부분」. 결제가 없는 주문은 거짓. */
+    /**
+     * 환불 편입 — 원래 결제액을 넘는 부분은 운영자 계좌 송금 행으로 나눈다(1021 설계서 4-5 · 결정 노트 기-93 보완). 넘는 금액이 없으면
+     * {@link #enqueueRefund}와 같다.
+     *
+     * @return PG 취소 행(없으면 null)과 송금 행(없으면 null)
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public SplitRefund enqueueRefundSplit(OrderDeliveryGroup group, RefundTaskSource source, Long sourceId,
+                                          int refundAmount, String transferDetail) {
+        String paymentId = group.getOrder().getPaidPaymentId();
+        long available = paymentId == null ? refundAmount : paymentRepository.findById(paymentId)
+                .map(payment -> Math.max(0L, payment.cancellableAmount() - refundTaskRepository.sumOutstandingByPayment(paymentId)))
+                .orElse((long) refundAmount);
+        int pgAmount = (int) Math.min(refundAmount, available);
+        int excess = refundAmount - pgAmount;
+        OrderRefundTask pg = pgAmount > 0 || excess == 0 ? enqueueRefund(group, source, sourceId, pgAmount) : null;
+        OrderRefundTask transfer = excess > 0
+                ? refundTaskRepository.save(OrderRefundTask.bankTransfer(group, source, sourceId, excess, transferDetail))
+                : null;
+        return new SplitRefund(pg, transfer);
+    }
+
+    public record SplitRefund(OrderRefundTask pg, OrderRefundTask transfer) {
+    }
+
     private boolean isPartial(String paymentId, int refundAmount) {
         return paymentId != null && paymentRepository.findById(paymentId)
                 .map(payment -> payment.getAmount() != null && refundAmount < payment.getAmount()).orElse(false);
@@ -358,13 +387,20 @@ public class OrderFulfillmentService {
     @Transactional
     public void applyTracking(OrderDeliveryGroup target, Optional<TrackSnapshot> result, LocalDateTime now,
                               int pickupAlertHours, int stallAlertDays) {
+        applyTracking(target, result, now, pickupAlertHours, stallAlertDays, true);
+    }
+
+    /** @param judgeAlerts false 면 배송 이상(집화 확인 필요 · 추적 정지)을 새로 판정하지 않는다 — 추적 연동 장애 중(1017 설계서 6-3) */
+    @Transactional
+    public void applyTracking(OrderDeliveryGroup target, Optional<TrackSnapshot> result, LocalDateTime now,
+                              int pickupAlertHours, int stallAlertDays, boolean judgeAlerts) {
         Long id = target.getId();
         // 폴링 당시의 송장 — 전이 WHERE 에 넣어 그사이 송장이 수정됐으면 0행이 된다(N11).
         DeliveryCarrier carrier = target.getCarrier();
         String trackingNumber = target.getTrackingNumber();
         if (result.isEmpty() || result.get().lastEventAt() == null) {
             // 이벤트 없음 — 집화 스캔 전에는 데이터가 없는 게 정상. 24시간이 지나야 1단 경고다(§34-6).
-            if (target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
+            if (judgeAlerts && target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
                     && target.getLastTrackingAt() == null
                     && target.getShippedAt() != null
                     && !target.getShippedAt().plusHours(pickupAlertHours).isAfter(now)
@@ -408,8 +444,12 @@ public class OrderFulfillmentService {
         // 2단 — 집화 후 N일 갱신 없음. 1단과 달리 이벤트가 있던 송장이다.
         if (target.getFulfillmentStatus() == FulfillmentStatus.SHIPPING
                 && !snapshot.lastEventAt().plusDays(stallAlertDays).isAfter(now)) {
-            if (deliveryGroupRepository.setTrackingAlert(id, carrier, trackingNumber, TrackingAlert.STALLED) == 1) {
+            // 판정을 멈춘 동안에도 기존 배지는 그대로 둔다(아래 「재개 — 해제」로 내려가지 않는다).
+            if (judgeAlerts
+                    && deliveryGroupRepository.setTrackingAlert(id, carrier, trackingNumber, TrackingAlert.STALLED) == 1) {
                 appendHistory(id, FulfillmentEventType.TRACKING_STALLED, FulfillmentActorType.TRACKER, null, null, now);
+                // 소비자 선택은 판정 + N일에 열린다(1021 기-15 【잠정】) — 그 전에 추적이 다시 움직이면 해제와 함께 닫힌다.
+                deliveryGroupRepository.openStallChoice(id, now.plusDays(trackerProperties.getConsumerChoiceDays()));
             }
             return;
         }

@@ -34,8 +34,7 @@ import java.util.List;
 
 import static showroomz.api.admin.thread.docs.AdminThreadDocsExamples.*;
 
-@Tag(name = "Admin - Thread", description = """
-        관리자 소통 스레드 API""")
+@Tag(name = "Admin - Thread", description = "관리자 소통 스레드 API")
 public interface AdminThreadControllerDocs {
 
     // ── 목록 · 배지 ──────────────────────────────────────────────────────────
@@ -71,7 +70,13 @@ public interface AdminThreadControllerDocs {
             - **회원번호 검색:** 그 탭의 접두사(`BRD-` · `INF-`, 대소문자 무시)로 시작하면 이름 검색을 하지 않고 회원번호로만 찾습니다.
               접두사 뒤가 숫자가 아니면(`BRD-abc`) **전체 목록이 아니라 0건**입니다. 다른 탭의 접두사(`BRAND` 탭에 `INF-3021`)는 이름 검색으로 처리됩니다.
 
-            **정렬** — 최근 메시지 시각 내림차순 고정. 메시지가 없는 채널은 맨 뒤입니다.
+            **정렬** — **「소명 미확인」 채널이 맨 위에 고정**되고(`appealUnconfirmed = true`), 그 안팎은 최근 메시지 시각 내림차순입니다.
+            메시지가 없는 채널은 맨 뒤입니다. 「소명 미확인」은 아래를 모두 만족하는 채널입니다(55 계획서 A8).
+            - 회원에게 열린 정지가 있다(회원 상세에서 정지하면 이 채널에 「계정 정지」 카드가 붙는다)
+            - 그 정지 카드 **뒤에** 회원이 보낸 **말풍선**이 있다 — 회원 쪽 시스템 카드(재발송 요청 등)는 세지 않는다
+            - 그 말풍선을 운영팀이 아직 읽지 않았다(운영팀 공용 읽음 위치 — 누가 읽든 함께 풀린다)
+
+            채널을 읽거나(`POST /read`) 정지를 해제하면 고정이 풀립니다. 정지 카드보다 먼저 온 메시지는 소명이 아니라 고정하지 않습니다.
 
             **페이징** — `page`(1부터, 기본 1) · `size`(기본 20).
 
@@ -84,13 +89,14 @@ public interface AdminThreadControllerDocs {
             - `unreadCount`: **운영팀 공용** 안 읽은 수입니다. 어느 운영자가 읽든 모두에게서 함께 줄어듭니다.
             - `memberStatus`: `ACTIVE` · `DORMANT` · `SUSPENDED` · `WITHDRAWN`. 인플루언서의 `NORMAL`은 `ACTIVE`로 맞춰 내립니다.
             - `writable = false`(탈퇴 회원)면 열람만 됩니다. 입력창 · 첨부 버튼을 닫습니다. **정지 회원은 쓸 수 있습니다** — 정지 사유를 이 채널에서 설명해야 하기 때문입니다.
+            - `appealUnconfirmed = true`면 보조 줄에 「소명 미확인」 경고 배지를 붙입니다(정렬 참고). 이슈 탭은 항상 false입니다.
 
             **갱신** — 실시간 푸시가 없습니다. 탭 전환 · 검색 · 메시지 전송 후 다시 조회합니다.
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "채널 목록과 페이지 정보",
                     content = @Content(schema = @Schema(implementation = PageResponse.class), examples = {
-                            @ExampleObject(name = "브랜드 탭", summary = "안 읽음 2 · 정지 회원(쓰기 가능) · 메시지 없는 채널(맨 아래)", value = LIST_BRAND),
+                            @ExampleObject(name = "브랜드 탭", summary = "소명 미확인(맨 위 고정) · 안 읽음 2 · 정지 회원(쓰기 가능) · 메시지 없는 채널(맨 아래)", value = LIST_BRAND),
                             @ExampleObject(name = "인플루언서 탭", summary = "마지막이 재발송 요청 카드 · 탈퇴 회원(writable=false)", value = LIST_INFLUENCER),
                             @ExampleObject(name = "이슈 탭", summary = "tab=ISSUE&state=OPEN — 정산 조정 협의 진행 중", value = LIST_ISSUE),
                             @ExampleObject(name = "결과 없음", summary = "keyword=BRD-abc 처럼 접두사 뒤가 숫자가 아닌 경우 포함", value = LIST_EMPTY)
@@ -164,14 +170,29 @@ public interface AdminThreadControllerDocs {
 
             | 필드 | 브랜드 | 인플루언서 |
             |---|---|---|
-            | `contractSigning` | 서명 진행중 + 체결 처리 대기 계약 수 | 같음 |
+            | `contractSigning` | 서명 진행중 + 공구 생성 대기 계약 수 | 같음 |
             | `contractConcluded` | 체결 완료 계약 수 | 같음 |
             | `groupBuyOngoing` | 진행중 공구 수 | 같음 |
             | `groupBuyEnded` | null | 종료 + 정산완료 공구 수 |
-            | `unsettledCount` | **항상 null** — 정산 모듈 없음 | null |
+            | `groupBuySuspensionScheduled` | 중단 예정 공구 수 — 직권 중단 사전 통지 뒤 집행 · 철회 전 | 같음 |
+            | `unsettledCount` | 미정산 건수 — **브랜드 몫**이 끝나지 않은 정산(확인 중 · 조정 협의 · 지급 예정 · 보류 · **분배 실패 포함**) + 회수 대기 차감 | 지급 완료 전 정산(분배 실패 포함) |
             | `connectedBrandCount` | null | 연결 중인 브랜드 수 |
 
             인플루언서의 계약 수는 스튜디오에 도착한 계약(서명 진행중 이후)만 셉니다 — 브랜드가 작성 · 검토 중인 계약은 세지 않습니다.
+            `groupBuySuspensionScheduled`는 셀러가 낸 중단 요청을 세지 않습니다(운영자 직권 통지만). 요약 줄 「공구 진행중 1 · 중단 예정 1」의 재료입니다.
+            `unsettledCount`는 회원 상세의 탈퇴 조건 「미정산」과 같은 숫자입니다(55 계획서 A9 · D22).
+
+            **정지 `sanction`** — 열린 정지가 있을 때만 채웁니다(없으면 null). 펼침 바 상태 「정지 · 10.08 16:30」과 사유 한 줄의 재료입니다.
+
+            | 필드 | 뜻 |
+            |---|---|
+            | `reasonCode` · `reasonLabel` | 정지 사유 — 브랜드 · 인플루언서 정지 사유 목록과 같은 값 |
+            | `reasonDetail` | 상세(직접 입력) — 없으면 null |
+            | `suspendedAt` | 정지 시각 |
+            | `endsOn` | 정지 종료일(포함) — 다음 날 00:00 자동 해제. null = 기간 없음 |
+            | `appealDeadlineAt` | 이의 신청 기한 |
+
+            `memberStatus = SUSPENDED`인데 `sanction = null`이면 정지 행 없이 상태만 바뀐 옛 회원입니다 — 사유 줄을 그리지 않습니다.
 
             **③ 열린 이슈 스레드 `openIssueThreads`** — 그 회원이 당사자인 열린 3자 스레드입니다. `SETTLEMENT_ADJUSTMENT`(정산 조정 · 진행 중)는
             클릭하면 이슈 탭의 그 스레드로 이동합니다. `GROUP_BUY_ISSUE` · `GROUP_BUY_FULFILLMENT`는 폐기 이력(신규 생성 없음)이라
@@ -193,7 +214,7 @@ public interface AdminThreadControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "헤더와 정보 바",
                     content = @Content(schema = @Schema(implementation = ChannelInfo.class), examples = {
-                            @ExampleObject(name = "브랜드", summary = "담당자 · 연락처 / 미정산 null / 이행 이견 3자 스레드 1건", value = INFO_BRAND),
+                            @ExampleObject(name = "브랜드", summary = "담당자 · 연락처 / 미정산 1건 · 중단 예정 1 / 정지 사유 · 일시 / 이행 이견 3자 스레드 1건", value = INFO_BRAND),
                             @ExampleObject(name = "인플루언서", summary = "사업자 · 이메일 · 인스타 / 종료 공구 · 연결 브랜드 수", value = INFO_INFLUENCER),
                             @ExampleObject(name = "탈퇴 회원", summary = "writable=false — 열람만", value = INFO_WITHDRAWN),
                             @ExampleObject(name = "이슈 스레드", summary = "정산 조정 협의 진행 중 — 이슈 패널", value = INFO_ISSUE)

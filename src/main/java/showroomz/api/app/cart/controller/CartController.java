@@ -1,6 +1,5 @@
 package showroomz.api.app.cart.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -25,7 +24,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/v1/user/cart")
 @RequiredArgsConstructor
-@Tag(name = "User - Cart", description = "장바구니 관리 API")
 public class CartController implements CartControllerDocs {
 
     private final CartService cartService;

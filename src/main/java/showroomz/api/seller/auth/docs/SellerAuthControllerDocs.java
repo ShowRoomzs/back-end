@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.Map;
 
-@Tag(name = "Seller - Auth", description = "Seller Auth API")
+@Tag(name = "Seller - Auth", description = "파트너센터 인증 API")
 public interface SellerAuthControllerDocs {
 
     @Operation(
@@ -506,11 +506,14 @@ public interface SellerAuthControllerDocs {
                     "- 수취인 이름 (한글·영문·공백만)\n" +
                     "- 수취인 연락처 (`010/011/016/017/018/019-xxxx-xxxx` 형식)\n" +
                     "- 주소 (우편번호 검색 결과), 상세 주소\n" +
-                    "- 기본 배송비, 발송 기한(공구 마감 후 N영업일 · 1~7 · 생략 시 3)\n" +
-                    "- 반품비 · 교환비는 **사용하지 않는다**(생략 가능) — 반품·교환 금액은 기본 배송비 기준이다\n\n" +
+                    "- 기본 배송비\n" +
+                    "- 발송 기한 `shippingLeadDays` — 공구 마감 후 N영업일 · 1~7 · **생략하면 400**\n\n" +
                     "**선택 입력:**\n" +
-                    "- 무료배송 기준금액\n" +
-                    "- 도서산간 추가비 (미입력 시 0원)\n\n" +
+                    "- 무료배송 기준금액 — 비우거나 0 이면 무료배송 없음(0 은 null 로 저장)\n" +
+                    "- 제주 추가비 (미입력 시 0원)\n" +
+                    "- 도서산간 추가비 — 제주 제외 (미입력 시 0원)\n" +
+                    "- 반품비 · 교환비 — 생략 시 3,000 / 6,000. 소비자 반품·교환 금액은 기본 배송비 기준이라 여기 값을 쓰지 않는다" +
+                    "(파트너 정산의 브랜드 부담 표시용)\n\n" +
                     "**완료 후:** `isNewMember`가 `false`로 변경되며 access/refresh 토큰이 발급됩니다."
     )
     @ApiResponses(value = {
@@ -551,17 +554,26 @@ public interface SellerAuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "이미 필수 정보 입력 완료",
+                    description = "이미 필수 정보 입력 완료 · 입력값 검증 실패",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
-                            examples = @ExampleObject(
-                                    name = "이미 완료",
-                                    value = "{\n" +
-                                            "  \"code\": \"ALREADY_REGISTERED\",\n" +
-                                            "  \"message\": \"이미 회원가입이 완료된 사용자입니다.\"\n" +
-                                            "}"
-                            )
+                            examples = {
+                                    @ExampleObject(
+                                            name = "이미 완료",
+                                            value = "{\n" +
+                                                    "  \"code\": \"ALREADY_REGISTERED\",\n" +
+                                                    "  \"message\": \"이미 회원가입이 완료된 사용자입니다.\"\n" +
+                                                    "}"
+                                    ),
+                                    @ExampleObject(
+                                            name = "발송 기한 누락",
+                                            value = "{\n" +
+                                                    "  \"code\": \"INVALID_INPUT\",\n" +
+                                                    "  \"message\": \"발송 기한을 입력해 주세요.\"\n" +
+                                                    "}"
+                                    )
+                            }
                     )
             )
     })
@@ -580,7 +592,8 @@ public interface SellerAuthControllerDocs {
                                     "  \"detailAddress\": \"4층 401호\",\n" +
                                     "  \"defaultDeliveryFee\": 3000,\n" +
                                     "  \"freeShippingThreshold\": 50000,\n" +
-                                    "  \"remoteAreaSurcharge\": 3000,\n" +
+                                    "  \"jejuSurcharge\": 5000,\n" +
+                                    "  \"remoteAreaSurcharge\": 5000,\n" +
                                     "  \"shippingLeadDays\": 3\n" +
                                     "}"
                     )
@@ -827,6 +840,7 @@ public interface SellerAuthControllerDocs {
     @Operation(
             summary = "판매자 회원 탈퇴",
             description = "인증된 판매자의 회원 탈퇴를 처리합니다. 판매자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
+                    "**브랜드(SELLER)는 즉시 탈퇴할 수 없습니다** — 409 `BRAND_WITHDRAWAL_REQUIRES_REQUEST`. 브랜드 탈퇴는 신청 → 운영자 승인제입니다(§51-5 · 52 설계서 0-5). 신청은 `POST /v1/seller/basic-info/withdrawal-requests`, 조건 · 상태는 `GET /v1/seller/basic-info/account` 의 `withdrawal` 입니다(51 설계서).\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

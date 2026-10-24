@@ -16,7 +16,7 @@ import showroomz.domain.contract.type.*;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Admin - Contract", description = "관리자 계약 관리 API — 모두싸인에서 처리한 절차 기록 · 계약 조건은 읽기 전용")
+@Tag(name = "Admin - Contract", description = "관리자 계약 관리 API")
 public interface AdminContractControllerDocs {
 
     @Operation(summary = "계약 목록 및 조치 큐", description = """
@@ -24,12 +24,13 @@ public interface AdminContractControllerDocs {
             `queue`를 선택하면 `tab`과 `sort`보다 우선하고 큐별 고정 정렬을 적용합니다.
 
             - `REVIEW`: 검토 대기, 검토 요청이 오래된 순
-            - `CONCLUSION`: 체결 처리 대기, 서명 확인 기준 시각이 오래된 순
+            - `CONCLUSION`: 공구 생성 대기, 서명 확인 기준 시각이 오래된 순
             - `EXPIRY`: 서명 기한이 지난 서명 진행중 계약, 기한이 오래된 순
             - `RESEND`: 미처리 재발송 요청이 있는 서명 진행중 계약, 최초 미처리 요청이 오래된 순
+            - `TERMINATION`: 처리 대기 해지 요청이 있는 계약(1021 설계서 1-4). 정렬은 `sort`를 따릅니다
 
             큐가 없으면 `tab`(기본 `ALL`)과 `sort`(기본 `REVIEW_REQUESTED_ASC`)를 적용합니다.
-            `CLOSED` 탭은 `DECLINED`·`EXPIRED`·`CANCELED`를 포함합니다. `page`는 1부터 시작하고 `size`는 20 또는 50입니다.
+            `CLOSED` 탭은 `DECLINED`·`EXPIRED`·`CANCELED`·`TERMINATED`를 포함합니다. `page`는 1부터 시작하고 `size`는 20 또는 50입니다.
             """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "목록과 페이지 정보",
@@ -49,11 +50,11 @@ public interface AdminContractControllerDocs {
             @Parameter(description = "일반 목록 정렬. 기본 REVIEW_REQUESTED_ASC", example = "REVIEW_REQUESTED_ASC") AdminContractSort sort,
             PagingRequest paging);
 
-    @Operation(summary = "조치 큐·상태 탭 건수", description = "검색어와 무관한 전체 계약 기준입니다. `actionRequiredCount`는 네 조치 큐의 건수를 합한 값이며, 같은 계약이 여러 큐에 속하면 각각 셉니다. 작성중·삭제된 계약은 제외합니다.")
+    @Operation(summary = "조치 큐·상태 탭 건수", description = "검색어와 무관한 전체 계약 기준입니다. `actionRequiredCount`는 다섯 조치 큐의 건수를 합한 값이며, 같은 계약이 여러 큐에 속하면 각각 셉니다. 사이드바 「계약 관리」 배지(`GET /v1/admin/badges`의 `contracts`)와 같은 값입니다. 작성중·삭제된 계약은 제외합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "큐·탭별 건수",
                     content = @Content(schema = @Schema(implementation = Summary.class), examples = @ExampleObject(value = """
-                            {"queues":{"REVIEW":3,"CONCLUSION":2,"EXPIRY":1,"RESEND":1},"tabCounts":{"ALL":18,"REVIEW_PENDING":3,"SIGNING":5,"CONCLUSION_PENDING":2,"CONCLUDED":4,"CLOSED":4},"actionRequiredCount":7}
+                            {"queues":{"REVIEW":3,"CONCLUSION":2,"EXPIRY":1,"RESEND":1,"TERMINATION":1},"tabCounts":{"ALL":18,"REVIEW_PENDING":3,"SIGNING":5,"CONCLUSION_PENDING":2,"CONCLUDED":4,"CLOSED":4},"actionRequiredCount":8}
                             """))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -140,7 +141,8 @@ public interface AdminContractControllerDocs {
                     """))) SignatureRequest request,
             @Parameter(hidden = true) UserPrincipal principal);
 
-    @Operation(summary = "체결 완료 및 공구 생성", description = "`CONCLUSION_PENDING`에서 양측 서명 시각과 `SIGNED_PDF`·`AUDIT_TRAIL` 문서가 모두 등록된 경우에만 처리합니다. 체결과 공구 생성은 같은 트랜잭션으로 처리합니다. 성공 응답의 `groupBuyNumber`는 생성된 공구 번호이며, 생성 실패 시 체결도 취소됩니다. 양측에 체결을 알립니다.")
+    @Operation(summary = "[폐지 예정] 체결 완료 및 공구 생성", deprecated = true,
+            description = "`POST /{id}/group-buy`(공구 생성)와 같습니다 — 1021 결정 노트 기-05 로 「체결 처리」가 「공구 생성」이 됐습니다. 1릴리스 뒤 제거합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "체결 완료와 생성된 공구 번호", content = @Content(schema = @Schema(implementation = ProcessResponse.class), examples = @ExampleObject(value = """
                     {"contractId":12,"status":"CONCLUDED","version":4,"groupBuyNumber":"GB-20260927-001"}
@@ -151,6 +153,50 @@ public interface AdminContractControllerDocs {
             @ApiResponse(responseCode = "409", description = "상태·서명 미충족 (`CONTRACT_STATUS_CONFLICT`), 문서 부족 (`CONTRACT_DOCUMENT_REQUIRED`), 공구 중복 (`CONTRACT_GROUP_BUY_ALREADY_CREATED`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ProcessResponse conclude(@Parameter(description = "계약 ID", example = "12") Long id, @Parameter(hidden = true) UserPrincipal principal);
+
+    @Operation(summary = "공구 생성(C4)", description = """
+            1021 결정 노트 기-05 【잠정】 — 계약은 **양측 서명이 끝난 순간 성립**합니다(상세 `stepper.establishedAt`). 운영자는 「공구 생성 대기」 계약의
+            체결 문서 2종(`SIGNED_PDF` · `AUDIT_TRAIL`)을 확인하고 공구를 만듭니다. 공구는 준비중으로 시작합니다.
+
+            - 조건: `CONCLUSION_PENDING` ∧ 양측 서명 ∧ 문서 2종 ∧ 당사자 정지 아님
+            - 결과: `CONCLUDED` · `concludedAt` = 이 처리 시각 · 응답 `groupBuyNumber`
+            - 서명 일시가 틀렸다면 이 처리 전이 마지막 정정 기회입니다(`PUT /{id}/signatures`)""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "공구 생성 완료", content = @Content(schema = @Schema(implementation = ProcessResponse.class), examples = @ExampleObject(value = """
+                    {"contractId":12,"status":"CONCLUDED","version":4,"groupBuyNumber":"GB-20260927-001"}
+                    """))),
+            @ApiResponse(responseCode = "404", description = "계약 없음 (`CONTRACT_NOT_FOUND`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "상태 · 서명 미충족 (`CONTRACT_STATUS_CONFLICT`) · 문서 부족 (`CONTRACT_DOCUMENT_REQUIRED`) · 당사자 정지 (`CONTRACT_HELD_BY_SANCTION`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ProcessResponse createGroupBuy(@Parameter(description = "계약 ID", example = "12") Long id, @Parameter(hidden = true) UserPrincipal principal);
+
+    @Operation(summary = "계약 해지(C7)", description = """
+            1021 결정 노트 기-05 【잠정】 — 계약 성립 뒤(공구 생성 대기 · 체결완료) **공구가 오픈되기 전**에만 해지합니다. 생성된 공구도 함께 종결(`TERMINATED`)되고
+            되돌릴 수 없습니다. 주문이 없으므로 환불 · 정산은 없습니다.
+
+            - 체크 2개 필수: `counterpartyConsentConfirmed`(상대방 동의를 운영팀 채널에서 확인) · `groupBuyNotOpenedConfirmed`
+            - 사유 4종 + 양측에 전달할 설명(필수) — 양측 운영팀 채널에 「계약 해지 처리됨」 카드로 나갑니다
+            - 브랜드 해지 요청이 있으면 `requestId` 로 그 요청을 처리합니다. 요청 없이 처리할 수도 있습니다(운영자 직권)
+            - 당사자 계정 이용 정지 중이어도 해지할 수 있습니다""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "해지 완료", content = @Content(schema = @Schema(implementation = ProcessResponse.class), examples = @ExampleObject(value = """
+                    {"contractId":12,"status":"TERMINATED","version":5,"groupBuyNumber":null}
+                    """))),
+            @ApiResponse(responseCode = "400", description = "체크 누락 (`CONTRACT_CHECKLIST_REQUIRED`) · 입력 오류", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "해지 불가 구간 (`CONTRACT_TERMINATION_NOT_ALLOWED`) · 요청 불일치 (`CONTRACT_TERMINATION_REQUEST_NOT_PENDING`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ProcessResponse terminate(@Parameter(description = "계약 ID", example = "12") Long id, TerminateRequest request,
+                              @Parameter(hidden = true) UserPrincipal principal);
+
+    @Operation(summary = "계약 취소 동의 확인 카드 발송", description = """
+            1021 결정 노트 기-06 【잠정】 — 서명 진행중 계약의 취소 요청이 들어오면, 요청하지 않은 쪽 운영팀 채널에 「계약 취소 · 해지 동의 확인」 카드를 보냅니다.
+            카드에는 버튼이 없습니다 — 동의는 답글로 받고, 확인한 뒤 [계약 취소]에서 `counterpartyConsentConfirmed=true` 로 처리합니다.""")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "발송 완료", content = @Content(schema = @Schema(implementation = CardResponse.class))),
+            @ApiResponse(responseCode = "409", description = "서명 진행중이 아님 (`CONTRACT_STATUS_CONFLICT`)", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    CardResponse sendCancelConsentCard(@Parameter(description = "계약 ID", example = "12") Long id, CancelConsentCardRequest request,
+                                       @Parameter(hidden = true) UserPrincipal principal);
 
     @Operation(summary = "대시보드 재확인 후 수동 만료", description = "`SIGNING` 계약의 서명 기한이 현재 시각보다 지났을 때만 사용합니다. 모두싸인 대시보드를 다시 확인하고 `dashboardRechecked=true`를 보냅니다. 성공하면 `EXPIRED`가 되고 양측에 알립니다.")
     @ApiResponses({
@@ -170,9 +216,10 @@ public interface AdminContractControllerDocs {
                     """))) ExpireRequest request,
             @Parameter(hidden = true) UserPrincipal principal);
 
-    @Operation(summary = "계약 취소", description = "서명 요청 발송 이후 체결 전(SIGNING·CONCLUSION_PENDING)만. "
+    @Operation(summary = "계약 취소", description = "서명 요청 발송 이후 성립 전(SIGNING)만 — 양측 서명이 끝나 성립한 계약은 해지(`POST /{id}/terminate`)입니다(1021 기-05). "
             + "이 구간은 브랜드가 취소할 수 없다. 모두싸인 서명 요청 회수 확인(signatureRequestWithdrawn) 필수 · "
-            + "사유 5종 · ETC면 메모 필수. 양측에 통지합니다. "
+            + "당사자 요청이면 상대방 동의 확인(counterpartyConsentConfirmed) 필수(1021 기-06) · "
+            + "사유(C6) · ETC면 메모 필수. 결과 카드는 양측 운영팀 채널에 붙고 양측에 통지합니다. "
             + "요청자(requesterType) 필수 — SELLER·CREATOR면 요청 경로(requestChannel)·요청 시각(requestedAt)도 필수(현재 이전 · 계약 생성 이후), "
             + "ADMIN(직권)이면 둘 다 보내지 않는다. 위반은 400 CONTRACT_CANCEL_REQUESTER_INVALID(어느 값인지는 message). "
             + "기록한 요청자는 어드민 상세 cancelRequest에만 나가고 브랜드·스튜디오에는 보이지 않습니다.")

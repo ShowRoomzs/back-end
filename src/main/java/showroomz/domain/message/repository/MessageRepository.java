@@ -28,6 +28,18 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
 
     Optional<Message> findTopByThreadOrderByIdDesc(MessageThread thread);
 
+    /** 참조 객체의 카드 — 직권 중단 통지 카드 등(1021 설계서 2-3). */
+    Optional<Message> findFirstByThread_IdAndRefTypeAndRefIdOrderByIdAsc(Long threadId,
+            showroomz.domain.message.type.MessageRefType refType, Long refId);
+
+    /** 카드 뒤에 그 당사자가 남긴 메시지 수 — 「의견 N건」. */
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(m) FROM Message m WHERE m.thread.id = :threadId "
+            + "AND m.id > :afterId AND m.senderType = :senderType")
+    long countAfter(@org.springframework.data.repository.query.Param("threadId") Long threadId,
+                    @org.springframework.data.repository.query.Param("afterId") Long afterId,
+                    @org.springframework.data.repository.query.Param("senderType")
+                    showroomz.domain.message.type.ParticipantType senderType);
+
     /**
      * 여러 스레드의 안 읽은 수를 <b>한 쿼리로</b> 집계한다 — 배지(`/connections/summary`)는 30~60초
      * 폴링 대상(§0)이고 목록도 매 진입마다 불리므로, 스레드당 쿼리를 도는 방식은 스레드 수만큼 비용이 는다.

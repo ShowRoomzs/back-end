@@ -5,7 +5,7 @@ import showroomz.domain.order.entity.Order;
 
 /**
  * 주문 상세 배송지 마스킹(C10 설계서 3-2) — 스크린샷 공유 대비. 앱에서 가리면 원문이 응답에 실려 다니므로 서버가 한다.
- * 어드민 회원 화면의 {@code AdminUserMasker}와는 규칙이 달라 공유하지 않는다.
+ * 어드민 회원 화면의 {@code AdminMemberMasker}와는 규칙이 달라 공유하지 않는다.
  */
 public final class OrderAddressMasker {
 

@@ -489,7 +489,7 @@ class PostPublishToFeedIntegrationTest extends IntegrationTestSupport {
 
         LocalDateTime now = LocalDateTime.now();
         postSuspensionRepository.save(new PostSuspension(
-                post, PostSuspensionReason.AD_DISCLOSURE, "대가관계 표시가 없습니다",
+                post, PostSuspensionReason.MISLEADING_INFO, "대가관계 표시가 없습니다",
                 "운영정책 제12조 3항", 1L, now, now.plusDays(7)));
     }
 

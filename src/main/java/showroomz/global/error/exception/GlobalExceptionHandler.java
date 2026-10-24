@@ -51,6 +51,14 @@ public class GlobalExceptionHandler {
                         errorCode.getCode(), errorCode.getMessage(), e.getViolations()));
     }
 
+    /** 조건 미충족(52 설계서 9-2) — 조건별 남은 건수를 함께 내린다. BusinessException 핸들러보다 먼저 잡힌다. */
+    @ExceptionHandler(ConditionUnmetException.class)
+    public ResponseEntity<?> handleConditionUnmet(ConditionUnmetException e) {
+        log.warn("ConditionUnmetException: {} {}", e.getErrorCode().getCode(), e.getUnmet());
+        return ResponseEntity.status(e.getErrorCode().getStatus()).body(java.util.Map.of(
+                "code", e.getErrorCode().getCode(), "message", e.getMessage(), "unmet", e.getUnmet()));
+    }
+
     /** 위반 목록을 실은 에러 바디. 기존 ErrorResponse(code·message)에 hardViolations만 더한 모양이다. */
     public record ContractValidationErrorResponse(
             String code,

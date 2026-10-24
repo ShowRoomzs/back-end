@@ -40,6 +40,7 @@ public class RefundTransitions {
     private final OrderFulfillmentService fulfillmentService;
     private final OrderClaimService claimService;
     private final SettlementClawbackHook settlementClawbackHook;
+    private final OrderNotificationService notificationService;
 
     /**
      * @param zeroAmount 환불액 0 — PG 를 부르지 않고 바로 완료로 닫는다(차감이 상품 금액을 다 덮은 경우)
@@ -145,6 +146,28 @@ public class RefundTransitions {
         task.startExecution();
         completeLocked(task, pgCancellationId, null, operatorId,
                 "수동 완료 기록 · " + (pgCancellationId == null ? "" : pgCancellationId + " · ") + note, now);
+        return true;
+    }
+
+    /**
+     * 계좌 송금 완료 기록(1021 설계서 4-5 · 06c M3) — 시스템은 송금하지 않는다. 운영자가 송금한 계좌 · 처리자를 남기고 완료로 닫는다.
+     * 결제 누적 취소액 · 클레임 종결 · 정산 차감은 건드리지 않는다 — 결제 밖의 돈이고, 브랜드 정산은 운임 정산 행이 이미 들고 있다(6-1).
+     *
+     * @return 기록했으면 true · 송금 대기 행이 아니면 false
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean recordTransfer(Long taskId, String bankCode, String accountEnc, String holderName, Long operatorId,
+                                  LocalDateTime now) {
+        OrderRefundTask task = refundTaskRepository.findForUpdate(taskId).orElse(null);
+        if (task == null || !task.isBankTransfer() || !task.isPending()) {
+            return false;
+        }
+        task.markTransferred(bankCode, accountEnc, holderName, operatorId, now);
+        Long deliveryGroupId = task.getDeliveryGroup().getId();
+        fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.REFUND_TRANSFERRED,
+                FulfillmentActorType.ADMIN, operatorId,
+                String.format("%s · %,d원 · %s · 예금주 %s", task.refundNo(), task.getRefundAmount(), bankCode, holderName), now);
+        notificationService.onRefundTransferred(deliveryGroupId, taskId, task.getRefundAmount());
         return true;
     }
 
@@ -275,6 +298,8 @@ public class RefundTransitions {
             case USER_CANCEL_BEFORE_PREPARE -> "결제완료 소비자 취소";
             case LOST_IN_TRANSIT -> "배송 분실 처리";
             case CLAIM_PAYMENT_CANCELLED -> "교환 재발송비 환불";
+            case FREIGHT_REFUND -> "운임 환급";
+            case STALL_REFUND_CHOSEN -> "추적 정지 · 소비자 환불 선택";
         };
     }
 }

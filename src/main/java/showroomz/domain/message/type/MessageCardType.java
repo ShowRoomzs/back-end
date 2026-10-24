@@ -11,6 +11,12 @@ public enum MessageCardType {
     CONTRACT_RESEND_REQUEST("요청 · 서명 안내 다시 받기"),
     /** 계약 관리의 운영자 [계약 취소] 결과 — 요청이 들어온 채널에 자동 등록된다. */
     CONTRACT_ADMIN_CANCELED("계약 직권 취소 처리됨"),
+    /** 계약 취소 · 해지 요청이 들어와 상대방 동의를 확인하는 카드(1021 기-06 · 어드민 20a A8 ②) — 요청하지 않은 쪽 채널. 버튼 없음. */
+    CONTRACT_CLOSE_CONSENT_REQUEST("계약 취소 · 해지 동의 확인"),
+    /** 운영자 [해지 처리] 결과(1021 기-05) — 양측 채널. */
+    CONTRACT_TERMINATED("계약 해지 처리됨"),
+    /** 직권 중단 사전 통지 · 소명 요청(1021 기-21 · 어드민 20a A8 ①) — 양측 채널. 버튼 없음(의견은 답글). */
+    GROUP_BUY_SUSPENSION_NOTICE("직권 중단 사전 통지 · 소명 요청"),
 
     // 정산 조정 협의(44 이슈 스레드 설계서 5-1) — 이슈 스레드에만 등록된다. 상태는 참조 제안 행에서 읽는다.
     /** 시스템 — 조정 요청 접수 · 정산 보류 · 이슈 스레드 개설. */
@@ -28,7 +34,15 @@ public enum MessageCardType {
     /** 시스템 — 합의 결과. */
     SETTLEMENT_ADJUSTMENT_AGREED("합의 완료 · 정산 금액 변경 · 이슈 종결"),
     /** 시스템 — 기한 만료 결과. */
-    SETTLEMENT_ADJUSTMENT_EXPIRED("합의 기한 경과 · 원래 금액 확정 · 이슈 종결");
+    SETTLEMENT_ADJUSTMENT_EXPIRED("합의 기한 경과 · 원래 금액 확정 · 이슈 종결"),
+    /** 요청자 철회(1021 기-14). */
+    SETTLEMENT_ADJUSTMENT_WITHDRAWN("요청 철회 · 원래 금액 확정 · 이슈 종결"),
+
+    // 계정 이용 정지(§51-4 · 52 설계서 0-12) — 회원 유형에 중립이다. 브랜드 · 인플루언서의 운영팀 채널에 붙고 그 아래 답글이 곧 소명이다.
+    /** 운영자 정지 — 사유 · 일시. */
+    ACCOUNT_SUSPENDED("계정 이용 정지"),
+    /** 운영자 정지 해제. */
+    ACCOUNT_SUSPENSION_RELEASED("정지 해제");
 
     private final String title;
 
@@ -39,5 +53,10 @@ public enum MessageCardType {
     /** 제안 카드 — 버튼(동의 · 반대 · 다른 금액 제안)이 붙을 수 있는 카드. */
     public boolean isAdjustmentProposal() {
         return this == SETTLEMENT_ADJUSTMENT_REQUEST || this == SETTLEMENT_ADJUSTMENT_COUNTER;
+    }
+
+    /** 제안 순번 → 카드 종류 — seq 1 은 요청, 그 뒤는 다른 금액 제안. 카드 등록과 목록 줄 배지가 같이 쓴다(55 계획서 S5). */
+    public static MessageCardType forProposalSeq(int seq) {
+        return seq == 1 ? SETTLEMENT_ADJUSTMENT_REQUEST : SETTLEMENT_ADJUSTMENT_COUNTER;
     }
 }

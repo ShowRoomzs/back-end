@@ -31,7 +31,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Creator - Thread", description = "쇼룸 스튜디오 연결·소통 스레드/메시지 API (§14)")
+@Tag(name = "Creator - Thread", description = "쇼룸 스튜디오 소통 스레드 API")
 public interface CreatorThreadControllerDocs {
 
     @Operation(

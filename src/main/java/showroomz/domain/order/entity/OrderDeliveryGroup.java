@@ -75,6 +75,22 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "free_shipping_applied", nullable = false)
     private boolean freeShippingApplied;
 
+    /**
+     * 결제 시점 무료배송 기준금액 스냅샷(1021 기-20 「저장 후 결제된 주문부터 적용」) — 일부 반품 재판정의 기준이다. null 이면 무료배송 없음
+     * (또는 1021 이전 주문 — 그때는 마켓 현재 값으로 백필된다).
+     */
+    @Column(name = "free_shipping_threshold")
+    private Integer freeShippingThreshold;
+
+    /** 결제 시점 배송 권역(우편번호 판정) 스냅샷. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "delivery_region", nullable = false, length = 16)
+    private showroomz.domain.order.type.DeliveryRegion deliveryRegion = showroomz.domain.order.type.DeliveryRegion.STANDARD;
+
+    /** 결제 시점 권역 추가비(편도) 스냅샷 — {@link #deliveryFee} 에 이미 더해져 있고, 재발송 배송비에도 더한다. */
+    @Column(name = "region_surcharge", nullable = false)
+    private Integer regionSurcharge = 0;
+
     @Column(name = "market_name", length = 100)
     private String marketName;
 
@@ -130,6 +146,18 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "last_tracking_at")
     private LocalDateTime lastTrackingAt;
 
+    /** 추적 정지 소비자 선택(1021 기-15) — 재발송 · 환불. 고르기 전 null. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "stall_choice", length = 16)
+    private showroomz.domain.order.type.StallChoice stallChoice;
+
+    @Column(name = "stall_choice_at")
+    private LocalDateTime stallChoiceAt;
+
+    /** 선택 개방 시각 = 추적 정지 판정 + N일. 추적이 다시 움직이거나 송장이 바뀌면(선택 전) null. */
+    @Column(name = "stall_choice_open_at")
+    private LocalDateTime stallChoiceOpenAt;
+
     /** 반송 사유는 저장하지 않는다 — API 가 코드·시각만 준다(§34-6). */
     @Column(name = "return_detected_at")
     private LocalDateTime returnDetectedAt;
@@ -172,6 +200,11 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "cancel_type", length = 30)
     private OrderCancelType cancelType;
 
+    /** 직권 취소 주체(1021 기-16) — 브랜드(SELLER) · 운영자 대행(ADMIN). 취소율 집계가 브랜드 것만 센다. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancel_actor_type", length = 16)
+    private showroomz.domain.order.type.FulfillmentActorType cancelActorType;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "cancel_reason_code", length = 30)
     private SellerCancelReason cancelReasonCode;
@@ -195,10 +228,23 @@ public class OrderDeliveryGroup extends BaseTimeEntity {
     @Column(name = "status_at_cancel", length = 30)
     private FulfillmentStatus statusAtCancel;
 
+    /**
+     * 결제 완료 시점의 라스트 터치 게시물(49 스튜디오 성과 설계서 1-5 · §24-7 24시간) — 성과 「게시물 → 주문」. FK 없음 · 통계 태그다.
+     * 다른 이행 컬럼처럼 {@code OrderDeliveryGroupRepository#attributePost} 조건부 UPDATE 로 한 번만 채운다.
+     */
+    @Column(name = "attributed_post_id")
+    private Long attributedPostId;
+
     @Builder
     public OrderDeliveryGroup(Order order, GroupBuy groupBuy, Market market, Integer productTotal, Integer deliveryFee,
                               Integer baseDeliveryFee, boolean freeShippingApplied, String marketName,
-                              String groupBuyNumber, Integer shipDueBusinessDays) {
+                              String groupBuyNumber, Integer shipDueBusinessDays, Integer freeShippingThreshold,
+                              showroomz.domain.order.type.DeliveryRegion deliveryRegion, Integer regionSurcharge) {
+        // 지정하지 않으면 마켓 설정에서 — 결제 시점 값으로 고정한다(기-20).
+        this.freeShippingThreshold = freeShippingThreshold != null ? freeShippingThreshold
+                : showroomz.domain.order.service.FreeShippingPolicy.thresholdOf(market);
+        this.deliveryRegion = deliveryRegion != null ? deliveryRegion : showroomz.domain.order.type.DeliveryRegion.STANDARD;
+        this.regionSurcharge = regionSurcharge != null ? regionSurcharge : 0;
         this.order = order;
         this.groupBuy = groupBuy;
         this.market = market;

@@ -5,8 +5,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.entity.ChangeRequestItem;
 import showroomz.domain.changerequest.type.ChangeRequestField;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.support.BrandFixture;
@@ -53,9 +53,9 @@ class SellerChangeRequestIntegrationTest extends IntegrationTestSupport {
         return String.format("CHG-%d-%04d", Year.now().getValue(), sequence);
     }
 
-    private List<BrandChangeRequestItem> itemsOf(long requestId) {
+    private List<ChangeRequestItem> itemsOf(long requestId) {
         return inTransaction(() -> {
-            BrandChangeRequest request = changeRequestRepository.findById(requestId).orElseThrow();
+            ChangeRequest request = changeRequestRepository.findById(requestId).orElseThrow();
             return request.getItems().stream()
                     .sorted((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
                     .toList();
@@ -84,7 +84,7 @@ class SellerChangeRequestIntegrationTest extends IntegrationTestSupport {
                     .andReturn().getResponse().getContentAsString();
 
             long requestId = objectMapper.readTree(body).get("requestId").asLong();
-            List<BrandChangeRequestItem> stored = itemsOf(requestId);
+            List<ChangeRequestItem> stored = itemsOf(requestId);
 
             assertThat(stored).hasSize(2);
             assertThat(stored.get(0).getFieldKey()).isEqualTo(ChangeRequestField.REPRESENTATIVE_NAME);
@@ -93,7 +93,7 @@ class SellerChangeRequestIntegrationTest extends IntegrationTestSupport {
             assertThat(stored.get(1).getFieldKey()).isEqualTo(ChangeRequestField.BUSINESS_ADDRESS);
             assertThat(stored.get(1).getCurrentValue()).isEqualTo("서울특별시 강남구 테헤란로 123, 4층 401호");
 
-            BrandChangeRequest saved = changeRequestRepository.findById(requestId).orElseThrow();
+            ChangeRequest saved = changeRequestRepository.findById(requestId).orElseThrow();
             assertThat(saved.getStatus()).isEqualTo(ChangeRequestStatus.PENDING);
             assertThat(saved.getRequesterName()).isEqualTo("김담당");
             assertThat(saved.getReason()).isEqualTo("대표자 변경 및 사업장 이전");
@@ -206,7 +206,7 @@ class SellerChangeRequestIntegrationTest extends IntegrationTestSupport {
         void create() throws Exception {
             long requestId = changeRequests.createSettlement(token, "004", "9876543210", NEW_ACCOUNT_HOLDER);
 
-            List<BrandChangeRequestItem> stored = itemsOf(requestId);
+            List<ChangeRequestItem> stored = itemsOf(requestId);
             assertThat(stored).hasSize(3);
             assertThat(stored.get(0).getFieldKey()).isEqualTo(ChangeRequestField.BANK_CODE);
             assertThat(stored.get(0).getCurrentValue()).isEqualTo("신한은행");
@@ -345,7 +345,7 @@ class SellerChangeRequestIntegrationTest extends IntegrationTestSupport {
                             .header(HttpHeaders.AUTHORIZATION, token))
                     .andExpect(status().isNoContent());
 
-            BrandChangeRequest canceled = changeRequestRepository.findById(requestId).orElseThrow();
+            ChangeRequest canceled = changeRequestRepository.findById(requestId).orElseThrow();
             assertThat(canceled.getStatus()).isEqualTo(ChangeRequestStatus.CANCELED);
             assertThat(canceled.getProcessedAt()).isNotNull();
 

@@ -21,7 +21,7 @@ import showroomz.api.seller.connection.dto.ConnectionCreatorSearchItem;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Seller - Connection", description = "파트너센터 연결 요청 API (§13)")
+@Tag(name = "Seller - Connection", description = "파트너센터 연결 요청 API")
 public interface SellerConnectionControllerDocs {
 
     @Operation(
@@ -97,7 +97,7 @@ public interface SellerConnectionControllerDocs {
             )
     })
     ResponseEntity<PageResponse<ConnectionCreatorSearchItem>> searchCreators(
-            @Parameter(description = "쇼룸명 검색어(미입력 시 전체)", example = "민지") @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "쇼룸명 검색어 — 필수(공백이면 400 · 1021 기-23 탐색 베타 제외)", example = "민지", required = true) @RequestParam(value = "keyword", required = false) String keyword,
             @ModelAttribute PagingRequest pagingRequest
     );
 

@@ -2,6 +2,7 @@ package showroomz.api.common.thread.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
+import showroomz.domain.member.common.service.SanctionTermPolicy;
 import showroomz.domain.message.entity.MessageCardPayload;
 import showroomz.domain.message.service.MessageCardReader.AdjustmentCard;
 import showroomz.domain.message.service.MessageCardReader.CardView;
@@ -9,6 +10,7 @@ import showroomz.domain.message.type.MessageCardActionState;
 import showroomz.domain.message.type.MessageCardTone;
 import showroomz.domain.message.type.MessageCardType;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -46,7 +48,73 @@ public record MessageCardResponse(
             String reasonLabel,
             @Schema(description = "[직권 취소] 처리 시각", example = "2026-08-14T10:40:00") LocalDateTime processedAt,
             @Schema(description = "[직권 취소] 양측 통지 여부", example = "true") Boolean notifiedBothParties,
-            @Schema(description = "[정산 조정] 카드의 사실 — 정산 조정 카드에만") AdjustmentDetail adjustment) {
+            @Schema(description = "[정산 조정] 카드의 사실 — 정산 조정 카드에만") AdjustmentDetail adjustment,
+            @Schema(description = "[계정 이용 정지 · 해제] 사유 코드 · 라벨 · 상세 · 지급 정지 여부 — 1017 이후 카드에만(옛 카드는 reasonLabel 한 줄). "
+                    + "정지 카드는 정지 기간 · 이의 신청 기한도(1021 이후)")
+            SanctionDetail sanction,
+            @Schema(description = "[취소 · 해지 동의 확인 · 해지 결과 · 직권 중단 사전 통지] 안내 카드의 사실(1021) — 버튼 없음 · 답글로 의견")
+            NoticeDetail notice) {
+    }
+
+    /**
+     * 안내 카드(1021 설계서 1-6 · 2-3). 「동의하시면 이 채널에 답해 주세요」 · 「통지만으로 판매는 멈추지 않습니다」 같은 고정 문구는 FE 가 {@code kind}로 고른다.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record NoticeDetail(
+            @Schema(description = "CANCEL(계약 취소 동의) · TERMINATE(계약 해지 동의 · 해지 결과) · ADMIN_SUSPENSION(직권 중단 사전 통지)",
+                    example = "TERMINATE") String kind,
+            @Schema(description = "당사자에게 그대로 보이는 설명 — 요청 메모 · 해지 설명 · 통지 본문") String body,
+            @Schema(description = "[해지 결과] 생성된 공구가 함께 종결됐는가") Boolean groupBuyClosed,
+            Long groupBuyId,
+            @Schema(example = "GRB-20260901-012") String groupBuyNumber,
+            @Schema(description = "[직권 중단] 근거 호", example = "ART17_1_LAW") String reasonClause,
+            @Schema(description = "[직권 중단] 근거 호 라벨") String reasonClauseLabel,
+            @Schema(description = "[직권 중단] 집행 예정 시각") LocalDateTime executeScheduledAt,
+            @Schema(description = "[직권 중단] 소명 · 의견 기한 — 양측 같은 기한") LocalDateTime appealDeadlineAt,
+            @Schema(description = "[직권 중단] 상대 당사자에게도 같은 통지가 갔는가") Boolean counterpartyNoticed,
+            @Schema(description = "[직권 중단] 이 채널의 상대 당사자 — SELLER(브랜드) · CREATOR(인플루언서). 상대에게 통지가 가지 않았거나 "
+                    + "옛 카드면 null", example = "SELLER", nullable = true) String counterpartyType,
+            @Schema(description = "[직권 중단] 상대 당사자 이름(브랜드명 · 쇼룸명) — 「브랜드(퓨어랩)에도 같은 통지가 갔습니다」. 옛 카드면 null",
+                    example = "퓨어랩", nullable = true) String counterpartyName) {
+
+        public static NoticeDetail of(MessageCardPayload.Notice n) {
+            return n == null ? null : new NoticeDetail(n.kind(), n.body(), n.groupBuyClosed(), n.groupBuyId(),
+                    n.groupBuyNumber(), n.reasonClause(), n.reasonClauseLabel(), n.executeScheduledAt(),
+                    n.appealDeadlineAt(), n.counterpartyNoticed(), n.counterpartyType(), n.counterpartyName());
+        }
+    }
+
+    /**
+     * 계정 이용 정지 · 해제 카드의 사실(ui-partner-15 S7 · ui-studio-13 S8). 차단 · 계속 이용 목록은 {@code memberType}별 고정 문구라 FE 가 든다.
+     * 정산 줄 — {@code payoutHeld = true} 「정산은 확정까지 진행되며, 정지가 풀리면 다음 영업일에 지급됩니다」 · false 「이번 사유는 지급에 영향이 없습니다」.
+     *
+     * <p>정지 기간 · 이의 신청 기한(1021 설계서 7-2 · 스튜디오 S8 「정지 기간 2026.10.08 14:20 ~ 2026.10.22 00:00 (14일)」 · 「이의 신청 기한
+     * 2026.10.13까지」)은 정지 카드 스냅샷에서 읽는다 — 기간 시작은 카드의 {@code processedAt}. 1021 이전 정지 카드 · 해제 카드에는 없다.
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SanctionDetail(
+            @Schema(description = "BRAND · CREATOR", example = "BRAND") String memberType,
+            @Schema(description = "정지 사유 코드(정지 카드) · 해제 사유 코드(해제 카드)", example = "SETTLEMENT_INFO_MISMATCH") String reasonCode,
+            @Schema(example = "정산 정보 불일치") String reasonLabel,
+            @Schema(description = "상세 사유 · 해제 메모 — 운영자가 적은 경우만") String reasonDetail,
+            @Schema(description = "[정지 카드] 지급 정지 사유인가") Boolean payoutHeld,
+            @Schema(description = "[정지 카드] 정지 종료일(포함) — 기간 없는 정지 · 1021 이전 카드 · 해제 카드는 없음",
+                    example = "2026-10-21", nullable = true) LocalDate endsOn,
+            @Schema(description = "[정지 카드] 자동 해제 시각 = 종료일 다음 날 00:00 — 「~ 2026.10.22 00:00」. 종료일이 없으면 없음",
+                    example = "2026-10-22T00:00:00", nullable = true) LocalDateTime autoReleaseAt,
+            @Schema(description = "[정지 카드] 정지 기간(일) — 정지일(processedAt 의 날짜) · 종료일 포함 「(14일)」. 종료일이 없으면 없음",
+                    example = "14", nullable = true) Integer periodDays,
+            @Schema(description = "[정지 카드] 이의 신청 기한 — 통지 + N영업일 23:59:59 · 정지 시점 스냅샷(기한 뒤에도 접수한다). "
+                    + "1021 이전 카드 · 해제 카드는 없음", example = "2026-10-13T23:59:59", nullable = true)
+            LocalDateTime appealDeadlineAt) {
+
+        /** @param processedAt 카드의 처리 시각 — 정지 카드면 정지 시각(기간 일수의 시작일) */
+        public static SanctionDetail of(MessageCardPayload.Sanction s, LocalDateTime processedAt) {
+            return s == null ? null
+                    : new SanctionDetail(s.memberType(), s.reasonCode(), s.reasonLabel(), s.reasonDetail(), s.payoutHeld(),
+                    s.endsOn(), SanctionTermPolicy.autoReleaseAt(s.endsOn()),
+                    SanctionTermPolicy.periodDays(processedAt, s.endsOn()), s.appealDeadlineAt());
+        }
     }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -84,11 +152,12 @@ public record MessageCardResponse(
     public record Action(
             @Schema(description = "액션 종류 — RESEND_NOTICE(재발송 요청) · ADJUSTMENT_RESPOND(정산 조정 제안)", example = "RESEND_NOTICE")
             String type,
-            @Schema(description = "PENDING(조치 전 · 응답 대기) · DONE(처리됨 · 응답됨) · CLOSED(닫힘 · 응답 없이 만료)",
+            @Schema(description = "PENDING(조치 전 · 응답 대기) · DONE(처리됨 · 응답됨) · CLOSED(닫힘 · 응답 없이 만료 · 요청 철회)",
                     example = "PENDING") MessageCardActionState state,
             @Schema(description = "알림 전송 시각 · 제안 응답 시각 — DONE일 때", example = "2026-08-14T08:55:00", nullable = true)
             LocalDateTime doneAt,
-            @Schema(description = "[정산 조정] 결과 문구 — 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」", nullable = true)
+            @Schema(description = "[정산 조정] 결과 문구 — 「동의」 · 「반대」 · 「다른 금액 제안으로 응답됨」 · 「기한 만료」 · 「요청 철회」"
+                    + "(CLOSED 는 협의가 철회로 끝났으면 「요청 철회」, 그 밖은 「기한 만료」)", nullable = true)
             String resultLabel,
             @Schema(description = "[정산 조정] 뷰어가 지금 이 카드에 답할 수 있는가 — 최신 제안 ∧ 동의 · 반대 · 다른 금액 제안 중 하나라도 가능. "
                     + "버튼 종류는 GET …/threads/{threadId}/adjustment 의 permissions", example = "false")
@@ -115,12 +184,17 @@ public record MessageCardResponse(
                     && respondableProposalId.equals(adjustment.proposalId()));
             return new MessageCardResponse(view.cardType(), view.title(), view.tone(), view.contractId(),
                     view.contractNumber(), view.groupBuyTitle(),
-                    new Detail(null, null, null, null, null, null, AdjustmentDetail.of(adjustment.snapshot())), action);
+                    new Detail(null, null, null, null, null, null, AdjustmentDetail.of(adjustment.snapshot()), null, null),
+                    action);
         }
         boolean resend = view.cardType() == MessageCardType.CONTRACT_RESEND_REQUEST;
         Detail detail = resend
-                ? new Detail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null)
-                : new Detail(null, null, null, view.reasonLabel(), view.processedAt(), true, null);
+                ? new Detail(view.requesterType(), view.requesterName(), view.requestedAt(), null, null, null, null, null, null)
+                : view.notice() != null
+                ? new Detail(view.requesterType(), view.requesterName(), view.requestedAt(), view.reasonLabel(),
+                        view.processedAt(), null, null, null, NoticeDetail.of(view.notice()))
+                : new Detail(null, null, null, view.reasonLabel(), view.processedAt(), true, null,
+                        SanctionDetail.of(view.sanction(), view.processedAt()), null);
         Action action = view.actionState() == null ? null
                 : new Action(RESEND_NOTICE, view.actionState(), view.doneAt(), null, false);
         return new MessageCardResponse(view.cardType(), view.title(), view.tone(), view.contractId(),

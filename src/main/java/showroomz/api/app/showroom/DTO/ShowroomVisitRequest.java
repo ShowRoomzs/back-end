@@ -17,7 +17,8 @@ import lombok.Setter;
 @Schema(description = "쇼룸 방문 기록 요청")
 public class ShowroomVisitRequest {
 
-    @Schema(description = "쇼룸 링크의 소스 값 — ig · search · post · direct. 없으면 직접 유입으로 집계",
+    @Schema(description = "쇼룸 링크의 소스 값 — ig · search · post · product · direct. 없으면 직접 유입으로 집계. " +
+            "상품 상세 딥링크로 들어와 쇼룸에 닿으면 product",
             example = "ig", nullable = true)
     private String source;
 

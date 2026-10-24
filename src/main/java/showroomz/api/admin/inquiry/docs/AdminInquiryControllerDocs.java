@@ -21,7 +21,7 @@ import showroomz.global.dto.PagingRequest;
 
 import java.util.List;
 
-@Tag(name = "Admin - Inquiry (1:1 문의)", description = "어드민 1:1 문의(CS) API — 1:1 문의는 마켓이 아닌 어드민으로만 접수된다")
+@Tag(name = "Admin - Inquiry", description = "관리자 1:1 문의 관리 API")
 public interface AdminInquiryControllerDocs {
 
     @Operation(
@@ -31,6 +31,8 @@ public interface AdminInquiryControllerDocs {
                     "- `ALL`: 전체 / `WAITING`: 접수(미답변) / `ANSWERED`: 답변완료\n\n" +
                     "**유형 필터(`type`)** — 미지정 시 전체 유형. `DELIVERY`, `CANCEL_EXCHANGE_RETURN`, `ORDER_PAYMENT`, `SERVICE`, `ACCOUNT`\n\n" +
                     "**검색(`keyword`)** — 작성자 · 문의 내용 통합 검색(단일 입력)\n\n" +
+                    "**소비자(`userId`)** — 그 소비자가 쓴 문의만(정확 일치 · 선택). 소비자 상세의 「1:1 문의 전체 보기」 · 진행 중 칩 「열린 문의」" +
+                    "(`pendingChips[].links[].query` 그대로)에서 들어옵니다. `statusCounts`도 같은 소비자 기준이고, 상세의 이전/다음도 `userId`를 함께 넘기면 그 소비자 안에서 움직입니다.\n\n" +
                     "**경과·SLA** — `elapsedText`는 모든 행에 값이 있습니다(미답변이면 현재까지, 답변 건이면 접수→답변 소요). " +
                     "`slaExceeded=true`면 상태 배지를 `SLA 초과`로 교체합니다(접수 배지와 병기하지 않음). 기준은 경과 3일 초과이며 서버가 계산합니다.\n\n" +
                     "**툴바** — `총 N건`은 `pageInfo.totalResults`, `미답변 N건`은 `statusCounts.waiting`입니다.\n\n" +
@@ -75,6 +77,7 @@ public interface AdminInquiryControllerDocs {
             @Parameter(description = "상태 탭", example = "ALL") @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
             @Parameter(description = "유형 필터 (미지정 시 전체 유형)", example = "DELIVERY") @RequestParam(value = "type", required = false) CsCategory type,
             @Parameter(description = "작성자 · 문의 내용 검색어") @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "작성한 소비자 ID — 소비자 상세에서 넘어온 진입(선택)", example = "88231") @RequestParam(value = "userId", required = false) Long userId,
             @Parameter(description = "페이징 (page: 1부터, size: 20/50/100)") PagingRequest pagingRequest
     );
 
@@ -108,7 +111,7 @@ public interface AdminInquiryControllerDocs {
                     "- `orderId`(참조 주문)는 **선택값**입니다. 주문 없이도 문의할 수 있으므로 `null`인 경우를 화면에서 `—`로 처리해야 합니다.\n" +
                     "- `operatorName`(처리자)은 답변완료 상태에서만 값이 있습니다.\n" +
                     "- `elapsedLabel`은 접수면 `미답변 경과`, 답변완료면 `응답 소요`입니다.\n" +
-                    "- `prevInquiryId` · `nextInquiryId`는 목록에서 넘어온 `status` · `type` · `keyword` 기준의 순서를 따릅니다. " +
+                    "- `prevInquiryId` · `nextInquiryId`는 목록에서 넘어온 `status` · `type` · `keyword` · `userId` 기준의 순서를 따릅니다. " +
                     "이전/다음 이동을 쓰려면 목록과 동일한 필터 값을 함께 넘겨주세요.\n\n" +
                     "**권한:** ADMIN"
     )
@@ -158,7 +161,8 @@ public interface AdminInquiryControllerDocs {
             @Parameter(description = "문의 ID", required = true, example = "21") @PathVariable("inquiryId") Long inquiryId,
             @Parameter(description = "목록에서 사용 중인 상태 탭 (이전/다음 순서 기준)", example = "ALL") @RequestParam(value = "status", defaultValue = "ALL") AdminInquiryStatusFilter status,
             @Parameter(description = "목록에서 사용 중인 유형 필터") @RequestParam(value = "type", required = false) CsCategory type,
-            @Parameter(description = "목록에서 사용 중인 검색어") @RequestParam(value = "keyword", required = false) String keyword
+            @Parameter(description = "목록에서 사용 중인 검색어") @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "목록에서 사용 중인 소비자 ID (이전/다음 순서 기준)", example = "88231") @RequestParam(value = "userId", required = false) Long userId
     );
 
     @Operation(

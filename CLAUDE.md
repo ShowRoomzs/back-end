@@ -6,11 +6,23 @@ Showroomz 백엔드 (Spring Boot / Gradle / Java).
 
 사용자에게 하는 답변은 **항상 한국어**로 작성한다. 코드 식별자·경로·명령어는 원문 그대로 둔다.
 
+## 테스트 실행
+
+시간을 줄이기 위해 **전체 테스트(`./gradlew test`)는 돌리지 않는다.** 사용자가 전체 실행을 직접 요청할 때만 돌린다.
+
+- 변경한 코드와 관련된 테스트만 `--tests`로 지정해 돌린다. 관련 테스트는 바꾼 클래스명·패키지로 `src/test`를 검색해 찾는다.
+  ```
+  ./gradlew test --tests '*AdminBrandSanctionIntegrationTest' --tests 'showroomz.api.admin.brand.*'
+  ```
+- 관련 테스트가 없거나 문서·어노테이션만 바꿨으면 컴파일만 확인한다: `./gradlew compileJava compileTestJava -q`
+
 ## 패키지 구조
 
 - `showroomz.api.<역할>.<기능>.{controller, docs, dto|DTO, service}` — 역할은 `admin` / `seller` / `creator` / `app`(유저) / `common` / `test`
 - `showroomz.domain.<도메인>.{entity, repository, type}`
 - `showroomz.global.*` — 설정, 공통 DTO, 예외
+- 목록 탭 · 정렬 같은 enum 은 **도메인 리포지토리가 파라미터로 받으면 `domain.*.type`**, 응답 · 서비스에서만 쓰면 `api.*.type` 에 둔다.
+- 회원 관리(브랜드 · 인플루언서) 공통 규칙 · 타입은 `domain.member.common`(메모 정책 · 조치 입력 규칙 · 알림 포트 · 지급 보류 포트 구현), 어드민 표기(회원번호 · 마스킹 · 사유 목록)는 `api.admin.common` 에 있다. 회원 유형별로 다시 만들지 않는다.
 
 Swagger 문서는 **컨트롤러가 `XxxControllerDocs` 인터페이스를 implements** 하는 구조다. `@Tag`, `@Operation`, `@ApiResponse` 등 문서 어노테이션은 docs 인터페이스에 두고, 컨트롤러에는 매핑만 둔다.
 

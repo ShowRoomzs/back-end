@@ -76,7 +76,8 @@ class SettlementScenarioIntegrationTest extends SettlementTestSupport {
     private static final byte[] PDF = "%PDF-1.4 scenario".getBytes(StandardCharsets.US_ASCII);
     /** 크림 27,200 · 리워드 12% → 단위 리워드 3,264 · 부가세 326 · 브랜드 측 27,200 − 3,264 − 326. */
     private static final long CREAM_REWARD = 3_264;
-    private static final long CREAM_BRAND = 27_200 - 3_264 - 326;
+    /** 브랜드 측은 원래 지급액 역산(1021 기-13) — 환불분 − PG 수수료 floor(27,200 × 3%) − 플랫폼 수수료(베타 0%) − 리워드 − 부가세. */
+    private static final long CREAM_BRAND = 27_200 - 816 - 3_264 - 326;
 
     @Autowired private SettlementTaxDocumentRepository documentRepository;
     @Autowired private SettlementClawbackRepository clawbackRepository;

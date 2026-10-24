@@ -166,6 +166,8 @@ public final class AdminSettlementDto {
             RateAmount rewardVat,
             SettlementPartyDto.AmountCount reshipFee,
             long consumerDeliveryFee,
+            @Schema(description = "+ 반품 시 차감한 최초 배송비(1021 기-18)") SettlementPartyDto.AmountCount returnDeductionFee,
+            @Schema(description = "± 운임 정산(1021 기-93) — 부호 있음") SettlementPartyDto.AmountCount freightAdjustment,
             long payoutBeforeClawback,
             long clawbackAmount,
             long payoutAmount) {
@@ -198,7 +200,7 @@ public final class AdminSettlementDto {
     public record Adjustment(
             Long adjustmentId,
             @Schema(description = "20b 이슈 스레드 — 어드민 소통 스레드 이슈 탭으로 연다") Long threadId,
-            @Schema(description = "OPEN · AGREED · EXPIRED") String status,
+            @Schema(description = "OPEN · AGREED · EXPIRED · WITHDRAWN") String status,
             String statusLabel,
             @Schema(description = "SELLER · CREATOR") String requesterType,
             LocalDateTime openedAt,
@@ -265,7 +267,7 @@ public final class AdminSettlementDto {
     }
 
     @Schema(name = "AdminSettlementPayoutCheck",
-            description = "tfoot 검산 — 수취자 합 + PG 수수료 + 원천징수 = 확정 거래액 + 재발송비 + 소비자 배송비")
+            description = "tfoot 검산 — 수취자 합 + PG 수수료 + 원천징수 = 확정 거래액 + 재발송비 + 소비자 배송비 + 반품 시 차감한 최초 배송비 ± 운임 정산")
     public record Check(long total, long inflowAmount, long confirmedSalesAmount, long withholdingAmount,
                         boolean balanced) {
     }

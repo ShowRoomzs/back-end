@@ -334,6 +334,48 @@ public abstract class SettlementTestSupport extends OrderFlowTestSupport {
         }
     }
 
+    /**
+     * 스튜디오 정산 계좌 변경 — 1021 결정 노트 기-22 로 변경 요청 → 운영자 승인을 거친다. 요청이 실패하면 그 응답을, 승인되면 정산 정보 탭 조회를
+     * 돌려준다(승인 뒤 실존 확인 흐름은 예전 즉시 변경과 같다 · 확인은 커밋 직후 같은 스레드에서 돈다).
+     */
+    protected ResultActions changeCreatorAccountApproved(Object body) throws Exception {
+        org.springframework.test.web.servlet.MvcResult requested = mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put(
+                                        "/v1/creator/basic-info/settlement-account")
+                                .header(HttpHeaders.AUTHORIZATION, creatorToken).contentType(MediaType.APPLICATION_JSON)
+                                .content(toJson(body)))
+                .andReturn();
+        if (requested.getResponse().getStatus() != 200) {
+            return replay(requested);
+        }
+        long requestId = objectMapper.readTree(requested.getResponse().getContentAsString())
+                .at("/pendingAccountChange/requestId").asLong();
+        adminPost("/v1/admin/change-requests/" + requestId + "/approve", Map.of()).andExpect(status().isOk());
+        return creatorGet("/v1/creator/basic-info/settlement");
+    }
+
+    /** 이미 받은 응답을 {@link ResultActions}로 — 헬퍼가 요청 실패 응답을 그대로 돌려줄 때. */
+    protected static ResultActions replay(org.springframework.test.web.servlet.MvcResult result) {
+        return new ResultActions() {
+            @Override
+            public ResultActions andExpect(org.springframework.test.web.servlet.ResultMatcher matcher) throws Exception {
+                matcher.match(result);
+                return this;
+            }
+
+            @Override
+            public ResultActions andDo(org.springframework.test.web.servlet.ResultHandler handler) throws Exception {
+                handler.handle(result);
+                return this;
+            }
+
+            @Override
+            public org.springframework.test.web.servlet.MvcResult andReturn() {
+                return result;
+            }
+        };
+    }
+
     protected ResultActions creatorGet(String url) throws Exception {
         return mockMvc.perform(get(url).header(HttpHeaders.AUTHORIZATION, creatorToken));
     }

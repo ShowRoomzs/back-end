@@ -25,7 +25,7 @@ import java.time.LocalDate;
 
 import static showroomz.api.admin.transaction.docs.AdminTransactionDocsExamples.*;
 
-@Tag(name = "Admin - Order", description = "관리자 거래 관리 · 주문 조회 API (06a)")
+@Tag(name = "Admin - Order", description = "관리자 주문 관리 API")
 public interface AdminOrderControllerDocs {
 
     // ── 조회 ─────────────────────────────────────────────────────────────────
@@ -46,6 +46,9 @@ public interface AdminOrderControllerDocs {
             **조건** — 모두 AND 이고, 하위주문 조건은 **하위주문 하나라도 맞으면** 그 주문이 나옵니다.
             - `status` — 상태 셀렉트. `PENDING`(결제 대기)은 목록에 오지 않으므로 고르지 않습니다.
             - `marketId` — 브랜드 상세의 「이 브랜드 진행 주문 보기」 진입 · `groupBuyId` · `creatorId`(공구를 연 인플루언서) · `paymentMethod` — 상세 조건
+            - `userId` — 소비자 상세의 「최근 주문」 · 「전체 주문 내역 보기」 진입(주문한 소비자 · 55 계획서 M3-2)
+            - `cancelRequested` — `true`면 **검토 중 취소 요청**이 있는 하위주문만(기본 `false`). 취소 탭은 취소된 하위주문까지 담아서, 소비자 상세
+              「취소 요청」 칩은 `tab=CANCEL&cancelRequested=true&userId=`로 들어옵니다(`pendingChips[].links[].query` 그대로 · 건수 = 칩 건수)
             - `trackingAlert` — 배송 이상 탭의 「이상 유형」(`PICKUP_UNCONFIRMED` 집화 확인 필요 · `STALLED` 추적 정지)
             - `from` · `to` — **결제일** 기준(양 끝 포함, `yyyy-MM-dd`)
 
@@ -69,6 +72,9 @@ public interface AdminOrderControllerDocs {
             - `attentionCount` — 운영자가 볼 것이 있는 하위주문 수(배송 이상 · 발송 기한 경과 · 검토 중 취소 요청). 0 이면 표시를 뺍니다.
             - `groups[].shipOverdue` — 발송 전인데 발송 기한이 지났다(브랜드 귀책). `shipDueAt`이 null 이면 공구 진행 중이라 기한이 아직 없습니다.
             - `groups[].statusTone` — 배지 색(`NEUTRAL` · `INFO` · `WARNING` · `SUCCESS` · `DANGER`). 상태 문구는 `statusLabel`을 그대로 씁니다.
+            - `groups[].claim` — 반품 · 교환 요약(56 C2 · 추가 필드). 그 하위주문에 접수된 클레임 중 **가장 최근에 신청한 것** 1건(결제 대기 · 요청 취소 제외)과
+              접수 건수 `count`. 없으면 null. `label`은 「반품완료」 · 「교환완료」 · 「환불완료」(교환을 환불로 닫음) · 「반품 반려」 · 「반품 진행중」 등.
+              `status`(배송 이행)는 바뀌지 않습니다 — 소비자 상세 「최근 주문」 상태 칸은 `claim`이 있으면 `claim.label`을 씁니다.
             - 행 확장 줄 — `itemSummary`(「데일리 선크림 외 1종」) · `itemQuantity`(수량 합) · `amount`(상품 합계 + 배송비 — 한 주문의 합이
               `totalAmount`) · `carrierLabel` · `trackingNumber`. 「공구명」 열은 `groups[].groupBuyTitle`(여러 브랜드면 첫 하위주문 것).
             - 「배송 이상」 열 — `trackingAlertLabel` + 경과 `issueElapsedLabel`(「등록 후 26시간」 · 「8일 무갱신」 · 「감지 09.12」). 기준 시각은 `issueSince`.
@@ -99,6 +105,7 @@ public interface AdminOrderControllerDocs {
             @Parameter(description = "브랜드(마켓) ID", example = "17") Long marketId,
             @Parameter(description = "공구 ID", example = "312") Long groupBuyId,
             @Parameter(description = "공구를 연 인플루언서(크리에이터) ID", example = "3021") Long creatorId,
+            @Parameter(description = "주문한 소비자 ID — 소비자 상세의 「전체 주문 내역 보기」", example = "88231") Long userId,
             @Parameter(description = "결제수단 — CARD · EASY_PAY", example = "CARD") PaymentMethod paymentMethod,
             @Parameter(description = "[배송 이상 탭] 이상 유형 — PICKUP_UNCONFIRMED · STALLED", example = "STALLED") TrackingAlert trackingAlert,
             @Parameter(description = "검색 대상 — ALL(기본) · ORDER_NUMBER · SUB_ORDER_NUMBER · RECIPIENT · BRAND · TRACKING_NUMBER · PG_TX_ID",
@@ -107,6 +114,7 @@ public interface AdminOrderControllerDocs {
             @Parameter(description = "정렬 — PAID_DESC(기본) · PAID_ASC · AMOUNT_DESC · ISSUE_OLDEST", example = "PAID_DESC") AdminOrderSort sort,
             @Parameter(description = "결제일 시작(포함) — yyyy-MM-dd", example = "2026-10-01") LocalDate from,
             @Parameter(description = "결제일 끝(포함) — yyyy-MM-dd", example = "2026-10-10") LocalDate to,
+            @Parameter(description = "검토 중 취소 요청이 있는 하위주문만 — 기본 false", example = "true") boolean cancelRequested,
             PagingRequest pagingRequest);
 
     @Operation(summary = "주문 탭 건수", description = """
@@ -135,6 +143,7 @@ public interface AdminOrderControllerDocs {
             @Parameter(description = "브랜드(마켓) ID", example = "17") Long marketId,
             @Parameter(description = "공구 ID", example = "312") Long groupBuyId,
             @Parameter(description = "인플루언서(크리에이터) ID", example = "3021") Long creatorId,
+            @Parameter(description = "주문한 소비자 ID", example = "88231") Long userId,
             @Parameter(description = "결제수단 — CARD · EASY_PAY", example = "CARD") PaymentMethod paymentMethod,
             @Parameter(description = "검색 대상 — 목록과 같은 값", example = "ALL") AdminOrderSearchType searchType,
             @Parameter(description = "검색어 — 목록과 같은 값", example = "20261003-000123") String keyword,

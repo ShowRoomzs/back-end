@@ -30,6 +30,15 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("SELECT g FROM OrderDeliveryGroup g LEFT JOIN FETCH g.groupBuy WHERE g.order.id = :orderId ORDER BY g.id ASC")
     List<OrderDeliveryGroup> findByOrderId(@Param("orderId") Long orderId);
 
+    /** 결제 완료 귀속의 재료 — [하위주문 id, 그 공구 인플루언서 id](49 스튜디오 성과 설계서 1-5). 공구 없는 백필 행은 빠진다. */
+    @Query("SELECT g.id, gb.creator.id FROM OrderDeliveryGroup g JOIN g.groupBuy gb WHERE g.order.id = :orderId")
+    List<Object[]> findCreatorIdsByOrderId(@Param("orderId") Long orderId);
+
+    /** 게시물 귀속 — 한 번만 채운다(이미 있으면 0행). 귀속은 결제 시점의 사실이라 나중에 바꾸지 않는다. */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.attributedPostId = :postId WHERE g.id = :id AND g.attributedPostId IS NULL")
+    int attributePost(@Param("id") Long id, @Param("postId") Long postId);
+
     /**
      * 주문 배송지 변경의 잠금(C10 설계서 3-6) — 그 주문의 하위주문 전부를 id 오름차순으로. 준비 시작(#2)과 같은 행을
      * 다투므로, 잠근 뒤 본 상태가 커밋까지 유지된다.
@@ -176,6 +185,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
             + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
             + "g.cancelledAt = :now, g.cancelType = showroomz.domain.order.type.OrderCancelType.SELLER_DIRECT, "
+            + "g.cancelActorType = showroomz.domain.order.type.FulfillmentActorType.ADMIN, "
             + "g.cancelReasonCode = :reasonCode, g.cancelReasonDetail = :reasonDetail "
             + "WHERE g.id = :id "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
@@ -239,7 +249,8 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderDeliveryGroup g SET g.carrier = :carrier, g.trackingNumber = :trackingNumber, "
-            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL, g.pickedUpAt = NULL "
+            + "g.trackingAlert = NULL, g.lastTrackingAt = NULL, g.pickedUpAt = NULL, "
+            + "g.stallChoiceOpenAt = CASE WHEN g.stallChoice IS NULL THEN NULL ELSE g.stallChoiceOpenAt END "
             + "WHERE g.id = :id AND g.market.id = :marketId "
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING")
     int updateInvoice(@Param("id") Long id, @Param("marketId") Long marketId,
@@ -254,6 +265,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     @Query("UPDATE OrderDeliveryGroup g SET g.statusAtCancel = g.fulfillmentStatus, "
             + "g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CANCELLED, "
             + "g.cancelledAt = :now, g.cancelType = showroomz.domain.order.type.OrderCancelType.SELLER_DIRECT, "
+            + "g.cancelActorType = showroomz.domain.order.type.FulfillmentActorType.SELLER, "
             + "g.cancelReasonCode = :reasonCode, g.cancelReasonDetail = :reasonDetail "
             + "WHERE g.id = :id AND g.market.id = :marketId "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
@@ -369,10 +381,27 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
                          @Param("trackingNumber") String trackingNumber, @Param("alert") TrackingAlert alert);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = NULL WHERE g.id = :id "
+    @Query("UPDATE OrderDeliveryGroup g SET g.trackingAlert = NULL, "
+            + "g.stallChoiceOpenAt = CASE WHEN g.stallChoice IS NULL THEN NULL ELSE g.stallChoiceOpenAt END "
+            + "WHERE g.id = :id "
             + "AND g.carrier = :carrier AND g.trackingNumber = :trackingNumber AND g.trackingAlert IS NOT NULL")
     int clearTrackingAlert(@Param("id") Long id, @Param("carrier") DeliveryCarrier carrier,
                            @Param("trackingNumber") String trackingNumber);
+
+    /** 추적 정지 판정 — 소비자 선택 개방 시각을 정한다(1021 기-15). 이미 골랐거나 열려 있으면 그대로. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.stallChoiceOpenAt = :openAt WHERE g.id = :id "
+            + "AND g.stallChoice IS NULL AND g.stallChoiceOpenAt IS NULL")
+    int openStallChoice(@Param("id") Long id, @Param("openAt") LocalDateTime openAt);
+
+    /** 소비자 선택(1021 기-15) — 배송중 ∧ 추적 정지 ∧ 개방 ∧ 미선택. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.stallChoice = :choice, g.stallChoiceAt = :now WHERE g.id = :id "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
+            + "AND g.trackingAlert = showroomz.domain.order.type.TrackingAlert.STALLED "
+            + "AND g.stallChoice IS NULL AND g.stallChoiceOpenAt IS NOT NULL AND g.stallChoiceOpenAt <= :now")
+    int chooseStall(@Param("id") Long id, @Param("choice") showroomz.domain.order.type.StallChoice choice,
+                    @Param("now") LocalDateTime now);
 
     /**
      * #6 DELIVERED → CONFIRMED — 배송완료 + 7일(약관 제19조①). 기준 시각은 교환 재발송이 도착했으면 그 시각이다
@@ -488,4 +517,70 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
             + "AND g.trackingAlert IS NOT NULL")
     long countTrackingAlerts(@Param("marketId") Long marketId);
+
+    /**
+     * 성과 재구매 — 브랜드 범위(48 파트너 설계서 2-5 · 미정 ② 잠정) — 주어진 소비자 중 <b>이 마켓의 다른 공구</b>에서 기준 시각 전에
+     * 결제해 구매확정된 하위주문이 있는 사람.
+     */
+    @Query("SELECT DISTINCT o.user.id FROM OrderDeliveryGroup g JOIN g.order o "
+            + "WHERE g.market.id = :marketId AND g.groupBuy.id <> :groupBuyId "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CONFIRMED "
+            + "AND o.paidAt < :before AND o.user.id IN :userIds")
+    List<Long> findRepeatBuyersInMarket(@Param("marketId") Long marketId, @Param("groupBuyId") Long groupBuyId,
+                                        @Param("before") LocalDateTime before,
+                                        @Param("userIds") Collection<Long> userIds);
+
+    /**
+     * 성과 재구매 — 인플루언서 범위(49 스튜디오 설계서 0-11 「이전 내 공구에서도 구매」) — 주어진 소비자 중 <b>같은 인플루언서의 다른
+     * 공구</b>에서 기준 시각 전에 결제해 구매확정된 하위주문이 있는 사람.
+     */
+    @Query("SELECT DISTINCT o.user.id FROM OrderDeliveryGroup g JOIN g.order o JOIN g.groupBuy gb "
+            + "WHERE gb.creator.id = :creatorId AND gb.id <> :groupBuyId "
+            + "AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CONFIRMED "
+            + "AND o.paidAt < :before AND o.user.id IN :userIds")
+    List<Long> findRepeatBuyersWithCreator(@Param("creatorId") Long creatorId, @Param("groupBuyId") Long groupBuyId,
+                                           @Param("before") LocalDateTime before,
+                                           @Param("userIds") Collection<Long> userIds);
+
+    /** 성과 모집단(48 파트너 설계서 0-3) — 결제 완료 하위주문이 1건 이상인 공구인가. */
+    @Query("SELECT COUNT(g) > 0 FROM OrderDeliveryGroup g WHERE g.groupBuy.id = :groupBuyId "
+            + "AND g.order.paidAt IS NOT NULL "
+            + "AND g.fulfillmentStatus <> showroomz.domain.order.type.FulfillmentStatus.PENDING")
+    boolean existsPaidForGroupBuy(@Param("groupBuyId") Long groupBuyId);
+
+    // ------------------------------------------------------------------ 어드민 브랜드 상세(52 설계서 2-5 · 4-1)
+
+    /** 발송 기한 경과 — 작업 큐(신규 · 준비중) 중 기한이 지난 결제 하위주문. 레일 「진행 중」 칩. */
+    @Query("SELECT COUNT(g) FROM OrderDeliveryGroup g WHERE g.market.id = :marketId AND g.order.paidAt IS NOT NULL "
+            + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
+            + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
+            + "AND g.shipDueAt IS NOT NULL AND g.shipDueAt < :now")
+    long countShipOverdue(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
+
+    /**
+     * 미종결 하위주문 — 탈퇴 조건 ③(§51-5). 정의는 공구 정산 게이트와 같다({@code FulfillmentStatus#isSettlementOpen}) — 반송중은
+     * 반송 완료 환불이 집행돼야 종결이다.
+     */
+    @Query("SELECT COUNT(g) FROM OrderDeliveryGroup g WHERE g.market.id = :marketId AND g.order.paidAt IS NOT NULL "
+            + "AND (g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
+            + "        showroomz.domain.order.type.FulfillmentStatus.PREPARING, "
+            + "        showroomz.domain.order.type.FulfillmentStatus.SHIPPING, "
+            + "        showroomz.domain.order.type.FulfillmentStatus.DELIVERED) "
+            + "  OR (g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.RETURNING "
+            + "      AND NOT (g.returnCompletedAt IS NOT NULL AND EXISTS (SELECT t.id FROM OrderRefundTask t "
+            + "          WHERE t.deliveryGroup = g "
+            + "          AND t.source = showroomz.domain.order.type.RefundTaskSource.RETURN_COMPLETED "
+            + "          AND t.status = showroomz.domain.order.type.RefundTaskStatus.DONE))))")
+    long countUnclosedByMarket(@Param("marketId") Long marketId);
+
+    /**
+     * 파트너 홈 달력 「발송 기한」(1017 설계서 4-3) — [공구 id, 발송기한]. 기한은 공구 종료 사건에서 일괄 계산되므로 공구당 1~2개다.
+     * 결제된 하위주문 중 취소되지 않은 것만 본다.
+     */
+    @Query("SELECT DISTINCT g.groupBuy.id, g.shipDueAt FROM OrderDeliveryGroup g WHERE g.market.id = :marketId "
+            + "AND g.order.paidAt IS NOT NULL AND g.groupBuy IS NOT NULL "
+            + "AND g.fulfillmentStatus <> showroomz.domain.order.type.FulfillmentStatus.CANCELLED "
+            + "AND g.shipDueAt >= :from AND g.shipDueAt < :to")
+    List<Object[]> findShipDueForMarket(@Param("marketId") Long marketId, @Param("from") LocalDateTime from,
+                                        @Param("to") LocalDateTime to);
 }

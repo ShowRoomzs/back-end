@@ -3,6 +3,7 @@ package showroomz.api.creator.settlement.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
 import showroomz.api.common.settlement.service.SettlementClawbackViews;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
@@ -12,6 +13,7 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementTaxDocument;
 import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
 import showroomz.domain.settlement.type.ClawbackSide;
+import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.TaxDocumentStatus;
 import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.config.properties.SettlementProperties;
@@ -62,8 +64,18 @@ public class CreatorSettlementBlocks {
                 .orElse(false);
     }
 
-    /** 사업자 보류 행의 상태 문구 — 세금계산서 카드 상태를 따른다(발행 필요 · 확인 중 · 반려 · 재제출 필요). */
-    public String businessBlockedLabel(Settlement settlement) {
+    /**
+     * 내 보류 행의 상태 문구 — 세금계산서 사유면 카드 상태(발행 필요 · 확인 중 · 반려 · 재제출 필요), 그 밖의 사유면 사유 라벨(「계정 이용 정지 ·
+     * 정산 정보 불일치」 · 「정산 계좌 확인 중」 · 1017 설계서 8-8). 사업자라도 정지 · 계좌 확인으로 보류됐거나 계산서가 이미 확인됐으면
+     * 세금계산서 문구를 내지 않는다. 사유를 알 수 없으면(원인이 풀리고 재판정 전) 예전 문구.
+     */
+    public String blockedLabel(Settlement settlement, PayoutHoldView hold) {
+        if (hold == null) {
+            return "지급 보류";
+        }
+        if (!isTaxInvoiceHold(hold)) {
+            return hold.label();
+        }
         TaxDocumentStatus status = creatorInvoice(settlement).map(SettlementTaxDocument::getStatus).orElse(null);
         if (status == TaxDocumentStatus.SUBMITTED) {
             return "확인 중";
@@ -74,12 +86,25 @@ public class CreatorSettlementBlocks {
         return "발행 필요";
     }
 
-    /** 사업자 보류 행의 지급 예정 문장 — 「발행 확인 후 + 3영업일」 · 「확인 후 + 3영업일」 · 「재제출 확인 후 + 3영업일」. */
-    public String businessBlockedNote(Settlement settlement, int payoutBusinessDays) {
+    /**
+     * 내 보류 행의 지급 예정 문장 — 세금계산서 사유면 「발행 확인 후 + 3영업일」 · 「확인 후 + 3영업일」 · 「재제출 확인 후 + 3영업일」, 그 밖의
+     * 사유면 그 사유의 지급일 문구(「정지 해제 다음 영업일 지급」 · 「계좌 확인 후 지급」 — {@code payoutHold.scheduleLabel} 과 같다).
+     */
+    public String blockedNote(Settlement settlement, PayoutHoldView hold, int payoutBusinessDays) {
+        if (hold == null) {
+            return "보류 사유 해소 후 지급";
+        }
+        if (!isTaxInvoiceHold(hold)) {
+            return hold.scheduleLabel();
+        }
         TaxDocumentStatus status = creatorInvoice(settlement).map(SettlementTaxDocument::getStatus).orElse(null);
         String prefix = status == TaxDocumentStatus.SUBMITTED ? "확인 후"
                 : status == TaxDocumentStatus.REJECTED ? "재제출 확인 후" : "발행 확인 후";
         return "%s + %d영업일".formatted(prefix, payoutBusinessDays);
+    }
+
+    private static boolean isTaxInvoiceHold(PayoutHoldView hold) {
+        return PayoutBlockReason.TAX_INVOICE_UNVERIFIED.name().equals(hold.reason());
     }
 
     /** GNB 배지 가산 — 세금계산서 입력 대기 · 반려 건수. */

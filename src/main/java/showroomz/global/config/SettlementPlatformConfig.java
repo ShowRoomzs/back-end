@@ -30,7 +30,7 @@ public class SettlementPlatformConfig {
             validate(properties.getPlatform());
         } else {
             log.warn("정산 런칭 게이트 꺼짐(settlement.launch-gate-enabled=false) — prod 지만 사업자 정보를 검증하지 않습니다. "
-                    + "실제 돈이 오가는 운영 서버에서는 반드시 켜세요(44 포트원 설계서 9-4).");
+                    + "실제 돈이 오가는 운영 서버에서는 반드시 켜세요(44 토스 설계서 9-4).");
         }
     }
 

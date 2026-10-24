@@ -58,6 +58,7 @@ public class AdminIssuePanelAssembler {
             case OPEN -> new String[]{"응답 대기", "INFO"};
             case AGREED -> new String[]{"합의 · 금액 변경", "SUCCESS"};
             case EXPIRED -> new String[]{"기한 만료 · 원래 금액", "NEUTRAL"};
+            case WITHDRAWN -> new String[]{"요청 철회 · 원래 금액", "NEUTRAL"};
         };
     }
 
@@ -75,7 +76,7 @@ public class AdminIssuePanelAssembler {
         Optional<GroupBuy> groupBuy = groupBuys.findDetailById(a.groupBuyId());
         String title = groupBuy.map(g -> g.getContract().getTitle()).orElse(null);
         return new ChannelInfo(thread.getId(), AdminChannelTab.ISSUE, title, null, null, null, null, false,
-                null, null, null, panel(a, connection, groupBuy, brandName, showroomName), null);
+                null, null, null, null, panel(a, connection, groupBuy, brandName, showroomName), null);
     }
 
     /** 브랜드–인플루언서 1:1 스레드 열람(4-5) — 헤더만. 읽기 전용이라 {@code writable = false}. */
@@ -84,7 +85,7 @@ public class AdminIssuePanelAssembler {
         String brandName = connection.getMarket().getMarketName();
         String showroomName = connection.getCreator().getShowroomName();
         return new ChannelInfo(thread.getId(), null, "%s × %s".formatted(brandName, showroomName), null, null, null,
-                null, false, null, null, null, null,
+                null, false, null, null, null, null, null,
                 new PairInfo(connection.getMarket().getId(), brandName, connection.getCreator().getId(), showroomName));
     }
 
@@ -118,7 +119,7 @@ public class AdminIssuePanelAssembler {
         return switch (status) {
             case OPEN -> "정산 보류 · 전액";
             case AGREED -> "보류 해제 · 금액 변경";
-            case EXPIRED -> "보류 해제 · 금액 변경 없음";
+            case EXPIRED, WITHDRAWN -> "보류 해제 · 금액 변경 없음";
         };
     }
 
@@ -142,6 +143,10 @@ public class AdminIssuePanelAssembler {
                     new IssueStep("OPEN", "협의", "DONE", "양측 직접"),
                     new IssueStep("AGREED", "합의 · 반영", "SKIPPED", "합의 없음"),
                     new IssueStep("CLOSED", "종결", "DONE", dayOf(a.closedAt()) + " · 기한 만료"));
+            case WITHDRAWN -> List.of(requested,
+                    new IssueStep("OPEN", "협의", "DONE", "양측 직접"),
+                    new IssueStep("AGREED", "합의 · 반영", "SKIPPED", "요청 철회"),
+                    new IssueStep("CLOSED", "종결", "DONE", dayOf(a.closedAt()) + " · 요청 철회"));
         };
     }
 

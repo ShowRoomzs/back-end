@@ -31,9 +31,12 @@ public class AdminChangeRequestController implements AdminChangeRequestControlle
     public ResponseEntity<AdminChangeRequestDto.ListResponse> getList(
             @RequestParam(value = "status", defaultValue = "PENDING") AdminChangeRequestStatusFilter status,
             @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "requesterType", required = false)
+            showroomz.domain.changerequest.type.ChangeRequesterType requesterType,
+            @RequestParam(value = "type", required = false) ChangeRequestType type,
             @ModelAttribute PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
-        return ResponseEntity.ok(adminChangeRequestService.getList(status, keyword, pageable));
+        return ResponseEntity.ok(adminChangeRequestService.getList(status, keyword, requesterType, type, pageable));
     }
 
     @Override

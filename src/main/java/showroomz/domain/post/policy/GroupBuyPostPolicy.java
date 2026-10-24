@@ -116,10 +116,25 @@ public class GroupBuyPostPolicy implements PostPolicy {
         }
     }
 
+    /**
+     * 1021 결정 노트 기-08 — 준비완료(예약) 단계는 [게시물 수정]을 막는다(운영자가 승인한 그대로 오픈한다). 단 노출 중지된 게시물은
+     * 시정해야 하므로 준비완료에서도 연다(1021 설계서 2-2 · Q8). 진행 중에는 본문만 고친다({@link #isTitleLocked}).
+     */
     public static boolean isEditable(GroupBuyPost groupBuyPost, GroupBuy groupBuy) {
         GroupBuyStatus status = groupBuy.getStatus();
-        return groupBuyPost != null && groupBuyPost.isApproved()
-                && (status == GroupBuyStatus.READY || status == GroupBuyStatus.IN_PROGRESS);
+        if (groupBuyPost == null || !groupBuyPost.isApproved()) {
+            return false;
+        }
+        return status == GroupBuyStatus.IN_PROGRESS
+                || (status == GroupBuyStatus.READY && groupBuyPost.isHidden());
+    }
+
+    /**
+     * 제목 잠금(1021 결정 노트 기-08 「진행 중에는 본문만 수정」) — 진행 중 ∧ 노출 중지 아님. 노출 중지 게시물은 제목에 위반 문구가 있을 수
+     * 있어 시정 경로로 제목도 연다.
+     */
+    public static boolean isTitleLocked(GroupBuyPost groupBuyPost, GroupBuy groupBuy) {
+        return groupBuy.getStatus() == GroupBuyStatus.IN_PROGRESS && groupBuyPost != null && !groupBuyPost.isHidden();
     }
 
     private GroupBuyPost load(Post post) {

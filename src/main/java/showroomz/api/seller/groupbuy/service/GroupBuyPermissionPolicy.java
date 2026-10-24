@@ -1,5 +1,8 @@
 package showroomz.api.seller.groupbuy.service;
 
+import showroomz.domain.contract.repository.ContractTerminationRequestRepository;
+import showroomz.domain.contract.service.ContractTerminationPolicy;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.api.seller.groupbuy.dto.GroupBuyDetailResponse;
@@ -24,6 +27,7 @@ import java.time.LocalDateTime;
 public class GroupBuyPermissionPolicy {
 
     private final GroupBuyProperties properties;
+    private final ContractTerminationRequestRepository terminationRequestRepository;
 
     public GroupBuyDetailResponse.Permissions evaluate(GroupBuyFacts facts, boolean hasPairThread, LocalDateTime now) {
         return new GroupBuyDetailResponse.Permissions(
@@ -34,7 +38,19 @@ public class GroupBuyPermissionPolicy {
                 canSubmitAppeal(facts, now),
                 canOpenIssue(facts),
                 canCheckFulfillment(facts),
-                hasPairThread);
+                hasPairThread,
+                canRequestTermination(facts));
+    }
+
+    /**
+     * [해지 요청](1021 설계서 1-4 · 결정 노트 기-05) — 오픈 전(준비중 · 준비완료) 공구의 「중단 요청」은 계약 해지 요청이 됐다.
+     * 계약 판정은 {@link ContractTerminationPolicy} 와 같다.
+     */
+    public boolean canRequestTermination(GroupBuyFacts facts) {
+        GroupBuy groupBuy = facts.groupBuy();
+        return ContractTerminationPolicy.isTerminable(groupBuy.getContract(), groupBuy)
+                && facts.pendingChangeRequest().isEmpty()
+                && terminationRequestRepository.findPending(groupBuy.getContract().getId()).isEmpty();
     }
 
     public boolean canConfirmStock(GroupBuyFacts facts) {
@@ -53,10 +69,11 @@ public class GroupBuyPermissionPolicy {
         return facts.groupBuy().getStatus() == GroupBuyStatus.IN_PROGRESS && !isRequestBlocked(facts);
     }
 
-    /** 준비완료에서도 받는다(C4) — §30-5가 §29-6 표보다 구체적이다(설계서 7-1 #3). */
+    /**
+     * 진행중만 — 1021 결정 노트 기-05 로 준비중 · 준비완료(오픈 전)의 「중단 요청」은 「해지 요청」(계약)이 됐다({@link #canRequestTermination}).
+     */
     public boolean canRequestSuspension(GroupBuyFacts facts) {
-        GroupBuyStatus status = facts.groupBuy().getStatus();
-        return (status == GroupBuyStatus.READY || status == GroupBuyStatus.IN_PROGRESS) && !isRequestBlocked(facts);
+        return facts.groupBuy().getStatus() == GroupBuyStatus.IN_PROGRESS && !isRequestBlocked(facts);
     }
 
     public boolean canSubmitAppeal(GroupBuyFacts facts, LocalDateTime now) {

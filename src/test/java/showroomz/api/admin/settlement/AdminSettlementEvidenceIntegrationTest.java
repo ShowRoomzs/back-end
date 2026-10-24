@@ -168,27 +168,18 @@ class AdminSettlementEvidenceIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("07a 증빙 탭 — 문서 행 · 주민번호 미등록 가상 행 · 툴바 · 처리 끝은 빠진다")
+    @DisplayName("07a 증빙 탭 — 문서 행 · 툴바 · 처리 끝은 빠진다 · 주민번호 미등록은 보류 사유가 아니라 가상 행이 없다(1021 기-12)")
     void evidenceTab() throws Exception {
         Settlement s = confirm(generatedSettlement());   // 비사업자 · 주민번호 미등록
 
         JsonNode tab = json(adminGet(SETTLEMENTS + "?tab=EVIDENCE").andExpect(status().isOk()));
-        assertThat(tab.at("/pageInfo/totalResults").asLong()).isEqualTo(2);
+        assertThat(tab.at("/pageInfo/totalResults").asLong()).isEqualTo(1);
         List<String> types = tab.findValuesAsText("type");
-        assertThat(types).containsExactlyInAnyOrder("BRAND_TAX_INVOICE", "RESIDENT_NUMBER_MISSING");
-        assertThat(tab.at("/toolbar/count").asLong()).isEqualTo(2);
+        assertThat(types).containsExactly("BRAND_TAX_INVOICE");
+        assertThat(tab.at("/toolbar/count").asLong()).isEqualTo(1);
         assertThat(tab.at("/toolbar/operatorActionCount").asLong()).isEqualTo(1);
-        assertThat(tab.at("/toolbar/payoutBlockedCount").asLong()).isEqualTo(1);
-        JsonNode virtual = null;
-        for (JsonNode row : tab.get("content")) {
-            if ("RESIDENT_NUMBER_MISSING".equals(row.get("type").asText())) {
-                virtual = row;
-            }
-        }
-        assertThat(virtual).isNotNull();
-        assertThat(virtual.get("documentId").isNull()).isTrue();
-        assertThat(virtual.get("payoutImpact").asText()).isEqualTo("BLOCKING");
-        assertThat(virtual.get("settlementId").asLong()).isEqualTo(s.getId());
+        assertThat(tab.at("/toolbar/payoutBlockedCount").asLong()).isZero();
+        assertThat(tab.at("/content/0/settlementId").asLong()).isEqualTo(s.getId());
 
         registerCreatorResidentNumber();
         issue(s, document(s, TaxDocumentType.BRAND_TAX_INVOICE).getId(), "20261010-41000099-00001234")

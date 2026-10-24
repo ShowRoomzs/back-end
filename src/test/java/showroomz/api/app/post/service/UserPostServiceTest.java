@@ -592,6 +592,7 @@ class UserPostServiceTest {
             boolean closed = saleState == GroupBuySaleState.CLOSED;
             GroupBuyPostCard card = new GroupBuyPostCard(77L, "여름 끝 무너진 장벽", saleState, dDay,
                     LocalDateTime.now().plusDays(3), "유료 광고 포함 · 글로우랩으로부터 대가를 받아 진행하는 공동구매입니다",
+                    "글로우랩",
                     List.of(product(901L, closed ? GroupBuyProductState.CLOSED : GroupBuyProductState.ON_SALE),
                             product(902L, closed ? GroupBuyProductState.CLOSED : GroupBuyProductState.SOLD_OUT)));
             given(groupBuyPostCardLoader.load(any(), any())).willReturn(Map.of(GROUP_BUY_POST_ID, card));

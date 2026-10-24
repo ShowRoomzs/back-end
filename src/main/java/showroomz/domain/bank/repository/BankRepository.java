@@ -11,6 +11,6 @@ public interface BankRepository extends JpaRepository<Bank, String> {
     // 사용 가능한 은행 목록을 순서대로 조회
     List<Bank> findAllByIsActiveTrueOrderByDisplayOrderAsc();
 
-    /** 회원 정보는 은행 이름만 저장한다(가입 때 {@code bank.getName()}) — PG 파트너 등록이 코드로 되돌릴 때(포트원 설계서 4-5). */
+    /** 회원 정보는 은행 이름만 저장한다(가입 때 {@code bank.getName()}) — PG 셀러 등록이 코드로 되돌릴 때(토스 설계서 4-5 · 표준 코드 그대로). */
     java.util.Optional<Bank> findByName(String name);
 }

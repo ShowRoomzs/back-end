@@ -7,10 +7,14 @@ import org.springframework.data.repository.query.Param;
 import showroomz.domain.post.entity.PostImage;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface PostImageRepository extends JpaRepository<PostImage, Long> {
 
     List<PostImage> findByPost_IdOrderBySortOrderAsc(Long postId);
+
+    /** 신고 지목 토글 — 그 게시물의 사진인지까지 함께 확인한다 */
+    Optional<PostImage> findByIdAndPost_Id(Long imageId, Long postId);
 
     /**
      * 목록 화면의 대표 사진 — 게시물마다 첫 장만 모아 한 번에 가져온다.

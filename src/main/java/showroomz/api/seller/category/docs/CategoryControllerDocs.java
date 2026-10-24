@@ -13,7 +13,7 @@ import showroomz.api.admin.category.DTO.CategoryDto;
 
 import java.util.List;
 
-@Tag(name = "Seller - Category", description = "Seller Category API")
+@Tag(name = "Seller - Category", description = "파트너센터 카테고리 API")
 public interface CategoryControllerDocs {
 
     @Operation(

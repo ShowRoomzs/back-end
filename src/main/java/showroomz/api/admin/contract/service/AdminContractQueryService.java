@@ -1,5 +1,6 @@
 package showroomz.api.admin.contract.service;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -9,6 +10,7 @@ import showroomz.api.seller.contract.service.ContractDetailAssembler;
 import showroomz.domain.contract.entity.*;
 import showroomz.domain.contract.repository.*;
 import showroomz.domain.contract.type.*;
+import showroomz.domain.contract.service.ContractTerminationPolicy;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.type.ThreadKind;
@@ -29,6 +31,8 @@ public class AdminContractQueryService {
     private final ContractResendRequestRepository resends;
     private final ContractDetailAssembler assembler;
     private final ContractDocumentStorage storage;
+    private final ContractTerminationRequestRepository terminationRequests;
+    private final showroomz.global.config.properties.ContractProperties contractProperties;
     private final ConnectionRepository connections;
     private final MessageThreadRepository threads;
     private final showroomz.domain.groupbuy.repository.GroupBuyRepository groupBuys;
@@ -43,7 +47,8 @@ public class AdminContractQueryService {
                 new ListItem(c.getId(), c.getContractNumber(), c.getTitle(), c.getMarket().getMarketName(),
                         c.getCreator() == null ? null : c.getCreator().getShowroomName(), itemCounts.getOrDefault(c.getId(), 0),
                         c.getGroupBuyStartAt(), c.getGroupBuyEndAt(), c.getReviewRequestedAt(), c.getStatus(),
-                        c.getStatus().getLabel(), c.getStatus().getTone())));
+                        c.getStatus().getLabel(), c.getStatus().getTone(),
+                        SanctionHoldView.forAdmin(c))));
     }
 
     public Summary summary() {
@@ -53,7 +58,7 @@ public class AdminContractQueryService {
         Map<AdminContractTab, Long> tabs = new EnumMap<>(AdminContractTab.class);
         for (AdminContractTab tab : AdminContractTab.values()) {
             long count = tab == AdminContractTab.ALL ? counts.values().stream().mapToLong(Long::longValue).sum()
-                    : tab == AdminContractTab.CLOSED ? List.of(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED)
+                    : tab == AdminContractTab.CLOSED ? List.of(ContractStatus.DECLINED, ContractStatus.EXPIRED, ContractStatus.CANCELED, ContractStatus.TERMINATED)
                         .stream().mapToLong(s -> counts.getOrDefault(s, 0L)).sum()
                     : counts.getOrDefault(ContractStatus.valueOf(tab.name()), 0L);
             tabs.put(tab, count);
@@ -61,6 +66,22 @@ public class AdminContractQueryService {
         Map<AdminContractQueue, Long> queues = new EnumMap<>(AdminContractQueue.class);
         for (AdminContractQueue queue : AdminContractQueue.values()) queues.put(queue, adminContracts.countQueue(queue, now));
         return new Summary(queues, tabs, queues.values().stream().mapToLong(Long::longValue).sum());
+    }
+
+    /** 큐에서 가장 오래 기다린 건의 기준 시각 — 어드민 홈 대기 행의 경과(55 계획서 A1). 비면 null. */
+    public LocalDateTime oldestInQueue(AdminContractQueue queue, LocalDateTime now) {
+        return adminContracts.oldestInQueue(queue, now);
+    }
+
+    /** 서명 기한 제안값(1021 설계서 1-7) — 공구 시작 N일 전 그날 지정 시각. 이미 지났으면 제안하지 않는다. */
+    LocalDateTime suggestedDeadline(Contract c, LocalDateTime now) {
+        if (c.getGroupBuyStartAt() == null) {
+            return null;
+        }
+        LocalDateTime suggested = c.getGroupBuyStartAt().toLocalDate()
+                .minusDays(contractProperties.getSignatureDeadlineDaysBeforeStart())
+                .atTime(contractProperties.getSignatureDeadlineSuggestTime());
+        return suggested.isAfter(now) ? suggested : null;
     }
 
     public Detail detail(Long id) {
@@ -96,21 +117,28 @@ public class AdminContractQueryService {
                 new Brand(c.getMarket().getId(), c.getMarket().getMarketName(), "/admin/brands/" + c.getMarket().getId(),
                         c.getMarket().getSeller() == null ? null : c.getMarket().getSeller().getEmail()),
                 c.getCreator() == null ? null : new Creator(c.getCreator().getId(), c.getCreator().getShowroomName(),
-                        "/admin/creators/" + c.getCreator().getId(), c.getCreator().getBusinessEmail()), threadId),
+                        "/admin/creators/" + c.getCreator().getId(), c.getCreator().getBusinessEmail()), threadId,
+                SanctionHoldView.forAdmin(c), SanctionHoldView.deadlinePaused(c)),
                 new Stepper(c.getReviewApprovedAt(), actor(history, ContractEventType.REVIEW_APPROVED), c.getSignatureRequestedAt(),
-                        (c.getBrandSignedAt() == null ? 0 : 1) + (c.getCreatorSignedAt() == null ? 0 : 1), c.getConcludedAt(), actor(history, ContractEventType.CONCLUDED)),
+                        (c.getBrandSignedAt() == null ? 0 : 1) + (c.getCreatorSignedAt() == null ? 0 : 1), c.getConcludedAt(), actor(history, ContractEventType.CONCLUDED),
+                        c.getEstablishedAt()),
                 new Review(c.getReviewRequestedAt(), (minutes / 1440) + "일 " + (minutes % 1440 / 60) + "시간", c.getReviewApprovedAt(), c.getReviewRejectedAt(), shared.review().rejectReason()),
                 new Signature(c.getSignatureRequestedAt(), c.getSignatureDeadlineAt(), c.getBrandSignedAt(), c.getCreatorSignedAt(), c.getSignatureAsOf(),
-                        actor(history, ContractEventType.SIGNATURE_UPDATED), due ? Duration.between(c.getSignatureDeadlineAt(), now).toDays() : 0),
+                        actor(history, ContractEventType.SIGNATURE_UPDATED), due ? Duration.between(c.getSignatureDeadlineAt(), now).toDays() : 0,
+                        status == ContractStatus.REVIEW_PENDING ? suggestedDeadline(c, now) : null,
+                        signing && due && SanctionHoldView.deadlinePaused(c)),
                 shared.items(), shared.content(), shared.fixedFee(), shared.settlement(), shared.closure(),
-                cancelRequest(c, history), documentResponses,
+                cancelRequest(c, history), terminationRequest(c), termination(c, history), documentResponses,
                 // 미처리 건수는 처리할 수 있을 때(서명 진행 중)만 센다 — 목록의 재발송 큐와 같은 정의다.
                 new Resend(signing ? requests.stream().filter(r -> !r.isHandled()).count() : 0,
                         last == null ? null : last.getRequestedAt(), last == null ? null : last.getRequesterType()),
                 groupBuy(c),
                 new Permissions(status == ContractStatus.REVIEW_PENDING, status == ContractStatus.REVIEW_PENDING,
                         signing || pending, pending && signed && completeDocs, signing && due, signing, pending,
-                        ContractStatus.ADMIN_CANCELABLE.contains(status)),
+                        ContractStatus.ADMIN_CANCELABLE.contains(status),
+                        pending && signed && completeDocs,
+                        ContractTerminationPolicy.isTerminable(c, c.getGroupBuyId() == null ? null
+                                : groupBuys.findById(c.getGroupBuyId()).orElse(null))),
                 history.stream().map(h -> new History(h.getEventType(), h.getActorType(), h.getActorId(), h.getActorDisplayName(), h.getDetail(), h.getOccurredAt())).toList(), c.getVersion());
     }
 
@@ -127,6 +155,34 @@ public class AdminContractQueryService {
         ContractCancelRequestChannel channel = c.getCancelRequestChannel();
         return new CancelRequestInfo(type, name, channel, channel == null ? null : channel.getLabel(),
                 c.getCancelRequestedAt(), c.getClosedAt(), actor(history, ContractEventType.CANCELED));
+    }
+
+    /** 처리 대기 중인 해지 요청(1021 설계서 1-4) — 요청자 이름은 지금 이름. */
+    private TerminationRequestInfo terminationRequest(Contract c) {
+        return terminationRequests.findPending(c.getId())
+                .map(r -> new TerminationRequestInfo(r.getId(), r.getRequesterType(), partyName(c, r.getRequesterType()),
+                        r.getReasonCode().name(), r.getReasonCode().getLabel(), r.getMemo(), r.getRequestedAt(),
+                        r.getConsentCardId()))
+                .orElse(null);
+    }
+
+    /** 해지 결과(B7) — 해지된 계약만. 처리한 요청이 있으면 요청자 · 요청 사유를 함께. */
+    private TerminationInfo termination(Contract c, List<ContractHistory> history) {
+        if (c.getStatus() != ContractStatus.TERMINATED) return null;
+        var handled = terminationRequests.findFirstByContract_IdOrderByRequestedAtDescIdDesc(c.getId())
+                .filter(r -> r.getStatus() == ContractTerminationRequestStatus.HANDLED).orElse(null);
+        return new TerminationInfo(c.getClosedAt(), c.getCloseReasonCode(),
+                ContractCloseReasonLabels.labelOf(c.getCloseReasonCode()), c.getCloseReasonMemo(),
+                handled == null ? null : handled.getRequesterType(),
+                handled == null ? null : partyName(c, handled.getRequesterType()),
+                handled == null ? null : handled.getReasonCode().getLabel(),
+                handled == null ? null : handled.getMemo(),
+                actor(history, ContractEventType.TERMINATED), c.getGroupBuyId() != null);
+    }
+
+    private static String partyName(Contract c, ContractActorType type) {
+        return type == ContractActorType.SELLER ? c.getMarket().getMarketName()
+                : type == ContractActorType.CREATOR && c.getCreator() != null ? c.getCreator().getShowroomName() : null;
     }
 
     /** 체결 트랜잭션이 만든 공구(공구 설계서 2-1). 체결 전에는 id·번호·상태 모두 null이다. */

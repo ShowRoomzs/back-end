@@ -1,6 +1,5 @@
 package showroomz.api.app.order.controller;
 
-import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -17,7 +16,6 @@ import showroomz.api.app.order.service.PaymentConfirmService;
 @RestController
 @RequestMapping("/v1/user/payments")
 @RequiredArgsConstructor
-@Tag(name = "User - Payment", description = "결제 결과 확정 (C9 → 완료)")
 public class PaymentController implements PaymentControllerDocs {
 
     private final PaymentConfirmService paymentConfirmService;

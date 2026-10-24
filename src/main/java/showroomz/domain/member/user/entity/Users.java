@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.member.user.type.NotificationToggle;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.vo.NotificationSetting;
 import showroomz.domain.member.user.vo.RefundAccount;
@@ -108,6 +109,10 @@ public class Users {
     @Column(name = "MARKETING_AGREE_CHANGED_AT")
     private LocalDateTime marketingAgreeChangedAt;
 
+    /** C11 알림 목록에 마지막으로 들어간 시각 — 이후 생성된 알림 수가 종 배지다(1017 설계서 1-0 ⑤). */
+    @Column(name = "notification_badge_seen_at")
+    private LocalDateTime notificationBadgeSeenAt;
+
     @Column(name = "STATUS", nullable = false)
     @Enumerated(EnumType.STRING)
     private UserStatus status;
@@ -175,6 +180,22 @@ public class Users {
             this.notificationSetting = new NotificationSetting();
         }
         this.notificationSetting.update(followPostPushAgree);
+    }
+
+    public void markNotificationBadgeSeen(LocalDateTime now) {
+        this.notificationBadgeSeenAt = now;
+    }
+
+    /** C15 광고성 토글 하나 — 혜택 · 이벤트는 기존 광고성 동의와 같은 값이다. @return 바뀌었는가 */
+    public boolean updateNotificationToggle(NotificationToggle toggle, boolean on,
+                                            LocalDateTime now) {
+        if (toggle == NotificationToggle.BENEFIT) {
+            return updateMarketingAgree(on);
+        }
+        if (this.notificationSetting == null) {
+            this.notificationSetting = new NotificationSetting();
+        }
+        return this.notificationSetting.set(toggle, on, now);
     }
 
     /**

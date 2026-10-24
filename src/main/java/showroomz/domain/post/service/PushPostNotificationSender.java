@@ -1,5 +1,7 @@
 package showroomz.domain.post.service;
 
+import java.time.LocalDateTime;
+import showroomz.domain.notification.service.FollowerNotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -7,7 +9,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Component;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
-import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.notification.repository.DeviceTokenRepository;
 import showroomz.domain.notification.repository.DeviceTokenRow;
 import showroomz.domain.notification.service.DeviceTokenService;
@@ -29,8 +30,8 @@ import java.util.List;
  * <b>팔로워 전원</b>에게 간다. 이력 테이블에 수신자를 적지 않는 이유이기도 하다 —
  * 팔로워 알림의 수신자는 수만 명이고, 그들을 이력에 펼치면 게시물 하나에 수만 행이 생긴다.
  *
- * <p>팔로워 발송은 <b>500명씩 끊어 읽고 끊어 보낸다.</b> 전부 메모리에 올리면 팔로워가 많은
- * 쇼룸에서 그대로 터진다.
+ * <p>팔로워 새 게시물은 1017 C15 부터 <b>광고성 하루 묶음</b>이다 — 여기서 보내지 않고
+ * {@link FollowerNotificationService}가 팔로워별 알림함 행 · 지연 푸시로 쌓는다(500명씩 끊어 읽는다).
  */
 @Slf4j
 @Component
@@ -46,6 +47,7 @@ public class PushPostNotificationSender implements PostNotificationSender {
     private final DeviceTokenService deviceTokenService;
     private final PushSender pushSender;
     private final PostPushMessageFactory messageFactory;
+    private final FollowerNotificationService followerNotifications;
 
     @Override
     public boolean send(PostNotificationLog notificationLog) {
@@ -59,48 +61,30 @@ public class PushPostNotificationSender implements PostNotificationSender {
         // 파기된 게시물일 수 있다 — 문구는 게시물 없이도 만들어진다
         Post post = postRepository.findById(notificationLog.getPostId()).orElse(null);
 
+        // 팔로워 새 게시물은 광고성 하루 묶음이다(1017 C15 · 설계서 1-6) — 즉시 보내지 않고 팔로워별 알림함 행 · 지연 푸시로 쌓는다.
+        // 여기서 「전달」은 묶음 대기열에 올렸다는 뜻이다(실제 발송은 묶음 시각 · 야간이면 다음 아침).
+        if (notificationLog.getEventType() == PostNotificationEvent.PUBLISHED_TO_FOLLOWERS) {
+            if (post == null) {
+                return false;
+            }
+            int queued = followerNotifications.enqueuePostDigest(creator, post, LocalDateTime.now());
+            log.info("팔로워 새 게시물 묶음 적재 - logId={}, 팔로워={}", notificationLog.getId(), queued);
+            return queued > 0;
+        }
+
         PushMessage message = messageFactory.create(notificationLog, creator, post);
         if (message == null) {
             // 푸시하지 않기로 한 종류(본인 삭제 등). 이력은 이미 남았다.
             return false;
         }
 
-        PushResult result = notificationLog.getEventType() == PostNotificationEvent.PUBLISHED_TO_FOLLOWERS
-                ? sendToFollowers(creator.getId(), message)
-                : sendToCreator(creator, message);
+        PushResult result = sendToCreator(creator, message);
 
         log.info("게시물 통지 발송 - logId={}, event={}, 성공={}, 실패={}",
                 notificationLog.getId(), notificationLog.getEventType(),
                 result.successCount(), result.failureCount());
 
         return result.anyDelivered();
-    }
-
-    /**
-     * 팔로워 전원 — 알림을 끈 사람과 탈퇴·정지 회원은 쿼리에서 이미 빠져 있다.
-     *
-     * <p>키셋({@code afterId})으로 끊어 읽는다. 발송 도중 만료 토큰을 지우기 때문에 OFFSET
-     * 페이징을 쓰면 삭제된 수만큼 뒤 페이지가 당겨져 <b>일부 팔로워가 통째로 건너뛰어진다.</b>
-     */
-    private PushResult sendToFollowers(Long creatorId, PushMessage message) {
-        Pageable chunk = PageRequest.of(0, CHUNK_SIZE);
-        PushResult total = PushResult.none();
-        long afterId = 0L;
-
-        while (true) {
-            List<DeviceTokenRow> rows =
-                    deviceTokenRepository.findFollowerTokens(creatorId, UserStatus.NORMAL, afterId, chunk);
-            if (rows.isEmpty()) {
-                return total;
-            }
-
-            afterId = rows.get(rows.size() - 1).id();
-            total = total.plus(sendAndPurge(rows, message));
-
-            if (rows.size() < CHUNK_SIZE) {
-                return total;
-            }
-        }
     }
 
     /**

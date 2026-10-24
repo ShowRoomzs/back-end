@@ -16,7 +16,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.order.dto.PaymentDto;
 
-@Tag(name = "User - Payment", description = "결제 결과 확정 (C9 → 완료)")
+@Tag(name = "User - Payment", description = "사용자 결제 API")
 public interface PaymentControllerDocs {
 
     @Operation(

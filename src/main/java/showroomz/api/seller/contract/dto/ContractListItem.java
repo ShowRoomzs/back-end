@@ -1,5 +1,6 @@
 package showroomz.api.seller.contract.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.type.ContractStatus;
@@ -49,7 +50,10 @@ public record ContractListItem(
 
         @Schema(description = "행 클릭 시 진입 모드 — EDIT(작성중·검토 반려) / VIEW(나머지). "
                 + "FE가 상태표를 들고 다시 판정하지 않도록 서버가 내린다(§26-1)", example = "VIEW")
-        EntryMode entryMode
+        EntryMode entryMode,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 
     public enum EntryMode { EDIT, VIEW }
@@ -68,7 +72,8 @@ public record ContractListItem(
                 status,
                 status.getLabel(),
                 status.getTone(),
-                status.isEditable() ? EntryMode.EDIT : EntryMode.VIEW
+                status.isEditable() ? EntryMode.EDIT : EntryMode.VIEW,
+                SanctionHoldView.forBrand(contract)
         );
     }
 }

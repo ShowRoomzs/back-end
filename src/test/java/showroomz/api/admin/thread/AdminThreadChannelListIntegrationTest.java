@@ -2,18 +2,28 @@ package showroomz.api.admin.thread;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import showroomz.domain.contract.entity.Contract;
+import showroomz.domain.contract.entity.ContractResendRequest;
+import showroomz.domain.contract.service.port.ContractChannelGateway;
 import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractCloseReasonCode;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.member.brand.service.BrandSanctionService;
+import showroomz.domain.member.brand.type.BrandSuspensionReason;
+import showroomz.domain.member.brand.type.SanctionReleaseReason;
+import showroomz.domain.member.creator.service.CreatorSanctionService;
+import showroomz.domain.member.creator.type.CreatorSuspensionReason;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.support.BrandFixture;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasLength;
 import static org.hamcrest.Matchers.hasSize;
@@ -31,6 +41,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("[통합] 어드민 소통 스레드 — 채널 목록 · 탭 배지")
 class AdminThreadChannelListIntegrationTest extends AdminThreadTestSupport {
+
+    @Autowired private BrandSanctionService brandSanctionService;
+    @Autowired private CreatorSanctionService creatorSanctionService;
+    @Autowired private ContractChannelGateway channelGateway;
 
     // ------------------------------------------------------------------ 탭 · 항목
 
@@ -204,6 +218,170 @@ class AdminThreadChannelListIntegrationTest extends AdminThreadTestSupport {
                 .andExpect(jsonPath("$.content[0].writable").value(false));
     }
 
+    // ------------------------------------------------------------------ 소명 미확인(55 계획서 A8)
+
+    @Test
+    @DisplayName("소명 미확인 — 정지 회원이 정지 카드 뒤에 보낸 말풍선을 운영팀이 안 읽었으면 최근 메시지순보다 앞서 맨 위에 고정된다")
+    void appealUnconfirmedIsPinnedOnTop() throws Exception {
+        MessageThread mood = channelOf(brandWithChannel("mood@showroomz.test", "무드코스메틱").market());
+        suspendBrand();
+        sellerSend(brandChannel, "배송 지연 경위와 재발 방지안 첨부합니다.").andExpect(status().isCreated());
+        backdateLastMessage(brandChannel, now.minusDays(3));
+        backdateLastMessage(mood, now.minusHours(1));
+
+        channels("BRAND")
+                .andExpect(jsonPath("$.content[*].name").value(contains("글로우랩", "무드코스메틱")))
+                .andExpect(jsonPath("$.content[0].memberStatus").value("SUSPENDED"))
+                .andExpect(jsonPath("$.content[0].appealUnconfirmed").value(true))
+                .andExpect(jsonPath("$.content[0].unreadCount").value(1))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+        // 페이지를 나눠도 고정이 첫 페이지에 온다
+        channels("BRAND", "page", "1", "size", "1")
+                .andExpect(jsonPath("$.content[*].name").value(contains("글로우랩")))
+                .andExpect(jsonPath("$.pageInfo.totalResults").value(2));
+    }
+
+    @Test
+    @DisplayName("소명 미확인 — 운영팀이 읽으면(어느 운영자든) 풀려 최근 메시지순으로 돌아가고, 새 답글이 오면 다시 고정된다")
+    void readingReleasesPin() throws Exception {
+        MessageThread mood = channelOf(brandWithChannel("mood@showroomz.test", "무드코스메틱").market());
+        suspendBrand();
+        sellerSend(brandChannel, "배송 지연 경위를 정리했습니다.").andExpect(status().isCreated());
+        markRead(brandChannel, otherAdminToken).andExpect(status().is2xxSuccessful());
+        backdateLastMessage(brandChannel, now.minusDays(3));
+        backdateLastMessage(mood, now.minusHours(1));
+
+        channels("BRAND")
+                .andExpect(jsonPath("$.content[*].name").value(contains("무드코스메틱", "글로우랩")))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+
+        sellerSend(brandChannel, "추가 자료 보내드립니다.").andExpect(status().isCreated());
+        backdateLastMessage(brandChannel, now.minusDays(3));
+        channels("BRAND")
+                .andExpect(jsonPath("$.content[*].name").value(contains("글로우랩", "무드코스메틱")))
+                .andExpect(jsonPath("$.content[0].appealUnconfirmed").value(true));
+    }
+
+    @Test
+    @DisplayName("소명 미확인 — 정지 카드보다 먼저 온 메시지는 안 읽었어도 소명이 아니다(고정하지 않는다)")
+    void messagesBeforeSuspensionCardDoNotPin() throws Exception {
+        MessageThread mood = channelOf(brandWithChannel("mood@showroomz.test", "무드코스메틱").market());
+        sellerSend(brandChannel, "정산 일정 문의드립니다.").andExpect(status().isCreated());
+        suspendBrand();
+        backdateLastMessage(brandChannel, now.minusDays(3));
+        backdateLastMessage(mood, now.minusHours(1));
+
+        channels("BRAND")
+                .andExpect(jsonPath("$.content[*].name").value(contains("무드코스메틱", "글로우랩")))
+                .andExpect(jsonPath("$.content[1].memberStatus").value("SUSPENDED"))
+                .andExpect(jsonPath("$.content[1].unreadCount").value(1))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+    }
+
+    @Test
+    @DisplayName("소명 미확인 — 운영팀 말풍선은 소명이 아니고, 정지가 풀리면 답글이 남아 있어도 고정이 풀린다")
+    void operatorMessagesAndReleaseDoNotPin() throws Exception {
+        suspendBrand();
+        adminSend(brandChannel, adminToken, "정지 사유를 안내드립니다.").andExpect(status().isCreated());
+        channels("BRAND").andExpect(jsonPath("$.content[0].appealUnconfirmed").value(false));
+
+        sellerSend(brandChannel, "확인했습니다. 시정하겠습니다.").andExpect(status().isCreated());
+        channels("BRAND").andExpect(jsonPath("$.content[0].appealUnconfirmed").value(true));
+
+        inTransaction(() -> brandSanctionService.release(brand.marketId(), SanctionReleaseReason.RESOLVED, null,
+                admin.getId(), "김운영", LocalDateTime.now()));
+        channels("BRAND").andExpect(jsonPath("$.content[0].memberStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.content[0].appealUnconfirmed").value(false));
+    }
+
+    @Test
+    @DisplayName("소명 미확인 — 인플루언서 탭도 같은 규칙이다(인플루언서 정지 행 · 운영팀 채널)")
+    void influencerAppealUnconfirmed() throws Exception {
+        MessageThread minji = channelOf(createCreator("민지의 쇼룸", "minji"));
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.AD_DISCLOSURE_OMITTED_REPEATED,
+                null, null, admin.getId(), "김운영", LocalDateTime.now()));
+        creatorSend(creatorChannel, "협찬 표기를 모두 고쳤습니다.").andExpect(status().isCreated());
+        backdateLastMessage(creatorChannel, now.minusDays(3));
+        backdateLastMessage(minji, now.minusHours(1));
+
+        channels("INFLUENCER")
+                .andExpect(jsonPath("$.content[*].name").value(contains("뷰티_하윤", "민지의 쇼룸")))
+                .andExpect(jsonPath("$.content[0].appealUnconfirmed").value(true))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+
+        markRead(creatorChannel, adminToken).andExpect(status().is2xxSuccessful());
+        channels("INFLUENCER")
+                .andExpect(jsonPath("$.content[*].name").value(contains("민지의 쇼룸", "뷰티_하윤")))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+    }
+
+    @Test
+    @DisplayName("[55 A8-05] 소명 미확인 — 회원 쪽에서 보낸 시스템 카드(브랜드 해지 요청 → 정지 인플루언서 채널의 「동의 확인」 카드)는 "
+            + "정지 카드 뒤 · 운영팀 미읽음이어도 소명이 아니다 · 같은 채널에 말풍선이 오면 그때 고정된다")
+    void memberSideSystemCardIsNotAppeal() throws Exception {
+        MessageThread minji = channelOf(createCreator("민지의 쇼룸", "minji"));
+        Contract contract = seed(ContractStatus.CONCLUSION_PENDING, s -> s.createdAt(now.minusDays(2)));
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.AD_DISCLOSURE_OMITTED_REPEATED,
+                null, null, admin.getId(), "김운영", LocalDateTime.now()));
+        // 운영 경로 그대로 — 해지 요청은 정지와 무관하게 받고, 동의 확인 카드는 상대(인플루언서) 운영팀 채널에 브랜드 발신으로 붙는다.
+        mockMvc.perform(post(SELLER_CONTRACTS + "/" + contract.getId() + "/termination-request")
+                        .header(HttpHeaders.AUTHORIZATION, brandToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("reasonCode", "QUALITY_ISSUE"))))
+                .andExpect(status().isOk());
+        assertLatestMessage(creatorChannel, "SYSTEM", "SELLER", "CONTRACT_CLOSE_CONSENT_REQUEST");
+        assertThat(latestMessageId(creatorChannel)).as("카드가 정지 카드보다 뒤다").isGreaterThan(suspendCardIdOfCreator());
+        backdateLastMessage(creatorChannel, now.minusDays(3));
+        backdateLastMessage(minji, now.minusHours(1));
+
+        channels("INFLUENCER")
+                .andExpect(jsonPath("$.content[*].name").value(contains("민지의 쇼룸", "뷰티_하윤")))
+                .andExpect(jsonPath("$.content[1].memberStatus").value("SUSPENDED"))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+
+        // 같은 채널에 회원 말풍선이 오면 그때 소명 미확인이다(나머지 조건은 이미 갖춰져 있었다).
+        creatorSend(creatorChannel, "협찬 표기를 모두 고쳤습니다.").andExpect(status().isCreated());
+        backdateLastMessage(creatorChannel, now.minusDays(3));
+        channels("INFLUENCER")
+                .andExpect(jsonPath("$.content[*].name").value(contains("뷰티_하윤", "민지의 쇼룸")))
+                .andExpect(jsonPath("$.content[0].appealUnconfirmed").value(true));
+    }
+
+    @Test
+    @DisplayName("[55 A8-05] 소명 미확인 — 서명 안내 재발송 요청 카드(회원 발신 시스템 카드)도 소명이 아니다. 정지 중에는 요청이 409로 막혀 "
+            + "운영 경로의 카드 적재(채널 포트)를 직접 불러 정지 카드 뒤에 둔다")
+    void resendRequestCardIsNotAppeal() throws Exception {
+        MessageThread mood = channelOf(brandWithChannel("mood@showroomz.test", "무드코스메틱").market());
+        Contract signing = seed(ContractStatus.SIGNING);
+        suspendBrand();
+        requestResendBySeller(signing).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("BRAND_SUSPENDED"));
+
+        // 요청 API 와 같은 적재 — 요청 행 저장 → 요청자 운영팀 채널에 요청자 발신 카드 → 요청 행에 카드 연결
+        inTransaction(() -> {
+            Contract loaded = contracts.findById(signing.getId()).orElseThrow();
+            ContractResendRequest request = resends.save(ContractResendRequest.of(loaded, ContractActorType.SELLER,
+                    brand.marketId(), LocalDateTime.now()));
+            ContractChannelGateway.ChannelCard card = channelGateway.postResendRequestCard(loaded, request);
+            request.attachCard(card.threadId(), card.messageId());
+            return card;
+        });
+        assertLatestMessage(brandChannel, "SYSTEM", "SELLER", "CONTRACT_RESEND_REQUEST");
+        assertThat(latestMessageId(brandChannel)).as("카드가 정지 카드보다 뒤다").isGreaterThan(suspendCardIdOfBrand());
+        backdateLastMessage(brandChannel, now.minusDays(3));
+        backdateLastMessage(mood, now.minusHours(1));
+
+        channels("BRAND")
+                .andExpect(jsonPath("$.content[*].name").value(contains("무드코스메틱", "글로우랩")))
+                .andExpect(jsonPath("$.content[1].memberStatus").value("SUSPENDED"))
+                .andExpect(jsonPath("$.content[1].appealUnconfirmed").value(false));
+
+        sellerSend(brandChannel, "재발송 요청 드린 계약 건 소명 자료입니다.").andExpect(status().isCreated());
+        backdateLastMessage(brandChannel, now.minusDays(3));
+        channels("BRAND")
+                .andExpect(jsonPath("$.content[*].name").value(contains("글로우랩", "무드코스메틱")))
+                .andExpect(jsonPath("$.content[0].appealUnconfirmed").value(true));
+    }
+
     // ------------------------------------------------------------------ 요청 검증 · 권한
 
     @Test
@@ -279,5 +457,35 @@ class AdminThreadChannelListIntegrationTest extends AdminThreadTestSupport {
         summaryOf(adminToken)
                 .andExpect(jsonPath("$.influencer.pendingCardCount").value(1))
                 .andExpect(jsonPath("$.brand.pendingCardCount").value(1));
+    }
+
+    // ------------------------------------------------------------------ 적재
+
+    /** 회원 상세의 정지와 같은 경로 — 정지 행 · 운영팀 채널의 「계정 정지」 카드가 함께 생긴다. */
+    private void suspendBrand() {
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.REPEATED_SHIPPING_DELAY,
+                null, null, admin.getId(), "김운영", LocalDateTime.now()));
+    }
+
+    private void assertLatestMessage(MessageThread channel, String messageType, String senderType, String cardType) {
+        Map<String, Object> row = jdbc.queryForMap("SELECT message_type, sender_type, card_type FROM message "
+                + "WHERE thread_id = ? ORDER BY message_id DESC LIMIT 1", channel.getId());
+        assertThat(row.get("message_type")).as("message_type").isEqualTo(messageType);
+        assertThat(row.get("sender_type")).as("sender_type").isEqualTo(senderType);
+        assertThat(row.get("card_type")).as("card_type").isEqualTo(cardType);
+    }
+
+    private long latestMessageId(MessageThread channel) {
+        return jdbc.queryForObject("SELECT MAX(message_id) FROM message WHERE thread_id = ?", Long.class, channel.getId());
+    }
+
+    private long suspendCardIdOfBrand() {
+        return jdbc.queryForObject("SELECT suspend_card_id FROM brand_sanction WHERE market_id = ? AND released_at IS NULL",
+                Long.class, brand.marketId());
+    }
+
+    private long suspendCardIdOfCreator() {
+        return jdbc.queryForObject("SELECT suspend_card_id FROM creator_sanction WHERE creator_id = ? AND released_at IS NULL",
+                Long.class, creator.getId());
     }
 }

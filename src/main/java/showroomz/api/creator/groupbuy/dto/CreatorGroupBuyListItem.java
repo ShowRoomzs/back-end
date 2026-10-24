@@ -1,5 +1,6 @@
 package showroomz.api.creator.groupbuy.dto;
 
+import showroomz.api.common.sanction.SanctionHoldView;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
@@ -29,7 +30,7 @@ public record CreatorGroupBuyListItem(
         @Schema(description = "현재 종료 예정 — 연장 수락이 반영된 값", example = "2026-08-20T23:55:00") LocalDateTime endAt,
 
         @Schema(description = "「내 게시물」 열 — 게시물 8종(저장값이 아니라 공구 상태에서 파생). NOT_WRITTEN(미작성) · WRITING(작성중) · "
-                + "PENDING_APPROVAL(승인대기) · REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · HIDDEN(숨김) · "
+                + "PENDING_APPROVAL(승인대기) · REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · "
                 + "CLOSED(종료 — 종결 3종 공통)", example = "NOT_WRITTEN")
         GroupBuyPostStatus postStatus,
 
@@ -48,8 +49,11 @@ public record CreatorGroupBuyListItem(
         @Schema(description = "공구 상태 배지 색 — NEUTRAL · INFO · WARNING · SUCCESS · DANGER", example = "NEUTRAL")
         GroupBuyTone statusTone,
 
-        @Schema(description = "내 조치 필요 — GNB 배지·목록 헤더와 같은 판정식. 게시물 작성·재등록(준비중) · 숨김 게시물 수정 · "
+        @Schema(description = "내 조치 필요 — GNB 배지·목록 헤더와 같은 판정식. 게시물 작성·재등록(준비중) · 노출 중지 게시물 수정 · "
                 + "연장 응답(종료 전) · 이행 확인(종료 · 내 확인 전) 중 하나라도 해당", example = "true")
-        boolean actionRequired
+        boolean actionRequired,
+
+        @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
+        SanctionHoldView sanctionHold
 ) {
 }

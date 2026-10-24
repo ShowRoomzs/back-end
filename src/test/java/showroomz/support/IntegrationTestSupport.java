@@ -15,7 +15,7 @@ import showroomz.api.app.auth.token.AuthTokenProvider;
 import showroomz.api.seller.auth.refreshToken.SellerRefreshTokenRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.bank.repository.BankRepository;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.BusinessException;
@@ -48,7 +48,7 @@ public abstract class IntegrationTestSupport {
     @Autowired
     protected MarketRepository marketRepository;
     @Autowired
-    protected BrandChangeRequestRepository changeRequestRepository;
+    protected ChangeRequestRepository changeRequestRepository;
     @Autowired
     protected SellerRefreshTokenRepository sellerRefreshTokenRepository;
     @Autowired

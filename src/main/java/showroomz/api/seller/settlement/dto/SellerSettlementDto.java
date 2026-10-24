@@ -1,5 +1,6 @@
 package showroomz.api.seller.settlement.dto;
 
+import showroomz.api.common.settlement.dto.PayoutHoldView;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
@@ -44,7 +45,8 @@ public final class SellerSettlementDto {
             @Schema(description = "REVIEWING · ADJUSTING · PAYOUT_SCHEDULED · PAID — 분배 실패는 PAID 로 접힌다") SettlementStatus status,
             String statusLabel,
             SettlementTone statusTone,
-            @Schema(description = "「지급(예정)일」 열 — 브랜드 행 기준") Schedule schedule
+            @Schema(description = "「지급(예정)일」 열 — 브랜드 행 기준") Schedule schedule,
+            @Schema(description = "내 지급 행 보류 이유(정지 · 세금계산서 등) — 상태는 「지급 예정」 그대로 · 보류가 아니면 null", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -68,7 +70,9 @@ public final class SellerSettlementDto {
             @Schema(description = "가장 임박한 확인 마감", nullable = true) LocalDateTime reviewingDueAt,
             long adjustingCount,
             SettlementPartyDto.StatusCounts statusCounts,
-            @Schema(description = "GNB 배지 = 요청 가능 창이 열린 정산 확인 중 — 조정 협의 「내 응답 필요」는 연결·소통 배지가 센다") long attentionCount
+            @Schema(description = "GNB 배지 = 요청 가능 창이 열린 정산 확인 중 — 조정 협의 「내 응답 필요」는 연결·소통 배지가 센다") long attentionCount,
+            @Schema(description = "조정 협의 「내 응답 필요」 — 인플루언서가 보낸 제안이 응답 대기인 열린 협의 수(홈 정산 카드 · `GET /v1/seller/badges` 의 settlements)",
+                    example = "1") long adjustmentMyTurnCount
     ) {
     }
 
@@ -96,7 +100,8 @@ public final class SellerSettlementDto {
             ClaimShipping claimShipping,
             @Schema(description = "명세 미리보기 5건 — 주문번호 내림차순") List<Item> items,
             long itemTotalCount,
-            Actions actions
+            Actions actions,
+            @Schema(description = "내 지급 행 보류 이유 — 「지급 정지 · 계정 이용 정지 중 — 정지가 풀리면 다음 영업일에 지급」(S5)", nullable = true) PayoutHoldView payoutHold
     ) {
     }
 
@@ -132,6 +137,10 @@ public final class SellerSettlementDto {
             RateAmount rewardVat,
             SettlementPartyDto.AmountCount reshipFee,
             @Schema(description = "소비자 결제 배송비 — 브랜드 가산(§46 B-6 미결 행)") long consumerDeliveryFee,
+            @Schema(description = "+ 반품 시 차감한 최초 배송비 — 무료배송 · 소비자 귀책 반품에서 환불액에서 뺀 금액 · 브랜드 정산에 남는다(1021 기-18)")
+            SettlementPartyDto.AmountCount returnDeductionFee,
+            @Schema(description = "± 운임 정산 — 귀책 변경(사유 번복 · 귀책 인정 · 이의 인용) · amount 는 부호 있음(소비자 부담 +, 환급 −) · 1021 기-93")
+            SettlementPartyDto.AmountCount freightAdjustment,
             @Schema(description = "차감 전 브랜드 수취액") long brandPayoutBeforeClawback,
             @Schema(description = "차감 반영 — 이전 회차 환불의 회수(없으면 [])") List<Clawback> clawbacks,
             long brandClawbackAmount,
@@ -168,7 +177,8 @@ public final class SellerSettlementDto {
             @Schema(description = "수취자 상태 — 남의 행의 분배 실패는 SCHEDULED 로 접는다 · 브랜드 행 실패만 FAILED") PayoutStatus status,
             @Schema(example = "지급 예정") String statusLabel,
             @Schema(nullable = true) LocalDate dueDate,
-            @Schema(nullable = true) LocalDateTime paidAt
+            @Schema(nullable = true) LocalDateTime paidAt,
+            @Schema(description = "[내 행] 보류 이유 — 「지급 정지 · 해제 다음 영업일 지급」", nullable = true) PayoutHoldView hold
     ) {
     }
 

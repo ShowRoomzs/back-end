@@ -17,6 +17,7 @@ import showroomz.domain.order.repository.AdminRefundSearchCondition.DateColumn;
 import showroomz.domain.order.repository.OrderRefundTaskRepository;
 import showroomz.domain.order.repository.OrderRefundTaskRepositoryCustom.Stat;
 import showroomz.domain.order.service.RefundExecutor;
+import showroomz.domain.order.type.RefundMethod;
 import showroomz.domain.order.type.RefundTaskOrigin;
 import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.global.config.properties.OrderProperties;
@@ -24,6 +25,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.PersonalDataCipher;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -48,10 +50,12 @@ public class AdminRefundService {
     private final AdminRefundAssembler assembler;
     private final OrderProperties orderProperties;
     private final TransactionTemplate readOnlyTransaction;
+    private final PersonalDataCipher cipher;
 
     public AdminRefundService(OrderRefundTaskRepository refundTaskRepository, RefundExecutor refundExecutor,
                               AdminRefundAssembler assembler, OrderProperties orderProperties,
-                              PlatformTransactionManager transactionManager) {
+                              PlatformTransactionManager transactionManager, PersonalDataCipher cipher) {
+        this.cipher = cipher;
         this.refundTaskRepository = refundTaskRepository;
         this.refundExecutor = refundExecutor;
         this.assembler = assembler;
@@ -60,10 +64,11 @@ public class AdminRefundService {
         this.readOnlyTransaction.setReadOnly(true);
     }
 
+    /** @param userId 주문한 소비자로 좁힌다 — 소비자 상세 「환불 실패」 칩 진입(56 C1). 탭의 상태 · 기간 규칙은 그대로다 */
     @Transactional(readOnly = true)
     public PageResponse<AdminTransactionDto.RefundItem> getRefunds(RefundTab tab, AdminTransactionDto.RefundRoute route,
                                                                    String keyword, AdminTransactionDto.RefundSort sort,
-                                                                   Integer days, PagingRequest paging) {
+                                                                   Integer days, Long userId, PagingRequest paging) {
         int size = paging.getSize();
         if (size < 1 || size > orderProperties.getListPageSizeMax()) {
             throw new BusinessException(ErrorCode.ORDER_PAGE_SIZE_INVALID);
@@ -71,7 +76,7 @@ public class AdminRefundService {
         Pageable pageable = PageRequest.of(Math.max(paging.getPage() - 1, 0), size);
         RefundTab resolved = tab == null ? RefundTab.PENDING : tab;
         Page<OrderRefundTask> page = refundTaskRepository.searchForAdmin(
-                condition(resolved, route, keyword, sort, days, LocalDateTime.now()), pageable);
+                condition(resolved, route, keyword, sort, days, userId, LocalDateTime.now()), pageable);
         return PageResponse.of(new PageImpl<>(assembler.items(page.getContent()), pageable, page.getTotalElements()));
     }
 
@@ -111,7 +116,8 @@ public class AdminRefundService {
         tabs.put(RefundTab.FAILED.name(), new AdminTransactionDto.RefundTabStat(failed[0], failed[1], waitingDays, null, null));
         tabs.put(RefundTab.DONE.name(), new AdminTransactionDto.RefundTabStat(done[0], done[1], null, doneDays,
                 byOrigin));
-        return new AdminTransactionDto.RefundSummary(tabs, pending[0] + failed[0]);
+        return new AdminTransactionDto.RefundSummary(tabs, pending[0] + failed[0],
+                refundTaskRepository.countByMethodAndStatus(RefundMethod.BANK_TRANSFER, RefundTaskStatus.PENDING));
     }
 
     /** 상세 — M1 집행 재확인 · M2 재시도 다이얼로그의 데이터. 소멸(VOID) 건도 돌려준다(주문 상세에서 링크로 올 수 있다). */
@@ -157,7 +163,7 @@ public class AdminRefundService {
                                                        AdminTransactionDto.RefundManualCompleteRequest request) {
         OrderRefundTask task = refundTaskRepository.findById(refundTaskId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.REFUND_TASK_NOT_FOUND));
-        if (!task.isExecutable()) {
+        if (!task.isExecutable() || task.isBankTransfer()) {
             throw new BusinessException(ErrorCode.REFUND_TASK_NOT_EXECUTABLE);
         }
         if (!refundExecutor.recordManual(refundTaskId, request.pgCancellationId(), request.note(), adminId,
@@ -167,9 +173,38 @@ public class AdminRefundService {
         return readOnlyTransaction.execute(tx -> assembler.item(refundTaskRepository.findWithOrder(refundTaskId).orElseThrow()));
     }
 
+    /**
+     * 송금 완료 기록(06c M3 · 1021 설계서 4-5) — 원래 결제액을 넘는 운임 환급은 PG 가 돌려줄 수 없어 운영자가 계좌로 보낸다. 시스템은
+     * 송금하지 않고, 보낸 계좌(암호화) · 처리자 · 시각만 남긴다. 소비자에게 「계좌로 N원을 송금했어요」 알림이 간다.
+     */
+    public AdminTransactionDto.RefundItem completeTransfer(Long adminId, Long refundTaskId,
+                                                           AdminTransactionDto.RefundTransferCompleteRequest request) {
+        String bankCode = trimToNull(request.bankCode());
+        String account = trimToNull(request.accountNumber());
+        String holder = trimToNull(request.holderName());
+        if (bankCode == null || account == null || holder == null || !request.transferConfirmed()) {
+            throw new BusinessException(ErrorCode.REFUND_TRANSFER_ACCOUNT_REQUIRED);
+        }
+        OrderRefundTask task = refundTaskRepository.findById(refundTaskId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.REFUND_TASK_NOT_FOUND));
+        if (!task.isTransferable()) {
+            throw new BusinessException(ErrorCode.REFUND_TRANSFER_NOT_PENDING);
+        }
+        if (!refundExecutor.recordTransfer(refundTaskId, bankCode, cipher.encrypt(account), holder, adminId,
+                LocalDateTime.now())) {
+            throw new BusinessException(ErrorCode.REFUND_TRANSFER_NOT_PENDING);
+        }
+        return readOnlyTransaction.execute(tx -> assembler.item(refundTaskRepository.findWithOrder(refundTaskId).orElseThrow()));
+    }
+
+    private static String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
     /** 탭 → 상태 · 출처 · 기간 · 「일시」 열, 검색어 → 환불번호 · 주문번호 · PG 거래번호(39 설계서 0-5 · 1-2 · 3-1). */
     static AdminRefundSearchCondition condition(RefundTab tab, AdminTransactionDto.RefundRoute route, String keyword,
-                                                AdminTransactionDto.RefundSort sort, Integer days, LocalDateTime now) {
+                                                AdminTransactionDto.RefundSort sort, Integer days, Long userId,
+                                                LocalDateTime now) {
         Set<RefundTaskStatus> statuses = switch (tab) {
             case PENDING -> EnumSet.of(RefundTaskStatus.PENDING, RefundTaskStatus.EXECUTING);
             case FAILED -> EnumSet.of(RefundTaskStatus.FAILED);
@@ -188,7 +223,7 @@ public class AdminRefundService {
         boolean prefixed = AdminRefundNumber.hasPrefix(text);
         return new AdminRefundSearchCondition(statuses, origin, executedFrom,
                 route == null ? null : route.getSources(), refundTaskId, prefixed ? null : text,
-                prefixed && refundTaskId == null, column, sort == AdminTransactionDto.RefundSort.AMOUNT_DESC);
+                prefixed && refundTaskId == null, column, sort == AdminTransactionDto.RefundSort.AMOUNT_DESC, userId);
     }
 
     /** 완료 탭 기간(일) — 목록과 요약이 같은 값을 써야 탭 숫자 = 목록 건수다. 기본 30 · 1 미만은 1. */

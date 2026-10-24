@@ -24,9 +24,10 @@ public interface CreatorImageControllerDocs {
                     "**type 안내:**\n" +
                     "- `POST`: 게시글 이미지\n" +
                     "- `PRODUCT`: 상품 이미지\n" +
-                    "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율(1:1) 필수)\n\n" +
-                    "**추가 정보 서류(사업자등록증·통장사본 등):**\n" +
-                    "`POST /v1/common/images?type=CREATOR_DOCUMENT` (jpg, jpeg, png, pdf / 최대 20MB, 인증 불필요)\n\n" +
+                    "- `MARKET`: 마켓 대표 이미지 (160×160px 이상, 정비율(1:1) 필수)\n" +
+                    "- `CREATOR_DOCUMENT`: 기본정보 관리의 서류 재제출(통장 사본 · 사업자등록증 · 폐업사실증명원) — jpg, jpeg, png, pdf / 최대 10MB\n\n" +
+                    "**온보딩 서류(가입 전 · 비로그인):**\n" +
+                    "`POST /v1/common/images?type=CREATOR_DOCUMENT` (jpg, jpeg, png, pdf / 최대 10MB, 인증 불필요)\n\n" +
                     "**권한:** CREATOR\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

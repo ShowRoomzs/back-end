@@ -153,7 +153,7 @@ class AdminGroupBuyCommandIntegrationTest extends AdminGroupBuyTestSupport {
                 "detail", "“탈모 개선” 표현", "observedRevisionNo", latest - 1))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("IN_PROGRESS"))
-                .andExpect(jsonPath("$.postStatus").value("HIDDEN"))
+                .andExpect(jsonPath("$.postStatus").value("EXPOSURE_SUSPENDED"))
                 .andExpect(jsonPath("$.revisionAdvanced").value(true));
 
         GroupBuyPost hidden = loadPost(groupBuy.getId());

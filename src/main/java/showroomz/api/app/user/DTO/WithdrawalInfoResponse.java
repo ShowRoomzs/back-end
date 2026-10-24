@@ -34,6 +34,36 @@ public class WithdrawalInfoResponse {
     @Schema(description = "C15-3 1단계에 노출할 탈퇴 이유 목록")
     private List<WithdrawalReasonOption> reasons;
 
+    @Schema(description = "인플루언서 계정 — true 면 소비자 탈퇴가 막힌다. 쇼룸 스튜디오 기본정보에서 탈퇴를 신청해 승인받아야 한다(§51-5)",
+            example = "false")
+    private boolean creatorReviewRequired;
+
+    @Schema(description = "탈퇴 차단 사유 분해(1021 기-31) — [진행 중 주문 N건 보기]는 합. 전부 0 이고 인플루언서가 아니어야 탈퇴할 수 있다")
+    private Blockers blockers;
+
+    @Schema(description = "정지 때문에 탈퇴할 수 없을 때의 안내 — 정지 중 ∧ 설정 `member.sanction.allow-withdrawal-while-suspended = false` "
+            + "일 때만(withdrawable = false), 그 밖에는 null(55 계획서 S11)",
+            example = "이용 정지 중에는 탈퇴할 수 없어요.", nullable = true)
+    private String suspensionBlockedReason;
+
+    @Getter
+    @AllArgsConstructor
+    @Schema(name = "WithdrawalBlockers")
+    public static class Blockers {
+        @Schema(description = "구매확정 전 주문 상품 수(결제 전 제외)", example = "1")
+        private long ongoingOrders;
+        @Schema(description = "진행 중 반품 · 교환 요청 수", example = "1")
+        private long openClaims;
+        @Schema(description = "미결제 재발송비 · 사유 번복 결제 수", example = "0")
+        private long unpaidCharges;
+        @Schema(description = "송금 대기 중인 운임 환급 수 — 받을 돈이 남아 있다", example = "0")
+        private long pendingTransfers;
+
+        public boolean any() {
+            return ongoingOrders + openClaims + unpaidCharges + pendingTransfers > 0;
+        }
+    }
+
     @Getter
     @AllArgsConstructor
     @Schema(description = "탈퇴 이유 선택지")

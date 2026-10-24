@@ -24,7 +24,7 @@ import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
 
-@Tag(name = "Admin - Terms", description = "관리자 약관·정책 관리 API (기획 §21)")
+@Tag(name = "Admin - Terms", description = "관리자 약관 관리 API")
 public interface AdminTermsControllerDocs {
 
     @Operation(
@@ -120,6 +120,19 @@ public interface AdminTermsControllerDocs {
                     + "`supersededCount` = '구버전 N건'.\n\n"
                     + "**상세 진입은 행 클릭입니다** — 관리 열에 `[상세]` 버튼을 두지 않습니다."
     )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "권한 없음 (ADMIN 권한 필요)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))
+            )
+    })
     @Parameters({
             @Parameter(
                     name = "type",

@@ -1,0 +1,11 @@
+-- 무료배송 기준금액 0 → NULL(55 계획서 P3 · D1 확정 2026-10-24 · 시안 06 「0원이면 무료배송을 적용하지 않습니다」).
+--
+-- 지금까지 0 은 「합계 ≥ 0」이라 모든 주문을 무료배송으로 만들었다. 이제 0 과 NULL 은 같은 뜻(무료배송 없음)이고, 저장할 때도 0 을 NULL 로 바꾼다.
+-- 「항상 무료배송」은 기본 배송비 0 으로 표현한다.
+--
+-- 마켓의 현재 설정만 고친다. 결제 시점 스냅샷 order_delivery_group.free_shipping_threshold 는 건드리지 않는다 — 옛 주문의 반품 차감 판정은
+-- 결제 때의 사실을 유지한다(1021 기-20 · Q11 백필과 같은 원칙).
+--
+-- 운영 반영 전에 대상 브랜드를 뽑아 고지한다:
+--   SELECT market_id, market_name FROM market WHERE free_shipping_threshold = 0;
+UPDATE market SET free_shipping_threshold = NULL WHERE free_shipping_threshold = 0;

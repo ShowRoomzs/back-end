@@ -18,6 +18,8 @@ import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.PublicShowrooms;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.service.UserSanctionGuard;
+import showroomz.domain.member.user.type.UserBlockedAction;
 import showroomz.domain.post.entity.Post;
 import showroomz.domain.post.entity.PostImage;
 import showroomz.domain.post.entity.PostLike;
@@ -214,6 +216,7 @@ public class UserPostService {
     public void likePost(String username, Long postId) {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.LIKE);
         Post post = postRepository.findById(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
 

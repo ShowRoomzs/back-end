@@ -12,6 +12,7 @@ import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimChargeType;
 import showroomz.domain.order.type.ClaimFeeBearer;
 import showroomz.domain.order.type.OperatorRefundReason;
+import showroomz.domain.order.type.RefundMethod;
 import showroomz.domain.order.type.RefundTaskOrigin;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
@@ -162,11 +163,14 @@ public final class AdminTransactionDto {
     /** 경로 셀렉트(39 설계서 3-1) — 서버가 발생 경로 집합으로 바꾼다. 교환은 §39-7 #4 「속할 곳이 없다」의 해소다. */
     public enum RefundRoute {
         CANCEL("취소", EnumSet.of(RefundTaskSource.CANCEL_REQUEST_APPROVED, RefundTaskSource.SELLER_DIRECT_CANCEL,
-                RefundTaskSource.USER_CANCEL_BEFORE_PREPARE, RefundTaskSource.LOST_IN_TRANSIT)),
+                RefundTaskSource.USER_CANCEL_BEFORE_PREPARE, RefundTaskSource.LOST_IN_TRANSIT,
+                RefundTaskSource.STALL_REFUND_CHOSEN)),
         RETURN("반품", EnumSet.of(RefundTaskSource.CLAIM_RETURN_PASSED)),
         RETURN_SHIPMENT("반송", EnumSet.of(RefundTaskSource.RETURN_COMPLETED)),
         EXCHANGE("교환", EnumSet.of(RefundTaskSource.CLAIM_PAYMENT_CANCELLED)),
-        OPERATOR("운영자 사유", EnumSet.of(RefundTaskSource.OPERATOR_REASON));
+        OPERATOR("운영자 사유", EnumSet.of(RefundTaskSource.OPERATOR_REASON)),
+        /** 귀책 변경 운임 환급(1021 설계서 4-5) — PG 취소분과 원래 결제액 초과분(계좌 송금) 모두. */
+        FREIGHT("운임 환급", EnumSet.of(RefundTaskSource.FREIGHT_REFUND));
 
         private final String label;
         private final Set<RefundTaskSource> sources;
@@ -234,14 +238,18 @@ public final class AdminTransactionDto {
             @Schema(nullable = true) LocalDateTime executedAt,
             @Schema(description = "[집행] · [재시도] 가능 — 대기 · 실패이고 결제가 있다") boolean executable,
             @Schema(description = "[철회] 가능 — 집행 전 운영자 사유 환불(반려 이의 인용 제외)") boolean voidable,
-            @Schema(description = "[수동 완료 기록] 가능 — 대기 · 실패") boolean manuallyCompletable
+            @Schema(description = "[수동 완료 기록] 가능 — 대기 · 실패(계좌 송금 행 제외)") boolean manuallyCompletable,
+            @Schema(description = "환불 수단 — PG_CANCEL(원 결제 취소) · BANK_TRANSFER(원래 결제액 초과분 · 운영자 계좌 송금 · 결제 열 「계좌 송금」)",
+                    example = "PG_CANCEL") RefundMethod method,
+            @Schema(description = "[송금 완료 기록] 가능 — 송금 대기(BANK_TRANSFER ∧ PENDING)") boolean transferable
     ) {
     }
 
     @Schema(name = "AdminRefundSummaryResponse")
     public record RefundSummary(
             @Schema(description = "탭별 건수 · 합계 — PENDING · FAILED · DONE") Map<String, RefundTabStat> tabs,
-            @Schema(description = "사이드바 배지 = 집행 대기 + 실패", example = "2") long badge
+            @Schema(description = "사이드바 배지 = 집행 대기 + 실패", example = "2") long badge,
+            @Schema(description = "송금 대기 건수 — 집행 대기 탭에 함께 있다(1021 설계서 4-5)", example = "1") long transferPending
     ) {
     }
 
@@ -300,7 +308,51 @@ public final class AdminTransactionDto {
             boolean executable,
             @Schema(description = "[철회] 가능 — 집행 전 운영자 사유 환불(반려 이의 인용 제외)") boolean voidable,
             @Schema(description = "[수동 완료 기록] 가능 — 대기 · 실패") boolean manuallyCompletable,
-            @Schema(description = "이 환불 건의 이력 — 오래된순") List<RefundHistory> history
+            @Schema(description = "이 환불 건의 이력 — 오래된순") List<RefundHistory> history,
+            @Schema(description = "환불 수단 — BANK_TRANSFER 면 `transfer` 가 있다", example = "PG_CANCEL") RefundMethod method,
+            @Schema(description = "M3 계좌 송금 — 원래 결제액 초과 운임 환급 행만(1021 설계서 4-5) · 그 밖은 null", nullable = true)
+            RefundTransfer transfer
+    ) {
+    }
+
+    @Schema(name = "AdminRefundTransfer", description = "M3 계좌 송금 — 시스템은 송금하지 않는다. 운영자가 송금한 뒤 계좌 · 완료를 기록한다")
+    public record RefundTransfer(
+            @Schema(description = "[송금 완료 기록] 가능 — 송금 대기") boolean transferable,
+            @Schema(description = "폼 기본값 — 소비자가 저장해 둔 환불 계좌. 없으면 null(1:1 문의로 받는다)", nullable = true)
+            RefundTransferAccount suggestedAccount,
+            @Schema(description = "이 환급 건으로 소비자가 쓴 1:1 문의(「환불 계좌 안내」) 최신 1건 — 「1:1 문의 #N 로 받은 계좌」", nullable = true,
+                    example = "4527") Long linkedInquiryId,
+            @Schema(description = "송금 완료 기록 — 완료 뒤에만", nullable = true) RefundTransferRecord transferred
+    ) {
+    }
+
+    @Schema(name = "AdminRefundTransferAccount")
+    public record RefundTransferAccount(
+            @Schema(example = "088") String bankCode,
+            @Schema(example = "신한은행", nullable = true) String bankName,
+            @Schema(description = "계좌번호 — 폼 기본값이라 원문", example = "110123456789") String accountNumber,
+            @Schema(example = "김수민") String holderName
+    ) {
+    }
+
+    @Schema(name = "AdminRefundTransferRecord")
+    public record RefundTransferRecord(
+            @Schema(example = "088") String bankCode,
+            @Schema(example = "신한은행", nullable = true) String bankName,
+            @Schema(description = "계좌번호 — 뒤 4자리만", example = "********6789") String accountNumberMasked,
+            @Schema(example = "김수민") String holderName,
+            LocalDateTime transferredAt,
+            Long transferredBy,
+            @Schema(nullable = true) String transferredByName
+    ) {
+    }
+
+    @Schema(name = "AdminRefundTransferCompleteRequest", description = "M3 송금 완료 기록 — 운영자가 이미 송금한 계좌")
+    public record RefundTransferCompleteRequest(
+            @Size(max = 10) @Schema(description = "은행 코드", example = "088") String bankCode,
+            @Size(max = 30) @Schema(description = "계좌번호 — 숫자 · 하이픈", example = "110-123-456789") String accountNumber,
+            @Size(max = 50) @Schema(description = "예금주 — 주문자 실명 확인은 운영자 체크", example = "김수민") String holderName,
+            @Schema(description = "「송금을 완료했습니다」 확인 — true 여야 한다", example = "true") boolean transferConfirmed
     ) {
     }
 

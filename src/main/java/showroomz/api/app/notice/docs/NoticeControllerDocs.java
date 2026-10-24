@@ -16,7 +16,7 @@ import showroomz.api.app.notice.dto.NoticeDetailResponse;
 import showroomz.api.app.notice.dto.NoticeResponse;
 import showroomz.global.dto.PageResponse;
 
-@Tag(name = "Common - Notice", description = "공용 공지 API (기획 §20 · C17 공지사항)\n\n")
+@Tag(name = "Common - Notice", description = "공용 공지 API")
 public interface NoticeControllerDocs {
 
     @Operation(

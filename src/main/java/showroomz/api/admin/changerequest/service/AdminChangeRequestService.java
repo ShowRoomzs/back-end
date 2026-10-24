@@ -1,74 +1,69 @@
 package showroomz.api.admin.changerequest.service;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.changerequest.ChangeRequestElapsedFormatter;
 import showroomz.api.admin.changerequest.dto.AdminChangeRequestDto;
 import showroomz.api.admin.changerequest.type.AdminChangeRequestStatusFilter;
 import showroomz.api.seller.auth.repository.SellerRepository;
-import showroomz.api.seller.auth.type.SellerStatus;
-import showroomz.domain.changerequest.entity.BrandChangeRequest;
-import showroomz.domain.changerequest.entity.BrandChangeRequestItem;
-import showroomz.domain.changerequest.repository.BrandChangeRequestRepository;
-import showroomz.domain.changerequest.service.ChangeRequestFieldResolver;
-import showroomz.domain.changerequest.type.ChangeRequestField;
+import showroomz.domain.changerequest.entity.ChangeRequest;
+import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestRejectReason;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequestType;
+import showroomz.domain.changerequest.type.ChangeRequesterType;
 import showroomz.domain.market.entity.Market;
-import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.dto.PaginationInfo;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.global.service.MailService;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 
+/**
+ * 어드민 변경 요청 큐(§16 · 16 설계서 rev.7) — 목록 · 건수 · 상세 · 승인 · 반려. 브랜드(M1 · M2) · 인플루언서(사업자 구분 변경) 요청이 한
+ * 큐다. 요청자마다 다른 일(상세 조립 · 승인 반영 · 결과 통지)은 전략({@link ChangeRequestDetailAssembler} · {@link ChangeRequestApplier})이
+ * 맡고, 여기는 공통부(상태 검사 · SLA · 경과 · 이전/다음 · 처리 이력 · 동시 처리 충돌)만 든다(정합 계획서 R3-1 · R3-2).
+ */
 @Service
-@RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminChangeRequestService {
 
     private static final long SLA_HOURS = 48;
 
-    /** 대조표 고정 항목(§16-2 C3) — BUSINESS_TYPE·BUSINESS_REG_NUMBER는 요청 불가라 enum에 없지만 행은 항상 노출된다. */
-    private static final List<DiffFieldSpec> BUSINESS_INFO_SPECS = List.of(
-            new DiffFieldSpec("BUSINESS_TYPE", "사업자 유형", false),
-            new DiffFieldSpec("MARKET_NAME", "브랜드명", false),
-            new DiffFieldSpec("REPRESENTATIVE_NAME", "대표자명", false),
-            new DiffFieldSpec("COMPANY_NAME", "사업자등록증 상호", false),
-            new DiffFieldSpec("BUSINESS_REG_NUMBER", "사업자등록번호", true),
-            new DiffFieldSpec("BUSINESS_CONDITION", "업태", false),
-            new DiffFieldSpec("BUSINESS_ADDRESS", "사업장 주소", false),
-            new DiffFieldSpec("MAIL_ORDER_REG_NUMBER", "통신판매업 신고번호", false));
+    private final ChangeRequestRepository changeRequestRepository;
+    private final SellerRepository sellerRepository;
+    private final Map<ChangeRequesterType, ChangeRequestDetailAssembler> assemblers = new EnumMap<>(ChangeRequesterType.class);
+    private final Map<ChangeRequesterType, ChangeRequestApplier> appliers = new EnumMap<>(ChangeRequesterType.class);
 
-    private static final List<DiffFieldSpec> SETTLEMENT_ACCOUNT_SPECS = List.of(
-            new DiffFieldSpec("BANK_CODE", "은행", false),
-            new DiffFieldSpec("ACCOUNT_NUMBER", "계좌번호", false),
-            new DiffFieldSpec("ACCOUNT_HOLDER", "예금주", false));
-
-    private record DiffFieldSpec(String fieldKey, String label, boolean locked) {
+    public AdminChangeRequestService(ChangeRequestRepository changeRequestRepository, SellerRepository sellerRepository,
+                                     List<ChangeRequestDetailAssembler> assemblers, List<ChangeRequestApplier> appliers) {
+        this.changeRequestRepository = changeRequestRepository;
+        this.sellerRepository = sellerRepository;
+        assemblers.forEach(a -> this.assemblers.put(a.requesterType(), a));
+        appliers.forEach(a -> this.appliers.put(a.requesterType(), a));
     }
 
-    private final BrandChangeRequestRepository brandChangeRequestRepository;
-    private final MarketRepository marketRepository;
-    private final SellerRepository sellerRepository;
-    private final ChangeRequestApplier changeRequestApplier;
-    private final MailService mailService;
-
     public AdminChangeRequestDto.ListResponse getList(AdminChangeRequestStatusFilter statusFilter, String keyword, Pageable pageable) {
-        Page<BrandChangeRequest> page = brandChangeRequestRepository.search(statusFilter.getStatusNames(), normalize(keyword), pageable);
+        return getList(statusFilter, keyword, null, null, pageable);
+    }
+
+    /** 목록 — 요청자(브랜드 · 인플루언서) · 유형 필터(1021 기-22 · 05 목록 「요청자 · 요청 유형」 열). */
+    public AdminChangeRequestDto.ListResponse getList(AdminChangeRequestStatusFilter statusFilter, String keyword,
+                                                      ChangeRequesterType requesterType, ChangeRequestType type,
+                                                      Pageable pageable) {
+        Page<ChangeRequest> page = changeRequestRepository.search(statusFilter.getStatusNames(), normalize(keyword),
+                requesterType == null ? null : requesterType.name(), type == null ? null : type.name(), pageable);
 
         List<AdminChangeRequestDto.ListItem> content = page.getContent().stream()
                 .map(this::toListItem)
@@ -83,7 +78,11 @@ public class AdminChangeRequestService {
 
     public AdminChangeRequestDto.SummaryResponse getSummary() {
         return AdminChangeRequestDto.SummaryResponse.builder()
-                .pendingCount(brandChangeRequestRepository.countByStatus(ChangeRequestStatus.PENDING))
+                .pendingCount(changeRequestRepository.countByStatus(ChangeRequestStatus.PENDING))
+                .brandPendingCount(changeRequestRepository.countByStatusAndRequesterType(ChangeRequestStatus.PENDING,
+                        ChangeRequesterType.BRAND))
+                .creatorPendingCount(changeRequestRepository.countByStatusAndRequesterType(ChangeRequestStatus.PENDING,
+                        ChangeRequesterType.CREATOR))
                 .build();
     }
 
@@ -92,82 +91,70 @@ public class AdminChangeRequestService {
                 .filter(reason -> reason.supports(type))
                 .map(reason -> AdminChangeRequestDto.RejectReasonOption.builder()
                         .code(reason)
-                        .label(reason.getDescription())
+                        .label(reason.descriptionFor(type))
                         .detailRequired(reason.isDetailRequired())
                         .build())
                 .toList();
     }
 
+    /** 공통부(코드 · 상태 · SLA · 경과 · 이전/다음 · 이력) + 요청자별 조립 — 이전/다음은 요청자 구분 없이 현재 탭 순서다(§16-2). */
     public AdminChangeRequestDto.DetailResponse getDetail(Long requestId, AdminChangeRequestStatusFilter statusFilter) {
-        BrandChangeRequest request = getRequest(requestId);
-        Market market = request.getMarket();
-        Seller seller = market.getSeller();
+        ChangeRequest request = getRequest(requestId);
 
-        List<Long> orderedIds = brandChangeRequestRepository.findOrderedIds(statusFilter.getStatusNames());
+        List<Long> orderedIds = changeRequestRepository.findOrderedIds(statusFilter.getStatusNames());
         int index = orderedIds.indexOf(requestId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
 
+        ChangeRequestDetailParts parts = assemblerOf(request).assemble(request);
         return AdminChangeRequestDto.DetailResponse.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
-                .brandName(market.getMarketName())
-                .marketId(market.getId())
+                .requester(requester(request))
+                .brandName(parts.brandName())
+                .marketId(parts.marketId())
                 .type(request.getType())
                 .status(request.getStatus())
                 .slaExceeded(isSlaExceeded(request))
                 .requestedAt(request.getRequestedAt())
                 .processedAt(request.getProcessedAt())
-                .requesterName(request.getRequesterName())
+                .requesterName(parts.requesterName())
                 .elapsedText(elapsedText(request))
                 .reason(request.getReason())
-                .diff(buildDiff(request, seller, market))
-                .changedFieldLabels(changedFieldLabels(request))
-                .evidence(buildEvidence(request))
-                .referenceItems(buildReferenceItems(request.getType(), seller))
-                .holderCheck(buildHolderCheck(request))
+                .diff(parts.diff())
+                .changedFieldLabels(parts.changedFieldLabels())
+                .evidence(parts.evidence())
+                .referenceItems(parts.referenceItems())
+                .holderCheck(parts.holderCheck())
+                .compareItems(parts.compareItems())
+                .approvalImpact(parts.approvalImpact())
                 .history(buildHistory(request))
                 .prevRequestId(prevId)
                 .nextRequestId(nextId)
                 .build();
     }
 
+    /**
+     * 승인 — 반영(요청자별 전제 재검사 포함) → 승인 기록(인플루언서 건은 암호문을 비운다) → 동시 처리 충돌 확인 → 결과 통지. 정산 행은 건드리지
+     * 않는다 — 인플루언서 구분의 「다음 정산부터」는 생성 시점 스냅샷이 만든다.
+     */
     @Transactional
     public AdminChangeRequestDto.ProcessResponse approve(Long requestId, Long processorId) {
-        BrandChangeRequest request = getRequest(requestId);
+        ChangeRequest request = getRequest(requestId);
         if (!request.isPending()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
         }
-
-        Market market = request.getMarket();
-        Seller seller = market.getSeller();
-
-        BrandChangeRequestItem marketNameItem = findItem(request, ChangeRequestField.MARKET_NAME);
-        if (marketNameItem != null && marketRepository.existsByMarketNameAndSellerStatusNotRejected(
-                marketNameItem.getRequestedValue(), SellerStatus.REJECTED)) {
-            throw new BusinessException(ErrorCode.DUPLICATE_MARKET_NAME);
-        }
-
-        changeRequestApplier.apply(request);
+        ChangeRequestApplier applier = applierOf(request);
+        applier.apply(request, LocalDateTime.now());
         request.approve(processorId);
-
-        mailService.sendChangeRequestApprovedEmail(
-                seller.getEmail(), request.getRequestCode(),
-                String.join(", ", changedFieldLabels(request)), request.getProcessedAt());
-
-        return AdminChangeRequestDto.ProcessResponse.builder()
-                .requestId(request.getId())
-                .requestCode(request.getRequestCode())
-                .brandName(market.getMarketName())
-                .type(request.getType())
-                .status(request.getStatus())
-                .processedAt(request.getProcessedAt())
-                .build();
+        flushOrConflict(request);
+        applier.notifyApproved(request);
+        return processResponse(request, null, null);
     }
 
     @Transactional
     public AdminChangeRequestDto.ProcessResponse reject(Long requestId, Long processorId, AdminChangeRequestDto.RejectRequest rejectRequest) {
-        BrandChangeRequest request = getRequest(requestId);
+        ChangeRequest request = getRequest(requestId);
         if (!request.isPending()) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
         }
@@ -176,37 +163,78 @@ public class AdminChangeRequestService {
         if (!reasonType.supports(request.getType())) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_REJECT_REASON_TYPE_MISMATCH);
         }
-        if (reasonType.isDetailRequired() && (rejectRequest.getReasonDetail() == null || rejectRequest.getReasonDetail().isBlank())) {
+        String detail = rejectRequest.getReasonDetail();
+        if (reasonType.isDetailRequired() && (detail == null || detail.isBlank())) {
             throw new BusinessException(ErrorCode.CHANGE_REQUEST_REJECT_DETAIL_REQUIRED);
         }
 
-        Market market = request.getMarket();
-        Seller seller = market.getSeller();
+        request.reject(processorId, reasonType.name(), detail);
+        flushOrConflict(request);
+        applierOf(request).notifyRejected(request, reasonType, detail);
+        return processResponse(request, reasonType.descriptionFor(request.getType()), detail);
+    }
 
-        request.reject(processorId, reasonType.name(), rejectRequest.getReasonDetail());
+    // ------------------------------------------------------------------ 공통
 
-        mailService.sendChangeRequestRejectedEmail(
-                seller.getEmail(), request.getRequestCode(), request.getProcessedAt(),
-                reasonType.getDescription(), rejectRequest.getReasonDetail());
+    private ChangeRequestDetailAssembler assemblerOf(ChangeRequest request) {
+        return strategy(assemblers, request);
+    }
 
+    private ChangeRequestApplier applierOf(ChangeRequest request) {
+        return strategy(appliers, request);
+    }
+
+    private static <T> T strategy(Map<ChangeRequesterType, T> strategies, ChangeRequest request) {
+        T strategy = strategies.get(request.getRequesterType());
+        if (strategy == null) {
+            throw new IllegalStateException("요청자 유형 전략 없음: " + request.getRequesterType());
+        }
+        return strategy;
+    }
+
+    private AdminChangeRequestDto.ProcessResponse processResponse(ChangeRequest request, String rejectReason,
+                                                                  String rejectReasonDetail) {
         return AdminChangeRequestDto.ProcessResponse.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
-                .brandName(market.getMarketName())
+                .requester(requester(request))
+                .brandName(request.isCreatorRequest() ? null : request.getMarket().getMarketName())
                 .type(request.getType())
                 .status(request.getStatus())
                 .processedAt(request.getProcessedAt())
-                .rejectReason(reasonType.getDescription())
-                .rejectReasonDetail(rejectRequest.getReasonDetail())
+                .rejectReason(rejectReason)
+                .rejectReasonDetail(rejectReasonDetail)
                 .build();
     }
 
-    private AdminChangeRequestDto.ListItem toListItem(BrandChangeRequest request) {
+    /** 승인 · 반려 동시 클릭 — 두 번째는 버전 충돌로 「검토 대기 상태인 요청만」(16 설계서 3-8). 알림 · 메일보다 먼저 확인한다. */
+    private void flushOrConflict(ChangeRequest request) {
+        try {
+            changeRequestRepository.saveAndFlush(request);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_PENDING);
+        }
+    }
+
+    private AdminChangeRequestDto.Requester requester(ChangeRequest request) {
+        if (request.isCreatorRequest()) {
+            Creator creator = request.getCreator();
+            return AdminChangeRequestDto.Requester.builder()
+                    .type(ChangeRequesterType.CREATOR).id(creator.getId()).name(creator.getShowroomName()).build();
+        }
+        Market market = request.getMarket();
+        return AdminChangeRequestDto.Requester.builder()
+                .type(ChangeRequesterType.BRAND).id(market.getId()).name(market.getMarketName()).build();
+    }
+
+    private AdminChangeRequestDto.ListItem toListItem(ChangeRequest request) {
         return AdminChangeRequestDto.ListItem.builder()
                 .requestId(request.getId())
                 .requestCode(request.getRequestCode())
-                .brandName(request.getMarket().getMarketName())
+                .requester(requester(request))
+                .brandName(request.isCreatorRequest() ? null : request.getMarket().getMarketName())
                 .type(request.getType())
+                .typeLabel(request.getType().label())
                 .requestedAt(request.getRequestedAt())
                 .processedAt(request.getProcessedAt())
                 .elapsedText(elapsedText(request))
@@ -215,100 +243,18 @@ public class AdminChangeRequestService {
                 .build();
     }
 
-    private List<AdminChangeRequestDto.DiffRow> buildDiff(BrandChangeRequest request, Seller seller, Market market) {
-        List<DiffFieldSpec> specs = request.getType() == ChangeRequestType.BUSINESS_INFO
-                ? BUSINESS_INFO_SPECS : SETTLEMENT_ACCOUNT_SPECS;
-        Map<String, BrandChangeRequestItem> itemsByKey = request.getItems().stream()
-                .collect(Collectors.toMap(item -> item.getFieldKey().name(), item -> item));
-
-        List<AdminChangeRequestDto.DiffRow> rows = new ArrayList<>();
-        for (DiffFieldSpec spec : specs) {
-            BrandChangeRequestItem item = itemsByKey.get(spec.fieldKey());
-            String currentValue;
-            String requestedValue = null;
-            boolean changed = false;
-            if (item != null) {
-                currentValue = item.getCurrentValue();
-                requestedValue = item.getRequestedValue();
-                changed = true;
-            } else {
-                currentValue = resolveLiveValue(spec.fieldKey(), seller, market);
-            }
-            rows.add(AdminChangeRequestDto.DiffRow.builder()
-                    .fieldKey(spec.fieldKey())
-                    .label(spec.label())
-                    .currentValue(currentValue)
-                    .requestedValue(requestedValue)
-                    .changed(changed)
-                    .locked(spec.locked())
-                    .build());
-        }
-        return rows;
-    }
-
-    private String resolveLiveValue(String fieldKey, Seller seller, Market market) {
-        return switch (fieldKey) {
-            case "BUSINESS_TYPE" -> seller.getBusinessType();
-            case "BUSINESS_REG_NUMBER" -> seller.getBusinessRegistrationNumber();
-            default -> ChangeRequestFieldResolver.currentValue(ChangeRequestField.valueOf(fieldKey), seller, market);
-        };
-    }
-
-    private List<String> changedFieldLabels(BrandChangeRequest request) {
-        return request.getItems().stream()
-                .sorted((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
-                .map(item -> item.getFieldKey().getLabel())
-                .toList();
-    }
-
-    private AdminChangeRequestDto.Evidence buildEvidence(BrandChangeRequest request) {
-        String documentLabel = request.getType() == ChangeRequestType.BUSINESS_INFO ? "사업자등록증" : "통장 사본";
-        return AdminChangeRequestDto.Evidence.builder()
-                .documentLabel(documentLabel)
-                .fileName(request.getEvidenceFileName())
-                .fileSizeBytes(request.getEvidenceFileSize())
-                .extension(extractExtension(request.getEvidenceFileName()))
-                .fileUrl(request.getEvidenceFileUrl())
-                .uploadedAt(request.getRequestedAt())
-                .build();
-    }
-
-    private List<AdminChangeRequestDto.ReferenceItem> buildReferenceItems(ChangeRequestType type, Seller seller) {
-        List<AdminChangeRequestDto.ReferenceItem> items = new ArrayList<>();
-        items.add(AdminChangeRequestDto.ReferenceItem.builder()
-                .label("사업자등록증 상호").value(seller.getCompanyName()).build());
-        if (type == ChangeRequestType.BUSINESS_INFO) {
-            items.add(AdminChangeRequestDto.ReferenceItem.builder()
-                    .label("사업자등록번호").value(seller.getBusinessRegistrationNumber()).build());
-        }
-        return items;
-    }
-
-    private AdminChangeRequestDto.HolderCheck buildHolderCheck(BrandChangeRequest request) {
-        if (request.getType() != ChangeRequestType.SETTLEMENT_ACCOUNT) {
-            return null;
-        }
-        BrandChangeRequestItem holderItem = findItem(request, ChangeRequestField.ACCOUNT_HOLDER);
-        String requestedHolder = holderItem != null ? holderItem.getRequestedValue() : null;
-        String companyName = request.getMarket().getSeller().getCompanyName();
-        return AdminChangeRequestDto.HolderCheck.builder()
-                .requestedHolder(requestedHolder)
-                .companyName(companyName)
-                .mismatch(!Objects.equals(requestedHolder, companyName))
-                .build();
-    }
-
-    private List<AdminChangeRequestDto.HistoryEvent> buildHistory(BrandChangeRequest request) {
+    private List<AdminChangeRequestDto.HistoryEvent> buildHistory(ChangeRequest request) {
         List<AdminChangeRequestDto.HistoryEvent> history = new ArrayList<>();
+        String requesterSurface = request.isCreatorRequest() ? "쇼룸 스튜디오" : "브랜드 파트너센터";
         history.add(AdminChangeRequestDto.HistoryEvent.builder()
                 .event("REQUESTED")
                 .occurredAt(request.getRequestedAt())
-                .actorLabel("브랜드 파트너센터")
+                .actorLabel(requesterSurface)
                 .build());
 
         if (request.getProcessedAt() != null) {
             String actorLabel = request.getStatus() == ChangeRequestStatus.CANCELED
-                    ? "브랜드 파트너센터"
+                    ? requesterSurface
                     : resolveAdminName(request.getProcessedBy());
             history.add(AdminChangeRequestDto.HistoryEvent.builder()
                     .event(request.getStatus().name())
@@ -332,7 +278,7 @@ public class AdminChangeRequestService {
         long rejected = 0L;
         long canceled = 0L;
 
-        for (Object[] row : brandChangeRequestRepository.countByStatusGroup(keyword)) {
+        for (Object[] row : changeRequestRepository.countByStatusGroup(keyword)) {
             ChangeRequestStatus status = (ChangeRequestStatus) row[0];
             long count = ((Number) row[1]).longValue();
             switch (status) {
@@ -349,43 +295,26 @@ public class AdminChangeRequestService {
                 .build();
     }
 
-    private String elapsedText(BrandChangeRequest request) {
+    private String elapsedText(ChangeRequest request) {
         if (request.getProcessedAt() != null) {
             return null;
         }
         return ChangeRequestElapsedFormatter.format(request.getRequestedAt());
     }
 
-    private boolean isSlaExceeded(BrandChangeRequest request) {
+    private boolean isSlaExceeded(ChangeRequest request) {
         if (request.getStatus() != ChangeRequestStatus.PENDING) {
             return false;
         }
         return Duration.between(request.getRequestedAt(), LocalDateTime.now()).toHours() > SLA_HOURS;
     }
 
-    private BrandChangeRequestItem findItem(BrandChangeRequest request, ChangeRequestField field) {
-        return request.getItems().stream()
-                .filter(item -> item.getFieldKey() == field)
-                .findFirst().orElse(null);
-    }
-
-    private String extractExtension(String fileName) {
-        if (fileName == null) {
-            return "";
-        }
-        int dotIndex = fileName.lastIndexOf('.');
-        if (dotIndex == -1 || dotIndex == fileName.length() - 1) {
-            return "";
-        }
-        return fileName.substring(dotIndex + 1).toLowerCase();
-    }
-
     private String normalize(String keyword) {
         return (keyword == null || keyword.isBlank()) ? null : keyword.trim();
     }
 
-    private BrandChangeRequest getRequest(Long requestId) {
-        return brandChangeRequestRepository.findById(requestId)
+    private ChangeRequest getRequest(Long requestId) {
+        return changeRequestRepository.findById(requestId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.CHANGE_REQUEST_NOT_FOUND));
     }
 }

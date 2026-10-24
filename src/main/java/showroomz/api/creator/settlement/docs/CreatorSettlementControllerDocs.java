@@ -21,7 +21,7 @@ import java.util.Set;
 
 import static showroomz.api.creator.settlement.docs.CreatorSettlementDocsExamples.*;
 
-@Tag(name = "Creator - Settlement", description = "쇼룸 스튜디오 정산 관리 API (#12)")
+@Tag(name = "Creator - Settlement", description = "쇼룸 스튜디오 정산 관리 API")
 public interface CreatorSettlementControllerDocs {
 
     String XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -82,6 +82,7 @@ public interface CreatorSettlementControllerDocs {
                     | `adjusting` | 조정 협의 건수 |
                     | `statusCounts` | 상태 칩 숫자 — 분배 실패는 `PAID` 에 포함 |
                     | `attentionCount` | GNB 「정산 관리」 배지 = 요청 가능 창이 열린 정산 확인 중 + 세금계산서 입력 대기 · 반려. 조정 협의의 「내 응답 필요」는 연결·소통 배지가 센다 |
+                    | `payoutCondition` | `TAX_INVOICE_UNVERIFIED` — 지급 예정 중 세금계산서 확인 전이라 보류된 건이 있다(「지급 조건 세금계산서 확인 후」) · 없으면 null |
                     """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "KPI · 상태 칩 · 배지",
@@ -115,12 +116,13 @@ public interface CreatorSettlementControllerDocs {
                     | `items` | 명세 미리보기 5건(소비자 열 없음) · `downloadAvailable`(확정 후) |
 
                     **`timeline.payoutDueNote`** — 「자동 확정 10.06 + 3영업일 · 10.09 한글날 제외」 · 「합의 확정 …」 · 「기한 만료 확정 …」 ·
-                    사업자 보류 「발행 확인 후 + 3영업일」 · 「확인 후 + 3영업일」 · 「재제출 확인 후 + 3영업일」 · 주민등록번호 미등록 「주민등록번호 등록 후 지급」
+                    내 행 보류는 **보류 사유**를 따른다 — 세금계산서 확인 전 「발행 확인 후 + 3영업일」 · 「확인 후 + 3영업일」 · 「재제출 확인 후 + 3영업일」, 그 밖의 사유는
+                    그 사유의 지급일 문구(`settlement.payoutHold.scheduleLabel` 과 같다 — 「정지 해제 다음 영업일 지급」 · 「계좌 확인 후 지급」). 사업자라도 정지 · 계좌 확인 보류면 세금계산서 문구가 아니다
 
                     **분배 행 `payouts.rows[]`**
                     - `shownAfterConfirm = true`(확정 전) — 금액만 보이고 상태는 「확인 기간 후 지급」(`WAITING`) · 「보류 중」(`HELD` — 조정 협의)
                     - 확정 후 — 「10.12 지급 예정」 · 「10.07 지급 완료」 · 0원 행은 「—」
-                    - 내 행 보류(`BLOCKED`) — 사업자는 세금계산서 카드 상태(「발행 필요」 · 「확인 중」 · 「반려 · 재제출 필요」), 비사업자는 「주민등록번호 등록 필요」
+                    - 내 행 보류(`BLOCKED`) — 세금계산서 확인 전이면 카드 상태(「발행 필요」 · 「확인 중」 · 「반려 · 재제출 필요」), 그 밖의 사유면 사유 라벨(`hold.label` — 「계정 이용 정지 · 정산 정보 불일치」 · 「정산 계좌 확인 중」)
                     - 내 행 실패만 「지급 확인 중」(`FAILED`) · 브랜드 행 실패는 「지급 예정」으로 접힌다
 
                     **세금계산서 카드 `taxInvoice.cardStatus`** — `PENDING_INPUT`(발행 필요) · `SUBMITTED`(확인 중) · `REJECTED`(반려 — `rejectReasonLabel` 표시) ·

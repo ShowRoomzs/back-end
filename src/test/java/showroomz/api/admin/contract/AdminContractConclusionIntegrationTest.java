@@ -207,16 +207,22 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
     }
 
     @Test
-    @DisplayName("운영자가 취소한 뒤에는 체결할 수 없다 — 공구 생성과 종결이 동시에 일어나지 않는다")
-    void cannotConcludeAfterOperatorCancel() throws Exception {
+    @DisplayName("운영자가 해지한 뒤에는 공구를 만들 수 없다 — 공구 생성과 종결이 동시에 일어나지 않는다(성립한 계약은 취소가 아니라 해지 · 1021 기-06)")
+    void cannotConcludeAfterOperatorTermination() throws Exception {
         Contract c = seed(ContractStatus.CONCLUSION_PENDING);
         attach(c, ContractDocumentType.SIGNED_PDF);
         attach(c, ContractDocumentType.AUDIT_TRAIL);
 
-        cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, null).andExpect(status().isOk());
+        cancel(c, true, ContractCloseReasonCode.SCHEDULE_CHANGE, null).andExpect(status().isConflict());
+        mockMvc.perform(post(BASE + "/" + c.getId() + "/terminate").header(HttpHeaders.AUTHORIZATION, adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(java.util.Map.of("reasonCode", "TERMINATE_CONTENT_ERROR",
+                                "explanation", "계약 내용 오류로 해지합니다.", "counterpartyConsentConfirmed", true,
+                                "groupBuyNotOpenedConfirmed", true))))
+                .andExpect(status().isOk());
 
         conclude(c).andExpect(status().isConflict());
-        assertThat(reload(c).getStatus()).isEqualTo(ContractStatus.CANCELED);
+        assertThat(reload(c).getStatus()).isEqualTo(ContractStatus.TERMINATED);
     }
 
     // ------------------------------------------------------------------ B5

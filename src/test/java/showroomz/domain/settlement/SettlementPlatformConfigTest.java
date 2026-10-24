@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * SHOWROOMZ 사업자 정보 기동 검증(44 어드민 설계서 9-1 · 구현 계획서 단계 0 게이트 ①) — 런칭 게이트가 켜진 운영 프로필은 더미 값으로
- * 뜨지 않는다. 게이트를 끈 개발 단계 prod 는 더미 값으로 뜬다(포트원 설계서 9-4).
+ * 뜨지 않는다. 게이트를 끈 개발 단계 prod 는 더미 값으로 뜬다(토스 설계서 9-4).
  */
 @DisplayName("정산 플랫폼 정보 — 런칭 게이트 켜진 운영 프로필만 더미 · 빈 값 금지")
 class SettlementPlatformConfigTest {

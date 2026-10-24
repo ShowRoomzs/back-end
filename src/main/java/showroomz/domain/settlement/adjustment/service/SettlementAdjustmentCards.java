@@ -49,8 +49,7 @@ public class SettlementAdjustmentCards {
 
     /** 요청(seq 1) · 다른 금액 제안(seq n) — 보낸 사람 = 제안자. */
     public Message proposal(SettlementAdjustment a, AdjustableSettlement s, SettlementAdjustmentProposal p) {
-        MessageCardType type = p.getSeq() == 1
-                ? MessageCardType.SETTLEMENT_ADJUSTMENT_REQUEST : MessageCardType.SETTLEMENT_ADJUSTMENT_COUNTER;
+        MessageCardType type = MessageCardType.forProposalSeq(p.getSeq());
         return post(a, s, p.getProposerType().participantType(), p.getProposerId(),
                 "stl-adj-%d-proposal-%d".formatted(a.getId(), p.getSeq()), type,
                 MessageRefType.SETTLEMENT_ADJUSTMENT_PROPOSAL, p.getId(),
@@ -81,6 +80,13 @@ public class SettlementAdjustmentCards {
     public Message expired(SettlementAdjustment a, AdjustableSettlement s, LocalDateTime closedAt) {
         return system(a, s, "stl-adj-%d-closed".formatted(a.getId()), MessageCardType.SETTLEMENT_ADJUSTMENT_EXPIRED,
                 new Snapshot(a).deadline(a.getDeadlineAt()).closed(a.getOriginalRewardAmount(), null, closedAt));
+    }
+
+    /** 요청 철회(1021 기-14) — 「요청 철회 · 원래 금액 확정 · 이슈 종결」. */
+    public Message withdrawn(SettlementAdjustment a, AdjustableSettlement s, SettlementParty withdrawnBy,
+                             LocalDateTime closedAt) {
+        return system(a, s, "stl-adj-%d-closed".formatted(a.getId()), MessageCardType.SETTLEMENT_ADJUSTMENT_WITHDRAWN,
+                new Snapshot(a).deadline(a.getDeadlineAt()).closed(a.getOriginalRewardAmount(), withdrawnBy, closedAt));
     }
 
     private Message system(SettlementAdjustment a, AdjustableSettlement s, String clientMessageId,

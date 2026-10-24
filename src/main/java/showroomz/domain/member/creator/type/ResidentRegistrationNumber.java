@@ -31,8 +31,24 @@ public final class ResidentRegistrationNumber {
         return digits;
     }
 
-    /** {@code 900101-1******} — 화면 표시용. 원문 대신 이 값을 저장해 두고 읽는다. */
+    private static final String MASKED_BACK = "*******";
+
+    /**
+     * {@code 900101-*******} — 화면 표시용. 원문 대신 이 값을 저장해 두고 읽는다. 뒤 7자리는 <b>성별 자리까지</b> 가린다 —
+     * 온보딩 입력(뒤 7자리 마스킹)과 표기를 맞춘다(스튜디오 06 「온보딩 rev.3 정합」).
+     */
     public static String mask(String normalized) {
-        return normalized.substring(0, 6) + "-" + normalized.charAt(6) + "******";
+        return normalized.substring(0, 6) + "-" + MASKED_BACK;
+    }
+
+    /**
+     * 저장된 마스킹 값을 화면 표기로 — 이전 규칙({@code 900101-1******})으로 저장된 행도 성별 자리를 가려 내린다.
+     * 값이 없거나 형식이 다르면 그대로.
+     */
+    public static String display(String storedMask) {
+        if (storedMask == null || storedMask.length() < 7 || storedMask.charAt(6) != '-') {
+            return storedMask;
+        }
+        return storedMask.substring(0, 7) + MASKED_BACK;
     }
 }

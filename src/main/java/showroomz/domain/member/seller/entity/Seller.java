@@ -98,25 +98,43 @@ public class Seller {
     @Column(name = "BANKBOOK_URL", length = 1024)
     private String bankbookImageUrl;
 
-    // PG 파트너 정산 연결(44 포트원 설계서 3-1) — 브랜드 = 포트원 파트너 1건
-    @Column(name = "PORTONE_PARTNER_ID", length = 64)
-    private String portonePartnerId;
+    // PG 지급대행 셀러 연결(44 토스 설계서 3-1) — 브랜드 = 토스 셀러 1건
+    /** PG 가 발급한 셀러 id(토스 · ≤35). */
+    @Column(name = "PG_PARTNER_ID", length = 64)
+    private String pgPartnerId;
 
-    @Column(name = "PORTONE_PARTNER_STATUS", length = 16)
-    private String portonePartnerStatus;
+    /** 우리 참조 id({@code refSellerId} · brand-{market_id}). */
+    @Column(name = "PG_PARTNER_REF", length = 20)
+    private String pgPartnerRef;
 
-    @Column(name = "PORTONE_PARTNER_SYNCED_AT")
-    private LocalDateTime portonePartnerSyncedAt;
+    /** TEST | LIVE — 현재 모드와 다르면 연결 없음으로 본다. */
+    @Column(name = "PG_PARTNER_ENV", length = 8)
+    private String pgPartnerEnv;
 
-    /** 포트원에 보낸 계좌의 sha256(bank|number|holder) — 평문 비교 없이 변경을 감지한다. */
-    @Column(name = "PORTONE_PARTNER_ACCOUNT_HASH", length = 64)
-    private String portonePartnerAccountHash;
+    /** PG 원시 상태(APPROVAL_REQUIRED · PARTIALLY_APPROVED · KYC_REQUIRED · APPROVED). */
+    @Column(name = "PG_PARTNER_STATUS", length = 32)
+    private String pgPartnerStatus;
 
-    public void linkPortOnePartner(String partnerId, String status, String accountHash, LocalDateTime at) {
-        this.portonePartnerId = partnerId;
-        this.portonePartnerStatus = status;
-        this.portonePartnerAccountHash = accountHash;
-        this.portonePartnerSyncedAt = at;
+    @Column(name = "PG_PARTNER_SYNCED_AT")
+    private LocalDateTime pgPartnerSyncedAt;
+
+    /** PG 에 보낸 계좌의 sha256(bank|number|holder) — 평문 비교 없이 변경을 감지한다. */
+    @Column(name = "PG_PARTNER_ACCOUNT_HASH", length = 64)
+    private String pgPartnerAccountHash;
+
+    public void linkPgPartner(String externalId, String ref, String env, String status, String accountHash, LocalDateTime at) {
+        this.pgPartnerId = externalId;
+        this.pgPartnerRef = ref;
+        this.pgPartnerEnv = env;
+        this.pgPartnerStatus = status;
+        this.pgPartnerAccountHash = accountHash;
+        this.pgPartnerSyncedAt = at;
+    }
+
+    /** 웹훅({@code seller.changed}) — 상태만. */
+    public void updatePgPartnerStatus(String status, LocalDateTime at) {
+        this.pgPartnerStatus = status;
+        this.pgPartnerSyncedAt = at;
     }
 
     // 약관 동의 내역
@@ -226,6 +244,38 @@ public class Seller {
         this.agreePrivacyPolicy = null;
         this.agreeTermsOfService = null;
         this.agreeOperationPolicy = null;
+    }
+
+    /**
+     * 브랜드 탈퇴 승인 파기(§51-5 · 52 설계서 1-6 · 4-3) — 사업자 · 정산 · 담당자 정보를 지운다. 반려 파기와 같은 방식이되 목록이 다르다:
+     * 사업자등록번호는 해시로 남겨 「같은 사업자등록번호로 재가입 가능 · 이전 데이터 미승계」가 성립하고, 약관 동의 · 가입일 · 최근 접속 ·
+     * PG 셀러 연결 id 는 보존한다(개인정보 아님 · 지급 완료 전제).
+     *
+     * <p>로그인 차단 — 이메일은 UNIQUE NOT NULL 이라 자리표시자로, 비밀번호는 아무도 모르는 해시로 바꾼다. 리프레시 토큰 삭제는 호출자 몫이다.
+     */
+    public void purgeOnWithdrawal(String hashedBusinessRegistrationNumber, String placeholderEmail,
+                                  String discardedPasswordHash, LocalDateTime now) {
+        this.name = "파기됨";
+        this.phoneNumber = null;
+        this.businessType = null;
+        this.representativeName = null;
+        this.representativeContact = null;
+        this.companyName = null;
+        this.businessRegistrationNumber = hashedBusinessRegistrationNumber;
+        this.businessCondition = null;
+        this.businessAddress = null;
+        this.detailAddress = null;
+        this.taxEmail = null;
+        this.businessLicenseImageUrl = null;
+        this.mailOrderRegImageUrl = null;
+        this.mailOrderRegNumber = null;
+        this.bankName = null;
+        this.accountHolder = null;
+        this.accountNumber = null;
+        this.bankbookImageUrl = null;
+        this.email = placeholderEmail;
+        this.password = discardedPasswordHash;
+        this.modifiedAt = now;
     }
 }
 

@@ -12,6 +12,7 @@ import showroomz.api.admin.transaction.dto.AdminTransactionDto;
 import showroomz.api.admin.transaction.service.AdminClaimService;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
+import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.ClaimReason;
 import showroomz.domain.order.type.ClaimType;
@@ -85,6 +86,59 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?marketId=" + brand.marketId()))).containsExactlyInAnyOrder(rejected, exchange);
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?tab=REJECT_HOLD"))).containsExactly(rejected);
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?types=EXCHANGE"))).containsExactlyInAnyOrder(exchange, other);
+    }
+
+    /**
+     * 소비자 상세 「반품·교환」 칩이 이 목록으로 온다(56 C1) — 칩은 기간 없이 세므로 userId 진입에서 기간을 비우면 기본 1개월을 걸지 않는다.
+     * 소비자 축은 주문 목록과 같은 주문자(orders.user_id)다.
+     */
+    @Test
+    @DisplayName("[56 C1] 목록 userId · openOnly — 주문한 소비자만 · 기간을 비우면 기본 1개월 없이 · 기간을 주면 그 기간 · openOnly 는 종결 제외")
+    void listByConsumer() throws Exception {
+        Long recent = returnClaim(deliveredGroup(creamVariant, 1));
+        Long old = returnClaim(deliveredGroup(creamVariant, 1));
+        jdbc.update("UPDATE order_claim SET requested_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(45), old);
+        Long completed = passed(returnClaim(deliveredGroup(creamVariant, 1)));
+        assertThat(claimStatus(completed)).isEqualTo("COMPLETED");
+        Long others = returnClaim(deliveredGroup(creamVariant, 1));
+        Users other = createConsumer("noah", "노아");
+        Long othersOrder = jdbc.queryForObject("SELECT order_id FROM order_claim WHERE claim_id = ?", Long.class, others);
+        jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = ?", other.getId(), othersOrder);
+
+        String mine = ADMIN_CLAIMS + "?userId=" + consumer.getId();
+        assertThat(ids(adminGet(mine))).containsExactlyInAnyOrder(recent, old, completed);
+        assertThat(ids(adminGet(mine + "&openOnly=true"))).containsExactlyInAnyOrder(recent, old);
+        adminGet(mine + "&tab=ALL&openOnly=true").andExpect(jsonPath("$.pageInfo.totalResults").value(2));
+        assertThat(ids(adminGet(mine + "&from=" + java.time.LocalDate.now().minusDays(7))))
+                .containsExactlyInAnyOrder(recent, completed);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?userId=" + other.getId()))).containsExactly(others);
+        // userId 가 없으면 지금처럼 기본 1개월 — 45일 전 신청은 빠진다
+        assertThat(ids(adminGet(ADMIN_CLAIMS))).containsExactlyInAnyOrder(recent, completed, others);
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?openOnly=true"))).containsExactlyInAnyOrder(recent, others);
+    }
+
+    /**
+     * 알려진 한계(56 수정 기록 5-2) — 요약은 userId 를 받지 않는다. 소비자 상세 칩으로 들어와 목록을 그 소비자로 좁혀도 탭 숫자 · KPI 는 전체 기준이다.
+     * 요약이 userId 를 받게 되면 이 테스트를 그 기대로 바꾼다.
+     */
+    @Test
+    @DisplayName("[56 C1-10] 알려진 한계 — 요약은 userId 를 받지 않는다(무시 · 400 아님) · 탭 숫자 · 검수 지연은 전체 기준 · 목록만 그 소비자로 좁혀진다")
+    void summaryIgnoresUserId() throws Exception {
+        Long mine = received(returnClaim(deliveredGroup(creamVariant, 1)));
+        Long others = received(returnClaim(deliveredGroup(creamVariant, 1)));
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(3), others);
+        Users other = createConsumer("noah", "노아");
+        jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = (SELECT order_id FROM order_claim WHERE claim_id = ?)",
+                other.getId(), others);
+
+        JsonNode all = json(adminGet(ADMIN_CLAIMS + "/summary").andExpect(status().isOk()));
+        JsonNode narrowed = json(adminGet(ADMIN_CLAIMS + "/summary?userId=" + consumer.getId()).andExpect(status().isOk()));
+
+        assertThat(narrowed).isEqualTo(all);
+        assertThat(narrowed.at("/tabCounts/ALL").asLong()).isEqualTo(2);
+        assertThat(narrowed.at("/kpi/overdue").asLong()).as("다른 소비자의 검수 지연도 잡힌다").isEqualTo(1);
+        adminGet(ADMIN_CLAIMS + "?userId=" + consumer.getId()).andExpect(jsonPath("$.pageInfo.totalResults").value(1));
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?userId=" + consumer.getId()))).containsExactly(mine);
     }
 
     @Test
@@ -310,8 +364,8 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
                 + "AND event_type = 'DISPUTE_ACCEPTED'", String.class, claimId)).contains("재발송비 결제 요청 취소");
         assertThat(jdbc.queryForList("SELECT event_type FROM order_fulfillment_history WHERE delivery_group_id = ?",
                 String.class, group.getId())).contains("REFUND_ENQUEUED_BY_OPERATOR");
-        // 편입만 — 돈은 나가지 않았다.
-        assertThat(fake.partialCancelCalls()).isEmpty();
+        // 상품 환불은 편입만 — 돈은 나가지 않았다. 1021 설계서 4-5 의 운임 환급(선불 운임 · 서버 계산)만 별도 행으로 PG 자동 집행된다.
+        assertThat(fake.partialCancelCalls()).singleElement().asString().endsWith(":" + freightRefundOf(claimId));
     }
 
     @Test
@@ -422,7 +476,8 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
 
         adminPost(ADMIN_REFUNDS + "/" + taskId + "/execute", Map.of()).andExpect(jsonPath("$.outcome").value("DONE"));
         assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "REFUNDED");
-        assertThat(fake.partialCancelCalls()).hasSize(1);
+        // 운임 환급(인용 때 자동 집행) + 상품 환불(운영자 집행) — 두 번.
+        assertThat(fake.partialCancelCalls()).hasSize(2).last().asString().endsWith(":" + CREAM_PRICE);
     }
 
     @Test
@@ -676,7 +731,7 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
     }
 
     @Test
-    @DisplayName("[F-B08] 인용 뒤 — 상세 인용 불가 · 인용 금액 null · 목록 행 귀책 변경 참 · 종결 단계 · fee_bearer 는 그대로(현재 동작)")
+    @DisplayName("[F-B08] 인용 뒤 — 상세 인용 불가 · 인용 금액 null · 목록 행 귀책 변경 참 · 종결 단계 · fee_bearer 는 브랜드 귀책으로(1021 7-2)")
     void afterAcceptanceDetailAndRow() throws Exception {
         Long claimId = rejectedClaim(returnClaim(deliveredGroup(creamVariant, 1)));
         accept(claimId).andExpect(status().isOk());
@@ -684,12 +739,12 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         JsonNode detail = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
         assertThat(detail.get("canAcceptDispute").asBoolean()).isFalse();
         assertThat(detail.has("disputeRefundAmount") && !detail.get("disputeRefundAmount").isNull()).isFalse();
-        // 인용은 귀책 변경 표시(faultChangedToSeller)만 세우고 fee_bearer 는 그대로다 — 「귀책」 열이 소비자 귀책으로 남는다(현재 동작 고정 · 확인 필요).
-        assertThat(detail.get("feeBearer").asText()).isEqualTo("CONSUMER");
+        // 1021 설계서 7-2 — 인용은 귀책 변경 표시(faultChangedToSeller)와 함께 fee_bearer 도 SELLER 로 돌린다(운임 환급 · 브랜드 부담).
+        assertThat(detail.get("feeBearer").asText()).isEqualTo("SELLER");
         JsonNode row = rowOf(json(adminGet(ADMIN_CLAIMS + "?tab=DONE")).get("content"), claimId);
         assertThat(row.get("faultChangedToSeller").asBoolean()).isTrue();
         assertThat(row.at("/claim/stage").asText()).isEqualTo("DONE");
-        assertThat(row.get("feeBearerLabel").asText()).isEqualTo("소비자 귀책");
+        assertThat(row.get("feeBearerLabel").asText()).isEqualTo("브랜드 귀책");
     }
 
     // ------------------------------------------------------------------ 도우미
@@ -700,6 +755,12 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         jdbc.update("UPDATE order_claim SET inspect_due_at = ?, inspect_notice_count = 3 WHERE claim_id = ?",
                 LocalDateTime.now().minusDays(4), claimId);
         return claimId;
+    }
+
+    /** 1021 4-5 — 반려 이의 인용으로 세운 운임 환급(선불 운임) 행의 금액. */
+    private int freightRefundOf(Long claimId) {
+        return jdbc.queryForObject("SELECT refund_amount FROM order_refund_task WHERE source = 'FREIGHT_REFUND' "
+                + "AND source_id = ?", Integer.class, collectionIdOf(claimId));
     }
 
     private int operatorTasksOf(Long claimId) {

@@ -11,6 +11,8 @@ import showroomz.api.creator.profile.dto.ShowroomNameResponse;
 import showroomz.domain.market.type.SnsType;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
+import showroomz.domain.member.creator.service.CreatorSanctionReader;
+import showroomz.domain.member.creator.type.CreatorStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -27,6 +29,10 @@ class CreatorProfileServiceTest {
 
     @Mock
     private CreatorRepository creatorRepository;
+
+    /** 제재 · 탈퇴 심사 상태(53 설계서 4-2) — 기본값(열린 정지 없음 · 신청 없음)으로 둔다. */
+    @Mock
+    private CreatorSanctionReader sanctionReader;
 
     @InjectMocks
     private CreatorProfileService creatorProfileService;
@@ -54,6 +60,8 @@ class CreatorProfileServiceTest {
         assertThat(response.getCreatorId()).isEqualTo(5L);
         assertThat(response.getShowroomName()).isEqualTo("감성 룩북");
         assertThat(response.getMaskedAccountNumber()).isEqualTo("******456789");
+        assertThat(response.getSanction().status()).isEqualTo(CreatorStatus.ACTIVE);
+        assertThat(response.getSanction().withdrawalPending()).isFalse();
     }
 
     @Test

@@ -11,7 +11,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public enum AdminIssueState {
     OPEN(List.of(AdjustmentStatus.OPEN)),
-    CLOSED(List.of(AdjustmentStatus.AGREED, AdjustmentStatus.EXPIRED));
+    CLOSED(List.of(AdjustmentStatus.AGREED, AdjustmentStatus.EXPIRED, AdjustmentStatus.WITHDRAWN));
 
     private final List<AdjustmentStatus> statuses;
 }

@@ -10,6 +10,7 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementConfirmReason;
 import showroomz.domain.settlement.type.SettlementEventType;
@@ -43,6 +44,7 @@ public class SettlementConfirmService {
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementHistoryRecorder historyRecorder;
     private final PayoutBlockPolicy blockPolicy;
+    private final PayoutHoldTransitions holdTransitions;
     private final SettlementSchedule schedule;
     private final SettlementTaxDocumentHook taxDocumentHook;
     private final SettlementNotifier notifier;
@@ -120,10 +122,16 @@ public class SettlementConfirmService {
                 throw new BusinessException(ErrorCode.SETTLEMENT_STATE_CHANGED);
             }
         }
+        // 계정 정지 · 지급 정지 사유면 브랜드 몫은 예정 대신 보류(§51-3 · 52 설계서 6-3). 계좌 고정은 위에서 이미 했다 — 해제되면 그 계좌로 나간다.
+        for (PayoutBlockReason brandReason : blockPolicy.brandBlockReasons(settlement)) {
+            payoutRepository.findBySettlementIdAndPayee(settlementId, SettlementPayee.BRAND)
+                    .filter(p -> p.getStatus() == PayoutStatus.SCHEDULED)
+                    .ifPresent(p -> holdTransitions.holdRow(p, brandReason, confirmedAt));
+        }
         taxDocumentHook.onConfirmed(settlement, confirmedAt);
         historyRecorder.recordBySystem(settlementId, eventOf(reason), basis, confirmedAt);
         AfterCommit.run(() -> notifier.settlementConfirmed(settlementId));
-        // PG 파트너 보장(포트원 설계서 4-3) — 외부 호출은 커밋 뒤. 실패해도 확정은 유지되고 그 수취자 행만 보류된다.
+        // PG 셀러 보장(토스 설계서 4-3) — 외부 호출은 커밋 뒤. 실패해도 확정은 유지되고 그 수취자 행만 보류된다.
         AfterCommit.run(() -> partnerSync.ensureForSettlement(settlementId));
         log.info("정산 확정 - settlementId: {}, reason: {}, payoutDueDate: {}", settlementId, reason, payoutDueDate);
     }
@@ -133,6 +141,7 @@ public class SettlementConfirmService {
             case AUTO -> SettlementEventType.AUTO_CONFIRMED;
             case AGREED -> SettlementEventType.CONFIRMED_BY_AGREEMENT;
             case EXPIRED -> SettlementEventType.CONFIRMED_BY_EXPIRY;
+            case WITHDRAWN -> SettlementEventType.CONFIRMED_BY_WITHDRAWAL;
         };
     }
 }

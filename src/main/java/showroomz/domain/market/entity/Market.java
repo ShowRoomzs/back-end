@@ -5,10 +5,11 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.domain.category.entity.Category;
-import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.market.type.SnsType;
+import showroomz.domain.member.seller.entity.Seller;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,22 +83,51 @@ public class Market {
     @Column(name = "free_shipping_threshold")
     private Integer freeShippingThreshold;
 
+    // 제주는 항공 · 해상 운임이 따로라 도서산간과 금액대가 다르다(§6-4 · 06 설계서 1-1)
+    @Column(name = "jeju_surcharge", nullable = false)
+    private Integer jejuSurcharge = 0;
+
+    // 제주를 뺀 도서산간 추가비
     @Column(name = "remote_area_surcharge", nullable = false)
     private Integer remoteAreaSurcharge = 0;
 
     @Column(name = "shipping_lead_days")
     private Integer shippingLeadDays;
 
-    @Column(name = "return_fee", nullable = false)
-    private Integer returnFee = 3000;
 
-    @Column(name = "exchange_fee", nullable = false)
-    private Integer exchangeFee = 6000;
+    /** 파트너 홈 첫 공구 가이드 숨김 시각(1017 설계서 4-4) — null 이면 보인다. 첫 공구가 오픈되면 숨김과 무관하게 사라진다. */
+    @Column(name = "home_guide_hidden_at")
+    private LocalDateTime homeGuideHiddenAt;
 
     public Market(Seller seller, String marketName, String csNumber) {
         this.seller = seller;
         this.marketName = marketName;
         this.csNumber = csNumber;
+    }
+
+    // ------------------------------------------------------------------ 회원 상태(52 설계서 0-2 · 정합 계획서 R1-6)
+
+    /** 정지 — 호출자가 마켓 행을 잠그고 활성임을 확인한 뒤 부른다. 사유 · 처리자는 {@code brand_sanction} 행이 든다. */
+    public void markSuspended() {
+        this.status = MarketStatus.SUSPENDED;
+    }
+
+    /** 정지 해제 — 호출자가 마켓 행을 잠그고 정지임을 확인한 뒤 부른다. */
+    public void markActive() {
+        this.status = MarketStatus.ACTIVE;
+    }
+
+    /** 탈퇴 승인 — 되돌릴 수 없다. 파기는 {@code BrandWithdrawalPurger}가 같은 트랜잭션에서 한다. */
+    public void markWithdrawn() {
+        this.status = MarketStatus.WITHDRAWN;
+    }
+
+    public boolean isSuspended() {
+        return status == MarketStatus.SUSPENDED;
+    }
+
+    public boolean isWithdrawn() {
+        return status == MarketStatus.WITHDRAWN;
     }
 
     /**
@@ -118,6 +148,11 @@ public class Market {
 
     public void clearSnsLinks() {
         this.snsLinks.clear();
+    }
+
+    /** 홈 가이드 숨김 — 다시 켜는 UI 는 없지만 {@code false} 도 받는다(null 로 되돌림). */
+    public void updateHomeGuideHidden(boolean hidden, LocalDateTime now) {
+        this.homeGuideHiddenAt = hidden ? now : null;
     }
 
     public void updateAdminMemo(String adminMemo) {

@@ -1,5 +1,10 @@
 package showroomz.api.seller.connection.service;
 
+import showroomz.domain.notification.type.NotificationType;
+import showroomz.domain.notification.type.NotificationTargetType;
+import showroomz.domain.notification.type.NotificationActorType;
+import showroomz.domain.notification.service.NotificationPublisher;
+import showroomz.domain.notification.service.NotificationCommand;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
@@ -15,6 +20,7 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
+import showroomz.domain.member.brand.service.BrandSanctionGuard;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.seller.entity.Seller;
@@ -29,15 +35,24 @@ import showroomz.global.error.exception.ErrorCode;
 @Transactional(readOnly = true)
 public class SellerConnectionService {
 
+    private final NotificationPublisher notificationPublisher;
     private final ConnectionRepository connectionRepository;
+    private final BrandSanctionGuard brandSanctionGuard;
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
     private final CreatorRepository creatorRepository;
 
-    /** §13-6 쇼룸명 검색 — 결과에 현재 연결 상태를 함께 실어 [요청] 버튼/상태 배지를 애초에 갈라 보여준다. */
+    /**
+     * §13-6 쇼룸명 검색 — 결과에 현재 연결 상태를 함께 실어 [요청] 버튼/상태 배지를 애초에 갈라 보여준다.
+     * 검색어는 필수다(1021 결정 노트 기-23 — 인플루언서 탐색은 베타 제외 · 연결 요청은 쇼룸명 검색 · 연결코드만). 빈 검색어로
+     * 전체 목록을 훑는 길을 닫는다.
+     */
     public PageResponse<ConnectionCreatorSearchItem> searchCreators(String sellerEmail, String keyword, PagingRequest pagingRequest) {
-        Market market = getMyMarket(sellerEmail);
         String safeKeyword = keyword == null ? "" : keyword.trim();
+        if (safeKeyword.isEmpty()) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "검색할 쇼룸명을 입력해 주세요.");
+        }
+        Market market = getMyMarket(sellerEmail);
 
         Page<ConnectionCreatorSearchItem> page = connectionRepository.searchConnectableCreators(
                 market.getId(), safeKeyword, UserStatus.WITHDRAWN, pagingRequest.toPageable());
@@ -64,7 +79,8 @@ public class SellerConnectionService {
                         creator.getShowroomName(),
                         creator.getFollowerCount(),
                         creator.getUser() == null ? null : creator.getUser().getProfileImageUrl(),
-                        activeStatusOf(market, creator)))
+                        activeStatusOf(market, creator),
+                        creator.getStatus() != showroomz.domain.member.creator.type.CreatorStatus.SUSPENDED))
                 .orElseGet(ConnectionCodeCheckResponse::notFound);
     }
 
@@ -83,10 +99,17 @@ public class SellerConnectionService {
     @Transactional
     public ConnectResponse requestConnection(String sellerEmail, ConnectRequest request) {
         Market market = getMyMarket(sellerEmail);
+        // 정지 중에는 새 연결을 요청하지 않는다(§51-1 · 52 설계서 7절).
+        brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONNECTION_REQUEST);
         Creator target = resolveTarget(request);
 
         if (!isConnectable(target)) {
             throw new BusinessException(ErrorCode.CONNECTION_TARGET_NOT_CONNECTABLE);
+        }
+        // 정지된 쇼룸에는 새 연결을 요청하지 않는다 — 정지 사실은 알리지 않는다(ui-partner-15 rev.2 · 1017 설계서 8-6).
+        if (target.getStatus() == showroomz.domain.member.creator.type.CreatorStatus.SUSPENDED) {
+            throw new BusinessException(ErrorCode.CREATOR_COUNTERPARTY_SUSPENDED, "현재 연결 요청을 받을 수 없는 쇼룸입니다.");
         }
 
         Connection connection = connectionRepository
@@ -102,6 +125,12 @@ public class SellerConnectionService {
                 })
                 .orElseGet(() -> connectionRepository.save(Connection.requestPair(market, target)));
 
+        // 스튜디오 알림 「퓨어랩이 연결을 요청했어요」(14 H1a) — 연결 요청함으로 간다.
+        notificationPublisher.publish(NotificationCommand.toCreator(target.getId(), NotificationType.CONNECTION_REQUESTED)
+                .actorType(NotificationActorType.BRAND).actorName(market.getMarketName())
+                .title(market.getMarketName() + "이 연결을 요청했어요 · 수락하면 브랜드가 계약을 보낼 수 있어요")
+                .emphasis(market.getMarketName())
+                .targetType(NotificationTargetType.CONNECTION_REQUESTS).targetId(connection.getId()).build());
         return new ConnectResponse(connection.getId(), connection.getStatus());
     }
 
@@ -126,7 +155,9 @@ public class SellerConnectionService {
     }
 
     private boolean isConnectable(Creator creator) {
-        return creator.getUser() != null && creator.getUser().getStatus() != UserStatus.WITHDRAWN;
+        // 인플루언서 탈퇴(스튜디오 자격 해지 · 53 설계서 4-4)는 소비자 계정 상태와 다른 축이다 — 둘 다 본다.
+        return creator.getUser() != null && creator.getUser().getStatus() != UserStatus.WITHDRAWN
+                && !creator.isWithdrawn();
     }
 
     private Market getMyMarket(String sellerEmail) {

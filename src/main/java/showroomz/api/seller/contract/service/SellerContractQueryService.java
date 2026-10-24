@@ -130,6 +130,22 @@ public class SellerContractQueryService {
         return new ContractSummaryResponse(tabCounts, contractRepository.countActionRequired(market.getId()));
     }
 
+    /** 파트너 홈 「내 서명 필요」(1017 설계서 4-1) — {@code countActionRequired}의 서명 쪽 절반. */
+    public long countMySignatureNeeded(Long marketId) {
+        return contractRepository.countSigningAwaitingBrand(marketId);
+    }
+
+    /** 파트너 홈 「검토 반려」 — {@code countActionRequired}의 나머지 절반. */
+    public long countReviewRejected(Long marketId) {
+        long count = 0;
+        for (Object[] row : contractRepository.countByStatus(marketId)) {
+            if (row[0] == ContractStatus.REVIEW_REJECTED) {
+                count += (Long) row[1];
+            }
+        }
+        return count;
+    }
+
     /** 상세(B2a~B8) — 조건·서명·상태·이력을 한 번에 내린다. */
     public ContractDetailResponse getContract(String sellerEmail, Long contractId) {
         Market market = accessGuard.resolveMarket(sellerEmail);

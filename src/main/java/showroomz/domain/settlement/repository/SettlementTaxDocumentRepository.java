@@ -105,4 +105,23 @@ public interface SettlementTaxDocumentRepository extends JpaRepository<Settlemen
             + "AND d.status IN (showroomz.domain.settlement.type.TaxDocumentStatus.PENDING_INPUT, "
             + "    showroomz.domain.settlement.type.TaxDocumentStatus.REJECTED)")
     long countCreatorInvoicesToInput(@Param("creatorId") Long creatorId);
+
+    /** 브랜드 세금계산서 발행 대기(차감 수정분 제외) — 어드민 브랜드 상세 「진행 중」 칩(52 설계서 2-5). */
+    @Query("SELECT COUNT(d) FROM SettlementTaxDocument d, Settlement s WHERE d.settlementId = s.id "
+            + "AND s.market.id = :marketId "
+            + "AND d.type = showroomz.domain.settlement.type.TaxDocumentType.BRAND_TAX_INVOICE "
+            + "AND d.status = showroomz.domain.settlement.type.TaxDocumentStatus.PENDING_ISSUE")
+    long countBrandInvoicesPendingIssue(@Param("marketId") Long marketId);
+
+    /**
+     * 스튜디오 홈 할 일 「세금계산서 발행」(1017 설계서 5-1) — {@link #countCreatorInvoicesToInput}의 행.
+     * [문서, 정산, 공구명(계약 제목)] · 자동 확정이 이른 정산부터.
+     */
+    @Query("SELECT d, s, c.title FROM SettlementTaxDocument d, Settlement s JOIN s.contract c WHERE s.id = d.settlementId "
+            + "AND s.creator.id = :creatorId "
+            + "AND d.type = showroomz.domain.settlement.type.TaxDocumentType.CREATOR_TAX_INVOICE "
+            + "AND d.status IN (showroomz.domain.settlement.type.TaxDocumentStatus.PENDING_INPUT, "
+            + "    showroomz.domain.settlement.type.TaxDocumentStatus.REJECTED) "
+            + "ORDER BY s.confirmedAt ASC, d.id ASC")
+    List<Object[]> findCreatorInvoicesToInput(@Param("creatorId") Long creatorId);
 }

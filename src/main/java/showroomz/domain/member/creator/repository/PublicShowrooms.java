@@ -2,6 +2,7 @@ package showroomz.domain.member.creator.repository;
 
 import com.querydsl.core.types.dsl.BooleanExpression;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.domain.member.creator.type.CreatorStatus;
 import showroomz.domain.member.user.type.UserStatus;
 
 import static showroomz.domain.member.creator.entity.QCreator.creator;
@@ -15,6 +16,9 @@ import static showroomz.domain.member.user.entity.QUsers.users;
  * 아무도 알아채지 못한다.
  *
  * <p>쇼룸명과 아이디는 등록 완료 시점에 함께 정해지므로, 둘 중 하나라도 비어 있으면 아직 등록 전이다.
+ *
+ * <p>인플루언서 탈퇴({@code creator.status = WITHDRAWN})는 쇼룸을 비공개로 만든다(§51-5). <b>정지는 숨기지 않는다</b> — 진행 중 공구
+ * 게시물까지 사라지면 소비자 · 브랜드 피해가 생긴다(§51-1 · 53 설계서 4-6).
  */
 public final class PublicShowrooms {
 
@@ -30,6 +34,7 @@ public final class PublicShowrooms {
         return creator.showroomName.isNotNull()
                 .and(creator.showroomName.ne(""))
                 .and(creator.showroomAddress.isNotNull())
+                .and(creator.status.ne(CreatorStatus.WITHDRAWN))
                 .and(users.status.eq(UserStatus.NORMAL))
                 .and(users.roleType.eq(RoleType.CREATOR));
     }

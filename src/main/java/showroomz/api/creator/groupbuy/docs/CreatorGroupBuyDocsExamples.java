@@ -363,7 +363,7 @@ final class CreatorGroupBuyDocsExamples {
               "timeline": {"startAt": "2026-08-14T10:00:00", "endAt": "2026-08-20T23:55:00", "originalEndAt": "2026-08-20T23:55:00", "totalDays": 7, "elapsedDays": 4, "daysUntilStart": null, "daysUntilEnd": 3, "startOverdue": false},
             """ + REFS + PAYOUT_OPEN + """
               "readiness": null,
-              "post": {"status": "HIDDEN", "statusLabel": "숨김", "statusTone": "WARNING", "title": "여름 수분 세럼, 제가 쓰던 그 조합", "content": "건조한 여름에도 속당김 없이 쓰던 세럼·크림 조합이에요. 제 피부 기준으로 오후까지 촉촉함이 유지됐어요.", "disclosureText": "유료 광고 포함 · 글로우랩으로부터 대가를 받아 진행하는 공동구매입니다", "sellerInfoAutoAttached": true, "submittedAt": "2026-08-06T14:02:00", "expectedReviewDate": null, "reviewedAt": "2026-08-07T10:15:00", "openedAt": "2026-08-14T10:00:32", "closedAt": null, "lastEditedAt": "2026-08-17T11:05:00", "rejection": null, "hidden": {"code": "AD_MEDICAL_CLAIM", "detail": "「피부염 개선」은 의료적 효능 표현입니다. 해당 문구를 삭제해 주세요.", "hiddenAt": "2026-08-16T15:20:00", "hiddenDays": 2}},
+              "post": {"status": "EXPOSURE_SUSPENDED", "statusLabel": "노출 중지", "statusTone": "DANGER", "title": "여름 수분 세럼, 제가 쓰던 그 조합", "content": "건조한 여름에도 속당김 없이 쓰던 세럼·크림 조합이에요. 제 피부 기준으로 오후까지 촉촉함이 유지됐어요.", "disclosureText": "유료 광고 포함 · 글로우랩으로부터 대가를 받아 진행하는 공동구매입니다", "sellerInfoAutoAttached": true, "submittedAt": "2026-08-06T14:02:00", "expectedReviewDate": null, "reviewedAt": "2026-08-07T10:15:00", "openedAt": "2026-08-14T10:00:32", "closedAt": null, "lastEditedAt": "2026-08-17T11:05:00", "rejection": null, "hidden": {"code": "AD_MEDICAL_CLAIM", "detail": "「피부염 개선」은 의료적 효능 표현입니다. 해당 문구를 삭제해 주세요.", "hiddenAt": "2026-08-16T15:20:00", "hiddenDays": 2}},
               "sales": null,
               "orderClosure": null,
               "extension": null,
@@ -555,10 +555,6 @@ final class CreatorGroupBuyDocsExamples {
 
     static final String ERR_NOT_FOUND = """
             {"code": "GROUP_BUY_NOT_FOUND", "message": "존재하지 않는 공구입니다."}
-            """;
-
-    static final String ERR_NOT_OWNED = """
-            {"code": "GROUP_BUY_NOT_OWNED_BY_CREATOR", "message": "존재하지 않는 공구입니다."}
             """;
 
     static final String ERR_CREATOR_NOT_FOUND = """

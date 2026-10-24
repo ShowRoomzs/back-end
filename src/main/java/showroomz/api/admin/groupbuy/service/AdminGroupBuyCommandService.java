@@ -1,5 +1,6 @@
 package showroomz.api.admin.groupbuy.service;
 
+import showroomz.domain.contract.service.ContractSanctionHoldService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -77,6 +78,7 @@ public class AdminGroupBuyCommandService {
     private final GroupBuyNotifier notifier;
     private final GroupBuySalesReader salesReader;
     private final GroupBuySettlementGateway settlementGateway;
+    private final showroomz.domain.message.service.MessageGroupBuyChannelGateway channelGateway;
 
     // ── 5-1 · 5-2 오픈 승인 · 반려 ────────────────────────────────────────────
 
@@ -90,6 +92,11 @@ public class AdminGroupBuyCommandService {
         GroupBuyActor admin = admin(operatorId);
         if (!permissionPolicy.canDecideOpen(locked.facts())) {
             throw new BusinessException(ErrorCode.GROUP_BUY_OPEN_REVIEW_NOT_PENDING);
+        }
+        // 당사자 정지 중에는 오픈을 승인하지 않는다 — 게시물은 승인대기 그대로 「승인 보류」(1017 설계서 8-3).
+        if (ContractSanctionHoldService.isMarketSuspended(locked.groupBuy().getMarket())
+                || ContractSanctionHoldService.isCreatorSuspended(locked.groupBuy().getCreator())) {
+            throw new BusinessException(ErrorCode.GROUP_BUY_HELD_BY_SANCTION);
         }
         LocalDateTime now = LocalDateTime.now();
         GroupBuy groupBuy = locked.groupBuy();
@@ -231,6 +238,8 @@ public class AdminGroupBuyCommandService {
                         request.appealDeadlineAt().format(NOTICE_APPEAL_FORMAT)),
                 notice.getId(), now);
         notifier.notifyBothParties(groupBuy, "SUSPENSION_NOTICED");
+        // 양측 운영팀 채널에 「직권 중단 사전 통지 · 소명 요청」 카드(1021 기-21 · 20a A8 ①) — 의견은 답글로, 브랜드 소명 자료는 /appeal 로도.
+        channelGateway.postSuspensionNoticeCards(groupBuy, notice, operatorId);
         return result(groupBuy, facts.post(), null,
                 request.clause() == SuspensionReasonClause.ART17_3_BREACH ? CLAUSE_CAUTION_POST_ALTERATION : null);
     }
