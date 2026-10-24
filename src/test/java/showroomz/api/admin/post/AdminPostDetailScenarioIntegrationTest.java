@@ -914,6 +914,80 @@ class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
         }
     }
 
+    // ------------------------------------------------------------------ 55 계획서 A7. 이전 · 다음
+
+    @Nested
+    @DisplayName("이전 · 다음")
+    class Navigation {
+
+        @Test
+        @DisplayName("[NV-01] 목록 순서의 앞 · 뒤 — 첫 건은 이전이 null, 끝 건은 다음이 null이다(최신순)")
+        void neighborsFollowListOrder() throws Exception {
+            Long oldest = publish(soyeon, "루틴 크림", LocalDateTime.now().minusDays(3));
+            Long middle = publish(harin, "선크림 후기", LocalDateTime.now().minusDays(2));
+            Long newest = publish(soyeon, "루틴 세럼", LocalDateTime.now().minusDays(1));
+            assertThat(postIds(list("sort", "LATEST"))).containsExactly(newest, middle, oldest);
+
+            assertNavigation(navigation(middle, "sort", "LATEST"), newest, oldest);
+            assertNavigation(navigation(newest, "sort", "LATEST"), null, middle);
+            assertNavigation(navigation(oldest, "sort", "LATEST"), middle, null);
+        }
+
+        @Test
+        @DisplayName("[NV-02] 탭 · 정렬 · 검색어가 순서를 정한다 — 파라미터가 없으면 목록 기본값(전체 · 조치 필요 우선)이다")
+        void tabSortAndKeywordDecideOrder() throws Exception {
+            Long oldest = publish(soyeon, "루틴 크림", LocalDateTime.now().minusDays(3));
+            Long middle = publish(harin, "선크림 후기", LocalDateTime.now().minusDays(2));
+            Long newest = publish(soyeon, "루틴 세럼", LocalDateTime.now().minusDays(1));
+            report(oldest, "nv-a", "한지준", LocalDateTime.now().minusHours(5));
+            report(middle, "nv-b", "오서린", LocalDateTime.now().minusHours(1));
+
+            // 조치 필요 우선 — 신고 접수(오래 기다린 순) → 게시중(최신)
+            assertThat(postIds(list())).containsExactly(oldest, middle, newest);
+            assertNavigation(navigation(middle), oldest, newest);
+
+            // 신고 접수 탭 — 그 탭의 줄만 센다
+            assertThat(postIds(list("tab", "REPORTED"))).containsExactly(oldest, middle);
+            assertNavigation(navigation(middle, "tab", "REPORTED"), oldest, null);
+
+            // 검색어 — 「루틴」 두 건만 최신순
+            assertThat(postIds(list("keyword", "루틴", "sort", "LATEST"))).containsExactly(newest, oldest);
+            assertNavigation(navigation(oldest, "keyword", "루틴", "sort", "LATEST"), newest, null);
+
+            // 쇼룸 좁히기
+            assertNavigation(navigation(newest, "showroomId", String.valueOf(soyeon.getId()), "sort", "LATEST"),
+                    null, oldest);
+        }
+
+        @Test
+        @DisplayName("[NV-03] 그 목록에 없는 게시물(다른 탭 · 검색 밖 · 작성중)은 이전 · 다음이 모두 null이다")
+        void outsideListHasNoNeighbors() throws Exception {
+            Long reported = publish(soyeon, "신고된 글", LocalDateTime.now().minusDays(2));
+            Long plain = publish(harin, "평범한 글", LocalDateTime.now().minusDays(1));
+            Long draft = draft(soyeon, "임시저장");
+            report(reported, "nv-c", "임서현", LocalDateTime.now().minusHours(2));
+
+            assertNavigation(navigation(plain, "tab", "REPORTED"), null, null);
+            assertNavigation(navigation(plain, "keyword", "신고"), null, null);
+            assertNavigation(navigation(draft), null, null);
+            // 한 건뿐인 목록 — 앞뒤가 없다
+            assertNavigation(navigation(reported, "tab", "REPORTED"), null, null);
+        }
+
+        private JsonNode navigation(Long postId, String... params) throws Exception {
+            JsonNode navigation = adminJson(ADMIN_POSTS + "/" + postId, params).get("navigation");
+            assertThat(navigation).as("navigation 블록은 항상 있다").isNotNull();
+            return navigation;
+        }
+
+        private void assertNavigation(JsonNode navigation, Long previous, Long next) {
+            assertThat(navigation.get("previousPostId").isNull() ? null : navigation.get("previousPostId").asLong())
+                    .as("previousPostId").isEqualTo(previous);
+            assertThat(navigation.get("nextPostId").isNull() ? null : navigation.get("nextPostId").asLong())
+                    .as("nextPostId").isEqualTo(next);
+        }
+    }
+
     // ------------------------------------------------------------------ 픽스처
 
     /** 신고 3건 — 허위 · 과장 정보 2 · 기타 1 */

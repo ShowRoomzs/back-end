@@ -43,6 +43,7 @@ import showroomz.domain.post.type.PostReportStatus;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.type.SuspensionResolution;
 import showroomz.domain.post.vo.PostMonitoringCounts;
+import showroomz.domain.post.vo.PostMonitoringNeighbors;
 import showroomz.domain.post.vo.PostMonitoringRow;
 import showroomz.domain.post.vo.PostSanctionCounts;
 import showroomz.global.dto.PageResponse;
@@ -146,7 +147,12 @@ public class AdminPostQueryService {
 
     // ------------------------------------------------------------------ 상세
 
-    public AdminPostMonitoringDto.DetailResponse getPost(Long postId) {
+    /**
+     * @param tab · sort · keyword · showroomId 상세를 연 목록의 조건 — 이전 · 다음을 그 목록의 순서로 센다(55 계획서 A7).
+     *                                         목록 API와 같은 기본값(ALL · ACTION_FIRST)을 쓴다
+     */
+    public AdminPostMonitoringDto.DetailResponse getPost(Long postId, PostMonitoringTab tab, PostMonitoringSort sort,
+                                                         String keyword, Long showroomId) {
         Post post = postRepository.findByIdWithImages(postId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.POST_NOT_FOUND));
         if (!post.isGeneral()) {
@@ -194,7 +200,12 @@ public class AdminPostQueryService {
                         ? toDeletion(post, suspensions, appeal, downloads, operatorNames, showroomName) : null)
                 .timeline(new TimelineBuilder(operatorNames, showroomName)
                         .build(post, reports, suspensions, appeal, logs, downloads))
+                .navigation(toNavigation(monitoringQueryRepository.findNeighbors(postId, tab, sort, keyword, showroomId)))
                 .build();
+    }
+
+    private static AdminPostMonitoringDto.Navigation toNavigation(PostMonitoringNeighbors neighbors) {
+        return new AdminPostMonitoringDto.Navigation(neighbors.previousPostId(), neighbors.nextPostId());
     }
 
     // ------------------------------------------------------------------ 목록 조립

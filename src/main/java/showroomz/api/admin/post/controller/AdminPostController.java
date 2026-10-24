@@ -73,8 +73,13 @@ public class AdminPostController implements AdminPostControllerDocs {
 
     @Override
     @GetMapping("/posts/{postId}")
-    public ResponseEntity<AdminPostMonitoringDto.DetailResponse> getPost(@PathVariable("postId") Long postId) {
-        return ResponseEntity.ok(adminPostQueryService.getPost(postId));
+    public ResponseEntity<AdminPostMonitoringDto.DetailResponse> getPost(
+            @PathVariable("postId") Long postId,
+            @RequestParam(value = "tab", required = false) PostMonitoringTab tab,
+            @RequestParam(value = "sort", required = false) PostMonitoringSort sort,
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @RequestParam(value = "showroomId", required = false) Long showroomId) {
+        return ResponseEntity.ok(adminPostQueryService.getPost(postId, tab, sort, keyword, showroomId));
     }
 
     @Override

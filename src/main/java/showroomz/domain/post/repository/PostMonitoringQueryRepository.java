@@ -11,6 +11,7 @@ import showroomz.domain.post.type.PostMonitoringSort;
 import showroomz.domain.post.type.PostMonitoringTab;
 import showroomz.domain.post.type.PostStatus;
 import showroomz.domain.post.vo.PostMonitoringCounts;
+import showroomz.domain.post.vo.PostMonitoringNeighbors;
 import showroomz.domain.post.vo.PostMonitoringRow;
 
 import java.sql.ResultSet;
@@ -105,6 +106,28 @@ public class PostMonitoringQueryRepository {
                 (rs, rowNum) -> new PostMonitoringCounts(rs.getLong("all_cnt"), rs.getLong("reported_cnt"),
                         rs.getLong("suspended_cnt"), rs.getLong("review_cnt"), rs.getLong("closed_cnt")));
         return counts == null ? new PostMonitoringCounts(0, 0, 0, 0, 0) : counts;
+    }
+
+    /**
+     * 상세의 이전 · 다음(55 계획서 A7) — 목록은 탭 · 정렬 · 검색어마다 순서가 달라 id 순으로 셀 수 없다.
+     * {@link #findPage}와 같은 순위 · 탭 조건 · 정렬로 줄을 세우고 {@code LAG} · {@code LEAD}로 앞뒤 id를 읽는다 —
+     * 정렬 끝에 {@code post_id}가 있어 순서가 하나로 정해진다. 그 목록에 없는 게시물(탭 밖 · 작성중)이면 {@link PostMonitoringNeighbors#NONE}.
+     * 창 함수는 MySQL 8 · H2가 같은 문장을 받는다.
+     */
+    public PostMonitoringNeighbors findNeighbors(Long postId, PostMonitoringTab tab, PostMonitoringSort sort,
+                                                 String keyword, Long creatorId) {
+        MapSqlParameterSource params = new MapSqlParameterSource("postId", postId);
+        String ranked = RANKED.formatted(BASE_SELECT + EXCLUDE_DRAFT + filters(keyword, creatorId, params));
+        String where = tabCondition(tab == null ? PostMonitoringTab.ALL : tab);
+        String order = orderBy(sort == null ? PostMonitoringSort.ACTION_FIRST : sort);
+        String sql = "SELECT n.prev_id, n.next_id FROM ("
+                + "SELECT x.post_id, LAG(x.post_id) OVER (ORDER BY " + order + ") AS prev_id,"
+                + " LEAD(x.post_id) OVER (ORDER BY " + order + ") AS next_id"
+                + " FROM (" + ranked + ") x WHERE " + where
+                + ") n WHERE n.post_id = :postId";
+        List<PostMonitoringNeighbors> rows = jdbc.query(sql, params, (rs, rowNum) -> new PostMonitoringNeighbors(
+                rs.getObject("prev_id", Long.class), rs.getObject("next_id", Long.class)));
+        return rows.isEmpty() ? PostMonitoringNeighbors.NONE : rows.get(0);
     }
 
     /**

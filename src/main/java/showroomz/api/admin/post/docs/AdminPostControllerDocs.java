@@ -108,6 +108,9 @@ public interface AdminPostControllerDocs {
                     - `deletion` — 삭제 유형 · 반려 사유 · 유예 · **원본 내려받기 기록** · 보관 만료(영구 삭제만)
                     - `author` — 앱 내 팔로워 수 · **작성자 조치 이력(횟수만)** — 판단 지표로 가공하지 않는다
                     - `timeline[]` — 처리 이력(최신순). 알림 이력은 영구 보존
+                    - `navigation` — **상세를 연 목록의 순서**로 바로 앞 · 뒤 게시물(이전 · 다음 버튼). 목록은 탭 · 정렬 · 검색어마다 순서가 달라
+                      목록 조회에 쓴 `tab` · `sort` · `keyword` · `showroomId`를 그대로 넘긴다(생략하면 목록 기본값 ALL · ACTION_FIRST).
+                      첫 건 · 끝 건이면 그쪽이 null, 그 목록에 없는 게시물(다른 탭 · 작성중)이면 둘 다 null
                     """
     )
     @ApiResponses({
@@ -117,7 +120,15 @@ public interface AdminPostControllerDocs {
     })
     ResponseEntity<AdminPostMonitoringDto.DetailResponse> getPost(
             @Parameter(description = "게시물 ID", required = true, example = "342", in = ParameterIn.PATH)
-            @PathVariable("postId") Long postId);
+            @PathVariable("postId") Long postId,
+            @Parameter(description = "[이전 · 다음] 상세를 연 목록의 탭 — 목록 API와 같다(기본 ALL)", example = "REPORTED")
+            @RequestParam(value = "tab", required = false) PostMonitoringTab tab,
+            @Parameter(description = "[이전 · 다음] 목록의 정렬 — 기본 ACTION_FIRST", example = "ACTION_FIRST")
+            @RequestParam(value = "sort", required = false) PostMonitoringSort sort,
+            @Parameter(description = "[이전 · 다음] 목록의 검색어", example = "루틴")
+            @RequestParam(value = "keyword", required = false) String keyword,
+            @Parameter(description = "[이전 · 다음] 목록의 쇼룸 ID 좁히기", example = "10")
+            @RequestParam(value = "showroomId", required = false) Long showroomId);
 
     @Operation(summary = "중지 사유 코드 목록 (C4)",
             description = """

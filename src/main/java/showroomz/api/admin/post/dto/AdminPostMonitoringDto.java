@@ -152,6 +152,20 @@ public class AdminPostMonitoringDto {
         private Deletion deletion;
         @Schema(description = "처리 이력 — 최신 우선")
         private List<TimelineItem> timeline;
+        @Schema(description = "이전 · 다음 — 상세를 연 목록(tab · sort · keyword · showroomId)의 순서 기준")
+        private Navigation navigation;
+    }
+
+    /** 브랜드 상세의 Navigation과 같은 모양이다 — 기준만 id 순이 아니라 목록 순서다(55 계획서 A7) */
+    @Schema(name = "AdminPostNavigation",
+            description = "목록 순서의 바로 앞 · 뒤 게시물 — 첫 건 · 끝 건이면 그쪽이 null, 그 목록에 없는 게시물이면 둘 다 null")
+    @Getter
+    @AllArgsConstructor
+    public static class Navigation {
+        @Schema(description = "이전(목록에서 위) 게시물 ID", example = "341", nullable = true)
+        private Long previousPostId;
+        @Schema(description = "다음(목록에서 아래) 게시물 ID", example = "343", nullable = true)
+        private Long nextPostId;
     }
 
     @Schema(description = "작성자 · 레일 「작성자 조치 이력」")
