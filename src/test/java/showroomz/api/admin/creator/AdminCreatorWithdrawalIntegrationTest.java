@@ -339,6 +339,51 @@ class AdminCreatorWithdrawalIntegrationTest extends AdminCreatorTestSupport {
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
+    @Test
+    @DisplayName("[55 M7-05] 지운 옛 반려 사유(UNDELIVERED_ORDER)로 반려 — 400 INVALID_INPUT(enum 역직렬화 실패) · 신청은 대기 그대로 · 이력 · 메일 없음")
+    void removedRejectReasonIsRejected() throws Exception {
+        CreatorWithdrawalRequest pending = savePendingRequest("본업 집중", LocalDateTime.now());
+
+        reject(pending.getId(), Map.of("reason", "UNDELIVERED_ORDER", "note", "배송 완료 후 다시 신청해 주세요."))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        CreatorWithdrawalRequest stored = withdrawalRequests.findById(pending.getId()).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(MemberWithdrawalStatus.PENDING);
+        assertThat(jdbc.queryForObject("SELECT reject_reason FROM creator_withdrawal_request WHERE request_id = ?",
+                String.class, pending.getId())).isNull();
+        assertThat(events()).doesNotContain(CreatorAdminEventType.WITHDRAWAL_REJECTED);
+        org.mockito.Mockito.verify(mailService, org.mockito.Mockito.never()).sendMemberWithdrawalRejectedEmail(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        adminGet(base).andExpect(jsonPath("$.rail.withdrawalReview.requestId").value(pending.getId()));
+    }
+
+    @Test
+    @DisplayName("[55 M10-05] 업무용 이메일이 비어 있으면 — 반려 · 승인 모두 처리는 성공 · 메일은 건너뛴다 · 반려 알림함은 그대로 쌓인다")
+    void resultMailSkippedWithoutRecipient() throws Exception {
+        jdbc.update("UPDATE creator SET business_email = '' WHERE creator_id = ?", creator.getId());
+
+        CreatorWithdrawalRequest first = savePendingRequest("본업 집중", LocalDateTime.now().minusDays(1));
+        reject(first.getId(), Map.of("reason", "SETTLEMENT_IN_PROGRESS", "note", "정산 완료 후 다시 신청해 주세요."))
+                .andExpect(status().isOk());
+        assertThat(withdrawalRequests.findById(first.getId()).orElseThrow().getStatus())
+                .isEqualTo(MemberWithdrawalStatus.REJECTED);
+        org.mockito.Mockito.verify(mailService, org.mockito.Mockito.never()).sendMemberWithdrawalRejectedEmail(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        assertThat(jdbc.queryForList("SELECT title FROM notification WHERE recipient_type = 'CREATOR' AND recipient_id = ? "
+                + "AND type = 'WITHDRAWAL_REJECTED'", String.class, creator.getId()))
+                .containsExactly("탈퇴 신청이 반려됐어요 · 사유: 미정산 남음");
+
+        Long approved = approveWithdrawal();
+        assertThat(withdrawalRequests.findById(approved).orElseThrow().getStatus()).isEqualTo(MemberWithdrawalStatus.APPROVED);
+        assertThat(reloadCreator().getStatus()).isEqualTo(CreatorStatus.WITHDRAWN);
+        org.mockito.Mockito.verify(mailService, org.mockito.Mockito.never()).sendMemberWithdrawalApprovedEmail(
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
+    }
+
     // ------------------------------------------------------------------ 12-4. 조건 판정식
 
     @Test
