@@ -670,6 +670,10 @@ public interface AdminCreatorControllerDocs {
             정지(M1 · 지급 정지 여부 `holdsPayout` 포함) · 정지 해제 · 탈퇴 반려(M3) · 마스킹 해제(M4) 사유의 코드와 라벨 — enum 단일 소스라
             FE 가 목록을 하드코딩하지 않는다. `detailRequired=true`(기타)를 고르면 상세 · 안내 입력이 필수가 된다. 브랜드 상세의 같은 API 와 같은 모양.
 
+            `suspensionTerm` — 정지 모달 미리보기(1021 7-2): 「이의 신청 기한 · 통지 후 `appealBusinessDays`영업일 이상 · `appealDeadlineAt`까지」
+            (응답 시각 기준 · 공휴일 반영) · 「소명 검토 · 접수 후 `appealReviewBusinessDays`영업일」(미정이면 null → 「[정책값 미정]」).
+            저장 값은 정지 응답의 `term.appealDeadlineAt` 이다.
+
             **권한:** ADMIN
             """)
     @ApiResponses({
@@ -701,7 +705,8 @@ public interface AdminCreatorControllerDocs {
                                         { "code": "SETTLEMENT_WITHHOLDING_CHECK", "label": "정산·원천징수 확인", "detailRequired": false, "holdsPayout": null },
                                         { "code": "CONTRACT_DISPUTE", "label": "계약·분쟁 대응", "detailRequired": false, "holdsPayout": null },
                                         { "code": "INVESTIGATION_COOPERATION", "label": "수사기관 협조", "detailRequired": false, "holdsPayout": null }
-                                      ]
+                                      ],
+                                      "suspensionTerm": { "appealBusinessDays": 3, "appealDeadlineAt": "2026-10-22T23:59:59", "appealReviewBusinessDays": null }
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "인증 실패",

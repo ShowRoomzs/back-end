@@ -56,6 +56,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
     @Autowired private BrandSanctionRepository sanctionRepository;
     @Autowired private BrandWithdrawalRequestRepository withdrawalRepository;
     @Autowired private BrandWithdrawalService withdrawalService;
+    @Autowired private showroomz.global.config.properties.MemberProperties memberProperties;
 
     private String base() {
         return BRANDS + "/" + brand.marketId();
@@ -409,6 +410,32 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.suspensionReasons[5].detailRequired").value(true))
                 .andExpect(jsonPath("$.releaseReasons.length()").value(2))
                 .andExpect(jsonPath("$.withdrawalRejectReasons.length()").value(5));
+    }
+
+    @Test
+    @DisplayName("[56 B4] 사유 목록의 정지 모달 미리보기 — 이의 신청 3영업일 · 소명 검토 미정 null · 미리보기 기한 = 지금 정지하면 저장되는 기한 · "
+            + "설정 영업일을 바꾸면 따라간다")
+    void reasonOptionsSuspensionTermPreview() throws Exception {
+        JsonNode term = json(adminGet(BRANDS + "/reason-options").andExpect(status().isOk())).get("suspensionTerm");
+        assertThat(term.get("appealBusinessDays").asInt()).isEqualTo(3);
+        assertThat(term.path("appealReviewBusinessDays").isNull() || term.path("appealReviewBusinessDays").isMissingNode())
+                .isTrue();
+        String preview = term.get("appealDeadlineAt").asText();
+        assertThat(preview).contains("T23:59:59");
+
+        suspend("CONSUMER_RESPONSE_NEGLECT", null).andExpect(status().isOk());
+        assertThat(json(adminGet(base())).at("/rail/currentStatus/sanction/term/appealDeadlineAt").asText())
+                .isEqualTo(preview);
+
+        memberProperties.getSanction().setAppealBusinessDays(5);
+        try {
+            JsonNode changed = json(adminGet(BRANDS + "/reason-options")).get("suspensionTerm");
+            assertThat(changed.get("appealBusinessDays").asInt()).isEqualTo(5);
+            // 같은 포맷(yyyy-MM-dd'T'HH:mm:ss'Z')이라 문자열 순서가 시각 순서다
+            assertThat(changed.get("appealDeadlineAt").asText()).isGreaterThan(preview);
+        } finally {
+            memberProperties.getSanction().setAppealBusinessDays(3);
+        }
     }
 
     // ------------------------------------------------------------------ BD-16 · BD-17 메모 · 이력

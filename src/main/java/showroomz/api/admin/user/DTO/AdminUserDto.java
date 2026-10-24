@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.*;
 import showroomz.api.admin.common.AdminMemberNavigation;
 import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.AdminSuspensionTermPreview;
 import showroomz.api.admin.transaction.dto.AdminOrderDto;
 import showroomz.api.admin.user.service.AdminUserDetailAssembler;
 import showroomz.api.admin.user.service.AdminUserTradeReader;
@@ -81,7 +82,9 @@ public class AdminUserDto {
             @Schema(description = "정지 사유 6종 — 소비자 정지는 지급과 무관해 holdsPayout 은 null") List<AdminReasonOption> suspensionReasons,
             @Schema(description = "해제 사유 3종 — TERM_ENDED(제재 기간 종료)를 운영자도 고른다(D18 · 브랜드 · 인플루언서에는 없다)")
             List<AdminReasonOption> releaseReasons,
-            @Schema(description = "마스킹 해제 사유 4종 — 정형 사유만 · 기타 · 상세 없음(M3-3)") List<AdminReasonOption> privacyUnmaskReasons) {
+            @Schema(description = "마스킹 해제 사유 4종 — 정형 사유만 · 기타 · 상세 없음(M3-3)") List<AdminReasonOption> privacyUnmaskReasons,
+            @Schema(description = "정지 모달(M1) 미리보기 — 이의 신청 기한 영업일 · 지금 정지하면 잡힐 기한 · 소명 검토 영업일(브랜드 · 인플루언서와 같은 모양)")
+            AdminSuspensionTermPreview suspensionTerm) {
     }
 
     @Schema(name = "AdminUserUnmaskRequest", description = "마스킹 해제 요청(M2) — 정형 사유 4종 중 하나 · 상세 사유란 없음")

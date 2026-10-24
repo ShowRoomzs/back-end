@@ -452,6 +452,35 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
                 .getReleaseReason().name()).isEqualTo("TERM_ENDED");
     }
 
+    @Test
+    @DisplayName("[56 B4] 사유 목록의 정지 모달 미리보기 — 이의 신청 3영업일 · 소명 검토 미정 null(설정하면 그 값) · 미리보기 기한 = 지금 정지하면 "
+            + "저장되는 기한")
+    void reasonOptionsSuspensionTermPreview() throws Exception {
+        JsonNode term = fetchReasonOptions().path("suspensionTerm");
+        assertThat(term.path("appealBusinessDays").asInt()).isEqualTo(3);
+        assertThat(term.path("appealReviewBusinessDays").isNull() || term.path("appealReviewBusinessDays").isMissingNode())
+                .isTrue();
+        String preview = term.path("appealDeadlineAt").asText();
+        assertThat(preview).contains("T23:59:59");
+
+        JsonNode suspended = objectMapper.readTree(suspend(mia, "RETURN_ABUSE", null).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+        assertThat(suspended.at("/statusCard/sanction/term/appealDeadlineAt").asText()).isEqualTo(preview);
+
+        memberProperties.getSanction().setAppealReviewBusinessDays(5);
+        try {
+            assertThat(fetchReasonOptions().at("/suspensionTerm/appealReviewBusinessDays").asInt()).isEqualTo(5);
+        } finally {
+            memberProperties.getSanction().setAppealReviewBusinessDays(null);
+        }
+    }
+
+    private JsonNode fetchReasonOptions() throws Exception {
+        return objectMapper.readTree(mockMvc.perform(get(ADMIN + "/reason-options")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+    }
+
     private static List<String> texts(JsonNode array, String field) {
         List<String> values = new java.util.ArrayList<>();
         array.forEach(node -> values.add(node.path(field).asText()));

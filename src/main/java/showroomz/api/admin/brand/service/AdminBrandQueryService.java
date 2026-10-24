@@ -16,6 +16,7 @@ import showroomz.api.admin.common.AdminMemberListTab;
 import showroomz.api.admin.brand.dto.AdminBrandDto;
 import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.AdminSuspensionTermPreview;
 import showroomz.api.admin.common.MemberNumber;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.seller.auth.type.SellerStatus;
@@ -125,7 +126,8 @@ public class AdminBrandQueryService {
         return new AdminBrandDto.ReasonOptions(
                 AdminReasonOption.suspension(BrandSuspensionReason.values()),
                 AdminReasonOption.memberRelease(),
-                AdminReasonOption.of(BrandWithdrawalRejectReason.values()));
+                AdminReasonOption.of(BrandWithdrawalRejectReason.values()),
+                AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.now()));
     }
 
     // ------------------------------------------------------------------ 목록

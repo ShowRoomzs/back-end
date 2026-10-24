@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.AdminSuspensionTermPreview;
 import showroomz.api.admin.common.MemberNumber;
 import showroomz.api.admin.creator.dto.AdminCreatorDto.*;
 import showroomz.api.admin.creator.repository.AdminCreatorListQueryRepository;
@@ -403,7 +404,8 @@ public class AdminCreatorQueryService {
                 AdminReasonOption.of(CreatorWithdrawalRejectReason.values()),
                 Arrays.stream(CreatorPrivacyAccessReason.values())
                         .map(r -> AdminReasonOption.label(r.name(), r.getLabel()))
-                        .toList());
+                        .toList(),
+                AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.now()));
     }
 
     // ------------------------------------------------------------------ 3-6 처리 이력

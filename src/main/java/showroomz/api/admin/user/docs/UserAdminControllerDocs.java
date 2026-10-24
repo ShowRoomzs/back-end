@@ -171,7 +171,10 @@ public interface UserAdminControllerDocs {
                     "- **정지 사유 6종** — `detailRequired=true`(기타)를 고르면 `reasonDetail`이 필수입니다. 소비자 정지는 지급과 무관해 `holdsPayout`은 null 입니다.\n" +
                     "- **해제 사유 3종** — 상세 입력란이 없어 `detailRequired`는 모두 false 입니다. `TERM_ENDED`(제재 기간 종료)를 운영자도 고를 수 있습니다 — " +
                     "브랜드 · 인플루언서 해제 사유에는 없는 값입니다(D18). 정지 기간이 끝난 정지는 시스템이 같은 사유로 자동 해제합니다.\n" +
-                    "- **마스킹 해제 사유 4종** — 정형 사유만입니다. 「기타」 · 상세 사유가 없습니다(이 4종을 벗어나는 열람은 하지 않는다).\n\n" +
+                    "- **마스킹 해제 사유 4종** — 정형 사유만입니다. 「기타」 · 상세 사유가 없습니다(이 4종을 벗어나는 열람은 하지 않는다).\n" +
+                    "- **`suspensionTerm`** — 정지 모달 미리보기(1021 7-2): 「이의 신청 기한 · 통지 후 `appealBusinessDays`영업일 이상 · " +
+                    "`appealDeadlineAt`까지」(응답 시각 기준 · 공휴일 반영) · 「소명 검토 · 접수 후 `appealReviewBusinessDays`영업일」" +
+                    "(미정이면 null → 「[정책값 미정]」). 저장 값은 정지 응답의 `term.appealDeadlineAt` 입니다. 브랜드 · 인플루언서와 같은 모양입니다.\n\n" +
                     "**권한:** ADMIN"
     )
     @ApiResponses(value = {
@@ -196,7 +199,8 @@ public interface UserAdminControllerDocs {
                                     "    { \"code\": \"DELIVERY_ACCIDENT\", \"label\": \"배송 사고\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
                                     "    { \"code\": \"PAYMENT_RETURN_DISPUTE\", \"label\": \"결제·반품 분쟁\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
                                     "    { \"code\": \"INVESTIGATION_COOPERATION\", \"label\": \"수사기관 협조\", \"detailRequired\": false, \"holdsPayout\": null }\n" +
-                                    "  ]\n" +
+                                    "  ],\n" +
+                                    "  \"suspensionTerm\": { \"appealBusinessDays\": 3, \"appealDeadlineAt\": \"2026-10-22T23:59:59\", \"appealReviewBusinessDays\": null }\n" +
                                     "}"))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),

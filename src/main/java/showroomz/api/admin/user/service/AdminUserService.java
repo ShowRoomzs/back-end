@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.user.AdminMemberNumber;
 import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.AdminSuspensionTermPreview;
 import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.repository.AdminUserQueryRepository;
 import showroomz.api.admin.user.type.AdminUserSort;
@@ -55,6 +56,7 @@ public class AdminUserService {
     private final AdminUserHistoryReader historyReader;
     private final AdminUserTradeReader tradeReader;
     private final AdminUserDetailAssembler detailAssembler;
+    private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     /**
      * 소비자 목록 (§25-3).
@@ -171,7 +173,8 @@ public class AdminUserService {
                         .toList(),
                 Arrays.stream(UserPrivacyAccessReason.values())
                         .map(r -> AdminReasonOption.label(r.name(), r.getLabel()))
-                        .toList());
+                        .toList(),
+                AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.now()));
     }
 
     /** 처리 이력 전체(51-6 설계서 7-2) — 원천 넷을 메모리에서 합친 뒤 자른다. */

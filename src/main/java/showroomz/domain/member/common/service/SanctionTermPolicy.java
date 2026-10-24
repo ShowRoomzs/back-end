@@ -46,6 +46,11 @@ public class SanctionTermPolicy {
         return businessCalendar.addBusinessDays(base, properties.getSanction().getAppealBusinessDays()).atTime(END_OF_DAY);
     }
 
+    /** 이의 신청 기한 영업일 수({@code member.sanction.appeal-business-days}) — 정지 모달 「통지 후 N영업일 이상」. */
+    public int appealBusinessDays() {
+        return properties.getSanction().getAppealBusinessDays();
+    }
+
     /** 소명 검토 N영업일 — 운영자 처리 기한 · 표시만. 미정이면 null(FE 「[정책값 미정]」). */
     public Integer appealReviewBusinessDays() {
         return properties.getSanction().getAppealReviewBusinessDays();

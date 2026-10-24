@@ -416,6 +416,22 @@ class AdminCreatorIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.privacyUnmaskReasons.length()").value(4));
     }
 
+    @Test
+    @DisplayName("[56 B4] 사유 목록의 정지 모달 미리보기 — 이의 신청 3영업일 · 소명 검토 미정 null · 미리보기 기한 = 지금 정지하면 저장되는 기한")
+    void reasonOptionsSuspensionTermPreview() throws Exception {
+        var term = json(adminGet(CREATORS + "reason-options").andExpect(status().isOk())).get("suspensionTerm");
+        assertThat(term.get("appealBusinessDays").asInt()).isEqualTo(3);
+        assertThat(term.path("appealReviewBusinessDays").isNull() || term.path("appealReviewBusinessDays").isMissingNode())
+                .isTrue();
+        String preview = term.get("appealDeadlineAt").asText();
+        assertThat(preview).contains("T23:59:59");
+
+        String base = CREATORS + creator.getId();
+        adminPost(base + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT")).andExpect(status().isOk());
+        assertThat(json(adminGet(base)).at("/rail/currentStatus/suspension/term/appealDeadlineAt").asText())
+                .isEqualTo(preview);
+    }
+
     // ------------------------------------------------------------------ CR-08 소비자 앱 탈퇴 우회 차단(정합 계획서 R0-2)
 
     @Test

@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import showroomz.api.admin.common.AdminReasonOption;
+import showroomz.api.admin.common.AdminSuspensionTermPreview;
 import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.contract.type.ContractStatus;
 import showroomz.domain.contract.type.FixedFeeTrigger;
@@ -327,6 +328,8 @@ public final class AdminCreatorDto {
     @Schema(name = "AdminCreatorReasonOptions", description = "모달 셀렉트의 단일 소스")
     public record ReasonOptions(List<AdminReasonOption> suspensionReasons, List<AdminReasonOption> releaseReasons,
                                 List<AdminReasonOption> withdrawalRejectReasons,
-                                List<AdminReasonOption> privacyUnmaskReasons) {
+                                List<AdminReasonOption> privacyUnmaskReasons,
+                                @Schema(description = "정지 모달(M1) 미리보기 — 이의 신청 기한 영업일 · 지금 정지하면 잡힐 기한 · 소명 검토 영업일")
+                                AdminSuspensionTermPreview suspensionTerm) {
     }
 }
