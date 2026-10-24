@@ -492,6 +492,38 @@ class SellerPerformanceBlocksIntegrationTest extends SettlementTestSupport {
         assertThat(d4.at("/kpi/payout/original").asLong()).isEqualTo(4_775_800);
     }
 
+    /** 요약 KPI 는 정산액을 합산하지 않는다(거래액 · 방문 · 전환 · ROAS) — 차감이 걸리는 곳은 협의 중의 「원래 값」뿐이다. */
+    @Test
+    @DisplayName("[56 P1-05] 조정 협의 중 — 정산액 · 수익의 original 도 차감 전 기준(4,775,800 · 1,287,200) · 목록 행도 같다 · 요약 거래액은 차감과 무관")
+    void adjustingOriginalIsBeforeClawback() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+        jdbc.update("UPDATE contract SET fixed_fee_amount = 400000 WHERE contract_id = ?", groupBuy.getContract().getId());
+        jdbc.update("UPDATE settlement SET status = 'PAYOUT_SCHEDULED', confirmed_sales_amount = 5480000, reward_amount = 548000, "
+                + "original_reward_amount = 548000, reward_vat_amount = 54800, pg_fee_amount = 164400, "
+                + "platform_fee_amount = 0, consumer_delivery_fee_amount = 30000, reship_fee_amount = 27000, "
+                + "return_deduction_fee_amount = 6000, brand_clawback_amount = 24150, "
+                + "brand_payout_amount = 4751650 WHERE settlement_id = ?", s.getId());
+        put(costUrl(), costBody(0L, 0L, null, null, null, 3_088_600L)).andExpect(status().isOk());
+        jdbc.update("UPDATE settlement SET status = 'ADJUSTING' WHERE settlement_id = ?", s.getId());
+
+        JsonNode d = detail();
+        assertThat(d.at("/status").asText()).isEqualTo("ADJUSTING");
+        assertThat(d.at("/kpi/payout/state").asText()).isEqualTo("NEGOTIATING");
+        assertThat(d.at("/kpi/payout/value").isNull()).isTrue();
+        assertThat(d.at("/kpi/payout/original").asLong()).isEqualTo(4_775_800);
+        assertThat(d.at("/cost/profit/state").asText()).isEqualTo("NEGOTIATING");
+        assertThat(d.at("/cost/profit/original").asLong()).isEqualTo(1_287_200);
+        JsonNode row = json(sellerGet(PERF + "/group-buys")).at("/content/0");
+        assertThat(row.at("/payout/original").asLong()).isEqualTo(4_775_800);
+
+        // 협의가 끝나 지급 예정으로 돌아오면(모집단) 요약 거래액은 확정 거래액 그대로다 — 차감은 정산액에만 걸린다.
+        jdbc.update("UPDATE settlement SET status = 'PAYOUT_SCHEDULED' WHERE settlement_id = ?", s.getId());
+        JsonNode summary = json(sellerGet(PERF + "/summary"));
+        assertThat(summary.at("/confirmedSales/value").asLong()).isEqualTo(d.at("/kpi/confirmedSales/value").asLong());
+    }
+
     // ------------------------------------------------------------------ CO 원가 저장
 
     @Test

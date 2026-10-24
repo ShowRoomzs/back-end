@@ -360,6 +360,27 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
                         .value(due));
     }
 
+    /** 알려진 한계(56 수정 기록 5-2) — 「원래」는 확정 기준 날짜다. 해제 때 늦춰진 행 예정일은 남지 않는다. */
+    @Test
+    @DisplayName("[56 A3-04] 알려진 한계 — 원래 예정일이 지난 뒤 해제되면 행 예정일이 늦춰지고, 다시 보류되면 「원래」는 늦춰진 날이 아니라 확정 기준 날짜다")
+    void originalDueDateAfterReleaseAndRehold() throws Exception {
+        Settlement s = confirm(seedSettlement("가을 공구", 1_000_000, SettlementStatus.REVIEWING));
+        java.time.LocalDate original = java.time.LocalDate.now().minusDays(10);
+        jdbc.update("UPDATE settlement SET payout_due_date = ? WHERE settlement_id = ?", original, s.getId());
+        jdbc.update("UPDATE settlement_payout SET due_date = ? WHERE settlement_id = ? AND payee = 'BRAND'", original, s.getId());
+
+        suspendBrand("SETTLEMENT_INFO_MISMATCH", null);
+        releaseBrand();
+        SettlementPayout released = payout(s.getId(), SettlementPayee.BRAND);
+        assertThat(released.getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        assertThat(released.getDueDate()).isAfter(original);   // 「원래 예정일과 오늘 중 늦은 날」 — 지난 날로 되돌리지 않는다
+
+        suspendBrand("SETTLEMENT_INFO_MISMATCH", null);
+        sellerGet("/v1/seller/settlements/" + s.getId())
+                .andExpect(jsonPath("$.payoutHold.reason").value("BRAND_SUSPENDED"))
+                .andExpect(jsonPath("$.payoutHold.originalDueDate").value(original.toString()));
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private record BrandRequest(Long marketId, Long connectionId) {
