@@ -266,6 +266,60 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
         requestCreatorWithdrawal(token).andExpect(status().isCreated());
     }
 
+    @Test
+    @DisplayName("[55 S11-05] 대기 중인 신청이 있는 채 정지되고 정지 중 탈퇴 설정이 꺼져 있어도 — 접수된 신청은 그대로 · 스튜디오 계정 탭 PENDING 유지 · "
+            + "suspensionBlockedReason null(1021 7-3)")
+    void pendingCreatorWithdrawalSurvivesSuspensionWhenSettingOff() throws Exception {
+        Creator fresh = createCreator("대기_정지", "pending-suspended");
+        String token = bearerToken(fresh.getUser().getUsername(), RoleType.CREATOR, fresh.getUser().getId());
+        requestCreatorWithdrawal(token).andExpect(status().isCreated());
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> creatorSanctionService.suspend(fresh.getId(), CreatorSuspensionReason.FALSE_INFORMATION, null,
+                now.toLocalDate().plusDays(7), operator.getId(), "운영자", now));
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            mockMvc.perform(get(CREATOR_ACCOUNT).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.withdrawal.state").value("PENDING"))
+                    .andExpect(jsonPath("$.withdrawal.suspensionBlockedReason").doesNotExist());
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(jdbc.queryForObject("SELECT status FROM creator_withdrawal_request WHERE creator_id = ?", String.class,
+                fresh.getId())).isEqualTo("PENDING");
+    }
+
+    // ------------------------------------------------------------------ 55 M5 어드민 정지 블록 기간
+
+    @Test
+    @DisplayName("[55 M5-04] 종료일 없는 정지 — 브랜드 · 인플루언서 · 소비자 어드민 상세 정지 블록 term 의 endsOn · autoReleaseAt · periodDays null · "
+            + "이의 신청 기한은 있다")
+    void indefiniteSuspensionTermHasOnlyAppealDeadline() throws Exception {
+        adminPost("/v1/admin/brands/" + brand.marketId() + "/suspend", Map.of("reason", "REPEATED_SHIPPING_DELAY"))
+                .andExpect(status().isOk());
+        adminGet("/v1/admin/brands/" + brand.marketId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.endsOn").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.sanction.term.periodDays").doesNotExist());
+
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT"))
+                .andExpect(status().isOk());
+        adminGet("/v1/admin/creators/" + creator.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.endsOn").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath("$.rail.currentStatus.suspension.term.periodDays").doesNotExist());
+
+        adminPost("/v1/admin/users/" + consumer.getId() + "/suspend", Map.of("reason", "RETURN_ABUSE"))
+                .andExpect(status().isOk());
+        adminGet("/v1/admin/users/" + consumer.getId()).andExpect(status().isOk())
+                .andExpect(jsonPath("$.statusCard.sanction.term.appealDeadlineAt").isNotEmpty())
+                .andExpect(jsonPath("$.statusCard.sanction.term.endsOn").doesNotExist())
+                .andExpect(jsonPath("$.statusCard.sanction.term.autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath("$.statusCard.sanction.term.periodDays").doesNotExist());
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private String marketStatus() {
