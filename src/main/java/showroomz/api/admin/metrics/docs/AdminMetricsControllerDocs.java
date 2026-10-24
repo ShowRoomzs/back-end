@@ -30,8 +30,8 @@ public interface AdminMetricsControllerDocs {
                     | preset | 기간 · 단위 | 비교 |
                     |---|---|---|
                     | `TODAY` | 오늘 00:00 ~ 지금 · 시간별 | 어제 같은 시간대 |
-                    | `D7`(기본) | 7일 전 ~ 어제 · 일별 | 직전 7일 |
-                    | `M1` | 이번 달 1일 ~ 어제 · 일별(1일이면 지난달 전체) | 전월 1일 ~ 같은 일 |
+                    | `D7` | 7일 전 ~ 어제 · 일별 | 직전 7일 |
+                    | `M1`(기본 · 한 달) | 이번 달 1일 ~ 어제 · 일별(1일이면 지난달 전체) | 전월 1일 ~ 같은 일 |
                     | `M6` | 6개월 · 월별 | 직전 같은 길이 |
                     | `CUSTOM` | `from` ~ `to`(포함 · 최대 1년) · 90일 초과면 월별 | 직전 같은 길이 |
 
@@ -55,7 +55,7 @@ public interface AdminMetricsControllerDocs {
             @ApiResponse(responseCode = "400", description = "INVALID_INPUT_VALUE — CUSTOM 기간 오류(from > to · 1년 초과)")
     })
     ResponseEntity<AdminMetricsDto.Response> getMetrics(
-            @Parameter(description = "TODAY · D7(기본) · M1 · M6 · CUSTOM", example = "D7") MetricsPreset preset,
+            @Parameter(description = "TODAY · D7 · M1(기본 · 한 달) · M6 · CUSTOM — 생략하면 M1", example = "M1") MetricsPreset preset,
             @Parameter(description = "CUSTOM 시작일(포함)", example = "2026-09-01") LocalDate from,
             @Parameter(description = "CUSTOM 종료일(포함)", example = "2026-09-30") LocalDate to,
             @Parameter(description = "CORE(기본) · SUPPLY · GROUP_BUY · DEMAND · OPERATION", example = "CORE") MetricsTab tab);
@@ -78,7 +78,7 @@ public interface AdminMetricsControllerDocs {
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<List<AdminMetricsDto.TabBadge>> getTabs(
-            @Parameter(description = "TODAY · D7(기본) · M1 · M6 · CUSTOM", example = "D7") MetricsPreset preset,
+            @Parameter(description = "TODAY · D7 · M1(기본 · 한 달) · M6 · CUSTOM — 생략하면 M1", example = "M1") MetricsPreset preset,
             @Parameter(description = "CUSTOM 시작일(포함)", example = "2026-09-01") LocalDate from,
             @Parameter(description = "CUSTOM 종료일(포함)", example = "2026-09-30") LocalDate to);
 }

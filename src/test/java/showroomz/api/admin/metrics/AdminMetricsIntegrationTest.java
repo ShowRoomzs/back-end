@@ -143,6 +143,22 @@ class AdminMetricsIntegrationTest extends SettlementTestSupport {
         }
     }
 
+    @Test
+    @DisplayName("[56 D7] 기간 생략 — 지표 · 탭 배지 모두 한 달(M1)이 기본이다")
+    void defaultPresetIsThisMonth() throws Exception {
+        purchase(creamVariant, 1);
+
+        JsonNode omitted = json(adminGet(METRICS + "?tab=CORE").andExpect(status().isOk()));
+        JsonNode month = json(adminGet(METRICS + "?preset=M1&tab=CORE").andExpect(status().isOk()));
+        assertThat(omitted.get("preset").asText()).isEqualTo("M1");
+        assertThat(omitted.get("period")).isEqualTo(month.get("period"));
+        assertThat(omitted.get("compare")).isEqualTo(month.get("compare"));
+        assertThat(omitted.get("rows")).isEqualTo(month.get("rows"));
+
+        JsonNode omittedTabs = json(adminGet(METRICS + "/tabs").andExpect(status().isOk()));
+        assertThat(omittedTabs).isEqualTo(json(adminGet(METRICS + "/tabs?preset=M1").andExpect(status().isOk())));
+    }
+
     private static Set<String> worsened(JsonNode rows) {
         Set<String> keys = new HashSet<>();
         rows.forEach(r -> {

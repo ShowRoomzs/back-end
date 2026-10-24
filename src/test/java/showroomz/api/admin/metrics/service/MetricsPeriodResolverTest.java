@@ -44,9 +44,10 @@ class MetricsPeriodResolverTest {
         }
 
         @Test
-        @DisplayName("D7(기본) — 7일 전 ~ 어제(오늘 00:00 제외) · 일별 · 비교 = 직전 7일")
-        void lastSevenDaysIsDefault() {
-            MetricsPeriodResolver.Resolved r = resolver.resolve(null, null, null, NOW);
+        @DisplayName("D7 — 7일 전 ~ 어제(오늘 00:00 제외) · 일별 · 비교 = 직전 7일")
+        void lastSevenDays() {
+            // 기본 프리셋은 56 D7 에서 M1 로 바뀌었다 — D7 은 명시해서 본다
+            MetricsPeriodResolver.Resolved r = resolver.resolve(MetricsPreset.D7, null, null, NOW);
 
             assertThat(r.preset()).isEqualTo(MetricsPreset.D7);
             assertThat(r.from()).isEqualTo(d("2026-10-15"));
@@ -56,6 +57,21 @@ class MetricsPeriodResolverTest {
             assertThat(r.unit()).isEqualTo(MetricsUnit.DAY);
             assertThat(r.label()).isEqualTo("10.15 ~ 10.21 (7일)");
             assertThat(r.days()).isEqualTo(7);
+        }
+
+        @Test
+        @DisplayName("[56 D7] 기본 — 프리셋을 넘기지 않으면 M1(한 달 · 이번 달 1일 ~ 어제 · 비교 = 전월 같은 기간)")
+        void thisMonthIsDefault() {
+            MetricsPeriodResolver.Resolved r = resolver.resolve(null, null, null, NOW);
+
+            assertThat(r).isEqualTo(resolver.resolve(MetricsPreset.M1, null, null, NOW));
+            assertThat(r.preset()).isEqualTo(MetricsPreset.M1);
+            assertThat(r.from()).isEqualTo(d("2026-10-01"));
+            assertThat(r.to()).isEqualTo(d("2026-10-22"));
+            assertThat(r.compareFrom()).isEqualTo(d("2026-09-01"));
+            assertThat(r.compareTo()).isEqualTo(d("2026-09-22"));
+            assertThat(r.unit()).isEqualTo(MetricsUnit.DAY);
+            assertThat(r.label()).isEqualTo("10.01 ~ 10.21 (21일)");
         }
 
         @Test

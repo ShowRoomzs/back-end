@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * 운영 지표 기간 규칙(1017 설계서 7-0 ② · 7-1) — 서버가 확정해 응답에 적는다. 기준 시각은 오늘 00:00(TODAY 만 지금).
- * 비교는 언제나 직전 같은 길이다(M1 만 전월 1일 ~ 같은 일).
+ * 비교는 언제나 직전 같은 길이다(M1 만 전월 1일 ~ 같은 일). 프리셋을 넘기지 않으면 M1(한 달)이다.
  */
 @Component
 public class MetricsPeriodResolver {
@@ -26,9 +26,12 @@ public class MetricsPeriodResolver {
     private static final DateTimeFormatter MD = DateTimeFormatter.ofPattern("MM.dd");
     private static final DateTimeFormatter YM = DateTimeFormatter.ofPattern("yyyy.MM");
 
+    /** 기간을 고르지 않았을 때 — 시안 21 「한 달(기본)」. */
+    static final MetricsPreset DEFAULT_PRESET = MetricsPreset.M1;
+
     public Resolved resolve(MetricsPreset preset, LocalDate from, LocalDate to, LocalDateTime now) {
         LocalDateTime today = now.toLocalDate().atStartOfDay();
-        return switch (preset == null ? MetricsPreset.D7 : preset) {
+        return switch (preset == null ? DEFAULT_PRESET : preset) {
             case TODAY -> new Resolved(MetricsPreset.TODAY, today, now, today.minusDays(1), now.minusDays(1),
                     MetricsUnit.HOUR, "오늘 00:00 ~ " + now.toLocalTime().withNano(0).withSecond(0), "어제 같은 시간대");
             case D7 -> lastDays(MetricsPreset.D7, today.minusDays(7), today, MetricsUnit.DAY);

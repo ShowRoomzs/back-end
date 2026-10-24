@@ -13,7 +13,7 @@ public final class AdminMetricsDto {
 
     @Schema(name = "AdminMetrics")
     public record Response(
-            @Schema(example = "D7") String preset,
+            @Schema(description = "적용된 프리셋 — 요청에서 생략하면 M1(한 달)", example = "M1") String preset,
             @Schema(example = "CORE") String tab,
             Period period,
             @Schema(description = "비교 기간 — 언제나 직전 같은 길이(M1 은 전월 1일 ~ 같은 일)") Period compare,
