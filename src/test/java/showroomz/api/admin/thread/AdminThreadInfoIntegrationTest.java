@@ -20,7 +20,9 @@ import showroomz.domain.groupbuy.type.SuspensionReasonClause;
 import showroomz.domain.groupbuy.type.SuspensionWithdrawReason;
 import showroomz.domain.member.brand.entity.BrandSanction;
 import showroomz.domain.member.brand.service.BrandSanctionService;
+import showroomz.domain.member.brand.service.BrandWithdrawalEligibility;
 import showroomz.domain.member.brand.type.BrandSuspensionReason;
+import showroomz.domain.member.brand.type.BrandWithdrawalCondition;
 import showroomz.domain.member.brand.type.SanctionReleaseReason;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.service.CreatorSanctionService;
@@ -29,12 +31,15 @@ import showroomz.domain.member.creator.type.CreatorSuspensionReason;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.entity.SettlementClawback;
+import showroomz.domain.settlement.repository.SettlementClawbackRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.service.SettlementAmounts;
 import showroomz.domain.settlement.service.SettlementCalculator;
 import showroomz.domain.settlement.service.SettlementInput;
 import showroomz.domain.settlement.service.SettlementNumberGenerator;
 import showroomz.domain.settlement.service.SettlementRates;
+import showroomz.domain.settlement.type.ClawbackSide;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.support.BrandFixture;
 
@@ -68,6 +73,10 @@ class AdminThreadInfoIntegrationTest extends AdminThreadTestSupport {
     @Autowired private SettlementNumberGenerator settlementNumbers;
     @Autowired private BrandSanctionService brandSanctionService;
     @Autowired private CreatorSanctionService creatorSanctionService;
+    @Autowired private SettlementClawbackRepository clawbacks;
+    @Autowired private BrandWithdrawalEligibility withdrawalEligibility;
+
+    private int clawbackSeq;
 
     // ------------------------------------------------------------------ ① 정보
 
@@ -273,6 +282,41 @@ class AdminThreadInfoIntegrationTest extends AdminThreadTestSupport {
     }
 
     @Test
+    @DisplayName("[55 A9-02] 미정산 건수 — 브랜드 쪽 회수 대기 차감(BRAND · PENDING)이 브랜드 미정산에 1건씩 더해진다. 인플루언서 쪽 · 처리된 차감 · "
+            + "다른 브랜드의 차감은 빠지고, 숫자는 회원 상세 탈퇴 조건 「미정산」과 같다")
+    void unsettledCountIncludesPendingBrandClawback() throws Exception {
+        Long paid = settlementOf(concludedGroupBuy(), SettlementStatus.PAID);
+        info(brandChannel).andExpect(jsonPath("$.progress.unsettledCount").value(0));
+
+        Long pending = clawback(brand.marketId(), paid, ClawbackSide.BRAND, "PENDING");
+        info(brandChannel).andExpect(jsonPath("$.progress.unsettledCount").value(1));
+        // 브랜드 쪽 차감은 인플루언서 미정산에 붙지 않는다
+        info(creatorChannel).andExpect(jsonPath("$.progress.unsettledCount").value(0));
+
+        // 인플루언서 쪽 차감 · 이미 처리된(반영 · 미회수) 차감은 세지 않는다
+        clawback(brand.marketId(), paid, ClawbackSide.CREATOR, "PENDING");
+        clawback(brand.marketId(), paid, ClawbackSide.BRAND, "APPLIED");
+        clawback(brand.marketId(), paid, ClawbackSide.BRAND, "UNRECOVERABLE");
+        info(brandChannel).andExpect(jsonPath("$.progress.unsettledCount").value(1));
+
+        // 다른 브랜드의 회수 대기 차감은 그 브랜드에만
+        BrandFixture.Brand mood = brandWithChannel("mood@showroomz.test", "무드코스메틱");
+        clawback(mood.marketId(), settlementOf(concludedGroupBuy(mood), SettlementStatus.PAID), ClawbackSide.BRAND, "PENDING");
+        info(channelOf(mood.market())).andExpect(jsonPath("$.progress.unsettledCount").value(1));
+
+        // 지급 전 정산과 함께 — 정산 1 + 차감 1
+        settlementOf(concludedGroupBuy(), SettlementStatus.REVIEWING);
+        info(brandChannel).andExpect(jsonPath("$.progress.unsettledCount").value(2));
+        assertThat(withdrawalEligibility.evaluate(brand.marketId()).get(BrandWithdrawalCondition.UNSETTLED)).isEqualTo(2);
+        assertThat(withdrawalEligibility.evaluate(mood.marketId()).get(BrandWithdrawalCondition.UNSETTLED)).isEqualTo(1);
+
+        // 차감이 다음 정산에 반영되면 빠진다
+        jdbc.update("UPDATE settlement_clawback SET status = 'APPLIED' WHERE clawback_id = ?", pending);
+        info(brandChannel).andExpect(jsonPath("$.progress.unsettledCount").value(1));
+        assertThat(withdrawalEligibility.evaluate(brand.marketId()).get(BrandWithdrawalCondition.UNSETTLED)).isEqualTo(1);
+    }
+
+    @Test
     @DisplayName("중단 예정 — 직권 중단 사전 통지(NOTICED)만 센다. 철회 · 집행되면 빠지고, 통지 없는 중단 예정 상태는 세지 않는다(55 계획서 A10 · D23)")
     void suspensionScheduledCountsOnlyNoticedAdminSuspensions() throws Exception {
         GroupBuy target = concludedGroupBuy();
@@ -423,6 +467,18 @@ class AdminThreadInfoIntegrationTest extends AdminThreadTestSupport {
             case PAYOUT_FAILED -> "FAILED";
         };
         jdbc.update("UPDATE settlement_payout SET status = ? WHERE settlement_id = ?", payout, settlementId);
+    }
+
+    /** 차감 1건 — 생성은 환불 경로(정산 테스트) 몫이라 행만 만들고 상태는 SQL로 옮긴다. 금액 · 사유는 판정에 쓰이지 않는다. */
+    private Long clawback(Long marketId, Long originSettlementId, ClawbackSide side, String status) {
+        SettlementClawback saved = clawbacks.save(SettlementClawback.builder()
+                .clawbackNumber("CLW-%04d".formatted(++clawbackSeq)).seq(clawbackSeq).side(side)
+                .originSettlementId(originSettlementId).reason("REFUND").refundAmount(10_000).amount(3_000)
+                .marketId(marketId).creatorId(creator.getId()).createdAt(now).build());
+        if (!"PENDING".equals(status)) {
+            jdbc.update("UPDATE settlement_clawback SET status = ? WHERE clawback_id = ?", status, saved.getId());
+        }
+        return saved.getId();
     }
 
     /** 직권 중단 사전 통지 — 집행 예정 = 소명 기한 + 1일. 공구는 운영 경로처럼 중단 예정으로 옮긴다. */
