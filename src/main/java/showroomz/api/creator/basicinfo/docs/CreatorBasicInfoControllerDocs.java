@@ -303,7 +303,7 @@ public interface CreatorBasicInfoControllerDocs {
 
                     **정산 계좌**
                     - `account.holderName` 은 본인 인증 실명(마스킹)이다 — 예금주를 입력받지 않는다.
-                    - `account.verification.status` — `UNVERIFIED`(확인 전) · `VERIFYING`(실명 확인 중) · `VERIFIED`(실명 확인 완료) ·
+                    - `account.verification.status` — `UNVERIFIED`(확인 전) · `VERIFYING`(운영자 확인 중) · `VERIFIED`(확인 완료) ·
                       `FAILED`(확인 실패 · `failReason`) · `CHANGE_REQUIRED`(변경 필요). `VERIFYING · FAILED · CHANGE_REQUIRED` 면 인플루언서 몫 지급이 보류된다.
                     - 제출 서류(`bankbook` · `business.license`)의 파일명 · 크기 · 제출일은 온보딩분이면 null — 「제출 완료」만 그린다.
 
@@ -346,7 +346,7 @@ public interface CreatorBasicInfoControllerDocs {
                                               "account": {
                                                 "bankName": "국민은행", "accountNumber": "******456789", "holderName": "소*연", "holderRule": "REAL_NAME",
                                                 "bankbook": { "url": "https://cdn…/creator-document/bankbook.jpg", "fileName": null, "fileSize": null, "submittedAt": null },
-                                                "verification": { "status": "VERIFIED", "label": "실명 확인 완료", "tone": "SUCCESS",
+                                                "verification": { "status": "VERIFIED", "label": "확인 완료", "tone": "SUCCESS",
                                                                   "verifiedAt": "2026-07-02T10:15:00", "failReason": null }
                                               },
                                               "businessTypeChange": null,
@@ -369,7 +369,7 @@ public interface CreatorBasicInfoControllerDocs {
                                                 "bankName": "신한은행", "accountNumber": "******234567", "holderName": "소*연", "holderRule": "REAL_NAME_OR_COMPANY",
                                                 "bankbook": { "url": "https://cdn…/creator-document/9f2c.jpg", "fileName": "통장사본_신한은행.jpg",
                                                               "fileSize": 482113, "submittedAt": "2026-10-15T11:00:00" },
-                                                "verification": { "status": "VERIFYING", "label": "실명 확인 중", "tone": "INFO",
+                                                "verification": { "status": "VERIFYING", "label": "운영자 확인 중", "tone": "INFO",
                                                                   "verifiedAt": null, "failReason": null }
                                               },
                                               "businessTypeChange": null,
@@ -432,7 +432,7 @@ public interface CreatorBasicInfoControllerDocs {
             description = """
                     「확인이 끝날 때까지 지급 예정 N건(금액)의 입금이 보류됩니다」의 재료. 모달을 열 때 부른다.
 
-                    - `pendingPayoutCount` · `pendingPayoutAmount` — 인플루언서 몫 지급 행 중 **확정됐고 지시 전**(예정 · 보류)인 것. 실명 확인이 끝날 때까지 기다린다.
+                    - `pendingPayoutCount` · `pendingPayoutAmount` — 인플루언서 몫 지급 행 중 **확정됐고 지시 전**(예정 · 보류)인 것. 운영자 확인이 끝날 때까지 기다린다.
                     - `inFlightPayoutCount` — 이미 지급 지시가 나가 **이전 계좌로** 지급되는 건수. 변경을 막지는 않는다.
                     - 확정 전 정산(검토 · 조정 협의)은 세지 않는다 — 확정 시점의 계좌로 나간다.
                     - 0 건이면 FE 는 보류 문장을 빼고 그린다.

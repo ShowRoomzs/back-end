@@ -21,6 +21,7 @@ public interface CreatorAccountStatusControllerDocs {
                     + "- `sanction.reasonDetail` 이 있을 때만 [자세히]로 펼친다\n"
                     + "- `sanction.payoutHeld = true` → 배너 정산 줄(확정까지 진행되며, 내 리워드는 정지가 풀리면 다음 영업일에 지급)\n"
                     + "- [운영팀에 소명하기] → `operatorChannelThreadId` 스레드의 `suspendCardMessageId` 카드\n"
+                    + "- `sanction.term` → 정지 기간 · 자동 해제 · 이의 신청 기한 줄(기간 없는 정지면 `endsOn` · `autoReleaseAt` · `periodDays` 가 null)\n"
                     + "- `withdrawalPending` → 탈퇴 심사 중(새 연결 수락 · 계약 서명 제한)\n\n"
                     + "**권한:** CREATOR"
     )
@@ -38,7 +39,14 @@ public interface CreatorAccountStatusControllerDocs {
                                         "suspendedAt": "2026-10-08T14:20:00",
                                         "payoutHeld": false,
                                         "operatorChannelThreadId": 44,
-                                        "suspendCardMessageId": 1203
+                                        "suspendCardMessageId": 1203,
+                                        "term": {
+                                          "endsOn": "2026-10-14",
+                                          "autoReleaseAt": "2026-10-15T00:00:00",
+                                          "periodDays": 7,
+                                          "appealDeadlineAt": "2026-10-14T23:59:59",
+                                          "appealReviewBusinessDays": null
+                                        }
                                       },
                                       "withdrawalPending": false
                                     }"""))),

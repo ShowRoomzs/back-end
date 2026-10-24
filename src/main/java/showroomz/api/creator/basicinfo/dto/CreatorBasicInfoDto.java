@@ -264,7 +264,7 @@ public class CreatorBasicInfoDto {
         private String holderRule;
         @Schema(description = "통장 사본")
         private DocumentFile bankbook;
-        @Schema(description = "실명 확인 상태")
+        @Schema(description = "계좌 확인 상태 — 라벨은 「운영자 확인」 계열(CreatorAccountVerificationStatus)")
         private AccountVerification verification;
     }
 
@@ -273,7 +273,7 @@ public class CreatorBasicInfoDto {
     public static class AccountVerification {
         @Schema(description = "UNVERIFIED · VERIFYING · VERIFIED · FAILED · CHANGE_REQUIRED", example = "VERIFIED")
         private String status;
-        @Schema(description = "상태 라벨", example = "실명 확인 완료")
+        @Schema(description = "상태 라벨 — 확인 전 · 운영자 확인 중 · 확인 완료 · 확인 실패 · 변경 필요", example = "확인 완료")
         private String label;
         @Schema(description = "배지 톤 — NEUTRAL · INFO · SUCCESS · WARNING", example = "SUCCESS")
         private String tone;

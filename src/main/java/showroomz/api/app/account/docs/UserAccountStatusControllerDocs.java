@@ -25,7 +25,8 @@ public interface UserAccountStatusControllerDocs {
                     "1:1 문의 유형 목록에 「계정 이용 정지」 1개 추가(1d — 등록은 `POST /v1/user/inquiries` 에 `sanctionAppeal: true`)\n" +
                     "- `suspension.noticePending = true` → 정지 안내 시트(1c)를 자동으로 1회 띄운 뒤 `POST /suspension-notice/ack`\n" +
                     "- `suspension.pendingAppealInquiryId` 가 있으면 시트의 「1:1 문의로 이의 신청」이 그 문의 상세로 간다(정지당 답변 전 소명 1건)\n" +
-                    "- `releaseNotice` 가 있으면 해제 토스트 1회 뒤 `POST /release-notice/ack`\n\n" +
+                    "- `releaseNotice` 가 있으면 해제 토스트 1회 뒤 `POST /release-notice/ack`\n" +
+                    "- `suspension.term` → 시트의 「정지 기간 N일 · 자동 해제 YYYY-MM-DD · 이의 신청 기한」(기간 없는 정지면 `endsOn` · `autoReleaseAt` · `periodDays` 가 null)\n\n" +
                     "상세 사유는 내리지 않습니다 — 정형 사유(`reasonLabel`)만 노출합니다(§51-6). 진행 중 주문(배송 조회 · 취소 · 구매확정 · 반품 · 교환)과 배송지 관리 · 1:1 문의는 정지와 관계없이 그대로 동작합니다(1e).\n\n" +
                     "**권한:** USER/CREATOR (로그인 필수)\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
@@ -47,7 +48,14 @@ public interface UserAccountStatusControllerDocs {
                                                     "    \"reasonLabel\": \"욕설·비방\",\n" +
                                                     "    \"suspendedAt\": \"2026-10-10T14:20:00\",\n" +
                                                     "    \"noticePending\": true,\n" +
-                                                    "    \"pendingAppealInquiryId\": null\n" +
+                                                    "    \"pendingAppealInquiryId\": null,\n" +
+                                                    "    \"term\": {\n" +
+                                                    "      \"endsOn\": \"2026-10-16\",\n" +
+                                                    "      \"autoReleaseAt\": \"2026-10-17T00:00:00\",\n" +
+                                                    "      \"periodDays\": 7,\n" +
+                                                    "      \"appealDeadlineAt\": \"2026-10-14T23:59:59\",\n" +
+                                                    "      \"appealReviewBusinessDays\": null\n" +
+                                                    "    }\n" +
                                                     "  },\n" +
                                                     "  \"releaseNotice\": null\n" +
                                                     "}"

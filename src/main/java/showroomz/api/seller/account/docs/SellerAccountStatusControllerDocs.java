@@ -20,7 +20,8 @@ public interface SellerAccountStatusControllerDocs {
                     + "- `sanction == null` → 배너 없음(정상 계정은 상태 칩도 두지 않는다)\n"
                     + "- `sanction.reasonDetail` 이 있을 때만 배너 [자세히]로 상세 사유를 펼친다\n"
                     + "- `sanction.payoutHeld = true` → 배너에 정산 줄(정산은 확정까지 진행되며, 정지가 풀리면 다음 영업일에 지급)\n"
-                    + "- [운영팀에 소명하기] → 연결·소통의 `operatorChannelThreadId` 스레드, `suspendCardMessageId` 카드 위치\n\n"
+                    + "- [운영팀에 소명하기] → 연결·소통의 `operatorChannelThreadId` 스레드, `suspendCardMessageId` 카드 위치\n"
+                    + "- `sanction.term` → 정지 기간 · 자동 해제 · 이의 신청 기한 줄(기간 없는 정지면 `endsOn` · `autoReleaseAt` · `periodDays` 가 null)\n\n"
                     + "**권한:** SELLER"
     )
     @ApiResponses(value = {
@@ -38,7 +39,14 @@ public interface SellerAccountStatusControllerDocs {
                                                 "suspendedAt": "2026-10-08T14:20:00",
                                                 "payoutHeld": true,
                                                 "operatorChannelThreadId": 31,
-                                                "suspendCardMessageId": 902
+                                                "suspendCardMessageId": 902,
+                                                "term": {
+                                                  "endsOn": "2026-10-14",
+                                                  "autoReleaseAt": "2026-10-15T00:00:00",
+                                                  "periodDays": 7,
+                                                  "appealDeadlineAt": "2026-10-14T23:59:59",
+                                                  "appealReviewBusinessDays": null
+                                                }
                                               },
                                               "withdrawalPending": false
                                             }"""),
