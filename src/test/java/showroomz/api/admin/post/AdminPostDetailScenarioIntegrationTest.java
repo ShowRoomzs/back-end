@@ -351,6 +351,57 @@ class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
                 postProperties.setRetentionMonths(6);
             }
         }
+
+        @Test
+        @DisplayName("[56 B3-03] 스튜디오 게시물 응답의 정책값 = 어드민 상세 policy — 심사 영업일(이의 신청 expectedReviewBusinessDays) · "
+                + "이의 기한 일수(조치 appealDeadline) · 유예 일수(원본 내려받기 graceUntil) · 설정을 바꾸면 함께 바뀐다")
+        void studioPolicyMatchesAdminPolicy() throws Exception {
+            String studio = creatorToken(soyeon);
+            Long postId = publish(soyeon, "정책값 대조", LocalDateTime.now().minusDays(1));
+            suspend(postId);
+            Long appealId = appeal(postId);
+
+            JsonNode policy = detail(postId).get("policy");
+            JsonNode studioPost = studioDetail(postId, studio);
+            assertThat(studioPost.at("/appeal/expectedReviewBusinessDays").asInt())
+                    .isEqualTo(policy.get("appealReviewBusinessDays").asInt()).isEqualTo(3);
+            assertThat(at(studioPost.at("/suspension/appealDeadline")))
+                    .isEqualTo(at(studioPost.at("/suspension/suspendedAt")).plusDays(policy.get("appealDeadlineDays").asInt()));
+
+            postProperties.setAppealDeadlineDays(10);
+            postProperties.setAppealReviewBusinessDays(5);
+            postProperties.setDownloadGraceDays(14);
+            try {
+                JsonNode changed = detail(postId).get("policy");
+                assertThat(studioDetail(postId, studio).at("/appeal/expectedReviewBusinessDays").asInt())
+                        .isEqualTo(changed.get("appealReviewBusinessDays").asInt()).isEqualTo(5);
+
+                Long next = publish(soyeon, "정책값 대조 2", LocalDateTime.now().minusDays(1));
+                suspend(next);
+                JsonNode nextSuspension = studioDetail(next, studio).get("suspension");
+                assertThat(at(nextSuspension.get("appealDeadline")))
+                        .isEqualTo(at(nextSuspension.get("suspendedAt")).plusDays(changed.get("appealDeadlineDays").asInt()))
+                        .isEqualTo(at(nextSuspension.get("suspendedAt")).plusDays(10));
+
+                reject(appealId, Map.of("comment", "광고 표기 누락")).andExpect(status().isOk());
+                JsonNode adminAppeal = detail(postId).get("appeal");
+                JsonNode originals = objectMapper.readTree(downloadOriginals(postId, studio).andExpect(status().isOk())
+                        .andReturn().getResponse().getContentAsString());
+                assertThat(at(originals.get("graceUntil"))).isEqualTo(at(adminAppeal.get("graceUntil")))
+                        .isEqualTo(at(adminAppeal.get("reviewedAt")).plusDays(changed.get("downloadGraceDays").asInt()))
+                        .isEqualTo(at(adminAppeal.get("reviewedAt")).plusDays(14));
+            } finally {
+                postProperties.setAppealDeadlineDays(7);
+                postProperties.setAppealReviewBusinessDays(3);
+                postProperties.setDownloadGraceDays(7);
+            }
+        }
+
+        private JsonNode studioDetail(Long postId, String creatorToken) throws Exception {
+            return objectMapper.readTree(mockMvc.perform(get("/v1/creator/posts/" + postId)
+                            .header(HttpHeaders.AUTHORIZATION, creatorToken))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        }
     }
 
     // ------------------------------------------------------------------ 6. 상태별 화면

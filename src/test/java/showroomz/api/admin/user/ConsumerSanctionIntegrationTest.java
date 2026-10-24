@@ -11,11 +11,13 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import showroomz.api.admin.common.AdminSuspensionTermPreview;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
+import showroomz.domain.member.common.service.SanctionTermPolicy;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.UserAdminMemo;
 import showroomz.domain.member.user.entity.UserSanction;
@@ -31,11 +33,14 @@ import showroomz.domain.notification.service.PushResult;
 import showroomz.domain.notification.service.PushSender;
 import showroomz.domain.notification.type.DevicePlatform;
 import showroomz.global.config.properties.MemberProperties;
+import showroomz.global.utils.BusinessCalendar;
 import showroomz.support.IntegrationTestSupport;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -79,6 +84,10 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
     private UserSanctionService sanctionService;
     @Autowired
     private MemberProperties memberProperties;
+    @Autowired
+    private SanctionTermPolicy termPolicy;
+    @Autowired
+    private BusinessCalendar businessCalendar;
 
     /** 소비자 정지 · 해제 알림은 실제로 보낸다(0-10) — 발송 여부와 문구를 본다. */
     @MockitoBean
@@ -472,6 +481,42 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
             assertThat(fetchReasonOptions().at("/suspensionTerm/appealReviewBusinessDays").asInt()).isEqualTo(5);
         } finally {
             memberProperties.getSanction().setAppealReviewBusinessDays(null);
+        }
+    }
+
+    /**
+     * 사유 목록 API 는 응답 시각({@code LocalDateTime.now()})으로 미리보기를 만들고 시계를 주입받지 않아 날짜를 고정할 수 없다 — 같은 계산
+     * {@link AdminSuspensionTermPreview#of}를 {@code now} 인자로 불러 공휴일 · 주말을 본다. API 가 그 계산을 쓰는지는 끝에서 맞춰 본다.
+     */
+    @Test
+    @DisplayName("[56 B4-04] 정지 모달 미리보기 기한은 공휴일 · 주말을 건너뛴다 — 10.08(목) 통지는 한글날(10.09)을 빼고 10.14 · 공휴일이 없으면 10.13 · "
+            + "토요일 · 공휴일 통지는 다음 영업일(월)부터 세어 10.15 · 사유 목록 API 도 같은 계산")
+    void suspensionTermPreviewSkipsHolidaysAndWeekends() throws Exception {
+        LocalDateTime thursday = LocalDateTime.of(2026, 10, 8, 14, 20);
+        businessCalendar.replaceRegisteredHolidays(Set.of());
+        try {
+            assertThat(AdminSuspensionTermPreview.of(termPolicy, thursday).appealDeadlineAt())
+                    .isEqualTo(LocalDateTime.of(2026, 10, 13, 23, 59, 59));
+
+            businessCalendar.replaceRegisteredHolidays(Set.of(LocalDate.of(2026, 10, 9)));
+            AdminSuspensionTermPreview preview = AdminSuspensionTermPreview.of(termPolicy, thursday);
+            assertThat(preview.appealBusinessDays()).isEqualTo(3);
+            assertThat(preview.appealDeadlineAt()).isEqualTo(LocalDateTime.of(2026, 10, 14, 23, 59, 59));
+            assertThat(AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.of(2026, 10, 10, 10, 0)).appealDeadlineAt())
+                    .isEqualTo(LocalDateTime.of(2026, 10, 15, 23, 59, 59));
+            assertThat(AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.of(2026, 10, 9, 10, 0)).appealDeadlineAt())
+                    .isEqualTo(LocalDateTime.of(2026, 10, 15, 23, 59, 59));
+
+            // API — 오늘 기준 다음 영업일을 공휴일로 넣어도 미리보기가 같은 계산(공휴일 반영)으로 나온다
+            LocalDate nextBusinessDay = businessCalendar.addBusinessDays(LocalDate.now(), 1);
+            businessCalendar.replaceRegisteredHolidays(Set.of(nextBusinessDay));
+            LocalDateTime before = AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.now()).appealDeadlineAt();
+            String fetched = fetchReasonOptions().at("/suspensionTerm/appealDeadlineAt").asText();
+            LocalDateTime after = AdminSuspensionTermPreview.of(termPolicy, LocalDateTime.now()).appealDeadlineAt();
+            assertThat(LocalDateTime.parse(fetched.replace("Z", ""))).isIn(before, after).isAfter(nextBusinessDay.atStartOfDay());
+            assertThat(LocalDateTime.parse(fetched.replace("Z", "")).toLocalDate()).isNotEqualTo(nextBusinessDay);
+        } finally {
+            businessCalendar.replaceRegisteredHolidays(Set.of());
         }
     }
 
