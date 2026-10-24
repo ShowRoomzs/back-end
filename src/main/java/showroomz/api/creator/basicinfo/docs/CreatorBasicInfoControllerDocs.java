@@ -34,8 +34,13 @@ public interface CreatorBasicInfoControllerDocs {
                     **탈퇴 `state`** — 아래 순서로 처음 맞는 것 하나:
                     1. `PENDING`(S7) — 승인 대기 신청이 있다. `pendingRequest` 에 신청 id · 일시 · 사유 · 처리 기한
                     2. `REJECTED`(S8) — 가장 최근 신청이 반려됐고 안내를 아직 [확인]하지 않았다. `rejection` 에 사유 · 안내
-                    3. `AVAILABLE`(S5) — 조건 3종 모두 충족
-                    4. `BLOCKED`(S4) — 조건 미충족
+                    3. `BLOCKED`(S4) — 정지 중 신청 불가(설정 · 아래). 조건과 무관
+                    4. `AVAILABLE`(S5) — 조건 3종 모두 충족
+                    5. `BLOCKED`(S4) — 조건 미충족
+
+                    **정지 중 신청(`suspensionBlockedReason`)** — 설정 `member.sanction.allow-withdrawal-while-suspended`(기본 true)에 따른다.
+                    허용이면 정지와 무관하게 조건만 본다(항상 null). 끄면 정지 중에는 신청 409 `CREATOR_SUSPENDED` 와 같은 문장이 실린다 —
+                    `PENDING` 이면 null(접수된 신청은 유지), `REJECTED` 면 안내와 함께 실려 재신청이 막혔음을 알린다.
 
                     **조건 행(`conditions`)** — 상태와 무관하게 항상 3행(`UNFINISHED_GROUP_BUYS` · `UNFINISHED_CONTRACTS` · `UNSETTLED`)을 내린다.
                     어드민 승인 직전 재검증과 같은 판정식이다. `breakdown` 은 0 건 키를 내리지 않는다. 조건 행의 링크(공구 · 계약 · 정산 관리)는 FE 라우팅이다.
@@ -59,7 +64,7 @@ public interface CreatorBasicInfoControllerDocs {
                                               "businessEmail": "soyeon@example.com",
                                               "login": { "provider": "KAKAO", "providerLabel": "카카오" },
                                               "withdrawal": {
-                                                "state": "BLOCKED", "satisfiedCount": 0, "totalCount": 3,
+                                                "state": "BLOCKED", "suspensionBlockedReason": null, "satisfiedCount": 0, "totalCount": 3,
                                                 "conditions": [
                                                   { "code": "UNFINISHED_GROUP_BUYS", "label": "끝나지 않은 공구", "count": 2, "satisfied": false,
                                                     "resolution": "주문이 모두 종결되어야 합니다",
@@ -82,7 +87,7 @@ public interface CreatorBasicInfoControllerDocs {
                                               "businessEmail": "soyeon@example.com",
                                               "login": { "provider": "KAKAO", "providerLabel": "카카오" },
                                               "withdrawal": {
-                                                "state": "AVAILABLE", "satisfiedCount": 3, "totalCount": 3,
+                                                "state": "AVAILABLE", "suspensionBlockedReason": null, "satisfiedCount": 3, "totalCount": 3,
                                                 "conditions": [
                                                   { "code": "UNFINISHED_GROUP_BUYS", "label": "끝나지 않은 공구", "count": 0, "satisfied": true,
                                                     "resolution": "주문이 모두 종결되어야 합니다", "breakdown": [] },
@@ -95,13 +100,26 @@ public interface CreatorBasicInfoControllerDocs {
                                               }
                                             }
                                             """),
+                                    @ExampleObject(name = "정지 중 신청 불가(BLOCKED · 설정 false)", value = """
+                                            {
+                                              "identity": { "realName": "소*연", "birthday": "2003-07-19", "phoneNumber": "010-****-6416" },
+                                              "businessEmail": "soyeon@example.com",
+                                              "login": { "provider": "KAKAO", "providerLabel": "카카오" },
+                                              "withdrawal": {
+                                                "state": "BLOCKED", "suspensionBlockedReason": "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다.",
+                                                "satisfiedCount": 3, "totalCount": 3,
+                                                "conditions": [ "… 3행 — S5 와 같음(조건은 충족)" ],
+                                                "approvalDueBusinessDays": 5, "pendingRequest": null, "rejection": null
+                                              }
+                                            }
+                                            """),
                                     @ExampleObject(name = "S7 승인 대기(PENDING)", value = """
                                             {
                                               "identity": { "realName": "소*연", "birthday": "2003-07-19", "phoneNumber": "010-****-6416" },
                                               "businessEmail": "soyeon@example.com",
                                               "login": { "provider": "KAKAO", "providerLabel": "카카오" },
                                               "withdrawal": {
-                                                "state": "PENDING", "satisfiedCount": 3, "totalCount": 3,
+                                                "state": "PENDING", "suspensionBlockedReason": null, "satisfiedCount": 3, "totalCount": 3,
                                                 "conditions": [ "… 3행 — S5 와 같음" ],
                                                 "approvalDueBusinessDays": 5,
                                                 "pendingRequest": { "requestId": 41, "requestedAt": "2026-10-14T10:20:00",
@@ -116,7 +134,7 @@ public interface CreatorBasicInfoControllerDocs {
                                               "businessEmail": "soyeon@example.com",
                                               "login": { "provider": "KAKAO", "providerLabel": "카카오" },
                                               "withdrawal": {
-                                                "state": "REJECTED", "satisfiedCount": 2, "totalCount": 3,
+                                                "state": "REJECTED", "suspensionBlockedReason": null, "satisfiedCount": 2, "totalCount": 3,
                                                 "conditions": [ "… 3행 — 현재 판정 그대로" ],
                                                 "approvalDueBusinessDays": 5,
                                                 "pendingRequest": null,
@@ -186,7 +204,8 @@ public interface CreatorBasicInfoControllerDocs {
                     - 운영자가 **영업일 5일 이내**에 승인 · 반려한다(`dueDate` — 무응답 자동 승인 없음).
                     - 대기 중에는 새 연결 수락 · 계약 서명 요청이 막힌다(409 `CREATOR_WITHDRAWAL_PENDING` · 브랜드 쪽 `CREATOR_COUNTERPARTY_WITHDRAWAL_PENDING`).
                       진행 중 공구 운영 · 정산은 그대로다.
-                    - **정지 중에도 신청할 수 있다** — 정지는 새 일을 막고 탈퇴는 정리하는 일이다.
+                    - **정지 중 신청은 설정에 따른다**(`member.sanction.allow-withdrawal-while-suspended` · 기본 true = 허용 — 정지는 새 일을
+                      막고 탈퇴는 정리하는 일이다). 끄면 정지 중 409 `CREATOR_SUSPENDED`(계정 탭 `suspensionBlockedReason` 과 같은 문장).
                     - 반려 안내(S8)를 닫지 않은 채 다시 신청하면 그 반려는 확인한 것으로 본다.
 
                     **권한:** CREATOR
@@ -216,9 +235,12 @@ public interface CreatorBasicInfoControllerDocs {
                             })),
             @ApiResponse(responseCode = "404", description = "인플루언서 아님 — CREATOR_NOT_FOUND",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "조건 미충족 · 열린 신청 있음 · 탈퇴 회원",
+            @ApiResponse(responseCode = "409", description = "조건 미충족 · 열린 신청 있음 · 탈퇴 회원 · 정지 중(설정 false)",
                     content = @Content(mediaType = "application/json",
                             examples = {
+                                    @ExampleObject(name = "정지 중(설정 false)", value = """
+                                            { "code": "CREATOR_SUSPENDED", "message": "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다." }
+                                            """),
                                     @ExampleObject(name = "조건 미충족", value = """
                                             {
                                               "code": "CREATOR_WITHDRAWAL_CONDITION_UNMET",

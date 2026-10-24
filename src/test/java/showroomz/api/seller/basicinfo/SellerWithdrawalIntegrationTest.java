@@ -3,6 +3,7 @@ package showroomz.api.seller.basicinfo;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import showroomz.api.admin.brand.AdminBrandTestSupport;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.type.ContractStatus;
@@ -12,6 +13,7 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.config.properties.MemberProperties;
 import showroomz.global.service.MailService;
 import showroomz.support.BrandFixture;
 
@@ -29,7 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 파트너센터 브랜드 탈퇴 신청(51 설계서 10절 WD · 55 계획서 P5) — 계정 탭 조건 내역 · 대기 중 잠금 · 브랜드 몫 기준 정산 조건.
+ * 파트너센터 브랜드 탈퇴 신청(51 설계서 10절 WD · 55 계획서 P5 · S11) — 계정 탭 조건 내역 · 대기 중 잠금 · 브랜드 몫 기준 정산 조건 · 정지 중
+ * 탈퇴 설정.
  *
  * <p>불변식(WD-04): 조건마다 {@code count} = 내역 합 = {@code BrandWithdrawalEligibility.evaluate} 값이다 — 어긋나면 「N / 4 충족」이 신청 ·
  * 승인 재검증과 다르게 보인다.
@@ -40,6 +43,8 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
     private static final String ACCOUNT = "/v1/seller/basic-info/account";
     private static final String WITHDRAWALS = "/v1/seller/basic-info/withdrawal-requests";
     private static final String CONTRACTS = "/v1/seller/contracts";
+
+    @Autowired private MemberProperties memberProperties;
 
     @Test
     @DisplayName("WD-01 · WD-04 조건 전부 0 — AVAILABLE · 4/4 · 내역 빈 배열 · 잠금 없음 · 이동 대상 4종")
@@ -122,6 +127,35 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
         postAs(sellerToken(owner.seller()), WITHDRAWALS, null).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("BRAND_WITHDRAWAL_CONDITION_UNMET"))
                 .andExpect(jsonPath("$.unmet.UNSETTLED").value(1));
+    }
+
+    @Test
+    @DisplayName("55 계획서 S11 — 정지 중 탈퇴 설정을 끄면 조건 4/4 여도 BLOCKED + 사유 · 신청 409 BRAND_SUSPENDED · 켜면 AVAILABLE · 신청 201")
+    void suspendedWithdrawalFollowsSetting() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("정지설정");
+        String token = sellerToken(owner.seller());
+        suspend(owner.marketId(), "PRODUCT_INFO_FALSIFIED", null).andExpect(status().isOk());
+        String message = "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다. 운영팀 소통 스레드로 문의해 주세요.";
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            JsonNode account = json(getAs(token, ACCOUNT).andExpect(status().isOk()));
+            assertThat(account.at("/withdrawal/state").asText()).isEqualTo("BLOCKED");
+            assertThat(account.at("/withdrawal/satisfiedCount").asInt()).isEqualTo(4);
+            assertThat(account.at("/withdrawal/suspensionBlockedReason").asText()).isEqualTo(message);
+            assertInvariant(owner, account);
+            postAs(token, WITHDRAWALS, null).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("BRAND_SUSPENDED"))
+                    .andExpect(jsonPath("$.message").value(message));
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(withdrawalRepository.findFirstByMarketIdOrderByRequestedAtDescIdDesc(owner.marketId())).isEmpty();
+
+        JsonNode account = json(getAs(token, ACCOUNT));
+        assertThat(account.at("/withdrawal/state").asText()).isEqualTo("AVAILABLE");
+        assertThat(account.at("/withdrawal/suspensionBlockedReason").isNull()).isTrue();
+        postAs(token, WITHDRAWALS, null).andExpect(status().isCreated());
     }
 
     @Test
@@ -229,7 +263,7 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
         actions.andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("BRAND_WITHDRAWAL_PENDING"));
     }
 
-    /** WD-04 — 조건마다 count = 내역 합 = 판정식 · AVAILABLE ⇔ 전부 0. */
+    /** WD-04 — 조건마다 count = 내역 합 = 판정식 · AVAILABLE ⇔ 전부 0 ∧ 정지 중 신청 불가 아님(S11). */
     private void assertInvariant(BrandFixture.Brand owner, JsonNode account) {
         var evaluated = eligibility.evaluate(owner.marketId());
         boolean allZero = true;
@@ -244,7 +278,8 @@ class SellerWithdrawalIntegrationTest extends AdminBrandTestSupport {
         }
         String state = account.at("/withdrawal/state").asText();
         if (!"PENDING".equals(state)) {
-            assertThat(state).isEqualTo(allZero ? "AVAILABLE" : "BLOCKED");
+            boolean suspensionBlocked = account.at("/withdrawal/suspensionBlockedReason").isTextual();
+            assertThat(state).isEqualTo(allZero && !suspensionBlocked ? "AVAILABLE" : "BLOCKED");
         }
     }
 

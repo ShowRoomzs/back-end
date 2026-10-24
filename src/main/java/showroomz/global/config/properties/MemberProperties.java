@@ -32,5 +32,11 @@ public class MemberProperties {
 
         /** 정지 기간 종료 자동 해제 배치(매일 00:05 · 기동 시 1회). */
         private boolean autoReleaseEnabled = true;
+
+        /**
+         * 정지 중 탈퇴 신청을 받을지(1021 기-03 【잠정】 · 설계서 7-3 · 14-A · 55 계획서 S11) — 브랜드 · 인플루언서 · 소비자 공통. 끄면 정지 중
+         * 신청이 409 이고 탈퇴 화면이 「신청 불가」다. 판정은 {@code SuspendedWithdrawalPolicy} 하나.
+         */
+        private boolean allowWithdrawalWhileSuspended = true;
     }
 }

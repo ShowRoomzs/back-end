@@ -4,6 +4,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.member.brand.entity.BrandSanction;
 import showroomz.domain.member.brand.repository.BrandSanctionRepository;
@@ -25,6 +27,7 @@ import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.config.properties.MemberProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.scheduler.SanctionAutoReleaseScheduler;
@@ -36,16 +39,21 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 1021 설계서 7절 — 정지 기간 · 자동 해제 · 이의 신청 기한 · 정지 중 탈퇴의 P7 기본 흐름 밖: 영업일 기한 계산 · 인플루언서 지급 보류 해제 ·
- * 운영팀 해제 카드 · 소비자 해제 토스트 · 배치 · 계정 상태 기간 블록 · 정지 중 탈퇴 신청 성공 · 운영자 해제와의 경계.
+ * 운영팀 해제 카드 · 소비자 해제 토스트 · 배치 · 계정 상태 기간 블록 · 정지 중 탈퇴 신청 성공 · 설정으로 막기(55 계획서 S11) · 운영자 해제와의 경계.
  */
 @DisplayName("1021 7절 정지 상세 — 이의 기한 · 자동 해제 훅(지급 · 카드 · 토스트) · 배치 · 계정 상태 · 정지 중 탈퇴 신청")
 class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
 
+    private static final String CREATOR_ACCOUNT = "/v1/creator/basic-info/account";
+    private static final String CREATOR_ACCOUNT_WITHDRAWALS = "/v1/creator/basic-info/withdrawal-requests";
+
+    @Autowired private MemberProperties memberProperties;
     @Autowired private BrandSanctionService brandSanctionService;
     @Autowired private BrandSanctionRepository brandSanctions;
     @Autowired private CreatorSanctionService creatorSanctionService;
@@ -227,10 +235,46 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
                 .isEqualTo("SUSPENDED");
     }
 
+    @Test
+    @DisplayName("55 계획서 S11 — 정지 중 탈퇴 설정을 끄면 계정 탭 BLOCKED + 사유(조건 충족이어도) · 신청 409 CREATOR_SUSPENDED · 켜면 AVAILABLE · 접수")
+    void suspendedCreatorWithdrawalFollowsSetting() throws Exception {
+        Creator fresh = createCreator("정지_설정", "suspended-setting");
+        String token = bearerToken(fresh.getUser().getUsername(), RoleType.CREATOR, fresh.getUser().getId());
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> creatorSanctionService.suspend(fresh.getId(), CreatorSuspensionReason.FALSE_INFORMATION, null,
+                now.toLocalDate().plusDays(7), operator.getId(), "운영자", now));
+        String message = "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다.";
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            mockMvc.perform(get(CREATOR_ACCOUNT).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                    .andExpect(jsonPath("$.withdrawal.state").value("BLOCKED"))
+                    .andExpect(jsonPath("$.withdrawal.satisfiedCount").value(3))
+                    .andExpect(jsonPath("$.withdrawal.suspensionBlockedReason").value(message));
+            requestCreatorWithdrawal(token).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("CREATOR_SUSPENDED"))
+                    .andExpect(jsonPath("$.message").value(message));
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM creator_withdrawal_request WHERE creator_id = ?", Long.class,
+                fresh.getId())).isZero();
+
+        mockMvc.perform(get(CREATOR_ACCOUNT).header(HttpHeaders.AUTHORIZATION, token)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.withdrawal.state").value("AVAILABLE"))
+                .andExpect(jsonPath("$.withdrawal.suspensionBlockedReason").doesNotExist());
+        requestCreatorWithdrawal(token).andExpect(status().isCreated());
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private String marketStatus() {
         return jdbc.queryForObject("SELECT status FROM market WHERE market_id = ?", String.class, brand.marketId());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions requestCreatorWithdrawal(String token) throws Exception {
+        return mockMvc.perform(post(CREATOR_ACCOUNT_WITHDRAWALS).header(HttpHeaders.AUTHORIZATION, token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"reason\":\"활동을 그만둡니다\"}"));
     }
 
     private org.springframework.test.web.servlet.ResultActions consumerAccountStatus() throws Exception {

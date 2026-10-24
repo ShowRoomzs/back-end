@@ -211,8 +211,12 @@ public class SellerBasicInfoDto {
     @Builder
     @Schema(description = "탈퇴 블록 — 조건 행은 상태와 무관하게 항상 내린다. 판정식은 어드민 승인 재검증과 같다")
     public static class Withdrawal {
-        @Schema(description = "AVAILABLE(신청 가능) · BLOCKED(조건 미충족) · PENDING(심사 중)", example = "BLOCKED")
+        @Schema(description = "AVAILABLE(신청 가능) · BLOCKED(조건 미충족 · 정지 중 신청 불가) · PENDING(심사 중)", example = "BLOCKED")
         private String state;
+        @Schema(description = "정지 때문에 신청할 수 없을 때의 안내 — 정지 중 ∧ 설정 `member.sanction.allow-withdrawal-while-suspended = false` "
+                + "일 때만(state BLOCKED · 조건과 무관), 그 밖에는 null(55 계획서 S11)",
+                example = "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다. 운영팀 소통 스레드로 문의해 주세요.", nullable = true)
+        private String suspensionBlockedReason;
         @Schema(description = "충족한 조건 수 — 「N / 4 충족」", example = "3")
         private int satisfiedCount;
         @Schema(description = "조건 수(항상 4)", example = "4")

@@ -8,6 +8,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.member.common.service.MemberNotifier;
 import showroomz.domain.member.common.service.MemberSanctionRules;
+import showroomz.domain.member.common.service.SuspendedWithdrawalPolicy;
 import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.entity.Creator;
@@ -51,6 +52,7 @@ public class CreatorWithdrawalService {
     private final CreatorMemberQueryRepository queries;
     private final MessageThreadRepository threads;
     private final MemberNotifier notifier;
+    private final SuspendedWithdrawalPolicy suspendedWithdrawal;
 
     @Transactional
     public CreatorWithdrawalRequest request(Long creatorId, String reasonText, LocalDateTime now) {
@@ -59,7 +61,9 @@ public class CreatorWithdrawalService {
         if (creator.isWithdrawn()) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWN);
         }
-        // 정지 중에도 탈퇴를 신청할 수 있다(1021 결정 노트 기-03 【잠정】 — 1017 설계서 8-2 의 차단을 되돌렸다). 남은 정산 · 계약 조건은 그대로 막는다.
+        // 정지 중 신청은 설정(member.sanction.allow-withdrawal-while-suspended)에 따라 — 기본 허용(1021 기-03 【잠정】 · 1017 8-2 의 차단을
+        // 되돌렸다) · 끄면 409 CREATOR_SUSPENDED(55 계획서 S11 · 1021 7-3). 남은 정산 · 계약 조건은 정지와 무관하게 그대로 막는다.
+        suspendedWithdrawal.requireCanRequest(MemberType.CREATOR, creator.isSuspended());
         String reason = reasonText == null ? "" : reasonText.strip();
         if (reason.isEmpty()) {
             throw new BusinessException(ErrorCode.CREATOR_WITHDRAWAL_REASON_REQUIRED);

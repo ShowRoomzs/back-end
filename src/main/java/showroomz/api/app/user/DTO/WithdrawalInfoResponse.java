@@ -41,6 +41,11 @@ public class WithdrawalInfoResponse {
     @Schema(description = "탈퇴 차단 사유 분해(1021 기-31) — [진행 중 주문 N건 보기]는 합. 전부 0 이고 인플루언서가 아니어야 탈퇴할 수 있다")
     private Blockers blockers;
 
+    @Schema(description = "정지 때문에 탈퇴할 수 없을 때의 안내 — 정지 중 ∧ 설정 `member.sanction.allow-withdrawal-while-suspended = false` "
+            + "일 때만(withdrawable = false), 그 밖에는 null(55 계획서 S11)",
+            example = "이용 정지 중에는 탈퇴할 수 없어요.", nullable = true)
+    private String suspensionBlockedReason;
+
     @Getter
     @AllArgsConstructor
     @Schema(name = "WithdrawalBlockers")

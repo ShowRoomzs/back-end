@@ -322,8 +322,13 @@ public interface SellerBasicInfoControllerDocs {
 
             **탈퇴 `state`** — 위에서부터 처음 맞는 것:
             1. `PENDING`(4-I 심사 중) — 승인 대기 신청이 있다. `pendingRequest` 에 신청 id · 일시 · 사유 · 남기실 말씀 · 신청자(담당자명 스냅샷 · 현재 로그인 이메일)
-            2. `AVAILABLE`(4-F) — 조건 4종 모두 0건
-            3. `BLOCKED`(4-G · 4-G2) — 조건 미충족
+            2. `BLOCKED` — 정지 중 신청 불가(설정 · 아래). 조건과 무관
+            3. `AVAILABLE`(4-F) — 조건 4종 모두 0건
+            4. `BLOCKED`(4-G · 4-G2) — 조건 미충족
+
+            **정지 중 신청(`suspensionBlockedReason`)** — 설정 `member.sanction.allow-withdrawal-while-suspended`(기본 true)에 따른다.
+            허용이면 정지와 무관하게 조건만 본다(항상 null). 끄면 정지 중에는 신청 409 `BRAND_SUSPENDED` 와 같은 문장이 실린다 —
+            `PENDING` 이면 null(접수된 신청은 유지).
 
             **조건 4종(`conditions`)** — 상태와 무관하게 항상 4행을 내린다. 어드민 승인 직전 재검증과 같은 판정식이다.
 
@@ -372,7 +377,7 @@ public interface SellerBasicInfoControllerDocs {
                                               "passwordChangeable": true,
                                               "identityLock": null,
                                               "withdrawal": {
-                                                "state": "BLOCKED", "satisfiedCount": 2, "totalCount": 4,
+                                                "state": "BLOCKED", "suspensionBlockedReason": null, "satisfiedCount": 2, "totalCount": 4,
                                                 "conditions": [
                                                   { "code": "ACTIVE_GROUP_BUYS", "label": "진행 중 · 준비 중 공구", "count": 1, "satisfied": false,
                                                     "target": "GROUP_BUYS",
@@ -404,6 +409,25 @@ public interface SellerBasicInfoControllerDocs {
                                               }
                                             }
                                             """),
+                                    @ExampleObject(name = "정지 중 신청 불가(BLOCKED · 설정 false)", value = """
+                                            {
+                                              "loginEmail": "brand@example.com",
+                                              "emailChangeable": true,
+                                              "lastEmailChangedAt": null,
+                                              "nextEmailChangeableAt": null,
+                                              "passwordChangeable": true,
+                                              "identityLock": null,
+                                              "withdrawal": {
+                                                "state": "BLOCKED",
+                                                "suspensionBlockedReason": "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다. 운영팀 소통 스레드로 문의해 주세요.",
+                                                "satisfiedCount": 4, "totalCount": 4,
+                                                "conditions": [ "… 4행 — 모두 satisfied" ],
+                                                "pendingRequest": null,
+                                                "lastRejection": null,
+                                                "reasonOptions": [ "… 5개" ]
+                                              }
+                                            }
+                                            """),
                                     @ExampleObject(name = "4-I 심사 중(PENDING)", value = """
                                             {
                                               "loginEmail": "brand@example.com",
@@ -413,7 +437,7 @@ public interface SellerBasicInfoControllerDocs {
                                               "passwordChangeable": false,
                                               "identityLock": "WITHDRAWAL_PENDING",
                                               "withdrawal": {
-                                                "state": "PENDING", "satisfiedCount": 4, "totalCount": 4,
+                                                "state": "PENDING", "suspensionBlockedReason": null, "satisfiedCount": 4, "totalCount": 4,
                                                 "conditions": [ "… 4행 — 모두 satisfied" ],
                                                 "pendingRequest": {
                                                   "requestId": 31, "requestedAt": "2026-10-14T14:20:00",
@@ -433,7 +457,7 @@ public interface SellerBasicInfoControllerDocs {
                                               "lastEmailChangedAt": null,
                                               "nextEmailChangeableAt": null,
                                               "withdrawal": {
-                                                "state": "AVAILABLE", "satisfiedCount": 4, "totalCount": 4,
+                                                "state": "AVAILABLE", "suspensionBlockedReason": null, "satisfiedCount": 4, "totalCount": 4,
                                                 "conditions": [ "… 4행 — 모두 satisfied" ],
                                                 "pendingRequest": null,
                                                 "lastRejection": {
@@ -559,7 +583,9 @@ public interface SellerBasicInfoControllerDocs {
             - 남기실 말씀은 1000자 이내.
             - 조건 4종을 **서버가 다시 판정**한다 — 하나라도 남았으면 409 `BRAND_WITHDRAWAL_CONDITION_UNMET` + 응답 최상위 `unmet`
               (미충족 조건별 건수). FE 는 버튼을 막아 두므로 이 응답은 「화면을 연 뒤 상황이 바뀐」 경우다 — 계정 정보를 다시 읽어 4-G 로 그린다.
-            - 승인 전까지 브랜드는 **활성 그대로**다(공구 · 주문 · 정산 진행). **정지 중에도 신청할 수 있다.**
+            - 승인 전까지 브랜드는 **활성 그대로**다(공구 · 주문 · 정산 진행).
+            - **정지 중 신청은 설정에 따른다**(`member.sanction.allow-withdrawal-while-suspended` · 기본 true = 허용). 끄면 정지 중
+              409 `BRAND_SUSPENDED`(계정 정보 `withdrawal.suspensionBlockedReason` 과 같은 문장).
             - 운영자 승인 시점에 조건을 한 번 더 판정한다. 신청 접수 알림은 없다(어드민 목록의 탈퇴 대기 필터 · 상세 심사 카드가 받는다).
             - 성공하면 FE 는 `GET /v1/seller/basic-info/account` 를 다시 읽어 4-I 를 그린다.
 
@@ -588,9 +614,12 @@ public interface SellerBasicInfoControllerDocs {
                                     """))),
             @ApiResponse(responseCode = "404", description = "마켓 없음 — MARKET_NOT_FOUND",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "조건 미충족 · 이미 심사 중 · 탈퇴 브랜드",
+            @ApiResponse(responseCode = "409", description = "조건 미충족 · 이미 심사 중 · 탈퇴 브랜드 · 정지 중(설정 false)",
                     content = @Content(mediaType = "application/json",
                             examples = {
+                                    @ExampleObject(name = "정지 중(설정 false)", value = """
+                                            { "code": "BRAND_SUSPENDED", "message": "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다. 운영팀 소통 스레드로 문의해 주세요." }
+                                            """),
                                     @ExampleObject(name = "조건 미충족", value = """
                                             {
                                               "code": "BRAND_WITHDRAWAL_CONDITION_UNMET",

@@ -55,8 +55,12 @@ public class CreatorBasicInfoDto {
     @Builder
     @Schema(description = "탈퇴 블록 — 상태별로 S4 · S5 · S7 · S8 을 그린다. 조건 행은 상태와 무관하게 항상 내린다")
     public static class Withdrawal {
-        @Schema(description = "AVAILABLE(S5) · BLOCKED(S4) · PENDING(S7) · REJECTED(S8)", example = "BLOCKED")
+        @Schema(description = "AVAILABLE(S5) · BLOCKED(S4 · 정지 중 신청 불가 포함) · PENDING(S7) · REJECTED(S8)", example = "BLOCKED")
         private String state;
+        @Schema(description = "정지 때문에 신청할 수 없을 때의 안내 — 정지 중 ∧ 설정 `member.sanction.allow-withdrawal-while-suspended = false` "
+                + "일 때만(BLOCKED 는 조건과 무관 · REJECTED 면 재신청 불가), PENDING 과 그 밖에는 null(55 계획서 S11)",
+                example = "계정 이용 정지 중에는 탈퇴를 신청할 수 없습니다.", nullable = true)
+        private String suspensionBlockedReason;
         @Schema(example = "0")
         private int satisfiedCount;
         @Schema(example = "3")

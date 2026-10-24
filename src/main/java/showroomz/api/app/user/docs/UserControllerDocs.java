@@ -413,7 +413,10 @@ public interface UserControllerDocs {
                     "안내와 \"진행 중 주문 N건 보기\"를 노출합니다.\n" +
                     "- `followingCount` / `wishlistCount` / `cartCount`: 탈퇴 시 삭제되는 활동 기록 수. " +
                     "최종 확인 모달의 \"팔로잉 N곳과 좋아요 M개가 모두 삭제되고...\" 문구에 씁니다.\n" +
-                    "- `reasons`: 1단계에 노출할 탈퇴 이유 목록. `code`를 그대로 탈퇴 요청의 `reason`으로 보냅니다.\n\n" +
+                    "- `reasons`: 1단계에 노출할 탈퇴 이유 목록. `code`를 그대로 탈퇴 요청의 `reason`으로 보냅니다.\n" +
+                    "- `suspensionBlockedReason`: 정지 때문에 탈퇴할 수 없을 때의 안내 문장(탈퇴 409 `USER_SUSPENDED` 와 같은 문장). " +
+                    "설정 `member.sanction.allow-withdrawal-while-suspended`(기본 true = 정지 중에도 탈퇴 허용)가 false 이고 " +
+                    "정지 중일 때만 채워지며 이때 `withdrawable = false`. 그 밖에는 null.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )

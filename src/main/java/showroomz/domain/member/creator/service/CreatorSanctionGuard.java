@@ -21,6 +21,9 @@ import showroomz.global.error.exception.ErrorCode;
  *   <li>탈퇴 심사 중(스튜디오 S7): 새 연결 수락 · 계약 서명</li>
  * </ul>
  *
+ * <p>정지 중 탈퇴 신청은 여기서 막지 않는다 — 설정({@code member.sanction.allow-withdrawal-while-suspended})에 따라 세 회원 유형 공통
+ * {@code SuspendedWithdrawalPolicy}가 정한다(55 계획서 S11 · 1021 7-3).
+ *
  * <p>상태 비교를 서비스 여기저기에 흩지 않도록 네 메서드만 둔다.
  */
 @Component

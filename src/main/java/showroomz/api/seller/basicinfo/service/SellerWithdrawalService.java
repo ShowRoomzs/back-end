@@ -13,6 +13,8 @@ import showroomz.domain.connection.service.OperatorChannelService;
 import showroomz.domain.member.brand.service.BrandWithdrawalChecklist;
 import showroomz.domain.member.brand.service.BrandWithdrawalService;
 import showroomz.domain.member.brand.type.BrandWithdrawalReason;
+import showroomz.domain.member.common.service.SuspendedWithdrawalPolicy;
+import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.global.error.exception.BusinessException;
@@ -40,10 +42,11 @@ public class SellerWithdrawalService {
     private final BrandWithdrawalChecklist checklist;
     private final BrandWithdrawalRequestRepository requests;
     private final OperatorChannelService operatorChannelService;
+    private final SuspendedWithdrawalPolicy suspendedWithdrawal;
 
     /**
      * 계정 탭 탈퇴 블록 — ① 열린 신청 ② 조건 4행과 내역(51 설계서 4절). 내역 합계 = 판정식 건수라 「N / 4 충족」이 신청 · 승인 재검증과
-     * 어긋나지 않는다. 최근 신청이 반려면 그 안내를 함께 내린다(재신청은 바로 가능).
+     * 어긋나지 않는다. 최근 신청이 반려면 그 안내를 함께 내린다(재신청은 바로 가능). 정지 중 신청 불가(설정)면 조건과 무관하게 BLOCKED 다.
      */
     @Transactional(readOnly = true)
     public SellerBasicInfoDto.Withdrawal read(Market market) {
@@ -59,16 +62,22 @@ public class SellerWithdrawalService {
                 : requests.findFirstByMarketIdOrderByRequestedAtDescIdDesc(marketId)
                         .filter(r -> r.getStatus() == MemberWithdrawalStatus.REJECTED);
 
+        // 정지 중 ∧ 설정 false 면 조건과 무관하게 신청 불가 — 신청 409 와 같은 판정 · 같은 문장(55 계획서 S11).
+        // 접수된 신청은 그대로라(1021 7-3) PENDING 이면 없다.
+        String suspensionBlockedReason = pending.isPresent() ? null
+                : suspendedWithdrawal.blockedReason(MemberType.BRAND, market.isSuspended());
         String state;
         if (pending.isPresent()) {
             state = "PENDING";
         } else {
-            state = conditions.stream().allMatch(SellerBasicInfoDto.WithdrawalCondition::isSatisfied)
+            state = suspensionBlockedReason == null
+                    && conditions.stream().allMatch(SellerBasicInfoDto.WithdrawalCondition::isSatisfied)
                     ? "AVAILABLE" : "BLOCKED";
         }
 
         return SellerBasicInfoDto.Withdrawal.builder()
                 .state(state)
+                .suspensionBlockedReason(suspensionBlockedReason)
                 .satisfiedCount((int) conditions.stream().filter(SellerBasicInfoDto.WithdrawalCondition::isSatisfied).count())
                 .totalCount(conditions.size())
                 .conditions(conditions)

@@ -12,6 +12,7 @@ import showroomz.domain.member.brand.type.BrandWithdrawalReason;
 import showroomz.domain.member.brand.type.BrandWithdrawalRejectReason;
 import showroomz.domain.member.common.service.MemberNotifier;
 import showroomz.domain.member.common.service.MemberSanctionRules;
+import showroomz.domain.member.common.service.SuspendedWithdrawalPolicy;
 import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.seller.entity.Seller;
@@ -39,13 +40,18 @@ public class BrandWithdrawalService {
     private final BrandWithdrawalPurger purger;
     private final BrandAdminHistoryRecorder historyRecorder;
     private final MemberNotifier notifier;
+    private final SuspendedWithdrawalPolicy suspendedWithdrawal;
 
-    /** 신청(파트너) — 조건 4종이 전부 0 이어야 한다. 정지 중에도 신청할 수 있다(§51-5 · 조건은 그대로). */
+    /**
+     * 신청(파트너) — 조건 4종이 전부 0 이어야 한다. 정지 중 신청은 설정({@code member.sanction.allow-withdrawal-while-suspended})에
+     * 따라 — 기본 허용 · 끄면 409 {@code BRAND_SUSPENDED}(55 계획서 S11 · 1021 7-3). 조건은 정지와 무관하게 그대로다.
+     */
     public BrandWithdrawalRequest request(Long marketId, BrandWithdrawalReason reason, String message, LocalDateTime now) {
         Market market = sanctionService.lockBrand(marketId);
         if (market.isWithdrawn()) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWN);
         }
+        suspendedWithdrawal.requireCanRequest(MemberType.BRAND, market.isSuspended());
         if (requestRepository.existsByMarketIdAndStatus(marketId, MemberWithdrawalStatus.PENDING)) {
             throw new BusinessException(ErrorCode.BRAND_WITHDRAWAL_ALREADY_PENDING);
         }

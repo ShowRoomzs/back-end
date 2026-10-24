@@ -30,6 +30,7 @@ import showroomz.domain.notification.service.PushMessage;
 import showroomz.domain.notification.service.PushResult;
 import showroomz.domain.notification.service.PushSender;
 import showroomz.domain.notification.type.DevicePlatform;
+import showroomz.global.config.properties.MemberProperties;
 import showroomz.support.IntegrationTestSupport;
 
 import java.time.LocalDateTime;
@@ -62,6 +63,7 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
     private static final String ADMIN = "/v1/admin/users";
     private static final String ACCOUNT_STATUS = "/v1/user/account-status";
     private static final String INQUIRIES = "/v1/user/inquiries";
+    private static final String WITHDRAWAL_INFO = "/v1/user/withdrawal";
 
     @Autowired
     private UserRepository userRepository;
@@ -75,6 +77,8 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
     private DeviceTokenRepository deviceTokenRepository;
     @Autowired
     private UserSanctionService sanctionService;
+    @Autowired
+    private MemberProperties memberProperties;
 
     /** 소비자 정지 · 해제 알림은 실제로 보낸다(0-10) — 발송 여부와 문구를 본다. */
     @MockitoBean
@@ -387,6 +391,33 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
         assertThat(restored).isEqualTo(UserStatus.NORMAL);
     }
 
+    @Test
+    @DisplayName("55 계획서 S11 — 정지 중 탈퇴 설정을 끄면 탈퇴 화면 withdrawable false + 사유 · 탈퇴 409 USER_SUSPENDED · 켜면 탈퇴된다")
+    void suspendedWithdrawalFollowsSetting() throws Exception {
+        suspend(mia, "PAYMENT_FRAUD_SUSPECTED", null).andExpect(status().isOk());
+        String message = "이용 정지 중에는 탈퇴할 수 없어요.";
+
+        memberProperties.getSanction().setAllowWithdrawalWhileSuspended(false);
+        try {
+            mockMvc.perform(get(WITHDRAWAL_INFO).header(HttpHeaders.AUTHORIZATION, miaToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.withdrawable").value(false))
+                    .andExpect(jsonPath("$.suspensionBlockedReason").value(message));
+            withdraw(miaToken).andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("USER_SUSPENDED"))
+                    .andExpect(jsonPath("$.message").value(message));
+        } finally {
+            memberProperties.getSanction().setAllowWithdrawalWhileSuspended(true);
+        }
+        assertThat(userRepository.findById(mia.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.SUSPENDED);
+
+        mockMvc.perform(get(WITHDRAWAL_INFO).header(HttpHeaders.AUTHORIZATION, miaToken))
+                .andExpect(jsonPath("$.withdrawable").value(true))
+                .andExpect(jsonPath("$.suspensionBlockedReason").doesNotExist());
+        withdraw(miaToken).andExpect(status().is2xxSuccessful());
+        assertThat(userRepository.findById(mia.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.WITHDRAWN);
+    }
+
     // ------------------------------------------------------------------ 메모 · 처리 이력
 
     @Test
@@ -465,6 +496,11 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
         String body = reason == null ? "{}" : "{\"reason\":\"" + reason + "\"}";
         return mockMvc.perform(post(ADMIN + "/" + target.getId() + "/release").contentType(MediaType.APPLICATION_JSON)
                 .header(HttpHeaders.AUTHORIZATION, adminToken).content(body));
+    }
+
+    private ResultActions withdraw(String token) throws Exception {
+        return mockMvc.perform(delete("/v1/user/auth/withdraw").contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, token).content("{\"agreeConsent\":true}"));
     }
 
     private ResultActions appeal(String token, String body) throws Exception {

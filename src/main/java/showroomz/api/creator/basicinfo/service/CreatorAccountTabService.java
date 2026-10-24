@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.creator.basicinfo.dto.CreatorBasicInfoDto;
+import showroomz.domain.member.common.service.SuspendedWithdrawalPolicy;
+import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.entity.CreatorWithdrawalRequest;
@@ -34,6 +36,7 @@ public class CreatorAccountTabService {
     private final CreatorWithdrawalService withdrawalService;
     private final CreatorWithdrawalEligibility eligibility;
     private final CreatorWithdrawalChecklist checklist;
+    private final SuspendedWithdrawalPolicy suspendedWithdrawal;
 
     @Transactional(readOnly = true)
     public CreatorBasicInfoDto.AccountResponse getAccount(Long userId) {
@@ -88,12 +91,16 @@ public class CreatorAccountTabService {
                         .provider(provider == null ? null : provider.name())
                         .providerLabel(providerLabel(provider))
                         .build())
-                .withdrawal(withdrawal(creator.getId()))
+                .withdrawal(withdrawal(creator))
                 .build();
     }
 
-    /** 상태 판정 — ① 열린 신청 ② 최근 신청이 확인 안 한 반려 ③ 조건 판정식(50 설계서 4-1). */
-    private CreatorBasicInfoDto.Withdrawal withdrawal(Long creatorId) {
+    /**
+     * 상태 판정 — ① 열린 신청 ② 최근 신청이 확인 안 한 반려 ③ 정지 중 신청 불가(설정) ④ 조건 판정식(50 설계서 4-1 · 55 계획서 S11).
+     * ③ 은 신청 409 와 같은 판정 · 같은 문장이다. 반려 안내(S8)는 그대로 띄우고 사유만 함께 내린다 — 재신청이 막혀 있다.
+     */
+    private CreatorBasicInfoDto.Withdrawal withdrawal(Creator creator) {
+        Long creatorId = creator.getId();
         List<CreatorWithdrawalChecklist.Condition> conditions = checklist.read(creatorId);
         Optional<CreatorWithdrawalRequest> pending = withdrawalRequests
                 .findFirstByCreatorIdAndStatusOrderByRequestedAtDesc(creatorId, MemberWithdrawalStatus.PENDING);
@@ -101,17 +108,22 @@ public class CreatorAccountTabService {
                 : withdrawalRequests.findFirstByCreatorIdOrderByRequestedAtDescIdDesc(creatorId)
                         .filter(CreatorWithdrawalRequest::isUnacknowledgedRejection);
 
+        String suspensionBlockedReason = pending.isPresent() ? null
+                : suspendedWithdrawal.blockedReason(MemberType.CREATOR, creator.isSuspended());
         String state;
         if (pending.isPresent()) {
             state = "PENDING";
         } else if (rejected.isPresent()) {
             state = "REJECTED";
+        } else if (suspensionBlockedReason != null) {
+            state = "BLOCKED";
         } else {
             state = eligibility.evaluate(creatorId).eligible() ? "AVAILABLE" : "BLOCKED";
         }
 
         return CreatorBasicInfoDto.Withdrawal.builder()
                 .state(state)
+                .suspensionBlockedReason(suspensionBlockedReason)
                 .satisfiedCount((int) conditions.stream().filter(CreatorWithdrawalChecklist.Condition::satisfied).count())
                 .totalCount(conditions.size())
                 .conditions(conditions.stream().map(CreatorAccountTabService::toCondition).toList())

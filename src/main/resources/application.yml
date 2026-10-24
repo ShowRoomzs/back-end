@@ -278,9 +278,10 @@ company:
     email: ${COMPANY_CS_EMAIL:}
     hours: ${COMPANY_CS_HOURS:}
 
-# MemberProperties.java — 회원 제재 정책값. 계정 이용 정지 기간 · 이의 신청 기한(1021 기-02 【잠정】).
+# MemberProperties.java — 회원 제재 정책값. 계정 이용 정지 기간 · 이의 신청 기한(1021 기-02 【잠정】) · 정지 중 탈퇴(기-03 【잠정】).
 member:
   sanction:
     appeal-business-days: 3                         # 이의 신청 기한 — 통지 + N영업일(표시용 · 접수는 막지 않는다)
     # appeal-review-business-days:                  # 소명 검토 N영업일 — [정책값 미정] · 비우면 응답 null
     auto-release-enabled: true                      # 정지 기간 종료 자동 해제(매일 00:05 · 기동 시 1회)
+    allow-withdrawal-while-suspended: true          # 정지 중 탈퇴 신청 허용(기-03 【잠정】 · 세 유형 공통) — false 면 신청 409 · 탈퇴 화면 「신청 불가」

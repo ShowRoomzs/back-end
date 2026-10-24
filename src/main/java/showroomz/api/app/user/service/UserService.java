@@ -22,6 +22,8 @@ import showroomz.domain.history.repository.UserConsentHistoryRepository;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.history.type.ConsentType;
 import showroomz.domain.history.repository.WithdrawalHistoryRepository;
+import showroomz.domain.member.common.service.SuspendedWithdrawalPolicy;
+import showroomz.domain.member.common.type.MemberType;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -61,6 +63,7 @@ public class UserService {
     private final CartRepository cartRepository;
     private final OrderProductRepository orderProductRepository;
     private final DeviceTokenService deviceTokenService;
+    private final SuspendedWithdrawalPolicy suspendedWithdrawal;
 
     /**
      * 더 이상 진행 중이 아닌 주문 상태 — 이 셋을 뺀 나머지가 탈퇴를 막는다. 전량 반품(RETURNED)도 항목의 종결이다.
@@ -293,15 +296,19 @@ public class UserService {
                 .toList();
 
         boolean creatorReviewRequired = isUnwithdrawnCreator(user);
+        // 정지 중 ∧ 설정 false 면 탈퇴 불가 — 탈퇴 409 와 같은 판정 · 같은 문장(55 계획서 S11 · 1021 7-3).
+        String suspensionBlockedReason = suspendedWithdrawal.blockedReason(MemberType.CONSUMER,
+                UserSanctionGuard.isSuspended(user));
         return new WithdrawalInfoResponse(
-                !blockers.any() && !creatorReviewRequired,
+                !blockers.any() && !creatorReviewRequired && suspensionBlockedReason == null,
                 ongoingOrderCount,
                 creatorFollowRepository.countByUser(user),
                 wishlistRepository.countByUser_Id(user.getId()),
                 cartRepository.countByUser(user),
                 reasons,
                 creatorReviewRequired,
-                blockers
+                blockers,
+                suspensionBlockedReason
         );
     }
 
@@ -346,6 +353,10 @@ public class UserService {
         if (!request.isAgreeConsent()) {
             throw new BusinessException(ErrorCode.WITHDRAWAL_CONSENT_REQUIRED);
         }
+
+        // 1-1. 정지 중 탈퇴는 설정(member.sanction.allow-withdrawal-while-suspended)에 따라 — 기본 허용 · 끄면 409 USER_SUSPENDED
+        //      (55 계획서 S11 · 1021 7-3). 허용이면 정지는 탈퇴 → 재가입 시 복원된다(restoreOnRejoin).
+        suspendedWithdrawal.requireCanRequest(MemberType.CONSUMER, UserSanctionGuard.isSuspended(user));
 
         // 2. 진행 중 주문이 있으면 배송·교환·환불이 끝날 때까지 탈퇴를 막는다.
         //    화면에서 이미 비활성이지만, 조회 후 주문이 생겼거나 API를 직접 호출한 경우를 여기서 거른다.
