@@ -39,6 +39,14 @@ public class DeliveryRegionResolver {
         return covering.isEmpty() ? DeliveryRegion.STANDARD : DeliveryRegion.REMOTE;
     }
 
+    /**
+     * [from, to]가 코드가 아는 제주 범위와 겹치는지 — 겹치면 제주가 우선이라 그 구간을 도서산간으로 등록해도 적용되지 않는다
+     * (어드민 등록 검증 · 55 계획서 P4).
+     */
+    public static boolean overlapsJejuDefault(String from, String to) {
+        return from.compareTo(JEJU_TO) <= 0 && to.compareTo(JEJU_FROM) >= 0;
+    }
+
     /** 그 권역의 편도 추가비 — 마켓 설정. 일반이면 0. */
     public static int surchargeOf(Market market, DeliveryRegion region) {
         if (market == null || region == null) {

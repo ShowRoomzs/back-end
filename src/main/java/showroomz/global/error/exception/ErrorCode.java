@@ -425,6 +425,9 @@ public enum ErrorCode {
     ORDER_STALL_CHOICE_NOT_OPEN(HttpStatus.CONFLICT, "ORDER_STALL_CHOICE_NOT_OPEN", "아직 선택할 수 없는 주문입니다. 배송 추적이 멈추고 일정 기간이 지나면 선택할 수 있어요."),
     ORDER_STALL_CHOICE_ALREADY_MADE(HttpStatus.CONFLICT, "ORDER_STALL_CHOICE_ALREADY_MADE", "이미 처리 방법을 선택했습니다."),
     ORDER_ADDRESS_REGION_CHANGED(HttpStatus.CONFLICT, "ORDER_ADDRESS_REGION_CHANGED", "제주 · 도서산간 추가 배송비가 달라지는 배송지로는 변경할 수 없습니다. 주문을 취소한 뒤 다시 주문해 주세요."),
+    // 추가 배송비 권역 우편번호 운영 등록(55 계획서 P4 · D4)
+    REMOTE_AREA_POSTCODE_NOT_FOUND(HttpStatus.NOT_FOUND, "REMOTE_AREA_POSTCODE_NOT_FOUND", "등록된 우편번호 범위를 찾을 수 없습니다."),
+    REMOTE_AREA_POSTCODE_OVERLAP(HttpStatus.CONFLICT, "REMOTE_AREA_POSTCODE_OVERLAP", "이미 등록된 우편번호 범위와 겹칩니다."),
 
     // 반품·교환(35 설계서 · 앱 클레임 설계서 3-8)
     CLAIM_NOT_FOUND(HttpStatus.NOT_FOUND, "CLAIM_NOT_FOUND", "반품·교환 요청을 찾을 수 없습니다."),
