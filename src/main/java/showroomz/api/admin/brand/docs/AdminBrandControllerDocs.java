@@ -11,8 +11,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import showroomz.api.admin.brand.dto.AdminBrandDto;
-import showroomz.api.admin.brand.type.AdminBrandSort;
-import showroomz.api.admin.brand.type.AdminBrandTab;
+import showroomz.api.admin.common.AdminMemberListSort;
+import showroomz.api.admin.common.AdminMemberListTab;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
@@ -52,13 +52,15 @@ public interface AdminBrandControllerDocs {
 
     @Operation(summary = "브랜드 회원 목록",
             description = """
-                    입점이 끝난 브랜드(셀러 승인 완료)만 나옵니다. 목록 시안(14)이 아직 없어 상세의 「목록 · 이전 · 다음」을 성립시키는 최소 구성입니다.
+                    입점이 끝난 브랜드(셀러 승인 완료)만 나옵니다(ui-admin-14 rev.7 · 55 계획서 M2). 인플루언서 목록과 같은 골격입니다.
 
-                    - `tab`: `ALL`(기본) · `ACTIVE`(휴면 포함) · `SUSPENDED` · `WITHDRAWN`
+                    - `tab`: `ALL`(기본) · `ACTIVE`(휴면 포함) · `SUSPENDED` · `WITHDRAWAL_PENDING` · `WITHDRAWN` — **건수가 서로 겹치지 않습니다**.
+                      탈퇴 승인 대기 행은 활성 · 정지 탭에서 빠지고(정지 중에 신청했어도 대기 탭), 원래 상태는 `memberStatus` 에 그대로 있습니다.
+                    - **전체 탭은 탈퇴 승인 대기 행이 맨 위에 고정**되고(고정 행끼리는 아래 정렬), 그 밖은 `sort` 를 따릅니다.
                     - `keyword`: `BRD-`로 시작하면 회원번호 정확 일치(접두사 뒤가 숫자가 아니면 0건) · 그 외 브랜드명 부분 일치
-                    - `sort`: `RECENT_JOINED`(기본 · 가입 최신순) · `BRAND_NO`(회원번호순)
-                    - 탈퇴 승인 대기는 **회원 상태가 아니라** `withdrawalPending` 플래그입니다(승인 전까지 브랜드는 활성).
-                    - `summary` 의 상태별 건수는 탭과 무관하게 검색어를 반영한 값이고, `summary.withdrawalPending` 은 검색 조건과도 무관한 전체 대기 건수입니다.
+                    - `sort`: `RECENT_JOINED`(기본 · 가입 최신순) · `MEMBER_NO`(회원번호순 · 옛 값 `BRAND_NO` 도 받는다)
+                    - 행: `managerContact`(마스킹하지 않음) · `connectedCreatorCount`(연결중 쌍) · 표시 상태 `listStatus` · `listStatusLabel` · `listStatusTone`
+                    - `summary` 는 탭 5종 건수(모두 검색어 범위)이고, 대기 탭에서만 `longestPendingDays`(「최장 대기 N일」 · 24시간 단위)가 있습니다.
 
                     **권한:** ADMIN
                     """)
@@ -69,15 +71,22 @@ public interface AdminBrandControllerDocs {
                             examples = @ExampleObject(value = """
                                     {
                                       "content": [
-                                        { "marketId": 42, "brandNo": "BRD-1042", "brandName": "코코브라운", "managerName": "김담당",
-                                          "businessType": "법인사업자", "memberStatus": "ACTIVE", "memberStatusLabel": "활성",
-                                          "withdrawalPending": true, "joinedAt": "2026-03-02T10:00:00", "lastLoginAt": "2026-10-15T09:12:00" },
-                                        { "marketId": 39, "brandNo": "BRD-1039", "brandName": "데일리코스", "managerName": "이담당",
-                                          "businessType": "개인사업자", "memberStatus": "SUSPENDED", "memberStatusLabel": "정지",
-                                          "withdrawalPending": false, "joinedAt": "2026-02-11T15:20:00", "lastLoginAt": "2026-10-01T18:40:00" }
+                                        { "marketId": 42, "brandNo": "BRD-1042", "brandName": "무드코스메틱", "managerName": "박지훈",
+                                          "managerContact": "010-4471-2093", "businessType": "법인사업자",
+                                          "memberStatus": "ACTIVE", "memberStatusLabel": "활성", "withdrawalPending": true,
+                                          "withdrawalRequestedAt": "2026-10-18T14:20:00",
+                                          "listStatus": "WITHDRAWAL_PENDING", "listStatusLabel": "탈퇴 승인 대기", "listStatusTone": "WARNING",
+                                          "connectedCreatorCount": 0, "joinedAt": "2026-01-12T10:00:00", "lastLoginAt": "2026-10-15T09:12:00" },
+                                        { "marketId": 39, "brandNo": "BRD-1039", "brandName": "글로우랩", "managerName": "이서연",
+                                          "managerContact": "010-2284-5510", "businessType": "법인사업자",
+                                          "memberStatus": "ACTIVE", "memberStatusLabel": "활성", "withdrawalPending": false,
+                                          "withdrawalRequestedAt": null,
+                                          "listStatus": "ACTIVE", "listStatusLabel": "활성", "listStatusTone": "SUCCESS",
+                                          "connectedCreatorCount": 14, "joinedAt": "2026-07-28T15:20:00", "lastLoginAt": "2026-10-01T18:40:00" }
                                       ],
                                       "pageInfo": { "currentPage": 1, "totalPages": 1, "totalResults": 2, "limit": 20, "hasNext": false },
-                                      "summary": { "total": 48, "active": 44, "suspended": 2, "withdrawn": 2, "withdrawalPending": 1 }
+                                      "summary": { "total": 8, "active": 4, "suspended": 1, "withdrawalPending": 2, "withdrawn": 1,
+                                                   "longestPendingDays": null }
                                     }
                                     """))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
@@ -85,12 +94,14 @@ public interface AdminBrandControllerDocs {
             @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
-    AdminBrandDto.ListResponse list(@Parameter(description = "탭 — ALL(기본) · ACTIVE(휴면 포함) · SUSPENDED · WITHDRAWN", example = "ALL")
-                                    AdminBrandTab tab,
+    AdminBrandDto.ListResponse list(@Parameter(description = "탭 — ALL(기본) · ACTIVE(휴면 포함) · SUSPENDED · WITHDRAWAL_PENDING · WITHDRAWN",
+                                            example = "ALL")
+                                    AdminMemberListTab tab,
                                     @Parameter(description = "`BRD-1042`(회원번호 정확 일치) 또는 브랜드명(부분 일치)", example = "코코")
                                     String keyword,
-                                    @Parameter(description = "정렬 — RECENT_JOINED(기본) · BRAND_NO", example = "RECENT_JOINED")
-                                    AdminBrandSort sort,
+                                    @Parameter(description = "정렬 — RECENT_JOINED(기본) · MEMBER_NO(옛 값 BRAND_NO 도 받는다)",
+                                            example = "RECENT_JOINED")
+                                    AdminMemberListSort sort,
                                     @ParameterObject PagingRequest paging);
 
     @Operation(summary = "브랜드 회원 상세",

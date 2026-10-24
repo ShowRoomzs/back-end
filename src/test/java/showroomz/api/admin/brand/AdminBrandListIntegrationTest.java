@@ -14,7 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 52 테스트 시나리오 2절 — 브랜드 회원 목록(목록 시안 14 미수령 · 설계서 9-1 최소 구성). 시드 브랜드(글로우랩) 하나가 늘 깔려 있다.
+ * 52 테스트 시나리오 2절 · 55 계획서 M2 — 브랜드 회원 목록(ui-admin-14 rev.7). 시드 브랜드(글로우랩) 하나가 늘 깔려 있다.
  */
 @DisplayName("어드민 브랜드 목록 — 탭 · 검색 · 정렬 · 요약 · 페이지(52 시나리오 LS)")
 class AdminBrandListIntegrationTest extends AdminBrandTestSupport {
@@ -40,8 +40,9 @@ class AdminBrandListIntegrationTest extends AdminBrandTestSupport {
         assertThat(all.path("summary").path("withdrawn").asLong()).isEqualTo(1);
         assertThat(all.path("pageInfo").isMissingNode()).isFalse();
         JsonNode first = all.path("content").get(0);
-        for (String field : List.of("marketId", "brandNo", "brandName", "managerName", "businessType", "memberStatus",
-                "memberStatusLabel", "withdrawalPending", "joinedAt", "lastLoginAt")) {
+        for (String field : List.of("marketId", "brandNo", "brandName", "managerName", "managerContact", "businessType",
+                "memberStatus", "memberStatusLabel", "withdrawalPending", "withdrawalRequestedAt", "listStatus", "listStatusLabel",
+                "listStatusTone", "connectedCreatorCount", "joinedAt", "lastLoginAt")) {
             assertThat(first.has(field)).as(field).isTrue();
         }
 
@@ -132,18 +133,57 @@ class AdminBrandListIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
-    @DisplayName("LS-08 · LS-10 요약의 탈퇴 대기 수는 검색 범위가 아니라 전체 · 설계서의 withdrawalPending 필터는 없어 무시된다(현재 동작 고정)")
-    void pendingSummaryIsGlobal() throws Exception {
+    @DisplayName("LS-08 · LS-10 · 55 M2 탈퇴 승인 대기 탭 — 건수는 서로 겹치지 않는다 · 요약은 검색어 범위 · 정지 중 신청도 대기 · 전체 탭 상단 고정 · "
+            + "최장 대기 일수(대기 탭만)")
+    void withdrawalPendingTab() throws Exception {
         BrandFixture.Brand a = cleanBrand("대기하나");
         BrandFixture.Brand b = cleanBrand("대기둘");
-        withdrawalService.request(a.marketId(), null, null, LocalDateTime.now());
+        withdrawalService.request(a.marketId(), null, null, LocalDateTime.now().minusDays(6));
         withdrawalService.request(b.marketId(), null, null, LocalDateTime.now());
+        suspend(b.marketId(), "REPEATED_SHIPPING_DELAY", null).andExpect(status().isOk());
+
+        JsonNode all = json(adminGet(BRANDS).andExpect(status().isOk()));
+        assertThat(all.at("/summary/total").asLong()).isEqualTo(3);
+        assertThat(all.at("/summary/active").asLong()).isEqualTo(1);
+        assertThat(all.at("/summary/suspended").asLong()).isZero();
+        assertThat(all.at("/summary/withdrawalPending").asLong()).isEqualTo(2);
+        assertThat(all.at("/summary/longestPendingDays").isNull()).isTrue();
+        // 전체 탭은 대기 행이 맨 위 — 고정 행끼리는 가입 최신순
+        assertThat(textsAt(all.path("content"), "listStatus")).containsExactly("WITHDRAWAL_PENDING", "WITHDRAWAL_PENDING", "ACTIVE");
+        assertThat(textsAt(all.path("content"), "listStatusTone")).containsExactly("WARNING", "WARNING", "SUCCESS");
+
+        JsonNode waiting = json(adminGet(BRANDS + "?tab=WITHDRAWAL_PENDING").andExpect(status().isOk()));
+        assertThat(textsAt(waiting.path("content"), "brandName")).containsExactlyInAnyOrder("대기하나", "대기둘");
+        assertThat(waiting.at("/summary/longestPendingDays").asLong()).isEqualTo(6);
+        JsonNode suspendedWaiting = waiting.path("content").get(0).path("brandName").asText().equals("대기둘")
+                ? waiting.path("content").get(0) : waiting.path("content").get(1);
+        assertThat(suspendedWaiting.path("memberStatus").asText()).isEqualTo("SUSPENDED");
+        assertThat(suspendedWaiting.path("withdrawalRequestedAt").isNull()).isFalse();
+        adminGet(BRANDS + "?tab=SUSPENDED").andExpect(jsonPath("$.content.length()").value(0));
+        adminGet(BRANDS + "?tab=ACTIVE").andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].brandName").value("글로우랩"));
 
         adminList("keyword", "대기하나").andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.summary.total").value(1))
-                .andExpect(jsonPath("$.summary.withdrawalPending").value(2));
-        adminGet(BRANDS + "?withdrawalPending=true").andExpect(status().isOk())
-                .andExpect(jsonPath("$.content.length()").value(3));
+                .andExpect(jsonPath("$.summary.withdrawalPending").value(1));
+    }
+
+    @Test
+    @DisplayName("55 M2 담당자 연락처 · 연결 인플루언서 — 연락처는 마스킹하지 않는다 · 연결중 쌍만 센다 · 탈퇴 행은 연락처 null")
+    void contactAndConnectedCreators() throws Exception {
+        BrandFixture.Brand owner = cleanBrand("연결브랜드");
+        jdbc.update("UPDATE seller SET phone_number = ? WHERE seller_id = ?", "01044712093", owner.seller().getId());
+        pairConnected(owner, creator, LocalDateTime.now().minusDays(3));
+        pairDisconnected(owner, createCreator("끊긴쇼룸", "ls-cut"), LocalDateTime.now().minusDays(1));
+
+        adminList("keyword", "연결브랜드").andExpect(jsonPath("$.content[0].managerContact").value("010-4471-2093"))
+                .andExpect(jsonPath("$.content[0].connectedCreatorCount").value(1));
+
+        BrandFixture.Brand gone = cleanBrand("떠난연락처");
+        Long requestId = withdrawalService.request(gone.marketId(), null, null, LocalDateTime.now()).getId();
+        approve(gone.marketId(), requestId).andExpect(status().isOk());
+        adminList("keyword", "떠난연락처").andExpect(jsonPath("$.content[0].managerContact").doesNotExist())
+                .andExpect(jsonPath("$.content[0].listStatus").value("WITHDRAWN"));
     }
 
     @Test

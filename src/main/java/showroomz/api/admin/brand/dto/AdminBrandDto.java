@@ -29,21 +29,26 @@ public final class AdminBrandDto {
             Long marketId,
             @Schema(example = "BRD-1042") String brandNo,
             String brandName,
-            String managerName,
-            @Schema(description = "사업자 구분", example = "법인사업자") String businessType,
-            @Schema(example = "ACTIVE") String memberStatus,
+            @Schema(description = "담당자 — 탈퇴면 null(파기)") String managerName,
+            @Schema(description = "담당자 연락처 — 마스킹하지 않는다(CS 가 바로 연락하는 사업자 담당자 · 시안 ⓓ). 탈퇴면 null",
+                    example = "010-4471-2093", nullable = true) String managerContact,
+            @Schema(description = "사업자 구분 — 평문(법인사업자 · 일반과세자 · 간이과세자)", example = "법인사업자") String businessType,
+            @Schema(description = "회원 상태(원래 값) — 정지 중 탈퇴 신청이면 SUSPENDED 그대로", example = "ACTIVE") String memberStatus,
             @Schema(example = "활성") String memberStatusLabel,
-            @Schema(description = "탈퇴 승인 대기 — 회원 상태가 아니라 별도 플래그") boolean withdrawalPending,
+            @Schema(description = "탈퇴 승인 대기 — 회원 상태가 아니라 열린 신청 행") boolean withdrawalPending,
+            @Schema(description = "탈퇴 신청 시각 — 대기 행만", nullable = true) LocalDateTime withdrawalRequestedAt,
+            @Schema(description = "목록 표시 상태 — ACTIVE · SUSPENDED · WITHDRAWAL_PENDING · WITHDRAWN(대기를 반영)",
+                    example = "WITHDRAWAL_PENDING") String listStatus,
+            @Schema(example = "탈퇴 승인 대기") String listStatusLabel,
+            @Schema(description = "배지 톤 — SUCCESS · DANGER · WARNING · NEUTRAL", example = "WARNING") String listStatusTone,
+            @Schema(description = "연결 인플루언서 — 연결중인 쌍 수(상세 운영 현황과 같은 기준)", example = "14") long connectedCreatorCount,
             LocalDateTime joinedAt,
             LocalDateTime lastLoginAt) {
     }
 
-    @Schema(name = "AdminBrandListSummary")
-    public record ListSummary(long total, long active, long suspended, long withdrawn, long withdrawalPending) {
-    }
-
     @Schema(name = "AdminBrandListResponse")
-    public record ListResponse(List<ListItem> content, PaginationInfo pageInfo, ListSummary summary) {
+    public record ListResponse(List<ListItem> content, PaginationInfo pageInfo,
+                               showroomz.api.admin.common.AdminMemberListSummary summary) {
     }
 
     // ------------------------------------------------------------------ 상세

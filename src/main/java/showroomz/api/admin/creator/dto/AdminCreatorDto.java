@@ -33,6 +33,35 @@ public final class AdminCreatorDto {
     private AdminCreatorDto() {
     }
 
+    // ------------------------------------------------------------------ 목록(ui-admin-16 rev.7 · 55 계획서 M1)
+
+    @Schema(name = "AdminCreatorListItem", description = "인플루언서 목록 한 행 — 쇼룸명이 공개 식별자라 첫 열이다")
+    public record ListItem(
+            @Schema(example = "3018") Long creatorId,
+            @Schema(description = "회원번호", example = "INF-3018") String memberNo,
+            @Schema(description = "쇼룸명 — 온보딩 전이면 null", example = "하린의 뷰티랩", nullable = true) String showroomName,
+            @Schema(description = "인스타 바로가기 — 미등록이거나 탈퇴로 파기됐으면 null", nullable = true) String instagramUrl,
+            @Schema(description = "업무용 이메일 — 공지 · 정산 안내 · 소명 요청 창구(탈퇴 뒤에도 보존)", example = "harin@beautylab.kr")
+            String businessEmail,
+            CreatorBusinessType businessType,
+            @Schema(description = "목록 표기 — 사업자 · 비사업자", example = "사업자") String businessTypeLabel,
+            @Schema(description = "가입일 — 상세 basic.joinedAt 과 같다") LocalDateTime joinedAt,
+            @Schema(description = "연결 브랜드 — 연결중인 쌍 수(상세 운영 현황과 같은 기준)", example = "4") long connectedBrandCount,
+            @Schema(description = "회원 상태(원래 값) — 정지 중 탈퇴 신청이면 SUSPENDED 그대로") CreatorStatus status,
+            @Schema(example = "활성") String statusLabel,
+            @Schema(description = "목록 표시 상태 — ACTIVE · SUSPENDED · WITHDRAWAL_PENDING · WITHDRAWN(대기를 반영)",
+                    example = "WITHDRAWAL_PENDING") String listStatus,
+            @Schema(example = "탈퇴 승인 대기") String listStatusLabel,
+            @Schema(description = "배지 톤 — SUCCESS · DANGER · WARNING · NEUTRAL", example = "WARNING") String listStatusTone,
+            @Schema(description = "탈퇴 승인 대기 — 회원 상태가 아니라 열린 신청 행") boolean withdrawalPending,
+            @Schema(description = "탈퇴 신청 시각 — 대기 행만", nullable = true) LocalDateTime withdrawalRequestedAt) {
+    }
+
+    @Schema(name = "AdminCreatorListResponse")
+    public record ListResponse(List<ListItem> content, showroomz.global.dto.PaginationInfo pageInfo,
+                               showroomz.api.admin.common.AdminMemberListSummary summary) {
+    }
+
     // ------------------------------------------------------------------ 상세(상단 4카드 + 레일)
 
     @Schema(description = "인플루언서 상세 — 상단 4카드(기본 · 본인확인 · 사업자 · 정산) + 우측 레일")

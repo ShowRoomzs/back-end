@@ -17,6 +17,57 @@ import showroomz.global.dto.PageResponse;
 @Tag(name = "Admin - Influencer Member", description = "관리자 인플루언서 회원 관리 API")
 public interface AdminCreatorControllerDocs {
 
+    @Operation(summary = "인플루언서 회원 목록",
+            description = """
+                    ui-admin-16 rev.7 · 55 계획서 M1 — 브랜드 목록(`GET /v1/admin/brands`)과 같은 골격입니다.
+
+                    - `tab`: `ALL`(기본) · `ACTIVE` · `SUSPENDED` · `WITHDRAWAL_PENDING` · `WITHDRAWN` — **건수가 서로 겹치지 않습니다**.
+                      탈퇴 승인 대기 행은 활성 · 정지 탭에서 빠지고(정지 중에 신청했어도 대기 탭), 원래 상태는 `status` 에 그대로 있습니다.
+                    - **전체 탭은 탈퇴 승인 대기 행이 맨 위에 고정**되고(고정 행끼리는 아래 정렬), 그 밖은 `sort` 를 따릅니다.
+                    - `keyword`: `INF-`로 시작하면 회원번호 정확 일치(접두사 뒤가 숫자가 아니면 0건) · 그 외 **쇼룸명 또는 업무용 이메일** 부분 일치(대소문자 무시)
+                    - `sort`: `RECENT_JOINED`(기본 · 가입 최신순) · `MEMBER_NO`(회원번호순)
+                    - 행: 쇼룸명 · 인스타 바로가기(`instagramUrl` · 미등록 · 탈퇴면 null) · 업무용 이메일 · 사업자 여부 · 가입일 · 연결 브랜드(연결중 쌍) · 표시 상태
+                    - `summary` 는 탭 5종 건수(모두 검색어 범위)이고, 대기 탭에서만 `longestPendingDays`(「최장 대기 N일」 · 날짜 차)가 있습니다.
+
+                    **권한:** ADMIN
+                    """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ListResponse.class),
+                            examples = @ExampleObject(value = """
+                                    {
+                                      "content": [
+                                        { "creatorId": 3021, "memberNo": "INF-3021", "showroomName": "하린의 뷰티랩",
+                                          "instagramUrl": "https://instagram.com/harin.beautylab", "businessEmail": "harin@beautylab.kr",
+                                          "businessType": "BUSINESS", "businessTypeLabel": "사업자", "joinedAt": "2026-04-02T10:00:00",
+                                          "connectedBrandCount": 4, "status": "ACTIVE", "statusLabel": "활성",
+                                          "listStatus": "WITHDRAWAL_PENDING", "listStatusLabel": "탈퇴 승인 대기", "listStatusTone": "WARNING",
+                                          "withdrawalPending": true, "withdrawalRequestedAt": "2026-10-20T09:30:00" },
+                                        { "creatorId": 3018, "memberNo": "INF-3018", "showroomName": "지민의 데일리",
+                                          "instagramUrl": null, "businessEmail": "jimin@daily.kr",
+                                          "businessType": "INDIVIDUAL", "businessTypeLabel": "비사업자", "joinedAt": "2026-07-11T15:20:00",
+                                          "connectedBrandCount": 0, "status": "ACTIVE", "statusLabel": "활성",
+                                          "listStatus": "ACTIVE", "listStatusLabel": "활성", "listStatusTone": "SUCCESS",
+                                          "withdrawalPending": false, "withdrawalRequestedAt": null }
+                                      ],
+                                      "pageInfo": { "currentPage": 1, "totalPages": 1, "totalResults": 2, "limit": 20, "hasNext": false },
+                                      "summary": { "total": 18, "active": 14, "suspended": 1, "withdrawalPending": 2, "withdrawn": 1,
+                                                   "longestPendingDays": null }
+                                    }
+                                    """))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ListResponse list(@Parameter(description = "탭 — ALL(기본) · ACTIVE · SUSPENDED · WITHDRAWAL_PENDING · WITHDRAWN", example = "ALL")
+                      showroomz.api.admin.common.AdminMemberListTab tab,
+                      @Parameter(description = "`INF-3018`(회원번호 정확 일치) 또는 쇼룸명 · 업무용 이메일(부분 일치)", example = "하린")
+                      String keyword,
+                      @Parameter(description = "정렬 — RECENT_JOINED(기본) · MEMBER_NO", example = "RECENT_JOINED")
+                      showroomz.api.admin.common.AdminMemberListSort sort,
+                      @org.springdoc.core.annotations.ParameterObject showroomz.global.dto.PagingRequest paging);
+
     /** 상세 · 조치 응답 예시 — 정지 상태 · 탈퇴 신청 심사 중. */
     String DETAIL_EXAMPLE = """
             {

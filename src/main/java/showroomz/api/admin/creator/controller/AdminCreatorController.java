@@ -28,6 +28,15 @@ public class AdminCreatorController implements AdminCreatorControllerDocs {
     private final AdminCreatorPrivacyService privacy;
 
     @Override
+    @GetMapping
+    public ListResponse list(@RequestParam(required = false) showroomz.api.admin.common.AdminMemberListTab tab,
+                             @RequestParam(required = false) String keyword,
+                             @RequestParam(required = false) showroomz.api.admin.common.AdminMemberListSort sort,
+                             @ModelAttribute showroomz.global.dto.PagingRequest paging) {
+        return queries.list(tab, keyword, sort, paging);
+    }
+
+    @Override
     @GetMapping("/reason-options")
     public ReasonOptions reasonOptions() {
         return queries.reasonOptions();

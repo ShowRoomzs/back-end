@@ -9,6 +9,7 @@ import showroomz.api.admin.common.AdminPrivilege;
 import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.api.admin.common.MemberNumber;
 import showroomz.api.admin.creator.dto.AdminCreatorDto.*;
+import showroomz.api.admin.creator.repository.AdminCreatorListQueryRepository;
 import showroomz.api.admin.creator.repository.AdminCreatorQueryRepository;
 import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.changerequest.repository.ChangeRequestRepository;
@@ -93,9 +94,69 @@ public class AdminCreatorQueryService {
     private final SellerRepository sellers;
     private final ChangeRequestRepository changeRequests;
     private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
+    private final AdminCreatorListQueryRepository listQueries;
+    private final showroomz.domain.connection.repository.ConnectionRepository connections;
 
     @Value("${showroomz.showroom.base-url:https://showroomz.kr/}")
     private String showroomBaseUrl;
+
+    // ------------------------------------------------------------------ 목록(ui-admin-16 rev.7 · 55 계획서 M1)
+
+    /**
+     * 인플루언서 회원 목록 — 브랜드 목록과 같은 골격(탭 5종 · 겹치지 않는 건수 · 전체 탭은 탈퇴 승인 대기 상단 고정 · 요약은 검색어 범위).
+     * 「최장 대기」는 상세 심사 카드와 같은 날짜 차다(D13-7).
+     */
+    @Transactional(readOnly = true)
+    public ListResponse list(showroomz.api.admin.common.AdminMemberListTab tab, String keyword,
+                             showroomz.api.admin.common.AdminMemberListSort sort, showroomz.global.dto.PagingRequest paging) {
+        var resolvedTab = tab == null ? showroomz.api.admin.common.AdminMemberListTab.ALL : tab;
+        var resolvedSort = sort == null ? showroomz.api.admin.common.AdminMemberListSort.RECENT_JOINED : sort;
+        var page = paging == null ? new showroomz.global.dto.PagingRequest() : paging;
+        var pageable = page.toPageable(org.springframework.data.domain.Sort.unsorted());
+        var k = showroomz.api.admin.common.AdminMemberListKeyword.of(MemberType.CREATOR, keyword);
+
+        org.springframework.data.domain.Page<AdminCreatorListQueryRepository.Row> rows = k.noMatch()
+                ? org.springframework.data.domain.Page.empty(pageable) : listQueries.search(resolvedTab, k, resolvedSort, pageable);
+        java.util.Map<Long, Long> connected = new java.util.HashMap<>();
+        if (!rows.isEmpty()) {
+            for (Object[] row : connections.countConnectedPairsByCreatorIn(rows.map(r -> r.creator().getId()).getContent())) {
+                connected.put((Long) row[0], ((Number) row[1]).longValue());
+            }
+        }
+        List<ListItem> content = rows.getContent().stream()
+                .map(r -> toListItem(r, connected.getOrDefault(r.creator().getId(), 0L)))
+                .toList();
+
+        java.util.Map<showroomz.api.admin.common.AdminMemberListTab, Long> counts = k.noMatch()
+                ? new java.util.EnumMap<>(showroomz.api.admin.common.AdminMemberListTab.class) : listQueries.countByTab(k);
+        Long longestPendingDays = null;
+        if (resolvedTab == showroomz.api.admin.common.AdminMemberListTab.WITHDRAWAL_PENDING && !k.noMatch()) {
+            LocalDateTime oldest = listQueries.oldestPendingRequestedAt(k);
+            longestPendingDays = oldest == null ? null
+                    : Math.max(0, ChronoUnit.DAYS.between(oldest.toLocalDate(), LocalDateTime.now().toLocalDate()));
+        }
+        return new ListResponse(content, new showroomz.global.dto.PaginationInfo(rows),
+                new showroomz.api.admin.common.AdminMemberListSummary(
+                        counts.getOrDefault(showroomz.api.admin.common.AdminMemberListTab.ALL, 0L),
+                        counts.getOrDefault(showroomz.api.admin.common.AdminMemberListTab.ACTIVE, 0L),
+                        counts.getOrDefault(showroomz.api.admin.common.AdminMemberListTab.SUSPENDED, 0L),
+                        counts.getOrDefault(showroomz.api.admin.common.AdminMemberListTab.WITHDRAWAL_PENDING, 0L),
+                        counts.getOrDefault(showroomz.api.admin.common.AdminMemberListTab.WITHDRAWN, 0L),
+                        longestPendingDays));
+    }
+
+    private static ListItem toListItem(AdminCreatorListQueryRepository.Row row, long connectedBrands) {
+        Creator c = row.creator();
+        boolean waiting = row.withdrawalRequestedAt() != null;
+        var listStatus = showroomz.api.admin.common.AdminMemberListStatus.of(c.isWithdrawn(),
+                c.getStatus() == CreatorStatus.SUSPENDED, waiting);
+        String businessTypeLabel = c.getBusinessType() == null ? null
+                : c.getBusinessType() == CreatorBusinessType.BUSINESS ? "사업자" : "비사업자";
+        return new ListItem(c.getId(), MemberNumber.format(MemberType.CREATOR, c.getId()), c.getShowroomName(),
+                c.isWithdrawn() ? null : c.getInstagramUrl(), c.getBusinessEmail(), c.getBusinessType(), businessTypeLabel,
+                c.getCreatedAt(), connectedBrands, c.getStatus(), c.getStatus().getLabel(), listStatus.name(),
+                listStatus.getLabel(), listStatus.getTone(), waiting, row.withdrawalRequestedAt());
+    }
 
     // ------------------------------------------------------------------ 3-1 상세
 

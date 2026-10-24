@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 import showroomz.domain.member.brand.entity.BrandWithdrawalRequest;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,10 +29,6 @@ public interface BrandWithdrawalRequestRepository extends JpaRepository<BrandWit
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT r FROM BrandWithdrawalRequest r WHERE r.id = :id")
     Optional<BrandWithdrawalRequest> findForUpdate(@Param("id") Long id);
-
-    @Query("SELECT r.marketId FROM BrandWithdrawalRequest r WHERE r.marketId IN :marketIds "
-            + "AND r.status = showroomz.domain.member.common.type.MemberWithdrawalStatus.PENDING")
-    List<Long> findPendingMarketIds(@Param("marketIds") Collection<Long> marketIds);
 
     @Query("SELECT COUNT(r) FROM BrandWithdrawalRequest r "
             + "WHERE r.status = showroomz.domain.member.common.type.MemberWithdrawalStatus.PENDING")

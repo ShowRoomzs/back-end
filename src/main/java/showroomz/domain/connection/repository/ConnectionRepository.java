@@ -116,6 +116,18 @@ public interface ConnectionRepository extends JpaRepository<Connection, Long> {
            "AND c.market.id = :marketId AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED")
     long countConnectedPairsByMarket(@Param("marketId") Long marketId);
 
+    /** 어드민 브랜드 목록 「연결 인플루언서」 — 상세 운영 현황과 같은 기준(연결중 PAIR · D13-3). [marketId, count]. */
+    @Query("SELECT c.market.id, COUNT(c) FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR "
+            + "AND c.market.id IN :marketIds AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED "
+            + "GROUP BY c.market.id")
+    List<Object[]> countConnectedPairsByMarketIn(@Param("marketIds") java.util.Collection<Long> marketIds);
+
+    /** 어드민 인플루언서 목록 「연결 브랜드」 — 상세 운영 현황과 같은 기준(연결중 PAIR · D13-3). [creatorId, count]. */
+    @Query("SELECT c.creator.id, COUNT(c) FROM Connection c WHERE c.type = showroomz.domain.connection.type.ConnectionType.PAIR "
+            + "AND c.creator.id IN :creatorIds AND c.status = showroomz.domain.connection.type.ConnectionStatus.CONNECTED "
+            + "GROUP BY c.creator.id")
+    List<Object[]> countConnectedPairsByCreatorIn(@Param("creatorIds") java.util.Collection<Long> creatorIds);
+
     /**
      * 연결 인플루언서 카드 — 연결중 먼저(최근 연결순) → 연결 종료(최근 종료순). 요청중 · 거절은 연결이 성립한 적이 없어 내리지 않는다.
      */

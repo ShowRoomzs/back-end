@@ -7,9 +7,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import showroomz.api.admin.brand.repository.AdminBrandListQueryRepository;
+import showroomz.api.admin.common.AdminMemberListKeyword;
+import showroomz.api.admin.common.AdminMemberListSort;
+import showroomz.api.admin.common.AdminMemberListStatus;
+import showroomz.api.admin.common.AdminMemberListSummary;
+import showroomz.api.admin.common.AdminMemberListTab;
 import showroomz.api.admin.brand.dto.AdminBrandDto;
-import showroomz.api.admin.brand.type.AdminBrandSort;
-import showroomz.api.admin.brand.type.AdminBrandTab;
 import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.api.admin.common.MemberNumber;
@@ -113,6 +117,7 @@ public class AdminBrandQueryService {
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementTaxDocumentRepository taxDocumentRepository;
     private final BrandWithdrawalEligibility withdrawalEligibility;
+    private final AdminBrandListQueryRepository listQueries;
     private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     /** 모달 셀렉트 사유 목록(정합 계획서 R1-9) — enum 단일 소스. 인플루언서 상세와 같은 조립식이다. */
@@ -125,53 +130,59 @@ public class AdminBrandQueryService {
 
     // ------------------------------------------------------------------ 목록
 
-    public AdminBrandDto.ListResponse list(AdminBrandTab tab, String keyword, AdminBrandSort sort, PagingRequest paging) {
-        AdminBrandTab resolvedTab = tab == null ? AdminBrandTab.ALL : tab;
-        AdminBrandSort resolvedSort = sort == null ? AdminBrandSort.RECENT_JOINED : sort;
+    /**
+     * 브랜드 회원 목록(ui-admin-14 rev.7 · 55 계획서 M2) — 탭 5종(겹치지 않는 건수) · 전체 탭은 탈퇴 승인 대기 상단 고정 · 연락처 · 연결 인플루언서.
+     * 요약 건수는 모두 검색어 범위다(D13-2).
+     */
+    public AdminBrandDto.ListResponse list(AdminMemberListTab tab, String keyword, AdminMemberListSort sort,
+                                           PagingRequest paging) {
+        AdminMemberListTab resolvedTab = tab == null ? AdminMemberListTab.ALL : tab;
+        AdminMemberListSort resolvedSort = sort == null ? AdminMemberListSort.RECENT_JOINED : sort;
         PagingRequest page = paging == null ? new PagingRequest() : paging;
-        Keyword k = Keyword.of(keyword);
+        Pageable pageable = page.toPageable(org.springframework.data.domain.Sort.unsorted());
+        AdminMemberListKeyword k = AdminMemberListKeyword.of(MemberType.BRAND, keyword);
 
-        Page<Market> markets = k.noMatch()
-                ? Page.empty(page.toPageable(resolvedSort.toSort()))
-                : marketRepository.searchBrandMembers(resolvedTab.getStatuses(), k.marketId(), k.name(),
-                page.toPageable(resolvedSort.toSort()));
-        Set<Long> pendingIds = markets.isEmpty() ? Set.of()
-                : new HashSet<>(withdrawalRepository.findPendingMarketIds(markets.map(Market::getId).getContent()));
-
-        List<AdminBrandDto.ListItem> content = markets.getContent().stream().map(m -> {
-            Seller s = m.getSeller();
-            BrandMemberStatus status = BrandMemberStatus.of(m.getStatus());
-            boolean withdrawn = status == BrandMemberStatus.WITHDRAWN;
-            return new AdminBrandDto.ListItem(m.getId(), MemberNumber.format(MemberType.BRAND, m.getId()), m.getMarketName(),
-                    withdrawn ? null : s.getName(), withdrawn ? null : s.getBusinessType(), status.name(),
-                    status.getLabel(), pendingIds.contains(m.getId()), s.getCreatedAt(), s.getLastLoginAt());
-        }).toList();
-
-        Map<BrandMemberStatus, Long> counts = new EnumMap<>(BrandMemberStatus.class);
-        if (!k.noMatch()) {
-            for (Object[] row : marketRepository.countBrandMembersByStatus(k.marketId(), k.name())) {
-                counts.merge(BrandMemberStatus.of((MarketStatus) row[0]), ((Number) row[1]).longValue(), Long::sum);
+        Page<AdminBrandListQueryRepository.Row> rows = k.noMatch() ? Page.empty(pageable)
+                : listQueries.search(resolvedTab, k, resolvedSort, pageable);
+        Map<Long, Long> connected = new HashMap<>();
+        if (!rows.isEmpty()) {
+            for (Object[] row : connectionRepository.countConnectedPairsByMarketIn(
+                    rows.map(r -> r.market().getId()).getContent())) {
+                connected.put((Long) row[0], ((Number) row[1]).longValue());
             }
         }
-        long total = counts.values().stream().mapToLong(Long::longValue).sum();
-        return new AdminBrandDto.ListResponse(content, new PaginationInfo(markets),
-                new AdminBrandDto.ListSummary(total, counts.getOrDefault(BrandMemberStatus.ACTIVE, 0L),
-                        counts.getOrDefault(BrandMemberStatus.SUSPENDED, 0L),
-                        counts.getOrDefault(BrandMemberStatus.WITHDRAWN, 0L), withdrawalRepository.countPending()));
+        List<AdminBrandDto.ListItem> content = rows.getContent().stream()
+                .map(r -> toListItem(r, connected.getOrDefault(r.market().getId(), 0L)))
+                .toList();
+
+        Map<AdminMemberListTab, Long> counts = k.noMatch() ? new EnumMap<>(AdminMemberListTab.class)
+                : listQueries.countByTab(k);
+        Long longestPendingDays = null;
+        if (resolvedTab == AdminMemberListTab.WITHDRAWAL_PENDING && !k.noMatch()) {
+            LocalDateTime oldest = listQueries.oldestPendingRequestedAt(k);
+            // 상세 심사 카드 경과일과 같은 식 — 24시간 단위(D13-7 · DT-21)
+            longestPendingDays = oldest == null ? null : Math.max(0, Duration.between(oldest, LocalDateTime.now()).toDays());
+        }
+        return new AdminBrandDto.ListResponse(content, new PaginationInfo(rows),
+                new AdminMemberListSummary(counts.getOrDefault(AdminMemberListTab.ALL, 0L),
+                        counts.getOrDefault(AdminMemberListTab.ACTIVE, 0L),
+                        counts.getOrDefault(AdminMemberListTab.SUSPENDED, 0L),
+                        counts.getOrDefault(AdminMemberListTab.WITHDRAWAL_PENDING, 0L),
+                        counts.getOrDefault(AdminMemberListTab.WITHDRAWN, 0L), longestPendingDays));
     }
 
-    /** 검색어 축 — {@code BRD-}로 시작하면 회원번호 정확 일치(숫자가 아니면 0건) · 그 외 브랜드명 부분 일치. */
-    private record Keyword(Long marketId, String name, boolean noMatch) {
-        static Keyword of(String keyword) {
-            if (keyword == null || keyword.isBlank()) {
-                return new Keyword(null, null, false);
-            }
-            if (MemberNumber.looksLike(MemberType.BRAND, keyword)) {
-                Long id = MemberNumber.parseOrNull(MemberType.BRAND, keyword);
-                return new Keyword(id, null, id == null);
-            }
-            return new Keyword(null, keyword.trim(), false);
-        }
+    private static AdminBrandDto.ListItem toListItem(AdminBrandListQueryRepository.Row row, long connectedCreators) {
+        Market m = row.market();
+        Seller s = row.seller();
+        BrandMemberStatus status = BrandMemberStatus.of(m.getStatus());
+        boolean withdrawn = status == BrandMemberStatus.WITHDRAWN;
+        boolean waiting = row.withdrawalRequestedAt() != null;
+        AdminMemberListStatus listStatus = AdminMemberListStatus.of(withdrawn, status == BrandMemberStatus.SUSPENDED, waiting);
+        return new AdminBrandDto.ListItem(m.getId(), MemberNumber.format(MemberType.BRAND, m.getId()), m.getMarketName(),
+                withdrawn ? null : s.getName(), withdrawn ? null : AdminMemberMasker.formatPhone(s.getPhoneNumber()),
+                withdrawn ? null : s.getBusinessType(), status.name(), status.getLabel(), waiting,
+                row.withdrawalRequestedAt(), listStatus.name(), listStatus.getLabel(), listStatus.getTone(),
+                connectedCreators, s.getCreatedAt(), s.getLastLoginAt());
     }
 
     // ------------------------------------------------------------------ 상세

@@ -19,8 +19,8 @@ import showroomz.api.admin.brand.dto.AdminBrandDto;
 import showroomz.api.admin.brand.service.AdminBrandCommandService;
 import showroomz.api.admin.brand.service.AdminBrandMemoService;
 import showroomz.api.admin.brand.service.AdminBrandQueryService;
-import showroomz.api.admin.brand.type.AdminBrandSort;
-import showroomz.api.admin.brand.type.AdminBrandTab;
+import showroomz.api.admin.common.AdminMemberListSort;
+import showroomz.api.admin.common.AdminMemberListTab;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
@@ -37,9 +37,9 @@ public class AdminBrandController implements AdminBrandControllerDocs {
 
     @Override
     @GetMapping
-    public AdminBrandDto.ListResponse list(@RequestParam(required = false) AdminBrandTab tab,
+    public AdminBrandDto.ListResponse list(@RequestParam(required = false) AdminMemberListTab tab,
                                            @RequestParam(required = false) String keyword,
-                                           @RequestParam(required = false) AdminBrandSort sort,
+                                           @RequestParam(required = false) AdminMemberListSort sort,
                                            @ModelAttribute PagingRequest paging) {
         return queries.list(tab, keyword, sort, paging);
     }

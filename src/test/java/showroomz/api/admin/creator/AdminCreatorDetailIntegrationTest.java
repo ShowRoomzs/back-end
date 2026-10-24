@@ -55,9 +55,10 @@ class AdminCreatorDetailIntegrationTest extends AdminCreatorTestSupport {
     // ------------------------------------------------------------------ 2. 권한 · 접근
 
     @Test
-    @DisplayName("[AU-01] 17개 엔드포인트 — 토큰 없음 401 · 소비자 · 인플루언서 · 브랜드 403 · 부수 효과 없음")
+    @DisplayName("[AU-01] 18개 엔드포인트(목록 포함) — 토큰 없음 401 · 소비자 · 인플루언서 · 브랜드 403 · 부수 효과 없음")
     void everyEndpointIsAdminOnly() throws Exception {
         List<Map.Entry<HttpMethod, String>> calls = List.of(
+                Map.entry(HttpMethod.GET, "/v1/admin/creators"),
                 Map.entry(HttpMethod.GET, CREATORS + "reason-options"),
                 Map.entry(HttpMethod.GET, base),
                 Map.entry(HttpMethod.GET, base + "/overview"),
