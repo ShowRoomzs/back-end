@@ -117,6 +117,30 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
         assertThat(ids(adminGet(ADMIN_CLAIMS + "?openOnly=true"))).containsExactlyInAnyOrder(recent, others);
     }
 
+    /**
+     * 알려진 한계(56 수정 기록 5-2) — 요약은 userId 를 받지 않는다. 소비자 상세 칩으로 들어와 목록을 그 소비자로 좁혀도 탭 숫자 · KPI 는 전체 기준이다.
+     * 요약이 userId 를 받게 되면 이 테스트를 그 기대로 바꾼다.
+     */
+    @Test
+    @DisplayName("[56 C1-10] 알려진 한계 — 요약은 userId 를 받지 않는다(무시 · 400 아님) · 탭 숫자 · 검수 지연은 전체 기준 · 목록만 그 소비자로 좁혀진다")
+    void summaryIgnoresUserId() throws Exception {
+        Long mine = received(returnClaim(deliveredGroup(creamVariant, 1)));
+        Long others = received(returnClaim(deliveredGroup(creamVariant, 1)));
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?", LocalDateTime.now().minusDays(3), others);
+        Users other = createConsumer("noah", "노아");
+        jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = (SELECT order_id FROM order_claim WHERE claim_id = ?)",
+                other.getId(), others);
+
+        JsonNode all = json(adminGet(ADMIN_CLAIMS + "/summary").andExpect(status().isOk()));
+        JsonNode narrowed = json(adminGet(ADMIN_CLAIMS + "/summary?userId=" + consumer.getId()).andExpect(status().isOk()));
+
+        assertThat(narrowed).isEqualTo(all);
+        assertThat(narrowed.at("/tabCounts/ALL").asLong()).isEqualTo(2);
+        assertThat(narrowed.at("/kpi/overdue").asLong()).as("다른 소비자의 검수 지연도 잡힌다").isEqualTo(1);
+        adminGet(ADMIN_CLAIMS + "?userId=" + consumer.getId()).andExpect(jsonPath("$.pageInfo.totalResults").value(1));
+        assertThat(ids(adminGet(ADMIN_CLAIMS + "?userId=" + consumer.getId()))).containsExactly(mine);
+    }
+
     @Test
     @DisplayName("[AC-03] 목록 — 검수에서 브랜드 귀책으로 바꾼 반려는 faultChangedToSeller 가 참")
     void faultChangedToSellerColumn() throws Exception {

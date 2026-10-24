@@ -654,6 +654,57 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.nextInquiryId").value(between.getId()));
     }
 
+    /**
+     * 칩 → 목록의 userId 가 없는 회원 · 탈퇴 계정이어도 목록은 거부(400 · 404)하지 않는다 — 조건에 맞는 행이 없으면 빈 목록이다(56 C1).
+     * 다른 소비자의 진행 중 건이 다섯 목록에 모두 있어, userId 조건이 빠지면 0 이 아니게 된다.
+     */
+    @Test
+    @DisplayName("[56 C1-11] 없는 userId · 탈퇴 소비자 userId — 1:1 · 상품 문의 · 클레임 · 환불 · 주문 목록 모두 빈 목록(400 아님) · 칩 query 를 그대로 붙여도 같다")
+    void listsWithUnknownOrWithdrawnUserIdAreEmpty() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        seedPendingWork(hong);
+        Users gone = createConsumer("gone", UserStatus.WITHDRAWN);
+        long unknown = jdbc.queryForObject("SELECT MAX(user_id) FROM users", Long.class) + 1_000;
+        List<Long> emptyUsers = List.of(unknown, gone.getId());
+
+        // 칩 링크(탭 · 상태 · userId) — 홍길동은 0 이 아니고, userId 만 바꾸면 0
+        JsonNode chips = json(detail(hong)).path("pendingChips");
+        java.util.Set<String> linkedTargets = new java.util.HashSet<>();
+        for (JsonNode chip : chips) {
+            for (JsonNode link : chip.path("links")) {
+                String target = link.path("target").asText();
+                linkedTargets.add(target);
+                assertThat(listTotal(target, link.path("query"))).as("%s 홍길동", target).isPositive();
+                for (Long userId : emptyUsers) {
+                    com.fasterxml.jackson.databind.node.ObjectNode query = link.path("query").deepCopy();
+                    query.put("userId", String.valueOf(userId));
+                    assertThat(listTotal(target, query)).as("%s userId=%d %s", target, userId, query).isZero();
+                }
+            }
+        }
+        assertThat(linkedTargets)
+                .containsExactlyInAnyOrder("INQUIRIES", "PRODUCT_INQUIRIES", "ORDERS", "CLAIMS", "REFUNDS");
+
+        // userId 만 — 기본 탭 · 기간 그대로
+        for (String target : linkedTargets) {
+            for (Long userId : emptyUsers) {
+                JsonNode query = objectMapper.valueToTree(java.util.Map.of("userId", String.valueOf(userId)));
+                assertThat(listTotal(target, query)).as("%s userId=%d", target, userId).isZero();
+            }
+        }
+        for (Long userId : emptyUsers) {
+            mockMvc.perform(get("/v1/admin/inquiries").param("userId", String.valueOf(userId))
+                            .header(HttpHeaders.AUTHORIZATION, adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0))
+                    .andExpect(jsonPath("$.statusCounts.all").value(0));
+            mockMvc.perform(get("/v1/admin/orders").param("userId", String.valueOf(userId))
+                            .header(HttpHeaders.AUTHORIZATION, adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.content.length()").value(0));
+        }
+    }
+
     @Test
     @DisplayName("판단 메타 — 반품 · 교환률 = 접수된 주문 ÷ 누적 주문(요청 취소 제외 · 반려 포함) · 정지 이력 횟수 · 직전 정지 · 가입 후 경과")
     void judgementMeta() throws Exception {

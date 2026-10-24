@@ -289,6 +289,36 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
                 .andExpect(jsonPath("$.pageInfo.totalResults").value(1));
     }
 
+    /**
+     * 알려진 한계(56 수정 기록 5-2) — 요약은 userId 를 받지 않는다. 「환불 실패」 칩으로 들어와 목록을 그 소비자로 좁혀도 탭 숫자 · 배지는 전체 기준이다.
+     * 요약이 userId 를 받게 되면 이 테스트를 그 기대로 바꾼다.
+     */
+    @Test
+    @DisplayName("[56 C1-10] 알려진 한계 — 요약은 userId 를 받지 않는다(무시 · 400 아님) · 탭 숫자 · 배지는 전체 기준 · 목록만 그 소비자로 좁혀진다")
+    void summaryIgnoresUserId() throws Exception {
+        long mineFailed = failedRefund();
+        long othersFailed = failedRefund();
+        operatorRefund(deliveredGroup(creamVariant, 1), 5_000);
+        long othersPending = operatorRefund(deliveredGroup(creamVariant, 1), 6_000);
+        Users other = createConsumer("noah", "노아");
+        for (long taskId : List.of(othersFailed, othersPending)) {
+            jdbc.update("UPDATE orders SET user_id = ? WHERE order_id = "
+                    + "(SELECT order_id FROM order_refund_task WHERE refund_task_id = ?)", other.getId(), taskId);
+        }
+
+        JsonNode all = json(adminGet(ADMIN_REFUNDS + "/summary").andExpect(status().isOk()));
+        JsonNode narrowed = json(adminGet(ADMIN_REFUNDS + "/summary?userId=" + consumer.getId())
+                .andExpect(status().isOk()));
+
+        assertThat(narrowed).isEqualTo(all);
+        assertThat(narrowed.at("/tabs/FAILED/count").asLong()).isEqualTo(2);
+        assertThat(narrowed.at("/tabs/PENDING/count").asLong()).isEqualTo(2);
+        assertThat(narrowed.at("/tabs/PENDING/amount").asLong()).isEqualTo(11_000);
+        assertThat(narrowed.get("badge").asLong()).isEqualTo(4);
+        assertThat(ids(adminGet(ADMIN_REFUNDS + "?tab=FAILED&userId=" + consumer.getId()))).containsExactly(mineFailed);
+        adminGet(ADMIN_REFUNDS + "?userId=" + consumer.getId()).andExpect(jsonPath("$.pageInfo.totalResults").value(1));
+    }
+
     @Test
     @DisplayName("[R-08] 실패 → 재시도 — 실패 탭 · 상세 실패 기록 · 이번엔 PG 성공이면 완료 · 시도 2회")
     void failedThenRetried() throws Exception {
