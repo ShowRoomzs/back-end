@@ -286,11 +286,13 @@ public class SettlementPayoutTransitions {
                     }
                 }
                 case DEFERRED -> {
-                    // 잔액 부족(토스 설계서 5-1 ①) — 지시를 되돌려 다음 영업일로. attempt 를 소모하지 않는다.
+                    // 잔액 부족(토스 설계서 5-1 ①) · 요청 전 통신 실패 — 지시를 되돌려 다음 영업일로. attempt 를 소모하지 않는다.
                     LocalDate next = businessCalendar.addBusinessDays(now.toLocalDate(), 1);
                     if (payoutRepository.deferRequested(line.payoutId(), next) == 1) {
+                        String why = line.failReason() == null || line.failCode() == null || "INSUFFICIENT_BALANCE".equals(line.failCode())
+                                ? "잔액 부족" : line.failReason();
                         historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_DEFERRED,
-                                "%s · 잔액 부족 · %s 로 연기".formatted(request.payee().getLabel(), next), now);
+                                "%s · %s · %s 로 연기".formatted(request.payee().getLabel(), why, next), now);
                         notifier.payoutCheckRequired(settlementId, request.payee(),
                                 line.failCode() == null ? "INSUFFICIENT_BALANCE" : line.failCode());
                     }

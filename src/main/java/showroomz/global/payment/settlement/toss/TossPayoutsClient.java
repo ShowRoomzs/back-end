@@ -160,7 +160,8 @@ public class TossPayoutsClient {
      * @throws PaymentGatewayException         결과 모름
      */
     private String call(HttpMethod method, String path, Object body, String idempotencyKey, boolean encrypted) {
-        RestClient.RequestBodySpec spec = rest.method(method).uri(path).accept(MediaType.APPLICATION_JSON);
+        // Accept 는 열어 둔다 — 암호화 호출의 응답은 JWE 문자열이라 text/plain 으로 올 수 있다(가이드 샘플 · Q11).
+        RestClient.RequestBodySpec spec = rest.method(method).uri(path).accept(MediaType.ALL);
         if (idempotencyKey != null) {
             spec = spec.header(IDEMPOTENCY_HEADER, idempotencyKey);
         }
@@ -190,7 +191,7 @@ public class TossPayoutsClient {
                     }
                     return plain;
                 }
-                ErrorBody error = plain == null ? null : convertQuietly(plain, ErrorBody.class);
+                ErrorBody error = plain == null ? null : errorOf(plain);
                 String code = error == null ? null : error.code();
                 String message = error == null ? null : error.message();
                 if (TossPayoutFailureClassifier.isUnknownOutcome(status, code)) {
@@ -254,9 +255,18 @@ public class TossPayoutsClient {
         }
     }
 
-    private <T> T convertQuietly(String json, Class<T> type) {
+    /**
+     * 에러 본문 → 코드 · 메시지. API v2 에러 객체는 {@code {version, traceId, error: {code, message}}} 로 <b>중첩</b>이고(req-res 「API v2
+     * 에러 객체」), 게이트웨이 · 인증 계층(401 등)은 v1 꼴 {@code {code, message}} 로 올 수 있어 둘 다 읽는다. 코드를 못 읽으면 모든 거절이
+     * 「모르는 코드」로 떨어져 중복 · 잔액 · 본인인증 분기가 전부 죽는다.
+     */
+    ErrorBody errorOf(String json) {
         try {
-            return objectMapper.readValue(json, type);
+            JsonNode root = objectMapper.readTree(json);
+            JsonNode node = root.hasNonNull("error") && root.get("error").isObject() ? root.get("error") : root;
+            String code = node.path("code").asText(null);
+            String message = node.path("message").asText(null);
+            return code == null && message == null ? null : new ErrorBody(code, message);
         } catch (IOException e) {
             return null;
         }

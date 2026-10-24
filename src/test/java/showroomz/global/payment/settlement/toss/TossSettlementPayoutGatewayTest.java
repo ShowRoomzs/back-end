@@ -25,7 +25,6 @@ import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutResult;
 import showroomz.domain.settlement.service.SettlementPartnerIds;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.config.properties.TossPayoutsProperties;
-import showroomz.global.payment.portone.PaymentGatewayException;
 import showroomz.global.utils.BusinessCalendar;
 
 import java.time.LocalDate;
@@ -33,7 +32,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -74,12 +72,13 @@ class TossSettlementPayoutGatewayTest {
     // ------------------------------------------------------------------ 지시(5-2)
 
     @Test
-    @DisplayName("지시 — 셀러 계좌 같으면 수정 없이 POST /v2/payouts · 배열 1건 · JWE · Idempotency-Key = UUIDv3(ref) · EXPRESS · amount{KRW} · 적요 · REQUESTED + id")
+    @DisplayName("지시 — 셀러 계좌 같으면(토스 응답은 마스킹 계좌번호) 수정 없이 POST /v2/payouts · 배열 1건 · JWE · Idempotency-Key = UUIDv3(ref) · EXPRESS · amount{KRW} · 적요 · REQUESTED + id")
     void requestExpress() throws Exception {
         String ref = "t-STL-2610-006-BRAND-0";
+        // 토스는 계좌번호를 마스킹해 돌려준다(가이드 응답 예 123*****90123) — 그대로 같은 계좌로 봐야 수정 호출이 나가지 않는다.
         server.expect(requestTo("https://api.tosspayments.com/v2/sellers/SELLER-1")).andExpect(method(HttpMethod.GET))
                 .andExpect(header("Authorization", "Basic dGVzdF9za19hYmM6"))
-                .andRespond(withSuccess(seller("SELLER-1", "PARTIALLY_APPROVED", "088", "110123456789"), MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess(sellerEnvelope("SELLER-1", "PARTIALLY_APPROVED", "088", "110*****6789"), MediaType.APPLICATION_JSON));
         server.expect(requestTo("https://api.tosspayments.com/v2/payouts")).andExpect(method(HttpMethod.POST))
                 .andExpect(header(TossPayoutsClient.SECURITY_MODE_HEADER, "ENCRYPTION"))
                 .andExpect(header(TossPayoutsClient.IDEMPOTENCY_HEADER, SettlementPartnerIds.idempotencyKey(ref)))
@@ -148,7 +147,7 @@ class TossSettlementPayoutGatewayTest {
                     assertThat(item.path("payoutDate").asText()).isEqualTo("2026-10-16");
                 })
                 .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_PLAIN)
-                        .body(jwe.encrypt("{\"code\":\"EXCEEDED_PAYOUT_BALANCE_AMOUNT\",\"message\":\"잔액 부족\"}")));
+                        .body(jwe.encrypt(error("EXCEEDED_PAYOUT_BALANCE_AMOUNT", "잔액 부족"))));
 
         PayoutResult deferred = gateway.distribute(command(THURSDAY.atTime(16, 0), line(SettlementPayee.CREATOR, 12_000L, "SELLER-2")));
         assertThat(deferred.lines().get(0).outcome()).isEqualTo(Outcome.DEFERRED);
@@ -160,7 +159,7 @@ class TossSettlementPayoutGatewayTest {
                 .andRespond(withSuccess(seller("SELLER-2", "PARTIALLY_APPROVED", "088", "110123456789"), MediaType.APPLICATION_JSON));
         server.expect(requestTo("https://api.tosspayments.com/v2/payouts"))
                 .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_PLAIN)
-                        .body(jwe.encrypt("{\"code\":\"DUPLICATE_PAYOUT_REQUEST\",\"message\":\"이미 요청\"}")));
+                        .body(jwe.encrypt(error("DUPLICATE_PAYOUT_REQUEST", "이미 요청"))));
         PayoutResult duplicate = gateway.distribute(command(THURSDAY.atTime(10, 0), line(SettlementPayee.CREATOR, 12_000L, "SELLER-2")));
         assertThat(duplicate.lines().get(0).outcome()).isEqualTo(Outcome.REQUESTED);
         assertThat(duplicate.lines().get(0).pgReference()).isNull();
@@ -168,13 +167,13 @@ class TossSettlementPayoutGatewayTest {
     }
 
     @Test
-    @DisplayName("지시 — 본인인증 필요(FORBIDDEN_SELLER_PAYOUT)는 셀러 상태로 KYC/본인인증을 가른 FAILED(서비스가 BLOCKED 로 되돌린다) · 5xx 는 예외(결과 모름) · 셀러 미연결은 PARTNER_NOT_READY")
+    @DisplayName("지시 — 본인인증 필요(FORBIDDEN_SELLER_PAYOUT)는 셀러 상태로 KYC/본인인증을 가른 FAILED(서비스가 BLOCKED 로 되돌린다) · 5xx 는 그 행만 REQUESTED(id 없음 · ref 있음) · 셀러 미연결은 PARTNER_NOT_READY")
     void forbiddenAndUnknown() {
         server.expect(requestTo("https://api.tosspayments.com/v2/sellers/SELLER-3"))
                 .andRespond(withSuccess(seller("SELLER-3", "KYC_REQUIRED", "088", "110123456789"), MediaType.APPLICATION_JSON));
         server.expect(requestTo("https://api.tosspayments.com/v2/payouts"))
                 .andRespond(withStatus(HttpStatus.FORBIDDEN).contentType(MediaType.TEXT_PLAIN)
-                        .body(jwe.encrypt("{\"code\":\"FORBIDDEN_SELLER_PAYOUT\",\"message\":\"KYC\"}")));
+                        .body(jwe.encrypt(error("FORBIDDEN_SELLER_PAYOUT", "KYC"))));
         server.expect(requestTo("https://api.tosspayments.com/v2/sellers/SELLER-3"))
                 .andRespond(withSuccess(seller("SELLER-3", "KYC_REQUIRED", "088", "110123456789"), MediaType.APPLICATION_JSON));
         PayoutResult forbidden = gateway.distribute(command(THURSDAY.atTime(10, 0), line(SettlementPayee.BRAND, 1_000L, "SELLER-3")));
@@ -186,13 +185,64 @@ class TossSettlementPayoutGatewayTest {
                 .andRespond(withSuccess(seller("SELLER-3", "APPROVED", "088", "110123456789"), MediaType.APPLICATION_JSON));
         server.expect(requestTo("https://api.tosspayments.com/v2/payouts"))
                 .andRespond(withStatus(HttpStatus.INTERNAL_SERVER_ERROR).contentType(MediaType.TEXT_PLAIN)
-                        .body(jwe.encrypt("{\"code\":\"COMMON_ERROR\",\"message\":\"일시 오류\"}")));
-        assertThatThrownBy(() -> gateway.distribute(command(THURSDAY.atTime(10, 0), line(SettlementPayee.BRAND, 1_000L, "SELLER-3"))))
-                .isInstanceOf(PaymentGatewayException.class);
+                        .body(jwe.encrypt(error("COMMON_ERROR", "일시 오류"))));
+        PayoutResult unknown = gateway.distribute(command(THURSDAY.atTime(10, 0), line(SettlementPayee.BRAND, 1_000L, "SELLER-3")));
+        LineResult unknownLine = unknown.lines().get(0);
+        assertThat(unknownLine.outcome()).isEqualTo(Outcome.REQUESTED);
+        assertThat(unknownLine.pgReference()).isNull();
+        assertThat(unknownLine.pgTransferId()).isEqualTo("t-STL-2610-006-BRAND-0");
+        assertThat(unknown.lines().get(1).outcome()).isEqualTo(Outcome.PAID);   // 다른 행(플랫폼)의 결과는 그대로 돌아온다
+        server.verify();
 
         PayoutResult unlinked = gateway.distribute(command(THURSDAY.atTime(10, 0), line(SettlementPayee.BRAND, 1_000L, null)));
         assertThat(unlinked.lines().get(0).outcome()).isEqualTo(Outcome.FAILED);
         assertThat(unlinked.lines().get(0).failCode()).isEqualTo("PARTNER_NOT_READY");
+    }
+
+    @Test
+    @DisplayName("지시 — 두 행 중 앞 행은 성공 · 뒤 행은 통신 실패 → 앞 행 REQUESTED(id) 유지 · 뒤 행만 REQUESTED(id 없음) · 요청 전 셀러 조회 통신 실패는 DEFERRED(ACCOUNT_SYNC_FAILED)")
+    void perLineUnknownOutcome() {
+        String brandRef = "t-STL-2610-006-BRAND-0";
+        server.expect(requestTo("https://api.tosspayments.com/v2/sellers/SELLER-1"))
+                .andRespond(withSuccess(sellerEnvelope("SELLER-1", "APPROVED", "088", "110*****6789"), MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://api.tosspayments.com/v2/payouts"))
+                .andRespond(withSuccess(jwe.encrypt(payoutList("PO-1", brandRef, "REQUESTED", "EXPRESS", "2026-10-15", 35_180L, null)),
+                        MediaType.TEXT_PLAIN));
+        server.expect(requestTo("https://api.tosspayments.com/v2/sellers/SELLER-2"))
+                .andRespond(withSuccess(sellerEnvelope("SELLER-2", "APPROVED", "088", "110*****6789"), MediaType.APPLICATION_JSON));
+        server.expect(requestTo("https://api.tosspayments.com/v2/payouts"))
+                .andRespond(request -> { throw new java.io.IOException("read timeout"); });
+
+        PayoutResult result = gateway.distribute(new PayoutCommand(1L, "STL-2610-006", List.of(
+                line(SettlementPayee.BRAND, 35_180L, "SELLER-1"), line(SettlementPayee.CREATOR, 12_000L, "SELLER-2")), THURSDAY.atTime(10, 0)));
+
+        server.verify();
+        assertThat(result.lines()).extracting(LineResult::payoutId, LineResult::outcome, LineResult::pgReference, LineResult::pgTransferId)
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(1L, Outcome.REQUESTED, "PO-1", brandRef),
+                        org.assertj.core.groups.Tuple.tuple(2L, Outcome.REQUESTED, null, "t-STL-2610-006-CREATOR-0"));
+
+        server.reset();
+        server.expect(requestTo("https://api.tosspayments.com/v2/sellers/SELLER-1"))
+                .andRespond(request -> { throw new java.io.IOException("connect timeout"); });
+        PayoutResult deferred = gateway.distribute(command(THURSDAY.atTime(10, 0), line(SettlementPayee.BRAND, 35_180L, "SELLER-1")));
+        assertThat(deferred.lines().get(0).outcome()).isEqualTo(Outcome.DEFERRED);
+        assertThat(deferred.lines().get(0).failCode()).isEqualTo("ACCOUNT_SYNC_FAILED");
+        assertThat(deferred.lines().get(0).pgTransferId()).isEqualTo(brandRef);
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("마스킹 계좌번호 비교 — 길이 같고 * 아닌 자리가 모두 같으면 같은 계좌 · 평문 응답도 같음 · 길이 · 숫자 다르면 다른 계좌")
+    void maskedAccountNumber() {
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("110*****6789", "110123456789")).isTrue();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("110*****6789", "110-1234-56789")).isTrue();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("110123456789", "110123456789")).isTrue();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("110*****6780", "110123456789")).isFalse();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("110*****678", "110123456789")).isFalse();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("************", "110123456789")).isTrue();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber(null, "1")).isFalse();
+        assertThat(TossSettlementPayoutGateway.sameAccountNumber("", "1")).isFalse();
     }
 
     // ------------------------------------------------------------------ 결과(5-4)
@@ -331,7 +381,7 @@ class TossSettlementPayoutGatewayTest {
         server.reset();
         server.expect(requestTo("https://api.tosspayments.com/v2/sellers"))
                 .andRespond(withStatus(HttpStatus.BAD_REQUEST).contentType(MediaType.TEXT_PLAIN)
-                        .body(jwe.encrypt("{\"code\":\"INVALID_BUSINESS_NUMBER\",\"message\":\"x\"}")));
+                        .body(jwe.encrypt(error("INVALID_BUSINESS_NUMBER", "x"))));
         server.expect(requestTo("https://api.tosspayments.com/v2/sellers"))
                 .andExpect(request -> assertThat(objectMapper.readTree(jwe.decrypt(request.getBody().toString()))
                         .path("businessType").asText()).isEqualTo("INDIVIDUAL_BUSINESS"))
@@ -372,6 +422,12 @@ class TossSettlementPayoutGatewayTest {
                 new Business("글로우랩 주식회사", "1208112345", "김대표", "서울", "도소매", true), null, existing);
     }
 
+    /** API v2 응답 봉투 — 단건 객체는 {@code entityBody} 아래(req-res). */
+    private static String sellerEnvelope(String id, String status, String bankCode, String accountNumber) {
+        return "{\"version\":\"2024-06-01\",\"traceId\":\"trace-1\",\"entityType\":\"seller\",\"entityBody\":"
+                + seller(id, status, bankCode, accountNumber) + "}";
+    }
+
     private static String seller(String id, String status, String bankCode, String accountNumber) {
         return ("{\"id\":\"%s\",\"refSellerId\":\"ref\",\"businessType\":\"CORPORATE\",\"status\":\"%s\","
                 + "\"account\":{\"bankCode\":\"%s\",\"accountNumber\":\"%s\",\"holderName\":\"글로우랩\"},\"metadata\":null}")
@@ -388,5 +444,10 @@ class TossSettlementPayoutGatewayTest {
 
     private static String payoutList(String id, String ref, String status, String type, String date, long amount, String errorCode) {
         return "{\"entityBody\":{\"hasMore\":false,\"nextCursor\":null,\"items\":[" + payout(id, ref, status, type, date, amount, errorCode) + "]}}";
+    }
+
+    /** API v2 에러 객체 — {@code error} 아래 중첩(req-res). 암호화 호출의 4xx 는 이 꼴이 JWE 로 온다. */
+    private static String error(String code, String message) {
+        return "{\"version\":\"2024-06-01\",\"traceId\":\"trace-1\",\"error\":{\"code\":\"%s\",\"message\":\"%s\"}}".formatted(code, message);
     }
 }
