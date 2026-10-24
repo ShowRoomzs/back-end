@@ -6,6 +6,9 @@ import showroomz.api.admin.user.dto.AdminUserDto.Actions;
 import showroomz.api.admin.user.dto.AdminUserDto.AppealInquiry;
 import showroomz.api.admin.user.dto.AdminUserDto.SanctionInfo;
 import showroomz.api.admin.user.dto.AdminUserDto.StatusCard;
+import showroomz.api.admin.user.dto.AdminUserDto.Withdrawal;
+import showroomz.domain.history.entity.UserStatusHistory;
+import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.member.user.entity.UserSanction;
 import showroomz.domain.member.user.entity.Users;
@@ -24,6 +27,7 @@ public class AdminUserStatusCardAssembler {
 
     private final UserSanctionRepository sanctions;
     private final OneToOneInquiryRepository inquiries;
+    private final UserStatusHistoryRepository statusHistories;
     private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
 
     public StatusCard statusCard(Users user) {
@@ -31,7 +35,16 @@ public class AdminUserStatusCardAssembler {
         UserStatus status = user.getStatus();
         // 정지 상태엔 정지 버튼을 두지 않는다(§25-4) · 탈퇴 회원엔 운영자 액션이 없다(§25-5)
         Actions actions = new Actions(status == UserStatus.NORMAL, status == UserStatus.SUSPENDED);
-        return new StatusCard(status, open == null ? null : sanctionInfo(open), actions);
+        return new StatusCard(status, open == null ? null : sanctionInfo(open),
+                status == UserStatus.WITHDRAWN ? withdrawal(user) : null, actions);
+    }
+
+    /** 탈퇴 블록(56 C3) — 처리 이력의 「회원 탈퇴」 파생 행과 같은 원천(가장 최근의 → WITHDRAWN 전이)이라 두 시각이 어긋나지 않는다. */
+    private Withdrawal withdrawal(Users user) {
+        return new Withdrawal(statusHistories
+                .findFirstByUser_IdAndNewStatusOrderByCreatedAtDescIdDesc(user.getId(), UserStatus.WITHDRAWN)
+                .map(UserStatusHistory::getCreatedAt)
+                .orElse(null));
     }
 
     private SanctionInfo sanctionInfo(UserSanction sanction) {

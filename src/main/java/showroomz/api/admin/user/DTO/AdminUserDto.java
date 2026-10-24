@@ -50,7 +50,17 @@ public class AdminUserDto {
     public record StatusCard(
             @Schema(example = "SUSPENDED") UserStatus status,
             @Schema(description = "열린 정지 — 없으면 null. 사유 기록 없이 정지된 옛 회원도 null") SanctionInfo sanction,
+            @Schema(description = "탈퇴 정보 — 탈퇴(WITHDRAWN) 계정만 · 그 밖에는 null(56 C3 · 브랜드 · 인플루언서 상세의 withdrawal 과 같은 자리)",
+                    nullable = true) Withdrawal withdrawal,
             Actions actions) {
+    }
+
+    @Schema(name = "AdminUserWithdrawal",
+            description = "탈퇴 블록 「탈퇴 일시」 — 소비자 탈퇴는 앱 셀프 탈퇴뿐이라 신청 · 승인 시각 · 처리자가 따로 없다(「탈퇴 경로 · 보존 · 파기 항목」은 고정 문구)")
+    public record Withdrawal(
+            @Schema(description = "탈퇴 일시 — 가장 최근의 탈퇴 전이(user_status_history). 처리 이력 「회원 탈퇴」 행과 같은 시각. "
+                    + "전이 기록이 없는 옛 탈퇴 회원은 null", example = "2026-07-19T20:02:00", nullable = true)
+            LocalDateTime withdrawnAt) {
     }
 
     public record SanctionInfo(

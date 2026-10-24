@@ -231,6 +231,7 @@ public interface UserAdminControllerDocs {
                     "**탈퇴 회원** — 본인확인 · 배송지 · 알림 수신은 `destroyed = true`, 최근 로그인 null(「— 파기됨」). 주문 · 문의 기록은 보존이라 그대로이고, 판단 메타는 거래 값이 null 이며 가입 후 경과 · 정지 이력만 남습니다.\n\n" +
                     "**현재 상태 카드(`statusCard`)** — 정지 상태면 사유 · 처리자 · 일시 · 상세 사유 · **소명 문의**(`appealInquiries` — 해제 모달의 「소명 문의 번호」)가 함께 내려갑니다. " +
                     "`actions.canSuspend` = 정상일 때만 · `actions.canRelease` = 정지일 때만 · 탈퇴 회원은 둘 다 false(운영자 액션 없음). " +
+                    "탈퇴 회원은 `withdrawal.withdrawnAt`(탈퇴 일시 — 처리 이력 「회원 탈퇴」 행과 같은 시각)이 함께 오고, 그 밖에는 `withdrawal = null` 입니다. " +
                     "탈퇴 회원도 열린 정지가 있으면 그대로 보입니다 — 같은 계정으로 재가입하면 그 정지로 돌아옵니다.\n\n" +
                     "**메모(`memos`)** — 최신 3건 + 전체 건수. `editable`은 요청 운영자 기준(작성자 본인 ∧ 24시간 이내 ∧ 탈퇴 아님)입니다.\n\n" +
                     "**처리 이력(`histories`)** — 최신 5건 + 전체 건수. 저장 사건(정지 · 해제 · 메모 · 개인정보 열람)과 파생 사건(가입 · 탈퇴 · 재가입 · 정지 소명 문의 접수)을 합친 최신순입니다.\n\n" +
@@ -367,6 +368,7 @@ public interface UserAdminControllerDocs {
                                     "      \"suspendedByName\": \"김운영\",\n" +
                                     "      \"appealInquiries\": []\n" +
                                     "    },\n" +
+                                    "    \"withdrawal\": null,\n" +
                                     "    \"actions\": { \"canSuspend\": false, \"canRelease\": true }\n" +
                                     "  },\n" +
                                     "  \"histories\": {\n" +
@@ -420,6 +422,7 @@ public interface UserAdminControllerDocs {
                                     "  \"statusCard\": {\n" +
                                     "    \"status\": \"NORMAL\",\n" +
                                     "    \"sanction\": null,\n" +
+                                    "    \"withdrawal\": null,\n" +
                                     "    \"actions\": { \"canSuspend\": true, \"canRelease\": false }\n" +
                                     "  },\n" +
                                     "  \"histories\": {\n" +

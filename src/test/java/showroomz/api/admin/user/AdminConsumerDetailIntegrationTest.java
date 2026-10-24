@@ -17,8 +17,10 @@ import showroomz.domain.category.repository.CategoryRepository;
 import showroomz.domain.cs.type.CsCategory;
 import showroomz.domain.history.entity.LoginHistory;
 import showroomz.domain.history.entity.UserConsentHistory;
+import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.repository.LoginHistoryRepository;
 import showroomz.domain.history.repository.UserConsentHistoryRepository;
+import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.history.type.ConsentType;
 import showroomz.domain.history.type.LoginStatus;
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
@@ -105,6 +107,7 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     @Autowired private UserPrivacyAccessLogRepository privacyLogRepository;
     @Autowired private OrderCancelRequestRepository cancelRequestRepository;
     @Autowired private OrderRefundTaskRepository refundTaskRepository;
+    @Autowired private UserStatusHistoryRepository statusHistoryRepository;
 
     private String adminToken;
     private Seller admin;
@@ -311,6 +314,38 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.judgement.claimRate").doesNotExist())
                 .andExpect(jsonPath("$.judgement.sinceJoined.totalDays").value(0))
                 .andExpect(jsonPath("$.judgement.sanctions.count").value(0));
+    }
+
+    /** 시안 탈퇴 계정 상태 카드 「탈퇴 일시」(56 C3) — 처리 이력 「회원 탈퇴」 파생 행과 같은 원천이라 두 시각이 같아야 한다. */
+    @Test
+    @DisplayName("[56 C3] 탈퇴 계정 statusCard.withdrawal — 탈퇴 일시 = 가장 최근 탈퇴 전이(재가입 뒤 다시 탈퇴하면 나중 것) = 처리 이력 「회원 탈퇴」 시각 · 활성 · 정지는 null · 전이 기록 없는 옛 탈퇴는 withdrawnAt null")
+    void withdrawnStatusCardCarriesWithdrawnAt() throws Exception {
+        Users gone = createConsumer("gone", UserStatus.WITHDRAWN);
+        LocalDateTime first = LocalDateTime.now().minusDays(90).withNano(0);
+        LocalDateTime rejoined = LocalDateTime.now().minusDays(60).withNano(0);
+        LocalDateTime last = LocalDateTime.now().minusDays(5).withNano(0);
+        statusTransition(gone, UserStatus.NORMAL, UserStatus.WITHDRAWN, first);
+        statusTransition(gone, UserStatus.WITHDRAWN, UserStatus.NORMAL, rejoined);
+        statusTransition(gone, UserStatus.NORMAL, UserStatus.WITHDRAWN, last);
+
+        JsonNode body = json(detail(gone));
+        assertThat(body.at("/statusCard/status").asText()).isEqualTo("WITHDRAWN");
+        assertThat(body.at("/statusCard/withdrawal/withdrawnAt").asText()).startsWith(iso(last));
+        JsonNode withdrawnRow = null;
+        for (JsonNode row : body.at("/histories/content")) {
+            if ("WITHDRAWN".equals(row.path("eventType").asText())) {
+                withdrawnRow = row;
+                break;
+            }
+        }
+        assertThat(withdrawnRow).isNotNull();
+        assertThat(withdrawnRow.path("occurredAt").asText()).isEqualTo(body.at("/statusCard/withdrawal/withdrawnAt").asText());
+        // 상태 변경 응답(정지 · 해제)과 같은 카드 — 탈퇴 회원이 아니면 비어 있다
+        detail(createConsumer("hong", UserStatus.NORMAL)).andExpect(jsonPath("$.statusCard.withdrawal").doesNotExist());
+        detail(createConsumer("paused", UserStatus.SUSPENDED)).andExpect(jsonPath("$.statusCard.withdrawal").doesNotExist());
+        detail(createConsumer("legacy", UserStatus.WITHDRAWN))
+                .andExpect(jsonPath("$.statusCard.withdrawal").exists())
+                .andExpect(jsonPath("$.statusCard.withdrawal.withdrawnAt").doesNotExist());
     }
 
     @Test
@@ -810,6 +845,13 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
         Long collectionId = jdbc.queryForObject("SELECT MAX(collection_id) FROM order_claim_collection", Long.class);
         claimInBox(collectionId, order, group, user, type, claimStatus, result);
         return collectionId;
+    }
+
+    /** 상태 전이 로그 1행 — 탈퇴 · 재가입 경로 대신 테이블 계약대로 심고 시각만 소급한다. */
+    private void statusTransition(Users user, UserStatus previous, UserStatus next, LocalDateTime at) {
+        UserStatusHistory saved = statusHistoryRepository.save(UserStatusHistory.builder()
+                .user(user).previousStatus(previous).newStatus(next).reason(null).build());
+        jdbc.update("UPDATE user_status_history SET created_at = ? WHERE user_status_history_id = ?", at, saved.getId());
     }
 
     /** 결제 · 배송완료 주문 1건(하위주문 1). */
