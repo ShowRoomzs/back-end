@@ -16,6 +16,7 @@ import showroomz.domain.message.type.MessageType;
 import showroomz.domain.message.type.ParticipantType;
 import showroomz.domain.message.type.ThreadKind;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -108,6 +109,8 @@ public final class AdminThreadDto {
             boolean writable,
             Profile profile,
             Progress progress,
+            @Schema(description = "[정지 회원] 열린 정지의 사유 · 일시 — 정지 행이 없으면 null(55 계획서 A11)", nullable = true)
+            OpenSanction sanction,
             @Schema(description = "그 회원이 당사자인 열린 공구 3자 스레드") List<OpenIssueThread> openIssueThreads,
             @Schema(description = "[이슈 스레드] 정산 조정 패널 — tab = ISSUE 일 때만", nullable = true) IssuePanel issue,
             @Schema(description = "[브랜드–인플루언서 1:1 스레드 열람] 그 쌍 — 이슈 패널의 링크로 들어온 PAIR 스레드일 때만(tab = null)",
@@ -209,8 +212,23 @@ public final class AdminThreadDto {
             @Schema(description = "체결 완료 계약 수", nullable = true) Long contractConcluded,
             @Schema(description = "진행중 공구 수", nullable = true) Long groupBuyOngoing,
             @Schema(description = "[인플루언서] 종료 공구 수", nullable = true) Long groupBuyEnded,
+            @Schema(description = "중단 예정 공구 수 — 직권 중단 사전 통지 뒤 집행 · 철회 전(NOTICED). 셀러의 중단 요청은 세지 않는다"
+                    + "(55 계획서 A10 · D23)", nullable = true) Long groupBuySuspensionScheduled,
             @Schema(description = "[브랜드] 미정산 건수 — 정산 모듈이 없어 항상 null", nullable = true) Long unsettledCount,
             @Schema(description = "[인플루언서] 연결 브랜드 수", nullable = true) Long connectedBrandCount) {
+    }
+
+    @Schema(description = "정보 바의 정지 사유 · 일시 — 열린 정지 행(브랜드 · 인플루언서 정지) 그대로(55 계획서 A11)")
+    public record OpenSanction(
+            @Schema(description = "사유 코드 — 브랜드 BrandSuspensionReason · 인플루언서 CreatorSuspensionReason",
+                    example = "REPEATED_SHIPPING_DELAY") String reasonCode,
+            @Schema(example = "배송 지연 반복") String reasonLabel,
+            @Schema(description = "상세(직접 입력) — 없으면 null", nullable = true) String reasonDetail,
+            @Schema(description = "정지 시각", example = "2026-10-08T16:30:00") LocalDateTime suspendedAt,
+            @Schema(description = "정지 종료일(포함) — 다음 날 00:00 자동 해제. null = 기간 없음", example = "2026-10-22",
+                    nullable = true) LocalDate endsOn,
+            @Schema(description = "이의 신청 기한", example = "2026-10-13T23:59:59", nullable = true)
+            LocalDateTime appealDeadlineAt) {
     }
 
     public record OpenIssueThread(

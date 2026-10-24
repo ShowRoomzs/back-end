@@ -129,12 +129,14 @@ public class AdminThreadQueryService {
             return new ChannelInfo(thread.getId(), tab, market.getMarketName(), market.getMarketImageUrl(),
                     AdminChannelMemberNumber.format(tab, memberId), memberId, status, status.isWritable(),
                     infoReader.brandProfile(market), infoReader.brandProgress(market),
+                    infoReader.brandSanction(market.getId()),
                     infoReader.openIssueThreads(market.getId(), null), null, null);
         }
         Creator creator = connection.getCreator();
         return new ChannelInfo(thread.getId(), tab, creator.getShowroomName(), AdminThreadAccess.memberImageOf(thread),
                 AdminChannelMemberNumber.format(tab, memberId), memberId, status, status.isWritable(),
                 infoReader.creatorProfile(creator), infoReader.creatorProgress(creator),
+                infoReader.creatorSanction(creator.getId()),
                 infoReader.openIssueThreads(null, creator.getId()), null, null);
     }
 

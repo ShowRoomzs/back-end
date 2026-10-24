@@ -34,6 +34,21 @@ public interface GroupBuyAdminSuspensionRepository extends JpaRepository<GroupBu
     long countAppealable(@Param("marketId") Long marketId, @Param("now") LocalDateTime now);
 
     /**
+     * 어드민 소통 스레드 정보 바 「중단 예정 N」(55 계획서 A10) — 직권 중단 사전 통지를 받았고 아직 집행 · 철회되지 않은 공구 수.
+     * 진행 중 통지는 공구당 1건이다(active_group_buy_id UNIQUE). 셀러가 낸 중단 요청은 세지 않는다(D23).
+     */
+    @Query("SELECT COUNT(s) FROM GroupBuyAdminSuspension s "
+            + "WHERE s.groupBuy.market.id = :marketId "
+            + "AND s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.NOTICED")
+    long countNoticedByMarketId(@Param("marketId") Long marketId);
+
+    /** {@link #countNoticedByMarketId}의 인플루언서 쪽 — 그 인플루언서가 당사자인 공구. */
+    @Query("SELECT COUNT(s) FROM GroupBuyAdminSuspension s "
+            + "WHERE s.groupBuy.creator.id = :creatorId "
+            + "AND s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.NOTICED")
+    long countNoticedByCreatorId(@Param("creatorId") Long creatorId);
+
+    /**
      * 소명 제출(설계서 4-6) — 제출 후 수정 불가를 조건부 UPDATE로 막는다. 0행이면 서비스가
      * 미제출·기한·통지 상태를 다시 읽어 409 사유를 구분한다.
      *

@@ -3,6 +3,7 @@ package showroomz.api.admin.thread.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.api.admin.thread.dto.AdminThreadDto.OpenIssueThread;
+import showroomz.api.admin.thread.dto.AdminThreadDto.OpenSanction;
 import showroomz.api.admin.thread.dto.AdminThreadDto.Profile;
 import showroomz.api.admin.thread.dto.AdminThreadDto.Progress;
 import showroomz.domain.connection.repository.ConnectionRepository;
@@ -10,13 +11,18 @@ import showroomz.domain.connection.type.ConnectionStatus;
 import showroomz.domain.connection.type.ConnectionType;
 import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.domain.groupbuy.repository.GroupBuyAdminSuspensionRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.brand.service.BrandSanctionReader;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorMemberQueryRepository;
+import showroomz.domain.member.creator.service.CreatorSanctionReader;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.message.entity.MessageThread;
 import showroomz.domain.message.repository.MessageThreadRepository;
+import showroomz.domain.settlement.repository.SettlementRepository;
 
 import java.util.List;
 import java.util.Map;
@@ -27,7 +33,7 @@ import java.util.Set;
  * 접이식 정보 바의 값(36 설계 3-4) — <b>이 화면에서 계산하지 않는다.</b> 각 수치는 그 도메인 리포지토리의 집계를 읽는다.
  *
  * <p>집계할 모듈이 없으면 0이 아니라 {@code null}이다 — 0은 「없음」이라는 사실이고 null은 「모름」이다.
- * 미정산 건수는 정산 모듈이 없어 null이고, 과세 유형은 저장 값이 없어 null이다.
+ * 과세 유형은 저장 값이 없어 null이다. 미정산 건수는 회원 상세의 탈퇴 조건과 같은 숫자를 읽는다(55 계획서 A9).
  */
 @Component
 @RequiredArgsConstructor
@@ -39,8 +45,13 @@ public class AdminChannelInfoReader {
 
     private final ContractRepository contracts;
     private final GroupBuyRepository groupBuys;
+    private final GroupBuyAdminSuspensionRepository adminSuspensions;
     private final ConnectionRepository connections;
     private final MessageThreadRepository threads;
+    private final SettlementRepository settlements;
+    private final CreatorMemberQueryRepository creatorQueries;
+    private final BrandSanctionReader brandSanctions;
+    private final CreatorSanctionReader creatorSanctions;
 
     public Profile brandProfile(Market market) {
         Seller seller = market.getSeller();
@@ -56,7 +67,8 @@ public class AdminChannelInfoReader {
         Map<Object, Long> contractCounts = toMap(contracts.countByStatus(market.getId()));
         Map<Object, Long> groupBuyCounts = toMap(groupBuys.countByStatus(market.getId()));
         return new Progress(sum(contractCounts, SIGNING), sum(contractCounts, Set.of(ContractStatus.CONCLUDED)),
-                sum(groupBuyCounts, GroupBuyStatus.SELLING), null, null, null);
+                sum(groupBuyCounts, GroupBuyStatus.SELLING), null,
+                adminSuspensions.countNoticedByMarketId(market.getId()), brandUnsettled(market.getId()), null);
     }
 
     public Progress creatorProgress(Creator creator) {
@@ -67,7 +79,42 @@ public class AdminChannelInfoReader {
         long connectedBrands = connections.countByTypeAndCreatorAndStatus(
                 ConnectionType.PAIR, creator, ConnectionStatus.CONNECTED);
         return new Progress(sum(contractCounts, SIGNING), sum(contractCounts, Set.of(ContractStatus.CONCLUDED)),
-                sum(groupBuyCounts, GroupBuyStatus.SELLING), sum(groupBuyCounts, ENDED), null, connectedBrands);
+                sum(groupBuyCounts, GroupBuyStatus.SELLING), sum(groupBuyCounts, ENDED),
+                adminSuspensions.countNoticedByCreatorId(creator.getId()), creatorUnsettled(creator.getId()),
+                connectedBrands);
+    }
+
+    // ------------------------------------------------------------------ 미정산 — 탈퇴 조건과 같은 숫자(55 계획서 A9 · D22)
+
+    /**
+     * 두 화면(정보 바 · 회원 상세 탈퇴 조건)의 숫자가 같아야 하므로 미정산 판정식은 이 메서드와 {@link #creatorUnsettled}에만 둔다.
+     * 지금은 지급 완료(PAID)가 아닌 정산 — 확인 중 · 조정 협의 · 지급 예정 · 분배 실패(D22: 분배 실패 포함).
+     * 브랜드 탈퇴 조건이 「브랜드 몫 기준」으로 바뀌면(55 계획서 P5-1 · D5) 여기를 같은 판정식으로 바꾼다.
+     */
+    private long brandUnsettled(Long marketId) {
+        return settlements.countUnpaidForMarket(marketId);
+    }
+
+    /** 인플루언서 탈퇴 조건(미정산)과 같은 쿼리. */
+    private long creatorUnsettled(Long creatorId) {
+        return creatorQueries.countUnsettled(creatorId);
+    }
+
+    // ------------------------------------------------------------------ 정지 사유 · 일시(55 계획서 A11)
+
+    /** 열린 정지가 없으면 null — 상태가 정지여도 정지 행이 없으면(옛 상태 변경) 사유를 모른다. */
+    public OpenSanction brandSanction(Long marketId) {
+        return brandSanctions.openSanction(marketId)
+                .map(s -> new OpenSanction(s.getReason().name(), s.getReason().getLabel(), s.getReasonDetail(),
+                        s.getSuspendedAt(), s.getEndsOn(), s.getAppealDeadlineAt()))
+                .orElse(null);
+    }
+
+    public OpenSanction creatorSanction(Long creatorId) {
+        return creatorSanctions.openSanction(creatorId)
+                .map(s -> new OpenSanction(s.getReason().name(), s.getReason().getLabel(), s.getReasonDetail(),
+                        s.getSuspendedAt(), s.getEndsOn(), s.getAppealDeadlineAt()))
+                .orElse(null);
     }
 
     /** 그 회원이 당사자인 열린 공구 3자 스레드 — 이슈 스레드 기획 전까지는 목록만 내린다(여는 화면이 없다). */

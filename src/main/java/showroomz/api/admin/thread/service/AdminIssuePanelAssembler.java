@@ -76,7 +76,7 @@ public class AdminIssuePanelAssembler {
         Optional<GroupBuy> groupBuy = groupBuys.findDetailById(a.groupBuyId());
         String title = groupBuy.map(g -> g.getContract().getTitle()).orElse(null);
         return new ChannelInfo(thread.getId(), AdminChannelTab.ISSUE, title, null, null, null, null, false,
-                null, null, null, panel(a, connection, groupBuy, brandName, showroomName), null);
+                null, null, null, null, panel(a, connection, groupBuy, brandName, showroomName), null);
     }
 
     /** 브랜드–인플루언서 1:1 스레드 열람(4-5) — 헤더만. 읽기 전용이라 {@code writable = false}. */
@@ -85,7 +85,7 @@ public class AdminIssuePanelAssembler {
         String brandName = connection.getMarket().getMarketName();
         String showroomName = connection.getCreator().getShowroomName();
         return new ChannelInfo(thread.getId(), null, "%s × %s".formatted(brandName, showroomName), null, null, null,
-                null, false, null, null, null, null,
+                null, false, null, null, null, null, null,
                 new PairInfo(connection.getMarket().getId(), brandName, connection.getCreator().getId(), showroomName));
     }
 

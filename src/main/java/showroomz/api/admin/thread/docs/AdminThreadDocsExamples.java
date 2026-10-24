@@ -154,7 +154,7 @@ final class AdminThreadDocsExamples {
               "threadId": 55, "tab": "BRAND", "name": "무드코스메틱",
               "imageUrl": "https://cdn.example.com/markets/1017/logo.png",
               "memberNo": "BRD-1017", "memberId": 1017,
-              "memberStatus": "ACTIVE", "writable": true,
+              "memberStatus": "SUSPENDED", "writable": true,
               "profile": {
                 "managerName": "이현", "managerContact": "010-1234-5678",
                 "businessType": null, "taxType": null, "businessEmail": null, "instagramUrl": null,
@@ -162,8 +162,12 @@ final class AdminThreadDocsExamples {
               },
               "progress": {
                 "contractSigning": 2, "contractConcluded": 5,
-                "groupBuyOngoing": 1, "groupBuyEnded": null,
-                "unsettledCount": null, "connectedBrandCount": null
+                "groupBuyOngoing": 1, "groupBuyEnded": null, "groupBuySuspensionScheduled": 1,
+                "unsettledCount": 1, "connectedBrandCount": null
+              },
+              "sanction": {
+                "reasonCode": "REPEATED_SHIPPING_DELAY", "reasonLabel": "배송 지연 반복", "reasonDetail": null,
+                "suspendedAt": "2026-10-08T16:30:00", "endsOn": "2026-10-22", "appealDeadlineAt": "2026-10-13T23:59:59"
               },
               "openIssueThreads": [
                 {"threadId": 210, "kind": "GROUP_BUY_FULFILLMENT", "groupBuyId": 33, "groupBuyTitle": "봄 톤업 선크림 공구"}
@@ -186,9 +190,10 @@ final class AdminThreadDocsExamples {
               },
               "progress": {
                 "contractSigning": 1, "contractConcluded": 3,
-                "groupBuyOngoing": 1, "groupBuyEnded": 2,
-                "unsettledCount": null, "connectedBrandCount": 4
+                "groupBuyOngoing": 1, "groupBuyEnded": 2, "groupBuySuspensionScheduled": 0,
+                "unsettledCount": 0, "connectedBrandCount": 4
               },
+              "sanction": null,
               "openIssueThreads": []
             }
             """;
@@ -207,9 +212,10 @@ final class AdminThreadDocsExamples {
               },
               "progress": {
                 "contractSigning": 0, "contractConcluded": 1,
-                "groupBuyOngoing": 0, "groupBuyEnded": 1,
-                "unsettledCount": null, "connectedBrandCount": 0
+                "groupBuyOngoing": 0, "groupBuyEnded": 1, "groupBuySuspensionScheduled": 0,
+                "unsettledCount": 0, "connectedBrandCount": 0
               },
+              "sanction": null,
               "openIssueThreads": []
             }
             """;

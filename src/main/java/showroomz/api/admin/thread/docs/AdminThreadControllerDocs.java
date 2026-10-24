@@ -167,10 +167,25 @@ public interface AdminThreadControllerDocs {
             | `contractConcluded` | 체결 완료 계약 수 | 같음 |
             | `groupBuyOngoing` | 진행중 공구 수 | 같음 |
             | `groupBuyEnded` | null | 종료 + 정산완료 공구 수 |
-            | `unsettledCount` | **항상 null** — 정산 모듈 없음 | null |
+            | `groupBuySuspensionScheduled` | 중단 예정 공구 수 — 직권 중단 사전 통지 뒤 집행 · 철회 전 | 같음 |
+            | `unsettledCount` | 미정산 건수 — 지급 완료 전 정산(확인 중 · 조정 협의 · 지급 예정 · **분배 실패 포함**) | 같음(그 인플루언서의 정산) |
             | `connectedBrandCount` | null | 연결 중인 브랜드 수 |
 
             인플루언서의 계약 수는 스튜디오에 도착한 계약(서명 진행중 이후)만 셉니다 — 브랜드가 작성 · 검토 중인 계약은 세지 않습니다.
+            `groupBuySuspensionScheduled`는 셀러가 낸 중단 요청을 세지 않습니다(운영자 직권 통지만). 요약 줄 「공구 진행중 1 · 중단 예정 1」의 재료입니다.
+            `unsettledCount`는 회원 상세의 탈퇴 조건 「미정산」과 같은 숫자입니다(55 계획서 A9 · D22).
+
+            **정지 `sanction`** — 열린 정지가 있을 때만 채웁니다(없으면 null). 펼침 바 상태 「정지 · 10.08 16:30」과 사유 한 줄의 재료입니다.
+
+            | 필드 | 뜻 |
+            |---|---|
+            | `reasonCode` · `reasonLabel` | 정지 사유 — 브랜드 · 인플루언서 정지 사유 목록과 같은 값 |
+            | `reasonDetail` | 상세(직접 입력) — 없으면 null |
+            | `suspendedAt` | 정지 시각 |
+            | `endsOn` | 정지 종료일(포함) — 다음 날 00:00 자동 해제. null = 기간 없음 |
+            | `appealDeadlineAt` | 이의 신청 기한 |
+
+            `memberStatus = SUSPENDED`인데 `sanction = null`이면 정지 행 없이 상태만 바뀐 옛 회원입니다 — 사유 줄을 그리지 않습니다.
 
             **③ 열린 이슈 스레드 `openIssueThreads`** — 그 회원이 당사자인 열린 3자 스레드입니다. `SETTLEMENT_ADJUSTMENT`(정산 조정 · 진행 중)는
             클릭하면 이슈 탭의 그 스레드로 이동합니다. `GROUP_BUY_ISSUE` · `GROUP_BUY_FULFILLMENT`는 폐기 이력(신규 생성 없음)이라
@@ -192,7 +207,7 @@ public interface AdminThreadControllerDocs {
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "헤더와 정보 바",
                     content = @Content(schema = @Schema(implementation = ChannelInfo.class), examples = {
-                            @ExampleObject(name = "브랜드", summary = "담당자 · 연락처 / 미정산 null / 이행 이견 3자 스레드 1건", value = INFO_BRAND),
+                            @ExampleObject(name = "브랜드", summary = "담당자 · 연락처 / 미정산 1건 · 중단 예정 1 / 정지 사유 · 일시 / 이행 이견 3자 스레드 1건", value = INFO_BRAND),
                             @ExampleObject(name = "인플루언서", summary = "사업자 · 이메일 · 인스타 / 종료 공구 · 연결 브랜드 수", value = INFO_INFLUENCER),
                             @ExampleObject(name = "탈퇴 회원", summary = "writable=false — 열람만", value = INFO_WITHDRAWN),
                             @ExampleObject(name = "이슈 스레드", summary = "정산 조정 협의 진행 중 — 이슈 패널", value = INFO_ISSUE)
