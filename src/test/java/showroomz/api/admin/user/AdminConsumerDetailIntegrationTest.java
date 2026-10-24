@@ -148,6 +148,34 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                         org.hamcrest.Matchers.startsWith(thisMonth.format(java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME))));
     }
 
+    /** 취소 시각이 아니라 결제월을 따른다 — 이번 달 화면 숫자가 지난달 주문의 취소로 깎이면 「이번 달 구매액」이 음수까지 갈 수 있다. */
+    @Test
+    @DisplayName("[55 M3-05] 결제월 경계 — 지난달 결제를 이번 달에 취소하면 누적에서만 빠지고 이번 달 구매액 · 주문 수는 그대로")
+    void cancelOfLastMonthPaymentStaysInLastMonth() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        LocalDateTime lastMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay().minusDays(3);
+        LocalDateTime thisMonth = LocalDateTime.now().withNano(0);
+
+        Order partial = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PURCHASE_CONFIRMED);
+        paidAt(partial, lastMonth);
+        cancel(attachPayment(partial, 1, true), 10_000, "SUCCEEDED");     // 취소 요청 · 성공은 이번 달(now)
+
+        Order full = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.CANCELLED);
+        paidAt(full, lastMonth.plusHours(1));
+        cancel(attachPayment(full, 1, true), PRICE, "SUCCEEDED");         // 지난달 결제 · 이번 달 전액 취소
+
+        Order current = orders.paidOrder(hong, variant, 1, PRICE, OrderProductStatus.PAID);
+        paidAt(current, thisMonth);
+        attachPayment(current, 1, true);
+
+        mockMvc.perform(get(PATH + hong.getId()).header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalPurchaseAmount").value(2L * PRICE - 10_000))
+                .andExpect(jsonPath("$.thisMonthPurchaseAmount").value(PRICE))
+                .andExpect(jsonPath("$.totalOrderCount").value(2))
+                .andExpect(jsonPath("$.thisMonthOrderCount").value(1));
+    }
+
     @Test
     @DisplayName("주문이 없으면 0 · 최근 주문일 null · 기본 배송지는 시 · 군 · 구까지만(구가 있는 시는 구까지)")
     void emptyTradeAndMaskedDefaultAddress() throws Exception {
