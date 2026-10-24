@@ -570,6 +570,43 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    @DisplayName("[55 M3-24] 마스킹 해제 권한이 없는 운영자 — 403 USER_PRIVACY_UNMASK_FORBIDDEN · 버튼 비활성 · 로그 · 처리 이력 없음 · 실값 미노출")
+    void unmaskForbiddenWithoutPrivilege(
+            @Autowired showroomz.api.admin.user.service.AdminUserPrivacyService privacyService,
+            @Autowired showroomz.api.admin.common.AdminPrivacySessions privacySessions) throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+
+        // 등급 모델이 아직 없어 AdminPrivilege 는 운영자면 통과시킨다(최고관리자 한정 예정 · §55 C-8). 판정을 쓰는 두 곳에 「권한 없음」을
+        // 잠시 꽂는다 — 스파이 빈은 컨텍스트를 갈라 놓으므로 쓰지 않는다. finally 에서 원래 판정으로 되돌린다.
+        showroomz.api.admin.common.AdminPrivilege denying = new showroomz.api.admin.common.AdminPrivilege() {
+            @Override
+            public boolean canUnmaskPrivacy(Long operatorId) {
+                return false;
+            }
+        };
+        Object service = org.springframework.test.util.AopTestUtils.getUltimateTargetObject(privacyService);
+        Object sessions = org.springframework.test.util.AopTestUtils.getUltimateTargetObject(privacySessions);
+        Object original = org.springframework.test.util.ReflectionTestUtils.getField(service, "privilege");
+        org.springframework.test.util.ReflectionTestUtils.setField(service, "privilege", denying);
+        org.springframework.test.util.ReflectionTestUtils.setField(sessions, "privilege", denying);
+        try {
+            detail(hong).andExpect(jsonPath("$.unmask.allowed").value(false));
+            unmask(hong, adminToken, "CS_RESPONSE").andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("USER_PRIVACY_UNMASK_FORBIDDEN"));
+        } finally {
+            org.springframework.test.util.ReflectionTestUtils.setField(service, "privilege", original);
+            org.springframework.test.util.ReflectionTestUtils.setField(sessions, "privilege", original);
+        }
+
+        assertThat(privacyLogRepository.findByUserId(hong.getId())).isEmpty();
+        assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM user_admin_history WHERE user_id = ? AND event_type = 'PRIVACY_UNMASKED'",
+                Long.class, hong.getId())).isZero();
+        detail(hong).andExpect(jsonPath("$.unmask.allowed").value(true))
+                .andExpect(jsonPath("$.identity.unmasked").value(false))
+                .andExpect(jsonPath("$.identity.name").value("홍*동"));
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private org.springframework.test.web.servlet.ResultActions detail(Users user) throws Exception {
