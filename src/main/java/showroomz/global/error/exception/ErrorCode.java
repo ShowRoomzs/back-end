@@ -535,6 +535,8 @@ public enum ErrorCode {
     USER_MEMO_NOT_FOUND(HttpStatus.NOT_FOUND, "USER_MEMO_NOT_FOUND", "존재하지 않는 메모입니다."),
     USER_MEMO_NOT_AUTHOR(HttpStatus.FORBIDDEN, "USER_MEMO_NOT_AUTHOR", "작성자만 수정·삭제할 수 있습니다."),
     USER_MEMO_EDIT_WINDOW_CLOSED(HttpStatus.FORBIDDEN, "USER_MEMO_EDIT_WINDOW_CLOSED", "작성 후 24시간이 지난 메모는 수정·삭제할 수 없습니다."),
+    USER_PRIVACY_UNMASK_FORBIDDEN(HttpStatus.FORBIDDEN, "USER_PRIVACY_UNMASK_FORBIDDEN", "마스킹 해제 권한이 없습니다."),
+    USER_PRIVACY_UNMASK_NOT_AVAILABLE(HttpStatus.CONFLICT, "USER_PRIVACY_UNMASK_NOT_AVAILABLE", "파기된 정보는 해제할 수 없습니다."),
     SANCTION_APPEAL_NOT_AVAILABLE(HttpStatus.CONFLICT, "SANCTION_APPEAL_NOT_AVAILABLE", "이용 정지 중일 때만 정지에 대한 문의를 남길 수 있어요."),
     SANCTION_APPEAL_ALREADY_EXISTS(HttpStatus.CONFLICT, "SANCTION_APPEAL_ALREADY_EXISTS", "이미 접수된 정지 문의가 있어요. 답변 전에는 기존 문의를 수정해 주세요."),
 

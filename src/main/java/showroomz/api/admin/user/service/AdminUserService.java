@@ -20,6 +20,7 @@ import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.type.UserPrivacyAccessReason;
 import showroomz.domain.member.user.type.UserReleaseReason;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.type.UserSuspensionReason;
@@ -158,14 +159,17 @@ public class AdminUserService {
     }
 
     /**
-     * 정지 · 해제 모달의 사유 목록(55 계획서 M8) — enum 이 단일 소스라 FE 가 하드코딩하지 않는다. 행 모양은 브랜드 · 인플루언서와 같다
-     * ({@link AdminReasonOption}). 해제 사유는 상세 입력란이 없어 {@code detailRequired}가 모두 false 이고, 운영자가 고르는
-     * {@code TERM_ENDED}를 그대로 둔다(D18 — 시안 M4 3종).
+     * 정지 · 해제 · 마스킹 해제 모달의 사유 목록(55 계획서 M8 · M3-3) — enum 이 단일 소스라 FE 가 하드코딩하지 않는다. 행 모양은 브랜드 ·
+     * 인플루언서와 같다({@link AdminReasonOption}). 해제 사유는 상세 입력란이 없어 {@code detailRequired}가 모두 false 이고, 운영자가 고르는
+     * {@code TERM_ENDED}를 그대로 둔다(D18 — 시안 M4 3종). 마스킹 해제 사유는 정형 4종뿐이다(시안 M2).
      */
     public AdminUserDto.ReasonOptions reasonOptions() {
         return new AdminUserDto.ReasonOptions(
                 AdminReasonOption.of(UserSuspensionReason.values()),
                 Arrays.stream(UserReleaseReason.values())
+                        .map(r -> AdminReasonOption.label(r.name(), r.getLabel()))
+                        .toList(),
+                Arrays.stream(UserPrivacyAccessReason.values())
                         .map(r -> AdminReasonOption.label(r.name(), r.getLabel()))
                         .toList());
     }

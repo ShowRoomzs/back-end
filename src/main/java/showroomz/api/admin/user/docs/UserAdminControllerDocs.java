@@ -166,11 +166,12 @@ public interface UserAdminControllerDocs {
 
     @Operation(
             summary = "소비자 모달 사유 목록",
-            description = "정지 모달(M1) · 해제 모달(M4) 셀렉트의 코드와 라벨입니다 — enum 단일 소스라 FE 가 목록을 하드코딩하지 않습니다(55 계획서 M8). " +
+            description = "정지 모달(M1) · 해제 모달(M4) · 마스킹 해제 모달(M2) 셀렉트의 코드와 라벨입니다 — enum 단일 소스라 FE 가 목록을 하드코딩하지 않습니다(55 계획서 M8 · M3-3). " +
                     "행 모양은 브랜드 · 인플루언서 상세의 같은 API 와 같습니다(`code` · `label` · `detailRequired` · `holdsPayout`).\n\n" +
                     "- **정지 사유 6종** — `detailRequired=true`(기타)를 고르면 `reasonDetail`이 필수입니다. 소비자 정지는 지급과 무관해 `holdsPayout`은 null 입니다.\n" +
                     "- **해제 사유 3종** — 상세 입력란이 없어 `detailRequired`는 모두 false 입니다. `TERM_ENDED`(제재 기간 종료)를 운영자도 고를 수 있습니다 — " +
-                    "브랜드 · 인플루언서 해제 사유에는 없는 값입니다(D18). 정지 기간이 끝난 정지는 시스템이 같은 사유로 자동 해제합니다.\n\n" +
+                    "브랜드 · 인플루언서 해제 사유에는 없는 값입니다(D18). 정지 기간이 끝난 정지는 시스템이 같은 사유로 자동 해제합니다.\n" +
+                    "- **마스킹 해제 사유 4종** — 정형 사유만입니다. 「기타」 · 상세 사유가 없습니다(이 4종을 벗어나는 열람은 하지 않는다).\n\n" +
                     "**권한:** ADMIN"
     )
     @ApiResponses(value = {
@@ -189,6 +190,12 @@ public interface UserAdminControllerDocs {
                                     "    { \"code\": \"RESOLVED\", \"label\": \"소명 확인 완료\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
                                     "    { \"code\": \"MISTAKE\", \"label\": \"오처리 정정\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
                                     "    { \"code\": \"TERM_ENDED\", \"label\": \"제재 기간 종료\", \"detailRequired\": false, \"holdsPayout\": null }\n" +
+                                    "  ],\n" +
+                                    "  \"privacyUnmaskReasons\": [\n" +
+                                    "    { \"code\": \"CS_RESPONSE\", \"label\": \"CS 응대\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"DELIVERY_ACCIDENT\", \"label\": \"배송 사고\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"PAYMENT_RETURN_DISPUTE\", \"label\": \"결제·반품 분쟁\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"INVESTIGATION_COOPERATION\", \"label\": \"수사기관 협조\", \"detailRequired\": false, \"holdsPayout\": null }\n" +
                                     "  ]\n" +
                                     "}"))),
             @ApiResponse(responseCode = "401", description = "인증 실패",
@@ -205,7 +212,9 @@ public interface UserAdminControllerDocs {
                     "`notification`(앱 푸시 = 기기 토큰 있음 ∧ 토글 하나라도 켬 · 토글 4개 · 광고성 동의와 변경 시각).\n\n" +
                     "**본인확인(`identity`)** — **마스킹은 서버가 끝냅니다.** 이름 가운데 · 생년월일 연도만 · 휴대폰 가운데 4자리. 성별은 해제 대상이 아닙니다. " +
                     "내외국인 · 통신사는 수집하지 않아 null 입니다. 재인증하면 인증 시각을 덮어써 `firstVerifiedAt` 대신 `renewedAt`이 채워집니다. " +
-                    "최상위 `birthday`는 `identity.birthday`와 같은 값(마스킹)입니다 — 원본은 내리지 않습니다.\n\n" +
+                    "최상위 `birthday`는 `identity.birthday`와 같은 값(마스킹)입니다 — 원본은 내리지 않습니다. " +
+                    "**이 운영자의 유효한 열람 세션**(`POST /{userId}/privacy-unmask`)이 있으면 이름 · 생년월일(+만 나이) · 휴대폰과 배송지 상세가 실값이고, " +
+                    "`unmask`에 해제됨 · 처리자 · 시각 · 남은 초 · 직전 사유가 실립니다. 다른 운영자의 세션은 적용되지 않습니다.\n\n" +
                     "**최근 주문(`recentOrders`)** — 최근 5건. 행은 어드민 주문 목록(`GET /v1/admin/orders?userId=`)과 같고, 「전체 주문 내역 보기 ›」도 그 목록입니다. " +
                     "**최근 문의(`recentInquiries`)** — 1:1 · 상품 문의를 최신순으로 합친 3건(번호는 각 관리 화면의 INQ- · QNA- · 제목은 본문 앞 40자).\n\n" +
                     "**배송지(`addresses`)** — 기본 배송지 먼저 · 최근 수정순. 마스킹 중에는 시 · 군 · 구까지만 · 상세주소 · 우편번호 null · 수령인 · 연락처 마스킹. " +
@@ -217,7 +226,7 @@ public interface UserAdminControllerDocs {
                     "`actions.canSuspend` = 정상일 때만 · `actions.canRelease` = 정지일 때만 · 탈퇴 회원은 둘 다 false(운영자 액션 없음). " +
                     "탈퇴 회원도 열린 정지가 있으면 그대로 보입니다 — 같은 계정으로 재가입하면 그 정지로 돌아옵니다.\n\n" +
                     "**메모(`memos`)** — 최신 3건 + 전체 건수. `editable`은 요청 운영자 기준(작성자 본인 ∧ 24시간 이내 ∧ 탈퇴 아님)입니다.\n\n" +
-                    "**처리 이력(`histories`)** — 최신 5건 + 전체 건수. 저장 사건(정지 · 해제 · 메모)과 파생 사건(가입 · 탈퇴 · 재가입 · 정지 소명 문의 접수)을 합친 최신순입니다.\n\n" +
+                    "**처리 이력(`histories`)** — 최신 5건 + 전체 건수. 저장 사건(정지 · 해제 · 메모 · 개인정보 열람)과 파생 사건(가입 · 탈퇴 · 재가입 · 정지 소명 문의 접수)을 합친 최신순입니다.\n\n" +
                     "**권한:** ADMIN\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -248,6 +257,72 @@ public interface UserAdminControllerDocs {
     ResponseEntity<AdminUserDto.UserDetailResponse> getUserDetail(
             @Parameter(description = "조회할 유저 ID", required = true, example = "1", in = ParameterIn.PATH)
             @PathVariable("userId") Long userId,
+            @Parameter(hidden = true) UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "소비자 본인확인 정보 마스킹 해제",
+            description = "본인확인 카드 헤더 [마스킹 해제] → 사유 모달(M2)의 실행입니다(55 계획서 M3-3). 흐름 · 규칙은 인플루언서 상세의 같은 API 와 같습니다.\n\n" +
+                    "- **대상** — 이름 · 생년월일(+만 나이) · 휴대폰과 배송지 상세(상세주소 · 우편번호 · 수령인 · 연락처 — 시안 A4 「주소는 본인확인 정보와 같은 열람 통제」). CI/DI 는 화면에 없고 해제 대상이 아닙니다.\n" +
+                    "- **범위** — 이 소비자 1건 · 이 운영자 · **10분 고정 만료**(조작으로 연장되지 않음) · [지금 잠금]. 다른 운영자의 상세에는 적용되지 않습니다. " +
+                    "다른 소비자로 이동 · 새로고침 때는 FE 가 `privacy-lock`을 부릅니다.\n" +
+                    "- **사유** — 정형 4종만(`reason-options`의 `privacyUnmaskReasons`) · 기타 · 상세 사유 없음.\n" +
+                    "- **기록** — 열람 로그 1행 + 처리 이력 「개인정보 열람」(경고색 · detail = 사유 라벨)이 즉시 남습니다. " +
+                    "**유효한 세션이 있으면 새 행을 만들지 않습니다**(두 번 눌러도 로그 1건 · 사유도 바뀌지 않음).\n" +
+                    "- **권한** — 최고관리자 한정이 기획이지만 등급 모델이 없어 지금은 ADMIN 이면 통과합니다(`unmask.allowed`).\n\n" +
+                    "응답은 **해제된 상세 전체**입니다(`identity.unmasked = true` · `unmask`).\n\n" +
+                    "**권한:** ADMIN"
+    )
+    @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true,
+            content = @Content(mediaType = "application/json",
+                    schema = @Schema(implementation = AdminUserDto.UnmaskRequest.class),
+                    examples = @ExampleObject(value = "{\n  \"reason\": \"CS_RESPONSE\"\n}")))
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "해제 — 해제된 상세 전체",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.UserDetailResponse.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"userId\": 88231,\n" +
+                                    "  \"memberNo\": \"CST-88231\",\n" +
+                                    "  \"identity\": { \"destroyed\": false, \"unmasked\": true, \"name\": \"홍길동\", \"birthday\": \"1990.03.17\", \"age\": 36,\n" +
+                                    "    \"gender\": \"FEMALE\", \"genderLabel\": \"여성\", \"nationality\": null, \"phone\": \"010-2841-1234\", \"carrier\": null,\n" +
+                                    "    \"firstVerifiedAt\": \"2026-02-01T10:22:00\", \"renewedAt\": null },\n" +
+                                    "  \"unmask\": { \"allowed\": true, \"unmasked\": true, \"operatorName\": \"김운영\", \"unmaskedAt\": \"2026-08-14T14:22:00\",\n" +
+                                    "    \"expiresAt\": \"2026-08-14T14:32:00\", \"remainingSeconds\": 600, \"lastReason\": \"CS_RESPONSE\" },\n" +
+                                    "  \"addresses\": { \"destroyed\": false, \"total\": 1, \"content\": [ { \"addressId\": 5, \"defaultAddress\": true,\n" +
+                                    "    \"address\": \"서울특별시 마포구 월드컵로 12\", \"detailAddress\": \"3층\", \"zipCode\": \"03925\", \"recipientName\": \"홍길동\",\n" +
+                                    "    \"phoneNumber\": \"010-2841-1234\", \"lastUsedOrderAt\": null } ] }\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "400", description = "사유 누락 · 없는 사유",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "해제 권한 없음(`USER_PRIVACY_UNMASK_FORBIDDEN`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_PRIVACY_UNMASK_FORBIDDEN\", \"message\": \"마스킹 해제 권한이 없습니다.\"}"))),
+            @ApiResponse(responseCode = "404", description = "회원 없음 — USER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "탈퇴(파기) 회원(`USER_PRIVACY_UNMASK_NOT_AVAILABLE`)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = "{\"code\": \"USER_PRIVACY_UNMASK_NOT_AVAILABLE\", \"message\": \"파기된 정보는 해제할 수 없습니다.\"}")))
+    })
+    ResponseEntity<AdminUserDto.UserDetailResponse> unmask(
+            @Parameter(description = "유저 ID", required = true, example = "88231", in = ParameterIn.PATH) @PathVariable("userId") Long userId,
+            @RequestBody AdminUserDto.UnmaskRequest request,
+            @Parameter(hidden = true) UserPrincipal principal
+    );
+
+    @Operation(
+            summary = "소비자 본인확인 정보 지금 잠금",
+            description = "[지금 잠금] — 이 운영자의 유효한 열람 세션을 닫습니다(즉시 재마스킹). 세션이 없어도 204 입니다(멱등). " +
+                    "다른 소비자 상세로 이동 · 새로고침 · 화면 이탈 때도 FE 가 부릅니다. 다른 운영자의 세션은 닫지 않습니다. " +
+                    "잠근 뒤 다시 열려면 사유를 다시 고릅니다(프리필은 10분 자동 만료 뒤에만 — `unmask.lastReason`).\n\n" +
+                    "**권한:** ADMIN"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "잠금 완료(세션이 없어도 성공)"),
+            @ApiResponse(responseCode = "404", description = "회원 없음 — USER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> lock(
+            @Parameter(description = "유저 ID", required = true, example = "88231", in = ParameterIn.PATH) @PathVariable("userId") Long userId,
             @Parameter(hidden = true) UserPrincipal principal
     );
 

@@ -5,13 +5,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.common.AdminMemberMasker;
-import showroomz.api.admin.common.AdminPrivilege;
 import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.api.admin.common.MemberNumber;
 import showroomz.api.admin.creator.dto.AdminCreatorDto.*;
 import showroomz.api.admin.creator.repository.AdminCreatorListQueryRepository;
 import showroomz.api.admin.creator.repository.AdminCreatorQueryRepository;
-import showroomz.api.seller.auth.repository.SellerRepository;
 import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.connection.type.ConnectionStatus;
@@ -52,7 +50,6 @@ import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -86,11 +83,10 @@ public class AdminCreatorQueryService {
     private final AdminCreatorQueryRepository queries;
     private final showroomz.api.admin.common.AdminLoginDeviceReader loginDevices;
     private final CreatorAdminHistoryReader historyReader;
-    private final AdminPrivilege privilege;
     private final SettlementPayoutRepository payouts;
     private final SettlementAdjustmentRepository adjustments;
     private final PostNotificationLogRepository postNotificationLogs;
-    private final SellerRepository sellers;
+    private final showroomz.api.admin.common.AdminPrivacySessions privacySessions;
     private final ChangeRequestRepository changeRequests;
     private final showroomz.domain.member.common.service.SanctionTermPolicy termPolicy;
     private final AdminCreatorListQueryRepository listQueries;
@@ -211,14 +207,9 @@ public class AdminCreatorQueryService {
         var lastReason = privacyLogs.findFirstByCreatorIdOrderByAccessedAtDescIdDesc(creator.getId())
                 .map(CreatorPrivacyAccessLog::getReason)
                 .orElse(null);
-        boolean allowed = !purged && privilege.canUnmaskPrivacy(operatorId);
-        if (session == null || purged) {
-            return new Unmask(allowed, false, null, null, null, null, lastReason);
-        }
-        String operatorName = sellers.findById(session.getOperatorId()).map(s -> s.getName()).orElse("운영자");
-        long remaining = Math.max(0, Duration.between(now, session.getExpiresAt()).getSeconds());
-        return new Unmask(allowed, true, operatorName, session.getAccessedAt(), session.getExpiresAt(), remaining,
-                lastReason);
+        var view = privacySessions.view(session, purged, operatorId, now);
+        return new Unmask(view.allowed(), view.unmasked(), view.operatorName(), view.unmaskedAt(), view.expiresAt(),
+                view.remainingSeconds(), lastReason);
     }
 
     private static Business business(Creator creator, boolean purged) {

@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.common.AdminLoginDeviceReader;
 import showroomz.api.admin.common.AdminMemberMasker;
 import showroomz.api.admin.common.AdminMemberNavigation;
+import showroomz.api.admin.common.AdminPrivacySessions;
 import showroomz.api.admin.transaction.dto.AdminOrderDto;
 import showroomz.api.admin.transaction.service.AdminOrderQueryService;
 import showroomz.api.admin.user.AdminMemberNumber;
@@ -24,7 +25,9 @@ import showroomz.domain.inquiry.support.OneToOneInquiryNumber;
 import showroomz.domain.inquiry.support.ProductInquiryNumber;
 import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.inquiry.type.InquiryStatus;
+import showroomz.domain.member.user.entity.UserPrivacyAccessLog;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.repository.UserPrivacyAccessLogRepository;
 import showroomz.domain.member.user.type.NotificationToggle;
 import showroomz.domain.member.user.type.UserPendingChip;
 import showroomz.domain.member.user.type.UserStatus;
@@ -49,7 +52,8 @@ import java.util.Map;
  * 모았다(단위 테스트의 mock 이 하나로 끝난다).
  *
  * <ul>
- *   <li>마스킹은 서버가 끝낸다 — 본인확인 정보 · 배송지 상세 · 수령인 · 연락처는 열람 세션이 없으면 원본을 싣지 않는다(§25-1)</li>
+ *   <li>마스킹은 서버가 끝낸다 — 본인확인 정보 · 배송지 상세 · 수령인 · 연락처는 <b>이 운영자의 유효한 열람 세션</b>이 없으면 원본을 싣지
+ *   않는다(§25-1 · M3-3). 다른 운영자의 세션은 적용되지 않는다</li>
  *   <li>탈퇴는 파기 — 본인확인 · 배송지 · 알림 수신 · 최근 로그인은 값 없이 {@code destroyed}만, 주문 · 문의 기록은 보존이라 그대로 싣는다</li>
  *   <li>다른 화면이 이미 세는 숫자는 같은 식을 쓴다 — 최근 주문은 어드민 주문 목록 · 반품 · 교환 칩은 탈퇴 차단 식 · 문의 번호는 각 관리 화면 번호</li>
  * </ul>
@@ -73,6 +77,8 @@ public class AdminUserDetailAssembler {
     private final ProductInquiryRepository productInquiryRepository;
     private final DeliveryAddressRepository deliveryAddressRepository;
     private final OrderClaimRepository claimRepository;
+    private final UserPrivacyAccessLogRepository privacyLogs;
+    private final AdminPrivacySessions privacySessions;
 
     /**
      * @param trade        거래 지표(M3-1) — 판단 메타가 같은 숫자를 쓴다
@@ -81,8 +87,9 @@ public class AdminUserDetailAssembler {
     public Extras assemble(Users user, AdminUserTradeReader.Trade trade, long inquiryCount, Long operatorId,
                            LocalDateTime now) {
         boolean withdrawn = user.getStatus() == UserStatus.WITHDRAWN;
-        boolean unmasked = false;
         Long userId = user.getId();
+        UserPrivacyAccessLog session = activeSession(userId, operatorId, now);
+        boolean unmasked = session != null && !withdrawn;
         return new Extras(
                 AdminMemberNumber.format(userId),
                 new AdminMemberNavigation(queries.findPreviousUserId(userId), queries.findNextUserId(userId)),
@@ -90,6 +97,7 @@ public class AdminUserDetailAssembler {
                 withdrawn ? null : loginDevices.lastDevice(userId),
                 notification(user, withdrawn),
                 identity(user, withdrawn, unmasked, now),
+                unmask(userId, session, withdrawn, operatorId, now),
                 recentOrders(userId),
                 recentInquiries(user, inquiryCount),
                 addresses(user, withdrawn, unmasked),
@@ -140,6 +148,27 @@ public class AdminUserDetailAssembler {
         return new AdminUserDto.Identity(false, false, AdminMemberMasker.maskName(user.getName()),
                 AdminMemberMasker.maskBirthdayYearOnly(user.getBirthday()), null, gender, genderLabel(gender), null,
                 AdminMemberMasker.maskPhone(user.getPhoneNumber()), null, firstVerifiedAt, renewedAt);
+    }
+
+    /** 해제 상태 — 조립 규칙은 인플루언서 상세와 같은 {@link AdminPrivacySessions}. 직전 사유는 운영자 무관 최신(재해제 프리필). */
+    private AdminUserDto.Unmask unmask(Long userId, UserPrivacyAccessLog session, boolean withdrawn, Long operatorId,
+                                       LocalDateTime now) {
+        AdminPrivacySessions.View view = privacySessions.view(session, withdrawn, operatorId, now);
+        var lastReason = privacyLogs.findFirstByUserIdOrderByAccessedAtDescIdDesc(userId)
+                .map(UserPrivacyAccessLog::getReason)
+                .orElse(null);
+        return new AdminUserDto.Unmask(view.allowed(), view.unmasked(), view.operatorName(), view.unmaskedAt(),
+                view.expiresAt(), view.remainingSeconds(), lastReason);
+    }
+
+    /** 이 운영자가 이 소비자에 연 유효한 세션 — 회원 1건 · 운영자 1명에 묶인다(다른 소비자 상세에 실값이 새지 않는다). */
+    public UserPrivacyAccessLog activeSession(Long userId, Long operatorId, LocalDateTime now) {
+        if (operatorId == null) {
+            return null;
+        }
+        return privacyLogs.findFirstByUserIdAndOperatorIdOrderByAccessedAtDescIdDesc(userId, operatorId)
+                .filter(log -> log.isActive(now))
+                .orElse(null);
     }
 
     private static String genderLabel(String gender) {
@@ -294,7 +323,7 @@ public class AdminUserDetailAssembler {
     /** 상세 응답에 더해 싣는 값 — {@code UserDetailResponse.of}가 펼친다. */
     public record Extras(String memberNo, AdminMemberNavigation navigation, LocalDateTime lastLoginAt,
                          DeviceType lastLoginDevice, AdminUserDto.NotificationStatus notification,
-                         AdminUserDto.Identity identity, AdminUserDto.RecentOrders recentOrders,
+                         AdminUserDto.Identity identity, AdminUserDto.Unmask unmask, AdminUserDto.RecentOrders recentOrders,
                          AdminUserDto.RecentInquiries recentInquiries, AdminUserDto.Addresses addresses,
                          List<AdminUserDto.PendingChip> pendingChips, AdminUserDto.Judgement judgement) {
     }

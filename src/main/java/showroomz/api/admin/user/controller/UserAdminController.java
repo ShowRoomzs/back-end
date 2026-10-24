@@ -22,6 +22,7 @@ import showroomz.api.admin.user.docs.UserAdminControllerDocs;
 import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.service.AdminUserCommandService;
 import showroomz.api.admin.user.service.AdminUserMemoService;
+import showroomz.api.admin.user.service.AdminUserPrivacyService;
 import showroomz.api.admin.user.service.AdminUserService;
 import showroomz.api.admin.user.type.AdminUserSort;
 import showroomz.api.admin.user.type.AdminUserTab;
@@ -39,6 +40,7 @@ public class UserAdminController implements UserAdminControllerDocs {
     private final AdminUserService adminUserService;
     private final AdminUserCommandService commandService;
     private final AdminUserMemoService memoService;
+    private final AdminUserPrivacyService privacyService;
 
     @Override
     @GetMapping
@@ -68,6 +70,24 @@ public class UserAdminController implements UserAdminControllerDocs {
             @PathVariable("userId") Long userId,
             @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity.ok(adminUserService.getUserDetail(userId, operator(principal)));
+    }
+
+    @Override
+    @PostMapping("/{userId}/privacy-unmask")
+    public ResponseEntity<AdminUserDto.UserDetailResponse> unmask(
+            @PathVariable("userId") Long userId,
+            @Valid @RequestBody AdminUserDto.UnmaskRequest request,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(privacyService.unmask(userId, operator(principal), request.reason()));
+    }
+
+    @Override
+    @PostMapping("/{userId}/privacy-lock")
+    public ResponseEntity<Void> lock(
+            @PathVariable("userId") Long userId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        privacyService.lock(userId, operator(principal));
+        return ResponseEntity.noContent().build();
     }
 
     @Override

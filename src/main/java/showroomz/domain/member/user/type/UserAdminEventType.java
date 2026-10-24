@@ -15,6 +15,8 @@ public enum UserAdminEventType {
     MEMO_CREATED("관리자 메모 기입", "NEUTRAL", true),
     MEMO_UPDATED("관리자 메모 수정", "NEUTRAL", true),
     MEMO_DELETED("관리자 메모 삭제", "NEUTRAL", true),
+    /** 본인확인 정보 열람(마스킹 해제 · 55 계획서 M3-3) — 조치와 같은 급의 사건이라 경고색 점(시안 A2). detail 은 사유 라벨. */
+    PRIVACY_UNMASKED("개인정보 열람 · 이름·생년월일·휴대폰", "WARNING", true),
 
     SIGNED_UP("가입", "NEUTRAL", false),
     WITHDRAWN("탈퇴", "NEUTRAL", false),

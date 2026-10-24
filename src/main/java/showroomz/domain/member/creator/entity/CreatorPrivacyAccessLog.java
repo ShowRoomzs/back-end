@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import showroomz.domain.member.common.entity.PrivacyAccessSession;
 import showroomz.domain.member.creator.type.CreatorPrivacyAccessReason;
 
 import java.time.Duration;
@@ -13,15 +14,16 @@ import java.time.LocalDateTime;
  * 본인확인 정보 열람 로그 1행 = 마스킹 해제 세션 1개(§53-2 · 53 설계서 0-6 · 2-3). 세션은 <b>이 인플루언서 1건 · 이 운영자</b>에 묶이고,
  * 무조작 10분은 {@code accessed_at + 10분} 고정 만료로 둔다(슬라이딩이면 조회마다 쓰기가 든다 · 9-2 #7). [지금 잠금]은 {@code locked_at}.
  *
- * <p>상세 사유 · 기타 없음 · 보존 기간 미정이라 삭제 배치 없음.
+ * <p>상세 사유 · 기타 없음 · 보존 기간 미정이라 삭제 배치 없음. 세션 규칙(유효 · 잠금 · 10분)은 {@link PrivacyAccessSession} 한 곳이다 —
+ * 소비자 열람 로그와 같다(55 계획서 M3-3).
  */
 @Entity
 @Table(name = "creator_privacy_access_log")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CreatorPrivacyAccessLog {
+public class CreatorPrivacyAccessLog implements PrivacyAccessSession {
 
-    public static final Duration SESSION_TTL = Duration.ofMinutes(10);
+    public static final Duration SESSION_TTL = PrivacyAccessSession.TTL;
     public static final String FIELDS = "NAME,BIRTHDAY,PHONE";
 
     @Id
@@ -63,10 +65,7 @@ public class CreatorPrivacyAccessLog {
         return log;
     }
 
-    public boolean isActive(LocalDateTime now) {
-        return lockedAt == null && expiresAt.isAfter(now);
-    }
-
+    @Override
     public void lock(LocalDateTime now) {
         this.lockedAt = now;
     }

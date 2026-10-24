@@ -96,7 +96,7 @@ class AdminUserServiceTest {
         given(detailAssembler.assemble(any(), any(), anyLong(), any(), any())).willReturn(
                 new AdminUserDetailAssembler.Extras(null, null, null, null, null,
                         new AdminUserDto.Identity(false, false, null, null, null, null, null, null, null, null, null, null),
-                        null, null, null, List.of(), null));
+                        null, null, null, null, List.of(), null));
     }
 
     private Users user(UserStatus status) {

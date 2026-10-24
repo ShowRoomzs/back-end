@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.user.repository.UserRepository;
@@ -29,6 +30,7 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.member.user.entity.UserSanction;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.repository.UserPrivacyAccessLogRepository;
 import showroomz.domain.member.user.repository.UserSanctionRepository;
 import showroomz.domain.member.user.type.UserReleaseReason;
 import showroomz.domain.member.user.type.UserSuspensionReason;
@@ -57,6 +59,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,7 +70,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 취소 · 결제 대기 주문은 섞이지 않아야 한다.
  *
  * <p>시안 필드 보강(M3-2) — 회원번호 · 이전/다음 · 최근 로그인 · 알림 수신 · 본인확인 마스킹 · 최근 주문 · 최근 문의 · 배송지 · 진행 중 칩 ·
- * 판단 메타. 마스킹은 서버가 끝내므로 원본이 응답에 없는지까지 본다.
+ * 판단 메타. 마스킹은 서버가 끝내므로 원본이 응답에 없는지까지 본다. 열람 해제(M3-3)는 이 운영자 · 이 소비자 · 10분 세션이다.
  */
 @DisplayName("[통합] 55 M3 어드민 소비자 상세 — 거래 지표 · 시안 필드 보강")
 class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
@@ -90,6 +93,7 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     @Autowired private OneToOneInquiryRepository oneToOneInquiryRepository;
     @Autowired private ProductInquiryRepository productInquiryRepository;
     @Autowired private UserSanctionRepository sanctionRepository;
+    @Autowired private UserPrivacyAccessLogRepository privacyLogRepository;
 
     private String adminToken;
     private Seller admin;
@@ -435,11 +439,124 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.judgement.sanctions.last").doesNotExist());
     }
 
+    // ------------------------------------------------------------------ M3-3 개인정보 열람 해제
+
+    @Test
+    @DisplayName("해제 — 실값(이름 · 생년월일 · 나이 · 휴대폰 · 배송지 상세) · 로그 1건(재해제 멱등) · 처리 이력 · 다른 운영자 세션 미적용 · 잠금 멱등")
+    void unmaskAndLock() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        jdbc.update("UPDATE users SET birthday = ?, phone_number = ? WHERE user_id = ?", "1990-03-17", "01028411234", hong.getId());
+        address(hong, "서울특별시 마포구 월드컵로 12", true);
+        String otherToken = adminToken(fixture.createAdmin("admin2@showroomz.test", "박운영"));
+
+        detail(hong).andExpect(jsonPath("$.unmask.allowed").value(true))
+                .andExpect(jsonPath("$.unmask.unmasked").value(false))
+                .andExpect(jsonPath("$.unmask.lastReason").doesNotExist());
+
+        unmask(hong, adminToken, "CS_RESPONSE").andExpect(status().isOk())
+                .andExpect(jsonPath("$.identity.unmasked").value(true))
+                .andExpect(jsonPath("$.identity.name").value("홍길동"))
+                .andExpect(jsonPath("$.identity.birthday").value("1990.03.17"))
+                .andExpect(jsonPath("$.identity.age").isNumber())
+                .andExpect(jsonPath("$.identity.phone").value("010-2841-1234"))
+                .andExpect(jsonPath("$.birthday").value("1990.03.17"))
+                .andExpect(jsonPath("$.addresses.content[0].address").value("서울특별시 마포구 월드컵로 12"))
+                .andExpect(jsonPath("$.addresses.content[0].detailAddress").value("3층"))
+                .andExpect(jsonPath("$.addresses.content[0].zipCode").value("06234"))
+                .andExpect(jsonPath("$.addresses.content[0].recipientName").value("김수민"))
+                .andExpect(jsonPath("$.unmask.unmasked").value(true))
+                .andExpect(jsonPath("$.unmask.operatorName").value("김운영"))
+                .andExpect(jsonPath("$.unmask.unmaskedAt").isNotEmpty())
+                .andExpect(jsonPath("$.unmask.expiresAt").isNotEmpty())
+                .andExpect(jsonPath("$.unmask.remainingSeconds", org.hamcrest.Matchers.lessThanOrEqualTo(600)))
+                .andExpect(jsonPath("$.unmask.lastReason").value("CS_RESPONSE"))
+                .andExpect(jsonPath("$.histories.content[0].eventType").value("PRIVACY_UNMASKED"))
+                .andExpect(jsonPath("$.histories.content[0].tone").value("WARNING"))
+                .andExpect(jsonPath("$.histories.content[0].detail").value("CS 응대"))
+                .andExpect(jsonPath("$.histories.content[0].refType").value("PRIVACY_ACCESS"))
+                .andExpect(jsonPath("$.histories.content[0].actorName").value("김운영"));
+        // 유효 세션이 있으면 새 행을 만들지 않는다 — 사유도 바뀌지 않는다
+        unmask(hong, adminToken, "DELIVERY_ACCIDENT").andExpect(status().isOk());
+        assertThat(privacyLogRepository.findByUserId(hong.getId())).hasSize(1);
+        assertThat(privacyLogRepository.findByUserId(hong.getId()).get(0).getReason().name()).isEqualTo("CS_RESPONSE");
+        assertThat(privacyLogRepository.findByUserId(hong.getId()).get(0).getFields()).isEqualTo("NAME,BIRTHDAY,PHONE,ADDRESS");
+
+        // 다른 운영자 · 다른 소비자에는 실값이 새지 않는다
+        mockMvc.perform(get(PATH + hong.getId()).header(HttpHeaders.AUTHORIZATION, otherToken))
+                .andExpect(jsonPath("$.identity.unmasked").value(false))
+                .andExpect(jsonPath("$.identity.name").value("홍*동"))
+                .andExpect(jsonPath("$.addresses.content[0].detailAddress").doesNotExist());
+        Users other = createConsumer("other", UserStatus.NORMAL);
+        detail(other).andExpect(jsonPath("$.identity.unmasked").value(false));
+
+        // 다른 운영자가 따로 열면 로그가 따로 쌓이고, 잠금은 자기 세션만 닫는다
+        unmask(hong, otherToken, "PAYMENT_RETURN_DISPUTE").andExpect(status().isOk());
+        assertThat(privacyLogRepository.findByUserId(hong.getId())).hasSize(2);
+        lock(hong, adminToken).andExpect(status().isNoContent());
+        detail(hong).andExpect(jsonPath("$.identity.unmasked").value(false))
+                .andExpect(jsonPath("$.identity.name").value("홍*동"))
+                .andExpect(jsonPath("$.unmask.lastReason").value("PAYMENT_RETURN_DISPUTE"));
+        mockMvc.perform(get(PATH + hong.getId()).header(HttpHeaders.AUTHORIZATION, otherToken))
+                .andExpect(jsonPath("$.identity.unmasked").value(true))
+                .andExpect(jsonPath("$.unmask.operatorName").value("박운영"));
+        lock(hong, adminToken).andExpect(status().isNoContent());   // 세션이 없어도 성공(멱등)
+    }
+
+    @Test
+    @DisplayName("10분 고정 만료 — 지나면 다시 마스킹 · 직전 사유 프리필 · 재해제하면 새 행")
+    void sessionExpires() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        unmask(hong, adminToken, "INVESTIGATION_COOPERATION").andExpect(status().isOk());
+        jdbc.update("UPDATE user_privacy_access_log SET expires_at = ? WHERE user_id = ?",
+                LocalDateTime.now().minusSeconds(1), hong.getId());
+
+        detail(hong).andExpect(jsonPath("$.identity.unmasked").value(false))
+                .andExpect(jsonPath("$.identity.name").value("홍*동"))
+                .andExpect(jsonPath("$.unmask.unmasked").value(false))
+                .andExpect(jsonPath("$.unmask.remainingSeconds").doesNotExist())
+                .andExpect(jsonPath("$.unmask.lastReason").value("INVESTIGATION_COOPERATION"));
+        unmask(hong, adminToken, "INVESTIGATION_COOPERATION").andExpect(status().isOk())
+                .andExpect(jsonPath("$.identity.unmasked").value(true));
+        assertThat(privacyLogRepository.findByUserId(hong.getId())).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("탈퇴(파기) 회원 409 · 버튼 비활성 · 기록 없음 · 사유 누락 400 · 없는 회원 404")
+    void unmaskRejected() throws Exception {
+        Users gone = createConsumer("gone", UserStatus.WITHDRAWN);
+        detail(gone).andExpect(jsonPath("$.unmask.allowed").value(false));
+        unmask(gone, adminToken, "CS_RESPONSE").andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("USER_PRIVACY_UNMASK_NOT_AVAILABLE"));
+        assertThat(privacyLogRepository.findByUserId(gone.getId())).isEmpty();
+
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        mockMvc.perform(post(PATH + hong.getId() + "/privacy-unmask").contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, adminToken).content("{}"))
+                .andExpect(status().isBadRequest());
+        unmask(hong, adminToken, "OTHER").andExpect(status().isBadRequest());
+        assertThat(privacyLogRepository.findByUserId(hong.getId())).isEmpty();
+        mockMvc.perform(post(PATH + "999999/privacy-unmask").contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.AUTHORIZATION, adminToken).content(toJson(java.util.Map.of("reason", "CS_RESPONSE"))))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(post(PATH + "999999/privacy-lock").header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isNotFound());
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private org.springframework.test.web.servlet.ResultActions detail(Users user) throws Exception {
         return mockMvc.perform(get(PATH + user.getId()).header(HttpHeaders.AUTHORIZATION, adminToken))
                 .andExpect(status().isOk());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions unmask(Users user, String token, String reason)
+            throws Exception {
+        return mockMvc.perform(post(PATH + user.getId() + "/privacy-unmask").contentType(MediaType.APPLICATION_JSON)
+                .header(HttpHeaders.AUTHORIZATION, token).content(toJson(java.util.Map.of("reason", reason))));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions lock(Users user, String token) throws Exception {
+        return mockMvc.perform(post(PATH + user.getId() + "/privacy-lock").header(HttpHeaders.AUTHORIZATION, token));
     }
 
     private JsonNode json(org.springframework.test.web.servlet.ResultActions result) throws Exception {

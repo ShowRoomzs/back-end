@@ -18,6 +18,7 @@ import showroomz.domain.member.user.type.UserAdminActorType;
 import showroomz.domain.member.user.type.UserAdminEventType;
 import showroomz.domain.member.user.type.NotificationToggle;
 import showroomz.domain.member.user.type.UserPendingChip;
+import showroomz.domain.member.user.type.UserPrivacyAccessReason;
 import showroomz.domain.member.user.type.UserReleaseReason;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.domain.member.user.type.UserSuspensionReason;
@@ -75,11 +76,29 @@ public class AdminUserDto {
     }
 
     @Schema(name = "AdminUserReasonOptions",
-            description = "모달 셀렉트 사유 목록 — 정지(M1) · 해제(M4). 브랜드 · 인플루언서 상세와 같은 행 모양(AdminReasonOption) · 55 계획서 M8")
+            description = "모달 셀렉트 사유 목록 — 정지(M1) · 해제(M4) · 마스킹 해제(M2). 브랜드 · 인플루언서 상세와 같은 행 모양(AdminReasonOption) · 55 계획서 M8")
     public record ReasonOptions(
             @Schema(description = "정지 사유 6종 — 소비자 정지는 지급과 무관해 holdsPayout 은 null") List<AdminReasonOption> suspensionReasons,
             @Schema(description = "해제 사유 3종 — TERM_ENDED(제재 기간 종료)를 운영자도 고른다(D18 · 브랜드 · 인플루언서에는 없다)")
-            List<AdminReasonOption> releaseReasons) {
+            List<AdminReasonOption> releaseReasons,
+            @Schema(description = "마스킹 해제 사유 4종 — 정형 사유만 · 기타 · 상세 없음(M3-3)") List<AdminReasonOption> privacyUnmaskReasons) {
+    }
+
+    @Schema(name = "AdminUserUnmaskRequest", description = "마스킹 해제 요청(M2) — 정형 사유 4종 중 하나 · 상세 사유란 없음")
+    public record UnmaskRequest(@NotNull @Schema(example = "CS_RESPONSE") UserPrivacyAccessReason reason) {
+    }
+
+    @Schema(name = "AdminUserUnmask",
+            description = "마스킹 해제 상태 — 본인확인 카드 헤더 「해제됨 · 처리자 · 시각 · mm:ss 후 잠금」 + [지금 잠금]. 세션은 이 소비자 1건 · 이 운영자 · 10분 고정 만료")
+    public record Unmask(
+            @Schema(description = "해제 버튼 활성 — 최고관리자 한정(등급 모델이 없어 지금은 ADMIN 이면 통과) · 탈퇴(파기) 회원은 false") boolean allowed,
+            @Schema(description = "이 운영자의 유효한 세션이 있어 실값으로 열렸는가") boolean unmasked,
+            @Schema(example = "김운영", nullable = true) String operatorName,
+            @Schema(nullable = true) LocalDateTime unmaskedAt,
+            @Schema(nullable = true) LocalDateTime expiresAt,
+            @Schema(description = "자동 잠금까지 남은 초", example = "581", nullable = true) Long remainingSeconds,
+            @Schema(description = "직전 해제 사유 — 무조작 10분 만료 뒤 재해제 프리필(시안 A3) · 운영자 무관 최신", nullable = true)
+            UserPrivacyAccessReason lastReason) {
     }
 
     // ------------------------------------------------------------------ 상세 보강(55 계획서 M3-2 · ui-admin-13 rev.7)
@@ -355,8 +374,11 @@ public class AdminUserDto {
         @Schema(description = "알림 수신 — 앱 푸시 켬/끔 · 광고성 수신 동의")
         private NotificationStatus notification;
 
-        @Schema(description = "본인확인 정보 — 기본 마스킹")
+        @Schema(description = "본인확인 정보 — 기본 마스킹 · 이 운영자의 열람 세션이 있으면 실값(M3-3)")
         private Identity identity;
+
+        @Schema(description = "마스킹 해제 상태 — 해제 버튼 활성 · 해제됨 · 처리자 · 남은 시간 · 직전 사유")
+        private Unmask unmask;
 
         @Schema(description = "마케팅 동의 여부", example = "true")
         private boolean marketingAgree;
@@ -445,6 +467,7 @@ public class AdminUserDto {
                     .lastLoginDevice(extras.lastLoginDevice())
                     .notification(extras.notification())
                     .identity(extras.identity())
+                    .unmask(extras.unmask())
                     .marketingAgree(user.isMarketingAgree())
                     .profileImageUrl(user.getProfileImageUrl())
                     .statusCard(statusCard)

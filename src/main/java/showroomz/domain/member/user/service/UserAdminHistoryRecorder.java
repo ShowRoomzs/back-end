@@ -22,6 +22,8 @@ public class UserAdminHistoryRecorder {
     public static final String REF_SANCTION = "SANCTION";
     public static final String REF_MEMO = "MEMO";
     public static final String REF_INQUIRY = "INQUIRY";
+    /** 열람 로그(user_privacy_access_log) — 55 계획서 M3-3. */
+    public static final String REF_PRIVACY_ACCESS = "PRIVACY_ACCESS";
 
     private final UserAdminHistoryRepository histories;
 

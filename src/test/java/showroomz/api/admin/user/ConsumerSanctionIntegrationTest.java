@@ -421,7 +421,7 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
     // ------------------------------------------------------------------ 모달 사유 목록(55 계획서 M8)
 
     @Test
-    @DisplayName("사유 목록 전수 — 정지 6종(기타만 상세 필수 · 지급 정지 없음) · 해제 3종(TERM_ENDED 유지 · 상세란 없음)")
+    @DisplayName("사유 목록 전수 — 정지 6종(기타만 상세 필수 · 지급 정지 없음) · 해제 3종(TERM_ENDED 유지 · 상세란 없음) · 마스킹 해제 4종")
     void reasonOptions() throws Exception {
         JsonNode body = objectMapper.readTree(mockMvc.perform(get(ADMIN + "/reason-options")
                         .header(HttpHeaders.AUTHORIZATION, adminToken))
@@ -436,7 +436,12 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
         assertThat(texts(body.path("releaseReasons"), "code")).containsExactly("RESOLVED", "MISTAKE", "TERM_ENDED");
         assertThat(texts(body.path("releaseReasons"), "label")).containsExactly("소명 확인 완료", "오처리 정정", "제재 기간 종료");
         assertThat(texts(body.path("releaseReasons"), "detailRequired")).containsOnly("false");
-        for (String list : List.of("suspensionReasons", "releaseReasons")) {
+        assertThat(texts(body.path("privacyUnmaskReasons"), "code")).containsExactly("CS_RESPONSE", "DELIVERY_ACCIDENT",
+                "PAYMENT_RETURN_DISPUTE", "INVESTIGATION_COOPERATION");
+        assertThat(texts(body.path("privacyUnmaskReasons"), "label")).containsExactly("CS 응대", "배송 사고", "결제·반품 분쟁",
+                "수사기관 협조");
+        assertThat(texts(body.path("privacyUnmaskReasons"), "detailRequired")).containsOnly("false");
+        for (String list : List.of("suspensionReasons", "releaseReasons", "privacyUnmaskReasons")) {
             body.path(list).forEach(r -> assertThat(r.path("holdsPayout").isNull()).as(list).isTrue());
         }
 
