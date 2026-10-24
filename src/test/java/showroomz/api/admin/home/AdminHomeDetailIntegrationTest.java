@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
@@ -29,6 +31,7 @@ import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.support.BrandFixture;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -391,6 +395,95 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         JsonNode appeal = rowsOf(todo, "APPEAL_REVIEW").get(0);
         assertThat(appeal.get("count").asLong()).isEqualTo(2);
         assertThat(appeal.get("ageText").asText()).as("제출된 소명은 통지 · 기한이 아니라 제출 시각").isEqualTo("6일 경과");
+    }
+
+    /**
+     * 홈 대기 행의 경과는 각 모듈 목록이 「가장 오래 기다린 것」을 고르는 기준 시각과 같아야 한다(56 E1) — 예외 관리 목록은 경과 오래된 순(기준 시각
+     * {@code basisAt} 오름차순)이라 맨 위 행의 경과 시간이, 게시물 모니터링 「조치 필요 우선」은 대기 시작(대기 이의 신청 접수, 없으면 가장 이른 대기
+     * 신고) 오름차순이라 맨 위 행의 대기 시작이 홈 경과와 같은 날수다. 유형마다 기준이 달라 한 가지 시각(발송 · 신고)만 쓰면 어긋나게 심는다.
+     */
+    @Test
+    @DisplayName("[56 E1-02] 홈 대기 행 경과 = 각 모듈 목록 경과 — 처리 지연 · 배송 예외는 예외 관리 목록 맨 위 행 「경과」의 기준 시각 · "
+            + "신고 게시물은 게시물 모니터링 「조치 필요 우선」 맨 위 행의 대기 시작과 같은 날수")
+    void waitingRowAgesMatchModuleLists() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        // 처리 지연 — 발송 기한 2일 5시간 전 · 1시간 전
+        OrderDeliveryGroup lateOld = purchase(creamVariant, 1).group();
+        OrderDeliveryGroup lateNew = purchase(creamVariant, 1).group();
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?",
+                now.minusDays(2).minusHours(5), lateOld.getId());
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?", now.minusHours(1),
+                lateNew.getId());
+        // 배송 예외 — 집화 미확인은 발송 등록(6일 2시간 전) · 추적 정지는 마지막 추적(4일 3시간 전 · 발송은 9일 전)이 기준
+        OrderDeliveryGroup pickup = shippingGroup(nextTrackingNumber());
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'PICKUP_UNCONFIRMED', shipped_at = ? "
+                + "WHERE delivery_group_id = ?", now.minusDays(6).minusHours(2), pickup.getId());
+        OrderDeliveryGroup stalled = shippingGroup(nextTrackingNumber());
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', shipped_at = ?, last_tracking_at = ? "
+                + "WHERE delivery_group_id = ?", now.minusDays(9), now.minusDays(4).minusHours(3), stalled.getId());
+        // 신고 게시물 — 신고 접수(대기 신고 3일 2시간 전 · 1일 전) / 이의 신청 심사 중(신고는 9일 전 · 이의 신청 5일 4시간 전)
+        Post reported = publishedPost("신고 접수 게시물", now.minusDays(10));
+        postReportRepository.save(new PostReport(reported, userRepository.findById(consumer.getId()).orElseThrow(),
+                PostReportReason.MISLEADING_INFO, null, now.minusDays(3).minusHours(2)));
+        postReportRepository.save(new PostReport(reported, createConsumer("late-reporter", "늦은신고자"),
+                PostReportReason.MISLEADING_INFO, null, now.minusDays(1)));
+        Post appealed = publishedPost("이의 신청 게시물", now.minusDays(12));
+        postReportRepository.save(new PostReport(appealed, createConsumer("old-reporter", "오래된신고자"),
+                PostReportReason.MISLEADING_INFO, null, now.minusDays(9)));
+        adminPost("/v1/admin/posts/" + appealed.getId() + "/suspend",
+                Map.of("reasonCode", "MISLEADING_INFO", "policyClause", "ARTICLE_3_2")).andExpect(status().isOk());
+        mockMvc.perform(post("/v1/creator/posts/" + appealed.getId() + "/appeal")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(Map.of("content", "개인적인 사용감을 적은 것입니다."))))
+                .andExpect(status().isCreated());
+        jdbc.update("UPDATE post_appeal SET submitted_at = ? WHERE post_id = ?", now.minusDays(5).minusHours(4),
+                appealed.getId());
+
+        JsonNode todo = json(adminGet(HOME).andExpect(status().isOk())).get("todo");
+
+        JsonNode delays = json(adminGet("/v1/admin/order-exceptions?tab=DELAY").andExpect(status().isOk()))
+                .at("/page/content");
+        assertThat(delays.get(0).get("deliveryGroupId").asLong()).isEqualTo(lateOld.getId());
+        assertThat(rowsOf(todo, "PROCESSING_DELAY").get(0).get("ageText").asText())
+                .isEqualTo(oldestElapsed(delays)).isEqualTo("2일 경과");
+
+        JsonNode deliveries = json(adminGet("/v1/admin/order-exceptions?tab=DELIVERY").andExpect(status().isOk()))
+                .at("/page/content");
+        assertThat(deliveries.get(0).get("deliveryGroupId").asLong()).isEqualTo(pickup.getId());
+        assertThat(rowsOf(todo, "DELIVERY_EXCEPTION").get(0).get("ageText").asText())
+                .isEqualTo(oldestElapsed(deliveries)).isEqualTo("6일 경과");
+
+        JsonNode posts = json(adminGet("/v1/admin/posts?sort=ACTION_FIRST").andExpect(status().isOk())).get("content");
+        assertThat(posts.get(0).get("postId").asLong()).isEqualTo(appealed.getId());
+        assertThat(posts.get(1).get("postId").asLong()).isEqualTo(reported.getId());
+        JsonNode topDetail = json(adminGet("/v1/admin/posts/" + appealed.getId()).andExpect(status().isOk()));
+        // 이의 신청 심사 중이면 대기 시작 = 이의 신청 접수(9일 전 신고가 아니다)
+        assertThat(posts.get(0).get("monitoringStatus").asText()).isEqualTo("UNDER_REVIEW");
+        LocalDateTime waitingSince = time(topDetail.at("/appeal/submittedAt"));
+        JsonNode postRow = rowsOf(todo, "POST_REPORT").get(0);
+        assertThat(postRow.get("count").asLong()).isEqualTo(2);
+        assertThat(postRow.get("ageText").asText())
+                .isEqualTo(Duration.between(waitingSince, LocalDateTime.now()).toDays() + "일 경과").isEqualTo("5일 경과");
+        // 둘째 행(신고 접수)의 대기 시작 = 가장 이른 대기 신고 — 맨 위보다 늦다
+        LocalDateTime secondSince = time(json(adminGet("/v1/admin/posts/" + reported.getId())).at("/reports/firstPendingAt"));
+        assertThat(secondSince).isAfter(waitingSince);
+    }
+
+    /** 예외 관리 목록 「경과」 — 맨 위 행이 가장 오래된 기준 시각이고, 그 경과 시간을 날수로 적는다(홈 「N일 경과」와 같은 버림). */
+    private static String oldestElapsed(JsonNode rows) {
+        long top = rows.get(0).get("elapsedHours").asLong();
+        rows.forEach(row -> assertThat(row.get("elapsedHours").asLong()).isLessThanOrEqualTo(top));
+        return top / 24 + "일 경과";
+    }
+
+    private Post publishedPost(String content, LocalDateTime publishedAt) {
+        return postRepository.save(Post.published(creatorRepository.findById(creator.getId()).orElseThrow(), content,
+                new BigDecimal("0.8000"), publishedAt));
+    }
+
+    private static LocalDateTime time(JsonNode node) {
+        String text = node.asText();
+        return LocalDateTime.parse(text.endsWith("Z") ? text.substring(0, text.length() - 1) : text);
     }
 
     @Test
