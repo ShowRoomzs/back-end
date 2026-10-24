@@ -301,6 +301,7 @@ class CreatorPerformanceScenarioIntegrationTest extends SettlementTestSupport {
             assertThat(d.at("/reward/totalRewardAmount").isNull()).isTrue();
             assertThat(d.at("/reward/payout/amount").isNull()).isTrue();
             assertThat(d.at("/rewardBar/salesReward/amount").isNull()).isTrue();
+            assertThat(d.at("/rewardBar/salesReward/note").asText()).isEqualTo("확정 거래액 × 리워드율(상품별)");   // 예정 아님(55 S7)
             assertThat(d.at("/kpi/myReward/amount").isNull()).isTrue();
             assertThat(d.at("/reward/settlementId").asLong()).isEqualTo(s.getId());
             assertThat(d.at("/reward/settlementStatusLabel").asText()).isEqualTo(step[1]);
@@ -334,7 +335,7 @@ class CreatorPerformanceScenarioIntegrationTest extends SettlementTestSupport {
         assertThat(open.at("/kpi/confirmedSales/basis").asText()).isEqualTo("구매확정 2건 기준");
         assertThat(open.at("/reward/originalRewardAmount").asLong()).isEqualTo(CREAM_REWARD * 2);
         assertThat(open.at("/rewardBar/salesReward/originalAmount").asLong()).isEqualTo(CREAM_REWARD * 2);
-        assertThat(open.at("/rewardBar/salesReward/note").asText()).isEqualTo("상품별 리워드율 합산 · 예정");
+        assertThat(open.at("/rewardBar/salesReward/note").asText()).isEqualTo("확정 거래액 × 리워드율(상품별) · 예정");
         assertThat(open.at("/rewardBar/fixedFee/stage").asText()).isEqualTo("CONFIRMED");
         assertThat(open.at("/reward/settlementId").isNull()).isTrue();
     }
@@ -885,6 +886,10 @@ class CreatorPerformanceScenarioIntegrationTest extends SettlementTestSupport {
         assertThat(other.at("/postViewers").asLong()).isEqualTo(2);
         assertThat(follower.at("/conversionRate").asDouble()).isEqualTo(50.0);  // FW-05
         assertThat(other.at("/conversionRate").asDouble()).isEqualTo(50.0);
+        assertThat(follower.at("/confirmedOrders").asLong()).isEqualTo(1);      // 전환율 분자(55 S8) — A
+        assertThat(other.at("/confirmedOrders").asLong()).isEqualTo(1);         // C
+        assertThat(follower.at("/confirmedOrders").asLong() + other.at("/confirmedOrders").asLong())
+                .isEqualTo(d.at("/funnel/confirmedOrderCount").asLong());       // 두 열 합 = 퍼널 구매확정
         assertThat(d.at("/followers/followerVisitorRate").asDouble()).isEqualTo(50.0);   // FW-06
         assertThat(d.at("/followers/delta").asInt()).isEqualTo(1);              // B +1 · C −1 · C +1
         assertThat(d.at("/followers/countAtEnd").asInt()).isEqualTo(3);         // A · B · C
@@ -922,6 +927,9 @@ class CreatorPerformanceScenarioIntegrationTest extends SettlementTestSupport {
     void fixedFee() throws Exception {
         Settlement s = settledAsPaid();
         JsonNode d = detail();
+        // 확정(D1) — 판매 리워드 보조줄은 산식 그대로(1021 기-11 · 55 S7) · 「예정」이 붙지 않는다.
+        assertThat(d.at("/rewardBar/salesReward/stage").asText()).isEqualTo("CONFIRMED");
+        assertThat(d.at("/rewardBar/salesReward/note").asText()).isEqualTo("확정 거래액 × 리워드율(상품별)");
         assertThat(d.at("/reward/fixedFeeAmount").asLong()).isEqualTo(FIXED_FEE);
         assertThat(d.at("/rewardBar/fixedFee/note").asText()).isEqualTo("브랜드 직접 지급");
         assertThat(d.at("/rewardBar/fixedFee").has("paid")).isFalse();

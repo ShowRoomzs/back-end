@@ -77,7 +77,7 @@ final class CreatorPerformanceDocsExamples {
                 "status": "SETTLED", "statusLabel": "정산 완료", "statusTone": "SUCCESS"},
               "notice": null,
               "rewardBar": {
-                "salesReward": {"stage": "CONFIRMED", "amount": 603600, "originalAmount": 603600, "note": "상품별 리워드율 합산"},
+                "salesReward": {"stage": "CONFIRMED", "amount": 603600, "originalAmount": 603600, "note": "확정 거래액 × 리워드율(상품별)"},
                 "fixedFee": {"stage": "CONFIRMED", "amount": 400000, "originalAmount": null, "note": "브랜드 직접 지급"},
                 "totalReward": {"stage": "CONFIRMED", "amount": 1003600, "originalAmount": null, "note": "판매 리워드 + 고정 지급비"}
               },
@@ -136,8 +136,8 @@ final class CreatorPerformanceDocsExamples {
                 }
               },
               "followers": {
-                "follower": {"visitors": 2210, "postViewers": 1480, "orders": 140, "conversionRate": 6.0},
-                "nonFollower": {"visitors": 2800, "postViewers": 1660, "orders": 173, "conversionRate": 5.7},
+                "follower": {"visitors": 2210, "postViewers": 1480, "orders": 140, "confirmedOrders": 132, "conversionRate": 6.0},
+                "nonFollower": {"visitors": 2800, "postViewers": 1660, "orders": 173, "confirmedOrders": 159, "conversionRate": 5.7},
                 "countAtEnd": 12480, "delta": 312, "followerVisitorRate": 44.1, "conversionEstimated": false
               },
               "reward": {
@@ -161,7 +161,7 @@ final class CreatorPerformanceDocsExamples {
               "notice": {"tone": "NEUTRAL", "text": "미처리 반품 3건이 남아 있습니다. 아래 «예정» 표시 값은 처리 결과에 따라 줄어들 수 있습니다.",
                 "link": null, "threadId": null},
               "rewardBar": {
-                "salesReward": {"stage": "AFTER_SETTLEMENT", "amount": null, "originalAmount": 677400, "note": "상품별 리워드율 합산 · 예정"},
+                "salesReward": {"stage": "AFTER_SETTLEMENT", "amount": null, "originalAmount": 677400, "note": "확정 거래액 × 리워드율(상품별) · 예정"},
                 "fixedFee": {"stage": "CONFIRMED", "amount": 300000, "originalAmount": null, "note": "브랜드 직접 지급"},
                 "totalReward": {"stage": "AFTER_SETTLEMENT", "amount": null, "originalAmount": null, "note": "판매 리워드 + 고정 지급비"}
               },
@@ -198,7 +198,7 @@ final class CreatorPerformanceDocsExamples {
                 "text": "정산 조정 협의 중이에요. 리워드는 브랜드와 합의한 금액으로 확정되고, 합의 기한(09.10)까지 합의가 없으면 원래 금액으로 확정돼요. 판매 · 유입 · 소비자 지표는 확정값입니다.",
                 "link": "ISSUE_THREAD", "threadId": 140},
               "rewardBar": {
-                "salesReward": {"stage": "AFTER_AGREEMENT", "amount": null, "originalAmount": 1577040, "note": "상품별 리워드율 합산"},
+                "salesReward": {"stage": "AFTER_AGREEMENT", "amount": null, "originalAmount": 1577040, "note": "확정 거래액 × 리워드율(상품별)"},
                 "fixedFee": {"stage": "CONFIRMED", "amount": 0, "originalAmount": null, "note": "브랜드 직접 지급"},
                 "totalReward": {"stage": "AFTER_AGREEMENT", "amount": null, "originalAmount": null, "note": "판매 리워드 + 고정 지급비"}
               },

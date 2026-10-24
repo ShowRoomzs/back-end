@@ -251,6 +251,11 @@ class CreatorPerformanceIntegrationTest extends SettlementTestSupport {
         assertThat(d.at("/followers/nonFollower/visitors").asLong()).isEqualTo(2);
         assertThat(d.at("/followers/follower/orders").asLong()).isEqualTo(1);
         assertThat(d.at("/followers/nonFollower/orders").asLong()).isZero();
+        // 구매확정 건수(전환율 분자 · 55 S8) — 두 열 합 = 퍼널의 구매확정 수.
+        assertThat(d.at("/followers/follower/confirmedOrders").asLong()).isEqualTo(1);
+        assertThat(d.at("/followers/nonFollower/confirmedOrders").asLong()).isZero();
+        assertThat(d.at("/followers/follower/confirmedOrders").asLong() + d.at("/followers/nonFollower/confirmedOrders").asLong())
+                .isEqualTo(d.at("/funnel/confirmedOrderCount").asLong());
         assertThat(d.at("/followers/followerVisitorRate").asDouble()).isEqualTo(33.3);
         assertThat(d.at("/consumers/followerBuyerCount").asLong()).isEqualTo(1);
         assertThat(d.at("/consumers/distribution/suppressed").asBoolean()).isTrue();   // 표본 1명 < 30

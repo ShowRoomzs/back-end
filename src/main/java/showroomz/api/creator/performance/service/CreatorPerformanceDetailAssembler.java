@@ -41,6 +41,8 @@ public class CreatorPerformanceDetailAssembler {
 
     private static final DateTimeFormatter MONTH_DAY = DateTimeFormatter.ofPattern("MM.dd");
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+    /** 판매 리워드 보조줄(1021 기-11) — 합의 반영이 아니면 이 문구, 정산 전이면 「 · 예정」을 붙인다. */
+    static final String SALES_REWARD_NOTE = "확정 거래액 × 리워드율(상품별)";
 
     private final SettlementAdjustmentReader adjustmentReader;
     private final GroupBuyThreadGateway threadGateway;
@@ -62,9 +64,10 @@ public class CreatorPerformanceDetailAssembler {
         Long totalReward = finalReward == null ? null : finalReward + f.fixedFeeAmount();
         Long agreedDelta = agreed ? s.getRewardAmount() - s.getOriginalRewardAmount() : null;
 
+        // 보조줄은 산식 그대로(1021 기-11 · 55 계획서 S7) — 금액은 항목별 절사 합이라 바뀌지 않는다(1021 6-1).
         CreatorPerformanceDto.Money salesMoney = new CreatorPerformanceDto.Money(stage, finalReward, originalReward,
                 agreed ? "원래 %s원 + 조정 %s원".formatted(won(originalReward), signedWon(agreedDelta))
-                        : estimated ? "상품별 리워드율 합산 · 예정" : "상품별 리워드율 합산");
+                        : estimated ? SALES_REWARD_NOTE + " · 예정" : SALES_REWARD_NOTE);
         CreatorPerformanceDto.Money fixedMoney = new CreatorPerformanceDto.Money(RewardStage.CONFIRMED,
                 f.fixedFeeAmount(), null, "브랜드 직접 지급");
         CreatorPerformanceDto.Money totalMoney = new CreatorPerformanceDto.Money(stage, totalReward, null,
@@ -185,11 +188,14 @@ public class CreatorPerformanceDetailAssembler {
         long otherVisitors = Math.max(0, t.visitorCount() - followerVisitors);
         long followerViewers = f.post() == null ? 0 : f.post().followerViewerCount();
         long otherViewers = f.post() == null ? 0 : Math.max(0, f.post().uniqueViewerCount() - followerViewers);
+        // 구매확정 건수 = 전환율 분자(55 계획서 S8) — 두 열 합 = 퍼널의 구매확정 수.
+        long followerConfirmed = o.confirmedFollowerCount();
+        long otherConfirmed = Math.max(0, o.confirmedCount() - followerConfirmed);
         CreatorPerformanceDto.Side follower = new CreatorPerformanceDto.Side(followerVisitors, followerViewers,
-                o.orderFollowerCount(), Percent.oneDecimal(o.confirmedFollowerCount(), followerVisitors));
+                o.orderFollowerCount(), followerConfirmed, Percent.oneDecimal(followerConfirmed, followerVisitors));
         CreatorPerformanceDto.Side other = new CreatorPerformanceDto.Side(otherVisitors, otherViewers,
-                Math.max(0, o.orderCount() - o.orderFollowerCount()),
-                Percent.oneDecimal(Math.max(0, o.confirmedCount() - o.confirmedFollowerCount()), otherVisitors));
+                Math.max(0, o.orderCount() - o.orderFollowerCount()), otherConfirmed,
+                Percent.oneDecimal(otherConfirmed, otherVisitors));
         return new CreatorPerformanceDto.Followers(follower, other, f.followers().countAtEnd(), f.followers().delta(),
                 Percent.oneDecimal(followerVisitors, t.visitorCount()), estimated);
     }

@@ -149,7 +149,8 @@ public final class CreatorPerformanceDto {
             @Schema(description = "판매 리워드의 원래 금액(계약 기준) — 정산 전이면 예정액(「예정 677,400원」) · 협의 중이면 「원래 N원」. 고정 지급비 · 합계 칸은 null",
                     example = "603600", nullable = true)
             Long originalAmount,
-            @Schema(description = "보조줄", example = "상품별 리워드율 합산", nullable = true) String note) {
+            @Schema(description = "보조줄 — 판매 리워드는 「확정 거래액 × 리워드율(상품별)」(정산 전이면 「 · 예정」) · 합의 반영이면 「원래 N원 + 조정 +N원」",
+                    example = "확정 거래액 × 리워드율(상품별)", nullable = true) String note) {
     }
 
     @Schema(name = "CreatorPerformanceRewardBar",
@@ -332,6 +333,8 @@ public final class CreatorPerformanceDto {
             @Schema(description = "쇼룸 방문(명)", example = "2210") long visitors,
             @Schema(description = "게시물 고유 조회자(명) — 게시물이 없으면 0", example = "1480") long postViewers,
             @Schema(description = "주문(건)", example = "140") long orders,
+            @Schema(description = "구매확정(하위주문 건) — 전환율의 분자. 두 열 합 = 퍼널 confirmedOrderCount", example = "132")
+            long confirmedOrders,
             @Schema(description = "구매전환율(%) = 구매확정 ÷ 방문 — 방문 0 이면 null", example = "6.0", nullable = true)
             Double conversionRate) {
     }
