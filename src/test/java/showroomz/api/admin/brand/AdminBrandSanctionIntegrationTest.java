@@ -479,7 +479,7 @@ class AdminBrandSanctionIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
-    @DisplayName("GD-03 · GD-05 가드는 market.status 만 본다 — 행 없는 정지는 막고 · 행만 있는 활성은 통과 · 탈퇴 대기는 가드가 아니다(현재 동작)")
+    @DisplayName("GD-03 · GD-05 정지 가드는 market.status 만 본다 — 행 없는 정지는 막고 · 행만 있는 활성은 통과 · 탈퇴 대기는 별도 잠금 가드가 막는다(51 7절)")
     void guardReadsMarketStatusOnly() throws Exception {
         BrandFixture.Brand rowless = cleanBrand("가드행없음");
         suspendWithoutSanctionRow(rowless.marketId());
@@ -496,7 +496,7 @@ class AdminBrandSanctionIntegrationTest extends AdminBrandTestSupport {
         withdrawalService.request(pending.marketId(), null, null, LocalDateTime.now());
         connect(pending, creator);
         postAs(sellerToken(pending.seller()), "/v1/seller/contracts", Map.of("creatorId", creator.getId()))
-                .andExpect(status().isCreated());
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("BRAND_WITHDRAWAL_PENDING"));
     }
 
     // ------------------------------------------------------------------ 보조

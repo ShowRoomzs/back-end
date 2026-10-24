@@ -258,7 +258,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
         adminGet(cleanBase).andExpect(status().isOk())
                 .andExpect(jsonPath("$.memberStatus").value("ACTIVE"))
                 .andExpect(jsonPath("$.withdrawalPending").value(true))
-                .andExpect(jsonPath("$.rail.withdrawalReview.reasonLabel").value("다른 채널 집중"))
+                .andExpect(jsonPath("$.rail.withdrawalReview.reasonLabel").value("다른 채널에 집중"))
                 .andExpect(jsonPath("$.rail.histories.items.length()").value(2))
                 .andExpect(jsonPath("$.rail.currentStatus.actions.canSuspend").value(true));
         adminPost(cleanBase + "/suspend", Map.of("reason", "CONSUMER_RESPONSE_NEGLECT")).andExpect(status().isOk());

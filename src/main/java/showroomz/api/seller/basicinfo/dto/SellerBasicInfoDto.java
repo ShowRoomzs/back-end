@@ -14,6 +14,7 @@ import showroomz.api.seller.changerequest.dto.ChangeRequestBannerResponse;
 import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.member.brand.type.BrandWithdrawalReason;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -188,12 +189,18 @@ public class SellerBasicInfoDto {
     public static class AccountInfoResponse {
         @Schema(description = "로그인 이메일", example = "brand@example.com")
         private String loginEmail;
-        @Schema(description = "지금 로그인 이메일을 바꿀 수 있는가 — 월 1회 제한(마지막 변경 + 1개월) 통과", example = "true")
+        @Schema(description = "지금 로그인 이메일을 바꿀 수 있는가 — 월 1회 제한(마지막 변경 + 1개월) 통과 ∧ identityLock 없음. "
+                + "월 1회 제한 문구는 identityLock 이 null 이고 이 값이 false 일 때만 띄운다", example = "true")
         private boolean emailChangeable;
         @Schema(description = "마지막 이메일 변경 시각 — 바꾼 적 없으면 null", nullable = true)
         private LocalDateTime lastEmailChangedAt;
         @Schema(description = "다음 변경 가능 시각 — 바꾼 적 없으면 null", nullable = true)
         private LocalDateTime nextEmailChangeableAt;
+        @Schema(description = "지금 비밀번호를 바꿀 수 있는가 — identityLock 없음", example = "true")
+        private boolean passwordChangeable;
+        @Schema(description = "로그인 정보 잠금 — null · WITHDRAWAL_PENDING(탈퇴 신청 심사 중 · 시안 4-I 「탈퇴 검토 중에는 변경할 수 "
+                + "없습니다」). 잠금 중 변경 API 는 409 BRAND_WITHDRAWAL_PENDING", example = "WITHDRAWAL_PENDING", nullable = true)
+        private String identityLock;
         @Schema(description = "탈퇴 블록 — 신청 · 승인제(§51-5). 마켓이 없는 계정은 null", nullable = true)
         private Withdrawal withdrawal;
     }
@@ -212,6 +219,12 @@ public class SellerBasicInfoDto {
         private int totalCount;
         @Schema(description = "조건 4행 — ACTIVE_GROUP_BUYS · CONTRACTS_BEFORE_CONCLUSION · UNCLOSED_ORDERS · UNSETTLED")
         private List<WithdrawalCondition> conditions;
+        @Schema(description = "작성 중인 계약 — 승인 때 함께 삭제된다(4-G 하단 · M5 「작성 중인 계약 N건은 함께 삭제됩니다」). 0 이면 줄을 숨긴다",
+                example = "1")
+        private long draftContractCount;
+        @Schema(description = "운영팀 1:1 채널 스레드 — 「운영팀에 문의 ↗」(계약 서명 진행중 · 분배 실패 · 차감 대기 행). 채널이 없으면 null",
+                example = "812", nullable = true)
+        private Long operatorThreadId;
         @Schema(description = "PENDING 일 때만", nullable = true)
         private PendingWithdrawal pendingRequest;
         @Schema(description = "가장 최근 신청이 반려였을 때만 — 즉시 재신청할 수 있다", nullable = true)
@@ -232,6 +245,62 @@ public class SellerBasicInfoDto {
         private long count;
         @Schema(description = "count == 0", example = "false")
         private boolean satisfied;
+        @Schema(description = "이동 대상 — GROUP_BUYS · CONTRACTS · ORDERS · SETTLEMENTS(FE 라우트는 FE 가 만든다)", example = "CONTRACTS")
+        private String target;
+        @Schema(description = "내역 — 건수 0 인 행은 내리지 않는다. 합계 = count")
+        private List<WithdrawalBreakdown> breakdown;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "탈퇴 조건 내역 1행(51 설계서 4절) — 선택 필드는 해당하는 행에만 값이 있다")
+    public static class WithdrawalBreakdown {
+        @Schema(description = "공구 · 계약은 상태 코드 · 주문은 UNCLOSED · 정산은 REVIEWING · ADJUSTING · PAYOUT_SCHEDULED · BLOCKED · "
+                + "FAILED · CLAWBACK_PENDING", example = "SIGNING")
+        private String key;
+        @Schema(example = "서명 진행중")
+        private String label;
+        @Schema(example = "1")
+        private long count;
+        @Schema(description = "WAIT(기다리면 풀림) · MY_ACTION(내 응답 필요) · OPERATOR(운영팀 문의)", example = "OPERATOR")
+        private String group;
+        @Schema(description = "그룹 라벨", example = "운영팀 문의")
+        private String groupLabel;
+        @Schema(description = "계약 행만 — CANCEL_REVIEW(검토 요청 취소) · DELETE(삭제) · CONTACT_OPERATOR(운영팀 문의)",
+                example = "CONTACT_OPERATOR", nullable = true)
+        private String action;
+        @Schema(description = "기다리면 풀리는 정산 행의 예상일 — 확인 중은 가장 이른 확인 기한 · 지급 예정은 가장 이른 지급 예정일",
+                example = "2026-10-12", nullable = true)
+        private LocalDate expectedDate;
+        @Schema(description = "지급 보류(BLOCKED) 행만 — 보류 사유 코드(PayoutBlockReason). 4-G2 는 BRAND_SUSPENDED",
+                example = "BRAND_SUSPENDED", nullable = true)
+        private String reasonCode;
+        @Schema(description = "지급 보류 사유 라벨 — 정지면 정지 사유를 괄호로 붙인다", example = "계정 이용 정지 · 지급 정지(정산 정보 불일치)",
+                nullable = true)
+        private String reasonLabel;
+        @Schema(description = "지급 보류가 풀리는 조건", example = "정지 해제 다음 영업일 지급", nullable = true)
+        private String dueNote;
+        @Schema(description = "지급 보류 행의 해소 경로 — SETTLEMENT_ACCOUNT(정산 정보 수정하기) · BUSINESS_INFO(사업자 정보). 운영팀만 풀 수 "
+                + "있으면 null", example = "SETTLEMENT_ACCOUNT", nullable = true)
+        private String target;
+        @Schema(description = "조정 협의 행만 — 정산별 이슈 스레드 · 합의 기한 · 차례")
+        private List<WithdrawalAdjustmentItem> items;
+    }
+
+    @Getter
+    @Builder
+    @Schema(description = "조정 협의 중인 정산 1건(4-G 「합의 기한 D-4 · 이슈 스레드 열기 ↗」)")
+    public static class WithdrawalAdjustmentItem {
+        @Schema(example = "512")
+        private Long settlementId;
+        @Schema(example = "STL-20261001-0003", nullable = true)
+        private String settlementNumber;
+        @Schema(description = "이슈 스레드", example = "903", nullable = true)
+        private Long threadId;
+        @Schema(description = "합의 기한", example = "2026-10-20T23:59:59", nullable = true)
+        private LocalDateTime deadlineAt;
+        @Schema(description = "브랜드 기준 차례 — MY_TURN · THEIR_TURN · OPEN_FLOOR · CLOSED", example = "MY_TURN", nullable = true)
+        private String turn;
     }
 
     @Getter
@@ -244,7 +313,7 @@ public class SellerBasicInfoDto {
         private LocalDateTime requestedAt;
         @Schema(description = "사유 코드 — 선택하지 않았으면 null", example = "OTHER_CHANNEL_FOCUS", nullable = true)
         private String reason;
-        @Schema(description = "사유 라벨 — 미선택이면 「선택하지 않음」", example = "다른 채널 집중")
+        @Schema(description = "사유 라벨 — 미선택이면 「선택하지 않음」", example = "다른 채널에 집중")
         private String reasonLabel;
         @Schema(description = "남기실 말씀", example = "그동안 감사했습니다.", nullable = true)
         private String message;

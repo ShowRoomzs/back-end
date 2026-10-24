@@ -17,6 +17,8 @@ import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.brand.entity.MarketShipLeadHistory;
 import showroomz.domain.member.brand.repository.MarketShipLeadHistoryRepository;
 import showroomz.domain.member.brand.service.BrandSanctionReader;
+import showroomz.domain.member.brand.service.BrandWithdrawalGuard;
+import showroomz.domain.member.brand.type.BrandBlockedAction;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.domain.order.service.ShipDuePolicy;
@@ -36,6 +38,8 @@ import java.util.List;
 public class SellerBasicInfoService {
 
     private static final DateTimeFormatter NEXT_CHANGEABLE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd");
+    /** 계정 탭 잠금 사유 — 탈퇴 신청 심사 중(51 설계서 3절 · 시안 4-I 「탈퇴 검토 중에는 변경할 수 없습니다」). */
+    static final String IDENTITY_LOCK_WITHDRAWAL_PENDING = "WITHDRAWAL_PENDING";
 
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
@@ -46,6 +50,7 @@ public class SellerBasicInfoService {
     private final MarketShipLeadHistoryRepository shipLeadHistoryRepository;
     private final BrandSanctionReader brandSanctionReader;
     private final SellerWithdrawalService withdrawalService;
+    private final BrandWithdrawalGuard withdrawalGuard;
 
     public SellerBasicInfoDto.BusinessInfoResponse getBusinessInfo(String sellerEmail) {
         Market market = getMyMarket(sellerEmail);
@@ -177,6 +182,8 @@ public class SellerBasicInfoService {
     @Transactional
     public void changePassword(String sellerEmail, SellerBasicInfoDto.ChangePasswordRequest request) {
         Seller seller = getMySeller(sellerEmail);
+        // 탈퇴 신청 심사 중이면 비밀번호 일치 여부와 무관하게 409(51 설계서 7-2 · 시안 4-I).
+        requireNoPendingWithdrawal(seller, BrandBlockedAction.PASSWORD_CHANGE);
         if (!passwordEncoder.matches(request.getCurrentPassword(), seller.getPassword())) {
             throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH, "현재 비밀번호가 일치하지 않습니다.");
         }
@@ -190,6 +197,8 @@ public class SellerBasicInfoService {
     @Transactional
     public SellerBasicInfoDto.AccountInfoResponse changeEmail(String sellerEmail, SellerBasicInfoDto.ChangeEmailRequest request) {
         Seller seller = getMySeller(sellerEmail);
+        // 탈퇴 결과 메일을 받을 주소다 — 심사 중에는 바꾸지 않는다(51 설계서 1-8 · 7-2). 월 1회 제한보다 먼저 본다.
+        requireNoPendingWithdrawal(seller, BrandBlockedAction.LOGIN_EMAIL_CHANGE);
 
         if (!passwordEncoder.matches(request.getCurrentPassword(), seller.getPassword())) {
             throw new BusinessException(ErrorCode.LOGIN_PASSWORD_MISMATCH, "현재 비밀번호가 일치하지 않습니다.");
@@ -232,17 +241,23 @@ public class SellerBasicInfoService {
     private SellerBasicInfoDto.AccountInfoResponse toAccountInfoResponse(Seller seller) {
         LocalDateTime emailChangedAt = seller.getEmailChangedAt();
         LocalDateTime nextChangeableAt = emailChangedAt != null ? emailChangedAt.plusMonths(1) : null;
-        boolean changeable = nextChangeableAt == null || !LocalDateTime.now().isBefore(nextChangeableAt);
+        boolean withinMonthlyLimit = nextChangeableAt == null || !LocalDateTime.now().isBefore(nextChangeableAt);
+        java.util.Optional<Market> market = marketRepository.findBySeller(seller);
+        boolean locked = market.map(m -> withdrawalGuard.hasPending(m.getId())).orElse(false);
 
         return SellerBasicInfoDto.AccountInfoResponse.builder()
                 .loginEmail(seller.getEmail())
-                .emailChangeable(changeable)
+                .emailChangeable(withinMonthlyLimit && !locked)
                 .lastEmailChangedAt(emailChangedAt)
                 .nextEmailChangeableAt(emailChangedAt != null ? nextChangeableAt : null)
-                .withdrawal(marketRepository.findBySeller(seller)
-                        .map(market -> withdrawalService.read(market))
-                        .orElse(null))
+                .passwordChangeable(!locked)
+                .identityLock(locked ? IDENTITY_LOCK_WITHDRAWAL_PENDING : null)
+                .withdrawal(market.map(withdrawalService::read).orElse(null))
                 .build();
+    }
+
+    private void requireNoPendingWithdrawal(Seller seller, BrandBlockedAction action) {
+        marketRepository.findBySeller(seller).ifPresent(market -> withdrawalGuard.requireNoPending(market.getId(), action));
     }
 
     private List<SellerBasicInfoDto.ReviewDocumentItem> buildReviewDocuments(Seller seller) {

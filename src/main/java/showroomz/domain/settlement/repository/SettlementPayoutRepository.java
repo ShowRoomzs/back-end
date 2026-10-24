@@ -53,6 +53,28 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "AND s.market.id = :marketId AND p.payee = :payee GROUP BY p.status")
     List<Object[]> aggregateForMarket(@Param("marketId") Long marketId, @Param("payee") SettlementPayee payee);
 
+    /**
+     * 브랜드 몫이 끝나지 않은 정산 건수 — 탈퇴 조건 ④(51 설계서 1-5 · D-1). 정산마다 브랜드 행은 1개라 행 수 = 정산 수다. 정산 상태로 세면
+     * 브랜드 몫은 이미 지급됐는데 인플루언서 몫 보류 · 분배 실패로 탈퇴가 막힌다.
+     */
+    @Query("SELECT COUNT(p) FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.market.id = :marketId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+            + "AND p.status NOT IN (showroomz.domain.settlement.type.PayoutStatus.PAID, "
+            + "showroomz.domain.settlement.type.PayoutStatus.NOT_APPLICABLE)")
+    long countBrandOpenForMarket(@Param("marketId") Long marketId);
+
+    /**
+     * 위 건수의 내역 — [정산 상태, 브랜드 행 상태, 보류 사유, 건수, 가장 이른 지급 예정일, 가장 이른 확인 기한]. 같은 WHERE 라 내역 합계가 판정과
+     * 어긋나지 않는다(51 설계서 4-4).
+     */
+    @Query("SELECT s.status, p.status, p.failCode, COUNT(p), MIN(p.dueDate), MIN(s.reviewDueAt) "
+            + "FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id AND s.market.id = :marketId "
+            + "AND p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND "
+            + "AND p.status NOT IN (showroomz.domain.settlement.type.PayoutStatus.PAID, "
+            + "showroomz.domain.settlement.type.PayoutStatus.NOT_APPLICABLE) "
+            + "GROUP BY s.status, p.status, p.failCode")
+    List<Object[]> countBrandOpenByStatus(@Param("marketId") Long marketId);
+
     /** 인플루언서의 수취자 행 집계 — 스튜디오는 내 행(CREATOR)만 본다. */
     @Query("SELECT p.status, COUNT(p), COALESCE(SUM(p.amount), 0), MIN(p.dueDate) "
             + "FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "

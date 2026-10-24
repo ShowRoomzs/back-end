@@ -23,11 +23,20 @@ public enum BrandBlockedAction {
     CONTRACT_RESEND_REQUEST("서명 안내 재발송을 요청할"),
     CONNECTION_REQUEST("인플루언서에게 연결을 요청할"),
     /** 기간 연장 요청(S3a) — 판매 기간을 늘리는 일이다. 조기 마감 · 중단 요청은 허용. */
-    GROUP_BUY_EXTENSION_REQUEST("기간 연장을 요청할");
+    GROUP_BUY_EXTENSION_REQUEST("기간 연장을 요청할"),
+    /** 탈퇴 신청 심사 중에만 막힌다(51 설계서 7-2 · 시안 4-I) — 정지 가드는 쓰지 않는다. */
+    PASSWORD_CHANGE("비밀번호를 변경할"),
+    /** 탈퇴 신청 심사 중에만 막힌다(51 설계서 7-2 · 시안 4-I) — 결과 메일을 받을 주소가 바뀌지 않게 한다. */
+    LOGIN_EMAIL_CHANGE("로그인 이메일을 변경할");
 
     private final String phrase;
 
     public String message() {
         return "계정 이용 정지 중에는 " + phrase + " 수 없습니다. 운영팀 소통 스레드로 문의해 주세요.";
+    }
+
+    /** 탈퇴 신청 심사 중 막힘 문구 — 인플루언서 쪽 「탈퇴 신청 심사 중에는 …」과 같은 틀(55 계획서 D8). */
+    public String withdrawalPendingMessage() {
+        return "탈퇴 신청 심사 중에는 " + phrase + " 수 없습니다. 신청을 취소하면 바로 이용할 수 있습니다.";
     }
 }

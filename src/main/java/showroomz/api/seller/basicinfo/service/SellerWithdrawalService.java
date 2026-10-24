@@ -9,9 +9,9 @@ import showroomz.domain.market.entity.Market;
 import showroomz.domain.market.repository.MarketRepository;
 import showroomz.domain.member.brand.entity.BrandWithdrawalRequest;
 import showroomz.domain.member.brand.repository.BrandWithdrawalRequestRepository;
-import showroomz.domain.member.brand.service.BrandWithdrawalEligibility;
+import showroomz.domain.connection.service.OperatorChannelService;
+import showroomz.domain.member.brand.service.BrandWithdrawalChecklist;
 import showroomz.domain.member.brand.service.BrandWithdrawalService;
-import showroomz.domain.member.brand.type.BrandWithdrawalCondition;
 import showroomz.domain.member.brand.type.BrandWithdrawalReason;
 import showroomz.domain.member.common.type.MemberWithdrawalStatus;
 import showroomz.domain.member.seller.entity.Seller;
@@ -21,14 +21,13 @@ import showroomz.global.error.exception.ErrorCode;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
  * 파트너센터 계정 탭 — 브랜드 탈퇴 신청 · 취소(§51-5 · 52 설계서 4절 · 정합 계획서 R0-1). 셀러 즉시 탈퇴는 409
  * {@code BRAND_WITHDRAWAL_REQUIRES_REQUEST}로 막혀 있다 — 이 서비스가 그 안내가 가리키는 길이다.
  *
- * <p>판정 · 신청 · 취소는 도메인 서비스({@link BrandWithdrawalService} · {@link BrandWithdrawalEligibility})를 그대로 부르고, 여기서는
+ * <p>판정 · 신청 · 취소는 도메인 서비스({@link BrandWithdrawalService} · {@link BrandWithdrawalChecklist})를 그대로 부르고, 여기서는
  * 로그인 셀러의 마켓을 찾고 화면 응답만 조립한다. 스튜디오 계정 탭({@code CreatorAccountTabService})과 같은 모양이다.
  */
 @Service
@@ -38,22 +37,21 @@ public class SellerWithdrawalService {
     private final SellerRepository sellerRepository;
     private final MarketRepository marketRepository;
     private final BrandWithdrawalService withdrawalService;
-    private final BrandWithdrawalEligibility eligibility;
+    private final BrandWithdrawalChecklist checklist;
     private final BrandWithdrawalRequestRepository requests;
+    private final OperatorChannelService operatorChannelService;
 
-    /** 계정 탭 탈퇴 블록 — ① 열린 신청 ② 조건 판정식. 최근 신청이 반려면 그 안내를 함께 내린다(재신청은 바로 가능). */
+    /**
+     * 계정 탭 탈퇴 블록 — ① 열린 신청 ② 조건 4행과 내역(51 설계서 4절). 내역 합계 = 판정식 건수라 「N / 4 충족」이 신청 · 승인 재검증과
+     * 어긋나지 않는다. 최근 신청이 반려면 그 안내를 함께 내린다(재신청은 바로 가능).
+     */
     @Transactional(readOnly = true)
     public SellerBasicInfoDto.Withdrawal read(Market market) {
         Long marketId = market.getId();
         String requesterEmail = market.getSeller() == null ? null : market.getSeller().getEmail();
-        Map<BrandWithdrawalCondition, Long> counts = eligibility.evaluate(marketId);
-        List<SellerBasicInfoDto.WithdrawalCondition> conditions = counts.entrySet().stream()
-                .map(e -> SellerBasicInfoDto.WithdrawalCondition.builder()
-                        .code(e.getKey().name())
-                        .label(e.getKey().getLabel())
-                        .count(e.getValue())
-                        .satisfied(e.getValue() == 0)
-                        .build())
+        BrandWithdrawalChecklist.Checklist read = checklist.read(marketId);
+        List<SellerBasicInfoDto.WithdrawalCondition> conditions = read.conditions().stream()
+                .map(SellerWithdrawalService::toCondition)
                 .toList();
         Optional<BrandWithdrawalRequest> pending = requests
                 .findFirstByMarketIdAndStatusOrderByRequestedAtDesc(marketId, MemberWithdrawalStatus.PENDING);
@@ -74,6 +72,8 @@ public class SellerWithdrawalService {
                 .satisfiedCount((int) conditions.stream().filter(SellerBasicInfoDto.WithdrawalCondition::isSatisfied).count())
                 .totalCount(conditions.size())
                 .conditions(conditions)
+                .draftContractCount(read.draftContractCount())
+                .operatorThreadId(operatorChannelService.findMarketChannelThreadId(market).orElse(null))
                 .pendingRequest(pending.map(r -> SellerBasicInfoDto.PendingWithdrawal.builder()
                         .requestId(r.getId())
                         .requestedAt(r.getRequestedAt())
@@ -113,6 +113,40 @@ public class SellerWithdrawalService {
     @Transactional
     public void cancel(String sellerEmail, Long requestId) {
         withdrawalService.cancel(myMarket(sellerEmail).getId(), requestId, LocalDateTime.now());
+    }
+
+    private static SellerBasicInfoDto.WithdrawalCondition toCondition(BrandWithdrawalChecklist.Condition condition) {
+        return SellerBasicInfoDto.WithdrawalCondition.builder()
+                .code(condition.condition().name())
+                .label(condition.condition().getLabel())
+                .count(condition.count())
+                .satisfied(condition.satisfied())
+                .target(condition.target().name())
+                .breakdown(condition.breakdown().stream().map(SellerWithdrawalService::toBreakdown).toList())
+                .build();
+    }
+
+    private static SellerBasicInfoDto.WithdrawalBreakdown toBreakdown(BrandWithdrawalChecklist.Breakdown row) {
+        return SellerBasicInfoDto.WithdrawalBreakdown.builder()
+                .key(row.key())
+                .label(row.label())
+                .count(row.count())
+                .group(row.group().name())
+                .groupLabel(row.group().getLabel())
+                .action(row.action() == null ? null : row.action().name())
+                .expectedDate(row.expectedDate())
+                .reasonCode(row.reasonCode())
+                .reasonLabel(row.reasonLabel())
+                .dueNote(row.dueNote())
+                .target(row.target() == null ? null : row.target().name())
+                .items(row.items().stream().map(item -> SellerBasicInfoDto.WithdrawalAdjustmentItem.builder()
+                        .settlementId(item.settlementId())
+                        .settlementNumber(item.settlementNumber())
+                        .threadId(item.threadId())
+                        .deadlineAt(item.deadlineAt())
+                        .turn(item.turn() == null ? null : item.turn().name())
+                        .build()).toList())
+                .build();
     }
 
     private Market myMarket(String sellerEmail) {

@@ -100,11 +100,15 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
-    @DisplayName("WE-04 정산 — 지급 완료 전 정산 4상태 + 브랜드 쪽 회수 대기 차감 · 지급 완료 · 인플루언서 쪽 차감 · 처리된 차감 제외")
+    @DisplayName("WE-04 정산 — 브랜드 몫이 끝나지 않은 정산(지급 완료 전 4상태) + 브랜드 쪽 회수 대기 차감 · 브랜드 몫 지급 완료 · 인플루언서 쪽 차감 · "
+            + "처리된 차감 제외(51 설계서 1-5 · D-1)")
     void settlementCondition() {
         Settlement first = null;
         for (SettlementStatus status : SettlementStatus.values()) {
             Settlement s = seedSettlement("조건 " + status, 1_000_000, status);
+            if (status == SettlementStatus.PAID) {
+                setPayout(s.getId(), SettlementPayee.BRAND, PayoutStatus.PAID, 900_000, null, LocalDate.now().minusDays(1));
+            }
             first = first == null ? s : first;
         }
         clawback(brand.marketId(), first.getId(), ClawbackSide.BRAND, "PENDING");
@@ -151,7 +155,7 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
-    @DisplayName("WE-07 브랜드 몫은 다 나갔어도 정산이 지급 완료 전이면 조건 ④ — 상세 미정산액 0 과 409 가 같이 보인다(판정 보류 · 17 #6)")
+    @DisplayName("WE-07 · WD-12 브랜드 몫은 다 나갔고 인플루언서 몫만 보류면 조건 ④ 아님 — 상세 미정산액 0 과 신청 가능이 일치한다(D-1 · 17 #6 해소)")
     void brandPaidButSettlementOpen() throws Exception {
         BrandFixture.Brand owner = cleanBrand("몫완료");
         Settlement s = settlementOf(owner, SettlementStatus.PAYOUT_SCHEDULED);
@@ -160,8 +164,8 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
 
         brandDetail(owner.marketId()).andExpect(jsonPath("$.operations.unsettledAmount").value(0))
                 .andExpect(jsonPath("$.operations.settledAmountTotal").value(900_000));
-        postAs(sellerToken(owner.seller()), PARTNER_WITHDRAWALS, null).andExpect(status().isConflict())
-                .andExpect(jsonPath("$.unmet.UNSETTLED").value(1));
+        assertThat(eligibility.evaluate(owner.marketId()).get(BrandWithdrawalCondition.UNSETTLED)).isZero();
+        postAs(sellerToken(owner.seller()), PARTNER_WITHDRAWALS, null).andExpect(status().isCreated());
     }
 
     @Test
@@ -406,6 +410,7 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
         Settlement s = settlementOf(owner, SettlementStatus.REVIEWING);
         expectUnmet(owner, requestId, "UNSETTLED");
         jdbc.update("UPDATE settlement SET status = 'PAID' WHERE settlement_id = ?", s.getId());
+        setPayout(s.getId(), SettlementPayee.BRAND, PayoutStatus.PAID, 900_000, null, LocalDate.now());
 
         approve(owner.marketId(), requestId).andExpect(status().isOk());
     }
@@ -443,22 +448,26 @@ class AdminBrandWithdrawalIntegrationTest extends AdminBrandTestSupport {
     }
 
     @Test
-    @DisplayName("WA-06 지급 정지 중 승인 — 묶인 정산이 있으면 409(UNSETTLED) · 지급 완료 뒤 승인 · 정지는 시스템 종결")
+    @DisplayName("WA-06 지급 정지 중 승인 — 브랜드 몫이 보류로 묶여 있으면 409(UNSETTLED · 정산 상태가 지급 완료여도) · 브랜드 몫 지급 뒤 승인 · "
+            + "정지는 시스템 종결")
     void approvalWhilePayoutHeld() throws Exception {
         BrandFixture.Brand owner = cleanBrand("지급정지승인");
         Settlement s = settlementOf(owner, SettlementStatus.PAYOUT_SCHEDULED);
         setPayout(s.getId(), SettlementPayee.BRAND, PayoutStatus.SCHEDULED, 900_000, null, LocalDate.now().plusDays(3));
         suspend(owner.marketId(), "SETTLEMENT_INFO_MISMATCH", null).andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
         Long requestId = pendingRequestRow(owner.marketId()).getId();
 
         expectUnmet(owner, requestId, "UNSETTLED");
+        // 정산 상태만 지급 완료로 바뀌어도 브랜드 몫이 보류면 여전히 조건 ④다 — 「정지를 피하려고 탈퇴」하는 길이 없다(51 설계서 1-7).
         jdbc.update("UPDATE settlement SET status = 'PAID' WHERE settlement_id = ?", s.getId());
+        expectUnmet(owner, requestId, "UNSETTLED");
+        setPayout(s.getId(), SettlementPayee.BRAND, PayoutStatus.PAID, 900_000, null, LocalDate.now());
         approve(owner.marketId(), requestId).andExpect(status().isOk());
 
         BrandSanction closed = sanctionRepository.findAll().stream()
                 .filter(x -> x.getMarketId().equals(owner.marketId())).findFirst().orElseThrow();
         assertThat(closed.getReleaseReason().name()).isEqualTo("WITHDRAWN");
-        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
     }
 
     @Test

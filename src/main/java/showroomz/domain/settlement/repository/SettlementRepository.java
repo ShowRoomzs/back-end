@@ -138,7 +138,15 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long>, S
             + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
     boolean existsUnpaidForMarket(@Param("marketId") Long marketId);
 
-    /** 지급 완료 전 정산 건수 — 탈퇴 조건 ④의 건수(52 설계서 4-1). */
+    /** 마켓의 이 상태 정산 id — 탈퇴 조건 내역의 조정 협의 행(51 설계서 4-4 · 이슈 스레드 링크). */
+    @Query("SELECT s.id FROM Settlement s WHERE s.market.id = :marketId AND s.status = :status ORDER BY s.id ASC")
+    List<Long> findIdsByMarketAndStatus(@Param("marketId") Long marketId,
+                                        @Param("status") showroomz.domain.settlement.type.SettlementStatus status);
+
+    /**
+     * 지급 완료 전 정산 건수(정산 상태 기준). 브랜드 탈퇴 조건 ④는 브랜드 몫 기준({@code SettlementPayoutRepository#countBrandOpenForMarket})으로
+     * 바뀌었다(51 설계서 1-5 · D-1).
+     */
     @Query("SELECT COUNT(s) FROM Settlement s WHERE s.market.id = :marketId "
             + "AND s.status <> showroomz.domain.settlement.type.SettlementStatus.PAID")
     long countUnpaidForMarket(@Param("marketId") Long marketId);

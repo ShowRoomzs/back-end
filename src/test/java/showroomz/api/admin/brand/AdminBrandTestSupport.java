@@ -69,7 +69,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * <p>다른 화면 · 배치가 만드는 상태(클레임 단계 · 정산 상태 · 시각)는 SQL 로 옮긴다 — 이 테스트들의 관심사는 그 상태를 브랜드 상세가 어떻게
  * 읽느냐이다.
  */
-abstract class AdminBrandTestSupport extends SettlementTestSupport {
+public abstract class AdminBrandTestSupport extends SettlementTestSupport {
 
     protected static final String BRANDS = "/v1/admin/brands";
     protected static final String ACCOUNT_RAW = "110123456789";

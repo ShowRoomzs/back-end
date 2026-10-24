@@ -332,7 +332,22 @@ public interface SellerBasicInfoControllerDocs {
             | `ACTIVE_GROUP_BUYS` | 진행 중 · 준비 중 공구 |
             | `CONTRACTS_BEFORE_CONCLUSION` | 체결 전 계약(검토 대기 · 서명 진행 중 등) |
             | `UNCLOSED_ORDERS` | 미종결 주문(배송 · 반품 · 교환) |
-            | `UNSETTLED` | 진행 중 정산 — 브랜드 몫 기준 |
+            | `UNSETTLED` | 진행 중 정산 — **브랜드 몫** 기준(브랜드 지급 행이 지급 완료가 아닌 정산 + 회수 대기 차감) |
+
+            조건 행마다 이동 대상 `target`(GROUP_BUYS · CONTRACTS · ORDERS · SETTLEMENTS)과 **내역 `breakdown`**(합계 = `count` · 0건 행은 생략)이 있다.
+            내역 행의 `group` 은 시안의 세 갈래 — `WAIT`(기다리면 풀림 · `expectedDate`) · `MY_ACTION`(내 응답 필요) · `OPERATOR`(운영팀 문의 →
+            `withdrawal.operatorThreadId`).
+
+            | 조건 | 내역 `key` |
+            | --- | --- |
+            | 계약 | `REVIEW_PENDING`(action `CANCEL_REVIEW`) · `REVIEW_REJECTED`(`DELETE`) · `SIGNING` · `CONCLUSION_PENDING`(`CONTACT_OPERATOR`) |
+            | 정산 | `REVIEWING`(WAIT) · `ADJUSTING`(MY_ACTION · `items[]` 이슈 스레드 · 합의 기한 · 차례) · `PAYOUT_SCHEDULED`(WAIT) · `BLOCKED`(보류 사유별 1행 · `reasonCode` · `target`) · `FAILED` · `CLAWBACK_PENDING`(OPERATOR) |
+
+            **4-G2** — 정지로 브랜드 몫 지급이 멈춘 정산은 `BLOCKED` 행 `reasonCode = BRAND_SUSPENDED` · `target = SETTLEMENT_ACCOUNT`(사업자 정보 허위
+            기재 정지면 `BUSINESS_INFO`)로 구분한다. `draftContractCount` = 승인 때 함께 삭제되는 작성 중 계약 수(M5).
+
+            **잠금(`identityLock = WITHDRAWAL_PENDING`)** — 심사 중에는 `passwordChangeable · emailChangeable = false` 이고 비밀번호 · 이메일 변경 ·
+            계약 작성 · 복제 · 검토 요청이 409 `BRAND_WITHDRAWAL_PENDING` 이다. 신청을 취소하면 바로 풀린다.
 
             **반려 결과(`lastRejection`)** — 가장 최근 신청이 반려였고 열린 신청이 없으면 사유 · 운영자 안내가 실린다. 확인 처리가 없어
             다음 신청 전까지 계속 내려간다. 재신청은 바로 가능하다.
@@ -354,21 +369,36 @@ public interface SellerBasicInfoControllerDocs {
                                               "emailChangeable": true,
                                               "lastEmailChangedAt": null,
                                               "nextEmailChangeableAt": null,
+                                              "passwordChangeable": true,
+                                              "identityLock": null,
                                               "withdrawal": {
                                                 "state": "BLOCKED", "satisfiedCount": 2, "totalCount": 4,
                                                 "conditions": [
-                                                  { "code": "ACTIVE_GROUP_BUYS", "label": "진행 중 · 준비 중 공구", "count": 1, "satisfied": false },
-                                                  { "code": "CONTRACTS_BEFORE_CONCLUSION", "label": "체결 전 계약", "count": 0, "satisfied": true },
-                                                  { "code": "UNCLOSED_ORDERS", "label": "미종결 주문(배송 · 반품 · 교환)", "count": 0, "satisfied": true },
-                                                  { "code": "UNSETTLED", "label": "진행 중 정산", "count": 2, "satisfied": false }
+                                                  { "code": "ACTIVE_GROUP_BUYS", "label": "진행 중 · 준비 중 공구", "count": 1, "satisfied": false,
+                                                    "target": "GROUP_BUYS",
+                                                    "breakdown": [ { "key": "IN_PROGRESS", "label": "진행중", "count": 1, "group": "WAIT", "groupLabel": "기다리면 풀림", "items": [] } ] },
+                                                  { "code": "CONTRACTS_BEFORE_CONCLUSION", "label": "체결 전 계약", "count": 0, "satisfied": true,
+                                                    "target": "CONTRACTS", "breakdown": [] },
+                                                  { "code": "UNCLOSED_ORDERS", "label": "미종결 주문(배송 · 반품 · 교환)", "count": 0, "satisfied": true,
+                                                    "target": "ORDERS", "breakdown": [] },
+                                                  { "code": "UNSETTLED", "label": "진행 중 정산", "count": 2, "satisfied": false, "target": "SETTLEMENTS",
+                                                    "breakdown": [
+                                                      { "key": "PAYOUT_SCHEDULED", "label": "지급 예정", "count": 1, "group": "WAIT", "groupLabel": "기다리면 풀림",
+                                                        "expectedDate": "2026-10-12", "items": [] },
+                                                      { "key": "BLOCKED", "label": "지급 보류", "count": 1, "group": "MY_ACTION", "groupLabel": "내 응답 필요",
+                                                        "reasonCode": "BRAND_SUSPENDED", "reasonLabel": "계정 이용 정지 · 지급 정지(정산 정보 불일치)",
+                                                        "dueNote": "정지 해제 다음 영업일 지급", "target": "SETTLEMENT_ACCOUNT", "items": [] }
+                                                    ] }
                                                 ],
+                                                "draftContractCount": 1,
+                                                "operatorThreadId": 812,
                                                 "pendingRequest": null,
                                                 "lastRejection": null,
                                                 "reasonOptions": [
                                                   { "code": "BUSINESS_CLOSED", "label": "사업 종료" },
-                                                  { "code": "LOW_PERFORMANCE", "label": "공구 성과 미흡" },
-                                                  { "code": "OPERATION_BURDEN", "label": "운영 부담(배송 · CS)" },
-                                                  { "code": "OTHER_CHANNEL_FOCUS", "label": "다른 채널 집중" },
+                                                  { "code": "LOW_PERFORMANCE", "label": "공구 성과가 기대에 못 미침" },
+                                                  { "code": "OPERATION_BURDEN", "label": "운영 부담(배송·CS)" },
+                                                  { "code": "OTHER_CHANNEL_FOCUS", "label": "다른 채널에 집중" },
                                                   { "code": "OTHER", "label": "기타" }
                                                 ]
                                               }
@@ -380,6 +410,8 @@ public interface SellerBasicInfoControllerDocs {
                                               "emailChangeable": false,
                                               "lastEmailChangedAt": "2026-10-02T10:00:00",
                                               "nextEmailChangeableAt": "2026-11-02T10:00:00",
+                                              "passwordChangeable": false,
+                                              "identityLock": "WITHDRAWAL_PENDING",
                                               "withdrawal": {
                                                 "state": "PENDING", "satisfiedCount": 4, "totalCount": 4,
                                                 "conditions": [ "… 4행 — 모두 satisfied" ],
@@ -456,6 +488,12 @@ public interface SellerBasicInfoControllerDocs {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
                             examples = @ExampleObject(value = """
                                     { "code": "PASSWORD_MISMATCH", "message": "현재 비밀번호가 일치하지 않습니다." }
+                                    """))),
+            @ApiResponse(responseCode = "409", description = "탈퇴 신청 심사 중 — BRAND_WITHDRAWAL_PENDING(비밀번호 확인보다 먼저 본다 · 51 설계서 7-2)",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    { "code": "BRAND_WITHDRAWAL_PENDING",
+                                      "message": "탈퇴 신청 심사 중에는 비밀번호를 변경할 수 없습니다. 신청을 취소하면 바로 이용할 수 있습니다." }
                                     """)))
     })
     ResponseEntity<Void> changePassword(@Valid @RequestBody SellerBasicInfoDto.ChangePasswordRequest request);
@@ -507,6 +545,8 @@ public interface SellerBasicInfoControllerDocs {
                                             """)
                             })),
             @ApiResponse(responseCode = "401", description = "현재 비밀번호 불일치 — PASSWORD_MISMATCH",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "탈퇴 신청 심사 중 — BRAND_WITHDRAWAL_PENDING(결과 메일 주소라 심사 중에는 바꾸지 않는다 · 가장 먼저 본다)",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<SellerBasicInfoDto.AccountInfoResponse> changeEmail(@Valid @RequestBody SellerBasicInfoDto.ChangeEmailRequest request);

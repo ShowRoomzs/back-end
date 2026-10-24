@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 public record MemberAccountStatusResponse(
         @Schema(description = "ACTIVE · SUSPENDED · WITHDRAWN(브랜드는 DORMANT 도 있다)", example = "SUSPENDED") String status,
         @Schema(description = "열린 정지 — 정지가 아니면 null", nullable = true) Sanction sanction,
-        @Schema(description = "탈퇴 신청 심사 중(인플루언서만 · 브랜드는 항상 false)", example = "false") boolean withdrawalPending
+        @Schema(description = "탈퇴 신청 심사 중 — 인플루언서 · 브랜드(열린 신청 행)", example = "false") boolean withdrawalPending
 ) {
 
     @Schema(name = "MemberAccountSanction")

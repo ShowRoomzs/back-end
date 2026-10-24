@@ -75,6 +75,7 @@ public class SellerContractCommandService {
 
     private final ContractAccessGuard accessGuard;
     private final BrandSanctionGuard brandSanctionGuard;
+    private final showroomz.domain.member.brand.service.BrandWithdrawalGuard brandWithdrawalGuard;
     private final ContractValidator contractValidator;
     private final ContractDetailAssembler detailAssembler;
     private final ContractRepository contractRepository;
@@ -101,6 +102,9 @@ public class SellerContractCommandService {
         Market market = accessGuard.resolveMarket(sellerEmail);
         // 브랜드 정지 중에는 새 계약을 시작하지 않는다(§51-1 · 52 설계서 7절) — 작성중 계약의 수정 · 삭제는 그대로다.
         brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
+        // 탈퇴 신청 심사 중에도 새 계약을 시작하지 않는다(51 설계서 7-2 · 시안 4-I).
+        brandWithdrawalGuard.requireNoPending(market.getId(),
                 showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Creator creator = null;
@@ -199,6 +203,9 @@ public class SellerContractCommandService {
         Contract contract = accessGuard.loadOwned(contractId, market);
         requireEditable(contract);
         brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_REVIEW_REQUEST);
+        // 탈퇴 신청 심사 중 검토 요청은 새 의무(서명 → 공구)를 만든다 — 잠금의 실질 관문(51 설계서 7-2).
+        brandWithdrawalGuard.requireNoPending(market.getId(),
                 showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_REVIEW_REQUEST);
         // 정지 · 탈퇴 심사 중인 인플루언서에게는 새 계약을 보내지 않는다(§51-1 · S7 · 53 설계서 4-2).
         creatorSanctionGuard.requireCanReceiveContract(contract.getCreator());
@@ -451,6 +458,8 @@ public class SellerContractCommandService {
         }
         // 복제도 새 계약의 시작이다 — create 와 같은 가드(이 경로가 가드를 우회하지 않게 · 1017 설계서 8-1).
         brandSanctionGuard.requireNotSuspended(market,
+                showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
+        brandWithdrawalGuard.requireNoPending(market.getId(),
                 showroomz.domain.member.brand.type.BrandBlockedAction.CONTRACT_CREATE);
 
         Contract copy = Contract.createDraft(market, source.getCreator(), source.getConnection());

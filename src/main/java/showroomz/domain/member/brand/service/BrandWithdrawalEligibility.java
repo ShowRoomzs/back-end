@@ -10,7 +10,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.brand.type.BrandWithdrawalCondition;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.settlement.repository.SettlementClawbackRepository;
-import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.global.error.exception.ConditionUnmetException;
 import showroomz.global.error.exception.ErrorCode;
 
@@ -28,7 +28,8 @@ import java.util.Set;
  *   <li>진행 중 · 준비 중 공구 — 준비중 · 준비완료 · 진행중 · 중단 예정. 종료 후 주문 종결 대기는 ③에서 걸린다</li>
  *   <li>체결 전 계약 — 검토 대기 · 검토 반려 · 서명 진행중 · 공구 생성 대기. 작성중은 조건이 아니다(승인 시 함께 삭제)</li>
  *   <li>미종결 주문 — 공구 정산 게이트와 같은 정의</li>
- *   <li>진행 중 정산 — 지급 완료 전 정산 + 회수 대기 차감</li>
+ *   <li>진행 중 정산 — <b>브랜드 몫</b>이 끝나지 않은 정산 + 회수 대기 차감(51 설계서 1-5 · D-1). 정산 상태로 세면 브랜드 몫은 이미
+ *   지급됐는데 인플루언서 몫 보류 · 분배 실패로 탈퇴가 막힌다</li>
  * </ol>
  */
 @Component
@@ -42,7 +43,7 @@ public class BrandWithdrawalEligibility {
     private final GroupBuyRepository groupBuyRepository;
     private final ContractRepository contractRepository;
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
-    private final SettlementRepository settlementRepository;
+    private final SettlementPayoutRepository payoutRepository;
     private final SettlementClawbackRepository clawbackRepository;
 
     /** 조건별 남은 건수 — 4종 모두 들어 있다(0 포함 · 선언 순서). */
@@ -53,7 +54,7 @@ public class BrandWithdrawalEligibility {
         result.put(BrandWithdrawalCondition.CONTRACTS_BEFORE_CONCLUSION,
                 sum(contractRepository.countByStatus(marketId), CONTRACT_CONDITION));
         result.put(BrandWithdrawalCondition.UNCLOSED_ORDERS, deliveryGroupRepository.countUnclosedByMarket(marketId));
-        result.put(BrandWithdrawalCondition.UNSETTLED, settlementRepository.countUnpaidForMarket(marketId)
+        result.put(BrandWithdrawalCondition.UNSETTLED, payoutRepository.countBrandOpenForMarket(marketId)
                 + clawbackRepository.countPendingForMarket(marketId));
         return result;
     }

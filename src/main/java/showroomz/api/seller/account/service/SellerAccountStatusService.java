@@ -30,7 +30,9 @@ public class SellerAccountStatusService {
         MemberAccountStatusResponse.Sanction sanction = sanctionReader.openSanction(market.getId())
                 .map(s -> toSanction(s, market))
                 .orElse(null);
-        return new MemberAccountStatusResponse(market.getStatus().name(), sanction, false);
+        // 탈퇴 신청 심사 중 — 파트너 홈 · 계정 탭 잠금 안내(51 설계서 1-4 · 55 계획서 P5).
+        return new MemberAccountStatusResponse(market.getStatus().name(), sanction,
+                sanctionReader.hasPendingWithdrawal(market.getId()));
     }
 
     private MemberAccountStatusResponse.Sanction toSanction(BrandSanction s, Market market) {

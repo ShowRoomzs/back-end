@@ -386,7 +386,7 @@ class AdminBrandDetailIntegrationTest extends AdminBrandTestSupport {
                 .andExpect(jsonPath("$.rail.withdrawalReview.elapsedDays").value(0))
                 .andExpect(jsonPath("$.rail.withdrawalReview.requesterName").value("김담당"))
                 .andExpect(jsonPath("$.rail.withdrawalReview.reason").value("OTHER_CHANNEL_FOCUS"))
-                .andExpect(jsonPath("$.rail.withdrawalReview.reasonLabel").value("다른 채널 집중"))
+                .andExpect(jsonPath("$.rail.withdrawalReview.reasonLabel").value("다른 채널에 집중"))
                 .andExpect(jsonPath("$.rail.withdrawalReview.message").value("자사몰 운영에 집중하기 위해 입점을 종료합니다."))
                 .andExpect(jsonPath("$.rail.histories.items.length()").value(2))
                 .andExpect(jsonPath("$.rail.histories.total").value(4));
