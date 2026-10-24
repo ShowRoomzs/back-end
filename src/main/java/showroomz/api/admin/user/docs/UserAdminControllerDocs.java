@@ -220,6 +220,7 @@ public interface UserAdminControllerDocs {
                     "**이 운영자의 유효한 열람 세션**(`POST /{userId}/privacy-unmask`)이 있으면 이름 · 생년월일(+만 나이) · 휴대폰과 배송지 상세가 실값이고, " +
                     "`unmask`에 해제됨 · 처리자 · 시각 · 남은 초 · 직전 사유가 실립니다. 다른 운영자의 세션은 적용되지 않습니다.\n\n" +
                     "**최근 주문(`recentOrders`)** — 최근 5건. 행은 어드민 주문 목록(`GET /v1/admin/orders?userId=`)과 같고, 「전체 주문 내역 보기 ›」도 그 목록입니다. " +
+                    "상태 칸의 「반품완료」 · 「교환완료」는 `groups[].claim.label`(가장 최근 반품 · 교환 · 없으면 null)이고, 배송 이행 상태는 `groups[].statusLabel` 그대로입니다. " +
                     "**최근 문의(`recentInquiries`)** — 1:1 · 상품 문의를 최신순으로 합친 3건(번호는 각 관리 화면의 INQ- · QNA- · 제목은 본문 앞 40자).\n\n" +
                     "**배송지(`addresses`)** — 기본 배송지 먼저 · 최근 수정순. 마스킹 중에는 시 · 군 · 구까지만 · 상세주소 · 우편번호 null · 수령인 · 연락처 마스킹. " +
                     "「최근 사용 주문일」은 주문에 배송지 id 가 없어 항상 null 입니다(보류).\n\n" +

@@ -552,6 +552,44 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
         assertThat(groupRow(group).get("confirm_paused_at")).isNull();
     }
 
+    /** 목록 행의 반품 · 교환 요약(56 C2) — 배송 이행 상태(status)는 그대로 두고 클레임 요약을 따로 싣는다. 실제 반품 경로로 진행 → 완료를 본다. */
+    @Test
+    @DisplayName("[56 C2] 목록 groups[].claim — 클레임 없으면 null · 진행 중 「반품 진행중」 · 검수 통과 환불 「반품완료」(결과 REFUNDED · 건수 1) · status 는 이행 상태 그대로")
+    void listRowClaimSummary() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup("400060017001", LocalDateTime.now().minusDays(1).withNano(0));
+        assertThat(rowGroup(group).get("claim").isNull()).isTrue();
+
+        long claimId = json(defect(group, itemsOf(group).get(0).getId(), "DAMAGED_OR_DEFECTIVE",
+                List.of("https://img.test/d.jpg")).andExpect(status().isOk())).get("claimIds").get(0).asLong();
+        JsonNode open = rowGroup(group);
+        assertThat(open.get("status").asText()).isEqualTo("DELIVERED");
+        assertThat(open.at("/claim/claimId").asLong()).isEqualTo(claimId);
+        assertThat(open.at("/claim/claimNumber").asText()).isEqualTo("CLM-" + claimId);
+        assertThat(open.at("/claim/type").asText()).isEqualTo("RETURN");
+        assertThat(open.at("/claim/result").isNull()).isTrue();
+        assertThat(open.at("/claim/label").asText()).isEqualTo("반품 진행중");
+        assertThat(open.at("/claim/count").asInt()).isEqualTo(1);
+
+        consumerPut("/v1/user/claims/" + claimId + "/collection-invoice", Map.of("carrier", "CJ", "trackingNumber", "500060017001"))
+                .andExpect(status().isOk());
+        sellerPost("/v1/seller/claims/receive", Map.of("claimIds", List.of(claimId))).andExpect(jsonPath("$.succeeded").value(1));
+        sellerPost("/v1/seller/claims/" + claimId + "/inspection/pass", Map.of()).andExpect(status().isOk());
+
+        JsonNode done = rowGroup(group);
+        assertThat(done.at("/claim/status").asText()).isEqualTo("COMPLETED");
+        assertThat(done.at("/claim/result").asText()).isEqualTo("REFUNDED");
+        assertThat(done.at("/claim/label").asText()).isEqualTo("반품완료");
+        assertThat(done.get("status").asText()).isEqualTo(groupRow(group).get("fulfillment_status"));
+    }
+
+    private JsonNode rowGroup(OrderDeliveryGroup group) throws Exception {
+        JsonNode rows = json(adminGet(ADMIN_ORDERS + "?size=100").andExpect(status().isOk())).get("content");
+        return StreamSupport.stream(rows.spliterator(), false)
+                .flatMap(row -> StreamSupport.stream(row.get("groups").spliterator(), false))
+                .filter(g -> g.get("deliveryGroupId").asLong() == group.getId())
+                .findFirst().orElseThrow();
+    }
+
     @Test
     @DisplayName("[L-02] 운영자 하자 반품을 브랜드가 반려 → 소비자 이의 → 운영자 인용 — 일반 반품과 같은 인용(금액 · 종결) · 귀책은 처음부터 브랜드 · 귀책 변경 표시도 참")
     void operatorDefectClaimRejectedThenDisputeAccepted() throws Exception {

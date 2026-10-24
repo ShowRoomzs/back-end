@@ -28,7 +28,7 @@ final class AdminTransactionDocsExamples {
                       "shipDueAt": "2026-10-07T23:59:59", "shipOverdue": true, "cancelRequested": false,
                       "itemSummary": "데일리 선크림 50ml", "itemQuantity": 1, "amount": 30200,
                       "carrier": null, "carrierLabel": null, "trackingNumber": null, "groupBuyTitle": "데일리 선크림 공구",
-                      "issueSince": null, "issueElapsedLabel": null
+                      "issueSince": null, "issueElapsedLabel": null, "claim": null
                     },
                     {
                       "deliveryGroupId": 1025, "subOrderNumber": "20261003-000123-02", "brandName": "글로우코스",
@@ -37,7 +37,7 @@ final class AdminTransactionDocsExamples {
                       "shipDueAt": "2026-10-08T23:59:59", "shipOverdue": false, "cancelRequested": false,
                       "itemSummary": "수분 세럼 30ml", "itemQuantity": 1, "amount": 24600,
                       "carrier": "CJ", "carrierLabel": "CJ대한통운", "trackingNumber": "640012345678", "groupBuyTitle": "수분 세럼 공구",
-                      "issueSince": null, "issueElapsedLabel": null
+                      "issueSince": null, "issueElapsedLabel": null, "claim": null
                     }
                   ],
                   "attentionCount": 1
@@ -53,7 +53,11 @@ final class AdminTransactionDocsExamples {
                       "shipDueAt": "2026-10-07T23:59:59", "shipOverdue": false, "cancelRequested": false,
                       "itemSummary": "데일리 선크림 외 1종", "itemQuantity": 2, "amount": 27200,
                       "carrier": "CJ", "carrierLabel": "CJ대한통운", "trackingNumber": "640012340099", "groupBuyTitle": "데일리 선크림 공구",
-                      "issueSince": null, "issueElapsedLabel": null
+                      "issueSince": null, "issueElapsedLabel": null,
+                      "claim": {
+                        "claimId": 3021, "claimNumber": "CLM-3021", "type": "RETURN", "status": "COMPLETED", "result": "REFUNDED",
+                        "label": "반품완료", "requestedAt": "2026-10-05T09:12:00", "count": 1
+                      }
                     }
                   ],
                   "attentionCount": 0
@@ -77,7 +81,7 @@ final class AdminTransactionDocsExamples {
                       "shipDueAt": "2026-09-10T23:59:59", "shipOverdue": false, "cancelRequested": false,
                       "itemSummary": "톤업 쿠션 21호", "itemQuantity": 1, "amount": 31900,
                       "carrier": "HANJIN", "carrierLabel": "한진택배", "trackingNumber": "512398760099", "groupBuyTitle": "톤업 쿠션 공구",
-                      "issueSince": "2026-10-02T07:40:00", "issueElapsedLabel": "8일 무갱신"
+                      "issueSince": "2026-10-02T07:40:00", "issueElapsedLabel": "8일 무갱신", "claim": null
                     }
                   ],
                   "attentionCount": 1

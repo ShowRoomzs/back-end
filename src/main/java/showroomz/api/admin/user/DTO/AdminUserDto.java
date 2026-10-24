@@ -143,6 +143,7 @@ public class AdminUserDto {
 
     @Schema(name = "AdminUserRecentOrders",
             description = "최근 주문 5건 — 어드민 주문 목록(GET /v1/admin/orders?userId=)과 같은 행 · 같은 집합이다. 「전체 주문 내역 보기 ›」는 그 목록으로 간다. "
+                    + "상태 칸의 「반품완료」 · 「교환완료」는 groups[].claim.label(56 C2)이다. "
                     + "total 은 결제된 주문 전부(전액 취소 포함)라 누적 주문 수(취소만 남은 주문 제외)와 다를 수 있다. 탈퇴 회원도 보존 기록이라 그대로 내린다")
     public record RecentOrders(@Schema(example = "14") long total, List<AdminOrderDto.ListItem> content) {
     }

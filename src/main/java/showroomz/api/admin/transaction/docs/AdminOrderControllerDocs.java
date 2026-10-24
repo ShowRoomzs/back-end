@@ -72,6 +72,9 @@ public interface AdminOrderControllerDocs {
             - `attentionCount` — 운영자가 볼 것이 있는 하위주문 수(배송 이상 · 발송 기한 경과 · 검토 중 취소 요청). 0 이면 표시를 뺍니다.
             - `groups[].shipOverdue` — 발송 전인데 발송 기한이 지났다(브랜드 귀책). `shipDueAt`이 null 이면 공구 진행 중이라 기한이 아직 없습니다.
             - `groups[].statusTone` — 배지 색(`NEUTRAL` · `INFO` · `WARNING` · `SUCCESS` · `DANGER`). 상태 문구는 `statusLabel`을 그대로 씁니다.
+            - `groups[].claim` — 반품 · 교환 요약(56 C2 · 추가 필드). 그 하위주문에 접수된 클레임 중 **가장 최근에 신청한 것** 1건(결제 대기 · 요청 취소 제외)과
+              접수 건수 `count`. 없으면 null. `label`은 「반품완료」 · 「교환완료」 · 「환불완료」(교환을 환불로 닫음) · 「반품 반려」 · 「반품 진행중」 등.
+              `status`(배송 이행)는 바뀌지 않습니다 — 소비자 상세 「최근 주문」 상태 칸은 `claim`이 있으면 `claim.label`을 씁니다.
             - 행 확장 줄 — `itemSummary`(「데일리 선크림 외 1종」) · `itemQuantity`(수량 합) · `amount`(상품 합계 + 배송비 — 한 주문의 합이
               `totalAmount`) · `carrierLabel` · `trackingNumber`. 「공구명」 열은 `groups[].groupBuyTitle`(여러 브랜드면 첫 하위주문 것).
             - 「배송 이상」 열 — `trackingAlertLabel` + 경과 `issueElapsedLabel`(「등록 후 26시간」 · 「8일 무갱신」 · 「감지 09.12」). 기준 시각은 `issueSince`.

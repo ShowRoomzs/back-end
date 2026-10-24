@@ -349,6 +349,55 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.tabCounts.ALL").value(1));
     }
 
+    /**
+     * 시안 「최근 주문」 상태 칸의 「반품완료」 · 「교환완료」(56 C2) — 행의 status(배송 이행)는 그대로이고 groups[].claim 이 따로 싣는다. 한
+     * 하위주문에 여러 클레임이 있으면 가장 최근에 신청한 것, 결제 대기 · 요청 취소는 세지 않는다. 주문 목록에도 같은 값이 나간다.
+     */
+    @Test
+    @DisplayName("[56 C2] 최근 주문 groups[].claim — 반품완료 · 교환완료 · 여러 건이면 가장 최근 신청(건수 함께) · 요청 취소 · 결제 대기만 있으면 null · status 는 이행 상태 그대로")
+    void recentOrdersCarryClaimSummary() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        LocalDateTime base = LocalDateTime.now().minusDays(10).withNano(0);
+        Order plain = paidDelivered(hong, base);
+        Order returned = paidDelivered(hong, base.plusDays(1));
+        claim(returned, onlyGroup(returned), hong, "RETURN", "COMPLETED", "REFUNDED");
+        Order exchanged = paidDelivered(hong, base.plusDays(2));
+        claim(exchanged, onlyGroup(exchanged), hong, "EXCHANGE", "COMPLETED", "EXCHANGED");
+        Order twice = paidDelivered(hong, base.plusDays(3));
+        Long rejectedBox = claim(twice, onlyGroup(twice), hong, "RETURN", "COMPLETED", "REJECTED");
+        jdbc.update("UPDATE order_claim SET requested_at = ? WHERE collection_id = ?", base, rejectedBox);
+        claim(twice, onlyGroup(twice), hong, "RETURN", "REQUESTED", null);
+        Order withdrawn = paidDelivered(hong, base.plusDays(4));
+        claim(withdrawn, onlyGroup(withdrawn), hong, "RETURN", "COMPLETED", "CANCELLED");
+        claim(withdrawn, onlyGroup(withdrawn), hong, "EXCHANGE", "PAYMENT_PENDING", null);
+
+        JsonNode rows = json(detail(hong)).path("recentOrders").path("content");
+        assertThat(rows).hasSize(5);
+        java.util.Map<Long, JsonNode> byOrder = new java.util.HashMap<>();
+        rows.forEach(row -> byOrder.put(row.path("orderId").asLong(), row.path("groups").get(0)));
+        for (JsonNode group : byOrder.values()) {
+            assertThat(group.path("status").asText()).isEqualTo("DELIVERED");
+        }
+        assertThat(byOrder.get(plain.getId()).path("claim").isNull()).isTrue();
+        assertThat(byOrder.get(withdrawn.getId()).path("claim").isNull()).isTrue();
+        JsonNode refunded = byOrder.get(returned.getId()).path("claim");
+        assertThat(refunded.path("label").asText()).isEqualTo("반품완료");
+        assertThat(refunded.path("type").asText()).isEqualTo("RETURN");
+        assertThat(refunded.path("result").asText()).isEqualTo("REFUNDED");
+        assertThat(refunded.path("count").asInt()).isEqualTo(1);
+        assertThat(byOrder.get(exchanged.getId()).path("claim").path("label").asText()).isEqualTo("교환완료");
+        JsonNode latest = byOrder.get(twice.getId()).path("claim");
+        assertThat(latest.path("status").asText()).isEqualTo("REQUESTED");
+        assertThat(latest.path("label").asText()).isEqualTo("반품 진행중");
+        assertThat(latest.path("count").asInt()).isEqualTo(2);
+        assertThat(latest.path("claimNumber").asText()).isEqualTo("CLM-" + latest.path("claimId").asLong());
+
+        // 주문 목록도 같은 행이다
+        JsonNode listed = json(mockMvc.perform(get("/v1/admin/orders").param("userId", String.valueOf(hong.getId()))
+                .header(HttpHeaders.AUTHORIZATION, adminToken)).andExpect(status().isOk())).path("content");
+        assertThat(listed.findValuesAsText("label")).containsExactlyInAnyOrder("반품완료", "교환완료", "반품 진행중");
+    }
+
     @Test
     @DisplayName("최근 문의 3건 — 1:1 · 상품 문의 최신순 합산 · 삭제 집행 제외 · 번호(INQ- · QNA-) · 제목 = 본문 앞 40자 · 상태 라벨")
     void recentInquiriesMergeBothKinds() throws Exception {
@@ -761,6 +810,18 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
         Long collectionId = jdbc.queryForObject("SELECT MAX(collection_id) FROM order_claim_collection", Long.class);
         claimInBox(collectionId, order, group, user, type, claimStatus, result);
         return collectionId;
+    }
+
+    /** 결제 · 배송완료 주문 1건(하위주문 1). */
+    private Order paidDelivered(Users user, LocalDateTime paidAt) {
+        Order order = orders.paidOrder(user, variant, 1, PRICE, OrderProductStatus.PAID);
+        paidAt(order, paidAt);
+        group(order, "DELIVERED");
+        return order;
+    }
+
+    private OrderDeliveryGroup onlyGroup(Order order) {
+        return deliveryGroupRepository.findByOrderId(order.getId()).get(0);
     }
 
     /** 같은 박스에 클레임 1건 더 — 목록은 클레임(행) 단위다. */

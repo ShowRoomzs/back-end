@@ -12,6 +12,7 @@ import showroomz.domain.order.type.AdminOrderSort;
 import showroomz.domain.order.type.AdminOrderTab;
 import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimChargeType;
+import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.ClaimReason;
@@ -77,7 +78,27 @@ public final class AdminOrderDto {
             @Schema(description = "배송 이상 기준 시각 — 집화 확인 필요 = 송장 등록 · 추적 정지 = 마지막 추적 · 반송 중 = 반송 감지. 이상이 없으면 null",
                     nullable = true) LocalDateTime issueSince,
             @Schema(description = "배송 이상 경과 문구 — 「등록 후 26시간」 · 「8일 무갱신」 · 「감지 09.12」. 이상이 없으면 null",
-                    example = "8일 무갱신", nullable = true) String issueElapsedLabel
+                    example = "8일 무갱신", nullable = true) String issueElapsedLabel,
+            @Schema(description = "반품 · 교환 요약(56 C2) — 이 하위주문에 접수된 클레임 중 **가장 최근에 신청한 것**(신청 시각 · 클레임 id 최신). "
+                    + "결제 대기(접수 전)와 요청 취소(소비자 철회 · 송장 미등록 자동 취소 · 운영자 직권 취소)는 세지 않는다. 없으면 null. "
+                    + "`status`(배송 이행 상태)는 그대로이고, 소비자 상세 「최근 주문」의 「반품완료」 · 「교환완료」는 이 값으로 그린다",
+                    nullable = true)
+            ClaimSummary claim
+    ) {
+    }
+
+    @Schema(name = "AdminOrderClaimSummary", description = "하위주문의 반품 · 교환 요약 — 가장 최근에 신청한 클레임 1건 + 접수 건수")
+    public record ClaimSummary(
+            Long claimId,
+            @Schema(example = "CLM-3021") String claimNumber,
+            @Schema(example = "RETURN") ClaimType type,
+            @Schema(description = "클레임 단계", example = "COMPLETED") ClaimStatus status,
+            @Schema(description = "종결 결과 — 종결 전이면 null", example = "REFUNDED", nullable = true) ClaimResult result,
+            @Schema(description = "상태 칸 문구 — 종결: 반품 환불 「반품완료」 · 교환 「교환완료」 · 교환을 환불로 닫음 「환불완료」 · 반려 「반품 반려」 「교환 반려」 / "
+                    + "진행 중: 「반품 진행중」 「교환 진행중」", example = "반품완료") String label,
+            @Schema(description = "신청 시각") LocalDateTime requestedAt,
+            @Schema(description = "이 하위주문에 접수된 반품 · 교환 건수(항목 단위 · 결제 대기 · 요청 취소 제외) — 2 이상이면 「외 N건」", example = "1")
+            int count
     ) {
     }
 
