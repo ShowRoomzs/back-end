@@ -9,6 +9,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 
@@ -217,6 +218,26 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("발행 필요");
         assertThat(detail.at("/withholding").isNull()).isTrue();
         creatorGet(SETTLEMENTS + "/summary").andExpect(jsonPath("$.attentionCount").value(1));
+    }
+
+    @Test
+    @DisplayName("[56 A1] 계좌 확인 중 확정 — 사유 코드 없이 보류된 내 행도 목록 · 상세 · 분배 행에 「정산 계좌 확인 중」 · 「계좌 확인 후 지급」 · 정지 아님")
+    void accountCheckHoldAtConfirm() throws Exception {
+        registerCreatorAccount();
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFYING' WHERE creator_id = ?", creator.getId());
+        Settlement s = confirm(reviewing());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isNull();
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/settlement/payoutHold/reason").asText()).isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+        assertThat(detail.at("/settlement/payoutHold/label").asText()).isEqualTo("정산 계좌 확인 중");
+        assertThat(detail.at("/settlement/payoutHold/scheduleLabel").asText()).isEqualTo("계좌 확인 후 지급");
+        assertThat(detail.at("/settlement/payoutHold/sanction").asBoolean()).isFalse();
+        assertThat(detail.at("/payouts/rows/0/hold/reason").asText()).isEqualTo("CREATOR_ACCOUNT_UNVERIFIED");
+        creatorGet(SETTLEMENTS)
+                .andExpect(jsonPath("$.content[0].settlementId").value(s.getId()))
+                .andExpect(jsonPath("$.content[0].payoutHold.reason").value("CREATOR_ACCOUNT_UNVERIFIED"));
     }
 
     @Test

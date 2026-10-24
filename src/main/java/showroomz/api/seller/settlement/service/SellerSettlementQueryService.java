@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.common.settlement.dto.SettlementFile;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.PayoutHoldViews;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.seller.settlement.dto.SellerSettlementDto;
 import showroomz.domain.contract.type.WithholdingType;
@@ -72,6 +73,7 @@ public class SellerSettlementQueryService {
     private final SettlementTaxDocumentRepository taxDocumentRepository;
     private final SettlementTaxDocumentService taxDocumentService;
     private final SettlementAdjustmentRepository adjustmentRepository;
+    private final PayoutHoldViews holdViews;
 
     // ------------------------------------------------------------------ 목록(2-2)
 
@@ -98,8 +100,7 @@ public class SellerSettlementQueryService {
                 s.getContract().getTitle(), influencer(s), s.getPeriodStartAt(), s.getPeriodEndAt(),
                 s.getConfirmedSalesAmount(), s.getPgFeeAmount() + s.getPlatformFeeAmount(), s.getRewardAmount(),
                 s.getRewardVatAmount(), s.getBrandPayoutAmount(), status, status.getLabel(), status.getTone(),
-                schedule(s, brand),
-                PayoutHoldView.of(brand, properties.getPayoutBusinessDays()));
+                schedule(s, brand), holdViews.of(s, brand));
     }
 
     /** 「지급(예정)일」 — 브랜드 행 기준. 사업자 인플루언서 건은 인플루언서 행과 날짜가 다르지만 브랜드는 자기 행만 본다. */
@@ -172,6 +173,7 @@ public class SellerSettlementQueryService {
         LocalDateTime now = LocalDateTime.now();
         Map<SettlementPayee, SettlementPayout> payouts = views.payoutsOf(s.getId());
         SettlementPayout brand = payouts.get(SettlementPayee.BRAND);
+        PayoutHoldView hold = holdViews.of(s, brand);
         boolean confirmed = s.getStatus().isConfirmed();
         SettlementStatus status = s.getStatus().toPartyStatus();
         SettlementPartyDto.AdjustmentBlock adjustment = blocks.adjustmentOf(s);
@@ -188,17 +190,18 @@ public class SellerSettlementQueryService {
                         brand == null ? null : brand.getDueDate(),
                         brand == null || brand.getStatus() != PayoutStatus.PAID ? null : brand.getPaidAt(),
                         views.payoutBasis(s.getId())),
-                adjustment, blocks.breakdownOf(s), confirmed ? payouts(s, payouts) : null,
+                adjustment, blocks.breakdownOf(s), confirmed ? payouts(s, payouts, hold) : null,
                 confirmed ? payment(s, brand) : null, taxDocuments, influencerTax(s), claimShipping(s, market),
                 preview.getContent().stream().map(SellerSettlementQueryService::item).toList(),
                 preview.getTotalElements(),
                 new SellerSettlementDto.Actions(canRequest, blocks.canRespond(adjustment), confirmed,
                         taxDocuments != null && taxDocuments.stream().anyMatch(SellerSettlementDto.TaxDocument::downloadable)),
-                PayoutHoldView.of(brand, properties.getPayoutBusinessDays()));
+                hold);
     }
 
     /** 3자 분배 — 브랜드 첫 행. 남의 행의 분배 실패는 「지급 예정」으로 접는다 · 브랜드 행 실패만 「지급 확인 중」(0-4 · §46 A-4). */
-    private List<SellerSettlementDto.Payout> payouts(Settlement s, Map<SettlementPayee, SettlementPayout> payouts) {
+    private List<SellerSettlementDto.Payout> payouts(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
+                                                     PayoutHoldView myHold) {
         String withholdingRate = SettlementPartyViews.percent(
                 s.getWithholdingIncomeRate().add(s.getWithholdingLocalRate()).movePointRight(2));
         return List.of(SettlementPayee.BRAND, SettlementPayee.CREATOR, SettlementPayee.PLATFORM).stream()
@@ -224,7 +227,7 @@ public class SellerSettlementQueryService {
                     return new SellerSettlementDto.Payout(payee, label, payout.getAmount(), note, shown,
                             statusLabel(s, payee, shown), payout.getDueDate(),
                             payout.getStatus() == PayoutStatus.PAID ? payout.getPaidAt() : null,
-                            mine ? PayoutHoldView.of(payout, properties.getPayoutBusinessDays()) : null);
+                            mine ? myHold : null);
                 }).toList();
     }
 

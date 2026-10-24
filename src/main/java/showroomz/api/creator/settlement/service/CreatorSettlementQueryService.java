@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.api.common.settlement.dto.SettlementPartyDto;
+import showroomz.api.common.settlement.service.PayoutHoldViews;
 import showroomz.api.common.settlement.service.SettlementPartyViews;
 import showroomz.api.creator.settlement.dto.CreatorSettlementDto;
 import showroomz.domain.member.creator.entity.Creator;
@@ -66,6 +67,7 @@ public class CreatorSettlementQueryService {
     private final SettlementStatementExcel statementExcel;
     private final SettlementProperties properties;
     private final CreatorSettlementBlocks blocks;
+    private final PayoutHoldViews holdViews;
 
     // ------------------------------------------------------------------ 진입
 
@@ -117,8 +119,7 @@ public class CreatorSettlementQueryService {
                     SettlementPartyViews.rewardRateLabel(rates.get(s.getId())), s.getRewardAmount(),
                     s.getRewardClawbackAmount(), s.getWithholdingAmount(), s.getCreatorVatAmount(),
                     s.getCreatorPayoutAmount(), status, status.getLabel(), status.getTone(), payoutDate,
-                    payoutDateKind,
-                    PayoutHoldView.of(mine, properties.getPayoutBusinessDays()));
+                    payoutDateKind, holdViews.of(s, mine));
         }).toList(), page);
     }
 
@@ -182,6 +183,7 @@ public class CreatorSettlementQueryService {
         SettlementStatus status = s.getStatus().toPartyStatus();
         Map<SettlementPayee, SettlementPayout> payouts = views.payoutsOf(s.getId());
         SettlementPayout mine = payouts.get(SettlementPayee.CREATOR);
+        PayoutHoldView hold = holdViews.of(s, mine);
         SettlementPartyDto.AdjustmentBlock adjustment = blocks.adjustmentOf(s);
         List<SettlementPartyViews.RewardRate> rates = views.rewardRatesOf(List.of(s.getId())).get(s.getId());
 
@@ -211,14 +213,13 @@ public class CreatorSettlementQueryService {
                 new CreatorSettlementDto.SettlementHeader(s.getId(), s.getSettlementNumber(), s.getGroupBuyId(),
                         s.getContract().getTitle(), s.getMarket().getMarketName(), s.getMarketId(),
                         s.getPeriodStartAt(), s.getPeriodEndAt(), status, status.getLabel(), status.getTone(),
-                        s.getCreatorBusinessType(), s.isBusinessCreator(),
-                        PayoutHoldView.of(mine, properties.getPayoutBusinessDays())),
+                        s.getCreatorBusinessType(), s.isBusinessCreator(), hold),
                 new CreatorSettlementDto.Timeline(s.getCreatedAt(), s.getOrdersClosedAt(), s.getReviewDueAt(),
                         s.getConfirmedAt(), s.getConfirmReason(),
                         s.getConfirmReason() == null ? null : s.getConfirmReason().getLabel(), payoutDueDate,
                         payoutDueNote, paidAt),
                 review, breakdown(s, rates), blocks.clawbacksOf(s),
-                new CreatorSettlementDto.Payouts(!confirmed, payoutRows(s, payouts)),
+                new CreatorSettlementDto.Payouts(!confirmed, payoutRows(s, payouts, hold)),
                 payment(s, mine, payoutDueDate, payoutDueNote), adjustment, withholding,
                 s.isBusinessCreator() && confirmed ? blocks.taxInvoiceOf(s) : null,
                 new CreatorSettlementDto.Items(preview.getContent().stream().map(CreatorSettlementQueryService::item)
@@ -239,7 +240,8 @@ public class CreatorSettlementQueryService {
     }
 
     /** 3자 분배 — 내 행 첫 줄. 내 행 실패는 「지급 확인 중」 · 브랜드 행 실패는 「지급 예정」으로 접는다(어드민 설계서 0-4 · §46 A-4). */
-    private List<CreatorSettlementDto.PayoutRow> payoutRows(Settlement s, Map<SettlementPayee, SettlementPayout> payouts) {
+    private List<CreatorSettlementDto.PayoutRow> payoutRows(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
+                                                            PayoutHoldView myHold) {
         String withholdingRate = SettlementPartyViews.percent(
                 s.getWithholdingIncomeRate().add(s.getWithholdingLocalRate()).movePointRight(2));
         return List.of(SettlementPayee.CREATOR, SettlementPayee.BRAND, SettlementPayee.PLATFORM).stream()
@@ -266,7 +268,7 @@ public class CreatorSettlementQueryService {
                             ? payout.getPaidAt().toLocalDate() : payout.getDueDate();
                     return new CreatorSettlementDto.PayoutRow(payee, payee.getLabel(), name, payout.getAmount(), note,
                             shown, statusLabel(s, payee, shown, date), date,
-                            mine ? PayoutHoldView.of(payout, properties.getPayoutBusinessDays()) : null);
+                            mine ? myHold : null);
                 }).toList();
     }
 

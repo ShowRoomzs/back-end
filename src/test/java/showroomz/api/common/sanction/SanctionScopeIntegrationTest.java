@@ -18,6 +18,8 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.domain.settlement.type.PayoutStatus;
@@ -297,6 +299,34 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
                         .value(true))
                 .andExpect(jsonPath("$.content[?(@.card.cardType == 'ACCOUNT_SUSPENDED')].card.detail.sanction.memberType")
                         .value("BRAND"));
+    }
+
+    @Test
+    @DisplayName("[56 A1] 정지 중 확정 — 인플루언서 몫이 사유 코드 없이 보류돼도 스튜디오 목록 · 상세 · 내 분배 행에 「계정 이용 정지」 · 「정지 해제 다음 영업일 지급」 · 파트너 화면엔 안 보인다")
+    void creatorHoldAtConfirmShowsSanction() throws Exception {
+        Settlement reviewing = seedSettlement("가을 공구", 1_000_000, SettlementStatus.REVIEWING);
+        suspendCreator("SETTLEMENT_INFO_MISMATCH", null);
+        Settlement s = confirm(reviewing);
+        SettlementPayout mine = payout(s.getId(), SettlementPayee.CREATOR);
+        assertThat(mine.getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        // 확정의 정책 보류는 사유 코드를 남기지 않는다 — 해제 경로가 이 모양을 전제로 해 저장 방식은 그대로 둔다.
+        assertThat(mine.getFailCode()).isNull();
+
+        creatorGet("/v1/creator/settlements/" + s.getId())
+                .andExpect(jsonPath("$.settlement.payoutHold.reason").value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.settlement.payoutHold.label").value(PayoutBlockReason.CREATOR_SUSPENDED.getLabel()))
+                .andExpect(jsonPath("$.settlement.payoutHold.scheduleLabel").value("정지 해제 다음 영업일 지급"))
+                .andExpect(jsonPath("$.settlement.payoutHold.sanction").value(true))
+                .andExpect(jsonPath("$.payouts.rows[0].hold.reason").value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.payouts.rows[1].hold").value(nullValue()));
+        creatorGet("/v1/creator/settlements")
+                .andExpect(jsonPath("$.content[?(@.settlementId == " + s.getId() + ")].payoutHold.reason")
+                        .value("CREATOR_SUSPENDED"))
+                .andExpect(jsonPath("$.content[?(@.settlementId == " + s.getId() + ")].payoutHold.sanction").value(true));
+        // 파트너는 자기 행(브랜드 몫 · 예정대로)만 보류 이유를 본다 — 인플루언서 정지는 드러나지 않는다.
+        sellerGet("/v1/seller/settlements/" + s.getId())
+                .andExpect(jsonPath("$.payoutHold").value(nullValue()))
+                .andExpect(jsonPath("$.payouts[1].hold").value(nullValue()));
     }
 
     // ------------------------------------------------------------------ helpers
