@@ -191,8 +191,8 @@ public class CreatorSettlementQueryService {
         String payoutDueNote = null;
         if (confirmed && mine != null) {
             if (mine.getStatus() == PayoutStatus.BLOCKED) {
-                payoutDueNote = s.isBusinessCreator()
-                        ? blocks.businessBlockedNote(s, properties.getPayoutBusinessDays()) : "보류 사유 해소 후 지급";
+                // 보류 사유를 따른다 — 사업자라도 정지 · 계좌 확인 보류면 세금계산서 문구가 아니다(56 A2).
+                payoutDueNote = blocks.blockedNote(s, hold, properties.getPayoutBusinessDays());
             } else {
                 payoutDueDate = mine.getDueDate();
                 payoutDueNote = views.payoutBasis(s.getId());
@@ -267,18 +267,18 @@ public class CreatorSettlementQueryService {
                     LocalDate date = shown == PayoutStatus.PAID && payout.getPaidAt() != null
                             ? payout.getPaidAt().toLocalDate() : payout.getDueDate();
                     return new CreatorSettlementDto.PayoutRow(payee, payee.getLabel(), name, payout.getAmount(), note,
-                            shown, statusLabel(s, payee, shown, date), date,
+                            shown, statusLabel(s, payee, shown, date, myHold), date,
                             mine ? myHold : null);
                 }).toList();
     }
 
-    private String statusLabel(Settlement s, SettlementPayee payee, PayoutStatus status, LocalDate date) {
+    private String statusLabel(Settlement s, SettlementPayee payee, PayoutStatus status, LocalDate date,
+                               PayoutHoldView myHold) {
         String day = date == null ? "" : date.format(SettlementSchedule.DAY) + " ";
         return switch (status) {
             case WAITING -> "확인 기간 후 지급";
             case HELD -> "보류 중";
-            case BLOCKED -> payee == SettlementPayee.CREATOR && s.isBusinessCreator()
-                    ? blocks.businessBlockedLabel(s) : "지급 보류";
+            case BLOCKED -> payee == SettlementPayee.CREATOR ? blocks.blockedLabel(s, myHold) : "지급 보류";
             case SCHEDULED, REQUESTED -> day + "지급 예정";
             case PAID -> day + "지급 완료";
             case FAILED -> "지급 확인 중";

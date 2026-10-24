@@ -9,6 +9,7 @@ import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
@@ -238,6 +239,50 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         creatorGet(SETTLEMENTS)
                 .andExpect(jsonPath("$.content[0].settlementId").value(s.getId()))
                 .andExpect(jsonPath("$.content[0].payoutHold.reason").value("CREATOR_ACCOUNT_UNVERIFIED"));
+    }
+
+    @Test
+    @DisplayName("[56 A2] 사업자 · 계산서 확인 뒤 정지 — 내 행 「발행 필요」 대신 정지 사유 라벨 · 지급 예정일 「정지 해제 다음 영업일 지급」")
+    void businessSuspendedAfterInvoiceVerified() throws Exception {
+        makeCreatorBusiness();
+        registerCreatorAccount();
+        Settlement s = confirm(reviewing());
+        submitInvoice(s, "20261007-41000012-38475920", null).andExpect(status().isOk());
+        Long invoiceId = jdbc.queryForObject("SELECT document_id FROM settlement_tax_document WHERE settlement_id = ? "
+                + "AND type = 'CREATOR_TAX_INVOICE'", Long.class, s.getId());
+        adminPost("/v1/admin/settlements/" + s.getId() + "/tax-documents/" + invoiceId + "/verify",
+                Map.of("result", "MATCH")).andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        adminPost("/v1/admin/creators/" + creator.getId() + "/suspend", Map.of("reason", "SETTLEMENT_INFO_MISMATCH"))
+                .andExpect(status().isOk());
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("CREATOR_SUSPENDED");
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("VERIFIED");
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText())
+                .isEqualTo(PayoutBlockReason.CREATOR_SUSPENDED.getLabel());
+        assertThat(detail.at("/payment/dueNote").asText()).isEqualTo("정지 해제 다음 영업일 지급");
+    }
+
+    @Test
+    @DisplayName("[56 A2] 사업자 · 계산서 제출 전 계좌 확인 중 — 내 행 「정산 계좌 확인 중」 · 「계좌 확인 후 지급」 · 세금계산서 카드는 그대로 발행 필요")
+    void businessAccountCheckBeforeInvoice() throws Exception {
+        makeCreatorBusiness();
+        registerCreatorAccount();
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFYING' WHERE creator_id = ?", creator.getId());
+        Settlement s = confirm(reviewing());
+
+        JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()).andExpect(status().isOk()));
+        assertThat(detail.at("/taxInvoice/cardStatus").asText()).isEqualTo("PENDING_INPUT");
+        assertThat(detail.at("/timeline/payoutDueNote").asText()).isEqualTo("계좌 확인 후 지급");
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("정산 계좌 확인 중");
+
+        // 계좌 확인이 끝나면 남은 사유(세금계산서)로 돌아간다.
+        jdbc.update("UPDATE creator SET account_verification_status = 'VERIFIED' WHERE creator_id = ?", creator.getId());
+        creatorGet(SETTLEMENTS + "/" + s.getId())
+                .andExpect(jsonPath("$.timeline.payoutDueNote").value("발행 확인 후 + 3영업일"))
+                .andExpect(jsonPath("$.payouts.rows[0].statusLabel").value("발행 필요"));
     }
 
     @Test

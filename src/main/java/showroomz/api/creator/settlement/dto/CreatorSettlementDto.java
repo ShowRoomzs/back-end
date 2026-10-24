@@ -119,7 +119,7 @@ public final class CreatorSettlementDto {
             @Schema(nullable = true) SettlementConfirmReason confirmReason,
             @Schema(nullable = true) String confirmReasonLabel,
             @Schema(description = "내 행 지급 예정일 — 사업자 발행 전 · 확인 중 · 협의면 null", nullable = true) LocalDate payoutDueDate,
-            @Schema(description = "「자동 확정 08.28 + 3영업일」 · 「발행 확인 후 + 3영업일」 등 — 서버 문장", nullable = true) String payoutDueNote,
+            @Schema(description = "「자동 확정 08.28 + 3영업일」 · 「발행 확인 후 + 3영업일」 · 「정지 해제 다음 영업일 지급」 등 — 서버 문장. 내 행 보류면 보류 사유를 따른다", nullable = true) String payoutDueNote,
             @Schema(nullable = true) LocalDateTime paidAt
     ) {
     }
