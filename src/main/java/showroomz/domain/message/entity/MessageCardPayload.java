@@ -98,11 +98,23 @@ public record MessageCardPayload(
      * @param groupBuyClosed     [해지 결과] 생성된 공구가 함께 종결됐는가
      * @param reasonClause       [직권 중단] 근거 호(ART17_1_LAW 등)
      * @param counterpartyNoticed [직권 중단] 상대 당사자에게도 같은 통지가 갔는가
+     * @param counterpartyType   [직권 중단] 이 카드를 받은 채널의 상대 당사자 — SELLER(브랜드) · CREATOR(인플루언서). 상대가 없으면 null
+     * @param counterpartyName   [직권 중단] 상대 당사자 이름(브랜드명 · 쇼룸명) — 「브랜드(퓨어랩)에도 같은 통지가 갔습니다」. 양측이 서로 보는
+     *                           이름이라 담는다. 1021 초기 카드는 없다(null)
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Notice(String kind, String body, Boolean groupBuyClosed, Long groupBuyId, String groupBuyNumber,
                          String reasonClause, String reasonClauseLabel, LocalDateTime executeScheduledAt,
-                         LocalDateTime appealDeadlineAt, Boolean counterpartyNoticed) {
+                         LocalDateTime appealDeadlineAt, Boolean counterpartyNoticed, String counterpartyType,
+                         String counterpartyName) {
+
+        /** 상대 당사자 이름이 없는 안내 카드(계약 취소 · 해지 동의 확인 · 해지 결과). */
+        public Notice(String kind, String body, Boolean groupBuyClosed, Long groupBuyId, String groupBuyNumber,
+                      String reasonClause, String reasonClauseLabel, LocalDateTime executeScheduledAt,
+                      LocalDateTime appealDeadlineAt, Boolean counterpartyNoticed) {
+            this(kind, body, groupBuyClosed, groupBuyId, groupBuyNumber, reasonClause, reasonClauseLabel,
+                    executeScheduledAt, appealDeadlineAt, counterpartyNoticed, null, null);
+        }
     }
 
     /**

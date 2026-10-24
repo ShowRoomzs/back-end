@@ -97,6 +97,43 @@ class Design1021P2GroupBuyIntegrationTest extends AdminGroupBuyTestSupport {
                 .andExpect(jsonPath("$.adminSuspension.creatorOpinion.replyCount").value(1));
     }
 
+    @Test
+    @DisplayName("[56 B2] 직권 중단 사전 통지 카드 — 채널마다 상대 당사자 이름: 브랜드 채널은 인플루언서(쇼룸명) · 인플루언서 채널은 브랜드(브랜드명) · "
+            + "파트너센터 · 스튜디오 · 어드민이 같은 값")
+    void suspensionNoticeCardNamesCounterparty() throws Exception {
+        GroupBuy groupBuy = seedInProgressLong();
+        seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false);
+        LocalDateTime appeal = businessCalendar.addBusinessDays(LocalDate.now(), 3).atTime(23, 59, 59);
+        LocalDateTime execute = businessCalendar.addBusinessDays(appeal.toLocalDate(), 1).atTime(10, 0);
+        adminAction(groupBuy.getId(), "admin-suspension/notice", Map.of("clause", "ART17_1_LAW",
+                "executeScheduledAt", execute.toString(), "appealDeadlineAt", appeal.toString(),
+                "noticeBody", "게시물 본문에 효능 단정 표현이 있습니다.")).andExpect(status().isOk());
+
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+        String notice = "$.content[?(@.card.cardType == 'GROUP_BUY_SUSPENSION_NOTICE')].card.detail.notice";
+        for (ResultActions brandSide : new ResultActions[]{
+                mockMvc.perform(get("/v1/seller/threads/" + brandChannel + "/messages")
+                        .header(HttpHeaders.AUTHORIZATION, brandToken)),
+                mockMvc.perform(get("/v1/admin/threads/" + brandChannel + "/messages")
+                        .header(HttpHeaders.AUTHORIZATION, operatorToken))}) {
+            brandSide.andExpect(status().isOk())
+                    .andExpect(jsonPath(notice + ".counterpartyNoticed").value(true))
+                    .andExpect(jsonPath(notice + ".counterpartyType").value("CREATOR"))
+                    .andExpect(jsonPath(notice + ".counterpartyName").value("글로우_지민"));
+        }
+        for (ResultActions creatorSide : new ResultActions[]{
+                mockMvc.perform(get("/v1/creator/threads/" + creatorChannel + "/messages")
+                        .header(HttpHeaders.AUTHORIZATION, creatorToken())),
+                mockMvc.perform(get("/v1/admin/threads/" + creatorChannel + "/messages")
+                        .header(HttpHeaders.AUTHORIZATION, operatorToken))}) {
+            creatorSide.andExpect(status().isOk())
+                    .andExpect(jsonPath(notice + ".counterpartyNoticed").value(true))
+                    .andExpect(jsonPath(notice + ".counterpartyType").value("SELLER"))
+                    .andExpect(jsonPath(notice + ".counterpartyName").value("글로우랩"));
+        }
+    }
+
     private ResultActions edit(long groupBuyId, String title, String content) throws Exception {
         java.util.Map<String, Object> body = new java.util.HashMap<>();
         body.put("title", title);

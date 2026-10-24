@@ -51,6 +51,27 @@ class MessageCardPayloadTest {
     }
 
     @Test
+    @DisplayName("[56 B2] 직권 중단 통지 카드는 상대 당사자 유형 · 이름을 되읽고, 그 칸이 없는 옛 카드는 null 로 읽는다 · 이름 없는 안내 카드는 JSON 에 쓰지 않는다")
+    void suspensionNoticeCounterparty() {
+        MessageCardPayload payload = MessageCardPayload.notice(41L, "CTR-1", "헤어 에센스 공구", null, null, AT, "1호 법령 위반",
+                null, 3L, new MessageCardPayload.Notice("ADMIN_SUSPENSION", "본문", null, 7L, "GRB-1", "ART17_1_LAW",
+                        "1호 법령 위반", AT.plusDays(6), AT.plusDays(5), true, "SELLER", "퓨어랩"));
+        MessageCardPayload parsed = MessageCardPayload.parse(payload.toJson());
+        assertThat(parsed).isEqualTo(payload);
+        assertThat(parsed.notice().counterpartyType()).isEqualTo("SELLER");
+        assertThat(parsed.notice().counterpartyName()).isEqualTo("퓨어랩");
+
+        MessageCardPayload old = MessageCardPayload.parse("{\"notice\":{\"kind\":\"ADMIN_SUSPENSION\",\"counterpartyNoticed\":true}}");
+        assertThat(old.notice().counterpartyNoticed()).isTrue();
+        assertThat(old.notice().counterpartyType()).isNull();
+        assertThat(old.notice().counterpartyName()).isNull();
+
+        String consent = MessageCardPayload.notice(41L, "CTR-1", null, "SELLER", "글로우랩", AT, "조건 재협의", null, null,
+                new MessageCardPayload.Notice("CANCEL", "조건 재협의", null, null, null, null, null, null, null, null)).toJson();
+        assertThat(consent).doesNotContain("counterpartyType", "counterpartyName");
+    }
+
+    @Test
     @DisplayName("모르는 필드가 섞인 스냅샷도 읽는다 — 카드 형식이 늘어도 옛 행이 깨지지 않는다")
     void ignoresUnknownFields() {
         MessageCardPayload parsed = MessageCardPayload.parse("{\"contractId\":41,\"futureField\":\"x\"}");

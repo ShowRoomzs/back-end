@@ -71,12 +71,16 @@ public record MessageCardResponse(
             @Schema(description = "[직권 중단] 근거 호 라벨") String reasonClauseLabel,
             @Schema(description = "[직권 중단] 집행 예정 시각") LocalDateTime executeScheduledAt,
             @Schema(description = "[직권 중단] 소명 · 의견 기한 — 양측 같은 기한") LocalDateTime appealDeadlineAt,
-            @Schema(description = "[직권 중단] 상대 당사자에게도 같은 통지가 갔는가") Boolean counterpartyNoticed) {
+            @Schema(description = "[직권 중단] 상대 당사자에게도 같은 통지가 갔는가") Boolean counterpartyNoticed,
+            @Schema(description = "[직권 중단] 이 채널의 상대 당사자 — SELLER(브랜드) · CREATOR(인플루언서). 상대에게 통지가 가지 않았거나 "
+                    + "옛 카드면 null", example = "SELLER", nullable = true) String counterpartyType,
+            @Schema(description = "[직권 중단] 상대 당사자 이름(브랜드명 · 쇼룸명) — 「브랜드(퓨어랩)에도 같은 통지가 갔습니다」. 옛 카드면 null",
+                    example = "퓨어랩", nullable = true) String counterpartyName) {
 
         public static NoticeDetail of(MessageCardPayload.Notice n) {
             return n == null ? null : new NoticeDetail(n.kind(), n.body(), n.groupBuyClosed(), n.groupBuyId(),
                     n.groupBuyNumber(), n.reasonClause(), n.reasonClauseLabel(), n.executeScheduledAt(),
-                    n.appealDeadlineAt(), n.counterpartyNoticed());
+                    n.appealDeadlineAt(), n.counterpartyNoticed(), n.counterpartyType(), n.counterpartyName());
         }
     }
 
