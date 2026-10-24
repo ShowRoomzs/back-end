@@ -348,6 +348,42 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.statusCard.withdrawal.withdrawnAt").doesNotExist());
     }
 
+    /** 시안 해제 모달 「소명 문의 INQ-20260810-027 · 답변완료」(56 C4) — 번호는 접수일 내 순번이라 서버가 1:1 문의 관리와 같은 규칙으로 매긴다. */
+    @Test
+    @DisplayName("[56 C4] 소명 문의 번호 — appealInquiries[].inquiryNumber = INQ-접수일-그날 순번(다른 소비자 문의 포함) · 1:1 문의 관리 상세 번호와 같다 · 최신순 · 답변 여부")
+    void appealInquiriesCarryInquiryNumber() throws Exception {
+        Users seo = createConsumer("seo", UserStatus.SUSPENDED);
+        Users other = createConsumer("other", UserStatus.NORMAL);
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        UserSanction sanction = sanctionRepository.save(UserSanction.suspend(seo.getId(), UserSuspensionReason.RETURN_ABUSE,
+                null, admin.getId(), "김운영", now.minusDays(3)));
+        LocalDateTime day = now.minusDays(2).toLocalDate().atTime(9, 0);
+        oneToOne(other, CsCategory.DELIVERY, "같은 날 먼저 들어온 다른 소비자 문의", day);
+        OneToOneInquiry firstAppeal = oneToOne(seo, CsCategory.ACCOUNT, "정지 사유를 확인하고 싶습니다", day.plusHours(1));
+        OneToOneInquiry secondAppeal = oneToOne(seo, CsCategory.ACCOUNT, "답변 부탁드립니다", now.minusHours(1));
+        jdbc.update("UPDATE one_to_one_inquiry SET sanction_id = ? WHERE inquiry_id IN (?, ?)", sanction.getId(),
+                firstAppeal.getId(), secondAppeal.getId());
+        jdbc.update("UPDATE one_to_one_inquiry SET status = 'ANSWERED', answered_at = ? WHERE inquiry_id = ?",
+                day.plusHours(3), firstAppeal.getId());
+
+        JsonNode appeals = json(detail(seo)).at("/statusCard/sanction/appealInquiries");
+        assertThat(appeals).hasSize(2);
+        assertThat(appeals.get(0).path("inquiryId").asLong()).isEqualTo(secondAppeal.getId());
+        assertThat(appeals.get(0).path("inquiryNumber").asText())
+                .isEqualTo("INQ-" + now.minusHours(1).format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE) + "-001");
+        assertThat(appeals.get(0).path("answered").asBoolean()).isFalse();
+        assertThat(appeals.get(1).path("inquiryId").asLong()).isEqualTo(firstAppeal.getId());
+        assertThat(appeals.get(1).path("inquiryNumber").asText())
+                .isEqualTo("INQ-" + day.format(java.time.format.DateTimeFormatter.BASIC_ISO_DATE) + "-002");
+        assertThat(appeals.get(1).path("answered").asBoolean()).isTrue();
+        for (JsonNode appeal : appeals) {
+            mockMvc.perform(get("/v1/admin/inquiries/" + appeal.path("inquiryId").asLong())
+                            .header(HttpHeaders.AUTHORIZATION, adminToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.inquiryNumber").value(appeal.path("inquiryNumber").asText()));
+        }
+    }
+
     @Test
     @DisplayName("최근 주문 5건 — 어드민 주문 목록(userId)과 같은 행 · 결제일 최신순 · total 은 그 목록 건수 · 다른 소비자 주문 제외")
     void recentOrdersReuseAdminOrderList() throws Exception {

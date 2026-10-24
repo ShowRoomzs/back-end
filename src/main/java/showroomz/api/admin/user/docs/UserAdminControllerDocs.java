@@ -229,7 +229,8 @@ public interface UserAdminControllerDocs {
                     "**칩 `count` = `links[].count` 합 = 그 목록들의 `pageInfo.totalResults` 합**입니다. 열린 문의는 1:1 문의 · 상품 문의 두 목록으로 갈릴 수 있습니다(0건인 쪽은 빠짐). " +
                     "**판단 메타(`judgement`)** — 누적 주문 · 누적 구매액 · 반품·교환 주문 수와 비율(÷ 누적 주문) · 정지 이력(user_sanction 행 수 · 직전 해제된 정지) · 가입 후 경과.\n\n" +
                     "**탈퇴 회원** — 본인확인 · 배송지 · 알림 수신은 `destroyed = true`, 최근 로그인 null(「— 파기됨」). 주문 · 문의 기록은 보존이라 그대로이고, 판단 메타는 거래 값이 null 이며 가입 후 경과 · 정지 이력만 남습니다.\n\n" +
-                    "**현재 상태 카드(`statusCard`)** — 정지 상태면 사유 · 처리자 · 일시 · 상세 사유 · **소명 문의**(`appealInquiries` — 해제 모달의 「소명 문의 번호」)가 함께 내려갑니다. " +
+                    "**현재 상태 카드(`statusCard`)** — 정지 상태면 사유 · 처리자 · 일시 · 상세 사유 · **소명 문의**(`appealInquiries` — 해제 모달의 「소명 문의 번호」 · " +
+                    "`inquiryNumber`는 1:1 문의 관리와 같은 INQ-YYYYMMDD-NNN)가 함께 내려갑니다. " +
                     "`actions.canSuspend` = 정상일 때만 · `actions.canRelease` = 정지일 때만 · 탈퇴 회원은 둘 다 false(운영자 액션 없음). " +
                     "탈퇴 회원은 `withdrawal.withdrawnAt`(탈퇴 일시 — 처리 이력 「회원 탈퇴」 행과 같은 시각)이 함께 오고, 그 밖에는 `withdrawal = null` 입니다. " +
                     "탈퇴 회원도 열린 정지가 있으면 그대로 보입니다 — 같은 계정으로 재가입하면 그 정지로 돌아옵니다.\n\n" +

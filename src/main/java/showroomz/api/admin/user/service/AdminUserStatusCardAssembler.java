@@ -10,6 +10,7 @@ import showroomz.api.admin.user.dto.AdminUserDto.Withdrawal;
 import showroomz.domain.history.entity.UserStatusHistory;
 import showroomz.domain.history.repository.UserStatusHistoryRepository;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.domain.inquiry.support.OneToOneInquiryNumber;
 import showroomz.domain.member.user.entity.UserSanction;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.repository.UserSanctionRepository;
@@ -49,7 +50,8 @@ public class AdminUserStatusCardAssembler {
 
     private SanctionInfo sanctionInfo(UserSanction sanction) {
         List<AppealInquiry> appeals = inquiries.findBySanctionIdOrderByCreatedAtDescIdDesc(sanction.getId()).stream()
-                .map(inquiry -> new AppealInquiry(inquiry.getId(), inquiry.isAnswered(), inquiry.getCreatedAt()))
+                .map(inquiry -> new AppealInquiry(inquiry.getId(), OneToOneInquiryNumber.of(inquiry, inquiries),
+                        inquiry.isAnswered(), inquiry.getCreatedAt()))
                 .toList();
         return new SanctionInfo(sanction.getId(), sanction.getReason(), sanction.getReason().getLabel(),
                 sanction.getReasonDetail(), sanction.getSuspendedAt(), sanction.getSuspendedByName(), appeals,

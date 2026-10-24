@@ -75,7 +75,12 @@ public class AdminUserDto {
             showroomz.api.common.account.dto.MemberAccountStatusResponse.Term term) {
     }
 
-    public record AppealInquiry(Long inquiryId, boolean answered, LocalDateTime createdAt) {
+    public record AppealInquiry(
+            Long inquiryId,
+            @Schema(description = "문의번호 — 1:1 문의 관리 · 최근 문의와 같은 INQ-YYYYMMDD-NNN(접수일 내 순번이라 FE 가 만들 수 없다 · 56 C4). "
+                    + "해제 모달 「소명 문의 INQ-20260810-027 · 답변완료」", example = "INQ-20260810-027") String inquiryNumber,
+            @Schema(description = "답변 완료 여부 — 「답변완료」 · 「답변 대기」") boolean answered,
+            LocalDateTime createdAt) {
     }
 
     @Schema(description = "버튼 노출 — 탈퇴 회원은 둘 다 false(운영자 액션 없음 · §25-5)")
