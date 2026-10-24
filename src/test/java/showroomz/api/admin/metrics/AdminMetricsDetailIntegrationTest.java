@@ -26,6 +26,8 @@ import showroomz.domain.post.type.PostPolicyClause;
 import showroomz.domain.post.type.PostReportReason;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.config.properties.AdminProperties;
+import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.support.BrandFixture;
 
 import java.math.BigDecimal;
@@ -51,6 +53,8 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
     @Autowired private PostRepository postRepository;
     @Autowired private PostReportRepository postReportRepository;
     @Autowired private SellerApplicationRepository sellerApplicationRepository;
+    @Autowired private AdminProperties adminProperties;
+    @Autowired private GroupBuyProperties groupBuyProperties;
 
     /** 지표는 같은 기간을 10분 캐시한다 — 테스트마다 데이터가 다르므로 비운다. */
     @BeforeEach
@@ -253,6 +257,56 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("[56 D3-02] 신규 입점 외 지표 — 다섯 탭의 표 줄 · 핵심 탭 4칸 모두 currentBreakdown · previousBreakdown 이 null(값이 있는 기간에도)")
+    void breakdownOnlyForNewOnboarding() throws Exception {
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDateTime current = yesterday.atTime(10, 0);
+        LocalDateTime previous = yesterday.minusDays(1).atTime(10, 0);
+        approvedSellerApplication("new-brand", "새브랜드", current.minusDays(3), current);
+        approvedSellerApplication("old-brand", "지난브랜드", previous.minusDays(3), previous);
+        // 결제도 두 기간에 하나씩 — 거래액 · 주문 · 활성 인플루언서 같은 지표에 값이 있어도 breakdown 은 없다
+        Purchase earlier = purchase(creamVariant, 1);
+        Purchase later = purchase(serumVariant, 1);
+        jdbc.update("UPDATE orders SET paid_at = ? WHERE order_id = ?", previous, earlier.orderId());
+        jdbc.update("UPDATE orders SET paid_at = ? WHERE order_id = ?", current, later.orderId());
+        String period = "?preset=CUSTOM&from=" + yesterday + "&to=" + yesterday;
+
+        boolean onboardingSeen = false;
+        int checked = 0;
+        for (String tab : new String[]{"CORE", "SUPPLY", "GROUP_BUY", "DEMAND", "OPERATION"}) {
+            JsonNode body = json(adminGet(METRICS + period + "&tab=" + tab).andExpect(status().isOk()));
+            java.util.List<JsonNode> lines = new java.util.ArrayList<>();
+            body.get("rows").forEach(lines::add);
+            if (body.hasNonNull("cards")) {
+                body.get("cards").forEach(lines::add);
+            }
+            for (JsonNode line : lines) {
+                String key = line.get("key").asText();
+                if ("NEW_ONBOARDING".equals(key)) {
+                    assertThat(line.get("currentBreakdown").asText()).isEqualTo("1곳 · 0명");
+                    assertThat(line.get("previousBreakdown").asText()).isEqualTo("1곳 · 0명");
+                    onboardingSeen = true;
+                    continue;
+                }
+                assertThat(textOrNull(line, "currentBreakdown")).as("%s %s current", tab, key).isNull();
+                assertThat(textOrNull(line, "previousBreakdown")).as("%s %s previous", tab, key).isNull();
+                checked++;
+            }
+        }
+        assertThat(onboardingSeen).isTrue();
+        // 표 줄 31(핵심 5 · 공급 7 · 공구 6 · 수요 6 · 운영 7) + 핵심 4칸 4 − 신규 입점 1
+        assertThat(checked).isEqualTo(34);
+        Map<String, JsonNode> core = rows(json(adminGet(METRICS + period + "&tab=CORE").andExpect(status().isOk())));
+        assertThat(core.get("GMV").get("current").asLong()).as("값이 있는 기간이다").isPositive();
+        assertThat(core.get("GMV").get("previous").asLong()).isPositive();
+    }
+
+    private static String textOrNull(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
+    }
+
+    @Test
     @DisplayName("[56 D4] 보조 설명 값 — 공구 중단 「신청 1 · 직권 1」 · 공구당 거래액 「중앙값 · N건」 · 수수료 「베타 0% · 정상 요율 2% 적용 시」")
     void suspensionsMedianAndFeeNotes() throws Exception {
         purchase(creamVariant, 1);
@@ -330,6 +384,41 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(operation.get("PROCESSED").get("note").asText()).matches("하루 평균 \\d+\\.\\d건");
         // 동적 값이 없는 지표는 정의 문구 그대로
         assertThat(operation.get("SLA_RATE").get("note").asText()).isEqualTo(MetricKey.SLA_RATE.getDefinition());
+    }
+
+    /**
+     * 설명의 기한 숫자는 설정에서 읽는다(56 D5) — 오픈 승인 SLA(group-buy.open-review.sla-business-days) · 1:1 첫 답변 기한(admin.inquiry-sla-hours).
+     * 초과 건수도 같은 설정으로 다시 센다. 「SLA 준수율」의 정적 정의 문구는 56 수정 기록 5-2 에 남긴 것이라 보지 않는다.
+     */
+    @Test
+    @DisplayName("[56 D5-02] 설정의 SLA · 기한 숫자를 바꾸면 설명 문구의 숫자(와 초과 건수)도 바뀐다 — 오픈 승인 「SLA N영업일」 · 1:1 「기한 N시간」")
+    void dynamicNotesFollowSettings() throws Exception {
+        purchase(creamVariant, 1);
+        seedPost(groupBuy.getId(), GroupBuyPostReviewStatus.APPROVED, false); // 제출 5시간 전 · 승인 2시간 전
+        LocalDateTime answeredAt = LocalDateTime.now().minusMinutes(30);
+        answeredInquiry(answeredAt.minusHours(13), answeredAt);                // 13시간 — 24시간 안 · 12시간 밖
+
+        assertThat(note("GROUP_BUY", "OPEN_REVIEW_DAYS")).isEqualTo("SLA 3영업일 · 초과 0건");
+        assertThat(note("OPERATION", "INQUIRY_FIRST_ANSWER_HOURS")).isEqualTo("기한 24시간 · 초과 0건");
+
+        int openReviewSla = groupBuyProperties.getOpenReview().getSlaBusinessDays();
+        int inquirySlaHours = adminProperties.getInquirySlaHours();
+        try {
+            groupBuyProperties.getOpenReview().setSlaBusinessDays(5);
+            adminProperties.setInquirySlaHours(12);
+            clearMetricsCache();
+
+            assertThat(note("GROUP_BUY", "OPEN_REVIEW_DAYS")).isEqualTo("SLA 5영업일 · 초과 0건");
+            assertThat(note("OPERATION", "INQUIRY_FIRST_ANSWER_HOURS")).isEqualTo("기한 12시간 · 초과 1건");
+        } finally {
+            groupBuyProperties.getOpenReview().setSlaBusinessDays(openReviewSla);
+            adminProperties.setInquirySlaHours(inquirySlaHours);
+            clearMetricsCache();
+        }
+    }
+
+    private String note(String tab, String key) throws Exception {
+        return rows(json(adminGet(METRICS + week() + "&tab=" + tab).andExpect(status().isOk()))).get(key).get("note").asText();
     }
 
     @Test

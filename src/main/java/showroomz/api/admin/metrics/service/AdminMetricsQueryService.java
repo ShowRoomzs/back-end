@@ -91,12 +91,15 @@ public class AdminMetricsQueryService {
         return badges;
     }
 
-    /** 탭 배지가 세는 지표 — 표 줄 + 핵심 탭은 4칸까지(시안 21 「4칸 포함」). 표 줄과 4칸에 같은 지표가 있으면 한 번만 센다. */
+    /** 탭 배지가 세는 지표 — 표 줄 + 핵심 탭은 4칸까지(시안 21 「4칸 포함」). */
     static List<MetricKey> badgeKeys(MetricsTab tab) {
-        Set<MetricKey> keys = new LinkedHashSet<>(TAB_ROWS.get(tab));
-        if (tab == MetricsTab.CORE) {
-            keys.addAll(CORE_CARDS);
-        }
+        return badgeKeys(TAB_ROWS.get(tab), tab == MetricsTab.CORE ? CORE_CARDS : List.of());
+    }
+
+    /** 표 줄 + 4칸 — 같은 지표가 둘 다에 있으면 한 번만 센다(표 줄 순서 뒤에 4칸에만 있는 지표). */
+    static List<MetricKey> badgeKeys(List<MetricKey> rows, List<MetricKey> cards) {
+        Set<MetricKey> keys = new LinkedHashSet<>(rows);
+        keys.addAll(cards);
         return List.copyOf(keys);
     }
 

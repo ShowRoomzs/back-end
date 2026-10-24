@@ -97,6 +97,48 @@ class MetricsPeriodResolverTest {
             assertThat(r.compareTo()).isEqualTo(d("2026-10-01"));
         }
 
+        /**
+         * 기본(M1)으로 이번 달 1일에 들어오면 「1일 ~ 어제」의 어제가 전월이다 — 빈 기간([1일, 1일)) · 역전 기간이 아니라 지난달 전체를 보고,
+         * 비교는 그 전달 전체다. 연 경계(1월 1일) · 짧은 달(3월 1일 — 비교가 2월) · 1일 자정 직후도 같은 규칙이다.
+         */
+        @Test
+        @DisplayName("[56 D7-03] 기본(preset 생략) · 이번 달 1일 — 어제가 전월이어도 빈 기간 · 역전 기간이 아니다(지난달 전체 · 비교 = 그 전달 전체)")
+        void defaultOnFirstDayOfMonthIsNotEmpty() {
+            record Case(String now, String from, String to, String compareFrom, String compareTo, String label,
+                        String compareLabel) {
+            }
+            List<Case> cases = List.of(
+                    new Case("2026-11-01T09:00:00", "2026-10-01", "2026-11-01", "2026-09-01", "2026-10-01",
+                            "10.01 ~ 10.31 (31일)", "전월 09.01 ~ 09.30 (30일)"),
+                    new Case("2026-11-01T00:00:00", "2026-10-01", "2026-11-01", "2026-09-01", "2026-10-01",
+                            "10.01 ~ 10.31 (31일)", "전월 09.01 ~ 09.30 (30일)"),
+                    new Case("2027-01-01T08:00:00", "2026-12-01", "2027-01-01", "2026-11-01", "2026-12-01",
+                            "12.01 ~ 12.31 (31일)", "전월 11.01 ~ 11.30 (30일)"),
+                    new Case("2027-03-01T10:00:00", "2027-02-01", "2027-03-01", "2027-01-01", "2027-02-01",
+                            "02.01 ~ 02.28 (28일)", "전월 01.01 ~ 01.31 (31일)"));
+
+            for (Case c : cases) {
+                LocalDateTime now = LocalDateTime.parse(c.now());
+                MetricsPeriodResolver.Resolved r = resolver.resolve(null, null, null, now);
+
+                assertThat(r).as(c.now()).isEqualTo(resolver.resolve(MetricsPreset.M1, null, null, now));
+                assertThat(r.preset()).as(c.now()).isEqualTo(MetricsPreset.M1);
+                assertThat(r.from()).as(c.now()).isEqualTo(d(c.from()));
+                assertThat(r.to()).as(c.now()).isEqualTo(d(c.to()));
+                assertThat(r.compareFrom()).as(c.now()).isEqualTo(d(c.compareFrom()));
+                assertThat(r.compareTo()).as(c.now()).isEqualTo(d(c.compareTo()));
+                // 빈 기간 · 역전 기간이 아니다 — 현재 · 비교 모두 시작 < 끝, 비교는 현재 앞에서 끝난다
+                assertThat(r.from()).as(c.now()).isBefore(r.to());
+                assertThat(r.compareFrom()).as(c.now()).isBefore(r.compareTo());
+                assertThat(r.compareTo()).as(c.now()).isEqualTo(r.from());
+                assertThat(r.to()).as(c.now()).isBeforeOrEqualTo(now);
+                assertThat(r.label()).as(c.now()).isEqualTo(c.label());
+                assertThat(r.compareLabel()).as(c.now()).isEqualTo(c.compareLabel());
+                // 차트 칸도 비지 않는다 — 지난달 일수만큼 일별 칸
+                assertThat(MetricsPeriodResolver.buckets(r.from(), r.to(), r.unit())).as(c.now()).hasSize((int) r.days());
+            }
+        }
+
         @Test
         @DisplayName("M1 · 3월 31일 — 비교 끝은 2월 말일로 맞춰진다")
         void monthEndClampsCompare() {
