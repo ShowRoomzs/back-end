@@ -974,6 +974,45 @@ class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
             assertNavigation(navigation(reported, "tab", "REPORTED"), null, null);
         }
 
+        @Test
+        @DisplayName("[NV-04 · 55 A7-04] 쇼룸 좁히기(showroomId) — 그 쇼룸 목록 안의 앞 · 뒤만 센다(사이의 다른 쇼룸 게시물은 건너뛴다) · "
+                + "좁힌 목록 밖 게시물은 앞뒤가 없다 · 탭 · 정렬과 함께 걸린다")
+        void showroomNarrowingDecidesNeighbors() throws Exception {
+            Long s1 = publish(soyeon, "소연 첫 글", LocalDateTime.now().minusDays(5));
+            Long h1 = publish(harin, "하린 첫 글", LocalDateTime.now().minusDays(4));
+            Long s2 = publish(soyeon, "소연 둘째 글", LocalDateTime.now().minusDays(3));
+            Long h2 = publish(harin, "하린 둘째 글", LocalDateTime.now().minusDays(2));
+            Long s3 = publish(soyeon, "소연 셋째 글", LocalDateTime.now().minusDays(1));
+            String soyeonId = String.valueOf(soyeon.getId());
+
+            // 좁히지 않으면 사이에 하린 게시물이 끼어 있다
+            assertNavigation(navigation(s2, "sort", "LATEST"), h2, h1);
+
+            // 소연 쇼룸으로 좁히면 그 쇼룸 목록 순서의 앞 · 뒤
+            assertThat(postIds(list("showroomId", soyeonId, "sort", "LATEST"))).containsExactly(s3, s2, s1);
+            assertNavigation(navigation(s2, "showroomId", soyeonId, "sort", "LATEST"), s3, s1);
+            assertNavigation(navigation(s3, "showroomId", soyeonId, "sort", "LATEST"), null, s2);
+            assertNavigation(navigation(s1, "showroomId", soyeonId, "sort", "LATEST"), s2, null);
+            // 하린 쇼룸으로 좁히면 하린 게시물끼리
+            assertNavigation(navigation(h1, "showroomId", String.valueOf(harin.getId()), "sort", "LATEST"), h2, null);
+
+            // 좁힌 목록 밖 — 다른 쇼룸의 게시물은 앞뒤가 없다
+            assertNavigation(navigation(h1, "showroomId", soyeonId, "sort", "LATEST"), null, null);
+            assertNavigation(navigation(h2, "showroomId", soyeonId), null, null);
+
+            // 정렬 생략(조치 필요 우선) — 신고 접수가 맨 앞, 나머지는 최신순
+            report(s1, "nv-d", "한지준", LocalDateTime.now().minusHours(5));
+            report(h1, "nv-e", "오서린", LocalDateTime.now().minusHours(1));
+            assertThat(postIds(list("showroomId", soyeonId))).containsExactly(s1, s3, s2);
+            assertNavigation(navigation(s3, "showroomId", soyeonId), s1, s2);
+
+            // 탭과 함께 — 신고 접수 탭 안에서도 그 쇼룸 것만
+            assertThat(postIds(list("tab", "REPORTED"))).containsExactly(s1, h1);
+            assertNavigation(navigation(s1, "tab", "REPORTED"), null, h1);
+            assertThat(postIds(list("tab", "REPORTED", "showroomId", soyeonId))).containsExactly(s1);
+            assertNavigation(navigation(s1, "tab", "REPORTED", "showroomId", soyeonId), null, null);
+        }
+
         private JsonNode navigation(Long postId, String... params) throws Exception {
             JsonNode navigation = adminJson(ADMIN_POSTS + "/" + postId, params).get("navigation");
             assertThat(navigation).as("navigation 블록은 항상 있다").isNotNull();
