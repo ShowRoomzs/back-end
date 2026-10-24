@@ -5,10 +5,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import showroomz.api.common.settlement.SettlementTestSupport;
+import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
+import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.member.seller.entity.SellerApplication;
+import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.service.SettlementClawbackService;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.config.properties.AdminProperties;
+import showroomz.support.BrandFixture;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,6 +38,8 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
     private static final DateTimeFormatter MD = DateTimeFormatter.ofPattern("MM.dd");
 
     @Autowired private SettlementClawbackService clawbackService;
+    @Autowired private SellerApplicationRepository sellerApplications;
+    @Autowired private AdminProperties adminProperties;
 
     @Test
     @DisplayName("AD-01 입점 심사 — 마감(신청 + 3영업일)이 지났으면 기한 초과 · 다음 영업일이면 D-1 · 나머지는 대기 1행")
@@ -248,6 +257,78 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         assertThat(row.get("detail").asText()).isEqualTo("CLW-0001 · " + String.format("%,d원", unrecoverable));
     }
 
+    @Test
+    @DisplayName("[55 A3-03] 입점 심사 · 오픈 승인 대기 행 보조줄 — 위로 올라간 건별 행 수를 「기한 초과 N건 · 기한 임박 N건은 위에」로 적고 "
+            + "0인 쪽은 빼며, 올라간 행이 없으면 보조줄이 없다")
+    void deadlinedWaitingRowDetails() throws Exception {
+        // 오픈 승인 — 기한 초과 2 · 대기 1(기한 임박 없음)
+        for (int i = 0; i < 2; i++) {
+            GroupBuy overdue = seedIn(GroupBuyStatus.PREPARING);
+            seedPost(overdue.getId(), GroupBuyPostReviewStatus.PENDING, false);
+            jdbc.update("UPDATE group_buy_post SET submitted_at = ? WHERE group_buy_id = ?",
+                    LocalDateTime.now().minusDays(14 + i), overdue.getId());
+        }
+        GroupBuy fresh = seedIn(GroupBuyStatus.PREPARING);
+        seedPost(fresh.getId(), GroupBuyPostReviewStatus.PENDING, false);
+        // 브랜드 입점 심사 — 기한 임박(D-1) 1 · 대기 1(기한 초과 없음)
+        seedSellerApplication("due-soon-brand", "임박브랜드", dueSoonCreatedDate().atTime(9, 0));
+        seedSellerApplication("waiting-brand", "여유브랜드", LocalDateTime.now());
+        // 인플루언서 입점 심사 — 대기 1뿐
+        seedCreatorApplication("only-waiting-app", LocalDateTime.now());
+
+        JsonNode todo = json(adminGet(HOME).andExpect(status().isOk())).get("todo");
+
+        List<JsonNode> openReview = rowsOf(todo, "OPEN_REVIEW");
+        assertThat(openReview).extracting(r -> r.get("urgency").asText()).containsExactly("OVERDUE", "OVERDUE", "WAITING");
+        assertThat(openReview.get(2).get("title").asText()).isEqualTo("오픈 승인");
+        assertThat(openReview.get(2).get("count").asLong()).isEqualTo(1);
+        assertThat(openReview.get(2).get("detail").asText()).isEqualTo("기한 초과 2건은 위에");
+
+        List<JsonNode> brandApplication = rowsOf(todo, "BRAND_APPLICATION");
+        assertThat(brandApplication).extracting(r -> r.get("urgency").asText()).containsExactly("DUE_SOON", "WAITING");
+        assertThat(brandApplication.get(0).get("title").asText()).isEqualTo("브랜드 입점 심사 · 임박브랜드");
+        assertThat(brandApplication.get(1).get("count").asLong()).isEqualTo(1);
+        assertThat(brandApplication.get(1).get("detail").asText()).isEqualTo("기한 임박 1건은 위에");
+
+        List<JsonNode> creatorApplication = rowsOf(todo, "CREATOR_APPLICATION");
+        assertThat(creatorApplication).extracting(r -> r.get("urgency").asText()).containsExactly("WAITING");
+        assertThat(textOrNull(creatorApplication.get(0), "detail")).as("위로 올라간 행이 없으면 보조줄 없음").isNull();
+    }
+
+    @Test
+    @DisplayName("[55 A3-04] 세금계산서 발행 대기 행 보조줄 — 「브랜드 N곳 · 홈택스 수동 · MM.dd 마감」은 대기 문서만 센다(같은 브랜드는 1곳 · "
+            + "기한 임박으로 올라간 문서의 브랜드 · 마감은 빠진다) · 마감이 없으면 마감 문구를 뺀다")
+    void taxInvoiceWaitingRowDetail() throws Exception {
+        LocalDate today = LocalDate.now();
+        BrandFixture.Brand mood = fixture.createBrand("mood-tax@showroomz.test", "무드코스메틱");
+        BrandFixture.Brand pure = fixture.createBrand("pure-tax@showroomz.test", "퓨어랩");
+        Settlement glowLater = seedSettlement("글로우 여유 공구 1", 1_000_000, SettlementStatus.PAID);
+        Settlement glowEarlier = seedSettlement("글로우 여유 공구 2", 1_000_000, SettlementStatus.PAID);
+        Settlement moodWaiting = settlementOf(mood, "무드 여유 공구");
+        Settlement pureUrgent = settlementOf(pure, "퓨어 임박 공구");
+        seedBrandInvoice(glowLater, today.plusDays(40));
+        seedBrandInvoice(glowEarlier, today.plusDays(30));
+        seedBrandInvoice(moodWaiting, today.plusDays(50));
+        LocalDate urgentDue = businessCalendar.addBusinessDays(today, 2);
+        seedBrandInvoice(pureUrgent, urgentDue);
+
+        List<JsonNode> rows = rowsOf(json(adminGet(HOME).andExpect(status().isOk())).get("todo"), "TAX_INVOICE_ISSUE");
+        assertThat(rows).extracting(r -> r.get("urgency").asText()).containsExactly("DUE_SOON", "WAITING");
+        assertThat(rows.get(0).get("dueText").asText()).isEqualTo("마감 " + urgentDue.format(MD));
+        JsonNode waiting = rows.get(1);
+        assertThat(waiting.get("count").asLong()).isEqualTo(3);
+        // 글로우랩 2건은 1곳 · 무드 1곳 — 퓨어랩(기한 임박 행)은 세지 않고, 마감도 퓨어랩의 더 이른 날이 아니라 대기 문서 중 가장 이른 날
+        assertThat(waiting.get("detail").asText())
+                .isEqualTo("브랜드 2곳 · 홈택스 수동 · " + today.plusDays(30).format(MD) + " 마감");
+
+        // 대기 문서에 마감이 없으면 마감 문구만 빠진다
+        jdbc.update("UPDATE settlement_tax_document SET due_date = NULL WHERE settlement_id IN (?, ?, ?)",
+                glowLater.getId(), glowEarlier.getId(), moodWaiting.getId());
+        List<JsonNode> undated = rowsOf(json(adminGet(HOME)).get("todo"), "TAX_INVOICE_ISSUE");
+        assertThat(undated).extracting(r -> r.get("urgency").asText()).containsExactly("DUE_SOON", "WAITING");
+        assertThat(undated.get(1).get("detail").asText()).isEqualTo("브랜드 2곳 · 홈택스 수동");
+    }
+
     // ------------------------------------------------------------------ 픽스처
 
     private void seedChangeRequest(String code, String requesterType, String type, Long marketId, Long creatorId) {
@@ -284,5 +365,38 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         jdbc.update("INSERT INTO settlement_tax_document (settlement_id, type, status, supply_amount, vat_amount, total_amount, "
                         + "due_date, created_at) VALUES (?, 'BRAND_TAX_INVOICE', 'PENDING_ISSUE', 100000, 10000, 110000, ?, ?)",
                 settlement.getId(), dueDate, LocalDateTime.now().minusDays(3));
+    }
+
+    /** {@code owner} 몫 정산 — 시드 브랜드의 종료 공구로 만든 뒤 마켓만 옮긴다(보조줄의 브랜드 수는 정산의 market_id 로 센다). */
+    private Settlement settlementOf(BrandFixture.Brand owner, String title) {
+        Settlement s = seedSettlement(title, 1_000_000, SettlementStatus.PAID);
+        jdbc.update("UPDATE settlement SET market_id = ? WHERE settlement_id = ?", owner.marketId(), s.getId());
+        return s;
+    }
+
+    /** 입점 신청 대기 — 신청 화면이 만드는 행을 그대로 두고 신청 시각만 옮긴다. */
+    private void seedSellerApplication(String account, String marketName, LocalDateTime createdAt) {
+        BrandFixture.Brand applicant = fixture.createBrand(account + "@showroomz.test", marketName);
+        SellerApplication application = sellerApplications.save(
+                SellerApplication.createFrom(applicant.seller(), marketName, "02-1234-5678"));
+        jdbc.update("UPDATE seller_application SET created_at = ? WHERE seller_application_id = ?", createdAt,
+                application.getId());
+    }
+
+    /** 마감(신청 + 입점 SLA 영업일)이 다음 영업일이 되는 신청일 — 기한 임박(D-1) 행을 만든다. */
+    private LocalDate dueSoonCreatedDate() {
+        int sla = adminProperties.getOnboardingSlaBusinessDays();
+        LocalDate nextBusinessDay = businessCalendar.addBusinessDays(LocalDate.now(), 1);
+        LocalDate created = LocalDate.now();
+        for (int guard = 0; !businessCalendar.addBusinessDays(created, sla).equals(nextBusinessDay); guard++) {
+            assertThat(guard).as("마감이 다음 영업일인 신청일을 찾지 못했다").isLessThan(30);
+            created = created.minusDays(1);
+        }
+        return created;
+    }
+
+    private static String textOrNull(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        return value == null || value.isNull() ? null : value.asText();
     }
 }
