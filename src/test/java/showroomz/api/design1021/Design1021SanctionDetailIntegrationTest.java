@@ -1,5 +1,6 @@
 package showroomz.api.design1021;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -366,6 +367,156 @@ class Design1021SanctionDetailIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
                 .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt")
                         .value(single(brandSanction.getAppealDeadlineAt().toLocalDate() + "T23:59:59")));
+    }
+
+    @Test
+    @DisplayName("[56 B1-02] 브랜드 정지(종료일 지정) → 파트너 운영팀 채널 정지 카드 — 10.08 14:20 통지 · 종료일 10.21 · 자동 해제 10.22 00:00 · "
+            + "14일 · 이의 신청 기한 10.14(한글날 제외 3영업일) · 어드민 카드도 같은 값")
+    void brandSuspensionCardCarriesTerm() throws Exception {
+        fixHolidays();
+        LocalDateTime notifiedAt = LocalDateTime.of(2026, 10, 8, 14, 20);
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, LocalDate.of(2026, 10, 21), operator.getId(), "운영자", notifiedAt));
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                sellerGet("/v1/seller/threads/" + brandChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + brandChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value("BRAND"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".reasonCode").value("PRODUCT_INFO_FALSIFIED"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value("2026-10-21"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").value(single("2026-10-22T00:00:00")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(14))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single("2026-10-14T23:59:59")));
+        }
+    }
+
+    @Test
+    @DisplayName("[56 B1-03] 종료일 없는 정지 카드 — 스튜디오 · 어드민(인플루언서 채널) · 어드민(브랜드 채널) 모두 종료일 · 자동 해제 · 기간 일수가 "
+            + "비고 이의 신청 기한(10.08 통지 → 10.14)만 있다")
+    void indefiniteSuspensionCardHasOnlyAppealDeadline() throws Exception {
+        fixHolidays();
+        LocalDateTime notifiedAt = LocalDateTime.of(2026, 10, 8, 14, 20);
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.CONSUMER_RESPONSE_NEGLECT, null, null, operator.getId(), "운영자", notifiedAt));
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.REPEATED_SHIPPING_DELAY,
+                null, null, operator.getId(), "운영자", notifiedAt));
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+
+        Map<String, org.springframework.test.web.servlet.ResultActions> surfaces = Map.of(
+                "CREATOR", creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"),
+                "CREATOR(admin)", adminGet("/v1/admin/threads/" + creatorChannel + "/messages"),
+                "BRAND(admin)", adminGet("/v1/admin/threads/" + brandChannel + "/messages"));
+        for (var surface : surfaces.entrySet()) {
+            surface.getValue().andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".memberType").value(surface.getKey().replace("(admin)", "")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single("2026-10-14T23:59:59")));
+        }
+    }
+
+    @Test
+    @DisplayName("[56 B1-04] 해제 카드는 기간 칸이 빈 값(파트너 · 어드민) · 이 변경 전에 쌓인 정지 카드는 payload 에 저장된 값 그대로(지금 정지 행이 아니라 "
+            + "카드 스냅샷) · 기간을 담지 않던 1017 카드는 빈 값")
+    void releasedAndLegacySuspensionCards() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDate brandEndsOn = now.toLocalDate().plusDays(6);
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, brandEndsOn, operator.getId(), "운영자", now));
+        inTransaction(() -> brandSanctionService.release(brand.marketId(), SanctionReleaseReason.RESOLVED, null,
+                operator.getId(), "운영자", now.plusMinutes(1)));
+        Long brandChannel = operatorChannels.findMarketChannelThreadId(brand.market()).orElseThrow();
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                sellerGet("/v1/seller/threads/" + brandChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + brandChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(RELEASED_CARD + ".memberType").value("BRAND"))
+                    .andExpect(jsonPath(RELEASED_CARD + ".reasonCode").value("RESOLVED"))
+                    .andExpect(jsonPath(RELEASED_CARD + ".endsOn").doesNotExist())
+                    .andExpect(jsonPath(RELEASED_CARD + ".autoReleaseAt").doesNotExist())
+                    .andExpect(jsonPath(RELEASED_CARD + ".periodDays").doesNotExist())
+                    .andExpect(jsonPath(RELEASED_CARD + ".appealDeadlineAt").doesNotExist())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value(brandEndsOn.toString()))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(7));
+        }
+
+        // 정지 행은 지금 기준(종료일 +13)이지만 카드는 1021 때 저장된 10.08 통지 스냅샷 — 저장된 값이 그대로 나온다
+        CreatorSanction sanction = inTransaction(() -> creatorSanctionService.suspend(creator.getId(),
+                CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE, null, now.toLocalDate().plusDays(13), operator.getId(),
+                "운영자", now));
+        String label = CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE.getLabel();
+        jdbc.update("UPDATE message SET card_payload = ? WHERE message_id = ?", ("{\"reasonLabel\":\"%s\","
+                + "\"processedAt\":\"2026-10-08T14:20:00\",\"operatorId\":%d,\"sanction\":{\"memberType\":\"CREATOR\","
+                + "\"reasonCode\":\"GROUP_BUY_NONPERFORMANCE\",\"reasonLabel\":\"%s\",\"payoutHeld\":true,"
+                + "\"endsOn\":\"2026-10-21\",\"appealDeadlineAt\":\"2026-10-14T23:59:59\"}}")
+                .formatted(label, operator.getId(), label), sanction.getSuspendCardId());
+        Long creatorChannel = operatorChannels.findCreatorChannelThreadId(creator).orElseThrow();
+        for (var messages : new org.springframework.test.web.servlet.ResultActions[]{
+                creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"),
+                adminGet("/v1/admin/threads/" + creatorChannel + "/messages")}) {
+            messages.andExpect(status().isOk())
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".reasonCode").value("GROUP_BUY_NONPERFORMANCE"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").value("2026-10-21"))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").value(single("2026-10-22T00:00:00")))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").value(14))
+                    .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").value(single("2026-10-14T23:59:59")));
+        }
+
+        // 1017 카드 — 사유 블록은 있지만 기간 · 기한을 담지 않았다
+        jdbc.update("UPDATE message SET card_payload = ? WHERE message_id = ?", ("{\"reasonLabel\":\"%s\","
+                + "\"processedAt\":\"2026-10-08T14:20:00\",\"operatorId\":%d,\"sanction\":{\"memberType\":\"CREATOR\","
+                + "\"reasonCode\":\"GROUP_BUY_NONPERFORMANCE\",\"reasonLabel\":\"%s\",\"payoutHeld\":true}}")
+                .formatted(label, operator.getId(), label), sanction.getSuspendCardId());
+        creatorGet("/v1/creator/threads/" + creatorChannel + "/messages").andExpect(status().isOk())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".reasonCode").value("GROUP_BUY_NONPERFORMANCE"))
+                .andExpect(jsonPath(SUSPENDED_CARD + ".endsOn").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".autoReleaseAt").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".periodDays").doesNotExist())
+                .andExpect(jsonPath(SUSPENDED_CARD + ".appealDeadlineAt").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("[56 B1-05] 같은 정지의 운영팀 채널 카드 = 계정 상태 term — 파트너 · 스튜디오 각각 이의 신청 기한 · 종료일 · 자동 해제 · 기간 일수가 같다"
+            + "(어드민 카드도)")
+    void suspensionCardMatchesAccountStatusTerm() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        inTransaction(() -> brandSanctionService.suspend(brand.marketId(), BrandSuspensionReason.PRODUCT_INFO_FALSIFIED,
+                null, now.toLocalDate().plusDays(6), operator.getId(), "운영자", now));
+        inTransaction(() -> creatorSanctionService.suspend(creator.getId(), CreatorSuspensionReason.GROUP_BUY_NONPERFORMANCE,
+                null, now.toLocalDate().plusDays(2), operator.getId(), "운영자", now));
+
+        JsonNode brandAccount = json(sellerGet("/v1/seller/account-status").andExpect(status().isOk())).get("sanction");
+        Long brandChannel = brandAccount.get("operatorChannelThreadId").asLong();
+        assertCardMatchesTerm(brandAccount, sellerGet("/v1/seller/threads/" + brandChannel + "/messages"));
+        assertCardMatchesTerm(brandAccount, adminGet("/v1/admin/threads/" + brandChannel + "/messages"));
+
+        JsonNode creatorAccount = json(creatorGet("/v1/creator/account-status").andExpect(status().isOk())).get("sanction");
+        Long creatorChannel = creatorAccount.get("operatorChannelThreadId").asLong();
+        assertCardMatchesTerm(creatorAccount, creatorGet("/v1/creator/threads/" + creatorChannel + "/messages"));
+        assertCardMatchesTerm(creatorAccount, adminGet("/v1/admin/threads/" + creatorChannel + "/messages"));
+    }
+
+    /** 계정 상태의 {@code suspendCardMessageId} 카드를 찾아 기간 네 값이 {@code term} 과 같은지 본다. */
+    private void assertCardMatchesTerm(JsonNode accountSanction,
+                                       org.springframework.test.web.servlet.ResultActions messages) throws Exception {
+        JsonNode term = accountSanction.get("term");
+        long cardId = accountSanction.get("suspendCardMessageId").asLong();
+        JsonNode card = null;
+        for (JsonNode message : json(messages.andExpect(status().isOk())).get("content")) {
+            if (message.get("messageId").asLong() == cardId) {
+                card = message.at("/card/detail/sanction");
+            }
+        }
+        assertThat(card).as("정지 카드 " + cardId).isNotNull();
+        assertThat(term.get("appealDeadlineAt").isNull()).isFalse();
+        assertThat(card.get("appealDeadlineAt").asText()).isEqualTo(term.get("appealDeadlineAt").asText());
+        assertThat(card.get("endsOn").asText()).isEqualTo(term.get("endsOn").asText());
+        assertThat(card.get("autoReleaseAt").asText()).isEqualTo(term.get("autoReleaseAt").asText());
+        assertThat(card.get("periodDays").asInt()).isEqualTo(term.get("periodDays").asInt());
     }
 
     // ------------------------------------------------------------------ helpers
