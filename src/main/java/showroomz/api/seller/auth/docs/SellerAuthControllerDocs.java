@@ -840,7 +840,7 @@ public interface SellerAuthControllerDocs {
     @Operation(
             summary = "판매자 회원 탈퇴",
             description = "인증된 판매자의 회원 탈퇴를 처리합니다. 판매자 계정과 관련된 모든 리프레시 토큰, 마켓 정보가 삭제됩니다.\n\n" +
-                    "**브랜드(SELLER)는 즉시 탈퇴할 수 없습니다** — 409 `BRAND_WITHDRAWAL_REQUIRES_REQUEST`. 브랜드 탈퇴는 신청 → 운영자 승인제입니다(§51-5 · 52 설계서 0-5).\n\n" +
+                    "**브랜드(SELLER)는 즉시 탈퇴할 수 없습니다** — 409 `BRAND_WITHDRAWAL_REQUIRES_REQUEST`. 브랜드 탈퇴는 신청 → 운영자 승인제입니다(§51-5 · 52 설계서 0-5). 신청은 `POST /v1/seller/basic-info/withdrawal-requests`, 조건 · 상태는 `GET /v1/seller/basic-info/account` 의 `withdrawal` 입니다(51 설계서).\n\n" +
                     "**권한:** SELLER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
