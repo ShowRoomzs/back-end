@@ -63,7 +63,7 @@ class AdminPostActionScenarioIntegrationTest extends AdminPostScenarioSupport {
             assertThat(suspension).containsEntry("reason_code", "MISLEADING_INFO")
                     .containsEntry("reason_detail", "효과를 단정하는 표현이 있습니다.")
                     .containsEntry("policy_clause_code", "ARTICLE_3_2")
-                    .containsEntry("policy_ref", "커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현")
+                    .containsEntry("policy_ref", "서비스 운영정책 — 커뮤니티 장 3조 2항 — 효과 · 가격 오인 표현")
                     .containsEntry("suspended_by", operator.getId())
                     .containsEntry("resolution", null);
             LocalDateTime suspendedAt = ((java.sql.Timestamp) suspension.get("suspended_at")).toLocalDateTime();
@@ -79,7 +79,7 @@ class AdminPostActionScenarioIntegrationTest extends AdminPostScenarioSupport {
             assertThat(payload.get("reasonLabel").asText()).isEqualTo("허위 · 과장 정보");
             assertThat(payload.get("reasonDetail").asText()).isEqualTo("효과를 단정하는 표현이 있습니다.");
             assertThat(payload.get("policyClauseCode").asText()).isEqualTo("ARTICLE_3_2");
-            assertThat(payload.get("policyRef").asText()).isEqualTo("커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현");
+            assertThat(payload.get("policyRef").asText()).isEqualTo("서비스 운영정책 — 커뮤니티 장 3조 2항 — 효과 · 가격 오인 표현");
             assertThat(payload.get("suspendedBy").asLong()).isEqualTo(operator.getId());
             assertThat(payload.hasNonNull("suspendedAt")).isTrue();
             assertThat(payload.hasNonNull("appealDeadline")).isTrue();

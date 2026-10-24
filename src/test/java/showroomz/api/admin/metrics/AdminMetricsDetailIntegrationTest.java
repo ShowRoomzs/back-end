@@ -12,7 +12,14 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.member.creator.entity.CreatorFollow;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.post.entity.Post;
+import showroomz.domain.post.entity.PostReport;
+import showroomz.domain.post.repository.PostReportRepository;
+import showroomz.domain.post.repository.PostRepository;
+import showroomz.domain.post.type.PostPolicyClause;
+import showroomz.domain.post.type.PostReportReason;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -32,6 +39,8 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
 
     @Autowired private AdminMetricsQueryService metricsQueryService;
     @Autowired private CreatorFollowRepository creatorFollowRepository;
+    @Autowired private PostRepository postRepository;
+    @Autowired private PostReportRepository postReportRepository;
 
     /** 지표는 같은 기간을 10분 캐시한다 — 테스트마다 데이터가 다르므로 비운다. */
     @BeforeEach
@@ -159,6 +168,23 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
                 + "&to=" + LocalDate.now() + "&tab=SUPPLY").andExpect(status().isOk())));
         assertThat(week.get("ACTIVE_CREATORS").get("note").asText()).isEqualTo("신규 1 · 재공구 0");
         assertThat(week.get("ACTIVE_BRANDS").get("note").asText()).isEqualTo("신규 1 · 재공구 0");
+    }
+
+    @Test
+    @DisplayName("MD-09 운영 — 게시물 신고율 설명은 「신고 N ÷ 게시물 M · 근거 서비스 운영정책 — 커뮤니티 장」이다(55 계획서 A15)")
+    void postReportRateNote() throws Exception {
+        Post post = postRepository.save(Post.published(creatorRepository.findById(creator.getId()).orElseThrow(),
+                "신고될 게시물", new BigDecimal("0.8000"), LocalDateTime.now().minusDays(1)));
+        postReportRepository.save(new PostReport(post, userRepository.findById(consumer.getId()).orElseThrow(),
+                PostReportReason.MISLEADING_INFO, null, LocalDateTime.now().minusMinutes(10)));
+
+        JsonNode reportRate = rows("TODAY", "OPERATION").get("POST_REPORT_RATE");
+        String[] count = reportRate.get("currentCount").asText().split("/");
+        assertThat(count[0]).isEqualTo("1");
+        assertThat(Long.parseLong(count[1])).isGreaterThanOrEqualTo(1);
+        assertThat(reportRate.get("note").asText())
+                .isEqualTo("신고 1 ÷ 게시물 " + count[1] + " · 근거 서비스 운영정책 — 커뮤니티 장")
+                .endsWith(PostPolicyClause.POLICY_CHAPTER);
     }
 
     // ------------------------------------------------------------------ 픽스처

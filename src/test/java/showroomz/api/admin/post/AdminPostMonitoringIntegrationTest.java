@@ -204,7 +204,7 @@ class AdminPostMonitoringIntegrationTest extends IntegrationTestSupport {
                     .andExpect(jsonPath("$.monitoringStatus").value("SUSPENDED"))
                     .andExpect(jsonPath("$.suspensions[0].open").value(true))
                     .andExpect(jsonPath("$.suspensions[0].policyClauseCode").value("ARTICLE_3_2"))
-                    .andExpect(jsonPath("$.suspensions[0].policyRef").value("커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현"))
+                    .andExpect(jsonPath("$.suspensions[0].policyRef").value("서비스 운영정책 — 커뮤니티 장 3조 2항 — 효과 · 가격 오인 표현"))
                     .andExpect(jsonPath("$.suspensions[0].suspendedByName").value("김운영"))
                     .andExpect(jsonPath("$.suspensions[0].appealDeadline").isNotEmpty())
                     .andExpect(jsonPath("$.suspensions[0].notifiedAt").isNotEmpty())

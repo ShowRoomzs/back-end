@@ -111,13 +111,14 @@ public class AdminPostDto {
         private boolean operatorOnly;
     }
 
-    @Schema(description = "근거 규정 조항 — 운영정책 문서 확정 전 가정값")
+    @Schema(description = "근거 규정 조항 — 서비스 운영정책 커뮤니티 장. 조항 번호 · 문구는 운영정책 문서 확정 전 가정값")
     @Getter
     @AllArgsConstructor
     public static class PolicyClauseItem {
         @Schema(description = "코드", example = "ARTICLE_3_2")
         private PostPolicyClause code;
-        @Schema(description = "조항 문구", example = "커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현")
+        @Schema(description = "조항 문구 — 조치에는 선택 시점 문구가 굳는다(라벨이 바뀌어도 과거 조치는 그대로)",
+                example = "서비스 운영정책 — 커뮤니티 장 3조 2항 — 효과 · 가격 오인 표현")
         private String label;
         @Schema(description = "기본 선택 추천 사유 — 서버는 조합을 검증하지 않는다")
         private Set<PostSuspensionReason> suggestedFor;

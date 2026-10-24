@@ -543,13 +543,18 @@ class AdminPostListScenarioIntegrationTest extends AdminPostScenarioSupport {
     class Codes {
 
         @Test
-        @DisplayName("[CD-02] 근거 규정 5개 — 라벨 · FE 기본 선택용 추천 사유")
+        @DisplayName("[CD-02] 근거 규정 5개 — 라벨(서비스 운영정책 — 커뮤니티 장 · rev.7 드롭다운) · FE 기본 선택용 추천 사유")
         void policyClauses() throws Exception {
             JsonNode clauses = adminJson(ADMIN_POSTS + "/policy-clauses");
 
             assertThat(texts(clauses, "code"))
                     .containsExactly("ARTICLE_3_2", "ARTICLE_3_4", "ARTICLE_4_1", "ARTICLE_4_3", "ARTICLE_5");
-            assertThat(texts(clauses, "label")).allMatch(label -> label.startsWith("커뮤니티 운영정책 "));
+            assertThat(texts(clauses, "label")).containsExactly(
+                    "서비스 운영정책 — 커뮤니티 장 3조 2항 — 효과 · 가격 오인 표현",
+                    "서비스 운영정책 — 커뮤니티 장 3조 4항 — 의약품 · 의료기기 오인 표현",
+                    "서비스 운영정책 — 커뮤니티 장 4조 1항 — 욕설 · 혐오 표현",
+                    "서비스 운영정책 — 커뮤니티 장 4조 3항 — 타인 사칭",
+                    "서비스 운영정책 — 커뮤니티 장 5조 — 광고 · 도배");
             assertThat(suggested(clauses.get(0))).containsExactly("MISLEADING_INFO");
             assertThat(suggested(clauses.get(1))).containsExactly("MISLEADING_INFO");
             assertThat(suggested(clauses.get(2))).containsExactlyInAnyOrder("ABUSE_HATE", "SEXUAL_CONTENT");

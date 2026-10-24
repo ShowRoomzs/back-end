@@ -134,7 +134,11 @@ public interface AdminPostControllerDocs {
     ResponseEntity<List<AdminPostDto.SuspensionReasonItem>> getSuspensionReasons();
 
     @Operation(summary = "근거 규정 조항 목록 (C4)",
-            description = "운영정책 문서가 아직 없어 **가정값**이다. `suggestedFor`는 FE 기본 선택용 추천이고 서버는 조합을 검증하지 않는다.")
+            description = """
+                    조항은 「서비스 운영정책 — 커뮤니티 장」에 있다 — `label`이 이 머리말로 시작한다(rev.7). 조항 번호 · 문구는 운영정책 문서가
+                    아직 없어 **가정값**이다. 조치에는 선택 시점 문구(`policyRef`)가 굳으므로 라벨이 바뀌어도 **과거 조치는 그대로**다.
+                    `suggestedFor`는 FE 기본 선택용 추천이고 서버는 조합을 검증하지 않는다.
+                    """)
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "조회 성공"),
             @ApiResponse(responseCode = "401", description = "인증 실패",

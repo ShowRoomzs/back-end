@@ -10,6 +10,7 @@ import showroomz.domain.metrics.repository.MetricsQueryRepository;
 import showroomz.domain.metrics.repository.MetricsQueryRepository.ClaimLine;
 import showroomz.domain.metrics.repository.MetricsQueryRepository.GroupBuyLine;
 import showroomz.domain.metrics.repository.MetricsQueryRepository.PaidLine;
+import showroomz.domain.post.type.PostPolicyClause;
 import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
@@ -237,8 +238,12 @@ public class MetricsFactsCalculator {
     private void operation(Facts f) {
         f.put(MetricKey.ADJUSTMENT_REQUEST_RATE, Value.rate(repository.countAdjustmentsOpened(f.from, f.to),
                 repository.countSettlementsCreated(f.from, f.to)));
-        f.put(MetricKey.POST_REPORT_RATE, Value.rate(repository.countPostReports(f.from, f.to),
-                repository.countPublishedPosts(f.to)));
+        // 신고율 설명 — 「신고 18 ÷ 게시물 2,010 · 근거 서비스 운영정책 — 커뮤니티 장」(55 계획서 A15). 근거는 노출 중지 조항과 같은 장이다.
+        long postReports = repository.countPostReports(f.from, f.to);
+        long publishedPosts = repository.countPublishedPosts(f.to);
+        f.put(MetricKey.POST_REPORT_RATE, Value.rate(postReports, publishedPosts)
+                .withNote("신고 %,d ÷ 게시물 %,d · 근거 %s".formatted(postReports, publishedPosts,
+                        PostPolicyClause.POLICY_CHAPTER)));
         f.processedTimes = operationsRepository.processedTimes(f.from, f.to);
         double days = Math.max(1.0, Duration.between(f.from, f.to).toMinutes() / 1440.0);
         f.put(MetricKey.PROCESSED, Value.of(f.processedTimes.size())

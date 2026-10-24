@@ -215,13 +215,36 @@ class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
             assertThat(card.get("reasonLabel").asText()).isEqualTo("욕설 · 혐오 표현");
             assertThat(card.get("reasonDetail").asText()).isEqualTo("욕설 표현이 있습니다.");
             assertThat(card.get("policyClauseCode").asText()).isEqualTo("ARTICLE_4_1");
-            assertThat(card.get("policyRef").asText()).isEqualTo("커뮤니티 운영정책 4조 1항 — 욕설 · 혐오 표현");
+            assertThat(card.get("policyRef").asText()).isEqualTo("서비스 운영정책 — 커뮤니티 장 4조 1항 — 욕설 · 혐오 표현");
             assertThat(card.get("suspendedBy").asLong()).isEqualTo(operator.getId());
             assertThat(at(card.get("appealDeadline"))).isEqualTo(at(card.get("suspendedAt")).plusDays(7));
             assertThat(card.get("deadlinePaused").asBoolean()).isFalse();
             assertThat(card.get("resolution").isNull()).isTrue();
             assertThat(at(card.get("notifiedAt"))).isCloseTo(at(card.get("suspendedAt")), within(5, ChronoUnit.SECONDS));
             assertThat(card.get("notificationDelivered").asBoolean()).isFalse();
+        }
+
+        @Test
+        @DisplayName("[DT-18a] 근거 규정 라벨이 바뀌어도 과거 조치의 문구는 그 시점 스냅샷 그대로다(55 계획서 A5 · D20)")
+        void policyLabelChangeIsNotRetroactive() throws Exception {
+            Long postId = publish(soyeon, "옛 라벨 조치", LocalDateTime.now().minusDays(1));
+            suspend(postId);
+            // rev.7 이전 라벨로 굳은 조치 — 코드는 같고 문구만 옛 머리말이다
+            jdbc.update("UPDATE post_suspension SET policy_ref = ? WHERE post_id = ?",
+                    "커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현", postId);
+
+            JsonNode body = detail(postId);
+            assertThat(body.get("suspensions").get(0).get("policyClauseCode").asText()).isEqualTo("ARTICLE_3_2");
+            assertThat(body.get("suspensions").get(0).get("policyRef").asText())
+                    .isEqualTo("커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현");
+            JsonNode suspended = null;
+            for (JsonNode item : body.get("timeline")) {
+                if ("SUSPENDED".equals(item.get("type").asText())) {
+                    suspended = item;
+                }
+            }
+            assertThat(suspended).isNotNull();
+            assertThat(suspended.get("detail").asText()).isEqualTo("커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현");
         }
 
         @Test
@@ -656,7 +679,7 @@ class AdminPostDetailScenarioIntegrationTest extends AdminPostScenarioSupport {
             assertThat(count(timeline, "REPORTS_CLOSED")).isZero();
             JsonNode suspended = item(timeline, "SUSPENDED", 0);
             assertThat(suspended.get("label").asText()).isEqualTo("노출 중지 · 허위 · 과장 정보");
-            assertThat(suspended.get("detail").asText()).isEqualTo("커뮤니티 운영정책 3조 2항 — 효과 · 가격 오인 표현");
+            assertThat(suspended.get("detail").asText()).isEqualTo("서비스 운영정책 — 커뮤니티 장 3조 2항 — 효과 · 가격 오인 표현");
             assertThat(suspended.get("actorName").asText()).isEqualTo("김운영");
             assertThat(suspended.get("tone").asText()).isEqualTo("DANGER");
             JsonNode canceled = item(timeline, "SUSPENSION_CANCELED", 0);
