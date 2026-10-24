@@ -57,6 +57,12 @@ public class UserAdminController implements UserAdminControllerDocs {
     }
 
     @Override
+    @GetMapping("/reason-options")
+    public ResponseEntity<AdminUserDto.ReasonOptions> reasonOptions() {
+        return ResponseEntity.ok(adminUserService.reasonOptions());
+    }
+
+    @Override
     @GetMapping("/{userId}")
     public ResponseEntity<AdminUserDto.UserDetailResponse> getUserDetail(
             @PathVariable("userId") Long userId,

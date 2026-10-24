@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import showroomz.api.admin.user.AdminMemberNumber;
 import showroomz.api.admin.common.AdminMemberMasker;
+import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.api.admin.user.dto.AdminUserDto;
 import showroomz.api.admin.user.repository.AdminUserQueryRepository;
 import showroomz.api.admin.user.type.AdminUserSort;
@@ -19,7 +20,9 @@ import showroomz.domain.inquiry.repository.ProductInquiryRepository;
 import showroomz.domain.inquiry.type.InquiryExposureStatus;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.user.entity.Users;
+import showroomz.domain.member.user.type.UserReleaseReason;
 import showroomz.domain.member.user.type.UserStatus;
+import showroomz.domain.member.user.type.UserSuspensionReason;
 import showroomz.domain.review.repository.ReviewRepository;
 import showroomz.domain.wishlist.repository.WishlistRepository;
 import showroomz.global.dto.PaginationInfo;
@@ -27,6 +30,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -145,6 +149,19 @@ public class AdminUserService {
                 memoService.latest(user, operatorId, DETAIL_MEMO_LIMIT),
                 historyReader.summary(user, DETAIL_HISTORY_LIMIT)
         );
+    }
+
+    /**
+     * 정지 · 해제 모달의 사유 목록(55 계획서 M8) — enum 이 단일 소스라 FE 가 하드코딩하지 않는다. 행 모양은 브랜드 · 인플루언서와 같다
+     * ({@link AdminReasonOption}). 해제 사유는 상세 입력란이 없어 {@code detailRequired}가 모두 false 이고, 운영자가 고르는
+     * {@code TERM_ENDED}를 그대로 둔다(D18 — 시안 M4 3종).
+     */
+    public AdminUserDto.ReasonOptions reasonOptions() {
+        return new AdminUserDto.ReasonOptions(
+                AdminReasonOption.of(UserSuspensionReason.values()),
+                Arrays.stream(UserReleaseReason.values())
+                        .map(r -> AdminReasonOption.label(r.name(), r.getLabel()))
+                        .toList());
     }
 
     /** 처리 이력 전체(51-6 설계서 7-2) — 원천 넷을 메모리에서 합친 뒤 자른다. */

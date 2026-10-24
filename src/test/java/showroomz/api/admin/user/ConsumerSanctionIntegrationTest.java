@@ -418,6 +418,41 @@ class ConsumerSanctionIntegrationTest extends IntegrationTestSupport {
         assertThat(userRepository.findById(mia.getId()).orElseThrow().getStatus()).isEqualTo(UserStatus.WITHDRAWN);
     }
 
+    // ------------------------------------------------------------------ 모달 사유 목록(55 계획서 M8)
+
+    @Test
+    @DisplayName("사유 목록 전수 — 정지 6종(기타만 상세 필수 · 지급 정지 없음) · 해제 3종(TERM_ENDED 유지 · 상세란 없음)")
+    void reasonOptions() throws Exception {
+        JsonNode body = objectMapper.readTree(mockMvc.perform(get(ADMIN + "/reason-options")
+                        .header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+
+        assertThat(texts(body.path("suspensionReasons"), "code")).containsExactly("ABUSIVE_LANGUAGE", "RETURN_ABUSE",
+                "FRAUDULENT_ORDER_SUSPECTED", "PAYMENT_FRAUD_SUSPECTED", "MULTIPLE_REPORTS", "OTHER");
+        assertThat(texts(body.path("suspensionReasons"), "label")).containsExactly("욕설·비방", "반품 남용", "부정 주문 의심",
+                "결제 도용 의심", "신고 다수 접수", "기타(직접 입력)");
+        assertThat(texts(body.path("suspensionReasons"), "detailRequired"))
+                .containsExactly("false", "false", "false", "false", "false", "true");
+        assertThat(texts(body.path("releaseReasons"), "code")).containsExactly("RESOLVED", "MISTAKE", "TERM_ENDED");
+        assertThat(texts(body.path("releaseReasons"), "label")).containsExactly("소명 확인 완료", "오처리 정정", "제재 기간 종료");
+        assertThat(texts(body.path("releaseReasons"), "detailRequired")).containsOnly("false");
+        for (String list : List.of("suspensionReasons", "releaseReasons")) {
+            body.path(list).forEach(r -> assertThat(r.path("holdsPayout").isNull()).as(list).isTrue());
+        }
+
+        // 목록의 해제 사유는 해제 API 가 실제로 받는 값이다
+        suspend(mia, body.path("suspensionReasons").get(0).path("code").asText(), null).andExpect(status().isOk());
+        release(mia, body.path("releaseReasons").get(2).path("code").asText()).andExpect(status().isOk());
+        assertThat(sanctionRepository.findFirstByUserIdOrderBySuspendedAtDescIdDesc(mia.getId()).orElseThrow()
+                .getReleaseReason().name()).isEqualTo("TERM_ENDED");
+    }
+
+    private static List<String> texts(JsonNode array, String field) {
+        List<String> values = new java.util.ArrayList<>();
+        array.forEach(node -> values.add(node.path(field).asText()));
+        return values;
+    }
+
     // ------------------------------------------------------------------ 메모 · 처리 이력
 
     @Test

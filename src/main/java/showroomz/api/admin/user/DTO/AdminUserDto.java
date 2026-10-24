@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import showroomz.api.admin.common.AdminReasonOption;
 import showroomz.api.admin.user.service.AdminUserTradeReader;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.domain.member.user.entity.Users;
@@ -63,6 +64,14 @@ public class AdminUserDto {
 
     @Schema(description = "정지 · 해제 응답 — 갱신된 상태 카드와 처리 이력 최신 5건")
     public record StatusResult(StatusCard statusCard, HistorySummary histories) {
+    }
+
+    @Schema(name = "AdminUserReasonOptions",
+            description = "모달 셀렉트 사유 목록 — 정지(M1) · 해제(M4). 브랜드 · 인플루언서 상세와 같은 행 모양(AdminReasonOption) · 55 계획서 M8")
+    public record ReasonOptions(
+            @Schema(description = "정지 사유 6종 — 소비자 정지는 지급과 무관해 holdsPayout 은 null") List<AdminReasonOption> suspensionReasons,
+            @Schema(description = "해제 사유 3종 — TERM_ENDED(제재 기간 종료)를 운영자도 고른다(D18 · 브랜드 · 인플루언서에는 없다)")
+            List<AdminReasonOption> releaseReasons) {
     }
 
     // ------------------------------------------------------------------ 메모 · 처리 이력(51-6 설계서 7절)

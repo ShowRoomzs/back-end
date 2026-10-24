@@ -165,6 +165,40 @@ public interface UserAdminControllerDocs {
     );
 
     @Operation(
+            summary = "소비자 모달 사유 목록",
+            description = "정지 모달(M1) · 해제 모달(M4) 셀렉트의 코드와 라벨입니다 — enum 단일 소스라 FE 가 목록을 하드코딩하지 않습니다(55 계획서 M8). " +
+                    "행 모양은 브랜드 · 인플루언서 상세의 같은 API 와 같습니다(`code` · `label` · `detailRequired` · `holdsPayout`).\n\n" +
+                    "- **정지 사유 6종** — `detailRequired=true`(기타)를 고르면 `reasonDetail`이 필수입니다. 소비자 정지는 지급과 무관해 `holdsPayout`은 null 입니다.\n" +
+                    "- **해제 사유 3종** — 상세 입력란이 없어 `detailRequired`는 모두 false 입니다. `TERM_ENDED`(제재 기간 종료)를 운영자도 고를 수 있습니다 — " +
+                    "브랜드 · 인플루언서 해제 사유에는 없는 값입니다(D18). 정지 기간이 끝난 정지는 시스템이 같은 사유로 자동 해제합니다.\n\n" +
+                    "**권한:** ADMIN"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.ReasonOptions.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"suspensionReasons\": [\n" +
+                                    "    { \"code\": \"ABUSIVE_LANGUAGE\", \"label\": \"욕설·비방\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"RETURN_ABUSE\", \"label\": \"반품 남용\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"FRAUDULENT_ORDER_SUSPECTED\", \"label\": \"부정 주문 의심\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"PAYMENT_FRAUD_SUSPECTED\", \"label\": \"결제 도용 의심\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"MULTIPLE_REPORTS\", \"label\": \"신고 다수 접수\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"OTHER\", \"label\": \"기타(직접 입력)\", \"detailRequired\": true, \"holdsPayout\": null }\n" +
+                                    "  ],\n" +
+                                    "  \"releaseReasons\": [\n" +
+                                    "    { \"code\": \"RESOLVED\", \"label\": \"소명 확인 완료\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"MISTAKE\", \"label\": \"오처리 정정\", \"detailRequired\": false, \"holdsPayout\": null },\n" +
+                                    "    { \"code\": \"TERM_ENDED\", \"label\": \"제재 기간 종료\", \"detailRequired\": false, \"holdsPayout\": null }\n" +
+                                    "  ]\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "401", description = "인증 실패",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<AdminUserDto.ReasonOptions> reasonOptions();
+
+    @Operation(
             summary = "소비자 상세 조회",
             description = "소비자 상세입니다. 주문 내역은 추후 개발 시 추가할 예정입니다.\n\n" +
                     "**현재 상태 카드(`statusCard`)** — 정지 상태면 사유 · 처리자 · 일시 · 상세 사유 · **소명 문의**(`appealInquiries` — 해제 모달의 「소명 문의 번호」)가 함께 내려갑니다. " +

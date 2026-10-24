@@ -327,6 +327,13 @@ class AdminBrandMemoHistoryIntegrationTest extends AdminBrandTestSupport {
         Set<String> creatorRow = new HashSet<>();
         creatorOptions.path("suspensionReasons").get(0).fieldNames().forEachRemaining(creatorRow::add);
         assertThat(brandRow).isEqualTo(creatorRow);
+        // 소비자도 같은 행 모양(55 계획서 M8) — 정지 · 해제 사유 모두
+        JsonNode consumerOptions = json(adminGet("/v1/admin/users/reason-options").andExpect(status().isOk()));
+        for (String list : List.of("suspensionReasons", "releaseReasons")) {
+            Set<String> consumerRow = new HashSet<>();
+            consumerOptions.path(list).get(0).fieldNames().forEachRemaining(consumerRow::add);
+            assertThat(consumerRow).as(list).isEqualTo(brandRow);
+        }
     }
 
     // ------------------------------------------------------------------ 12 권한 · 개인정보
