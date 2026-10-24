@@ -59,7 +59,8 @@ public interface AdminMetricsControllerDocs {
     @Operation(
             summary = "탭 배지(나빠진 지표 수)",
             description = """
-                    5탭 배지를 한 번에 — 탭마다 `rows` 중 `deltaKind = BAD` 인 지표 수입니다. 기간 파라미터는 지표 조회와 같습니다.
+                    5탭 배지를 한 번에 — 탭마다 `rows` 중 `deltaKind = BAD` 인 지표 수입니다. **핵심 탭은 `cards` 4칸도 함께 셉니다**
+                    (표 줄과 4칸에 같은 지표가 있으면 한 번). 0 이면 배지를 숨깁니다. 기간 파라미터는 지표 조회와 같습니다.
 
                     **권한:** ADMIN"""
     )

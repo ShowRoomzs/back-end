@@ -1,8 +1,12 @@
 package showroomz.api.admin.metrics;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.util.ReflectionTestUtils;
+import showroomz.api.admin.metrics.service.AdminMetricsQueryService;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.domain.order.type.ClaimReason;
@@ -10,7 +14,9 @@ import showroomz.domain.order.type.ClaimReason;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -21,6 +27,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminMetricsIntegrationTest extends SettlementTestSupport {
 
     private static final String METRICS = "/v1/admin/metrics";
+
+    @Autowired private AdminMetricsQueryService metricsQueryService;
+
+    /** 지표는 같은 기간을 10분 캐시한다 — 테스트마다 데이터가 다르므로 비운다. */
+    @BeforeEach
+    void clearMetricsCache() {
+        ((Map<?, ?>) ReflectionTestUtils.getField(metricsQueryService, "cache")).clear();
+    }
 
     @Test
     @DisplayName("M-01 5탭 × 프리셋 — 전부 조회된다(원천 쿼리 · 차트 · 분해 표)")
@@ -98,6 +112,45 @@ class AdminMetricsIntegrationTest extends SettlementTestSupport {
         Map<String, JsonNode> operation = rows(json(adminGet(METRICS + "?preset=TODAY&tab=OPERATION")));
         assertThat(operation.get("REFUND_FAILURES").get("current").asLong()).isEqualTo(1);
         assertThat(operation.get("REFUND_FAILURES").get("deltaKind").asText()).isEqualTo("BAD");
+    }
+
+    @Test
+    @DisplayName("[56 D1] 탭 배지 — 핵심 탭은 표 줄 + 4칸을 센다(같은 지표는 한 번) · 다른 탭은 표 줄만")
+    void coreBadgeCountsCards() throws Exception {
+        Purchase earlier = purchase(creamVariant, 1);
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        // 비교 기간(그제)에만 결제 — 어제는 거래액 · 주문 · 수수료 · 활성 인플루언서(4칸)가 모두 줄었다
+        jdbc.update("UPDATE orders SET paid_at = ? WHERE order_id = ?", yesterday.minusDays(1).atTime(12, 0),
+                earlier.orderId());
+        String period = "?preset=CUSTOM&from=" + yesterday + "&to=" + yesterday;
+
+        JsonNode core = json(adminGet(METRICS + period + "&tab=CORE").andExpect(status().isOk()));
+        Set<String> badRows = worsened(core.get("rows"));
+        Set<String> badCards = worsened(core.get("cards"));
+        assertThat(badRows).containsExactlyInAnyOrder("GMV", "ORDERS", "FEE_REVENUE");
+        assertThat(badCards).containsExactly("ACTIVE_CREATORS");
+        Set<String> distinct = new HashSet<>(badRows);
+        distinct.addAll(badCards);
+
+        Map<String, Long> badges = new HashMap<>();
+        json(adminGet(METRICS + "/tabs" + period).andExpect(status().isOk()))
+                .forEach(t -> badges.put(t.get("tab").asText(), t.get("worsenedCount").asLong()));
+        assertThat(badges.get("CORE")).isEqualTo((long) distinct.size()).isEqualTo(4L);
+        for (String tab : new String[]{"SUPPLY", "GROUP_BUY", "DEMAND", "OPERATION"}) {
+            JsonNode body = json(adminGet(METRICS + period + "&tab=" + tab).andExpect(status().isOk()));
+            assertThat(body.path("cards").isNull() || body.path("cards").isMissingNode()).as(tab).isTrue();
+            assertThat(badges.get(tab)).as(tab).isEqualTo((long) worsened(body.get("rows")).size());
+        }
+    }
+
+    private static Set<String> worsened(JsonNode rows) {
+        Set<String> keys = new HashSet<>();
+        rows.forEach(r -> {
+            if ("BAD".equals(r.get("deltaKind").asText())) {
+                keys.add(r.get("key").asText());
+            }
+        });
+        return keys;
     }
 
     private static Map<String, JsonNode> rows(JsonNode body) {

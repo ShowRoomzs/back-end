@@ -22,6 +22,7 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,7 @@ import java.util.stream.Collectors;
 
 /**
  * 어드민 운영 지표(1017 설계서 7절) — <b>집계 전용 · 저장 없음</b>. 같은 기간의 계산은 10분 캐시한다(인메모리 · 단일 인스턴스 전제).
- * 탭 배지 「나빠진 지표 수」는 지표 방향({@link MetricKey.BetterWhen})으로 서버가 센다.
+ * 탭 배지 「나빠진 지표 수」는 지표 방향({@link MetricKey.BetterWhen})으로 서버가 센다 — 핵심 탭은 4칸도 센다({@link #badgeKeys}).
  */
 @Service
 @RequiredArgsConstructor
@@ -83,11 +84,20 @@ public class AdminMetricsQueryService {
         Facts previous = facts(period.compareFrom(), period.compareTo(), now);
         List<AdminMetricsDto.TabBadge> badges = new ArrayList<>();
         for (MetricsTab tab : MetricsTab.values()) {
-            long worsened = TAB_ROWS.get(tab).stream()
+            long worsened = badgeKeys(tab).stream()
                     .filter(k -> "BAD".equals(row(k, current, previous).deltaKind())).count();
             badges.add(new AdminMetricsDto.TabBadge(tab.name(), tab.getLabel(), worsened));
         }
         return badges;
+    }
+
+    /** 탭 배지가 세는 지표 — 표 줄 + 핵심 탭은 4칸까지(시안 21 「4칸 포함」). 표 줄과 4칸에 같은 지표가 있으면 한 번만 센다. */
+    static List<MetricKey> badgeKeys(MetricsTab tab) {
+        Set<MetricKey> keys = new LinkedHashSet<>(TAB_ROWS.get(tab));
+        if (tab == MetricsTab.CORE) {
+            keys.addAll(CORE_CARDS);
+        }
+        return List.copyOf(keys);
     }
 
     private Facts facts(LocalDateTime from, LocalDateTime to, LocalDateTime now) {

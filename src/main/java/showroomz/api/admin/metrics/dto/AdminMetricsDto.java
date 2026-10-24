@@ -80,7 +80,8 @@ public final class AdminMetricsDto {
     public record TabBadge(
             @Schema(example = "OPERATION") String tab,
             @Schema(example = "운영") String label,
-            @Schema(description = "나빠진 지표 수 — 0 이면 배지 없음", example = "2") long worsenedCount
+            @Schema(description = "나빠진 지표 수(`deltaKind = BAD`) — 핵심 탭은 표 줄 + 4칸(같은 지표는 한 번) · 0 이면 배지 없음",
+                    example = "2") long worsenedCount
     ) {
     }
 }
