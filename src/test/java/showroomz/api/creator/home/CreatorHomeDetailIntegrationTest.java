@@ -91,6 +91,60 @@ class CreatorHomeDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
+    @DisplayName("[56 A4-02] 다가오는 일정 종료 카드 kind GROUP_BUY_END — 같은 날이면 오픈 시각이 더 이르고 제목순(「공구 오픈」 < 「공구 종료」)이 "
+            + "반대여도 종료가 먼저(kind 로 정렬)")
+    void upcomingEndCardSortsFirstByKind() throws Exception {
+        // 진행 중 공구(fixture)를 4일 뒤 23:00 종료로 — 같은 날 00:30 에 오픈하는 공구가 시각 · 제목으로는 앞선다
+        LocalDateTime endAt = groupBuy.getEndAt().withHour(23).withMinute(0).withSecond(0).withNano(0);
+        jdbc.update("UPDATE group_buy SET end_at = ? WHERE group_buy_id = ?", endAt, groupBuy.getId());
+        LocalDateTime openAt = endAt.withHour(0).withMinute(30);
+        GroupBuy opening = seed(brand, creator, "같은 날 오픈 공구", openAt, openAt.plusDays(7));
+        moveTo(opening.getId(), GroupBuyStatus.READY);
+
+        JsonNode upcoming = json(creatorGet(HOME).andExpect(status().isOk())).get("upcoming");
+        assertThat(upcoming).hasSize(3);
+
+        JsonNode end = upcoming.get(0);
+        assertThat(end.get("kind").asText()).isEqualTo("GROUP_BUY_END");
+        assertThat(end.at("/target/id").asLong()).isEqualTo(groupBuy.getId());
+        assertThat(end.get("date").asText()).isEqualTo(endAt.toLocalDate().toString());
+        assertThat(end.get("groupBuyStatus").asText()).isEqualTo("IN_PROGRESS");
+        assertThat(end.get("title").asText()).isEqualTo("공구 종료 · 글로우 크림 앵콜 공구");
+        assertThat(end.get("description").asText()).isEqualTo("종료 후 주문이 모두 끝나면 정산이 생성돼요");
+
+        JsonNode open = upcoming.get(1);
+        assertThat(open.get("kind").asText()).isEqualTo("GROUP_BUY_OPEN");
+        assertThat(open.at("/target/id").asLong()).isEqualTo(opening.getId());
+        assertThat(open.get("date").asText()).isEqualTo(end.get("date").asText());
+
+        // 오픈한 공구의 종료도 종료 카드다
+        JsonNode openingEnd = upcoming.get(2);
+        assertThat(openingEnd.get("kind").asText()).isEqualTo("GROUP_BUY_END");
+        assertThat(openingEnd.at("/target/id").asLong()).isEqualTo(opening.getId());
+        assertThat(openingEnd.get("groupBuyStatus").asText()).isEqualTo("READY");
+    }
+
+    @Test
+    @DisplayName("[56 A4-03] 게시물이 없는 오픈 카드 — postStatus 는 공구 관리 · 파트너 홈과 같은 파생값 NOT_WRITTEN(설계서 1017 5-1 "
+            + "GroupBuyPostStatus.of) · kind · 공구 상태 · 날짜 · 제목 · 설명 · 대상은 그대로")
+    void upcomingOpenCardWithoutPost() throws Exception {
+        // 진행 중 공구(fixture)는 4일 뒤 종료 — 그 뒤로 게시물 없는 준비중 공구 하나
+        LocalDateTime base = groupBuy.getEndAt().plusDays(1).withHour(9).withMinute(0).withSecond(0).withNano(0);
+        GroupBuy noPost = seed(brand, creator, "게시물 없는 공구", base, base.plusDays(7));
+
+        JsonNode upcoming = json(creatorGet(HOME).andExpect(status().isOk())).get("upcoming");
+        JsonNode open = upcoming.get(1);
+        assertThat(open.at("/target/type").asText()).isEqualTo("GROUP_BUY");
+        assertThat(open.at("/target/id").asLong()).isEqualTo(noPost.getId());
+        assertThat(open.get("kind").asText()).isEqualTo("GROUP_BUY_OPEN");
+        assertThat(open.get("groupBuyStatus").asText()).isEqualTo("PREPARING");
+        assertThat(open.get("postStatus").asText()).isEqualTo("NOT_WRITTEN");
+        assertThat(open.get("date").asText()).isEqualTo(base.toLocalDate().toString());
+        assertThat(open.get("title").asText()).isEqualTo("공구 오픈 · 게시물 없는 공구");
+        assertThat(open.get("description").asText()).isEqualTo("오픈되면 게시물이 공개되고 판매가 시작돼요");
+    }
+
+    @Test
     @DisplayName("CD-02 세금계산서 반려 — 「다시 입력」 · 반려 안내 · extra.rejected / 제출됨 · 검증됨은 할 일이 아니다")
     void rejectedTaxInvoice() throws Exception {
         Settlement rejected = seedSettlement("반려 공구", 1_000_000, SettlementStatus.PAYOUT_SCHEDULED);
