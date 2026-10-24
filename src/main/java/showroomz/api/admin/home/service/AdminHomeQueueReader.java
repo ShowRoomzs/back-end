@@ -113,21 +113,27 @@ public class AdminHomeQueueReader {
         queues.add(waiting("CLAWBACK_UNRECOVERABLE", SETTLEMENTS, "차감 미회수", clawbackDetail(clawbacks),
                 clawbacks.unrecoverableCount(), opsRepository.oldestUnrecoverableClawback(),
                 "/settlements?tab=CLAWBACK", now));
-        AdminOrderExceptionDto.ExceptionSummary exceptions = exceptionService.getSummary();
+        // 경과(56 E1) — 처리 지연 · 배송 예외는 예외 관리 목록 「경과」 열과 같은 기준 시각(처리 지연 = 기한 · 배송 예외 = 유형별 기준 시각).
+        AdminOrderExceptionService.SummaryWithOldest exceptionSnapshot = exceptionService.getSummaryWithOldest();
+        AdminOrderExceptionDto.ExceptionSummary exceptions = exceptionSnapshot.summary();
         queues.add(waiting("PROCESSING_DELAY", TRANSACTIONS, "처리 지연 확인",
                 kindDetail(exceptions, AdminOrderExceptionDto.ExceptionTab.DELAY),
-                exceptions.tabCounts().getOrDefault("DELAY", 0L), null, "/order-exceptions?tab=DELAY", now));
+                exceptions.tabCounts().getOrDefault("DELAY", 0L),
+                exceptionSnapshot.oldest(AdminOrderExceptionDto.ExceptionTab.DELAY), "/order-exceptions?tab=DELAY", now));
         // 사이드바 배지 범위(order.exception.badge-scope)가 처리 지연만이면 배송 예외는 할 일에 넣지 않는다 — 합계가 배지와 같아야 한다.
         queues.add(waiting("DELIVERY_EXCEPTION", TRANSACTIONS, "배송 예외 확인",
                 kindDetail(exceptions, AdminOrderExceptionDto.ExceptionTab.DELIVERY),
                 "ALL".equals(exceptions.badgeScope()) ? exceptions.tabCounts().getOrDefault("DELIVERY", 0L) : 0L,
-                null, "/order-exceptions?tab=DELIVERY", now));
+                exceptionSnapshot.oldest(AdminOrderExceptionDto.ExceptionTab.DELIVERY), "/order-exceptions?tab=DELIVERY",
+                now));
         queues.add(waiting("CLAIM_DISPUTE", TRANSACTIONS, "반려 이의 확인", null, claimRepository.countOpenDisputes(null),
                 opsRepository.oldestOpenDispute(), "/claims?dispute=OPEN", now));
-        queues.add(waiting("POST_REPORT", POSTS, "신고 게시물 검토", "일반 게시물 신고 누적",
-                postQueryService.getSummary().getActionRequired(), null, "/posts?tab=REPORTED", now));
-        queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청", null,
-                productInquiryService.getSummary().getDeleteRequestedCount(), null,
+        long postActions = postQueryService.getSummary().getActionRequired();
+        queues.add(waiting("POST_REPORT", POSTS, "신고 게시물 검토", "일반 게시물 신고 누적", postActions,
+                postActions == 0 ? null : postQueryService.oldestActionRequiredSince(), "/posts?tab=REPORTED", now));
+        long deleteRequests = productInquiryService.getSummary().getDeleteRequestedCount();
+        queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청", null, deleteRequests,
+                deleteRequests == 0 ? null : opsRepository.oldestProductInquiryDeleteRequest(),
                 "/product-inquiries?status=DELETE_REQUESTED", now));
         queues.addAll(contracts(now));
         queues.add(waiting("SUSPEND_REQUEST", GROUP_BUYS, "중단 요청", null,
@@ -138,8 +144,9 @@ public class AdminHomeQueueReader {
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.EARLY_CLOSE_REQUEST, 0L),
                 opsRepository.oldestPendingGroupBuyChangeRequest(ChangeRequestType.EARLY_CLOSE),
                 "/group-buys?queue=EARLY_CLOSE_REQUEST", now));
-        queues.add(waiting("APPEAL_REVIEW", GROUP_BUYS, "소명 검토", null,
-                groupBuyQueues.getOrDefault(AdminGroupBuyQueue.APPEAL_REVIEW, 0L), null,
+        long appealReviews = groupBuyQueues.getOrDefault(AdminGroupBuyQueue.APPEAL_REVIEW, 0L);
+        queues.add(waiting("APPEAL_REVIEW", GROUP_BUYS, "소명 검토", null, appealReviews,
+                appealReviews == 0 ? null : opsRepository.oldestAppealReview(now),
                 "/group-buys?queue=APPEAL_REVIEW", now));
         return new Snapshot(queues);
     }

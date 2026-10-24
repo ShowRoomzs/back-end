@@ -109,6 +109,19 @@ public class PostMonitoringQueryRepository {
     }
 
     /**
+     * 조치 필요(신고 접수 + 이의 신청 심사 중 = {@link PostMonitoringCounts#actionRequired()}) 중 가장 오래 기다린 시각 — 어드민 홈
+     * 「신고 게시물 검토」 대기 행의 경과(56 E1). 「조치 필요 우선」 정렬의 순위 0 · 2차 키({@code waiting_since} = 대기 이의 신청 접수, 없으면
+     * 가장 이른 대기 신고)와 같은 식이라 목록 맨 위 행의 대기 시작과 같다. 없으면 null.
+     */
+    public LocalDateTime findOldestActionRequiredSince() {
+        String sql = "SELECT MIN(x.waiting_since) AS oldest FROM (" + RANKED.formatted(BASE_SELECT + EXCLUDE_DRAFT)
+                + ") x WHERE x.rnk = 0";
+        List<LocalDateTime> rows = jdbc.query(sql, new MapSqlParameterSource(),
+                (rs, rowNum) -> rs.getObject("oldest", LocalDateTime.class));
+        return rows.isEmpty() ? null : rows.get(0);
+    }
+
+    /**
      * 상세의 이전 · 다음(55 계획서 A7) — 목록은 탭 · 정렬 · 검색어마다 순서가 달라 id 순으로 셀 수 없다.
      * {@link #findPage}와 같은 순위 · 탭 조건 · 정렬로 줄을 세우고 {@code LAG} · {@code LEAD}로 앞뒤 id를 읽는다 —
      * 정렬 끝에 {@code post_id}가 있어 순서가 하나로 정해진다. 그 목록에 없는 게시물(탭 밖 · 작성중)이면 {@link PostMonitoringNeighbors#NONE}.

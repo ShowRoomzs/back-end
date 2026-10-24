@@ -146,6 +146,23 @@ public class AdminOperationsQueryRepository {
                 .setParameter("type", type).getSingleResult();
     }
 
+    /**
+     * 공구 소명 검토(56 E1) — 소명을 냈으면 제출 시각, 안 냈으면 소명 기한(지난 순간 큐에 든다). 조건은
+     * {@code AdminGroupBuyQueuePredicate.appealReview}와 같다(통지 중 ∧ (제출됨 ∨ 기한 경과)).
+     */
+    public LocalDateTime oldestAppealReview(LocalDateTime now) {
+        return em.createQuery("SELECT MIN(COALESCE(s.appealSubmittedAt, s.appealDeadlineAt)) FROM GroupBuyAdminSuspension s "
+                        + "WHERE s.status = showroomz.domain.groupbuy.type.AdminSuspensionStatus.NOTICED "
+                        + "AND (s.appealSubmittedAt IS NOT NULL OR s.appealDeadlineAt < :now)", LocalDateTime.class)
+                .setParameter("now", now).getSingleResult();
+    }
+
+    /** 상품 문의 삭제 요청(56 E1) — 요청 시각. 조건은 어드민 상품 문의 요약의 삭제 요청 건수와 같다(노출 축 DELETE_REQUESTED). */
+    public LocalDateTime oldestProductInquiryDeleteRequest() {
+        return single("SELECT MIN(i.deleteRequestedAt) FROM ProductInquiry i "
+                + "WHERE i.exposureStatus = showroomz.domain.inquiry.type.InquiryExposureStatus.DELETE_REQUESTED");
+    }
+
     /** 기한 내 1:1 문의 중 가장 오래된 접수 — 기한 초과분은 건별 행으로 따로 나간다. */
     public LocalDateTime oldestWaitingInquirySince(LocalDateTime createdFrom) {
         return em.createQuery("SELECT MIN(i.createdAt) FROM OneToOneInquiry i "

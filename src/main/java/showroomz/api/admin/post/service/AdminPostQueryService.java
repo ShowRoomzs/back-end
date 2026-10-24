@@ -145,6 +145,11 @@ public class AdminPostQueryService {
                 .build();
     }
 
+    /** 조치 필요 중 가장 오래 기다린 시각 — 어드민 홈 「신고 게시물 검토」 경과(56 E1). 없으면 null. */
+    public LocalDateTime oldestActionRequiredSince() {
+        return monitoringQueryRepository.findOldestActionRequiredSince();
+    }
+
     // ------------------------------------------------------------------ 상세
 
     /**

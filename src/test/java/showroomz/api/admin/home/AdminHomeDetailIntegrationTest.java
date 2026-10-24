@@ -6,17 +6,27 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.groupbuy.entity.GroupBuy;
+import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.inquiry.entity.ProductInquiry;
+import showroomz.domain.inquiry.repository.ProductInquiryRepository;
+import showroomz.domain.inquiry.type.ProductInquiryDeleteReason;
+import showroomz.domain.inquiry.type.ProductInquiryType;
 import showroomz.domain.member.seller.entity.SellerApplication;
 import showroomz.domain.member.seller.repository.SellerApplicationRepository;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.post.entity.Post;
+import showroomz.domain.post.entity.PostReport;
+import showroomz.domain.post.repository.PostReportRepository;
+import showroomz.domain.post.type.PostReportReason;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.service.SettlementClawbackService;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.config.properties.AdminProperties;
 import showroomz.support.BrandFixture;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +50,8 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
     @Autowired private SettlementClawbackService clawbackService;
     @Autowired private SellerApplicationRepository sellerApplications;
     @Autowired private AdminProperties adminProperties;
+    @Autowired private PostReportRepository postReportRepository;
+    @Autowired private ProductInquiryRepository productInquiryRepository;
 
     @Test
     @DisplayName("AD-01 입점 심사 — 마감(신청 + 3영업일)이 지났으면 기한 초과 · 다음 영업일이면 D-1 · 나머지는 대기 1행")
@@ -327,6 +339,54 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         List<JsonNode> undated = rowsOf(json(adminGet(HOME)).get("todo"), "TAX_INVOICE_ISSUE");
         assertThat(undated).extracting(r -> r.get("urgency").asText()).containsExactly("DUE_SOON", "WAITING");
         assertThat(undated.get(1).get("detail").asText()).isEqualTo("브랜드 2곳 · 홈택스 수동");
+    }
+
+    @Test
+    @DisplayName("[56 E1] 대기 행 경과 — 처리 지연(발송 기한) · 배송 예외(마지막 추적) · 신고 게시물(대기 신고 접수) · 상품 문의 삭제 요청(요청 시각) · "
+            + "소명 검토(제출 시각, 미제출이면 소명 기한) 중 가장 오래된 시각")
+    void waitingRowAgesFromEntryTimes() throws Exception {
+        LocalDateTime now = LocalDateTime.now();
+        // 처리 지연 — 발송 기한이 2일 · 1시간 전에 지난 2건 → 오래된 쪽
+        OrderDeliveryGroup lateOld = purchase(creamVariant, 1).group();
+        OrderDeliveryGroup lateNew = purchase(creamVariant, 1).group();
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?", now.minusDays(2),
+                lateOld.getId());
+        jdbc.update("UPDATE order_delivery_group SET ship_due_at = ? WHERE delivery_group_id = ?", now.minusHours(1),
+                lateNew.getId());
+        // 배송 예외 — 추적 정지 · 마지막 추적 8일 전(예외 관리 목록 경과와 같은 기준)
+        OrderDeliveryGroup stalled = shippingGroup(nextTrackingNumber());
+        jdbc.update("UPDATE order_delivery_group SET tracking_alert = 'STALLED', last_tracking_at = ? "
+                + "WHERE delivery_group_id = ?", now.minusDays(8), stalled.getId());
+        // 신고 게시물 — 대기 신고 3일 전 · 1일 전 → 가장 이른 대기 신고
+        Post post = postRepository.save(Post.published(creatorRepository.findById(creator.getId()).orElseThrow(),
+                "신고될 게시물", new BigDecimal("0.8000"), now.minusDays(5)));
+        postReportRepository.save(new PostReport(post, userRepository.findById(consumer.getId()).orElseThrow(),
+                PostReportReason.MISLEADING_INFO, null, now.minusDays(3)));
+        postReportRepository.save(new PostReport(post, createConsumer("late-reporter", "늦은신고자"),
+                PostReportReason.MISLEADING_INFO, null, now.minusDays(1)));
+        // 상품 문의 삭제 요청 — 4일 전 요청
+        ProductInquiry inquiry = ProductInquiry.builder().user(userRepository.findById(consumer.getId()).orElseThrow())
+                .product(cream).type(ProductInquiryType.OPTION).content("옵션이 궁금해요").secret(false).build();
+        inquiry.requestDelete(ProductInquiryDeleteReason.ABUSE, null);
+        productInquiryRepository.save(inquiry);
+        jdbc.update("UPDATE PRODUCT_INQUIRY SET DELETE_REQUESTED_AT = ? WHERE PRODUCT_INQUIRY_ID = ?", now.minusDays(4),
+                inquiry.getId());
+        // 소명 검토 — 미제출 · 기한 1시간 전 경과(진입 = 기한) / 기한 전 6일 전 제출(진입 = 제출 · 통지는 7일 전)
+        GroupBuy lapsed = seedIn(GroupBuyStatus.IN_PROGRESS);
+        seedNotice(lapsed.getId(), now.minusHours(1));
+        GroupBuy appealed = seedIn(GroupBuyStatus.IN_PROGRESS);
+        GroupBuyAdminSuspension notice = seedNotice(appealed.getId(), now.plusDays(2));
+        jdbc.update("UPDATE group_buy_admin_suspension SET noticed_at = ?, appeal_submitted_at = ?, appeal_content = ? "
+                + "WHERE admin_suspension_id = ?", now.minusDays(7), now.minusDays(6), "표현을 수정했습니다.", notice.getId());
+
+        JsonNode todo = json(adminGet(HOME).andExpect(status().isOk())).get("todo");
+        assertThat(rowsOf(todo, "PROCESSING_DELAY").get(0).get("ageText").asText()).isEqualTo("2일 경과");
+        assertThat(rowsOf(todo, "DELIVERY_EXCEPTION").get(0).get("ageText").asText()).isEqualTo("8일 경과");
+        assertThat(rowsOf(todo, "POST_REPORT").get(0).get("ageText").asText()).isEqualTo("3일 경과");
+        assertThat(rowsOf(todo, "PRODUCT_INQUIRY_DELETE").get(0).get("ageText").asText()).isEqualTo("4일 경과");
+        JsonNode appeal = rowsOf(todo, "APPEAL_REVIEW").get(0);
+        assertThat(appeal.get("count").asLong()).isEqualTo(2);
+        assertThat(appeal.get("ageText").asText()).as("제출된 소명은 통지 · 기한이 아니라 제출 시각").isEqualTo("6일 경과");
     }
 
     // ------------------------------------------------------------------ 픽스처
