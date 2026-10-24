@@ -286,25 +286,60 @@ public class AdminMetricsQueryService {
                 List.of("인플루언서(쇼룸)", "팔로워", "구매 소비자", "전환율"), rows);
     }
 
+    /** 큐별 처리 표의 평균 소요 단위(시안 21 K5) — 큐마다 다르다. */
+    enum QueueUnit { HOURS, BUSINESS_DAYS, DAYS }
+
+    /**
+     * 큐별 처리 표의 한 줄 — 이름 · 원천 큐(여럿이면 합친다) · 평균 소요 단위 · 기한 규칙 유무.
+     *
+     * @param queues 비어 있으면 처리 시각을 기록하지 않는 큐 — 모든 칸 「—」
+     */
+    record QueueRow(String label, List<String> queues, QueueUnit unit, boolean hasDue) {
+    }
+
+    /** 시안 21 K5 「큐별 처리」 순서 · 이름. 입점 심사는 브랜드 + 인플루언서 한 줄이다. 신고 게시물 · 배송 예외는 기한 규칙이 없다. */
+    static final List<QueueRow> QUEUE_ROWS = List.of(
+            new QueueRow("1:1 문의 답변", List.of("INQUIRY"), QueueUnit.HOURS, true),
+            new QueueRow("브랜드 · 인플루언서 입점 심사", List.of("SELLER_APPLICATION", "CREATOR_APPLICATION"),
+                    QueueUnit.BUSINESS_DAYS, true),
+            new QueueRow("오픈 승인 검토", List.of("OPEN_REVIEW"), QueueUnit.BUSINESS_DAYS, true),
+            new QueueRow("배송 예외 확인", List.of(), QueueUnit.DAYS, false),
+            new QueueRow("신고 게시물 검토", List.of("POST_REPORT"), QueueUnit.DAYS, false),
+            new QueueRow("변경 요청 검토", List.of("CHANGE_REQUEST"), QueueUnit.BUSINESS_DAYS, true));
+
     /** 운영 — 큐별 처리(처리 수 · 평균 소요 · 기한 초과). 배송 예외는 처리 시각이 없어 「—」. */
     private AdminMetricsDto.Breakdown queueBreakdown(Facts f) {
-        Map<String, String> labels = new java.util.LinkedHashMap<>();
-        labels.put("INQUIRY", "1:1 문의");
-        labels.put("SELLER_APPLICATION", "브랜드 입점 심사");
-        labels.put("CREATOR_APPLICATION", "인플루언서 입점 심사");
-        labels.put("OPEN_REVIEW", "오픈 승인");
-        labels.put("POST_REPORT", "신고 게시물");
-        labels.put("CHANGE_REQUEST", "변경 요청");
         List<List<String>> rows = new ArrayList<>();
-        labels.forEach((queue, label) -> {
-            List<LocalDateTime[]> pairs = f.pairs.getOrDefault(queue, List.of());
-            String avg = pairs.isEmpty() ? "—" : MetricsFactsCalculator.round1(pairs.stream()
-                    .mapToLong(p -> Duration.between(p[0], p[1]).toMinutes()).average().orElse(0) / 60.0) + "시간";
-            long over = "POST_REPORT".equals(queue) ? 0 : pairs.stream().filter(p -> !calculator.withinSla(queue, p)).count();
-            rows.add(List.of(label, String.valueOf(pairs.size()), avg, "POST_REPORT".equals(queue) ? "—" : String.valueOf(over)));
-        });
-        rows.add(List.of("배송 예외", "—", "—", "—"));
+        for (QueueRow row : QUEUE_ROWS) {
+            if (row.queues().isEmpty()) {
+                rows.add(List.of(row.label(), "—", "—", "—"));
+                continue;
+            }
+            List<LocalDateTime[]> pairs = new ArrayList<>();
+            long over = 0;
+            for (String queue : row.queues()) {
+                List<LocalDateTime[]> queuePairs = f.pairs.getOrDefault(queue, List.of());
+                pairs.addAll(queuePairs);
+                over += row.hasDue() ? queuePairs.stream().filter(p -> !calculator.withinSla(queue, p)).count() : 0;
+            }
+            rows.add(List.of(row.label(), String.valueOf(pairs.size()), averageText(pairs, row.unit()),
+                    row.hasDue() ? String.valueOf(over) : "—"));
+        }
         return new AdminMetricsDto.Breakdown("큐별 처리", List.of("큐", "처리", "평균 소요", "기한 초과"), rows);
+    }
+
+    /** 평균 소요 — 시간 · 일은 경과 시간, 영업일은 {@link MetricsFactsCalculator#businessDays}(오픈 승인 소요와 같은 셈). */
+    private String averageText(List<LocalDateTime[]> pairs, QueueUnit unit) {
+        if (pairs.isEmpty()) {
+            return "—";
+        }
+        double minutes = pairs.stream().mapToLong(p -> Duration.between(p[0], p[1]).toMinutes()).average().orElse(0);
+        return switch (unit) {
+            case HOURS -> MetricsFactsCalculator.round1(minutes / 60.0) + "시간";
+            case DAYS -> MetricsFactsCalculator.round1(minutes / 1440.0) + "일";
+            case BUSINESS_DAYS -> MetricsFactsCalculator.round1(pairs.stream().mapToInt(calculator::businessDays)
+                    .average().orElse(0)) + "영업일";
+        };
     }
 
     private static String won(long amount) {

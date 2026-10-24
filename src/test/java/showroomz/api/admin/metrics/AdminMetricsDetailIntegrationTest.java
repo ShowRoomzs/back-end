@@ -127,11 +127,11 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rows.get("PROCESSED").get("current").asLong()).isEqualTo(2);
 
         JsonNode inquiryRow = body.at("/breakdown/rows/0");
-        assertThat(inquiryRow.get(0).asText()).isEqualTo("1:1 문의");
+        assertThat(inquiryRow.get(0).asText()).isEqualTo("1:1 문의 답변"); // 큐 이름 · 순서는 56 D6
         assertThat(inquiryRow.get(1).asText()).isEqualTo("2");
         assertThat(inquiryRow.get(2).asText()).isEqualTo("15.5시간");
         assertThat(inquiryRow.get(3).asText()).isEqualTo("1");
-        assertThat(body.at("/breakdown/rows").get(body.at("/breakdown/rows").size() - 1).get(0).asText()).isEqualTo("배송 예외");
+        assertThat(body.at("/breakdown/rows/3").toString()).isEqualTo("[\"배송 예외 확인\",\"—\",\"—\",\"—\"]");
     }
 
     @Test
@@ -330,6 +330,36 @@ class AdminMetricsDetailIntegrationTest extends SettlementTestSupport {
         assertThat(operation.get("PROCESSED").get("note").asText()).matches("하루 평균 \\d+\\.\\d건");
         // 동적 값이 없는 지표는 정의 문구 그대로
         assertThat(operation.get("SLA_RATE").get("note").asText()).isEqualTo(MetricKey.SLA_RATE.getDefinition());
+    }
+
+    @Test
+    @DisplayName("[56 D6] 큐별 처리 — 시안 이름 · 순서 6줄 · 입점 심사는 브랜드 + 인플루언서 1줄 · 평균 소요 단위 시간 · 영업일 · 일")
+    void queueBreakdownMatchesDesign() throws Exception {
+        // 공휴일 없는 2026년 7월 — 07.06(월) 기준
+        LocalDateTime monday = LocalDateTime.of(2026, 7, 6, 9, 0);
+        answeredInquiry(monday, monday.plusHours(6));                                        // 6시간
+        approvedSellerApplication("july-brand", "칠월브랜드", monday, monday.plusDays(2));        // 수요일 처리 — 2영업일
+        approvedCreatorApplication(createConsumer("july-creator", "칠월인플"), monday,
+                monday.plusDays(7));                                                          // 다음 월요일 — 5영업일 · 기한(3영업일) 초과
+        Post post = postRepository.save(Post.published(creatorRepository.findById(creator.getId()).orElseThrow(),
+                "신고 검토된 게시물", new BigDecimal("0.8000"), monday.minusDays(1)));
+        PostReport report = postReportRepository.save(new PostReport(post,
+                userRepository.findById(consumer.getId()).orElseThrow(), PostReportReason.MISLEADING_INFO, null,
+                monday.plusDays(1)));
+        jdbc.update("UPDATE post_report SET handled_at = ? WHERE post_report_id = ?", monday.plusDays(1).plusHours(36),
+                report.getId());
+
+        JsonNode body = json(adminGet(METRICS + "?preset=CUSTOM&from=2026-07-01&to=2026-07-31&tab=OPERATION")
+                .andExpect(status().isOk()));
+        assertThat(body.at("/breakdown/title").asText()).isEqualTo("큐별 처리");
+        assertThat(body.at("/breakdown/columns").toString()).isEqualTo("[\"큐\",\"처리\",\"평균 소요\",\"기한 초과\"]");
+        assertThat(body.at("/breakdown/rows").toString()).isEqualTo("["
+                + "[\"1:1 문의 답변\",\"1\",\"6.0시간\",\"0\"],"
+                + "[\"브랜드 · 인플루언서 입점 심사\",\"2\",\"3.5영업일\",\"1\"],"
+                + "[\"오픈 승인 검토\",\"0\",\"—\",\"0\"],"
+                + "[\"배송 예외 확인\",\"—\",\"—\",\"—\"],"
+                + "[\"신고 게시물 검토\",\"1\",\"1.5일\",\"—\"],"
+                + "[\"변경 요청 검토\",\"0\",\"—\",\"0\"]]");
     }
 
     // ------------------------------------------------------------------ 픽스처

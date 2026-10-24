@@ -201,8 +201,7 @@ public class MetricsFactsCalculator {
         f.pairs.put("OPEN_REVIEW", reviews);
         int sla = groupBuyProperties.getOpenReview().getSlaBusinessDays();
         long over = reviews.stream().filter(p -> p[1].isAfter(dueAt(p[0], sla))).count();
-        Double avg = reviews.isEmpty() ? null : round1(reviews.stream()
-                .mapToInt(p -> businessCalendar.businessDaysBetween(p[0].toLocalDate(), p[1].toLocalDate())).average().orElse(0));
+        Double avg = reviews.isEmpty() ? null : round1(reviews.stream().mapToInt(this::businessDays).average().orElse(0));
         // 시안 21 K3 「SLA 3영업일 · 초과 0건」 — 기한 정의와 초과 건수를 함께
         f.put(MetricKey.OPEN_REVIEW_DAYS, Value.nullable(avg).withNote("SLA " + sla + "영업일 · 초과 " + over + "건"));
     }
@@ -331,6 +330,11 @@ public class MetricsFactsCalculator {
             case "CHANGE_REQUEST" -> Duration.between(pair[0], pair[1]).toMinutes() <= adminProperties.getChangeRequestSlaHours() * 60L;
             default -> true;
         };
+    }
+
+    /** 처리 쌍의 영업일 소요 — 진입일 다음 날부터 처리일까지의 영업일 수(같은 날 처리 = 0). 오픈 승인 소요 · 큐별 처리가 같이 쓴다. */
+    int businessDays(LocalDateTime[] pair) {
+        return businessCalendar.businessDaysBetween(pair[0].toLocalDate(), pair[1].toLocalDate());
     }
 
     // ------------------------------------------------------------------
