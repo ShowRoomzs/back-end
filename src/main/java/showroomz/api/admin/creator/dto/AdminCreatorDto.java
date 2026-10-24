@@ -324,7 +324,7 @@ public final class AdminCreatorDto {
                                           @Size(max = 500) @Schema(description = "인플루언서에게 전달할 안내 — 기타일 때 필수") String note) {
     }
 
-    @Schema(description = "모달 셀렉트의 단일 소스")
+    @Schema(name = "AdminCreatorReasonOptions", description = "모달 셀렉트의 단일 소스")
     public record ReasonOptions(List<AdminReasonOption> suspensionReasons, List<AdminReasonOption> releaseReasons,
                                 List<AdminReasonOption> withdrawalRejectReasons,
                                 List<AdminReasonOption> privacyUnmaskReasons) {

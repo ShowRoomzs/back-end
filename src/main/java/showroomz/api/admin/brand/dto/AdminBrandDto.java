@@ -272,7 +272,7 @@ public final class AdminBrandDto {
     public record MemoRequest(@NotBlank @Size(max = 300) String content) {
     }
 
-    @Schema(description = "모달 셀렉트 사유 목록 — 정지 · 해제 · 탈퇴 반려. 인플루언서 상세와 같은 모양")
+    @Schema(name = "AdminBrandReasonOptions", description = "모달 셀렉트 사유 목록 — 정지 · 해제 · 탈퇴 반려. 인플루언서 상세와 같은 모양")
     public record ReasonOptions(List<AdminReasonOption> suspensionReasons, List<AdminReasonOption> releaseReasons,
                                 List<AdminReasonOption> withdrawalRejectReasons) {
     }
