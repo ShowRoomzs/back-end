@@ -101,10 +101,19 @@ class SellerPerformanceMoney {
         return f.buyers().stream().filter(PerformanceFacts.Buyer::repeatInBrand).count();
     }
 
-    /** 합의 전 정산액 — 정산 계산기가 원래 리워드로 다시 낸다(수수료 · 부가세를 여기서 계산하지 않는다). */
+    /**
+     * 성과의 정산액 = 이 공구의 브랜드 수취액(<b>차감 전</b>). {@code brand_payout_amount} 는 이전 정산의 회수분까지 뺀 「이번 지급액」이라 다른 공구의
+     * 환불이 이 공구 성과로 잡힌다 — 시안 12 rev.8 「정산액 4,775,800 · 이번 지급액 4,751,650」(1021 변경내역 ④ · 56 A-1). 이번 지급액은 정산 연결
+     * {@code breakdown} 이 따로 싣는다.
+     */
+    static long payoutAmount(Settlement s) {
+        return s.getBrandPayoutBeforeClawback();
+    }
+
+    /** 합의 전 정산액 — 정산 계산기가 원래 리워드로 다시 낸다(수수료 · 부가세를 여기서 계산하지 않는다). 차감 전 기준은 {@link #payoutAmount}와 같다. */
     Long originalPayout(PerformanceFacts f) {
         return agreed(f) ? settlementCalculator.preview(f.settlement(), f.settlement().getOriginalRewardAmount())
-                .brandPayoutAmount() : null;
+                .brandPayoutBeforeClawback() : null;
     }
 
     PerformanceFigure<Long> payout(PerformanceFacts f) {
@@ -113,10 +122,10 @@ class SellerPerformanceMoney {
             return PerformanceFigure.none(FigureState.PENDING_SETTLEMENT, "반품 처리가 끝나면 산출됩니다");
         }
         if (f.status() == PerformanceStatus.ADJUSTING) {
-            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, s.getBrandPayoutAmount(), "리워드 합의 후 확정");
+            return new PerformanceFigure<>(null, FigureState.NEGOTIATING, payoutAmount(s), "리워드 합의 후 확정");
         }
         Long original = originalPayout(f);
-        return new PerformanceFigure<>(s.getBrandPayoutAmount(), FigureState.FINAL, original,
+        return new PerformanceFigure<>(payoutAmount(s), FigureState.FINAL, original,
                 original != null ? "합의 반영" : "PG·리워드·리워드 부가세 차감 후 실지급 · 정산 관리 기준");
     }
 }

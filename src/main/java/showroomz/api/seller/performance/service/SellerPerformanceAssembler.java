@@ -249,7 +249,7 @@ public class SellerPerformanceAssembler {
             totalCost = PerformanceFigure.fin(total, "상품 원가 + 부자재 + 배송비 + 반품 폐기 + 기타");
             Settlement s = f.settlement();
             long sales = f.orders().confirmedSalesAmount();
-            long value = s.getBrandPayoutAmount() - total - f.fixedFeeAmount();
+            long value = SellerPerformanceMoney.payoutAmount(s) - total - f.fixedFeeAmount();
             Long original = money.originalPayout(f) == null ? null : money.originalPayout(f) - total - f.fixedFeeAmount();
             String basis = "정산액 − 총 원가 − 고정 지급비";
             if (f.status() == PerformanceStatus.ADJUSTING) {

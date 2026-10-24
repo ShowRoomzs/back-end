@@ -459,6 +459,39 @@ class SellerPerformanceBlocksIntegrationTest extends SettlementTestSupport {
         assertThat(d4.at("/cost/profitRate/original").decimalValue()).isEqualByComparingTo("22.3");
     }
 
+    /** 다른 공구의 정산 후 환불 차감(−24,150)이 이 공구 성과를 깎으면 안 된다 — 차감 후 금액은 정산 연결 breakdown 의 「이번 지급액」으로만 보인다. */
+    @Test
+    @DisplayName("[56 A-1] 1021 시안 숫자 — 이전 정산 차감이 있어도 정산액은 브랜드 수취액 4,775,800 · 수익 1,287,200 · 23.5% · 이번 지급액 4,751,650 은 정산 연결에만")
+    void payoutIsBeforeClawback() throws Exception {
+        confirmedGroup(creamVariant, 1);
+        endGroupBuy();
+        Settlement s = generate(LocalDateTime.now().withNano(0));
+        jdbc.update("UPDATE contract SET fixed_fee_amount = 400000 WHERE contract_id = ?", groupBuy.getContract().getId());
+        jdbc.update("UPDATE settlement SET status = 'PAYOUT_SCHEDULED', confirmed_sales_amount = 5480000, reward_amount = 548000, "
+                + "original_reward_amount = 548000, reward_vat_amount = 54800, pg_fee_amount = 164400, "
+                + "platform_fee_amount = 0, consumer_delivery_fee_amount = 30000, reship_fee_amount = 27000, "
+                + "return_deduction_fee_amount = 6000, brand_clawback_amount = 24150, "
+                + "brand_payout_amount = 4751650 WHERE settlement_id = ?", s.getId());
+        put(costUrl(), costBody(0L, 0L, null, null, null, 3_088_600L)).andExpect(status().isOk());
+
+        JsonNode d = detail();
+        assertThat(d.at("/kpi/payout/value").asLong()).isEqualTo(4_775_800);
+        assertThat(d.at("/cost/profit/value").asLong()).isEqualTo(1_287_200);
+        assertThat(d.at("/cost/profitRate/value").decimalValue()).isEqualByComparingTo("23.5");
+        assertThat(d.at("/settlement/breakdown/brandPayoutBeforeClawback").asLong()).isEqualTo(4_775_800);
+        assertThat(d.at("/settlement/breakdown/brandClawbackAmount").asLong()).isEqualTo(24_150);
+        assertThat(d.at("/settlement/breakdown/brandPayoutAmount").asLong()).isEqualTo(4_751_650);
+        JsonNode row = json(sellerGet(PERF + "/group-buys")).at("/content/0");
+        assertThat(row.at("/payout/value").asLong()).isEqualTo(4_775_800);
+
+        // 합의 반영(D4) — 원래 정산액도 차감 전 기준(정산 계산기가 원래 리워드로 낸 차감 전 수취액)
+        jdbc.update("UPDATE settlement SET reward_amount = 493200, reward_vat_amount = 49320, "
+                + "brand_payout_amount = 4811930 WHERE settlement_id = ?", s.getId());
+        JsonNode d4 = detail();
+        assertThat(d4.at("/kpi/payout/value").asLong()).isEqualTo(4_836_080);
+        assertThat(d4.at("/kpi/payout/original").asLong()).isEqualTo(4_775_800);
+    }
+
     // ------------------------------------------------------------------ CO 원가 저장
 
     @Test

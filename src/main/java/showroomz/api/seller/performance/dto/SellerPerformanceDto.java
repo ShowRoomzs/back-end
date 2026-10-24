@@ -54,7 +54,7 @@ public final class SellerPerformanceDto {
             @Schema(description = "쇼룸 방문(명) — 공구 기간 · 고유 방문자") PerformanceFigure<Long> visitors,
             @Schema(description = "전환율(%) = 구매확정(건) ÷ 쇼룸 방문(명)") PerformanceFigure<BigDecimal> conversionRate,
             @Schema(description = "확정 거래액(원)") PerformanceFigure<Long> confirmedSales,
-            @Schema(description = "정산액(원) — 브랜드 실지급 · 조정 협의 중이면 NEGOTIATING + original") PerformanceFigure<Long> payout,
+            @Schema(description = "정산액(원) — 이 공구의 브랜드 수취액(이전 정산 차감 전 · 차감 후 「이번 지급액」은 상세 정산 연결 breakdown) · 조정 협의 중이면 NEGOTIATING + original") PerformanceFigure<Long> payout,
             @Schema(description = "확정 수량(개)") PerformanceFigure<Long> confirmedQuantity,
             @Schema(description = "구매확정률(%) = 구매확정 ÷ 주문") PerformanceFigure<BigDecimal> confirmRate,
             @Schema(description = "상세 열람 가능 — 집계 중 행도 상세(D2)가 열려 항상 true", example = "true") boolean detailAvailable
@@ -160,7 +160,7 @@ public final class SellerPerformanceDto {
     @Schema(name = "SellerPerformanceKpi", description = "KPI 8 — 각 basis 에 분모 문장")
     public record Kpi(
             @Schema(description = "확정 거래액(원) — basis 「구매확정 N건 기준」") PerformanceFigure<Long> confirmedSales,
-            @Schema(description = "정산액(원) — 브랜드 실지급 · 정산 관리 값 그대로") PerformanceFigure<Long> payout,
+            @Schema(description = "정산액(원) — 이 공구의 브랜드 수취액(정산 관리 brandPayoutBeforeClawback · 이전 정산 차감 전). 차감 후 「이번 지급액」은 정산 연결 breakdown") PerformanceFigure<Long> payout,
             @Schema(description = "전환율(%) = 구매확정(건) ÷ 쇼룸 방문(명)") PerformanceFigure<BigDecimal> conversionRate,
             @Schema(description = "구매확정률(%) = 구매확정 ÷ 주문") PerformanceFigure<BigDecimal> confirmRate,
             @Schema(description = "확정 수량(개) — basis 「주문 수량 N개」") PerformanceFigure<Long> confirmedQuantity,
