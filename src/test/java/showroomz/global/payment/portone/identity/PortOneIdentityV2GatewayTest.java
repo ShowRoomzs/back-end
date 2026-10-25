@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * SDK 응답 → 우리 모델 매핑(57 설계서 2-2 · 실호출 없음). SDK 객체를 직접 만들어 넣는다 — 응답 스키마의 정본은 jar 다(R-2).
  */
+@DisplayName("[57 MP] 포트원 본인인증 게이트웨이 — SDK 객체 → 모델 매핑")
 class PortOneIdentityV2GatewayTest {
 
     private static final Instant AT = Instant.parse("2026-10-24T01:03:12Z");
@@ -33,7 +34,7 @@ class PortOneIdentityV2GatewayTest {
             "channel-key-identity", "KCP 본인인증", PgProvider.KcpV2.INSTANCE, "mid");
 
     @Test
-    @DisplayName("VERIFIED — verifiedCustomer 전 필드 · 전화번호는 숫자만 · verifiedAt 은 KST")
+    @DisplayName("MP-01 VERIFIED — verifiedCustomer 전 필드 · 전화번호는 숫자만 · verifiedAt 은 KST")
     void verifiedIsMapped() {
         IdentityVerificationVerifiedCustomer customer = new IdentityVerificationVerifiedCustomer("cid", "홍길동",
                 IdentityVerificationOperator.SktMvno.INSTANCE, "010-1234-5678", "1998-04-12", Gender.Female.INSTANCE, Boolean.FALSE, "CI-1", "DI-1");
@@ -60,7 +61,7 @@ class PortOneIdentityV2GatewayTest {
     }
 
     @Test
-    @DisplayName("VERIFIED 인데 선택 필드가 비어도(ci · operator · gender) null 로 매핑된다")
+    @DisplayName("MP-02 VERIFIED 인데 선택 필드가 비어도(ci · operator · gender) null 로 매핑된다")
     void verifiedWithMissingOptionalFields() {
         IdentityVerificationVerifiedCustomer customer = new IdentityVerificationVerifiedCustomer(null, "홍길동",
                 null, null, "1998-04-12", null, null, null, "DI-1");
@@ -79,7 +80,7 @@ class PortOneIdentityV2GatewayTest {
     }
 
     @Test
-    @DisplayName("FAILED — failure{reason · pgCode · pgMessage} · pgTxId")
+    @DisplayName("MP-03 FAILED — failure{reason · pgCode · pgMessage} · pgTxId")
     void failedIsMapped() {
         FailedIdentityVerification sdk = new FailedIdentityVerification("idv2", CHANNEL,
                 new IdentityVerificationRequestedCustomer(null, null, null, null, null, null), null, AT, AT, AT,
@@ -97,7 +98,7 @@ class PortOneIdentityV2GatewayTest {
     }
 
     @Test
-    @DisplayName("READY — 상태만")
+    @DisplayName("MP-04 READY — 상태만")
     void readyIsMapped() {
         ReadyIdentityVerification sdk = new ReadyIdentityVerification("idv3", CHANNEL,
                 new IdentityVerificationRequestedCustomer(null, null, null, null, null, null), null, AT, AT, AT,
@@ -111,7 +112,7 @@ class PortOneIdentityV2GatewayTest {
     }
 
     @Test
-    @DisplayName("Unrecognized — 새 SDK 가 모르는 상태를 주면 결과를 모르는 것으로(PaymentGatewayException)")
+    @DisplayName("MP-05 Unrecognized — 새 SDK 가 모르는 상태를 주면 결과를 모르는 것으로(PaymentGatewayException)")
     void unrecognizedIsUnknown() {
         assertThatThrownBy(() -> PortOneIdentityV2Gateway.toModel(IdentityVerification.Unrecognized.INSTANCE))
                 .isInstanceOf(PaymentGatewayException.class);

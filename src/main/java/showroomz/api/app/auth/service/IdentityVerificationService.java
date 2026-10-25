@@ -105,7 +105,8 @@ public class IdentityVerificationService {
 
         switch (row.getStatus()) {
             case CONSUMED -> throw new BusinessException(ErrorCode.IDENTITY_VERIFICATION_CONSUMED);
-            case FAILED -> throw new BusinessException(ErrorCode.IDENTITY_VERIFICATION_FAILED);
+            // 저장된 사유 그대로(3-2 ②) — 포트원을 다시 묻지 않고, 처음 닫을 때와 같은 코드라 앱이 같은 화면(1d · 1e)으로 간다
+            case FAILED -> throw new BusinessException(errorOf(row.getFailReason()));
             case VERIFIED -> {
                 if (!row.isExpired(now)) {
                     return response(row);                       // 멱등
@@ -176,6 +177,19 @@ public class IdentityVerificationService {
             log.warn("포트원 본인인증 조회 실패(결과 모름) - id: {} - {}", id, e.getMessage());
             throw new BusinessException(ErrorCode.IDENTITY_GATEWAY_ERROR);
         }
+    }
+
+    /** 닫힌 행의 사유 → 처음 닫을 때 낸 코드. 사유가 없는 옛 행은 일반 실패다. */
+    static ErrorCode errorOf(IdentityFailReason reason) {
+        if (reason == null) {
+            return ErrorCode.IDENTITY_VERIFICATION_FAILED;
+        }
+        return switch (reason) {
+            case UNDER_MIN_AGE -> ErrorCode.UNDER_MIN_AGE;
+            case DUPLICATE_IDENTITY -> ErrorCode.IDENTITY_ALREADY_REGISTERED;
+            case NOT_COMPLETED -> ErrorCode.IDENTITY_VERIFICATION_EXPIRED;
+            case PG_FAILED, DI_MISSING -> ErrorCode.IDENTITY_VERIFICATION_FAILED;
+        };
     }
 
     private static IdentityVerificationCompleteResponse response(IdentityVerification row) {
