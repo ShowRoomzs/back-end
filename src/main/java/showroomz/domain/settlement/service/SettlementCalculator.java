@@ -142,11 +142,16 @@ public class SettlementCalculator {
     /**
      * 조정 상한(4-1) — 「조정 후 브랜드 수취액 ≥ 0」을 식으로 옮긴 것 · 리워드 부가세 포함 · 10원 미만 절사.
      *
-     * <pre>floor10((confirmed_sales − pg − platform + reship + consumer_delivery − brand_clawback) ÷ (1 + reward_vat_rate))</pre>
+     * <p>브랜드 수취액에 더해지는 줄 전부가 들어간다 — 1021 설계서 6-1 이 더한 「+ 반품 시 차감한 최초 배송비」 · 「± 운임 정산」도 같다.
+     * 빠지면 운임 환급(−)이 있는 정산에서 상한 금액으로 합의해도 브랜드 수취액이 음수가 되어 {@link #verify}가 합의 확정을 막는다.
+     *
+     * <pre>floor10((confirmed_sales − pg − platform + reship + consumer_delivery + return_deduction_fee ± freight_adjustment
+     *   − brand_clawback) ÷ (1 + reward_vat_rate))</pre>
      */
     public long maxRewardAmount(Settlement s) {
         long base = s.getConfirmedSalesAmount() - s.getPgFeeAmount() - s.getPlatformFeeAmount()
-                + s.getReshipFeeAmount() + s.getConsumerDeliveryFeeAmount() - s.getBrandClawbackAmount();
+                + s.getReshipFeeAmount() + s.getConsumerDeliveryFeeAmount()
+                + s.getReturnDeductionFeeAmount() + s.getFreightAdjustmentAmount() - s.getBrandClawbackAmount();
         if (base <= 0) {
             return 0;
         }
