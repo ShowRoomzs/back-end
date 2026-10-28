@@ -10,6 +10,13 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    # 시간 제한(58 계획 1-1) — 10-26 개발 서버가 무응답일 때 기본값(소켓 무한 대기 · 커넥션 대기 30초)이라 스레드가 풀리지 않았다.
+    hikari:
+      maximum-pool-size: 10                         # 기본값 명시
+      connection-timeout: 10000                     # 커넥션 대기 상한(ms) — 넘으면 그 요청만 실패한다
+      data-source-properties:
+        connectTimeout: 10000                       # MySQL Connector/J — 연결 수립 상한(ms)
+        socketTimeout: 300000                       # 응답 없는 소켓 대기 상한(ms · 기본 0 = 무한) — 가장 긴 배치 쿼리보다 넉넉하게
 
   jpa:
     properties:

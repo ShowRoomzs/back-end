@@ -476,6 +476,10 @@ public enum ErrorCode {
     SETTLEMENT_TAX_INVOICE_NOT_ISSUED(HttpStatus.CONFLICT, "SETTLEMENT_TAX_INVOICE_NOT_ISSUED", "세금계산서가 아직 발행되지 않았습니다."),
     SETTLEMENT_RECEIPT_NOT_READY(HttpStatus.CONFLICT, "SETTLEMENT_RECEIPT_NOT_READY", "원천징수영수증이 아직 준비되지 않았습니다."),
 
+    // 어드민 운영 지표(1017 설계서 7절 · 58 계획 1-1)
+    /** 같은 기간 계산을 기다리다 상한을 넘겼거나 동시 계산 자리가 없다 — 계산은 계속되고 끝나면 캐시에 남는다. */
+    METRICS_BUSY(HttpStatus.SERVICE_UNAVAILABLE, "METRICS_BUSY", "운영 지표를 계산하고 있습니다. 잠시 뒤 다시 시도해 주세요."),
+
     // 성과 관리(49 스튜디오 성과 설계서 5절)
     /** 진행 중 · 중단 공구 — 성과는 종료 공구 전용이다(§47-0). */
     PERFORMANCE_NOT_READY(HttpStatus.CONFLICT, "PERFORMANCE_NOT_READY", "공구가 종료되면 성과를 열람할 수 있습니다."),

@@ -2,7 +2,6 @@ package showroomz.api.admin.metrics.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.metrics.dto.AdminMetricsDto;
 import showroomz.api.admin.metrics.service.MetricsFactsCalculator.Facts;
 import showroomz.api.admin.metrics.service.MetricsFactsCalculator.Value;
@@ -13,6 +12,8 @@ import showroomz.api.admin.metrics.type.MetricsUnit;
 import showroomz.domain.metrics.repository.MetricsQueryRepository.ClaimLine;
 import showroomz.domain.metrics.repository.MetricsQueryRepository.GroupBuyLine;
 import showroomz.domain.metrics.repository.MetricsQueryRepository.PaidLine;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -26,20 +27,30 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
  * 어드민 운영 지표(1017 설계서 7절) — <b>집계 전용 · 저장 없음</b>. 같은 기간의 계산은 10분 캐시한다(인메모리 · 단일 인스턴스 전제).
  * 탭 배지 「나빠진 지표 수」는 지표 방향({@link MetricKey.BetterWhen})으로 서버가 센다 — 핵심 탭은 4칸도 센다({@link #badgeKeys}).
+ *
+ * <p>트랜잭션은 계산({@link MetricsFactsCalculator#compute})에만 둔다 — 여기에 두면 같은 기간 계산을 기다리는 요청도 커넥션을 잡는다.
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminMetricsQueryService {
 
     static final Duration CACHE_TTL = Duration.ofMinutes(10);
+    /** 같은 기간 계산을 기다리거나 계산 자리를 기다리는 상한 — 넘으면 503 {@code METRICS_BUSY}. */
+    static final Duration WAIT_LIMIT = Duration.ofSeconds(30);
+    /** 서로 다른 기간을 동시에 계산하는 수 — 한 요청은 현재 · 비교 기간을 차례로 계산한다. */
+    static final int MAX_CONCURRENT_COMPUTES = 2;
     static final int TOP = 5;
 
     static final Map<MetricsTab, List<MetricKey>> TAB_ROWS = new EnumMap<>(Map.of(
@@ -61,6 +72,8 @@ public class AdminMetricsQueryService {
     private final MetricsPeriodResolver periodResolver;
     private final MetricsFactsCalculator calculator;
     private final Map<String, Cached> cache = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<Facts>> inFlight = new ConcurrentHashMap<>();
+    private final Semaphore computeSlots = new Semaphore(MAX_CONCURRENT_COMPUTES);
 
     public AdminMetricsDto.Response getMetrics(MetricsPreset preset, LocalDate from, LocalDate to, MetricsTab tab) {
         LocalDateTime now = LocalDateTime.now();
@@ -103,16 +116,75 @@ public class AdminMetricsQueryService {
         return List.copyOf(keys);
     }
 
+    /**
+     * 같은 기간은 한 번만 계산한다(58 계획 1-1) — 화면이 {@code /metrics} 와 {@code /metrics/tabs} 를 같이 부르면 캐시가 빈 동안 같은
+     * 계산이 겹쳐 돌았다. 먼저 온 요청이 계산하고 나머지는 그 결과를 기다린다. 서로 다른 기간도 동시에 {@link #MAX_CONCURRENT_COMPUTES}
+     * 개까지만 계산한다 — 계산 하나가 커넥션을 끝까지 잡아서, 겹치면 다른 API 가 커넥션을 못 얻는다(10-26 개발 서버 무응답).
+     */
     private Facts facts(LocalDateTime from, LocalDateTime to, LocalDateTime now) {
         String key = from + "|" + to;
-        Cached cached = cache.get(key);
-        if (cached != null && cached.expiresAt().isAfter(now)) {
-            return cached.facts();
+        Facts cached = cachedFacts(key, now);
+        if (cached != null) {
+            return cached;
         }
-        cache.entrySet().removeIf(e -> !e.getValue().expiresAt().isAfter(now));
-        Facts facts = calculator.compute(from, to, now);
-        cache.put(key, new Cached(facts, now.plus(CACHE_TTL)));
-        return facts;
+        CompletableFuture<Facts> mine = new CompletableFuture<>();
+        CompletableFuture<Facts> running = inFlight.putIfAbsent(key, mine);
+        if (running != null) {
+            return await(running);
+        }
+        try {
+            Facts facts = cachedFacts(key, now);
+            if (facts == null) {
+                facts = compute(from, to, now);
+                cache.entrySet().removeIf(e -> !e.getValue().expiresAt().isAfter(now));
+                cache.put(key, new Cached(facts, now.plus(CACHE_TTL)));
+            }
+            mine.complete(facts);
+            return facts;
+        } catch (RuntimeException e) {
+            mine.completeExceptionally(e);
+            throw e;
+        } finally {
+            inFlight.remove(key, mine);
+        }
+    }
+
+    private Facts cachedFacts(String key, LocalDateTime now) {
+        Cached cached = cache.get(key);
+        return cached != null && cached.expiresAt().isAfter(now) ? cached.facts() : null;
+    }
+
+    private Facts compute(LocalDateTime from, LocalDateTime to, LocalDateTime now) {
+        try {
+            if (!computeSlots.tryAcquire(WAIT_LIMIT.toMillis(), TimeUnit.MILLISECONDS)) {
+                throw new BusinessException(ErrorCode.METRICS_BUSY);
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.METRICS_BUSY);
+        }
+        try {
+            return calculator.compute(from, to, now);
+        } finally {
+            computeSlots.release();
+        }
+    }
+
+    /** 다른 요청이 계산 중인 같은 기간 — 상한까지만 기다린다. 넘어도 그 계산은 계속되고 끝나면 캐시에 남는다. */
+    private static Facts await(CompletableFuture<Facts> running) {
+        try {
+            return running.get(WAIT_LIMIT.toMillis(), TimeUnit.MILLISECONDS);
+        } catch (TimeoutException e) {
+            throw new BusinessException(ErrorCode.METRICS_BUSY);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorCode.METRICS_BUSY);
+        } catch (ExecutionException e) {
+            if (e.getCause() instanceof RuntimeException cause) {
+                throw cause;
+            }
+            throw new IllegalStateException(e.getCause());
+        }
     }
 
     /**
@@ -227,8 +299,7 @@ public class AdminMetricsQueryService {
                 .collect(Collectors.groupingBy(PaidLine::creatorId, Collectors.summingLong(PaidLine::amount)));
         Map<Long, Set<Long>> runs = new HashMap<>();
         f.lines.forEach(l -> runs.computeIfAbsent(l.creatorId(), k -> new HashSet<>()).add(l.groupBuyId()));
-        Map<Long, Long> cumulative = f.groupBuys.stream().filter(g -> g.openedAt().isBefore(f.to))
-                .collect(Collectors.groupingBy(GroupBuyLine::creatorId, Collectors.counting()));
+        Map<Long, Long> cumulative = f.cumulativeByCreator;
         Map<Long, String> names = f.groupBuys.stream()
                 .collect(Collectors.toMap(GroupBuyLine::creatorId, GroupBuyLine::creatorName, (a, b) -> a));
         List<List<String>> rows = gmv.entrySet().stream()

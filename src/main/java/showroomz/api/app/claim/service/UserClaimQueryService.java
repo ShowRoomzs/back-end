@@ -581,11 +581,14 @@ public class UserClaimQueryService {
             return UserClaimDto.ReshipFee.builder().state(ReshipFeeState.WAITING)
                     .amount(rejectCharge == null ? null : rejectCharge.getAmount()).build();
         }
+        // 결제 필요는 결제 대기뿐이다 — 브랜드 부담 · 취소 · 소멸을 default 로 흘리면 0원 청구가 「결제 필요」로 보였다(58 계획 3-1).
         ReshipFeeState state = switch (rejectCharge.getStatus()) {
+            case PENDING -> ReshipFeeState.PAYABLE;
             case PAID -> ReshipFeeState.PAID;
             case DEDUCTED -> ReshipFeeState.DEDUCTED;
             case COVERED -> ReshipFeeState.COVERED;
-            default -> ReshipFeeState.PAYABLE;
+            case WAIVED -> ReshipFeeState.WAIVED;
+            case VOID, REFUNDED -> ReshipFeeState.CANCELLED;
         };
         LocalDate dueDate = rejectCharge.getDueAt() == null ? null : rejectCharge.getDueAt().toLocalDate();
         boolean overdue = state == ReshipFeeState.PAYABLE && dueDate != null && dueDate.isBefore(today);
