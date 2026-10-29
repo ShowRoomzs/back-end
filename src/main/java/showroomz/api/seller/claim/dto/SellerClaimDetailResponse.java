@@ -32,8 +32,24 @@ public record SellerClaimDetailResponse(
         @Schema(description = "교환 재발송 배송비 청구 여부 — 교환만. 고객 귀책이면 요청 때 결제했다(1021 기-18 · 구 `exchangeFeeCharged`)",
                 nullable = true) Boolean reshipFeeCharged,
         @Schema(description = "검수 판정 · 운임 정산 — 판정이 기록됐거나 운임 정산 행이 있을 때만(1021 설계서 4-3 · 4-4)", nullable = true)
-        Inspection inspection
+        Inspection inspection,
+        @Schema(description = "판정 전 운임 미리보기(B2b · B1r · M1 금액 줄 · 58 계획 5-4) — 판정 전 단계(요청 · 회수 중 · 도착 · 검수 대기)만. "
+                + "판정 뒤에는 `inspection` 이 실제 금액을 말한다", nullable = true)
+        FreightPreview freightPreview
 ) {
+
+    @Schema(name = "SellerClaimFreightPreview")
+    public record FreightPreview(
+            @Schema(description = "기본 배송비(편도 · 주문 시점) — 귀책 변경 운임 · 착불 운임 · 최초 배송비 차감의 정액(1021 기-93 보완)",
+                    example = "3000") int baseDeliveryFee,
+            @Schema(description = "결제 시점 권역 추가비(제주 · 도서산간)", example = "0") int regionSurcharge,
+            @Schema(description = "재발송 배송비 = 기본 배송비 + 권역 추가비 — 반려 · 교환 사유 번복 때 소비자가 낸다", example = "3000")
+            int reshipFee,
+            @Schema(description = "원래 결제액 — 결제가 없는 주문이면 null", example = "54400", nullable = true) Long originalPaidAmount,
+            @Schema(description = "PG 로 더 돌려줄 수 있는 금액(취소 가능 잔액 − 집행 대기 환불) — 넘는 환급은 운영자 계좌 송금(1021 설계서 4-5). "
+                    + "결제가 없는 주문이면 null", example = "54400", nullable = true) Long pgRefundableAmount
+    ) {
+    }
 
     @Schema(name = "SellerClaimInspection")
     public record Inspection(

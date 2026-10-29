@@ -41,6 +41,7 @@ import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.DeliveryCarrier;
+import showroomz.domain.order.type.FreightAdjustmentTrigger;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.UserClaimPhase;
@@ -538,16 +539,20 @@ public class UserClaimQueryService {
                 anyRefunded |= claim.getResult() == ClaimResult.REFUNDED;
             }
         }
-        int reshipDeduction = rejectCharge != null && rejectCharge.getStatus() == ClaimChargeStatus.DEDUCTED
+        int chargeDeduction = rejectCharge != null && rejectCharge.getStatus() == ClaimChargeStatus.DEDUCTED
                 ? rejectCharge.getAmount() : 0;
+        // 착불 신청 반려의 착불 운임은 반려 재발송비 청구에 합쳐 차감된다 — 화면이 두 줄로 그리도록 나눠 내린다(58 계획 2-4).
+        int collectFreightDeduction = chargeDeduction == 0 ? 0
+                : Math.min(chargeDeduction, collectFreightOf(collection, FreightAdjustmentTrigger.REJECT_WITH_COLLECT));
         int returnDeduction = approved > 0 ? collection.getReturnDeduction() : 0;
         long amount = collection.getRefundAmount() != null ? collection.getRefundAmount()
-                : Math.max(0, approved - returnDeduction - reshipDeduction);
+                : Math.max(0, approved - returnDeduction - chargeDeduction);
         return UserClaimDto.Refund.builder()
                 .rejectedAmount(anyRejected ? rejected : null)
                 .returnDeduction(returnDeduction)
                 .approvedAmount(approved)
-                .reshipDeduction(reshipDeduction)
+                .reshipDeduction(chargeDeduction - collectFreightDeduction)
+                .collectFreightDeduction(collectFreightDeduction)
                 .amount(amount)
                 .confirmed(anyRefunded && !anyPending)
                 .refundMethodLabel(refundMethodLabel(order))
@@ -594,9 +599,14 @@ public class UserClaimQueryService {
         LocalDate dueDate = rejectCharge.getDueAt() == null ? null : KstDates.toKstDate(rejectCharge.getDueAt());
         boolean overdue = state == ReshipFeeState.PAYABLE && dueDate != null && dueDate.isBefore(today);
         LocalDateTime now = LocalDateTime.now();
+        int total = rejectCharge.getAmount() == null ? 0 : rejectCharge.getAmount();
+        int collectFreight = Math.min(total, collectFreightOf(collection, overturn
+                ? FreightAdjustmentTrigger.REASON_OVERTURNED : FreightAdjustmentTrigger.REJECT_WITH_COLLECT));
         return UserClaimDto.ReshipFee.builder()
                 .state(state)
                 .amount(rejectCharge.getAmount())
+                .reshipFee(total - collectFreight)
+                .collectFreight(collectFreight)
                 .dueDate(state == ReshipFeeState.PAYABLE ? dueDate : null)
                 // 기한 경과(46 수정계획 7-3) — 목록 할 일 줄은 날짜를 빼는데 상세는 지난 날짜를 그대로 내려 「…까지 결제해 주세요」가 됐다.
                 .overdue(overdue)
@@ -608,5 +618,16 @@ public class UserClaimQueryService {
                         storagePolicy.storageDueAt(rejected.getNoticeCount(), rejected.getLastNoticeAt()),
                         storagePolicy.phase(rejected.getNoticeCount(), rejected.getLastNoticeAt(), now)))
                 .build();
+    }
+
+    /**
+     * 재발송비 청구에 합쳐 받은 착불 운임(58 계획 2-4 · 1021 기-93) — 착불 신청 반려는 {@code REJECT_WITH_COLLECT}, 교환 사유 번복은
+     * {@code REASON_OVERTURNED} 운임 정산 행(소비자 부담)의 착불 운임 합이다.
+     */
+    private int collectFreightOf(OrderClaimCollection collection, FreightAdjustmentTrigger trigger) {
+        return freightAdjustmentRepository.findByClaimCollectionIdOrderByIdAsc(collection.getId()).stream()
+                .filter(row -> row.getTrigger() == trigger)
+                .mapToInt(showroomz.domain.order.entity.OrderClaimFreightAdjustment::getCollectFreight)
+                .sum();
     }
 }

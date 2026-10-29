@@ -176,7 +176,7 @@ public interface UserProductControllerDocs {
                     "(반올림 방식이 갈리면 같은 상품에 34%와 35%가 동시에 보입니다).\n" +
                     "- 할인이 없거나 판매가가 정가보다 높은 데이터면 0입니다.\n\n" +
                     "**이 응답에 포함되지 않는 것:**\n" +
-                    "- 상품 문의(문의 탭): `GET /v1/common/products/{productId}/inquiries`가 담당합니다.\n" +
+                    "- 상품 문의(문의 탭): `GET /v1/common/products/{productId}/inquiries`가 담당합니다(공개 목록 · 비밀글은 본인만).\n" +
                     "- 옵션별 실시간 재고: 시트를 연 뒤에는 `GET /v1/common/products/{productId}/variants`로 갱신합니다.\n" +
                     "- 찜(♥): 게시물 단위 기능이라 상품 상세에는 두지 않습니다.\n" +
                     "- **\"이 공구에서 함께 판매 중\"(공구 추천 상품): 공구 연결 기능이 아직 구현되지 않아 추후 구현 예정입니다.** " +

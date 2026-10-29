@@ -289,6 +289,9 @@ public class UserOrderDto {
     @Schema(description = "주문 항목 행 — 목록·상세 공용")
     public static class ItemRow {
         private Long orderProductId;
+        @Schema(description = "하위주문(배송 그룹) — 취소 요청 생성(`POST …/cancel-requests`)의 `deliveryGroupId`", example = "911",
+                nullable = true)
+        private Long deliveryGroupId;
         private Long productId;
         private Long variantId;
         @Schema(description = "브랜드명 — 주문 시점 스냅샷", example = "라보에이치", nullable = true)

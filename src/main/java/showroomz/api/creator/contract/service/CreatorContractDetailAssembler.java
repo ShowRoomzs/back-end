@@ -342,13 +342,18 @@ public class CreatorContractDetailAssembler {
 
         boolean mySignaturePending = contract.getStatus() == ContractStatus.SIGNING
                 && contract.getCreatorSignedAt() == null;
+        // 정지 중 서명 안내 재발송은 정지 가드가 막는다(1017 8-2) — 버튼도 미리 끈다(58 계획 3-2). 거절은 허용.
+        boolean suspended = contract.getCreator() != null && contract.getCreator().isSuspended();
 
         return new CreatorContractDetailResponse.Permissions(
                 mySignaturePending,
-                mySignaturePending,
+                mySignaturePending && !suspended,
                 connected && threadId != null,
                 contract.getStatus() == ContractStatus.CONCLUDED && documents.size() >= 2,
-                contract.getGroupBuyId() != null);
+                contract.getGroupBuyId() != null,
+                suspended && mySignaturePending ? "계정 이용 정지 중에는 "
+                        + showroomz.domain.member.creator.type.CreatorBlockedAction.CONTRACT_RESEND_REQUEST.getPhrase()
+                        + " 수 없습니다." : null);
     }
 
     /**

@@ -348,7 +348,11 @@ public record CreatorContractDetailResponse(
                     + "「회복 경로는 [스레드에서 협의하기] 하나」가 §27-1 #5의 결론이다")
             boolean canOpenThread,
             @Schema(description = "CONCLUDED이고 문서 2종이 있을 때") boolean canDownloadDocuments,
-            @Schema(description = "이미 생성된 공구로 **이동**할 뿐이다") boolean canOpenGroupBuy
+            @Schema(description = "이미 생성된 공구로 **이동**할 뿐이다") boolean canOpenGroupBuy,
+            @Schema(description = "계정 이용 정지로 막힌 버튼의 안내 — 정지 중이면 `canRequestResend` 가 false 이고 이 문구를 함께 보인다"
+                    + "(거절은 정지 중에도 된다 · 58 계획 3-2). 정지가 아니면 null",
+                    example = "계정 이용 정지 중에는 서명 안내 재발송을 요청할 수 없습니다.", nullable = true)
+            String suspensionBlockedMessage
     ) {
     }
 

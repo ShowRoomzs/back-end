@@ -410,7 +410,10 @@ public record GroupBuyDetailResponse(
             @Schema(description = "[이행 확인] — **폐기(2026-10-06) · 항상 false**", deprecated = true) boolean canCheckFulfillment,
             @Schema(description = "[스레드 열기] — 인플루언서와 PAIR 스레드가 있음(counterparty.pairThreadId != null)") boolean canOpenPairThread,
             @Schema(description = "[해지 요청](B3 · C4 · 1021 기-05) — 준비중 · 준비완료 ∧ 계약 해지 요청 없음 ∧ 공구 변경 요청 검토 중 아님. "
-                    + "실행은 계약 API `POST /v1/seller/contracts/{contractId}/termination-request`") boolean canRequestTermination
+                    + "실행은 계약 API `POST /v1/seller/contracts/{contractId}/termination-request`") boolean canRequestTermination,
+            @Schema(description = "계정 이용 정지로 막힌 버튼의 안내 — 정지 중이면 `canRequestExtension` 이 false 이고 이 문구를 함께 보인다"
+                    + "(조기 마감 · 중단 요청은 정지 중에도 된다 · 58 계획 3-2). 정지가 아니면 null", nullable = true)
+            String suspensionBlockedMessage
     ) {
     }
 

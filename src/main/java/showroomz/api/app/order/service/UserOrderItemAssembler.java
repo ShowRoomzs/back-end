@@ -175,6 +175,7 @@ public class UserOrderItemAssembler {
 
         return UserOrderDto.ItemRow.builder()
                 .orderProductId(product.getId())
+                .deliveryGroupId(group != null ? group.getId() : null)
                 .productId(product.getVariant() != null && product.getVariant().getProduct() != null
                         ? product.getVariant().getProduct().getProductId() : null)
                 .variantId(product.getVariantId())

@@ -531,6 +531,68 @@ class ProductInquiryLifecycleIntegrationTest extends IntegrationTestSupport {
         }
     }
 
+    @Nested
+    @DisplayName("공개 목록 — 상품 상세 문의 탭(58 계획 2-3)")
+    class PublicList {
+
+        private static final String PUBLIC_LIST = "/v1/common/products/%d/inquiries";
+
+        @Test
+        @DisplayName("비로그인 — 최신순 · 비밀글은 본문 · 답변 없이 자리만 · 작성자는 닉네임 앞 절반 · 삭제 집행은 빠진다")
+        void anonymousSeesMaskedList() throws Exception {
+            Long open = registerInquiry("민감성인데 아침에도 써도 될까요?", false);
+            answer(open, "네, 아침저녁 모두 가능합니다.");
+            Long secret = registerInquiry("배송지 변경하고 싶어요", true);
+            answer(secret, "주문 상세에서 바꿀 수 있습니다.");
+            Long deleted = registerInquiry("부적절한 내용", false);
+            execute(deleted, "ABUSE", null);
+
+            mockMvc.perform(get(PUBLIC_LIST.formatted(productId)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.pageInfo.totalResults").value(2))
+                    .andExpect(jsonPath("$.content[0].id").value(secret))
+                    .andExpect(jsonPath("$.content[0].secret").value(true))
+                    .andExpect(jsonPath("$.content[0].mine").value(false))
+                    .andExpect(jsonPath("$.content[0].content").doesNotExist())
+                    .andExpect(jsonPath("$.content[0].answer").doesNotExist())
+                    .andExpect(jsonPath("$.content[0].status").value("ANSWERED"))
+                    .andExpect(jsonPath("$.content[0].authorName").value("미*"))
+                    .andExpect(jsonPath("$.content[1].id").value(open))
+                    .andExpect(jsonPath("$.content[1].content").value("민감성인데 아침에도 써도 될까요?"))
+                    .andExpect(jsonPath("$.content[1].typeName").value("재입고"))
+                    .andExpect(jsonPath("$.content[1].answer.content").value("네, 아침저녁 모두 가능합니다."));
+        }
+
+        @Test
+        @DisplayName("작성자 본인 — 내 비밀글은 본문 · 답변을 본다 · 다른 소비자는 못 본다 · 답변 상태 필터")
+        void ownerSeesOwnSecret() throws Exception {
+            Long secret = registerInquiry("배송지 변경하고 싶어요", true);
+            Users other = createConsumer("noah");
+            String otherToken = bearerToken(other.getUsername(), RoleType.USER, other.getId());
+
+            mockMvc.perform(get(PUBLIC_LIST.formatted(productId)).header(HttpHeaders.AUTHORIZATION, consumerToken))
+                    .andExpect(jsonPath("$.content[0].id").value(secret))
+                    .andExpect(jsonPath("$.content[0].mine").value(true))
+                    .andExpect(jsonPath("$.content[0].content").value("배송지 변경하고 싶어요"));
+            mockMvc.perform(get(PUBLIC_LIST.formatted(productId)).header(HttpHeaders.AUTHORIZATION, otherToken))
+                    .andExpect(jsonPath("$.content[0].mine").value(false))
+                    .andExpect(jsonPath("$.content[0].content").doesNotExist());
+
+            mockMvc.perform(get(PUBLIC_LIST.formatted(productId) + "?status=ANSWERED"))
+                    .andExpect(jsonPath("$.pageInfo.totalResults").value(0));
+            mockMvc.perform(get(PUBLIC_LIST.formatted(productId) + "?status=WAITING&type=RESTOCK"))
+                    .andExpect(jsonPath("$.pageInfo.totalResults").value(1));
+        }
+
+        @Test
+        @DisplayName("없는 상품은 404")
+        void unknownProduct() throws Exception {
+            mockMvc.perform(get(PUBLIC_LIST.formatted(999_999L)))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("PRODUCT_NOT_FOUND"));
+        }
+    }
+
     // ------------------------------------------------------------------ 단계 (steps)
 
     private Long registerInquiry(String content, boolean secret) throws Exception {

@@ -595,8 +595,11 @@ public class UserClaimDto {
         private Integer returnDeduction;
         @Schema(description = "환불 대상 상품 금액 — 반려·취소된 항목 제외", example = "27200")
         private Long approvedAmount;
-        @Schema(description = "반려 상품 재발송비 차감 — 일부 반려에서 환불액에서 뺐을 때", example = "0")
+        @Schema(description = "반려 상품 재발송비 차감 — 일부 반려에서 환불액에서 뺐을 때(착불 운임은 따로 `collectFreightDeduction`)", example = "0")
         private Integer reshipDeduction;
+        @Schema(description = "착불 운임 차감 — 착불(브랜드 귀책)로 보냈다가 반려된 상품의 운임을 소비자가 부담할 때(1021 기-93). 없으면 0",
+                example = "3000")
+        private Integer collectFreightDeduction;
         @Schema(description = "환불 예정 금액(또는 확정 금액) — 전체 반려면 0", example = "24200")
         private Long amount;
         @Schema(description = "환불이 집행됐는가 — 거짓이면 「환불 예정 금액」, 참이면 「환불 금액」")
@@ -612,8 +615,13 @@ public class UserClaimDto {
     @Schema(description = "반려 상품을 다시 받는 배송비")
     public static class ReshipFee {
         private ReshipFeeState state;
-        @Schema(example = "3000", nullable = true)
+        @Schema(description = "결제(또는 차감)할 합계 = `reshipFee` + `collectFreight`", example = "6000", nullable = true)
         private Integer amount;
+        @Schema(description = "재발송 배송비 — 합계에서 착불 운임을 뺀 몫. WAITING 이면 null", example = "3000", nullable = true)
+        private Integer reshipFee;
+        @Schema(description = "착불 운임 — 착불(브랜드 귀책)로 보냈다가 반려 · 사유 번복된 상품의 운임을 소비자가 부담할 때(1021 기-93). "
+                + "없으면 0 · WAITING 이면 null", example = "3000", nullable = true)
+        private Integer collectFreight;
         @Schema(description = "결제 기한 — PAYABLE 일 때. 「10.23(금)까지 결제해 주세요」. 기한이 지나도 내린다 — `overdue` 를 먼저 본다",
                 example = "2026-10-23", nullable = true)
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")

@@ -141,6 +141,8 @@ class UserOrderQueryIntegrationTest extends SellerOrderTestSupport {
 
             orderList().andExpect(status().isOk())
                     .andExpect(jsonPath("$.content[0].items[0].status").value("PAID"))
+                    // 취소 요청 생성의 키(58 계획 2-2)
+                    .andExpect(jsonPath("$.content[0].items[0].deliveryGroupId").value(group.getId()))
                     .andExpect(jsonPath("$.content[0].items[0].statusLabel").value("결제완료"))
                     .andExpect(jsonPath("$.content[0].items[0].statusTone").value("ACTIVE"))
                     // 공구 진행 중 — 발송 기한 대신 약정 문구(1009 기획 수정본 1-3)

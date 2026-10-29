@@ -256,7 +256,19 @@ public class OrderFulfillmentService {
                 paymentCancelId, now)));
     }
 
-    /** 원래 결제의 부분 취소인가 — 어드민 06c 결제 열 「부분」. 결제가 없는 주문은 거짓. */
+    /**
+     * 원래 결제 — [결제액, PG 로 더 돌려줄 수 있는 금액(취소 가능 잔액 − 집행 대기 환불)]. {@link #enqueueRefundSplit}가 PG 취소분과
+     * 계좌 송금분을 가르는 셈과 같다 — 판정 전 운임 미리보기(58 계획 5-4)가 쓴다. 결제가 없는 주문이면 null.
+     */
+    @Transactional(readOnly = true)
+    public long[] paymentRefundable(OrderDeliveryGroup group) {
+        String paymentId = group.getOrder().getPaidPaymentId();
+        return paymentId == null ? null : paymentRepository.findById(paymentId)
+                .map(payment -> new long[]{payment.getAmount() == null ? 0L : payment.getAmount(),
+                        Math.max(0L, payment.cancellableAmount() - refundTaskRepository.sumOutstandingByPayment(paymentId))})
+                .orElse(null);
+    }
+
     /**
      * 환불 편입 — 원래 결제액을 넘는 부분은 운영자 계좌 송금 행으로 나눈다(1021 설계서 4-5 · 결정 노트 기-93 보완). 넘는 금액이 없으면
      * {@link #enqueueRefund}와 같다.

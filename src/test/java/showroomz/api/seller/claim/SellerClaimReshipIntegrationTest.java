@@ -140,6 +140,28 @@ class SellerClaimReshipIntegrationTest extends SellerOrderTestSupport {
                 .andExpect(jsonPath("$.scans[0].description").value("배송완료"));
     }
 
+    @Test
+    @DisplayName("테스트 API — 재발송 중 클레임을 도착으로 종결한다(추적과 같은 전이 · 교환 완료) · 재발송 중이 아니면 409(58 계획 2-5)")
+    void testApiReshipDelivered() throws Exception {
+        OrderDeliveryGroup group = deliveredGroup();
+        Long claimId = passed(exchangeClaim(group));
+        mockMvc.perform(post("/test/claims/" + claimId + "/reship-delivered"))
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code").value("CLAIM_STATE_CHANGED"));
+
+        sellerPost(CLAIMS + "/reshipments", Map.of("items", List.of(reshipRow(claimId, "CJ", newInvoice()))))
+                .andExpect(jsonPath("$.succeeded").value(1));
+        mockMvc.perform(post("/test/claims/" + claimId + "/reship-delivered"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.claimId").value(claimId))
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.result").value("EXCHANGED"))
+                .andExpect(jsonPath("$.deliveredAt").isNotEmpty());
+
+        assertThat(claimRow(claimId)).containsEntry("status", "COMPLETED").containsEntry("result", "EXCHANGED");
+        assertThat(reload(group).getConfirmRestartAt()).isNotNull();
+        assertThat(events(claimId)).contains("RESHIP_DELIVERED");
+    }
+
     // ------------------------------------------------------------------ 송장 중복(#12)
 
     @Test

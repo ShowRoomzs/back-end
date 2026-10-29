@@ -259,28 +259,36 @@ public class ContractDetailAssembler {
                 .toList();
     }
 
-    /** 설계서 4-5 — 상태 × 서명 조합 × 지급 여부로 갈리는 버튼 판정을 서버가 한 번에 한다. */
+    /**
+     * 설계서 4-5 — 상태 × 서명 조합 × 지급 여부로 갈리는 버튼 판정을 서버가 한 번에 한다. 계정 이용 정지 중이면 정지 가드가 막는 버튼
+     * (수정 · 검토 요청 · 서명 안내 재발송 · 새 계약 작성 — 1017 8-1)도 false 로 내린다 — 눌러야 409 를 보던 것을 화면이 미리 알게(58 계획 3-2).
+     */
     private ContractDetailResponse.Permissions permissions(Contract contract) {
         ContractStatus status = contract.getStatus();
         boolean editable = status.isEditable();
+        boolean suspended = contract.getMarket() != null && contract.getMarket().isSuspended();
 
         return new ContractDetailResponse.Permissions(
-                editable,
+                editable && !suspended,
                 // 삭제는 작성중·검토 반려만. 검토 대기 이후의 되돌림은 취소이지 삭제가 아니다(설계서 4-2).
                 contract.isDeletable(),
-                editable,
+                editable && !suspended,
                 status == ContractStatus.REVIEW_PENDING,
                 // [서명 안내 다시 받기]는 「내 서명 안내」를 다시 보내달라는 요청이다 —
                 // 내가 이미 서명했으면 받을 안내가 없어 B4a에서는 버튼이 사라진다(§26-B4a).
-                status == ContractStatus.SIGNING && contract.getBrandSignedAt() == null,
+                status == ContractStatus.SIGNING && contract.getBrandSignedAt() == null && !suspended,
                 status == ContractStatus.CONCLUDED
                         && contract.hasFixedFee()
                         && contract.getFixedFeePaidAt() == null,
-                ContractStatus.DUPLICABLE.contains(status),
+                ContractStatus.DUPLICABLE.contains(status) && !suspended,
                 canRequestTermination(contract),
                 contract.getId() != null && terminationRequestRepository.findPending(contract.getId()).isPresent(),
-                contract.getEstablishedAt() != null);
+                contract.getEstablishedAt() != null,
+                suspended ? SUSPENDED_MESSAGE : null);
     }
+
+    static final String SUSPENDED_MESSAGE = "계정 이용 정지 중에는 계약 수정 · 검토 요청 · 서명 안내 재발송 · 새 계약 작성을 할 수 없습니다. "
+            + "운영팀 소통 스레드로 문의해 주세요.";
 
     private boolean canRequestTermination(Contract contract) {
         if (contract.getId() == null || !ContractStatus.TERMINABLE.contains(contract.getStatus())) {

@@ -439,7 +439,12 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(description = "[이행 확인] — **폐기(2026-10-06) · 항상 false**", deprecated = true) boolean canCheckFulfillment,
             @Schema(description = "[스레드 열기] — 브랜드와의 PAIR 스레드가 있을 때") boolean canOpenPairThread,
             @Schema(description = "[게시물 수정]에서 제목도 고칠 수 있는가 — 진행 중이면 false(본문만 · 1021 기-08) · 노출 중지면 true")
-            boolean canEditPostTitle
+            boolean canEditPostTitle,
+            @Schema(description = "[수락](연장) — `canRespondExtension` ∧ 계정 이용 정지 아님. 정지 중에는 거절만 된다(1017 8-2 · 58 계획 3-2)")
+            boolean canAcceptExtension,
+            @Schema(description = "연장 수락이 정지로 막혔을 때의 안내 — 홈 할 일 카드와 같은 문구. 막히지 않았으면 null",
+                    example = "연장 수락은 정지 해제 후 할 수 있어요", nullable = true)
+            String acceptExtensionBlockedMessage
     ) {
     }
 

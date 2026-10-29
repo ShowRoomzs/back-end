@@ -59,6 +59,17 @@ class SellerClaimReshipFeeTest {
     }
 
     @Test
+    @DisplayName("교환 사유 번복 — 선결제분이 있어도 번복 청구(재발송 배송비 + 착불 운임)를 본다(58 계획 3-3)")
+    void exchangeOverturnUsesOverturnCharge() {
+        SellerClaimListItem.ReshipFee fee = SellerClaimAssembler.reshipFee(claim(ClaimType.EXCHANGE), List.of(
+                charge(ClaimChargeType.EXCHANGE_RESHIP, 3000, ClaimChargeStatus.PAID),
+                charge(ClaimChargeType.OVERTURN_RESHIP, 6000, ClaimChargeStatus.PENDING)));
+
+        assertThat(fee.amount()).isEqualTo(6000);
+        assertThat(fee.status()).isEqualTo(ClaimChargeStatus.PENDING);
+    }
+
+    @Test
     @DisplayName("같은 종류가 여럿이면 마지막 청구가 지금 값이다")
     void latestChargeWins() {
         SellerClaimListItem.ReshipFee fee = SellerClaimAssembler.reshipFee(rejected(claim(ClaimType.RETURN)), List.of(
