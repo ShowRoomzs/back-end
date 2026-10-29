@@ -12,6 +12,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.service.OrderGroupBuyLiveReader;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.domain.showroom.repository.ShowroomVisitRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -50,7 +51,7 @@ public class SellerHomeLiveService {
         }
         Map<Long, Long> stockByProduct = stockByProduct(itemsByContract);
 
-        LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime todayStart = KstDates.startOfDay(KstDates.today(now));
         List<SellerHomeDto.LiveItem> items = new ArrayList<>();
         for (GroupBuy groupBuy : groupBuys) {
             Long creatorId = groupBuy.getCreator().getId();

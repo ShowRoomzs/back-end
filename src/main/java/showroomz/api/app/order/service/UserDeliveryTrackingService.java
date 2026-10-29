@@ -18,6 +18,7 @@ import showroomz.domain.order.service.DeliveryArrivalEstimator;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -118,7 +119,7 @@ public class UserDeliveryTrackingService {
                         .build();
             }
             case DELIVERED -> UserOrderDto.TrackingHeadline.builder()
-                    .date(group.getDeliveredAt().toLocalDate())
+                    .date(KstDates.toKstDate(group.getDeliveredAt()))
                     .text("상품 배송이 완료되었어요")
                     .build();
         };
@@ -127,7 +128,7 @@ public class UserDeliveryTrackingService {
     /** 주문 내역의 「MM.dd 도착 예정」과 같은 날짜여야 한다 — {@code UserOrderItemAssembler}와 같은 규칙. */
     private LocalDate arrivalDueDate(OrderDeliveryGroup group) {
         LocalDate due = arrivalEstimator.estimate(group.getCarrier(), group.getPickedUpAt());
-        return due == null || due.isBefore(LocalDate.now()) ? null : due;
+        return due == null || due.isBefore(KstDates.today()) ? null : due;
     }
 
     private static String lastScan(DeliveryTrackingEvent event) {

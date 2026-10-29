@@ -28,7 +28,7 @@ import java.util.List;
  */
 public class AdminPostMonitoringDto {
 
-    private static final String DATETIME = "yyyy-MM-dd'T'HH:mm:ss";
+    private static final String DATETIME = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     // ------------------------------------------------------------------ 목록 · 요약
 

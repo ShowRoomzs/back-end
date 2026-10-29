@@ -19,6 +19,7 @@ import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -72,7 +73,7 @@ public class CreatorAccountChangeApplier {
         Creator creator = request.getCreator();
         if (creator.getAccountVerificationStatus() == null || !creator.getAccountVerificationStatus().blocksPayout()) {
             payoutHolds.release(SettlementPayee.CREATOR, creator.getId(), PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED,
-                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, now.toLocalDate(), now);
+                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, KstDates.today(now), now);
         }
         Long creatorId = creator.getId();
         String code = request.getRequestCode();

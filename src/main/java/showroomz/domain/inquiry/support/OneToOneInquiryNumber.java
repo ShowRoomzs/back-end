@@ -2,6 +2,7 @@ package showroomz.domain.inquiry.support;
 
 import showroomz.domain.inquiry.entity.OneToOneInquiry;
 import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,9 +20,9 @@ public final class OneToOneInquiryNumber {
 
     public static String of(OneToOneInquiry inquiry, OneToOneInquiryRepository repository) {
         LocalDateTime createdAt = inquiry.getCreatedAt();
-        LocalDateTime dayStart = createdAt.toLocalDate().atStartOfDay();
+        LocalDateTime dayStart = KstDates.startOfDay(KstDates.toKstDate(createdAt));
         long sequence = repository.countByCreatedAtGreaterThanEqualAndCreatedAtLessThanAndIdLessThanEqual(
                 dayStart, dayStart.plusDays(1), inquiry.getId());
-        return "INQ-" + createdAt.format(DATE) + "-" + String.format("%03d", sequence);
+        return "INQ-" + KstDates.toKstDate(createdAt).format(DATE) + "-" + String.format("%03d", sequence);
     }
 }

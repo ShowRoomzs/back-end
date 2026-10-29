@@ -27,6 +27,7 @@ import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -91,7 +92,7 @@ public class AdminSettlementCommandService {
             holder = payout.getAccountHolder();
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
         LocalDateTime now = LocalDateTime.now();
         int attempt = payout.getAttempt() + 1;
         SettlementPayee payee = payout.getPayee();

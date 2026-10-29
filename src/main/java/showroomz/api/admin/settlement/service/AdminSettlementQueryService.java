@@ -32,8 +32,8 @@ import showroomz.global.dto.PaginationInfo;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -170,7 +170,7 @@ public class AdminSettlementQueryService {
                 scheduleKind = "AGREEMENT_DUE";
             }
             case PAYOUT_SCHEDULED -> {
-                scheduleAt = s.getPayoutDueDate() == null ? null : s.getPayoutDueDate().atStartOfDay();
+                scheduleAt = s.getPayoutDueDate() == null ? null : KstDates.startOfDay(s.getPayoutDueDate());
                 scheduleKind = "PAYOUT_DUE";
             }
             case PAID -> {
@@ -223,7 +223,7 @@ public class AdminSettlementQueryService {
             }
         }
         counts.forEach((payee, count) -> labels.add(payee.getLabel() + " " + count));
-        Long elapsed = earliest == null ? null : ChronoUnit.DAYS.between(earliest.toLocalDate(), LocalDate.now());
+        Long elapsed = earliest == null ? null : ChronoUnit.DAYS.between(KstDates.toKstDate(earliest), KstDates.today());
         return new AdminSettlementDto.Toolbar(null, null, amount, labels.isEmpty() ? null : String.join(" · ", labels),
                 elapsed, null, null, null, null, null);
     }

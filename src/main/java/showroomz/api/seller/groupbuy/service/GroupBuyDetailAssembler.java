@@ -35,6 +35,7 @@ import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.global.utils.RewardCalculator;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -133,9 +134,9 @@ public class GroupBuyDetailAssembler {
         int elapsedDays = now.isBefore(startAt) ? 0
                 : Math.min(GroupBuy.daysInclusive(startAt, now.isBefore(cap) ? now : cap), totalDays);
         Integer daysUntilStart = now.isBefore(startAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), startAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(startAt)) : null;
         Integer daysUntilEnd = groupBuy.getStatus().isSelling() && now.isBefore(endAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), endAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(endAt)) : null;
         boolean startOverdue = groupBuy.getStatus() == GroupBuyStatus.PREPARING && !now.isBefore(startAt);
 
         return new Timeline(startAt, endAt, contract.getGroupBuyEndAt(), totalDays, elapsedDays,
@@ -213,7 +214,7 @@ public class GroupBuyDetailAssembler {
                 post.getRejectReasonCode() == null ? null : lastRejectedAt(history),
                 hidden ? new Reason(post.getHiddenReasonCode(), post.getHiddenReasonDetail()) : null,
                 hidden ? post.getHiddenAt() : null,
-                hidden ? (int) ChronoUnit.DAYS.between(post.getHiddenAt().toLocalDate(), now.toLocalDate()) : null);
+                hidden ? (int) ChronoUnit.DAYS.between(KstDates.toKstDate(post.getHiddenAt()), KstDates.today(now)) : null);
     }
 
     /**

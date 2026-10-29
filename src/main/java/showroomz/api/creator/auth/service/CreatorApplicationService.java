@@ -30,6 +30,7 @@ import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 import showroomz.global.utils.BusinessRegistrationNumberHasher;
 import showroomz.domain.settlement.service.AfterCommit;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -294,7 +295,7 @@ public class CreatorApplicationService {
         // 통지(1021 기-36) — 정형 사유만 · 상세는 내부 기록. 업무 이메일은 아래에서 파기되므로 먼저 잡아 두고 커밋 뒤 보낸다.
         String noticeEmail = application.getBusinessEmail();
         CreatorRejectionNotice notice = CreatorRejectionNotice.of(request.getRejectReasonType(),
-                application.getProcessedAt().toLocalDate());
+                KstDates.toKstDate(application.getProcessedAt()));
         if (noticeEmail != null && !noticeEmail.isBlank()) {
             AfterCommit.run(() -> mailService.sendCreatorRejectionNotice(noticeEmail, notice.subject(), notice.htmlBody()));
         }
@@ -325,7 +326,7 @@ public class CreatorApplicationService {
         if (reasonType == null) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "반려 사유를 선택해 주세요.");
         }
-        return CreatorRejectionNotice.of(reasonType, java.time.LocalDate.now());
+        return CreatorRejectionNotice.of(reasonType, KstDates.today());
     }
 
     private String resolveProcessorEmail(Long adminUserId) {

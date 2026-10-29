@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import showroomz.domain.settlement.service.SettlementPayoutService;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -35,7 +36,7 @@ public class SettlementPayoutScheduler {
 
     /** 1회분 — 기준 시각을 받는다(테스트가 토요일 · 월요일을 고정한다). */
     public void run(LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         if (!businessCalendar.isBusinessDay(today)) {
             return;
         }

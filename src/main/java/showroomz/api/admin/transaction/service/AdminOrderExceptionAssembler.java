@@ -10,6 +10,7 @@ import showroomz.domain.order.entity.OrderDeliveryGroup;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -62,7 +63,7 @@ public class AdminOrderExceptionAssembler {
         long elapsedHours = hours(row.basisAt(), now);
 
         if (delay) {
-            int businessDays = calendar.businessDaysBetween(row.dueAt().toLocalDate(), now.toLocalDate());
+            int businessDays = calendar.businessDaysBetween(KstDates.toKstDate(row.dueAt()), KstDates.today(now));
             Integer noticeCount = switch (kind) {
                 case SHIP_OVERDUE -> group.getOverdueNoticeCount();
                 case INSPECT_OVERDUE -> claim.getInspectNoticeCount();
@@ -164,17 +165,17 @@ public class AdminOrderExceptionAssembler {
      * 영업일 10시. 저장하지 않는다 — 배치가 돌면 다음 폴링에서 따라온다.
      */
     LocalDateTime nextNoticeAt(LocalDateTime lastNoticeAt, LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
-        boolean notifiedToday = lastNoticeAt != null && !lastNoticeAt.toLocalDate().isBefore(today);
+        LocalDate today = KstDates.today(now);
+        boolean notifiedToday = lastNoticeAt != null && !KstDates.toKstDate(lastNoticeAt).isBefore(today);
         if (!notifiedToday && calendar.isBusinessDay(today)) {
             for (LocalTime slot : NOTICE_SLOTS) {
-                LocalDateTime at = today.atTime(slot);
+                LocalDateTime at = KstDates.at(today, slot);
                 if (at.isAfter(now)) {
                     return at;
                 }
             }
         }
-        return calendar.addBusinessDays(today, 1).atTime(NOTICE_SLOTS.get(0));
+        return KstDates.at(calendar.addBusinessDays(today, 1), NOTICE_SLOTS.get(0));
     }
 
     private static long hours(LocalDateTime basisAt, LocalDateTime now) {

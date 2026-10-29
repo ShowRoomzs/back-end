@@ -14,6 +14,7 @@ import showroomz.global.payment.settlement.toss.TossPayoutsDtos.Payout;
 import showroomz.global.payment.settlement.toss.TossPayoutsDtos.PayoutRequest;
 import showroomz.global.payment.settlement.toss.TossPayoutsDtos.Seller;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -169,7 +170,7 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
 
     /** 지시 시각 → 유형(0-4). 영업일 [start, end) 안이면 EXPRESS, 아니면 다음 영업일 SCHEDULED. */
     Schedule scheduleFor(LocalDateTime requestedAt) {
-        LocalDate day = requestedAt.toLocalDate();
+        LocalDate day = KstDates.toKstDate(requestedAt);
         LocalTime time = requestedAt.toLocalTime();
         boolean inWindow = businessCalendar.isBusinessDay(day) && !time.isBefore(properties.getExpressWindowStart())
                 && time.isBefore(properties.getExpressWindowEnd());
@@ -199,14 +200,14 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
                     continue;
                 }
                 // 결과 모름(지시 중 통신 실패) — 지급일 범위 목록에서 참조 id 로 찾는다.
-                LocalDate from = lookup.requestedAt() == null ? LocalDate.now().minusDays(7) : lookup.requestedAt().toLocalDate();
+                LocalDate from = lookup.requestedAt() == null ? KstDates.today().minusDays(7) : KstDates.toKstDate(lookup.requestedAt());
                 LocalDate to = businessCalendar.addBusinessDays(from, 1);
                 Payout found = client.listPayouts(from, to).stream().filter(p -> payoutRef.equals(p.refPayoutId()))
                         .findFirst().orElse(null);
                 if (found != null) {
                     results.add(fromPayout(lookup.payoutId(), lookup.amount(), payoutRef, found, false));
-                } else if (lookup.requestedAt() != null && !businessCalendar.addBusinessDays(lookup.requestedAt().toLocalDate(),
-                        properties.getNotFoundGraceBusinessDays()).isAfter(LocalDate.now())) {
+                } else if (lookup.requestedAt() != null && !businessCalendar.addBusinessDays(KstDates.toKstDate(lookup.requestedAt()),
+                        properties.getNotFoundGraceBusinessDays()).isAfter(KstDates.today())) {
                     // 유예가 지났는데도 없다 — 지시가 토스에 닿지 않았다. 재분배가 새 ref 로 올린다(9-5 절차 뒤).
                     results.add(new LineResult(lookup.payoutId(), Outcome.FAILED, null, TossPayoutFailureClassifier.TRANSFER_NOT_FOUND,
                             "PG 지급 미생성 — " + payoutRef, payoutRef, null, null));

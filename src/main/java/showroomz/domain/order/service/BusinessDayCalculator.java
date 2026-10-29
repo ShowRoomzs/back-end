@@ -3,10 +3,10 @@ package showroomz.domain.order.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
  * 클레임 기한 계산(35 설계서 1-7) — 기산 시각이 비영업일이면 <b>다음 영업일을 기산일로</b> 보고 + N영업일, 그 날의 끝
@@ -19,16 +19,15 @@ import java.time.LocalTime;
 @RequiredArgsConstructor
 public class BusinessDayCalculator {
 
-    private static final LocalTime END_OF_DAY = LocalTime.of(23, 59, 59);
-
     private final BusinessCalendar businessCalendar;
 
+    /** 기산 시각의 한국 날짜부터 센 기한 — 그 한국 날짜의 23:59:59 를 서버 시각으로(58 계획 3-3). */
     public LocalDateTime dueAt(LocalDateTime from, int businessDays) {
-        LocalDate base = from.toLocalDate();
+        LocalDate base = KstDates.toKstDate(from);
         while (!businessCalendar.isBusinessDay(base)) {
             base = base.plusDays(1);
         }
-        return businessCalendar.addBusinessDays(base, businessDays).atTime(END_OF_DAY);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(base, businessDays));
     }
 
     /**
@@ -36,11 +35,11 @@ public class BusinessDayCalculator {
      * 있어 최종 판정은 {@link #dueAt}으로 한 번 더 한다. 자동 입고 대상 조회(1021 기-17)가 쓴다.
      */
     public LocalDateTime dueElapsedCandidateBefore(LocalDateTime now, int businessDays) {
-        return businessCalendar.latestStartToFinishBefore(now.toLocalDate(), businessDays).plusDays(1).atStartOfDay();
+        return KstDates.startOfDay(businessCalendar.latestStartToFinishBefore(KstDates.today(now), businessDays).plusDays(1));
     }
 
-    /** 달력일 기한 — {@code from}의 날짜 + N일의 끝. 회수 송장 등록 기한 · 재발송비 결제 기한이 쓴다. */
+    /** 달력일 기한 — {@code from}의 한국 날짜 + N일의 끝. 회수 송장 등록 기한 · 재발송비 결제 기한이 쓴다. */
     public static LocalDateTime endOfDayAfter(LocalDateTime from, int days) {
-        return from.toLocalDate().plusDays(days).atTime(END_OF_DAY);
+        return KstDates.endOfDay(KstDates.toKstDate(from).plusDays(days));
     }
 }

@@ -398,7 +398,7 @@ class UserOrderQueryIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.notices[0].type").value("CONFIRM_DUE"))
                     .andExpect(jsonPath("$.notices[0].tone").value("ACTIVE"))
                     .andExpect(jsonPath("$.notices[0].date").value(deliveredAt.plusDays(7)
-                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss"))));
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'"))));
         }
     }
 

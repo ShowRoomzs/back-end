@@ -21,6 +21,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.Percent;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -59,8 +60,8 @@ public class CreatorPerformanceQueryService {
                                                                 Set<CreatorPerformanceStatus> statuses, String keyword,
                                                                 CreatorPerformanceSort sort, PagingRequest paging) {
         Creator creator = groupBuyReader.resolveCreator(creatorEmail);
-        List<GroupBuy> listed = groupBuys.findListed(creator.getId(), LocalDate.now()
-                .minusMonths(months(months)).atStartOfDay());
+        List<GroupBuy> listed = groupBuys.findListed(creator.getId(),
+                KstDates.startOfDay(KstDates.today().minusMonths(months(months))));
         Map<Long, PerformanceFacts> facts = performanceReader.readRows(listed);
 
         String needle = keyword == null || keyword.isBlank() ? null : keyword.trim().toLowerCase(Locale.ROOT);
@@ -92,9 +93,9 @@ public class CreatorPerformanceQueryService {
     public CreatorPerformanceDto.Summary getSummary(String creatorEmail, Integer months) {
         Creator creator = groupBuyReader.resolveCreator(creatorEmail);
         int span = months(months);
-        LocalDate to = LocalDate.now();
+        LocalDate to = KstDates.today();
         LocalDate from = to.minusMonths(span);
-        List<GroupBuy> listed = groupBuys.findListed(creator.getId(), from.atStartOfDay());
+        List<GroupBuy> listed = groupBuys.findListed(creator.getId(), KstDates.startOfDay(from));
         Map<Long, PerformanceFacts> facts = performanceReader.readRows(listed);
 
         Map<CreatorPerformanceStatus, Long> counts = new EnumMap<>(CreatorPerformanceStatus.class);

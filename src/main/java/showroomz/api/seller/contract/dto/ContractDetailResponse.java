@@ -123,8 +123,8 @@ public record ContractDetailResponse(
 
     @Schema(description = "공구 기간")
     public record Period(
-            @Schema(description = "공구 시작 일시(Asia/Seoul)", example = "2026-09-01T10:00:00", nullable = true) LocalDateTime startAt,
-            @Schema(description = "공구 종료 일시(Asia/Seoul)", example = "2026-09-17T23:59:00", nullable = true) LocalDateTime endAt,
+            @Schema(description = "공구 시작 일시(UTC)", example = "2026-09-01T01:00:00Z", nullable = true) LocalDateTime startAt,
+            @Schema(description = "공구 종료 일시(UTC)", example = "2026-09-17T14:59:00Z", nullable = true) LocalDateTime endAt,
             @Schema(description = "일수 — 시작·종료 일자 양끝 포함", example = "17", nullable = true) Integer days
     ) {
     }

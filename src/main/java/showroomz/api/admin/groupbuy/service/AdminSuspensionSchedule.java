@@ -6,6 +6,7 @@ import showroomz.api.admin.groupbuy.dto.AdminGroupBuyDto;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,14 +29,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AdminSuspensionSchedule {
 
-    private static final LocalTime END_OF_DAY = LocalTime.of(23, 59, 59);
-
     private final BusinessCalendar businessCalendar;
     private final GroupBuyProperties properties;
 
+    /** 소명 기한 하한 — 한국 날짜 23:59:59 의 서버 시각(58 계획 1-4 · FE 가 UTC 로 보내는 값과 같은 기준). */
     public LocalDateTime minAppealDeadline(LocalDate noticeDate) {
-        return businessCalendar.addBusinessDays(noticeDate, properties.getSuspension().getAppealBusinessDays())
-                .atTime(END_OF_DAY);
+        return KstDates.endOfDay(
+                businessCalendar.addBusinessDays(noticeDate, properties.getSuspension().getAppealBusinessDays()));
     }
 
     public LocalDate minExecutionDate(LocalDate noticeDate) {
@@ -45,9 +45,9 @@ public class AdminSuspensionSchedule {
     /** 통지 요청값 검증 — 하나라도 어기면 false. */
     public boolean isValid(GroupBuy groupBuy, LocalDateTime appealDeadlineAt, LocalDateTime executeScheduledAt,
                            LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         return !appealDeadlineAt.isBefore(minAppealDeadline(today))
-                && !executeScheduledAt.toLocalDate().isBefore(minExecutionDate(today))
+                && !KstDates.toKstDate(executeScheduledAt).isBefore(minExecutionDate(today))
                 && executeScheduledAt.isAfter(appealDeadlineAt.plus(properties.getSuspension().getMinGapAfterAppeal()))
                 && executeScheduledAt.isBefore(groupBuy.getEndAt());
     }
@@ -57,11 +57,11 @@ public class AdminSuspensionSchedule {
      * 버튼 판정은 POST의 검증 범위와 같아야 한다.
      */
     public boolean hasWindow(GroupBuy groupBuy, LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         LocalDateTime afterAppeal = minAppealDeadline(today)
                 .plus(properties.getSuspension().getMinGapAfterAppeal())
                 .plusNanos(1);
-        LocalDateTime firstNoticeDate = minExecutionDate(today).atStartOfDay();
+        LocalDateTime firstNoticeDate = KstDates.startOfDay(minExecutionDate(today));
         LocalDateTime earliest = afterAppeal.isAfter(firstNoticeDate) ? afterAppeal : firstNoticeDate;
         return earliest.isBefore(groupBuy.getEndAt());
     }
@@ -77,11 +77,11 @@ public class AdminSuspensionSchedule {
      * <p>칩은 하루 단위라 보수적으로 판정한다 — 최소 간격이 날짜 중간에 걸치면 그날은 잠근다.
      */
     public List<AdminGroupBuyDto.ExecutionDate> executionDates(GroupBuy groupBuy, LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         LocalDate minDate = minExecutionDate(today);
         LocalDateTime earliestExecution = minAppealDeadline(today)
                 .plus(properties.getSuspension().getMinGapAfterAppeal());
-        LocalDateTime endAt = groupBuy.getEndAt();
+        LocalDateTime endAt = KstDates.toKst(groupBuy.getEndAt());
         LocalDate lastDate = endAt.toLocalTime().equals(LocalTime.MIDNIGHT)
                 ? endAt.toLocalDate().minusDays(1) : endAt.toLocalDate();
 
@@ -90,7 +90,7 @@ public class AdminSuspensionSchedule {
             if (!businessCalendar.isBusinessDay(date)) {
                 continue;
             }
-            boolean selectable = !date.isBefore(minDate) && date.isAfter(earliestExecution.toLocalDate());
+            boolean selectable = !date.isBefore(minDate) && date.isAfter(KstDates.toKstDate(earliestExecution));
             dates.add(new AdminGroupBuyDto.ExecutionDate(date, selectable));
         }
         return dates;

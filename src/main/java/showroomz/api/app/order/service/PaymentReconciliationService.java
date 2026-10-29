@@ -16,6 +16,7 @@ import showroomz.global.payment.portone.PaymentGatewayRejectedException;
 import showroomz.global.payment.portone.PortOnePayment;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
 import showroomz.global.payment.portone.PortOneStatus;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.EnumMap;
@@ -97,7 +98,7 @@ public class PaymentReconciliationService {
         }
 
         int issues = counts.values().stream().mapToInt(Integer::intValue).sum();
-        String summary = "일일 대사 " + from.toLocalDate() + " - 포트원 " + remoteList.size() + "건 · 우리 " + ours.size()
+        String summary = "일일 대사 " + KstDates.toKstDate(from) + " - 포트원 " + remoteList.size() + "건 · 우리 " + ours.size()
                 + "건 · 어긋남 " + issues + "건 " + counts;
         if (issues > 0) {
             alerts.warning(summary);

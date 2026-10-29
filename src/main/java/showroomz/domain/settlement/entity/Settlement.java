@@ -13,6 +13,7 @@ import showroomz.domain.member.creator.type.CreatorBusinessType;
 import showroomz.domain.settlement.service.SettlementAmounts;
 import showroomz.domain.settlement.type.SettlementConfirmReason;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.utils.KstDates;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -332,7 +333,7 @@ public class Settlement {
 
     /** 자동 확정의 확정 시각 — 마감 다음 날 00:00:00(규칙값 · 0-10). 배치가 늦어도 지급 예정일이 밀리지 않는다. */
     public LocalDateTime autoConfirmAt() {
-        return reviewDueAt.toLocalDate().plusDays(1).atStartOfDay();
+        return KstDates.startOfDay(KstDates.toKstDate(reviewDueAt).plusDays(1));
     }
 
     // ── 상태 전이에 딸린 필드 ────────────────────────────────────────────

@@ -19,6 +19,7 @@ import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.EnumSet;
@@ -132,7 +133,7 @@ public class SettlementAdjustmentPortAdapter implements SettlementAdjustmentPort
         }
         SettlementAdjustment adjustment = adjustmentRepository.findById(adjustmentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.SETTLEMENT_ADJUSTMENT_NOT_FOUND));
-        LocalDateTime confirmedAt = adjustment.getDeadlineAt().toLocalDate().plusDays(1).atStartOfDay();
+        LocalDateTime confirmedAt = KstDates.startOfDay(KstDates.toKstDate(adjustment.getDeadlineAt()).plusDays(1));
         historyRecorder.recordBySystem(settlementId, SettlementEventType.ADJUSTMENT_EXPIRED,
                 "합의 기한 경과 · 원래 금액 확정", now);
         confirmService.confirm(settlementId, SettlementConfirmReason.EXPIRED, confirmedAt);

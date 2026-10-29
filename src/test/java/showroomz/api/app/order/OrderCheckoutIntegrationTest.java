@@ -97,7 +97,7 @@ class OrderCheckoutIntegrationTest extends OrderPaymentTestSupport {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.status").value("PAYMENT_PENDING"))
                 .andExpect(jsonPath("$.orderNumber").value(org.hamcrest.Matchers.matchesPattern("\\d{8}-\\d{6}")))
-                .andExpect(jsonPath("$.expiresAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}")))
+                .andExpect(jsonPath("$.expiresAt").value(org.hamcrest.Matchers.matchesPattern("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z")))
                 .andExpect(jsonPath("$.payment.paymentId").value(org.hamcrest.Matchers.endsWith("-1")))
                 .andExpect(jsonPath("$.payment.storeId").value("store-fake"))
                 .andExpect(jsonPath("$.payment.channelKey").value("channel-key-fake"))

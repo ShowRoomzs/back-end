@@ -38,6 +38,7 @@ import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -320,7 +321,7 @@ public class AdminHomeQueueReader {
                 LocalDateTime submittedAt = (LocalDateTime) row[2];
                 LocalDateTime base = submittedAt != null ? submittedAt : now;
                 items.add(new Dated((Long) row[0], "오픈 승인 · " + row[1], pair((String) row[3], (String) row[4]),
-                        dueAt(base.toLocalDate(), sla), base, "GROUP_BUY"));
+                        dueAt(KstDates.toKstDate(base), sla), base, "GROUP_BUY"));
             }
         }
         return deadlined("OPEN_REVIEW", GROUP_BUYS, "오픈 승인", count, items, "/group-buys?queue=OPEN_REVIEW", now);
@@ -333,13 +334,13 @@ public class AdminHomeQueueReader {
         for (Object[] row : opsRepository.findPendingSellerApplications()) {
             LocalDateTime createdAt = (LocalDateTime) row[2];
             brand.add(new Dated((Long) row[0], "브랜드 입점 심사 · " + row[1], documentDetail(row[3], row[4], row[5]),
-                    dueAt(createdAt.toLocalDate(), sla), createdAt, "SELLER_APPLICATION"));
+                    dueAt(KstDates.toKstDate(createdAt), sla), createdAt, "SELLER_APPLICATION"));
         }
         List<Dated> creator = new ArrayList<>();
         // 인플루언서 입점 심사의 건별 행 보조줄은 없다 — 시안에 인플루언서 D-1 행이 없다(56 E2).
         for (Object[] row : opsRepository.findPendingCreatorApplications()) {
             LocalDateTime createdAt = (LocalDateTime) row[2];
-            creator.add(new Dated((Long) row[0], "인플루언서 입점 심사 · " + row[1], null, dueAt(createdAt.toLocalDate(), sla),
+            creator.add(new Dated((Long) row[0], "인플루언서 입점 심사 · " + row[1], null, dueAt(KstDates.toKstDate(createdAt), sla),
                     createdAt, "CREATOR_APPLICATION"));
         }
         return List.of(
@@ -361,7 +362,7 @@ public class AdminHomeQueueReader {
                 .filter(d -> d.getType() == TaxDocumentType.CREATOR_TAX_INVOICE
                         && d.getStatus() == TaxDocumentStatus.SUBMITTED).toList();
 
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         LocalDate dueSoonLimit = businessCalendar.addBusinessDays(today, adminProperties.getTaxInvoiceDueSoonBusinessDays());
         List<SettlementTaxDocument> urgent = toIssue.stream()
                 .filter(d -> d.getDueDate() != null && !d.getDueDate().isAfter(dueSoonLimit))
@@ -422,7 +423,7 @@ public class AdminHomeQueueReader {
     /** 마감 있는 건 — 지났으면 기한 초과, 마감일이 다음 영업일 이내면 기한 임박(D-1 · 오늘 마감), 나머지는 대기 1행. */
     private Queue deadlined(String key, String menu, String label, long count, List<Dated> items, String filter,
                             LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         LocalDate nextBusinessDay = businessCalendar.addBusinessDays(today, 1);
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         long itemized = 0;
@@ -430,7 +431,7 @@ public class AdminHomeQueueReader {
         LocalDateTime oldestWaiting = null;
         for (Dated item : items) {
             boolean overdue = item.dueAt().isBefore(now);
-            boolean dueSoon = !overdue && !item.dueAt().toLocalDate().isAfter(nextBusinessDay);
+            boolean dueSoon = !overdue && !KstDates.toKstDate(item.dueAt()).isAfter(nextBusinessDay);
             if (!overdue && !dueSoon) {
                 oldestWaiting = oldestWaiting == null || item.enteredAt().isBefore(oldestWaiting) ? item.enteredAt() : oldestWaiting;
                 continue;
@@ -440,7 +441,7 @@ public class AdminHomeQueueReader {
             if (rows.size() >= ROW_LIMIT) {
                 continue;
             }
-            String badge = overdue ? "기한 초과" : item.dueAt().toLocalDate().equals(today) ? "오늘 마감" : "D-1";
+            String badge = overdue ? "기한 초과" : KstDates.toKstDate(item.dueAt()).equals(today) ? "오늘 마감" : "D-1";
             rows.add(row(overdue ? TodoUrgency.OVERDUE : TodoUrgency.DUE_SOON, badge, key, item.title(), item.detail(), menu,
                     ageText(item.enteredAt(), now), "마감 " + item.dueAt().format(MONTH_DAY),
                     new AdminHomeDto.Target(item.targetType(), item.id(), null), 1));
@@ -490,7 +491,7 @@ public class AdminHomeQueueReader {
     }
 
     private LocalDateTime dueAt(LocalDate base, int slaBusinessDays) {
-        return businessCalendar.addBusinessDays(base, slaBusinessDays).atTime(23, 59, 59);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(base, slaBusinessDays));
     }
 
     // ------------------------------------------------------------------ 대기 큐 — 큐별 1행

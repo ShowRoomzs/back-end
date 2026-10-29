@@ -7,6 +7,7 @@ import showroomz.domain.order.type.ClaimChargeStatus;
 import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.UserClaimPhase;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -55,7 +56,7 @@ public final class UserClaimPresenter {
         return switch (claim.getStatus()) {
             case PAYMENT_PENDING -> view(UserClaimPhase.PAYMENT_PENDING, type + " 요청", "결제 대기", null);
             case REQUESTED -> {
-                LocalDate due = notPassed(collection.getInvoiceDueAt().toLocalDate(), today);
+                LocalDate due = notPassed(KstDates.toKstDate(collection.getInvoiceDueAt()), today);
                 yield new View(UserClaimPhase.REQUESTED, type + " 요청", "회수 송장 입력 필요", true, "진행 중 · 요청",
                         new Todo(TodoType.REGISTER_COLLECTION_INVOICE, withDue("회수 송장 등록 필요", due), due));
             }
@@ -81,7 +82,7 @@ public final class UserClaimPresenter {
         if (claim.getRejectedAt() == null) {
             // 교환 사유 번복(1021 설계서 4-4) — 반려가 아니라 소비자 귀책으로 바로잡혀 결제를 기다린다. 청구는 번복 때 바로 열린다.
             LocalDate due = rejectCharge == null || rejectCharge.getDueAt() == null ? null
-                    : notPassed(rejectCharge.getDueAt().toLocalDate(), today);
+                    : notPassed(KstDates.toKstDate(rejectCharge.getDueAt()), today);
             return new View(UserClaimPhase.OVERTURN_PAYMENT_PENDING, type + " 사유 변경", "재발송 배송비 · 착불 운임 결제 필요",
                     true, "사유 변경 · 결제 필요",
                     new Todo(TodoType.PAY_RESHIP_FEE, withDue("재발송 배송비 · 착불 운임 결제 필요", due), due));
@@ -91,7 +92,7 @@ public final class UserClaimPresenter {
         }
         // 기한이 지나도 할 일은 남는다 — 날짜만 빠진다.
         LocalDate due = rejectCharge == null || rejectCharge.getDueAt() == null ? null
-                : notPassed(rejectCharge.getDueAt().toLocalDate(), today);
+                : notPassed(KstDates.toKstDate(rejectCharge.getDueAt()), today);
         return new View(UserClaimPhase.REJECTED_PAY, type + " 반려", "재발송 배송비 결제 필요", true, "검수 반려",
                 new Todo(TodoType.PAY_RESHIP_FEE, withDue("재발송 배송비 결제 필요", due), due));
     }

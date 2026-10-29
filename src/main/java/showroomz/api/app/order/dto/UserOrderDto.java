@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * C10 주문 내역 · C10-1 주문 상세의 항목 행 DTO(C10 설계서 1-5). 목록과 상세가 같은 행을 쓴다.
- * 라벨·색·보조 문구·버튼은 서버가 내린다(0-4). 시각은 기존 주문 API 와 같은 규약({@link OrderDto#TIME_PATTERN} · KST).
+ * 라벨·색·보조 문구·버튼은 서버가 내린다(0-4). 시각은 기존 주문 API 와 같은 규약({@link OrderDto#TIME_PATTERN} · UTC).
  */
 public class UserOrderDto {
 

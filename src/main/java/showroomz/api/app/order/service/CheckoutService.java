@@ -51,6 +51,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
 import showroomz.global.utils.DiscountRate;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -493,7 +494,7 @@ public class CheckoutService {
 
     private java.time.LocalDate expectedShipDueDate(GroupBuy groupBuy, int businessDays) {
         java.time.LocalDateTime base = groupBuy.getEndedAt() != null ? groupBuy.getEndedAt() : groupBuy.getEndAt();
-        return base == null ? null : shipDuePolicy.dueAt(base, businessDays).toLocalDate();
+        return base == null ? null : KstDates.toKstDate(shipDuePolicy.dueAt(base, businessDays));
     }
 
     private OrderDto.Item toItemDto(Line line, Pricing pricing) {

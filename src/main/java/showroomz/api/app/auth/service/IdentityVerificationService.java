@@ -27,6 +27,7 @@ import showroomz.global.payment.portone.identity.IdentityVerificationResult;
 import showroomz.global.payment.portone.identity.PortOneIdentityGateway;
 import showroomz.global.utils.MaskingUtils;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -132,7 +133,7 @@ public class IdentityVerificationService {
 
         IdentityVerificationResult.VerifiedCustomer c = result.customer();
         // ⑤ 14세 — 개인정보 없이 닫는다(0-8)
-        if (isUnderMinAge(c.birthDate(), now.toLocalDate())) {
+        if (isUnderMinAge(c.birthDate(), KstDates.today(now))) {
             row.failed(IdentityFailReason.UNDER_MIN_AGE, null, null, result.pgTxId());
             throw new BusinessException(ErrorCode.UNDER_MIN_AGE);
         }

@@ -13,6 +13,7 @@ import showroomz.domain.settlement.repository.SettlementWithholdingReportLogRepo
 import showroomz.domain.settlement.service.SettlementStatementExcel;
 import showroomz.domain.settlement.service.SettlementTableExcel;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -38,8 +39,8 @@ public class AdminWithholdingReportService {
     @Transactional
     public SettlementFile download(YearMonth month, Long operatorId) {
         operators.operatorName(operatorId);
-        List<Object[]> targets = settlementRepository.findWithholdingTargets(month.atDay(1).atStartOfDay(),
-                month.plusMonths(1).atDay(1).atStartOfDay());
+        List<Object[]> targets = settlementRepository.findWithholdingTargets(KstDates.startOfDay(month.atDay(1)),
+                KstDates.startOfDay(month.plusMonths(1).atDay(1)));
         List<List<Object>> rows = new ArrayList<>();
         long[] totals = new long[3];
         for (Object[] target : targets) {
@@ -54,7 +55,7 @@ public class AdminWithholdingReportService {
                     creator.getRealName() == null ? "" : creator.getRealName(),
                     creator.getResidentRegistrationNumberEnc() == null ? ""
                             : cipher.decrypt(creator.getResidentRegistrationNumberEnc()),
-                    gross, incomeTax, localTax, paidAt.toLocalDate().toString()));
+                    gross, incomeTax, localTax, KstDates.toKstDate(paidAt).toString()));
             totals[0] += gross;
             totals[1] += incomeTax;
             totals[2] += localTax;

@@ -11,6 +11,7 @@ import showroomz.domain.market.type.MarketStatus;
 import showroomz.domain.message.repository.MessageRepository;
 import showroomz.domain.message.service.MessageThreadService;
 import showroomz.domain.metrics.repository.AdminOperationsQueryRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,7 +46,7 @@ public class AdminHomeAssembler {
         long dueSoon = snapshot.rowCount(TodoUrgency.EXECUTION_PENDING) + snapshot.rowCount(TodoUrgency.DUE_SOON);
         AdminHomeDto.Todo todo = new AdminHomeDto.Todo(total, failed, overdue, dueSoon,
                 Math.max(0, total - failed - overdue - dueSoon),
-                opsRepository.countProcessed(now.toLocalDate().atStartOfDay(), now), PROCESSED_NOTE, snapshot.rows());
+                opsRepository.countProcessed(KstDates.startOfDay(KstDates.today(now)), now), PROCESSED_NOTE, snapshot.rows());
         return new AdminHomeDto.Home(now, integrationReader.read(now), todo, scheduleReader.read(now),
                 metricsReader.read(now));
     }

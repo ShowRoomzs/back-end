@@ -35,6 +35,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.SettlementAccountMasker;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -106,7 +107,7 @@ public class CreatorSettlementQueryService {
             LocalDate payoutDate = null;
             String payoutDateKind = null;
             if (mine != null && mine.getStatus() == PayoutStatus.PAID && mine.getPaidAt() != null) {
-                payoutDate = mine.getPaidAt().toLocalDate();
+                payoutDate = KstDates.toKstDate(mine.getPaidAt());
                 payoutDateKind = "PAID";
             } else if (mine != null && mine.getDueDate() != null && (mine.getStatus() == PayoutStatus.SCHEDULED
                     || mine.getStatus() == PayoutStatus.REQUESTED)) {
@@ -265,7 +266,7 @@ public class CreatorSettlementQueryService {
                         case PLATFORM -> s.isBusinessCreator() ? "부가세는 인플루언서에게 지급" : "플랫폼 신고 · 납부";
                     };
                     LocalDate date = shown == PayoutStatus.PAID && payout.getPaidAt() != null
-                            ? payout.getPaidAt().toLocalDate() : payout.getDueDate();
+                            ? KstDates.toKstDate(payout.getPaidAt()) : payout.getDueDate();
                     return new CreatorSettlementDto.PayoutRow(payee, payee.getLabel(), name, payout.getAmount(), note,
                             shown, statusLabel(s, payee, shown, date, myHold), date,
                             mine ? myHold : null);

@@ -41,8 +41,8 @@ public record ContractUpdateRequest(
         @Size(max = 40)
         String title,
 
-        @Schema(description = "공구 시작 일시(Asia/Seoul)", example = "2026-09-01T10:00:00", nullable = true) LocalDateTime groupBuyStartAt,
-        @Schema(description = "공구 종료 일시(Asia/Seoul)", example = "2026-09-17T23:59:00", nullable = true) LocalDateTime groupBuyEndAt,
+        @Schema(description = "공구 시작 일시 — UTC(…Z) · KST 10:00 이면 01:00Z", example = "2026-09-01T01:00:00Z", nullable = true) LocalDateTime groupBuyStartAt,
+        @Schema(description = "공구 종료 일시 — UTC(…Z) · KST 23:59 면 14:59Z", example = "2026-09-17T14:59:00Z", nullable = true) LocalDateTime groupBuyEndAt,
 
         @Schema(description = "고정 지급비(원) · 0원 허용 · 최대 1,000만원", nullable = true)
         @Min(0) @Max(10_000_000)

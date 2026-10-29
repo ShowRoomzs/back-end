@@ -19,6 +19,7 @@ import showroomz.domain.settlement.adjustment.type.ProposalStatus;
 import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.global.utils.Percent;
+import showroomz.global.utils.KstDates;
 
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -101,7 +102,7 @@ public class CreatorPerformanceDetailAssembler {
                         Percent.oneDecimal(followerBuyers, buyers),
                         CreatorPerformanceDistribution.of(f.buyers().stream()
                                 .map(b -> new CreatorPerformanceDistribution.Person(b.gender(), b.birthday())).toList(),
-                                f.periodEnd().toLocalDate())),
+                                KstDates.toKstDate(f.periodEnd()))),
                 followers(f, estimated),
                 reward(f, stage, status, s, adjustment, agreed, originalReward, finalReward, totalReward, creator),
                 new CreatorPerformanceDto.Recollaboration(groupBuy.getMarket().getId(),

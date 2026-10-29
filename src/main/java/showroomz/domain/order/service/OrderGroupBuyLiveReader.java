@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.order.repository.OrderProductRepository;
 import showroomz.domain.order.type.OrderStatus;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -33,7 +34,7 @@ public class OrderGroupBuyLiveReader {
      * @param now   기준 시각(「집계 중」 칸 = 이 시각의 시)
      */
     public LiveSales read(Long groupBuyId, LocalDateTime since, LocalDateTime now) {
-        LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime todayStart = KstDates.startOfDay(KstDates.today(now));
         LocalDateTime yesterdayStart = todayStart.minusDays(1);
         LocalDateTime yesterdaySameTime = now.minusDays(1);
 
@@ -52,7 +53,7 @@ public class OrderGroupBuyLiveReader {
             if (!paidAt.isBefore(todayStart)) {
                 todayOrders.add(orderId);
                 paidToday += amount;
-                int hour = paidAt.getHour();
+                int hour = KstDates.toKst(paidAt).getHour();
                 hourOrders.get(hour).add(orderId);
                 hourAmounts[hour] += amount;
             } else if (!paidAt.isAfter(yesterdaySameTime)) {
@@ -73,7 +74,7 @@ public class OrderGroupBuyLiveReader {
 
         List<HourBucket> hourly = new ArrayList<>(HOURS);
         for (int hour = 0; hour < HOURS; hour++) {
-            hourly.add(new HourBucket(hour, hourOrders.get(hour).size(), hourAmounts[hour], hour == now.getHour()));
+            hourly.add(new HourBucket(hour, hourOrders.get(hour).size(), hourAmounts[hour], hour == KstDates.toKst(now).getHour()));
         }
         return new LiveSales(todayOrders.size(), yesterdayOrders.size(), paidToday, ordersCumulative, paidCumulative,
                 soldQuantity, hourly);

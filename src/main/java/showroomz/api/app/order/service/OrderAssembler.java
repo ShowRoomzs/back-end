@@ -26,6 +26,7 @@ import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.payment.portone.PortOneCodes;
 import showroomz.global.payment.portone.PortOnePaymentGateway;
 import showroomz.global.utils.DiscountRate;
+import showroomz.global.utils.KstDates;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -116,7 +117,7 @@ public class OrderAssembler {
                             .regionSurcharge(group.getRegionSurcharge())
                             .build())
                     // 확정 기한이 있으면 그 날, 공구 진행 중이면 마감 예정 기준 예상일 — 문구는 주문 시점 N 그대로.
-                    .expectedShipDueDate(group.getShipDueAt() != null ? group.getShipDueAt().toLocalDate()
+                    .expectedShipDueDate(group.getShipDueAt() != null ? KstDates.toKstDate(group.getShipDueAt())
                             : expectedShipDueDate(group))
                     .shipDueText(ShipDuePolicy.noticeText(group.getShipDueBusinessDays()))
                     .build());
@@ -293,6 +294,6 @@ public class OrderAssembler {
         if (group.getGroupBuy() == null || group.getGroupBuy().getEndAt() == null) {
             return null;
         }
-        return shipDuePolicy.dueAt(group.getGroupBuy().getEndAt(), group.getShipDueBusinessDays()).toLocalDate();
+        return KstDates.toKstDate(shipDuePolicy.dueAt(group.getGroupBuy().getEndAt(), group.getShipDueBusinessDays()));
     }
 }

@@ -33,7 +33,7 @@ import java.util.List;
 
 /**
  * 소비자 앱 반품·교환(C10-3 요청 · C10-5 상세 — 앱 클레임 설계서 3 · 4절). 사유 · 택배사 · 금액 · 라벨 · 버튼은 서버가
- * 내린다 — 앱에 목록을 박지 않는다(0-7 · 0-8). 시각은 주문 API 와 같은 규약({@link OrderDto#TIME_PATTERN} · KST).
+ * 내린다 — 앱에 목록을 박지 않는다(0-7 · 0-8). 시각은 주문 API 와 같은 규약({@link OrderDto#TIME_PATTERN} · UTC).
  */
 public class UserClaimDto {
 

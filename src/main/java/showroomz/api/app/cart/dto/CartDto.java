@@ -190,9 +190,9 @@ public class CartDto {
         @Schema(description = "공구명(계약의 공구명)", example = "가을 앰플 신제품 공구", nullable = true)
         private String groupBuyTitle;
 
-        @Schema(description = "공구 종료 시각(Asia/Seoul) — 연장되면 바뀐다", example = "2026-09-17T23:59:00", nullable = true)
+        @Schema(description = "공구 종료 시각(UTC) — 연장되면 바뀐다", example = "2026-09-17T14:59:00Z", nullable = true)
         @com.fasterxml.jackson.annotation.JsonFormat(
-                shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+                shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private java.time.LocalDateTime endAt;
 
         @Schema(description = "그룹 머리의 D-day — 종료 일자까지 남은 날 수(마감 당일 0). 마감 그룹이면 null",

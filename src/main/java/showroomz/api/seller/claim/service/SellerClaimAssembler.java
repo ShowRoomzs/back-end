@@ -18,6 +18,7 @@ import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.OrderBadgeTone;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -86,7 +87,7 @@ public class SellerClaimAssembler {
                 OrderBadgeTone.NEUTRAL,
                 claim.getRequestedAt(),
                 claim.getStageEnteredAt(),
-                (int) Math.max(0, ChronoUnit.DAYS.between(claim.getStageEnteredAt().toLocalDate(), now.toLocalDate())),
+                (int) Math.max(0, ChronoUnit.DAYS.between(KstDates.toKstDate(claim.getStageEnteredAt()), KstDates.today(now))),
                 isOverdue(claim, now),
                 new SellerClaimListItem.Collection(
                         collection.getId(),

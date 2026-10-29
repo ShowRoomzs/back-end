@@ -10,6 +10,7 @@ import showroomz.domain.performance.type.PerformanceAgeBand;
 import showroomz.domain.performance.type.PerformanceCancelKind;
 import showroomz.domain.performance.type.PerformanceExceptionKind;
 import showroomz.domain.performance.type.PerformanceSource;
+import showroomz.global.utils.KstDates;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -158,7 +159,7 @@ final class SellerPerformanceSections {
             counts.put(band, new long[2]);
         }
         for (PerformanceFacts.Buyer buyer : f.buyers()) {
-            long[] c = counts.get(PerformanceAgeBand.of(buyer.birthday(), f.periodStart().toLocalDate()));
+            long[] c = counts.get(PerformanceAgeBand.of(buyer.birthday(), KstDates.toKstDate(f.periodStart())));
             if ("FEMALE".equalsIgnoreCase(buyer.gender())) {
                 c[0]++;
             } else if ("MALE".equalsIgnoreCase(buyer.gender())) {

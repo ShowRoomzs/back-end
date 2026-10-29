@@ -10,6 +10,7 @@ import showroomz.domain.metrics.repository.AdminOperationsQueryRepository;
 import showroomz.domain.settlement.adjustment.entity.SettlementAdjustment;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.global.config.properties.SettlementProperties;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,8 +31,8 @@ public class AdminTodayScheduleReader {
     private final SettlementProperties settlementProperties;
 
     public List<AdminHomeDto.ScheduleItem> read(LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
-        LocalDateTime from = today.atStartOfDay();
+        LocalDate today = KstDates.today(now);
+        LocalDateTime from = KstDates.startOfDay(today);
         LocalDateTime to = from.plusDays(1);
         List<AdminHomeDto.ScheduleItem> items = new ArrayList<>();
         for (GroupBuy groupBuy : opsRepository.findOpeningBetween(from, to)) {
@@ -46,7 +47,7 @@ public class AdminTodayScheduleReader {
         long payoutCount = payouts[0] instanceof Number n ? n.longValue() : 0;
         if (payoutCount > 0) {
             long amount = payouts[1] instanceof Number n ? n.longValue() : 0;
-            items.add(new AdminHomeDto.ScheduleItem(today.atTime(settlementProperties.getPayoutHour(), 0),
+            items.add(new AdminHomeDto.ScheduleItem(KstDates.at(today, java.time.LocalTime.of(settlementProperties.getPayoutHour(), 0)),
                     "SETTLEMENT_PAYOUT", "정산 지급 " + payoutCount + "건", String.format("합계 %,d원", amount),
                     new AdminHomeDto.Target("QUEUE", null, "/settlements?tab=ALL")));
         }

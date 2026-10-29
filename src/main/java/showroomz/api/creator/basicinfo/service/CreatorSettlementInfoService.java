@@ -25,6 +25,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.MaskingUtils;
 import showroomz.global.utils.SettlementAccountMasker;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -135,7 +136,7 @@ public class CreatorSettlementInfoService {
         LocalDateTime now = LocalDateTime.now();
         if (creator.getAccountVerificationStatus() == null || !creator.getAccountVerificationStatus().blocksPayout()) {
             payoutHolds.release(SettlementPayee.CREATOR, creator.getId(), PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED,
-                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, now.toLocalDate(), now);
+                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, KstDates.today(now), now);
         }
         return toResponse(creator);
     }

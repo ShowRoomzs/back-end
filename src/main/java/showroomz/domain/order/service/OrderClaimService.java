@@ -60,6 +60,7 @@ import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -338,8 +339,8 @@ public class OrderClaimService {
             throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE, "배송완료 후 3개월이 지나 열 수 없습니다.");
         }
         // 하자 인지일(46 수정계획 3-2) — 표시용 기산점이다. 30일 기한으로 개설을 막지 않는다(법무 판단 대기).
-        if (defectNoticedOn != null && (defectNoticedOn.isBefore(group.getDeliveredAt().toLocalDate())
-                || defectNoticedOn.isAfter(now.toLocalDate()))) {
+        if (defectNoticedOn != null && (defectNoticedOn.isBefore(KstDates.toKstDate(group.getDeliveredAt()))
+                || defectNoticedOn.isAfter(KstDates.today(now)))) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "하자 인지일은 배송완료일 이후 · 오늘 이전이어야 합니다.");
         }
         Set<Long> ids = new HashSet<>();

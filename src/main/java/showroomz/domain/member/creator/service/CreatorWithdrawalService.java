@@ -26,6 +26,7 @@ import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -81,7 +82,7 @@ public class CreatorWithdrawalService {
                 .filter(CreatorWithdrawalRequest::isUnacknowledgedRejection)
                 .ifPresent(rejected -> rejected.acknowledgeResult(now));
         CreatorWithdrawalRequest saved = requests.save(CreatorWithdrawalRequest.request(creatorId, reason, now,
-                businessCalendar.addBusinessDays(now.toLocalDate(), APPROVAL_DUE_BUSINESS_DAYS)));
+                businessCalendar.addBusinessDays(KstDates.today(now), APPROVAL_DUE_BUSINESS_DAYS)));
         history.byCreator(creatorId, CreatorAdminEventType.WITHDRAWAL_REQUESTED, reason,
                 CreatorAdminHistoryRecorder.REF_WITHDRAWAL_REQUEST, saved.getId(), now);
         return saved;

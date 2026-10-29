@@ -169,15 +169,15 @@ public class PostDto {
         private Long likeCount;
 
         @Schema(description = "게시 시각. 작성중이면 null", example = "2026-08-10T09:12:00")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime publishedAt;
 
         @Schema(description = "작성 시각", example = "2026-08-09T21:30:00")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime createdAt;
 
         @Schema(description = "이의 신청 기한 — 노출 중지 상태에서만 값이 있다", nullable = true)
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime appealDeadline;
     }
 
@@ -213,14 +213,14 @@ public class PostDto {
         private String policyRef;
 
         @Schema(description = "조치 시각", example = "2026-08-12T10:00:00")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime suspendedAt;
 
         @Schema(description = "처리자(운영자) ID", example = "3")
         private Long suspendedBy;
 
         @Schema(description = "이의 신청 기한", example = "2026-08-19T10:00:00")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime appealDeadline;
 
         @Schema(description = "지금 이의 신청이 가능한지 — 기한 내 미신청 상태일 때만 true", example = "true")
@@ -241,18 +241,18 @@ public class PostDto {
         private String content;
 
         @Schema(description = "신청 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime submittedAt;
 
         @Schema(description = "심사 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime reviewedAt;
 
         @Schema(description = "심사 의견")
         private String reviewComment;
 
         @Schema(description = "원본 내려받기 유예 만료 — 반려된 건에만 값이 있다(§24-6)")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime graceUntil;
 
         @Schema(description = "심사 예상 소요(영업일) — 표시용", example = "3")
@@ -281,15 +281,15 @@ public class PostDto {
         private Long likeCount;
 
         @Schema(description = "게시 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime publishedAt;
 
         @Schema(description = "작성 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime createdAt;
 
         @Schema(description = "수정 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime modifiedAt;
 
         @Schema(description = "수정 가능 여부 — 중지·심사 중에는 false(§24-5)", example = "false")
@@ -312,7 +312,7 @@ public class PostDto {
     @AllArgsConstructor
     public static class OriginalImagesResponse {
         @Schema(description = "유예 만료 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime graceUntil;
 
         @Schema(description = "원본 URL 목록 (순서대로)")

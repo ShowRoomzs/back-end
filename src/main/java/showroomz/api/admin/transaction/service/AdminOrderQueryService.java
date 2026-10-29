@@ -52,6 +52,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -482,7 +483,7 @@ public class AdminOrderQueryService {
         return new AdminOrderSearchCondition(params.tab() == null ? AdminOrderTab.ALL : params.tab(), params.status(),
                 params.marketId(), params.groupBuyId(), params.creatorId(), params.userId(), params.paymentMethod(),
                 params.trackingAlert(), params.searchType(), params.keyword(), params.sort(),
-                from == null ? null : from.atStartOfDay(), to == null ? null : to.atTime(23, 59, 59),
+                from == null ? null : KstDates.startOfDay(from), to == null ? null : KstDates.endOfDay(to),
                 params.cancelRequested());
     }
 }

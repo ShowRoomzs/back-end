@@ -98,11 +98,11 @@ public class PostInsightDto {
         private String periodLabel;
 
         @Schema(description = "집계 시작")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime from;
 
         @Schema(description = "집계 종료 — 노출 중지된 게시물은 <b>중지 시각</b>이 상한이다(§24-7 화면의 '중지 시점까지 누적')")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime to;
 
         @Schema(description = "집계가 중지 시점에서 멈췄는지", example = "false")

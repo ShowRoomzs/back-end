@@ -54,10 +54,10 @@ import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.RewardCalculator;
+import showroomz.global.utils.KstDates;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -83,7 +83,6 @@ import java.util.stream.Stream;
 @Transactional(readOnly = true)
 public class AdminGroupBuyDetailAssembler {
 
-    private static final LocalTime END_OF_DAY = LocalTime.of(23, 59, 59);
     private static final DateTimeFormatter POST_NUMBER_DATE = DateTimeFormatter.BASIC_ISO_DATE;
     private static final String DEFAULT_OPERATOR_NAME = "운영자";
 
@@ -157,9 +156,9 @@ public class AdminGroupBuyDetailAssembler {
         int elapsedDays = now.isBefore(startAt) ? 0
                 : Math.min(GroupBuy.daysInclusive(startAt, now.isBefore(cap) ? now : cap), totalDays);
         Integer daysUntilStart = now.isBefore(startAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), startAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(startAt)) : null;
         Integer daysUntilEnd = groupBuy.getStatus().isSelling() && now.isBefore(endAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), endAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(endAt)) : null;
         boolean startOverdue = groupBuy.getStatus() == GroupBuyStatus.PREPARING && !now.isBefore(startAt);
         return new Timeline(startAt, endAt, contract.getGroupBuyEndAt(), totalDays, elapsedDays,
                 daysUntilStart, daysUntilEnd, startOverdue);
@@ -232,13 +231,13 @@ public class AdminGroupBuyDetailAssembler {
         int sla = properties.getOpenReview().getSlaBusinessDays();
         LocalDateTime dueAt = openReviewDueAt(post.getSubmittedAt(), sla);
         return new OpenReview(post.getSubmittedAt(), sla, dueAt,
-                ChronoUnit.DAYS.between(now.toLocalDate(), dueAt.toLocalDate()),
+                ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(dueAt)),
                 groupBuy.getStartAt(), now.isAfter(dueAt));
     }
 
     /** 오픈 승인 기한 — 요약의 최단 기한과 같은 식이다. */
     public LocalDateTime openReviewDueAt(LocalDateTime submittedAt, int slaBusinessDays) {
-        return businessCalendar.addBusinessDays(submittedAt.toLocalDate(), slaBusinessDays).atTime(END_OF_DAY);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(KstDates.toKstDate(submittedAt), slaBusinessDays));
     }
 
     // ── 게시물 ────────────────────────────────────────────────────────────────
@@ -462,7 +461,7 @@ public class AdminGroupBuyDetailAssembler {
         }
         return new AdminSuspension(notice.getId(), notice.getKind(), notice.getReasonClause(), notice.basisLabel(),
                 notice.getNoticeBody(), notice.getNoticedAt(), names.of(notice.getNoticedBy()),
-                (int) ChronoUnit.DAYS.between(notice.getNoticedAt().toLocalDate(), now.toLocalDate()),
+                (int) ChronoUnit.DAYS.between(KstDates.toKstDate(notice.getNoticedAt()), KstDates.today(now)),
                 notice.getExecuteScheduledAt(), notice.getAppealDeadlineAt(), notice.getNoticeRevisionNo(),
                 sinceNotice, appeal,
                 notice.getAppealDeadlineAt() != null && now.isAfter(notice.getAppealDeadlineAt()),
@@ -588,8 +587,8 @@ public class AdminGroupBuyDetailAssembler {
         Watch watch = null;
         if (groupBuy.getStatus() == GroupBuyStatus.ENDED && groupBuy.getEndedAt() != null) {
             int watchDays = properties.getSettlement().getWatchDays();
-            watch = new Watch(groupBuy.getEndedAt().toLocalDate().plusDays(watchDays),
-                    ChronoUnit.DAYS.between(groupBuy.getEndedAt().toLocalDate(), now.toLocalDate()),
+            watch = new Watch(KstDates.toKstDate(groupBuy.getEndedAt()).plusDays(watchDays),
+                    ChronoUnit.DAYS.between(KstDates.toKstDate(groupBuy.getEndedAt()), KstDates.today(now)),
                     !now.isBefore(groupBuy.getEndedAt().plusDays(watchDays)));
         }
         List<BigDecimal> rewardRates = contract.getItems().stream()

@@ -30,6 +30,7 @@ import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementEventType;
 import showroomz.domain.settlement.type.SettlementPayee;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -222,7 +223,7 @@ public class SettlementPartnerSyncService {
             return linked != null;
         }
         PartnerStatus status = gateway.statusOf(rawStatus);
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         if (status == PartnerStatus.APPROVED) {
             List<SettlementPayout> blocked = readTransaction.execute(tx ->
                     payoutRepository.findBlockedFor(linked.payee(), linked.refId(), PayoutBlockReason.PARTNER_CODES));

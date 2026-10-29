@@ -14,6 +14,7 @@ import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerResult;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerStatus;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.SettlementPayee;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -99,7 +100,7 @@ public class CreatorAccountVerificationService {
         if (result.status() == PartnerStatus.APPROVED || result.status() == PartnerStatus.PENDING) {
             creator.markAccountVerified(now);
             payoutHolds.release(SettlementPayee.CREATOR, creatorId, PayoutBlockReason.CREATOR_ACCOUNT_UNVERIFIED,
-                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, now.toLocalDate(), now);
+                    PayoutHoldTransitions.DueRule.ORIGINAL_OR_TODAY, KstDates.today(now), now);
         } else if (result.failCode() != null && ACCOUNT_FAIL_CODES.contains(result.failCode())) {
             creator.markAccountFailed(result.failCode());
             // 보류 사유 enum 에 없는 코드(BANK_REJECTED)는 정산 정보 화면의 failReason 과 같은 라벨 — 알림에 코드를 그대로 싣지 않는다.

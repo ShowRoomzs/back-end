@@ -50,6 +50,7 @@ import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -129,7 +130,7 @@ public class AdminCreatorQueryService {
         if (resolvedTab == showroomz.api.admin.common.AdminMemberListTab.WITHDRAWAL_PENDING && !k.noMatch()) {
             LocalDateTime oldest = listQueries.oldestPendingRequestedAt(k);
             longestPendingDays = oldest == null ? null
-                    : Math.max(0, ChronoUnit.DAYS.between(oldest.toLocalDate(), LocalDateTime.now().toLocalDate()));
+                    : Math.max(0, ChronoUnit.DAYS.between(KstDates.toKstDate(oldest), KstDates.toKstDate(LocalDateTime.now())));
         }
         return new ListResponse(content, new showroomz.global.dto.PaginationInfo(rows),
                 new showroomz.api.admin.common.AdminMemberListSummary(
@@ -195,7 +196,7 @@ public class AdminCreatorQueryService {
         }
         if (unmasked) {
             return new Identity(false, true, creator.getRealName(), AdminMemberMasker.formatBirthday(creator.getBirthday()),
-                    AdminMemberMasker.age(creator.getBirthday(), now.toLocalDate()), AdminMemberMasker.formatPhone(creator.getPhoneNumber()),
+                    AdminMemberMasker.age(creator.getBirthday(), KstDates.today(now)), AdminMemberMasker.formatPhone(creator.getPhoneNumber()),
                     null, user.getIdentityVerifiedAt(), null);
         }
         return new Identity(false, false, AdminMemberMasker.maskName(creator.getRealName()),
@@ -280,7 +281,7 @@ public class AdminCreatorQueryService {
     private WithdrawalReview review(CreatorWithdrawalRequest request, LocalDateTime now) {
         CreatorWithdrawalEligibility.Result result = eligibility.evaluate(request.getCreatorId());
         return new WithdrawalReview(request.getId(), request.getRequestedAt(),
-                ChronoUnit.DAYS.between(request.getRequestedAt().toLocalDate(), now.toLocalDate()), request.getDueDate(),
+                ChronoUnit.DAYS.between(KstDates.toKstDate(request.getRequestedAt()), KstDates.today(now)), request.getDueDate(),
                 request.getReasonText(), new Conditions(result.count(CreatorWithdrawalCondition.UNFINISHED_GROUP_BUYS),
                 result.count(CreatorWithdrawalCondition.UNFINISHED_CONTRACTS),
                 result.count(CreatorWithdrawalCondition.UNSETTLED)));

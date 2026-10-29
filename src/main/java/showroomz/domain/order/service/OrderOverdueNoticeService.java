@@ -9,6 +9,7 @@ import showroomz.domain.order.event.OrderOverdueNoticeEvent;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,23 +29,23 @@ public class OrderOverdueNoticeService {
 
     /** 오늘이 영업일이 아니면 아무것도 하지 않는다 — 주말 · 공휴일에는 알림 회차가 쌓이지 않는다. */
     public boolean isNoticeDay(LocalDateTime now) {
-        return businessCalendar.isBusinessDay(now.toLocalDate());
+        return businessCalendar.isBusinessDay(KstDates.today(now));
     }
 
     @Transactional(readOnly = true)
     public List<Long> findShipOverdue(LocalDateTime now, int limit) {
-        return deliveryGroupRepository.findShipOverdueToNotify(now, now.toLocalDate().atStartOfDay(),
+        return deliveryGroupRepository.findShipOverdueToNotify(now, KstDates.startOfDay(KstDates.today(now)),
                 PageRequest.of(0, limit));
     }
 
     @Transactional(readOnly = true)
     public List<Long> findInspectOverdue(LocalDateTime now, int limit) {
-        return claimRepository.findInspectOverdueToNotify(now, now.toLocalDate().atStartOfDay(), PageRequest.of(0, limit));
+        return claimRepository.findInspectOverdueToNotify(now, KstDates.startOfDay(KstDates.today(now)), PageRequest.of(0, limit));
     }
 
     @Transactional
     public boolean noticeShipOverdue(Long deliveryGroupId, LocalDateTime now) {
-        if (deliveryGroupRepository.recordOverdueNotice(deliveryGroupId, now, now.toLocalDate().atStartOfDay()) != 1) {
+        if (deliveryGroupRepository.recordOverdueNotice(deliveryGroupId, now, KstDates.startOfDay(KstDates.today(now))) != 1) {
             return false;
         }
         deliveryGroupRepository.findById(deliveryGroupId).ifPresent(group -> eventPublisher.publishEvent(
@@ -55,7 +56,7 @@ public class OrderOverdueNoticeService {
 
     @Transactional
     public boolean noticeInspectOverdue(Long claimId, LocalDateTime now) {
-        if (claimRepository.recordInspectNotice(claimId, now, now.toLocalDate().atStartOfDay()) != 1) {
+        if (claimRepository.recordInspectNotice(claimId, now, KstDates.startOfDay(KstDates.today(now))) != 1) {
             return false;
         }
         claimRepository.findById(claimId).ifPresent(claim -> eventPublisher.publishEvent(

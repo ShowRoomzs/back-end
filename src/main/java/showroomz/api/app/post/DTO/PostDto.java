@@ -74,13 +74,13 @@ public class PostDto {
         private GroupBuyBlock groupBuy;
 
         @Schema(description = "게시 일시 — 처음 게시된 시각. 공구 게시물은 공구가 오픈된 시각", example = "2026-03-04T12:34:56")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime publishedAt;
 
         @Schema(description = "마지막 수정 시각 — 게시 후 본문·사진(공구는 제목·본문)을 고친 시각. 고친 적이 없으면 publishedAt과 같다. "
                 + "좋아요·노출 수·노출 상태 변경으로는 바뀌지 않는다 — publishedAt보다 늦으면 「수정됨」으로 표시할 수 있다",
                 example = "2026-03-04T13:00:00")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime modifiedAt;
     }
 
@@ -162,7 +162,7 @@ public class PostDto {
         private Boolean likeLocked;
 
         @Schema(description = "게시 일시 — 목록 정렬 기준. 공구 게시물은 공구가 오픈된 시각", example = "2026-03-04T12:34:56")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime publishedAt;
 
         @Schema(description = "공구 블록 — 공구 게시물만 있고 일반 게시물은 null. 목록에서 마감(CLOSED)이면 products는 []", nullable = true)
@@ -196,7 +196,7 @@ public class PostDto {
         private Integer dDay;
         @Schema(description = "종료 예정 일시 — 연장이 반영된 현재 값. 시분 단위 표시가 필요할 때. "
                 + "조기 마감·중단으로 일찍 끝나도 원래 종료 예정 값이다", example = "2026-09-29T23:59:59")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime endAt;
         @Schema(description = "대가관계 표시 — 공구 게시물에 항상 붙는다")
         private AdDisclosure adDisclosure;

@@ -24,6 +24,7 @@ import showroomz.global.dto.PaginationInfo;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -74,7 +75,7 @@ public class SellerPerformanceQueryService {
         LocalDateTime from = row.get(0, LocalDateTime.class);
         LocalDateTime to = row.get(1, LocalDateTime.class);
         return from == null || to == null ? null
-                : new SellerPerformanceDto.ListPeriod(from.toLocalDate(), to.toLocalDate());
+                : new SellerPerformanceDto.ListPeriod(KstDates.toKstDate(from), KstDates.toKstDate(to));
     }
 
     // ------------------------------------------------------------------ 요약(3-3)

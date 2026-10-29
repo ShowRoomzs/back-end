@@ -23,14 +23,18 @@ import showroomz.domain.payment.type.PaymentStatus;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** C9 결제 화면 DTO(결제 계획서 5절). 시각은 장바구니와 같은 KST {@code yyyy-MM-dd'T'HH:mm:ss}다(5-3). */
+/** C9 결제 화면 DTO(결제 계획서 5절). 시각은 다른 API 와 같은 UTC {@code yyyy-MM-dd'T'HH:mm:ss'Z'}다(58 계획 1-6). */
 public class OrderDto {
 
     /** C9 요청사항 프리셋 4종. */
     public static final List<String> MEMO_PRESETS = List.of(
             "문 앞에 놓아주세요", "경비실에 맡겨주세요", "부재 시 연락해주세요", "배송 전 미리 연락해주세요");
 
-    public static final String TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss";
+    /**
+     * 소비자 주문 · 클레임 · 취소 응답의 시각 형식 — 전역 직렬화(JacksonConfig)와 같은 UTC + {@code Z}. 서버 시각은 UTC 라 {@code Z} 없이 내리면
+     * 앱이 KST 로 읽어 날짜가 하루 앞당겨졌다(58 계획 1-6 ①).
+     */
+    public static final String TIME_PATTERN = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     // ------------------------------------------------------------------ 요청
 
@@ -334,7 +338,7 @@ public class OrderDto {
         private Long orderId;
         private String orderNumber;
         private OrderStatus status;
-        @Schema(description = "결제 대기 만료 시각(Asia/Seoul)", example = "2026-09-27T14:41:00")
+        @Schema(description = "결제 대기 만료 시각(UTC)", example = "2026-09-27T05:41:00Z")
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = TIME_PATTERN)
         private LocalDateTime expiresAt;
         private PaymentWindow payment;

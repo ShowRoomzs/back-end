@@ -17,6 +17,7 @@ import showroomz.domain.contract.type.FixedFeeTrigger;
 import showroomz.domain.contract.type.SecondaryUsePeriodType;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -459,7 +460,7 @@ public class Contract extends BaseTimeEntity {
         if (groupBuyStartAt == null || groupBuyEndAt == null) {
             return null;
         }
-        return (int) ChronoUnit.DAYS.between(groupBuyStartAt.toLocalDate(), groupBuyEndAt.toLocalDate()) + 1;
+        return (int) ChronoUnit.DAYS.between(KstDates.toKstDate(groupBuyStartAt), KstDates.toKstDate(groupBuyEndAt)) + 1;
     }
 
     public int totalContentCount() {

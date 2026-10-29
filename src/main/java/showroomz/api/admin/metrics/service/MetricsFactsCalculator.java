@@ -16,6 +16,7 @@ import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -346,7 +347,7 @@ public class MetricsFactsCalculator {
 
     /** 처리 쌍의 영업일 소요 — 진입일 다음 날부터 처리일까지의 영업일 수(같은 날 처리 = 0). 오픈 승인 소요 · 큐별 처리가 같이 쓴다. */
     int businessDays(LocalDateTime[] pair) {
-        return businessCalendar.businessDaysBetween(pair[0].toLocalDate(), pair[1].toLocalDate());
+        return businessCalendar.businessDaysBetween(KstDates.toKstDate(pair[0]), KstDates.toKstDate(pair[1]));
     }
 
     // ------------------------------------------------------------------
@@ -358,7 +359,7 @@ public class MetricsFactsCalculator {
     }
 
     private LocalDateTime dueAt(LocalDateTime base, int businessDays) {
-        return businessCalendar.addBusinessDays(base.toLocalDate(), businessDays).atTime(23, 59, 59);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(KstDates.toKstDate(base), businessDays));
     }
 
     private static Integer minQuantity(List<ContractItem> items) {

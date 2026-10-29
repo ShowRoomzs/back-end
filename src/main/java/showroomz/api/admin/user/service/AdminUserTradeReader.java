@@ -10,8 +10,8 @@ import showroomz.domain.address.repository.DeliveryAddressRepository;
 import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.member.user.type.UserStatus;
 import showroomz.global.utils.Percent;
+import showroomz.global.utils.KstDates;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -33,7 +33,7 @@ public class AdminUserTradeReader {
     private final DeliveryAddressRepository deliveryAddressRepository;
 
     public Trade read(Users user, LocalDateTime now) {
-        LocalDateTime monthStart = LocalDate.from(now).withDayOfMonth(1).atStartOfDay();
+        LocalDateTime monthStart = KstDates.startOfDay(KstDates.today(now).withDayOfMonth(1));
         AdminUserQueryRepository.PurchaseTotals totals = queryRepository.purchaseTotals(user.getId(), monthStart);
         long total = Math.max(0, totals.paidAmount() - totals.cancelledAmount());
         long thisMonth = Math.max(0, totals.thisMonthPaidAmount() - totals.thisMonthCancelledAmount());

@@ -58,7 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("[통합] §24-7 게시물 인사이트")
 class PostInsightIntegrationTest extends IntegrationTestSupport {
 
-    private static final DateTimeFormatter RESPONSE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+    private static final DateTimeFormatter RESPONSE_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     /** §22-5와 같은 표본 최소치 — 미달이면 구성 비율을 비공개한다. */
     private static final int MINIMUM_SAMPLE_SIZE = 30;

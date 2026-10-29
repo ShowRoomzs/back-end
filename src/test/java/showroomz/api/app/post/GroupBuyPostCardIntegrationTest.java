@@ -220,7 +220,7 @@ class GroupBuyPostCardIntegrationTest extends GroupBuyPostTestSupport {
 
         detail(postId)
                 .andExpect(jsonPath("$.groupBuy.dDay").value(0))
-                .andExpect(jsonPath("$.groupBuy.endAt").value(LocalDate.now() + "T23:59:59"));
+                .andExpect(jsonPath("$.groupBuy.endAt").value(LocalDate.now() + "T23:59:59Z"));
     }
 
     // ── 쿼리 수 ─────────────────────────────────────────────────────────────

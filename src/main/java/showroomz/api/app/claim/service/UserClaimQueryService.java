@@ -49,6 +49,7 @@ import showroomz.domain.payment.repository.PaymentRepository;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -282,7 +283,7 @@ public class UserClaimQueryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         OrderClaimCollection collection = focused.getCollection();
         Order order = focused.getDeliveryGroup().getOrder();
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
 
         // 철회·취소로 사라진 항목은 빼되, 진입한 항목은 취소됐어도 싣는다(알림 딥링크로 열린다).
         List<OrderClaim> shown = claimRepository.findByCollectionId(collection.getId()).stream()
@@ -321,7 +322,7 @@ public class UserClaimQueryService {
                         .collectionInvoice(!collection.hasInvoice() ? null : new UserClaimDto.Invoice(
                                 collection.getCarrier(), collection.getCarrier().getLabel(),
                                 collection.getTrackingNumber()))
-                        .invoiceDueDate(invoiceMissing ? collection.getInvoiceDueAt().toLocalDate() : null)
+                        .invoiceDueDate(invoiceMissing ? KstDates.toKstDate(collection.getInvoiceDueAt()) : null)
                         .reshipInvoice(focused.getReshipTrackingNumber() == null ? null : new UserClaimDto.Invoice(
                                 focused.getReshipCarrier(), focused.getReshipCarrier().getLabel(),
                                 focused.getReshipTrackingNumber()))
@@ -384,7 +385,7 @@ public class UserClaimQueryService {
         UserClaimDto.OverturnPayment payment = null;
         if (overturnCharge) {
             int total = charge.getAmount() == null ? 0 : charge.getAmount();
-            LocalDate dueDate = charge.getDueAt() == null ? null : charge.getDueAt().toLocalDate();
+            LocalDate dueDate = charge.getDueAt() == null ? null : KstDates.toKstDate(charge.getDueAt());
             payment = UserClaimDto.OverturnPayment.builder()
                     .reshipFee(Math.max(0, total - collectFreight))
                     .collectFreight(collectFreight)
@@ -590,7 +591,7 @@ public class UserClaimQueryService {
             case WAIVED -> ReshipFeeState.WAIVED;
             case VOID, REFUNDED -> ReshipFeeState.CANCELLED;
         };
-        LocalDate dueDate = rejectCharge.getDueAt() == null ? null : rejectCharge.getDueAt().toLocalDate();
+        LocalDate dueDate = rejectCharge.getDueAt() == null ? null : KstDates.toKstDate(rejectCharge.getDueAt());
         boolean overdue = state == ReshipFeeState.PAYABLE && dueDate != null && dueDate.isBefore(today);
         LocalDateTime now = LocalDateTime.now();
         return UserClaimDto.ReshipFee.builder()

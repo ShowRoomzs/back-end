@@ -10,6 +10,7 @@ import showroomz.domain.groupbuy.service.port.GroupBuySalesReader;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.order.service.OrderGroupBuyLiveReader;
 import showroomz.domain.showroom.repository.ShowroomVisitRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,7 +37,7 @@ public class CreatorHomeLiveService {
         }
         GroupBuy groupBuy = selling.get(0);
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime todayStart = KstDates.startOfDay(KstDates.today(now));
         LocalDateTime todayFrom = todayStart.isAfter(groupBuy.getStartAt()) ? todayStart : groupBuy.getStartAt();
         GroupBuySalesReader.GroupBuySales sales = salesReader.readSales(groupBuy.getId())
                 .orElse(new GroupBuySalesReader.GroupBuySales(0, 0L, List.of()));

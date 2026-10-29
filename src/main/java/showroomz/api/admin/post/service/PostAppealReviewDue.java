@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.global.config.properties.PostProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -24,7 +25,8 @@ public class PostAppealReviewDue {
         if (submittedAt == null) {
             return null;
         }
-        return businessCalendar.addBusinessDays(submittedAt.toLocalDate(), postProperties.getAppealReviewBusinessDays())
-                .atTime(submittedAt.toLocalTime());
+        // 접수한 한국 날짜 + N영업일, 접수와 같은 한국 시각(58 계획 3-3)
+        return KstDates.at(businessCalendar.addBusinessDays(KstDates.toKstDate(submittedAt),
+                postProperties.getAppealReviewBusinessDays()), KstDates.toKst(submittedAt).toLocalTime());
     }
 }

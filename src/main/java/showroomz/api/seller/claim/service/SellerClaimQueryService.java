@@ -39,6 +39,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -268,7 +269,7 @@ public class SellerClaimQueryService {
     private SellerClaimSearchCondition buildCondition(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                       ClaimReason reason, LocalDate from, LocalDate to,
                                                       String keyword, LocalDateTime now) {
-        LocalDate resolvedTo = to != null ? to : now.toLocalDate();
+        LocalDate resolvedTo = to != null ? to : KstDates.today(now);
         LocalDate resolvedFrom = from != null ? from : resolvedTo.minusDays(DEFAULT_PERIOD_DAYS);
         // 역전된 기간은 빈 목록이 아니라 입력 오류다 — 주문 관리와 같은 규칙.
         if (resolvedFrom.isAfter(resolvedTo)) {
@@ -288,7 +289,7 @@ public class SellerClaimQueryService {
             }
         }
         return new SellerClaimSearchCondition(marketId, tab == null ? ClaimTab.COLLECT_WAIT : tab, types, reason,
-                resolvedFrom.atStartOfDay(), resolvedTo.atTime(LocalTime.MAX), claimId, orderNumber);
+                KstDates.startOfDay(resolvedFrom), KstDates.at(resolvedTo, LocalTime.MAX), claimId, orderNumber);
     }
 
     /** 자릿수가 넘치는 접수번호는 없는 번호다 — 0 건이 되도록 존재할 수 없는 id 로 바꾼다. */

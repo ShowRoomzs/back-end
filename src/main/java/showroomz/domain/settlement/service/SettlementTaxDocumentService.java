@@ -25,6 +25,7 @@ import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -77,7 +78,7 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
                 && documentRepository.findBySettlementIdAndTypeAndClawbackIdIsNull(settlementId,
                 TaxDocumentType.BRAND_TAX_INVOICE).isEmpty()) {
             Seller seller = settlement.getMarket().getSeller();
-            LocalDate dueDate = brandInvoiceDueDate(confirmedAt.toLocalDate());
+            LocalDate dueDate = brandInvoiceDueDate(KstDates.toKstDate(confirmedAt));
             documentRepository.save(SettlementTaxDocument.create(settlementId, TaxDocumentType.BRAND_TAX_INVOICE,
                     TaxDocumentStatus.PENDING_ISSUE, settlement.getRewardAmount(), settlement.getRewardVatAmount(),
                     seller == null || seller.getCompanyName() == null ? settlement.getMarket().getMarketName()
@@ -190,7 +191,7 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
         if (documentRepository.verify(documentId, now, operatorId) != 1) {
             throw new BusinessException(ErrorCode.SETTLEMENT_TAX_DOCUMENT_STATE_CHANGED);
         }
-        LocalDate dueDate = calendar.addBusinessDays(now.toLocalDate(), properties.getPayoutBusinessDays());
+        LocalDate dueDate = calendar.addBusinessDays(KstDates.today(now), properties.getPayoutBusinessDays());
         // 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 확인은 남기되 보류는 유지한다. 정지 해제가 다시 판정해 올린다.
         Settlement settlement = settlementRepository.findById(settlementId).orElse(null);
         Long creatorId = settlement == null ? null : settlement.getCreatorId();

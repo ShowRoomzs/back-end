@@ -15,6 +15,7 @@ import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.utils.KstDates;
 import java.time.*;
 import java.util.*;
 
@@ -73,14 +74,17 @@ public class AdminContractQueryService {
         return adminContracts.oldestInQueue(queue, now);
     }
 
-    /** 서명 기한 제안값(1021 설계서 1-7) — 공구 시작 N일 전 그날 지정 시각. 이미 지났으면 제안하지 않는다. */
+    /**
+     * 서명 기한 제안값(1021 설계서 1-7) — 공구 시작의 한국 날짜 N일 전 그날 지정 시각(KST) · 서버 시각. 이미 지났으면 제안하지 않는다.
+     * 서버 날짜로 자르면 KST 오전에 시작하는 공구의 제안이 하루 밀렸다(58 계획 1-7).
+     */
     LocalDateTime suggestedDeadline(Contract c, LocalDateTime now) {
         if (c.getGroupBuyStartAt() == null) {
             return null;
         }
-        LocalDateTime suggested = c.getGroupBuyStartAt().toLocalDate()
-                .minusDays(contractProperties.getSignatureDeadlineDaysBeforeStart())
-                .atTime(contractProperties.getSignatureDeadlineSuggestTime());
+        LocalDateTime suggested = KstDates.at(KstDates.toKstDate(c.getGroupBuyStartAt())
+                        .minusDays(contractProperties.getSignatureDeadlineDaysBeforeStart()),
+                contractProperties.getSignatureDeadlineSuggestTime());
         return suggested.isAfter(now) ? suggested : null;
     }
 

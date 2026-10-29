@@ -34,6 +34,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -287,7 +288,7 @@ public class SettlementPayoutTransitions {
                 }
                 case DEFERRED -> {
                     // 잔액 부족(토스 설계서 5-1 ①) · 요청 전 통신 실패 — 지시를 되돌려 다음 영업일로. attempt 를 소모하지 않는다.
-                    LocalDate next = businessCalendar.addBusinessDays(now.toLocalDate(), 1);
+                    LocalDate next = businessCalendar.addBusinessDays(KstDates.today(now), 1);
                     if (payoutRepository.deferRequested(line.payoutId(), next) == 1) {
                         String why = line.failReason() == null || line.failCode() == null || "INSUFFICIENT_BALANCE".equals(line.failCode())
                                 ? "잔액 부족" : line.failReason();

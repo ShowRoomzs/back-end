@@ -25,6 +25,7 @@ import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -124,7 +125,7 @@ public class UserClaimTrackingService {
                                   List<DeliveryTrackingEvent> scans, boolean hasInvoice) {
         boolean exchange = claim.getType() == ClaimType.EXCHANGE;
         if (claim.getRejectedAt() != null) {
-            return new Stage(3, headline(claim.getRejectedAt().toLocalDate(), "검수에서 반려되었어요",
+            return new Stage(3, headline(KstDates.toKstDate(claim.getRejectedAt()), "검수에서 반려되었어요",
                     (exchange ? "교환" : "반품") + " 상세에서 사유를 확인해 주세요"));
         }
         ClaimStatus status = claim.getStatus();
@@ -132,19 +133,19 @@ public class UserClaimTrackingService {
                 || status == ClaimStatus.RESHIPPING || claim.getResult() == ClaimResult.REFUNDED
                 || claim.getResult() == ClaimResult.EXCHANGED;
         if (passed) {
-            LocalDate date = claim.getInspectedAt() == null ? null : claim.getInspectedAt().toLocalDate();
+            LocalDate date = claim.getInspectedAt() == null ? null : KstDates.toKstDate(claim.getInspectedAt());
             String text = !exchange ? "검수가 끝나 환불이 진행돼요"
                     : status == ClaimStatus.RESHIP_READY ? "검수가 끝나 새 상품을 준비하고 있어요"
                     : "검수가 끝나 새 상품이 출발했어요";
             return new Stage(4, headline(date, text, null));
         }
         if (status == ClaimStatus.RECEIVED) {
-            return new Stage(3, headline(claim.getReceivedAt() == null ? null : claim.getReceivedAt().toLocalDate(),
+            return new Stage(3, headline(claim.getReceivedAt() == null ? null : KstDates.toKstDate(claim.getReceivedAt()),
                     "도착해서 검수 중이에요", null));
         }
         if (status == ClaimStatus.ARRIVED) {
             return new Stage(2, headline(collection.getArrivedAt() == null ? null
-                    : collection.getArrivedAt().toLocalDate(), "브랜드에 도착했어요", null));
+                    : KstDates.toKstDate(collection.getArrivedAt()), "브랜드에 도착했어요", null));
         }
         if (!hasInvoice) {
             return new Stage(-1, headline(null, "회수 송장을 등록해 주세요", null));
@@ -206,7 +207,7 @@ public class UserClaimTrackingService {
                 yield headline(due, due != null ? "도착 예정이에요" : "상품이 배송중이에요",
                         scans.isEmpty() ? null : lastScan(scans.get(0)));
             }
-            case DELIVERED -> headline(deliveredAt.toLocalDate(), "상품 배송이 완료되었어요", null);
+            case DELIVERED -> headline(KstDates.toKstDate(deliveredAt), "상품 배송이 완료되었어요", null);
         };
         return UserOrderDto.TrackingResponse.builder()
                 .state(state)
@@ -256,7 +257,7 @@ public class UserClaimTrackingService {
             return null;
         }
         LocalDate due = arrivalEstimator.estimate(carrier, scans.get(scans.size() - 1).getOccurredAt());
-        return due == null || due.isBefore(LocalDate.now()) ? null : due;
+        return due == null || due.isBefore(KstDates.today()) ? null : due;
     }
 
     private static UserOrderDto.TrackingHeadline headline(LocalDate date, String text, String sub) {

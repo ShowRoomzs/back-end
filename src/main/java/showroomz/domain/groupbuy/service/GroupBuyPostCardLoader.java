@@ -13,6 +13,7 @@ import showroomz.domain.groupbuy.type.GroupBuySaleState;
 import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.repository.ProductVariantRepository;
 import showroomz.global.utils.DiscountRate;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -113,7 +114,7 @@ public class GroupBuyPostCardLoader {
 
     /** D-day — KST 날짜 차이. 앱 시계를 믿지 않도록 서버가 계산한다(4-4). 마감 당일은 0이다. */
     public static int dDay(LocalDateTime endAt, LocalDateTime now) {
-        return (int) ChronoUnit.DAYS.between(now.toLocalDate(), endAt.toLocalDate());
+        return (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(endAt));
     }
 
     /** C7 {@code status.isOutOfStock}과 같은 식 — 강제 품절 ∨ 재고 있는 옵션 없음. 상품이 없는 행은 살 수 없다. */
