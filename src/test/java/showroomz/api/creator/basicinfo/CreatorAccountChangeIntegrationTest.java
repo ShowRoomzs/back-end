@@ -84,7 +84,7 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.account.accountNumber").value("****234567"))
                 .andExpect(jsonPath("$.pendingAccountChange").doesNotExist())
                 .andExpect(jsonPath("$.account.verification.status").value("VERIFIED"))
-                .andExpect(jsonPath("$.account.verification.label").value("확인 완료"))
+                .andExpect(jsonPath("$.account.verification.label").value("운영자 확인 완료"))
                 .andExpect(jsonPath("$.account.verification.verifiedAt").isNotEmpty())
                 .andExpect(jsonPath("$.account.bankbook.fileName").value("통장사본_신한은행.jpg"))
                 .andExpect(jsonPath("$.account.bankbook.submittedAt").isNotEmpty());

@@ -62,7 +62,7 @@ public interface SellerGroupBuyControllerDocs {
                     - `endAt`은 **현재 종료 예정** — 연장이 수락되면 바뀐 값이 내려온다.
                     - `postStatus` — 게시물 8종. 저장값이 아니라 공구 상태에서 파생한 값이다:
                       `NOT_WRITTEN` 미작성 · `WRITING` 작성중 · `PENDING_APPROVAL` 승인대기 · `REJECTED` 반려 ·
-                      `SCHEDULED` 예약(승인됐고 시작 전) · `EXPOSED` 노출중 · `HIDDEN` 숨김 · `CLOSED` 종료(종결 3종 공통)
+                      `SCHEDULED` 예약(승인됐고 시작 전) · `EXPOSED` 노출중 · `EXPOSURE_SUSPENDED` 노출 중지 · `CLOSED` 종료(종결 4종 공통)
                     - `*Label` · `*Tone`(`NEUTRAL` · `INFO` · `WARNING` · `SUCCESS` · `DANGER`)은 배지 문구·색이다. FE가 매핑하지 않고 그대로 쓴다.
                     - `remark`(비고) — 상태만으로 알 수 없는 예외만 **최대 1개** 내린다. 대부분 행은 `null`이다. 문구는 FE가 코드로 고른다.
                       둘 이상 걸리면 아래 **우선순위가 높은 하나만** 내린다(판매가 끊길 가능성이 큰 쪽이 위).
@@ -138,7 +138,7 @@ public interface SellerGroupBuyControllerDocs {
                     | `activeRequest` | 검토 중(PENDING)인 중단·조기 마감 요청이 있을 때(요청자 무관) |
                     | `lastDecision` | 승인·반려된 요청이 1건 이상일 때 — 가장 최근 1건 |
                     | `adminSuspension` | 직권 중단 통지 이력이 있을 때 |
-                    | `closure` · `afterEnd` | 종결 3종(`ENDED` · `SETTLED` · `SUSPENDED`) |
+                    | `closure` · `afterEnd` | 종결 4종(`ENDED` · `SETTLED` · `SUSPENDED` · `TERMINATED`) |
 
                     **상태별 화면 가이드**
                     - `PREPARING` — `readiness.gates` 3개(① 물량 확인 · ② 게시물 제출 · ③ 오픈 승인) 체크리스트. `permissions.canConfirmStock`이면 `[확보 완료]`.

@@ -122,7 +122,7 @@ public interface CreatorSettlementControllerDocs {
                     **분배 행 `payouts.rows[]`**
                     - `shownAfterConfirm = true`(확정 전) — 금액만 보이고 상태는 「확인 기간 후 지급」(`WAITING`) · 「보류 중」(`HELD` — 조정 협의)
                     - 확정 후 — 「10.12 지급 예정」 · 「10.07 지급 완료」 · 0원 행은 「—」
-                    - 내 행 보류(`BLOCKED`) — 세금계산서 확인 전이면 카드 상태(「발행 필요」 · 「확인 중」 · 「반려 · 재제출 필요」), 그 밖의 사유면 사유 라벨(`hold.label` — 「계정 이용 정지 · 정산 정보 불일치」 · 「정산 계좌 확인 중」)
+                    - 내 행 보류(`BLOCKED`) — 세금계산서 확인 전이면 카드 상태(「발행 필요」 · 「확인 중」 · 「반려 · 재제출 필요」), 그 밖의 사유면 사유 라벨(`hold.label` — 「지급 정지 · 계정 이용 정지」 · 「정산 계좌 확인 중」)
                     - 내 행 실패만 「지급 확인 중」(`FAILED`) · 브랜드 행 실패는 「지급 예정」으로 접힌다
 
                     **세금계산서 카드 `taxInvoice.cardStatus`** — `PENDING_INPUT`(발행 필요) · `SUBMITTED`(확인 중) · `REJECTED`(반려 — `rejectReasonLabel` 표시) ·

@@ -38,8 +38,8 @@ public record GroupBuyListItem(
         @Schema(description = "게시물 상태 배지 색 — NEUTRAL · INFO · WARNING · SUCCESS · DANGER", example = "SUCCESS")
         GroupBuyTone postStatusTone,
 
-        @Schema(description = "공구 상태 7종 — PREPARING(준비중) · READY(준비완료) · IN_PROGRESS(진행중) · "
-                + "SUSPENSION_SCHEDULED(중단 예정) · ENDED(종료) · SETTLED(정산완료) · SUSPENDED(중단). "
+        @Schema(description = "공구 상태 8종 — PREPARING(준비중) · READY(준비완료) · IN_PROGRESS(진행중) · "
+                + "SUSPENSION_SCHEDULED(중단 예정) · ENDED(종료) · SETTLED(정산완료) · SUSPENDED(중단) · TERMINATED(해지). "
                 + "탭 묶음이 아니라 개별 값이다 — 진행중 탭 안에서도 중단 예정은 그대로 내린다",
                 example = "SUSPENSION_SCHEDULED")
         GroupBuyStatus status,

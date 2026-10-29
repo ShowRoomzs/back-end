@@ -232,7 +232,7 @@ public interface AdminCreatorControllerDocs {
                                     {
                                       "content": [
                                         { "contractId": 220, "contractNumber": "CT-2609-0031", "marketName": "코코브라운", "title": "가을 수분 크림 공구 계약",
-                                          "status": "CONCLUDED", "statusLabel": "체결완료", "tone": "SUCCESS",
+                                          "status": "CONCLUDED", "statusLabel": "계약 성립", "tone": "SUCCESS",
                                           "fixedFeeAmount": 300000, "fixedFeeTrigger": "POST_REGISTERED", "fixedFeeTriggerLabel": "공구 게시물 등록 후",
                                           "fixedFeeTriggerReachedAt": "2026-09-05T12:00:00", "fixedFeePaidAt": null }
                                       ],

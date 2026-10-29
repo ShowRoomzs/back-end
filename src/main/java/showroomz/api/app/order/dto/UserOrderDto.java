@@ -192,7 +192,7 @@ public class UserOrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "항목 버튼 — 서버가 내린 것만 그린다")
+    @Schema(name = "UserOrderAction", description = "항목 버튼 — 서버가 내린 것만 그린다")
     public static class Action {
         private UserOrderAction type;
         @Schema(example = "주문 취소")

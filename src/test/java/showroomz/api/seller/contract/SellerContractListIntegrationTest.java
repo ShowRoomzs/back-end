@@ -52,7 +52,7 @@ class SellerContractListIntegrationTest extends SellerContractTestSupport {
                         containsInAnyOrder("SIGNING", "CONCLUSION_PENDING")));
 
         list("tab", "CONCLUDED").andExpect(jsonPath("$.pageInfo.totalResults").value(1))
-                .andExpect(jsonPath("$.content[0].statusLabel").value("체결완료"));
+                .andExpect(jsonPath("$.content[0].statusLabel").value("계약 성립"));
 
         // 종결 4종(1021 해지 포함)은 한 탭으로 접히지만 배지 문구는 각자의 것을 유지한다(§26-1).
         list("tab", "CLOSED").andExpect(jsonPath("$.pageInfo.totalResults").value(4))

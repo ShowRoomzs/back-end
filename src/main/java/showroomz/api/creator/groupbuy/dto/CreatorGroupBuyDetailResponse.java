@@ -35,7 +35,7 @@ public record CreatorGroupBuyDetailResponse(
         @Schema(description = "원본 계약 — 항상") ContractRef contract,
         @Schema(description = "공구 상품 = 계약 상품 전부 — 항상") List<Item> items,
         @Schema(description = "고정 지급비 — 항상(계약에 없으면 내부 필드가 null)") FixedFee fixedFee,
-        @Schema(description = "「내가 받는 금액」 — 비종결(준비중·준비완료·진행중·중단 예정)에서만. 종결 3종은 null", nullable = true)
+        @Schema(description = "「내가 받는 금액」 — 비종결(준비중·준비완료·진행중·중단 예정)에서만. 종결 4종은 null", nullable = true)
         Payout payout,
         @Schema(description = "준비 게이트 3개 — PREPARING·READY에서만", nullable = true) Readiness readiness,
         @Schema(description = "공구 게시물 — 항상(미작성이면 status만 NOT_WRITTEN이고 disclosureText 외 나머지는 null)") Post post,
@@ -50,7 +50,7 @@ public record CreatorGroupBuyDetailResponse(
         ActiveRequest activeRequest,
         @Schema(description = "진행 중인 직권 중단 통지 — 중단 예정(SUSPENSION_SCHEDULED)에서만", nullable = true)
         AdminSuspension adminSuspension,
-        @Schema(description = "종결 정보 — 종결 3종(ENDED·SETTLED·SUSPENDED)에서만", nullable = true) Closure closure,
+        @Schema(description = "종결 정보 — 종결 4종(ENDED·SETTLED·SUSPENDED·TERMINATED)에서만", nullable = true) Closure closure,
         @Schema(description = "정산 — 정산완료(SETTLED)에서만", nullable = true) Settlement settlement,
         @Schema(description = "종료 후 이행 확인 — 종료·정산완료에서만(중단은 null)", nullable = true) AfterEnd afterEnd,
         @Schema(description = "버튼 노출 판정 — 항상") Permissions permissions,
@@ -65,8 +65,8 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(example = "41") Long groupBuyId,
             @Schema(description = "공구번호 — GB-생성일(YYYYMMDD)-순번", example = "GB-20260803-041") String groupBuyNumber,
             @Schema(description = "공구명 — 계약에서 읽는다", example = "여름 수분 세럼 공구") String title,
-            @Schema(description = "공구 상태 7종 — PREPARING(준비중) · READY(준비완료) · IN_PROGRESS(진행중) · "
-                    + "SUSPENSION_SCHEDULED(중단 예정) · ENDED(종료) · SETTLED(정산완료) · SUSPENDED(중단)", example = "IN_PROGRESS")
+            @Schema(description = "공구 상태 8종 — PREPARING(준비중) · READY(준비완료) · IN_PROGRESS(진행중) · "
+                    + "SUSPENSION_SCHEDULED(중단 예정) · ENDED(종료) · SETTLED(정산완료) · SUSPENDED(중단) · TERMINATED(해지)", example = "IN_PROGRESS")
             GroupBuyStatus status,
             @Schema(description = "상태 배지 문구", example = "진행중") String statusLabel,
             @Schema(description = "상태 배지 색 — NEUTRAL · INFO · WARNING · SUCCESS · DANGER", example = "SUCCESS")
@@ -158,7 +158,9 @@ public record CreatorGroupBuyDetailResponse(
             SalesReward salesReward,
             @Schema(description = "플랫폼 지급 보증 여부 — 항상 false. FE는 이 값으로 미보증 고지(§29-9)를 붙인다", example = "false")
             boolean platformGuaranteed,
-            @Schema(description = "미보증 고지의 「이슈 스레드에서 운영자 중재」가 갈 곳") DisputeChannel disputeChannel
+            @Schema(description = "미보증 고지의 「브랜드와 협의」가 갈 곳 — 브랜드와의 1:1(PAIR) 스레드. "
+                    + "운영자 중재 이슈 스레드 직접 개설은 폐기됐다 — 금액 이견은 정산 조정 요청으로 연다(44 정산조정 설계서 7절)")
+            DisputeChannel disputeChannel
     ) {
     }
 
@@ -201,7 +203,7 @@ public record CreatorGroupBuyDetailResponse(
 
     public record Post(
             @Schema(description = "게시물 상태 8종(파생값) — NOT_WRITTEN(미작성) · WRITING(작성중) · PENDING_APPROVAL(승인대기) · "
-                    + "REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · CLOSED(종료 — 종결 3종 공통)",
+                    + "REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · CLOSED(종료 — 종결 4종 공통)",
                     example = "EXPOSED")
             GroupBuyPostStatus status,
             @Schema(description = "게시물 상태 배지 문구", example = "노출중") String statusLabel,
@@ -218,7 +220,7 @@ public record CreatorGroupBuyDetailResponse(
             LocalDate expectedReviewDate,
             @Schema(description = "운영자 검토(승인·반려) 시각", nullable = true) LocalDateTime reviewedAt,
             @Schema(description = "노출 시작 — 공구 오픈 시각", nullable = true) LocalDateTime openedAt,
-            @Schema(description = "노출 종료 — 공구 종결 시각(종결 3종에서만)", nullable = true) LocalDateTime closedAt,
+            @Schema(description = "노출 종료 — 공구 종결 시각(종결 4종에서만)", nullable = true) LocalDateTime closedAt,
             @Schema(description = "승인 후 마지막 수정 시각", nullable = true) LocalDateTime lastEditedAt,
             @Schema(description = "반려 — 반려 상태일 때만", nullable = true) Rejection rejection,
             @Schema(description = "노출 중지 — 노출 중지 중일 때만(종결 후에는 null)", nullable = true) Hidden hidden

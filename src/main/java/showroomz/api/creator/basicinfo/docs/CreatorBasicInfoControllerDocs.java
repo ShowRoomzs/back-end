@@ -72,7 +72,7 @@ public interface CreatorBasicInfoControllerDocs {
                                                                    { "key": "AWAITING_ORDER_CLOSURE", "label": "종료 후 주문 종결 대기", "count": 1 } ] },
                                                   { "code": "UNFINISHED_CONTRACTS", "label": "끝나지 않은 계약", "count": 1, "satisfied": false,
                                                     "resolution": "연결된 공구가 끝나야 합니다",
-                                                    "breakdown": [ { "key": "CONCLUDED", "label": "체결완료", "count": 1 } ] },
+                                                    "breakdown": [ { "key": "CONCLUDED", "label": "계약 성립", "count": 1 } ] },
                                                   { "code": "UNSETTLED", "label": "미정산", "count": 1, "satisfied": false,
                                                     "resolution": "모두 지급 완료되어야 합니다",
                                                     "breakdown": [ { "key": "ADJUSTING", "label": "조정 협의", "count": 1 } ] }

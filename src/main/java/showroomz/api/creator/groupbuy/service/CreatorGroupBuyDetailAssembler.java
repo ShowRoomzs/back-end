@@ -167,7 +167,7 @@ public class CreatorGroupBuyDetailAssembler {
     }
 
     /**
-     * 「내가 받는 금액」 — 종결 3종은 null이다. 시안 B7~B12에 이 카드가 없고, 종결 후 금액은 KPI와 정산 블록이 말한다.
+     * 「내가 받는 금액」 — 종결 4종은 null이다. 시안 B7~B12에 이 카드가 없고, 종결 후 금액은 KPI와 정산 블록이 말한다.
      * 공제 계산은 하지 않는다(정산 관리 소관). 미보증 고지 문장은 FE 상수이고 서버는 분기 값만 준다.
      */
     private Payout payout(GroupBuy groupBuy, Contract contract, Long myReward, Long pairThreadId) {

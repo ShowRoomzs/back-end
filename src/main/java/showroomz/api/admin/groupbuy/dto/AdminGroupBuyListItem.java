@@ -40,7 +40,7 @@ public record AdminGroupBuyListItem(
 
         @Schema(example = "INFO") GroupBuyTone postStatusTone,
 
-        @Schema(description = "상태 7종 개별 값 — 진행중 탭 안의 중단 예정도 그대로 내린다", example = "PREPARING")
+        @Schema(description = "상태 8종(TERMINATED 해지 포함) 개별 값 — 진행중 탭 안의 중단 예정도 그대로 내린다", example = "PREPARING")
         GroupBuyStatus status,
 
         @Schema(example = "준비중") String statusLabel,

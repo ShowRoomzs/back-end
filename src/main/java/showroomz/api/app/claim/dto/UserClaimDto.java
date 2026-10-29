@@ -519,6 +519,7 @@ public class UserClaimDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
+    @Schema(name = "UserClaimAction", description = "항목 버튼 — 서버가 내린 것만 그린다")
     public static class Action {
         private ActionType type;
         @Schema(example = "요청 철회")

@@ -9,7 +9,7 @@ import showroomz.domain.order.type.CancelRejectReason;
  * 기타면 상세가 필수다. 라벨과 상세가 소비자에게 그대로 전달된다(약관 제18조①). 환불은 일어나지 않는다.
  */
 public record CancelRequestRejectRequest(
-        @Schema(description = "거부 사유 — ALREADY_PACKED · PICKED_UP · ETC(MADE_TO_ORDER 는 기-33 으로 삭제 · 400)",
+        @Schema(description = "거부 사유 — ALREADY_PACKED · PICKED_UP · ETC(MADE_TO_ORDER 는 기-33 으로 삭제 — 보내면 400)",
                 example = "ALREADY_PACKED")
         CancelRejectReason reasonCode,
         @Schema(description = "상세 사유 — ETC 면 필수 · 그 밖은 선택 · 500자", example = "오늘 오전에 출고 작업이 끝났습니다.",

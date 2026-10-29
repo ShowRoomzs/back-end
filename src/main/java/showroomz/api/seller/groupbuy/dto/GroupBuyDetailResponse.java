@@ -57,8 +57,8 @@ public record GroupBuyDetailResponse(
         @Schema(description = "직권 중단 — 진행 중 통지, 없으면 종결을 만든 통지, 없으면 가장 최근 통지. 통지 이력이 없으면 null",
                 nullable = true)
         AdminSuspension adminSuspension,
-        @Schema(description = "종결 정보 — 종결 3종(ENDED·SETTLED·SUSPENDED)에서만", nullable = true) Closure closure,
-        @Schema(description = "종료 후 — 종결 3종(ENDED·SETTLED·SUSPENDED)에서만", nullable = true) AfterEnd afterEnd,
+        @Schema(description = "종결 정보 — 종결 4종(ENDED·SETTLED·SUSPENDED·TERMINATED)에서만", nullable = true) Closure closure,
+        @Schema(description = "종료 후 — 종결 4종(ENDED·SETTLED·SUSPENDED·TERMINATED)에서만", nullable = true) AfterEnd afterEnd,
         @Schema(description = "버튼 노출 판정 — 항상") Permissions permissions,
         @Schema(description = "이력 — 최신순(발생 시각 내림차순)") List<HistoryEntry> history,
         @Schema(description = "목록 이웃 — 목록 조건(tab·keyword·sort)이 쿼리로 오지 않으면 둘 다 null. 실행 API 응답에서는 항상 둘 다 null")
@@ -75,7 +75,7 @@ public record GroupBuyDetailResponse(
             @Schema(example = "18") Long groupBuyId,
             @Schema(description = "공구번호 — GB-생성일(YYYYMMDD)-순번", example = "GB-20260806-018") String groupBuyNumber,
             @Schema(description = "공구명 — 계약에서 읽는다", example = "글로우 크림 앵콜 공구") String title,
-            @Schema(description = "공구 상태 7종 — PREPARING · READY · IN_PROGRESS · SUSPENSION_SCHEDULED · ENDED · SETTLED · SUSPENDED",
+            @Schema(description = "공구 상태 8종 — PREPARING · READY · IN_PROGRESS · SUSPENSION_SCHEDULED · ENDED · SETTLED · SUSPENDED · TERMINATED(해지 — 오픈 전 계약 해지)",
                     example = "IN_PROGRESS")
             GroupBuyStatus status,
             @Schema(description = "상태 배지 문구", example = "진행중") String statusLabel,
@@ -192,7 +192,7 @@ public record GroupBuyDetailResponse(
 
     @Schema(description = "공구 게시물 — 작성·수정은 인플루언서, 심사·노출 중지은 운영자 몫이다. 브랜드는 읽기만 한다")
     public record Post(
-            @Schema(description = "게시물 상태 8종 — NOT_WRITTEN · WRITING · PENDING_APPROVAL · REJECTED · SCHEDULED · EXPOSED · HIDDEN · CLOSED",
+            @Schema(description = "게시물 상태 8종 — NOT_WRITTEN · WRITING · PENDING_APPROVAL · REJECTED · SCHEDULED · EXPOSED · EXPOSURE_SUSPENDED(노출 중지) · CLOSED",
                     example = "EXPOSED")
             GroupBuyPostStatus status,
             @Schema(description = "게시물 상태 배지 문구", example = "노출중") String statusLabel,
@@ -201,8 +201,8 @@ public record GroupBuyDetailResponse(
             @Schema(description = "게시물 본문", nullable = true) String content,
             @Schema(description = "심사 제출 시각", nullable = true) LocalDateTime submittedAt,
             @Schema(description = "노출 시작 — 공구 오픈 시각", nullable = true) LocalDateTime openedAt,
-            @Schema(description = "노출 종료 — 공구 종결 시각(종결 3종에서만)", nullable = true) LocalDateTime closedAt,
-            @Schema(description = "노출 종료 사유 — 공구 종결 유형(종결 3종에서만)", nullable = true) GroupBuyCloseType closeReason,
+            @Schema(description = "노출 종료 — 공구 종결 시각(종결 4종에서만)", nullable = true) LocalDateTime closedAt,
+            @Schema(description = "노출 종료 사유 — 공구 종결 유형(종결 4종에서만)", nullable = true) GroupBuyCloseType closeReason,
             @Schema(description = "운영자 오픈 반려 사유 — 반려 기록이 있을 때", nullable = true) Reason rejectReason,
             @Schema(description = "운영자 오픈 반려 시각 — rejectReason이 있을 때만(재제출해도 마지막 반려 시각이 남는다)", nullable = true)
             LocalDateTime rejectedAt,
