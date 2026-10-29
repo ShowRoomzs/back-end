@@ -175,7 +175,8 @@ public interface AdminCreatorControllerDocs {
                                       "operations": { "connectedBrandCount": 4, "sellingGroupBuyCount": 1, "rewardInProgressAmount": 482000,
                                                       "openAdjustmentCount": 1 },
                                       "activity": { "groupBuyPostCount": 12, "reviewRejectCount": 2, "hiddenCount": 1, "generalPostCount": 30,
-                                                    "followerCount": 1840, "threadCount": 9, "openThreadCount": 2 }
+                                                    "followerCount": 1840, "threadCount": 9, "openThreadCount": 2,
+                                                    "exposureSuspendedCount": 1 }
                                     }
                                     """))),
             @ApiResponse(responseCode = "404", description = "CREATOR_NOT_FOUND",

@@ -1488,6 +1488,31 @@ public class OrderClaimService {
                 .map(claim -> planDispute(claim).amount()).orElse(null);
     }
 
+    /**
+     * B2 인용 전 운임 환급 예정액(58 계획 5-13 · 1021 설계서 4-3) — 인용하면 생길 운임 정산 행과 같은 식({@link #acceptSellerFaultWithFreight}
+     * · {@link #freightRefundOf}). 이미 브랜드 귀책이면 운임 행이 생기지 않아 0, 인용할 수 없으면 null.
+     */
+    @Transactional(readOnly = true)
+    public DisputeFreightPreview previewDisputeFreight(Long claimId) {
+        return claimRepository.findById(claimId).filter(OrderClaimService::isDisputeAcceptable).map(claim -> {
+            OrderClaimCollection collection = claim.getCollection();
+            if (collection.getFeeBearer() != ClaimFeeBearer.CONSUMER) {
+                return new DisputeFreightPreview(0, 0);
+            }
+            // 판정 종료 뒤라 통과분 환불에서 실제로 뺐을 때만 환원할 몫이 있다
+            int restored = collection.getRefundAmount() != null && collection.getRefundAmount() > 0
+                    ? collection.getReturnDeduction() : 0;
+            return new DisputeFreightPreview(feePolicy.freightFlat(claim.getDeliveryGroup()), restored);
+        }).orElse(null);
+    }
+
+    /** @param initialFeeRestored 차감했던 최초 배송비 환원 — 인용하면 운임 환급에 더해진다 */
+    public record DisputeFreightPreview(int prepaidFreightRefund, int initialFeeRestored) {
+        public int total() {
+            return prepaidFreightRefund + initialFeeRestored;
+        }
+    }
+
     private DisputePlan planDispute(OrderClaim claim) {
         Long collectionId = claim.getCollection().getId();
         int goods = Math.toIntExact((long) claim.getOrderProduct().getPrice() * claim.getQuantity());

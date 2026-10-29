@@ -16,7 +16,7 @@ import showroomz.domain.settlement.type.ClawbackSide;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.TaxDocumentStatus;
 import showroomz.domain.settlement.type.TaxDocumentType;
-import showroomz.global.config.properties.SettlementProperties;
+import showroomz.global.config.properties.CompanyProperties;
 
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +32,7 @@ public class CreatorSettlementBlocks {
 
     private final SettlementPartyViews views;
     private final SettlementTaxDocumentRepository documentRepository;
-    private final SettlementProperties properties;
+    private final CompanyProperties company;
     private final SettlementClawbackViews clawbackViews;
 
     /** 조정 내역(D2) — 협의가 없으면 null. */
@@ -46,14 +46,19 @@ public class CreatorSettlementBlocks {
     }
 
     public CreatorSettlementDto.TaxInvoice taxInvoice(SettlementTaxDocument d) {
-        SettlementProperties.Platform platform = properties.getPlatform();
+        // 공급받는자 = 운영사(company.* · 기-35) — 빈 값은 null(company-info 와 같은 규칙 · 58 계획 6-2)
         return new CreatorSettlementDto.TaxInvoice(cardStatus(d.getStatus()),
-                new CreatorSettlementDto.Supplier(platform.getBusinessName(), platform.getRepresentative(),
-                        platform.getRegistrationNumber(), platform.getAddress(), platform.getTaxEmail()),
+                new CreatorSettlementDto.Supplier(blankToNull(company.getName()), blankToNull(company.getRepresentative()),
+                        blankToNull(company.getRegistrationNumber()), blankToNull(company.getAddress()),
+                        blankToNull(company.getTaxEmail())),
                 d.getSupplyAmount(), d.getVatAmount(), d.getTotalAmount(), d.getApprovalNumber(), d.getSubmittedAt(),
                 d.getFileName(), d.getRejectReason() == null ? null : d.getRejectReason().name(),
                 d.getRejectReason() == null ? null : d.getRejectReason().getLabel(), d.getRejectedAt(),
                 d.getVerifiedAt());
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     /** 원천징수영수증을 내려받을 수 있는가 — 생성 완료(지급 완료 뒤 비동기로 만들어진다). */

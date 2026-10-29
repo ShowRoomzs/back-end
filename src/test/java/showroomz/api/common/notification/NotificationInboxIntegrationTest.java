@@ -136,6 +136,8 @@ class NotificationInboxIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.content[0].emphasis").isNotEmpty())
                 .andExpect(jsonPath("$.content[0].target.type").value("ORDER_GROUP"))
                 .andExpect(jsonPath("$.content[0].target.id").value(group.getId()))
+                // 앱 주문 상세 경로용 주문 id(58 계획 6-4)
+                .andExpect(jsonPath("$.content[0].target.orderId").value(group.getOrder().getId()))
                 .andExpect(jsonPath("$.content[0].advertising").value(false))
                 .andReturn().getResponse().getContentAsString();
         Long id = objectMapper.readTree(body).at("/content/0/notificationId").asLong();

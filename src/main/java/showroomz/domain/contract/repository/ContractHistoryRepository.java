@@ -18,7 +18,7 @@ public interface ContractHistoryRepository extends JpaRepository<ContractHistory
     List<ContractHistory> findByContractIdOrderByOccurredAtAscIdAsc(Long contractId);
 
     /**
-     * 스튜디오에 내리는 이력 — <b>화이트리스트 7종</b>(§27 설계서 6-4).
+     * 스튜디오에 내리는 이력 — <b>화이트리스트 10종</b>(§27 설계서 6-4 · 성립 · 해지 요청 · 해지는 58 계획 6-3).
      *
      * <p>이벤트 목록을 파라미터로 받지 않고 쿼리에 박는다. 서비스에서 전량 조회 후 걸러내면
      * 걸러내기 전 목록이 메모리에 존재하고, 다음 사람이 디버깅용 직렬화를 한 줄 넣는 순간 유출된다.
@@ -43,6 +43,9 @@ public interface ContractHistoryRepository extends JpaRepository<ContractHistory
             + "  showroomz.domain.contract.type.ContractEventType.CREATOR_SIGNED,"
             + "  showroomz.domain.contract.type.ContractEventType.BOTH_SIGNED_CONFIRMED,"
             + "  showroomz.domain.contract.type.ContractEventType.CONCLUDED,"
+            + "  showroomz.domain.contract.type.ContractEventType.ESTABLISHED,"
+            + "  showroomz.domain.contract.type.ContractEventType.TERMINATION_REQUESTED,"
+            + "  showroomz.domain.contract.type.ContractEventType.TERMINATED,"
             + "  showroomz.domain.contract.type.ContractEventType.DECLINED,"
             + "  showroomz.domain.contract.type.ContractEventType.EXPIRED,"
             + "  showroomz.domain.contract.type.ContractEventType.CANCELED) "

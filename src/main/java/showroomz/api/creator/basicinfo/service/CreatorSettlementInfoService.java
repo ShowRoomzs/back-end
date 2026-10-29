@@ -20,7 +20,7 @@ import showroomz.domain.settlement.service.PayoutHoldTransitions;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
-import showroomz.global.config.properties.SettlementProperties;
+import showroomz.global.config.properties.CompanyProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.MaskingUtils;
@@ -41,7 +41,7 @@ public class CreatorSettlementInfoService {
     static final String ACCOUNT_CHANGE_BLOCKED_BY_BUSINESS_TYPE = "사업자 구분 확인이 끝난 뒤 요청할 수 있어요";
 
     private final CreatorRepository creatorRepository;
-    private final SettlementProperties settlementProperties;
+    private final CompanyProperties company;
     private final CreatorBusinessTypeChangeReader businessTypeChanges;
     private final BankRepository bankRepository;
     private final SettlementPayoutRepository payoutRepository;
@@ -248,14 +248,18 @@ public class CreatorSettlementInfoService {
     }
 
     private CreatorBasicInfoDto.TaxInvoiceRecipient taxInvoiceRecipient() {
-        SettlementProperties.Platform platform = settlementProperties.getPlatform();
+        // 운영사(company.* · 기-35) — 빈 값은 null(company-info 와 같은 규칙 · 58 계획 6-2)
         return CreatorBasicInfoDto.TaxInvoiceRecipient.builder()
-                .businessName(platform.getBusinessName())
-                .registrationNumber(platform.getRegistrationNumber())
-                .representative(platform.getRepresentative())
-                .address(platform.getAddress())
-                .taxEmail(platform.getTaxEmail())
+                .businessName(blankToNull(company.getName()))
+                .registrationNumber(blankToNull(company.getRegistrationNumber()))
+                .representative(blankToNull(company.getRepresentative()))
+                .address(blankToNull(company.getAddress()))
+                .taxEmail(blankToNull(company.getTaxEmail()))
                 .build();
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     Creator creatorOf(Long userId) {

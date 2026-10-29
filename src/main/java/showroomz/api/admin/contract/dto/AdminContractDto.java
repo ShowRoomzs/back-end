@@ -53,8 +53,8 @@ public final class AdminContractDto {
                                 @Schema(description = "요청 시각 — 요청자가 브랜드·인플루언서면 필수(현재 이전 · 계약 생성 이후), ADMIN이면 보내지 않는다",
                                         example = "2026-08-14T10:05:00", nullable = true)
                                 LocalDateTime requestedAt,
-                                @Schema(description = "상대방 동의를 운영팀 채널에서 확인함(C6 · 1021 기-06) — 요청자가 브랜드 · 인플루언서면 true 필수. "
-                                        + "직권(ADMIN)은 생략 가능", example = "true", nullable = true)
+                                @Schema(description = "상대방 동의를 운영팀 채널에서 확인함(C6 · 1021 기-06) — 요청자와 무관하게 true 필수"
+                                        + "(직권 ADMIN 포함 · 58 계획 5-20)", example = "true")
                                 Boolean counterpartyConsentConfirmed) {}
 
     /** 운영자 [해지 처리](1021 설계서 1-4 · 어드민 01 C7) — 성립 뒤 · 공구 오픈 전. 체크 2개 필수. */
@@ -163,7 +163,7 @@ public final class AdminContractDto {
     public record Summary(
             @Schema(description = "조치 큐별 건수: REVIEW·CONCLUSION·EXPIRY·RESEND·TERMINATION") Map<AdminContractQueue, Long> queues,
             @Schema(description = "상태 탭별 건수: ALL·REVIEW_PENDING·SIGNING·CONCLUSION_PENDING·CONCLUDED·CLOSED") Map<AdminContractTab, Long> tabCounts,
-            @Schema(description = "다섯 조치 큐 건수의 합 = 사이드바 「계약 관리」 배지. 계약 중복 가능", example = "8") long actionRequiredCount) {}
+            @Schema(description = "조치 큐 건수의 합(재발송 요청 RESEND 제외 — 소통 스레드에서 끝난다 · rev.8 ②) = 사이드바 「계약 관리」 배지. 계약 중복 가능", example = "7") long actionRequiredCount) {}
     /** @param email 모두싸인 수신자 등록용 — 브랜드 계정 이메일({@code Seller.email}). 계약서 PDF의 「브랜드_이메일」과 같은 값 */
     public record Brand(Long marketId, String name, String link,
                         @Schema(description = "모두싸인 수신자 등록용 브랜드 이메일(계정 이메일)", example = "contact@glowlab.kr")

@@ -91,7 +91,9 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         mockMvc.perform(get(BASE + "/summary").header("Authorization", token))
                 .andExpect(jsonPath("$.tabCounts.ALL").value(10)).andExpect(jsonPath("$.tabCounts.CLOSED").value(2))
                 .andExpect(jsonPath("$.queues.REVIEW").value(2)).andExpect(jsonPath("$.queues.EXPIRY").value(1))
-                .andExpect(jsonPath("$.queues.RESEND").value(1)).andExpect(jsonPath("$.actionRequiredCount").value(5));
+                .andExpect(jsonPath("$.queues.RESEND").value(1))
+                // 재발송 요청은 조치 필요 합(사이드바 배지)에 들지 않는다 — 소통 스레드에서 끝난다(rev.8 ② · 58 계획 5-33)
+                .andExpect(jsonPath("$.actionRequiredCount").value(4));
         mockMvc.perform(get(BASE).param("queue", "RESEND").header("Authorization", token))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].contractId").value(overdue.getId()));

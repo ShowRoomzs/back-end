@@ -140,7 +140,19 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
                 .andExpect(jsonPath("$.summary.inspectionResult").value("REASON_OVERTURNED"));
         userGet(USER_CLAIMS + "/" + claimId)
                 .andExpect(jsonPath("$.reshipFee.reshipFee").value(base))
-                .andExpect(jsonPath("$.reshipFee.collectFreight").value(base));
+                .andExpect(jsonPath("$.reshipFee.collectFreight").value(base))
+                .andExpect(jsonPath("$.reshipFee.storage").doesNotExist());
+
+        // 58 계획 5-6 — 결제 기한이 지나면 번복 보류도 반려 보류처럼 미결제 고지 · 보관 기한 블록이 붙는다
+        Object dueAt = charge.get("due_at");
+        jdbc.update("UPDATE order_claim_charge SET due_at = ? WHERE collection_id = ? AND type = 'OVERTURN_RESHIP'",
+                LocalDateTime.now().minusDays(2), collectionIdOf(claimId));
+        userGet(USER_CLAIMS + "/" + claimId)
+                .andExpect(jsonPath("$.reshipFee.overdue").value(true))
+                .andExpect(jsonPath("$.reshipFee.storage.noticeCount").value(0))
+                .andExpect(jsonPath("$.reshipFee.storage.phase").value("NOTICE_PENDING"));
+        jdbc.update("UPDATE order_claim_charge SET due_at = ? WHERE collection_id = ? AND type = 'OVERTURN_RESHIP'",
+                dueAt, collectionIdOf(claimId));
 
         String paymentId = json(userPost(USER_CLAIMS + "/" + claimId + "/reship-fee/payments", CARD)
                 .andExpect(status().isOk())).get("paymentId").asText();
@@ -270,6 +282,12 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
         OrderDeliveryGroup group = deliveredGroup(creamVariant, 2);   // 54,400 · 무료배송
         Long claimId = rejectedClaim(returnClaim(group));
         int base = baseFee(group);
+
+        // 58 계획 5-13 — 인용 전 예정액: 선불 운임 · 통과분 환불이 없어 최초 배송비 환원은 0 (인용 뒤 송금 대기 금액과 같다)
+        JsonNode before = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
+        assertThat(before.at("/disputePreview/prepaidFreightRefund").asInt()).isEqualTo(base);
+        assertThat(before.at("/disputePreview/initialFeeRestored").asInt()).isZero();
+        assertThat(before.at("/disputePreview/total").asInt()).isEqualTo(base);
 
         accept(claimId).andExpect(status().isOk());
 

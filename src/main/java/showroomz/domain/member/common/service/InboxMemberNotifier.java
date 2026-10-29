@@ -75,7 +75,7 @@ public class InboxMemberNotifier implements MemberNotifier {
         publish(type, memberId, NotificationType.WITHDRAWAL_REJECTED,
                 type == MemberType.BRAND ? "탈퇴 신청이 반려되었습니다 · 사유: " + reasonLabel
                         : "탈퇴 신청이 반려됐어요 · 사유: " + reasonLabel,
-                NotificationTargetType.BASIC_INFO_TAB, null, "ACCOUNT");
+                NotificationTargetType.BASIC_INFO_TAB, null, "account");
         if (recipient == null || recipient.isBlank()) {
             log.warn("[알림] {} 탈퇴 반려 메일 수신처 없음 - id: {}", type.getLabel(), memberId);
             return;
@@ -92,35 +92,35 @@ public class InboxMemberNotifier implements MemberNotifier {
     public void accountVerificationFailed(Long creatorId, String reasonLabel) {
         publish(MemberType.CREATOR, creatorId, NotificationType.ACCOUNT_VERIFICATION_FAILED,
                 "정산 계좌 확인에 실패했어요 · " + reasonLabel, NotificationTargetType.BASIC_INFO_TAB, null,
-                "SETTLEMENT");
+                "settlement");
     }
 
     @Override
     public void businessTypeChangeApproved(Long creatorId, String businessEmail, String requestCode) {
         publish(MemberType.CREATOR, creatorId, NotificationType.BUSINESS_TYPE_CHANGE_APPROVED,
                 "사업자 구분 변경 요청이 승인됐어요(" + requestCode + ")", NotificationTargetType.BASIC_INFO_TAB, null,
-                "SETTLEMENT");
+                "settlement");
     }
 
     @Override
     public void businessTypeChangeRejected(Long creatorId, String businessEmail, String requestCode, String reasonLabel) {
         publish(MemberType.CREATOR, creatorId, NotificationType.BUSINESS_TYPE_CHANGE_REJECTED,
                 "사업자 구분 변경 요청이 반려됐어요 · 사유: " + reasonLabel, NotificationTargetType.BASIC_INFO_TAB, null,
-                "SETTLEMENT");
+                "settlement");
     }
 
     @Override
     public void accountChangeApproved(Long creatorId, String requestCode) {
         publish(MemberType.CREATOR, creatorId, NotificationType.ACCOUNT_CHANGE_APPROVED,
                 "정산 계좌 변경 요청이 승인됐어요(" + requestCode + ") · 새 계좌를 확인하고 있어요", NotificationTargetType.BASIC_INFO_TAB,
-                null, "SETTLEMENT");
+                null, "settlement");
     }
 
     @Override
     public void accountChangeRejected(Long creatorId, String requestCode, String reasonLabel) {
         publish(MemberType.CREATOR, creatorId, NotificationType.ACCOUNT_CHANGE_REJECTED,
                 "정산 계좌 변경 요청이 반려됐어요 · 사유: " + reasonLabel + " · 기존 계좌로 지급돼요",
-                NotificationTargetType.BASIC_INFO_TAB, null, "SETTLEMENT");
+                NotificationTargetType.BASIC_INFO_TAB, null, "settlement");
     }
 
     // ------------------------------------------------------------------

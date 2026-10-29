@@ -79,6 +79,6 @@ public class AdminBrandMemoService {
 
     private static AdminBrandDto.Memo toMemo(BrandAdminMemo memo, boolean editable) {
         return new AdminBrandDto.Memo(memo.getId(), memo.getAuthorName(), memo.getContent(), memo.getCreatedAt(),
-                memo.getModifiedAt(), editable);
+                memo.getModifiedAt(), editable, true); // 작성 · 수정 응답 — 요청 운영자가 작성자다
     }
 }

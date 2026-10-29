@@ -163,9 +163,16 @@ class Design1021P4InspectionIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.voidable").value(false))
                 .andExpect(jsonPath("$.transfer.transferable").value(true))
                 .andExpect(jsonPath("$.transfer.linkedInquiryId").value(inquiryId))
-                .andExpect(jsonPath("$.transfer.transferred").doesNotExist());
+                .andExpect(jsonPath("$.transfer.transferred").doesNotExist())
+                // 58 계획 5-14 — M1 운임 정산 요약 · 원래 결제액을 다 써 PG 취소 짝 행은 없다
+                .andExpect(jsonPath("$.freightAdjustment.direction").value("REFUND_CONSUMER"))
+                .andExpect(jsonPath("$.freightAdjustment.directionLabel").value("소비자 환급"))
+                .andExpect(jsonPath("$.freightAdjustment.amount").value(DELIVERY_FEE))
+                .andExpect(jsonPath("$.freightAdjustment.bankTransferRefundTaskId").value(transfer.getId()))
+                .andExpect(jsonPath("$.pairedRefundTaskId").doesNotExist());
         adminGet("/v1/admin/refunds/summary").andExpect(status().isOk())
-                .andExpect(jsonPath("$.transferPending").value(1));
+                .andExpect(jsonPath("$.transferPending").value(1))
+                .andExpect(jsonPath("$.bankTransferAmount").value(DELIVERY_FEE));
         adminGet("/v1/admin/refunds?tab=PENDING&route=FREIGHT").andExpect(status().isOk())
                 .andExpect(jsonPath("$.content[0].paymentLabel").value("계좌 송금"))
                 .andExpect(jsonPath("$.content[0].transferable").value(true));

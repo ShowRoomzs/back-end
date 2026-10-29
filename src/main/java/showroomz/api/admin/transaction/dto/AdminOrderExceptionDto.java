@@ -96,7 +96,10 @@ public final class AdminOrderExceptionDto {
             @Schema(description = "송장 — 배송 예외만", nullable = true) Invoice invoice,
             @Schema(description = "처리 주체 — 배송 예외만 · CS 답변 문장", example = "소비자·브랜드가 택배사 조회", nullable = true)
             String handlerLabel,
-            Link link
+            Link link,
+            @Schema(description = "추적 정지 · 소비자 선택(1021 기-15 · 58 계획 5-12) — 추적 정지 행만. 06a 하위주문 상세 `stallChoice` 와 같은 값",
+                    nullable = true)
+            AdminOrderDto.StallChoice stallChoice
     ) {
     }
 

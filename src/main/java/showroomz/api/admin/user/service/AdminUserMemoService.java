@@ -120,6 +120,6 @@ public class AdminUserMemoService {
     private static Memo toDto(UserAdminMemo memo, Users user, Long operatorId, LocalDateTime now) {
         boolean editable = user.getStatus() != UserStatus.WITHDRAWN && memo.isEditableBy(operatorId, now);
         return new Memo(memo.getId(), memo.getAuthorName(), memo.getContent(), memo.getCreatedAt(),
-                memo.getModifiedAt(), editable);
+                memo.getModifiedAt(), editable, memo.isAuthor(operatorId));
     }
 }

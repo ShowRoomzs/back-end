@@ -71,6 +71,10 @@ public class CreatorApplicationDetailResponse {
     @Schema(description = "반려 상세 사유 (반려 시에만, 선택)", example = "제출하신 채널의 팔로워 수가 기준에 미달합니다.")
     private String rejectReasonDetail;
 
+    @Schema(description = "반려 통지 메일 — true 발송 성공 · false 발송 실패(재발송하지 않는다 · 신청자에게 따로 연락) · "
+            + "null 기록 없음(이 기능 이전 반려 · 업무 이메일 없음 · 발송 중)", nullable = true)
+    private Boolean noticeSent;
+
     // ── 본인 인증 (회원가입 시 PASS 인증값) ──
 
     @Schema(description = "실명 (회원가입 시 본인인증 결과, 반려 시 null/파기)", example = "홍길동")

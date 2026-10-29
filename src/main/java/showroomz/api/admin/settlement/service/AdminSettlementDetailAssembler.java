@@ -48,8 +48,11 @@ import java.util.Objects;
 @Transactional(readOnly = true)
 public class AdminSettlementDetailAssembler {
 
-    static final String PLATFORM_NAME = "SHOWROOMZ";
     private static final int ITEM_PREVIEW_SIZE = 5;
+    /** 재발송비 건수 — 정산 생성과 같은 상태(결제 · 환불액 차감 · SettlementGenerationService). */
+    private static final java.util.Set<showroomz.domain.order.type.ClaimChargeStatus> RESHIP_CHARGE_STATUSES =
+            java.util.EnumSet.of(showroomz.domain.order.type.ClaimChargeStatus.PAID,
+                    showroomz.domain.order.type.ClaimChargeStatus.DEDUCTED);
 
     private final SettlementItemRepository itemRepository;
     private final SettlementHistoryRepository historyRepository;
@@ -63,6 +66,9 @@ public class AdminSettlementDetailAssembler {
     private final SettlementProperties properties;
     private final SettlementTaxDocumentRepository documentRepository;
     private final SettlementClawbackViews clawbackViews;
+    private final showroomz.domain.order.repository.OrderClaimChargeRepository chargeRepository;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightRepository;
+    private final showroomz.global.config.properties.CompanyProperties company;
 
     public AdminSettlementDto.Detail detail(Settlement s) {
         boolean confirmed = s.getStatus().isConfirmed();
@@ -101,7 +107,7 @@ public class AdminSettlementDetailAssembler {
         return new AdminSettlementDto.Stage(current, s.getStatus().isConfirmed() && adjustment == null);
     }
 
-    private static AdminSettlementDto.Breakdown breakdown(Settlement s) {
+    private AdminSettlementDto.Breakdown breakdown(Settlement s) {
         AdminSettlementDto.BrandAxis brand = new AdminSettlementDto.BrandAxis(s.getGrossOrderAmount(),
                 new SettlementPartyDto.AmountCount(s.getCancelDeduction(), s.getCancelCount()),
                 new SettlementPartyDto.AmountCount(s.getReturnDeduction(), s.getReturnCount()),
@@ -111,17 +117,56 @@ public class AdminSettlementDetailAssembler {
                 new AdminSettlementDto.RateAmount(s.getPlatformFeeRate(), s.getPlatformFeeAmount()),
                 s.getOriginalRewardAmount(), s.getRewardAmount(),
                 new AdminSettlementDto.RateAmount(s.getRewardVatRate(), s.getRewardVatAmount()),
-                new SettlementPartyDto.AmountCount(s.getReshipFeeAmount(), s.getReshipCount()),
+                reshipFee(s),
                 s.getConsumerDeliveryFeeAmount(),
                 new SettlementPartyDto.AmountCount(s.getReturnDeductionFeeAmount(), s.getReturnDeductionCount()),
-                new SettlementPartyDto.AmountCount(s.getFreightAdjustmentAmount(), s.getFreightAdjustmentCount()),
+                freightAdjustment(s),
                 s.getBrandPayoutBeforeClawback(), s.getBrandClawbackAmount(), s.getBrandPayoutAmount());
         AdminSettlementDto.CreatorAxis creator = new AdminSettlementDto.CreatorAxis(s.getCreatorBusinessType(),
                 s.getRewardAmount(), s.getRewardClawbackAmount(),
                 s.isBusinessCreator() ? null : new AdminSettlementDto.Withholding(s.getWithholdingAmount(),
                         s.getWithholdingIncomeRate(), s.getWithholdingLocalRate()),
                 s.getCreatorVatAmount(), s.getCreatorPayoutAmount());
-        return new AdminSettlementDto.Breakdown(brand, creator, s.getPlatformShareAmount());
+        return new AdminSettlementDto.Breakdown(brand, creator, s.getPlatformShareAmount(), rewardRateLabel(s));
+    }
+
+    /** 재발송비 — 정산 행은 합계만 들어 건수를 청구 종류별로 조회해 나눈다(58 계획 5-16 · 생성과 같은 결제 · 차감 상태). */
+    private AdminSettlementDto.ReshipFee reshipFee(Settlement s) {
+        java.util.Map<showroomz.domain.order.type.ClaimChargeType, Long> byType =
+                new java.util.EnumMap<>(showroomz.domain.order.type.ClaimChargeType.class);
+        for (Object[] row : chargeRepository.countByGroupBuyAndType(s.getGroupBuyId(), RESHIP_CHARGE_STATUSES)) {
+            byType.put((showroomz.domain.order.type.ClaimChargeType) row[0], ((Number) row[1]).longValue());
+        }
+        return new AdminSettlementDto.ReshipFee(s.getReshipFeeAmount(), s.getReshipCount(),
+                byType.getOrDefault(showroomz.domain.order.type.ClaimChargeType.EXCHANGE_RESHIP, 0L),
+                byType.getOrDefault(showroomz.domain.order.type.ClaimChargeType.REJECT_RESHIP, 0L),
+                byType.getOrDefault(showroomz.domain.order.type.ClaimChargeType.OVERTURN_RESHIP, 0L));
+    }
+
+    /** ± 운임 정산 — 이 정산에 반영된 운임 정산 행을 클레임별 줄로(58 계획 5-17). 추가 결제분(CHARGE)은 재발송비 줄이라 빠진다. */
+    private AdminSettlementDto.FreightAdjustment freightAdjustment(Settlement s) {
+        List<AdminSettlementDto.FreightItem> items = freightRepository.findByAppliedSettlementIdOrderByIdAsc(s.getId()).stream()
+                .filter(row -> row.getSettledVia() != showroomz.domain.order.type.FreightSettledVia.CHARGE)
+                .map(row -> new AdminSettlementDto.FreightItem(row.getClaimId() == null ? null : "CLM-" + row.getClaimId(),
+                        row.getDirection().name(), row.signedAmount()))
+                .toList();
+        return new AdminSettlementDto.FreightAdjustment(s.getFreightAdjustmentAmount(), s.getFreightAdjustmentCount(), items);
+    }
+
+    /** 리워드율 표기(기-11 · 58 계획 5-18) — 계약 상품의 율이 하나면 「10%」, 여럿이면 「상품별」. */
+    static String rewardRateLabel(Settlement s) {
+        List<java.math.BigDecimal> rates = s.getContract().getItems().stream()
+                .map(showroomz.domain.contract.entity.ContractItem::getRewardRate).filter(Objects::nonNull)
+                .map(java.math.BigDecimal::stripTrailingZeros).distinct().toList();
+        if (rates.isEmpty()) {
+            return null;
+        }
+        return rates.size() == 1 ? rates.get(0).toPlainString() + "%" : "상품별";
+    }
+
+    /** 플랫폼 표기 — 운영사 상호(company.name · 기-35 「쇼룸즈」 · 58 계획 5-19). */
+    private String platformName() {
+        return company.getName() == null || company.getName().isBlank() ? "쇼룸즈" : company.getName().trim();
     }
 
     /** 차감 반영(D3) — 이 정산에서 회수한 차감을 번호별로 측 합. */
@@ -191,7 +236,7 @@ public class AdminSettlementDetailAssembler {
         } else if (p.getPayee() == SettlementPayee.PLATFORM) {
             bankName = null;
             accountNumber = null;
-            holder = PLATFORM_NAME;
+            holder = platformName();
             source = "NONE";
         } else {
             SettlementPayoutTransitions.Account current = payoutTransitions.currentAccount(s, p.getPayee());
@@ -285,14 +330,26 @@ public class AdminSettlementDetailAssembler {
     }
 
     /** 증빙(D7) — 승인번호는 앞 8 · 뒤 4 만 보인다. */
-    private static List<AdminSettlementDto.TaxDocument> taxDocuments(Settlement s, List<SettlementTaxDocument> documents) {
+    private List<AdminSettlementDto.TaxDocument> taxDocuments(Settlement s, List<SettlementTaxDocument> documents) {
         return documents.stream().map(d -> new AdminSettlementDto.TaxDocument(d.getId(), d.getType().name(),
                 d.getType().getLabel(), d.getType().getDirection(), counterpartyOf(s, d), d.getSupplyAmount(),
                 d.getVatAmount(), d.getTotalAmount(), d.getStatus().name(), d.getStatus().getLabel(),
                 maskApprovalNumber(d.getApprovalNumber()), d.getIssuedDate(), d.getDueDate(), d.getSubmittedAt(),
                 d.getVerifiedAt(), d.getRejectReason() == null ? null : d.getRejectReason().name(),
                 d.getRejectReason() == null ? null : d.getRejectReason().getLabel(), d.getFileName(),
-                new AdminSettlementDto.TaxDocumentActions(canVerify(d), canRegister(d)))).toList();
+                new AdminSettlementDto.TaxDocumentActions(canVerify(d), canRegister(d)),
+                d.getType().isBrandInvoice() ? recipient() : null)).toList();
+    }
+
+    /** 공급받는자 — 운영사 사업자 정보(company.* · 설계 6-5). 빈 값은 null. */
+    private AdminSettlementDto.Recipient recipient() {
+        return new AdminSettlementDto.Recipient(blankToNull(company.getName()), blankToNull(company.getRepresentative()),
+                blankToNull(company.getRegistrationNumber()), blankToNull(company.getAddress()),
+                blankToNull(company.getTaxEmail()));
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     private static String counterpartyOf(Settlement s, SettlementTaxDocument d) {
@@ -334,11 +391,11 @@ public class AdminSettlementDetailAssembler {
         };
     }
 
-    static String payeeName(Settlement s, SettlementPayee payee) {
+    String payeeName(Settlement s, SettlementPayee payee) {
         return switch (payee) {
             case BRAND -> s.getMarket().getMarketName();
             case CREATOR -> s.getCreator().getShowroomName();
-            case PLATFORM -> PLATFORM_NAME;
+            case PLATFORM -> platformName();
         };
     }
 

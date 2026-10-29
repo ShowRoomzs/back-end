@@ -53,14 +53,18 @@ public record GroupBuyListItem(
         Remark remark,
 
         @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
-        SanctionHoldView sanctionHold
+        SanctionHoldView sanctionHold,
+
+        @Schema(description = "해지 요청 — 이 공구 계약의 가장 최근 요청(상태 무관). 요청이 없으면 null", nullable = true)
+        GroupBuyTerminationRequestView terminationRequest
 ) {
 
     @Schema(description = "비고 — 코드만 내린다. 문구는 FE가 고른다(설계서 4-2)")
     public record Remark(
             @Schema(description = "우선순위 순 — ADMIN_SUSPENSION_NOTICED(직권 중단 예정) > "
                     + "SUSPENSION_REQUEST_REVIEWING(중단 요청 검토 중 · 요청자 무관) > "
-                    + "EARLY_CLOSE_REQUEST_REVIEWING(조기 마감 요청 검토 중) > EXTENSION_PENDING(연장 요청 응답 대기) > "
+                    + "EARLY_CLOSE_REQUEST_REVIEWING(조기 마감 요청 검토 중) > TERMINATION_REQUESTED(계약 해지 요청 처리 대기) > "
+                    + "EXTENSION_PENDING(연장 요청 응답 대기) > "
                     + "SUSPENDED_BY_ADMIN(운영자 직권 중단으로 종결). 여러 개가 걸리면 가장 앞의 하나만 내린다",
                     example = "ADMIN_SUSPENSION_NOTICED")
             GroupBuyRemarkCode code,

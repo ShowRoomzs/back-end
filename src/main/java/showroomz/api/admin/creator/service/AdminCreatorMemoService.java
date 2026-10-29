@@ -93,6 +93,6 @@ public class AdminCreatorMemoService {
 
     private static Memo toDto(CreatorAdminMemo memo, Long operatorId, LocalDateTime now) {
         return new Memo(memo.getId(), memo.getAuthorName(), memo.getContent(), memo.getCreatedAt(), memo.getModifiedAt(),
-                memo.isEditableBy(operatorId, now));
+                memo.isEditableBy(operatorId, now), memo.isAuthor(operatorId));
     }
 }

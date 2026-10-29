@@ -49,9 +49,10 @@ public class AdminSettlementController implements AdminSettlementControllerDocs 
     @GetMapping
     public AdminSettlementDto.ListResponse<?> list(@RequestParam(required = false) AdminSettlementTab tab,
                                                    @RequestParam(required = false) String keyword,
+                                                   @RequestParam(required = false) Long marketId,
                                                    @RequestParam(required = false) AdminSettlementSort sort,
                                                    @ModelAttribute PagingRequest paging) {
-        return queries.list(tab, keyword, sort, paging);
+        return queries.list(tab, keyword, marketId, sort, paging);
     }
 
     @Override

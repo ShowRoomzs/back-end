@@ -56,6 +56,6 @@ public class AdminUserStatusCardAssembler {
         return new SanctionInfo(sanction.getId(), sanction.getReason(), sanction.getReason().getLabel(),
                 sanction.getReasonDetail(), sanction.getSuspendedAt(), sanction.getSuspendedByName(), appeals,
                 showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(sanction.getEndsOn(), sanction.getSuspendedAt(),
-                        sanction.getAppealDeadlineAt(), termPolicy.appealReviewBusinessDays()));
+                        sanction.getAppealDeadlineAt(), termPolicy));
     }
 }

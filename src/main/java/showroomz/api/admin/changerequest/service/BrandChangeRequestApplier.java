@@ -94,7 +94,7 @@ public class BrandChangeRequestApplier implements ChangeRequestApplier {
         notificationPublisher.publish(NotificationCommand.toSeller(request.getMarket().getId(), type)
                 .actorType(NotificationActorType.OPERATOR).title(sentence)
                 .targetType(NotificationTargetType.BASIC_INFO_TAB).targetId(request.getId())
-                .targetSub(request.getType() == null ? null : request.getType().name()).build());
+                .targetSub(request.getType() == null ? null : request.getType().name().toLowerCase(java.util.Locale.ROOT)).build());
     }
 
     @Override

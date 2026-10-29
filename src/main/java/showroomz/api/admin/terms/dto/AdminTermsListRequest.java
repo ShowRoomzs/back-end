@@ -10,7 +10,7 @@ import showroomz.api.admin.terms.type.AdminTermsTypeFilter;
 public class AdminTermsListRequest {
 
     @Schema(description = "유형 탭 (미입력 시 전체)", example = "TERMS_OF_SERVICE",
-            allowableValues = {"ALL", "TERMS_OF_SERVICE", "PRIVACY_POLICY", "MARKETING_CONSENT"})
+            allowableValues = {"ALL", "TERMS_OF_SERVICE", "PRIVACY_POLICY", "MARKETING_CONSENT", "OPERATION_POLICY"})
     private AdminTermsTypeFilter type = AdminTermsTypeFilter.ALL;
 
     @Schema(description = "문서명 키워드 검색 (문서명 단일 대상)", example = "이용약관")

@@ -110,7 +110,7 @@ public interface AdminTermsControllerDocs {
                     + "표시 버전은 현재 시행중(없으면 시행 예정) 1개입니다 — 과거 버전은 문서 상세의 이력에서 봅니다.\n\n"
                     + "**정렬:** 유형 순 → 등록 순 고정입니다.\n\n"
                     + "**유형 탭:** `type` 으로 필터링합니다 — `ALL`(기본 진입 탭) · `TERMS_OF_SERVICE` · "
-                    + "`PRIVACY_POLICY` · `MARKETING_CONSENT`. `typeCounts` 에 탭별 건수가 함께 내려갑니다.\n\n"
+                    + "`PRIVACY_POLICY` · `MARKETING_CONSENT` · `OPERATION_POLICY`(운영정책 · 열람 전용). `typeCounts` 에 탭별 건수가 함께 내려갑니다.\n\n"
                     + "**검색:** 문서명 단일 대상입니다. 대상·상태 셀렉트는 두지 않습니다 — "
                     + "문서가 10건 안팎이라 유형 탭 + 문서명 검색으로 충분하고, 대상은 목록 열에서 바로 읽힙니다.\n\n"
                     + "**상태 3종:** `EFFECTIVE`(시행중, 성공) · `SCHEDULED`(시행 예정, 정보) · `SUPERSEDED`(구버전, 중립).\n\n"
@@ -138,7 +138,7 @@ public interface AdminTermsControllerDocs {
                     name = "type",
                     description = "유형 탭 (미입력/ALL 시 전체)",
                     example = "TERMS_OF_SERVICE",
-                    schema = @Schema(allowableValues = {"ALL", "TERMS_OF_SERVICE", "PRIVACY_POLICY", "MARKETING_CONSENT"})
+                    schema = @Schema(allowableValues = {"ALL", "TERMS_OF_SERVICE", "PRIVACY_POLICY", "MARKETING_CONSENT", "OPERATION_POLICY"})
             ),
             @Parameter(name = "keyword", description = "문서명 키워드 검색 (부분 일치)", example = "이용약관"),
             @Parameter(name = "page", description = "페이지 번호 (1부터 시작)", example = "1"),

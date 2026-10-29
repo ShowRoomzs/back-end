@@ -580,6 +580,9 @@ public class UserClaimQueryService {
         OrderClaim rejected = shown.stream().filter(claim -> claim.getRejectedAt() != null).findFirst().orElse(null);
         // 사유 번복 청구(1021 설계서 4-4)도 같은 [결제] 블록이다 — 반려가 아니라 판정 종료를 기다리지 않는다.
         boolean overturn = rejectCharge != null && rejectCharge.getType() == ClaimChargeType.OVERTURN_RESHIP;
+        // 미결제 고지 · 보관 기한은 보류 중인 건이 센다 — 번복 보류도 반려 보류와 같은 길이다(58 계획 5-6 · 1021 17-2)
+        OrderClaim held = rejected != null ? rejected : !overturn ? null
+                : shown.stream().filter(claim -> claim.getStatus() == ClaimStatus.REJECT_HOLD).findFirst().orElse(null);
         if (rejected == null && !overturn) {
             return null;
         }
@@ -614,9 +617,9 @@ public class UserClaimQueryService {
                 .methodLabel(state != ReshipFeeState.PAID || rejectCharge.getPaidPaymentId() == null ? null
                         : claimPaymentRepository.findById(rejectCharge.getPaidPaymentId())
                         .map(OrderClaimPayment::methodLabel).orElse(null))
-                .storage(!overdue || rejected == null ? null : new UserClaimDto.Storage(rejected.getNoticeCount(),
-                        storagePolicy.storageDueAt(rejected.getNoticeCount(), rejected.getLastNoticeAt()),
-                        storagePolicy.phase(rejected.getNoticeCount(), rejected.getLastNoticeAt(), now)))
+                .storage(!overdue || held == null ? null : new UserClaimDto.Storage(held.getNoticeCount(),
+                        storagePolicy.storageDueAt(held.getNoticeCount(), held.getLastNoticeAt()),
+                        storagePolicy.phase(held.getNoticeCount(), held.getLastNoticeAt(), now)))
                 .build();
     }
 

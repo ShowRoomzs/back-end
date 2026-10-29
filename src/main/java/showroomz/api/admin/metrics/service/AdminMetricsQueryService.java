@@ -212,43 +212,50 @@ public class AdminMetricsQueryService {
         MetricsUnit unit = period.unit();
         List<LocalDateTime[]> buckets;
         MetricKey key;
-        Function<LocalDateTime[], Double> value;
+        java.util.function.BiFunction<Facts, LocalDateTime[], Double> value;
         switch (tab) {
             case SUPPLY -> {
                 key = MetricKey.CONTRACTS_CONCLUDED;
                 if (unit == MetricsUnit.DAY && period.days() >= 14) {
                     unit = MetricsUnit.WEEK;
                 }
-                value = b -> (double) current.concluded.stream()
+                value = (f, b) -> (double) f.concluded.stream()
                         .map(r -> (LocalDateTime) r[1]).filter(at -> in(at, b)).count();
             }
             case GROUP_BUY -> {
                 key = MetricKey.SELLING_GROUP_BUYS;
-                value = b -> (double) current.groupBuys.stream().filter(g -> g.sellingDuring(b[0], b[1])).count();
+                value = (f, b) -> (double) f.groupBuys.stream().filter(g -> g.sellingDuring(b[0], b[1])).count();
             }
             case DEMAND -> {
                 key = MetricKey.BUYERS;
-                value = b -> (double) current.lines.stream().filter(l -> in(l.paidAt(), b))
+                value = (f, b) -> (double) f.lines.stream().filter(l -> in(l.paidAt(), b))
                         .map(PaidLine::userId).distinct().count();
             }
             case OPERATION -> {
                 key = MetricKey.PROCESSED;
-                value = b -> (double) current.processedTimes.stream().filter(t -> in(t, b)).count();
+                value = (f, b) -> (double) f.processedTimes.stream().filter(t -> in(t, b)).count();
             }
             default -> {
                 key = MetricKey.GMV;
-                value = b -> (double) current.lines.stream().filter(l -> in(l.paidAt(), b)).mapToLong(PaidLine::amount).sum();
+                value = (f, b) -> (double) f.lines.stream().filter(l -> in(l.paidAt(), b)).mapToLong(PaidLine::amount).sum();
             }
         }
         buckets = MetricsPeriodResolver.buckets(period.from(), period.to(), unit);
         MetricsUnit labelUnit = unit;
         List<AdminMetricsDto.Point> points = buckets.stream()
-                .map(b -> new AdminMetricsDto.Point(b[0], MetricsPeriodResolver.bucketLabel(b[0], labelUnit), value.apply(b)))
+                .map(b -> new AdminMetricsDto.Point(b[0], MetricsPeriodResolver.bucketLabel(b[0], labelUnit),
+                        value.apply(current, b)))
+                .toList();
+        // 비교 기간 — 같은 단위로 나눠 현재 버킷 수만큼(58 계획 5-32). i 번째가 points[i] 와 짝이다
+        List<AdminMetricsDto.Point> comparePoints = MetricsPeriodResolver
+                .buckets(period.compareFrom(), period.compareTo(), unit).stream().limit(buckets.size())
+                .map(b -> new AdminMetricsDto.Point(b[0], MetricsPeriodResolver.bucketLabel(b[0], labelUnit),
+                        value.apply(previous, b)))
                 .toList();
         MetricKey totalKey = tab == MetricsTab.GROUP_BUY ? MetricKey.GROUP_BUYS_RUN : key;
         double total = nz(current.get(totalKey).value());
         double delta = total - nz(previous.get(totalKey).value());
-        return new AdminMetricsDto.Chart(key.name(), key.getLabel(), unit.name(), total, delta, points);
+        return new AdminMetricsDto.Chart(key.name(), key.getLabel(), unit.name(), total, delta, points, comparePoints);
     }
 
     private static boolean in(LocalDateTime at, LocalDateTime[] bucket) {

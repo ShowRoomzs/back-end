@@ -136,16 +136,25 @@ public record MessageCardResponse(
             @Schema(description = "[동의 · 반대] 응답한 쪽 이름") String responderName,
             @Schema(description = "[동의 · 반대] 응답 시각") LocalDateTime respondedAt,
             @Schema(description = "[합의 · 만료] 확정 리워드") Long finalRewardAmount,
-            @Schema(description = "[합의] 동의한 쪽") String agreedByType,
+            @Schema(description = "[합의] 동의한 쪽 — [철회] 카드는 1릴리스 동안 철회한 쪽도 여기에 담긴다(`withdrawnByType` 를 쓴다)")
+            String agreedByType,
             @Schema(description = "[합의] 동의한 쪽 이름") String agreedByName,
-            @Schema(description = "[합의 · 만료] 종결 시각") LocalDateTime closedAt) {
+            @Schema(description = "[합의 · 만료 · 철회] 종결 시각") LocalDateTime closedAt,
+            @Schema(description = "[철회] 요청을 철회한 쪽 — SELLER · CREATOR(58 계획 5-10)") String withdrawnByType,
+            @Schema(description = "[철회] 철회한 쪽 이름") String withdrawnByName) {
 
         public static AdjustmentDetail of(MessageCardPayload.Adjustment s) {
+            return of(s, null);
+        }
+
+        /** 철회 카드면 스냅샷의 「동의한 쪽」 칸에 담긴 철회 주체를 전용 필드로도 낸다. */
+        public static AdjustmentDetail of(MessageCardPayload.Adjustment s, MessageCardType cardType) {
+            boolean withdrawn = cardType == MessageCardType.SETTLEMENT_ADJUSTMENT_WITHDRAWN;
             return s == null ? null : new AdjustmentDetail(s.settlementId(), s.settlementNumber(), s.groupBuyId(),
                     s.adjustmentId(), s.proposalId(), s.seq(), s.proposerType(), s.proposerName(),
                     s.originalRewardAmount(), s.rewardAmount(), s.reason(), s.deadlineAt(), s.responderType(),
                     s.responderName(), s.respondedAt(), s.finalRewardAmount(), s.agreedByType(), s.agreedByName(),
-                    s.closedAt());
+                    s.closedAt(), withdrawn ? s.agreedByType() : null, withdrawn ? s.agreedByName() : null);
         }
     }
 
@@ -184,7 +193,8 @@ public record MessageCardResponse(
                     && respondableProposalId.equals(adjustment.proposalId()));
             return new MessageCardResponse(view.cardType(), view.title(), view.tone(), view.contractId(),
                     view.contractNumber(), view.groupBuyTitle(),
-                    new Detail(null, null, null, null, null, null, AdjustmentDetail.of(adjustment.snapshot()), null, null),
+                    new Detail(null, null, null, null, null, null,
+                            AdjustmentDetail.of(adjustment.snapshot(), view.cardType()), null, null),
                     action);
         }
         boolean resend = view.cardType() == MessageCardType.CONTRACT_RESEND_REQUEST;

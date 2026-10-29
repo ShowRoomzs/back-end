@@ -8,6 +8,8 @@ import showroomz.api.seller.groupbuy.dto.GroupBuyDetailResponse;
 import showroomz.api.seller.groupbuy.dto.GroupBuyDetailResponse.*;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.repository.ContractTerminationRequestRepository;
+import showroomz.api.seller.groupbuy.dto.GroupBuyTerminationRequestView;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
@@ -63,6 +65,7 @@ public class GroupBuyDetailAssembler {
     private final GroupBuyThreadGateway threadGateway;
     private final GroupBuyPermissionPolicy permissionPolicy;
     private final GroupBuySettlementReader settlementReader;
+    private final ContractTerminationRequestRepository terminationRequestRepository;
     /** 정산 지연 감시 기준(§29-11) — 어드민 요약과 같은 설정값을 쓴다. */
     private final GroupBuyProperties properties;
 
@@ -101,7 +104,9 @@ public class GroupBuyDetailAssembler {
                 permissionPolicy.evaluate(facts, pairThreadId != null, now),
                 history(history),
                 navigation == null ? new Navigation(null, null) : navigation,
-                SanctionHoldView.forBrand(groupBuy));
+                SanctionHoldView.forBrand(groupBuy),
+                GroupBuyTerminationRequestView.of(terminationRequestRepository
+                        .findFirstByContract_IdOrderByRequestedAtDescIdDesc(contract.getId()).orElse(null)));
     }
 
     private Summary summary(GroupBuy groupBuy, Contract contract) {

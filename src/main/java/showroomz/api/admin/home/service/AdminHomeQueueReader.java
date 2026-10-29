@@ -136,10 +136,8 @@ public class AdminHomeQueueReader {
         long postActions = postQueryService.getSummary().getActionRequired();
         queues.add(waiting("POST_REPORT", POSTS, "신고 게시물 검토", "일반 게시물 신고 누적", postActions,
                 postActions == 0 ? null : postQueryService.oldestActionRequiredSince(), "/posts?tab=REPORTED", now));
+        // 상품 문의 삭제 요청은 할 일 · cs.total 이 아니다 — 상품 문의 메뉴 하위 숫자로만 낸다(rev.8 ② · 58 계획 5-33)
         long deleteRequests = productInquiryService.getSummary().getDeleteRequestedCount();
-        queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청", null, deleteRequests,
-                deleteRequests == 0 ? null : opsRepository.oldestProductInquiryDeleteRequest(),
-                "/product-inquiries?status=DELETE_REQUESTED", now));
         queues.addAll(contracts(now));
         queues.add(waiting("SUSPEND_REQUEST", GROUP_BUYS, "중단 요청", null,
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.SUSPEND_REQUEST, 0L),
@@ -153,7 +151,7 @@ public class AdminHomeQueueReader {
         queues.add(waiting("APPEAL_REVIEW", GROUP_BUYS, "소명 검토", null, appealReviews,
                 appealReviews == 0 ? null : opsRepository.oldestAppealReview(now),
                 "/group-buys?queue=APPEAL_REVIEW", now));
-        return new Snapshot(queues);
+        return new Snapshot(queues, deleteRequests);
     }
 
     // ------------------------------------------------------------------ 대기 행 보조줄(55 계획서 A3 · 00-home rev.4)
@@ -199,7 +197,8 @@ public class AdminHomeQueueReader {
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         for (OrderRefundTask task : opsRepository.findFailedRefunds(ROW_LIMIT)) {
             LocalDateTime failedAt = task.getFailedAt() != null ? task.getFailedAt() : task.getModifiedAt();
-            rows.add(row(TodoUrgency.FAILED, "실패", "REFUND_FAILED",
+            // 배지는 큐별로 — 「환불 실패」 · 「분배 실패」(58 계획 5-34)
+            rows.add(row(TodoUrgency.FAILED, "환불 실패", "REFUND_FAILED",
                     "환불 실패 · " + task.getOrder().getOrderNumber(),
                     join(task.getLastError(), won(task.getRefundAmount())), TRANSACTIONS, ageText(failedAt, now), null,
                     new AdminHomeDto.Target("REFUND", task.getId(), null), 1));
@@ -222,7 +221,7 @@ public class AdminHomeQueueReader {
                     .collect(Collectors.groupingBy(SettlementPayout::getSettlementId));
             for (Object[] row : failed) {
                 Settlement settlement = (Settlement) row[0];
-                rows.add(row(TodoUrgency.FAILED, "실패", "PAYOUT_FAILED", "분배 실패 · " + settlement.getSettlementNumber(),
+                rows.add(row(TodoUrgency.FAILED, "분배 실패", "PAYOUT_FAILED", "분배 실패 · " + settlement.getSettlementNumber(),
                         payoutFailureDetail(payouts.get(settlement.getId()), settlement), SETTLEMENTS,
                         ageText((LocalDateTime) row[1], now), null,
                         new AdminHomeDto.Target("SETTLEMENT", settlement.getId(), null), 1));
@@ -505,6 +504,9 @@ public class AdminHomeQueueReader {
         Map<AdminContractQueue, Long> counts = contractQueryService.summary().queues();
         List<Queue> queues = new ArrayList<>();
         for (AdminContractQueue queue : AdminContractQueue.values()) {
+            if (queue == AdminContractQueue.RESEND) {
+                continue;   // 재발송 요청은 소통 스레드에서 끝난다 — 계약 배지 · 할 일에 넣지 않는다(rev.8 ② · 58 계획 5-33)
+            }
             long count = counts.getOrDefault(queue, 0L);
             queues.add(waiting("CONTRACT_" + queue.name(), CONTRACTS, contractLabel(queue), contractDetail(queue), count,
                     count == 0 ? null : contractQueryService.oldestInQueue(queue, now), "/contracts?queue=" + queue.name(),
@@ -618,7 +620,8 @@ public class AdminHomeQueueReader {
     public record Queue(String key, String menu, long count, List<AdminHomeDto.TodoRow> rows) {
     }
 
-    public record Snapshot(List<Queue> queues) {
+    /** @param productInquiryDeleteRequests 상품 문의 삭제 요청 — 할 일이 아니라 사이드바 하위 숫자로만(58 계획 5-33) */
+    public record Snapshot(List<Queue> queues, long productInquiryDeleteRequests) {
 
         public long count(String key) {
             return queues.stream().filter(q -> q.key().equals(key)).mapToLong(Queue::count).sum();

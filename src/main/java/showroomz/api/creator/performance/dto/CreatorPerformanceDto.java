@@ -234,7 +234,9 @@ public final class CreatorPerformanceDto {
             @Schema(description = "배송 예외(건) — 반송 · 분실 등", example = "1") long deliveryExceptionCount,
             @Schema(description = "구매확정률(%) = 구매확정 ÷ 주문", example = "93.0", nullable = true) Double confirmedRate,
             @Schema(description = "최종 구매전환율(%) = 구매확정 ÷ 쇼룸 방문", example = "5.8", nullable = true) Double finalConversionRate,
-            @Schema(description = "구간 2 가 예정값인가(집계 중 · 정산 전)", example = "false") boolean estimated) {
+            @Schema(description = "구간 2 가 예정값인가(집계 중 · 정산 전)", example = "false") boolean estimated,
+            @Schema(description = "주문 전환율(%) = 주문 ÷ 쇼룸 방문 — 방문 0 이면 null(58 계획 5-9)", example = "6.2", nullable = true)
+            Double orderVisitRate) {
     }
 
     @Schema(name = "CreatorPerformanceSales", description = "② 판매 — 상품별 값은 계약 기준(합의 차액은 adjustmentDelta 한 줄)")
@@ -285,7 +287,9 @@ public final class CreatorPerformanceDto {
             long repeatBuyerCount,
             @Schema(description = "팔로워 구매 소비자(명) — 결제 시점 팔로워", example = "130") long followerBuyerCount,
             @Schema(description = "구매 소비자 중 팔로워(%)", example = "45.1", nullable = true) Double followerBuyerRate,
-            @Schema(description = "연령 · 성별 분포") Distribution distribution) {
+            @Schema(description = "연령 · 성별 분포") Distribution distribution,
+            @Schema(description = "신규 소비자 비중(%) = 신규 ÷ 구매 소비자 — 구매 0 이면 null(58 계획 5-9)", example = "71.5", nullable = true)
+            Double newBuyerRate) {
     }
 
     @Schema(name = "CreatorPerformanceDistribution",

@@ -40,6 +40,6 @@ public class SellerAccountStatusService {
                 MemberAccountStatusResponse.blankToNull(s.getReasonDetail()), s.getSuspendedAt(), s.isPayoutHeld(),
                 operatorChannelService.findMarketChannelThreadId(market).orElse(null), s.getSuspendCardId(),
                 MemberAccountStatusResponse.Term.of(s.getEndsOn(), s.getSuspendedAt(), s.getAppealDeadlineAt(),
-                        termPolicy.appealReviewBusinessDays()));
+                        termPolicy));
     }
 }

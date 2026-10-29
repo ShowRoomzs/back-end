@@ -252,7 +252,7 @@ public class AdminCreatorQueryService {
         Withdrawal withdrawal = null;
         if (creator.getStatus() == CreatorStatus.SUSPENDED) {
             suspension = sanctions.findByCreatorIdAndReleasedAtIsNull(creator.getId())
-                    .map(s -> suspensionOf(s, termPolicy.appealReviewBusinessDays()))
+                    .map(s -> suspensionOf(s, termPolicy))
                     .orElse(null);
         }
         if (creator.isWithdrawn()) {
@@ -287,13 +287,14 @@ public class AdminCreatorQueryService {
                 result.count(CreatorWithdrawalCondition.UNSETTLED)));
     }
 
-    static Suspension suspensionOf(CreatorSanction sanction, Integer appealReviewBusinessDays) {
+    static Suspension suspensionOf(CreatorSanction sanction,
+                                  showroomz.domain.member.common.service.SanctionTermPolicy termPolicy) {
         return new Suspension(sanction.getId(), sanction.getReason(), sanction.getReason().getLabel(),
                 sanction.getReasonDetail(), sanction.getSuspendedAt(), sanction.getSuspendedByName(),
                 sanction.isPayoutHeld(),
                 sanction.isPayoutHeld() ? "지급 정지 · 정지 해제 다음 영업일 지급" : "유지 · 사유가 정산 정보와 무관",
                 showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(sanction.getEndsOn(), sanction.getSuspendedAt(),
-                        sanction.getAppealDeadlineAt(), appealReviewBusinessDays));
+                        sanction.getAppealDeadlineAt(), termPolicy));
     }
 
     private static OpenAdjustment adjustmentOf(SettlementAdjustment a) {

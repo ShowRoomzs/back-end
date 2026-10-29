@@ -85,8 +85,12 @@ class Design1021P0IntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.noticeLabel").value("채널 운영 기준 미충족"))
                 .andExpect(jsonPath("$.reapplyAvailableOn").value(LocalDate.now().plusDays(14).toString()));
 
+        org.mockito.Mockito.when(mailService.sendCreatorRejectionNotice(anyString(), anyString(), anyString()))
+                .thenReturn(java.util.concurrent.CompletableFuture.completedFuture(null));
         adminPost(base + "/reject", Map.of("rejectReasonType", "SUSPECTED_FAKE_FOLLOWERS",
                 "rejectReasonDetail", "팔로워 급증 구간 다수 — 내부 기록")).andExpect(status().isNoContent());
+        // 58 계획 5-24 — 발송 결과가 반려 상세에 남는다
+        adminGet(base).andExpect(status().isOk()).andExpect(jsonPath("$.noticeSent").value(true));
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
         verify(mailService).sendCreatorRejectionNotice(eq("notice-biz@showroomz.test"), anyString(), body.capture());
@@ -99,6 +103,25 @@ class Design1021P0IntegrationTest extends SettlementTestSupport {
         assertThat(saved.getRejectReasonDetail()).isEqualTo("팔로워 급증 구간 다수 — 내부 기록");
         assertThat(applicationService.getMyRejectedApplication(applicant.getId()).getRejectReason())
                 .isEqualTo("채널 운영 기준 미충족");
+    }
+
+    @Test
+    @DisplayName("58 5-24 — 반려 통지 메일이 실패하면 상세 noticeSent=false · 반려는 그대로")
+    void rejectionNoticeFailureRecorded() throws Exception {
+        Users applicant = createConsumer("reject-notice-fail", "반려실패");
+        Long applicationId = inTransaction(() -> applications.save(CreatorApplication.createApplication(applicant,
+                SnsType.INSTAGRAM, "https://instagram.com/notice-fail", "noticefail", 3_000, "notice-fail@showroomz.test",
+                "김실패", "1995-01-01", "01011113333"))).getId();
+        String base = "/v1/admin/creator/applications/" + applicationId;
+        adminGet(base).andExpect(status().isOk()).andExpect(jsonPath("$.noticeSent").value(nullValue()));
+
+        org.mockito.Mockito.when(mailService.sendCreatorRejectionNotice(anyString(), anyString(), anyString()))
+                .thenReturn(java.util.concurrent.CompletableFuture.failedFuture(new IllegalStateException("smtp down")));
+        adminPost(base + "/reject", Map.of("rejectReasonType", "OTHER")).andExpect(status().isNoContent());
+
+        adminGet(base).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REJECTED"))
+                .andExpect(jsonPath("$.noticeSent").value(false));
     }
 
     @Test

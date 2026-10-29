@@ -341,7 +341,8 @@ class AdminOrderActionGuardIntegrationTest extends OrderFlowTestSupport {
                 Map.entry("/cancel", Map.of("reasonCode", "DEFECT", "consumerMessage", "회수")),
                 Map.entry("/refund-tasks", Map.of("reason", "RECALL", "amount", 1_000, "detail", "근거")),
                 Map.entry("/defect-claims", Map.of("items", List.of(Map.of("orderProductId", 1, "quantity", 1)),
-                        "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "내용", "evidenceImageUrls", List.of(EVIDENCE))),
+                        "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "내용", "evidenceImageUrls", List.of(EVIDENCE),
+                        "defectNoticedOn", java.time.LocalDate.now().toString())),
                 Map.entry("/lost", Map.of("reason", "분실")),
                 Map.entry("/delivered", Map.of("deliveredAt", now, "reason", "수령")));
         for (Map.Entry<String, Map<String, Object>> action : posts) {
@@ -524,7 +525,8 @@ class AdminOrderActionGuardIntegrationTest extends OrderFlowTestSupport {
     private ResultActions defect(OrderDeliveryGroup group, List<Map<String, Object>> items, String reasonCode, String detail)
             throws Exception {
         return adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/defect-claims", Map.of("items", items,
-                "reasonCode", reasonCode, "detail", detail, "evidenceImageUrls", List.of(EVIDENCE)));
+                "reasonCode", reasonCode, "detail", detail, "evidenceImageUrls", List.of(EVIDENCE),
+                "defectNoticedOn", java.time.LocalDate.now().toString()));
     }
 
     private ResultActions lost(OrderDeliveryGroup group, String reason) throws Exception {

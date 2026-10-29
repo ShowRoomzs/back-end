@@ -212,11 +212,11 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
                 .andExpect(content().string(not(containsString("브랜드 서명:"))));
 
         operatorRecordsSignatures(contractId, brandSignedAt, mySignedAt);
-        // S3c — 양측 서명 완료 확인 · 내 서명 완료 · 브랜드 서명 완료 · 서명 요청 도착 · 연결 성립
+        // S3c — 양측 서명 완료 확인 · 계약 성립(58 계획 6-3) · 내 서명 완료 · 브랜드 서명 완료 · 서명 요청 도착 · 연결 성립
         detail(contractId)
                 .andExpect(jsonPath("$.history[*].eventType").value(contains(
-                        "BOTH_SIGNED_CONFIRMED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT", null)))
-                .andExpect(jsonPath("$.history[1].actorDisplayName").value("뷰티_소연"))
+                        "BOTH_SIGNED_CONFIRMED", "ESTABLISHED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT", null)))
+                .andExpect(jsonPath("$.history[2].actorDisplayName").value("뷰티_소연"))
                 .andExpect(content().string(not(containsString("인플루언서 서명:"))));
 
         operatorUploads(contractId, ContractDocumentType.SIGNED_PDF, "계약서.pdf");
@@ -226,7 +226,8 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
         // S6 — 체결완료 · 양측 서명 완료 확인 · 내 서명 완료 · 브랜드 서명 완료 · 서명 요청 도착 (· 연결 성립)
         String body = detail(contractId).andReturn().getResponse().getContentAsString();
         List<String> events = JsonPath.parse(body).read("$.history[*].eventType");
-        assertThat(events).startsWith(
+        // 계약 성립(ESTABLISHED)도 스튜디오 이력에 선다(58 계획 6-3)
+        assertThat(events).contains("ESTABLISHED").filteredOn(e -> !"ESTABLISHED".equals(e)).startsWith(
                 "CONCLUDED", "BOTH_SIGNED_CONFIRMED", "CREATOR_SIGNED", "BRAND_SIGNED", "SIGNATURE_SENT");
     }
 
@@ -358,7 +359,7 @@ class CreatorContractLifecycleIntegrationTest extends CreatorContractTestSupport
                         .header(HttpHeaders.AUTHORIZATION, operatorToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(("{\"signatureRequestWithdrawn\":true,\"reasonCode\":\"SCHEDULE_CHANGE\",\"memo\":\"%s\","
-                                + "\"requesterType\":\"ADMIN\"}").formatted(memo)))
+                                + "\"requesterType\":\"ADMIN\",\"counterpartyConsentConfirmed\":true}").formatted(memo)))
                 .andExpect(status().isOk());
 
         detail(contractId)

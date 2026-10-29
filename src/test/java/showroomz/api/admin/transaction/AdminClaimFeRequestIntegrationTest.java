@@ -85,12 +85,16 @@ class AdminClaimFeRequestIntegrationTest extends ClaimTestSupport {
         assertThat(deadline.get("noticeDeadline").asText()).isEqualTo(noticed.plusDays(30).toString());
         assertThat(deadline.get("appliedDeadline").asText()).isEqualTo(noticed.plusDays(30).toString());
 
+        // 인지일은 필수다(58 계획 5-11) — 비우면 400
         OrderDeliveryGroup noNotice = deliveredGroup(creamVariant, 1, deliveredAt);
-        Long plain = json(defectClaim(noNotice, null).andExpect(status().isOk())).at("/claimIds/0").asLong();
-        JsonNode supplyOnly = json(adminGet(ADMIN_CLAIMS + "/" + plain)).get("legalDeadline");
-        assertThat(supplyOnly.get("noticedOn").isNull()).isTrue();
-        assertThat(supplyOnly.get("noticeDeadline").isNull()).isTrue();
-        assertThat(supplyOnly.get("appliedDeadline").asText()).isEqualTo(supplied.plusMonths(3).toString());
+        defectClaim(noNotice, null).andExpect(status().isBadRequest());
+        // 공급 기준이 더 이르면 그쪽이 적용 기한이다(공급 + 3개월 < 인지 + 30일)
+        OrderDeliveryGroup lateNotice = deliveredGroup(creamVariant, 1, LocalDateTime.now().minusMonths(3).plusDays(5));
+        LocalDate lateSupplied = lateNotice.getDeliveredAt().toLocalDate();
+        Long late = json(defectClaim(lateNotice, LocalDate.now().toString()).andExpect(status().isOk()))
+                .at("/claimIds/0").asLong();
+        JsonNode supplyFirst = json(adminGet(ADMIN_CLAIMS + "/" + late)).get("legalDeadline");
+        assertThat(supplyFirst.get("appliedDeadline").asText()).isEqualTo(lateSupplied.plusMonths(3).toString());
 
         OrderDeliveryGroup invalid = deliveredGroup(creamVariant, 1, deliveredAt);
         defectClaim(invalid, supplied.minusDays(1).toString()).andExpect(status().isBadRequest());

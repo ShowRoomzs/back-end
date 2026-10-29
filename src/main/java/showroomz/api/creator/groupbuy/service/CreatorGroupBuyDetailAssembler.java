@@ -233,7 +233,8 @@ public class CreatorGroupBuyDetailAssembler {
                 : null;
         Hidden hidden = !terminal && post.isHidden()
                 ? new Hidden(post.getHiddenReasonCode(), post.getHiddenReasonDetail(), post.getHiddenAt(),
-                        GroupBuy.daysInclusive(post.getHiddenAt(), now))
+                        GroupBuy.daysInclusive(post.getHiddenAt(), now),
+                        operatorChannelService.findCreatorChannelThreadId(groupBuy.getCreator()).orElse(null))
                 : null;
         return new Post(
                 status,

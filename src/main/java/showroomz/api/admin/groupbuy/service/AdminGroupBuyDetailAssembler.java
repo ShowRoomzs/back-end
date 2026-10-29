@@ -101,6 +101,7 @@ public class AdminGroupBuyDetailAssembler {
     private final GroupBuyProperties properties;
     private final showroomz.domain.connection.service.OperatorChannelService operatorChannelService;
     private final showroomz.domain.message.repository.MessageRepository messageRepository;
+    private final showroomz.domain.settlement.repository.SettlementRepository settlementRepository;
 
     public AdminGroupBuyDetailResponse assemble(GroupBuy groupBuy, Navigation navigation) {
         LocalDateTime now = LocalDateTime.now();
@@ -594,8 +595,11 @@ public class AdminGroupBuyDetailAssembler {
         List<BigDecimal> rewardRates = contract.getItems().stream()
                 .map(ContractItem::getRewardRate).filter(Objects::nonNull)
                 .map(BigDecimal::stripTrailingZeros).distinct().toList();
+        var row = settlementRepository.findByGroupBuyId(groupBuy.getId()).orElse(null);
         return new Settlement(stage, source, permissionPolicy.settlementBlockers(facts), watch,
-                new Preview(sales == null ? null : sales.amount(), rewardRates, null));
+                new Preview(sales == null ? null : sales.amount(), rewardRates, null),
+                row == null ? null : row.getId(), row == null ? null : row.getSettlementNumber(),
+                row == null ? "정산 대기" : row.getStatus().getLabel());
     }
 
     /** B6 · 조기 마감 종결(4-9). 액션이 없다 — 판매 리워드 문구는 규칙 고지라 FE 상수다. */

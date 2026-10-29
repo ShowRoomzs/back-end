@@ -13,7 +13,10 @@ import showroomz.api.seller.groupbuy.dto.GroupBuyDetailResponse;
 import showroomz.api.seller.groupbuy.dto.GroupBuyListItem;
 import showroomz.api.seller.groupbuy.dto.GroupBuySummaryResponse;
 import showroomz.api.seller.groupbuy.service.GroupBuyAccessGuard.SellerScope;
+import showroomz.api.seller.groupbuy.dto.GroupBuyTerminationRequestView;
+import showroomz.domain.contract.entity.ContractTerminationRequest;
 import showroomz.domain.contract.repository.ContractItemRepository;
+import showroomz.domain.contract.repository.ContractTerminationRequestRepository;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
@@ -57,6 +60,7 @@ public class SellerGroupBuyQueryService {
     private final GroupBuyChangeRequestRepository changeRequestRepository;
     private final GroupBuyAdminSuspensionRepository adminSuspensionRepository;
     private final ContractItemRepository contractItemRepository;
+    private final ContractTerminationRequestRepository terminationRequestRepository;
     private final GroupBuyDetailAssembler detailAssembler;
 
     /**
@@ -87,9 +91,12 @@ public class SellerGroupBuyQueryService {
         Map<Long, GroupBuyAdminSuspension> notices = adminSuspensionRepository.findNoticedByGroupBuyIds(ids).stream()
                 .collect(Collectors.toMap(notice -> notice.getGroupBuy().getId(), Function.identity(), (a, b) -> a));
         Map<Long, Long> itemCounts = countItems(groupBuys);
+        Map<Long, ContractTerminationRequest> terminations = terminationRequestRepository.findLatestByContractIds(
+                groupBuys.stream().map(groupBuy -> groupBuy.getContract().getId()).toList());
 
         List<GroupBuyListItem> content = groupBuys.stream()
                 .map(groupBuy -> {
+                    ContractTerminationRequest termination = terminations.get(groupBuy.getContract().getId());
                     GroupBuyPostStatus postStatus = GroupBuyPostStatus.of(posts.get(groupBuy.getId()), groupBuy);
                     GroupBuyStatus status = groupBuy.getStatus();
                     return new GroupBuyListItem(
@@ -107,8 +114,10 @@ public class SellerGroupBuyQueryService {
                             status.getLabel(),
                             status.getTone(),
                             remark(groupBuy, notices.get(groupBuy.getId()), pendingRequests.get(groupBuy.getId()),
+                                    termination != null && termination.isPending(),
                                     pendingExtensions.contains(groupBuy.getId())),
-                SanctionHoldView.forBrand(groupBuy));
+                            SanctionHoldView.forBrand(groupBuy),
+                            GroupBuyTerminationRequestView.of(termination));
                 })
                 .toList();
         return PageResponse.of(new PageImpl<>(content, pageable, page.getTotalElements()));
@@ -119,7 +128,8 @@ public class SellerGroupBuyQueryService {
      * 판매가 끊길 가능성이 큰 쪽이 위다.
      */
     private GroupBuyListItem.Remark remark(GroupBuy groupBuy, GroupBuyAdminSuspension notice,
-                                           GroupBuyChangeRequest pendingRequest, boolean extensionPending) {
+                                           GroupBuyChangeRequest pendingRequest, boolean terminationPending,
+                                           boolean extensionPending) {
         if (notice != null) {
             return new GroupBuyListItem.Remark(GroupBuyRemarkCode.ADMIN_SUSPENSION_NOTICED, notice.getAppealDeadlineAt());
         }
@@ -127,6 +137,9 @@ public class SellerGroupBuyQueryService {
             return new GroupBuyListItem.Remark(pendingRequest.getRequestType() == ChangeRequestType.SUSPEND
                     ? GroupBuyRemarkCode.SUSPENSION_REQUEST_REVIEWING
                     : GroupBuyRemarkCode.EARLY_CLOSE_REQUEST_REVIEWING, null);
+        }
+        if (terminationPending) {
+            return new GroupBuyListItem.Remark(GroupBuyRemarkCode.TERMINATION_REQUESTED, null);
         }
         if (extensionPending) {
             return new GroupBuyListItem.Remark(GroupBuyRemarkCode.EXTENSION_PENDING, null);

@@ -38,6 +38,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 @Transactional(readOnly = true)
 public class CreatorApplicationService {
 
@@ -171,6 +172,7 @@ public class CreatorApplicationService {
                 .processorEmail(application.getProcessorEmail())
                 .rejectReasonType(application.getRejectReasonType())
                 .rejectReasonDetail(application.getRejectReasonDetail())
+                .noticeSent(application.noticeSent())
                 .name(rejected ? null : application.getRealName())
                 .birthday(rejected ? null : application.getBirthday())
                 .phoneNumber(rejected ? null : application.getPhoneNumber())
@@ -297,7 +299,13 @@ public class CreatorApplicationService {
         CreatorRejectionNotice notice = CreatorRejectionNotice.of(request.getRejectReasonType(),
                 KstDates.toKstDate(application.getProcessedAt()));
         if (noticeEmail != null && !noticeEmail.isBlank()) {
-            AfterCommit.run(() -> mailService.sendCreatorRejectionNotice(noticeEmail, notice.subject(), notice.htmlBody()));
+            Long id = application.getId();
+            AfterCommit.run(() -> {
+                var sending = mailService.sendCreatorRejectionNotice(noticeEmail, notice.subject(), notice.htmlBody());
+                if (sending != null) {
+                    sending.whenComplete((ignored, error) -> recordNoticeMail(id, error));
+                }
+            });
         }
 
         Users user = application.getUser();
@@ -312,6 +320,20 @@ public class CreatorApplicationService {
                 .reason(fullRejectReason)
                 .processorEmail(processorEmail)
                 .build());
+    }
+
+    /** 반려 통지 메일 결과 기록(58 계획 5-24) — 기록이 실패해도 반려는 이미 커밋됐다. */
+    private void recordNoticeMail(Long applicationId, Throwable error) {
+        try {
+            if (error == null) {
+                creatorApplicationRepository.markNoticeMailSent(applicationId, LocalDateTime.now());
+            } else {
+                log.warn("[입점 반려] 통지 메일 실패 - applicationId: {}", applicationId, error);
+                creatorApplicationRepository.markNoticeMailFailed(applicationId, LocalDateTime.now());
+            }
+        } catch (RuntimeException e) {
+            log.error("[입점 반려] 통지 메일 결과 기록 실패 - applicationId: {}", applicationId, e);
+        }
     }
 
     /** 어드민 C1 「신청자 통지 미리보기」 — 실제 발송과 같은 템플릿. 반려일은 오늘. */

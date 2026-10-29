@@ -126,7 +126,29 @@ public class AdminClaimService {
                 settlementReader.readByDeliveryGroup(claim.getDeliveryGroup().getId())
                         .map(s -> new AdminTransactionDto.ClaimSettlement(s.settlementNumber(), s.status(),
                                 s.statusLabel(), s.confirmedAt(), isDeductedOnPass(claim)))
-                        .orElse(null));
+                        .orElse(null),
+                deductionReason(claim),
+                acceptable ? disputePreview(claimService.previewDisputeFreight(claimId)) : null);
+    }
+
+    private static AdminTransactionDto.DisputePreview disputePreview(OrderClaimService.DisputeFreightPreview preview) {
+        return preview == null ? null : new AdminTransactionDto.DisputePreview(preview.prepaidFreightRefund(),
+                preview.initialFeeRestored(), preview.total());
+    }
+
+    /**
+     * 최초 배송비 차감 근거(58 계획 5-13 · 1021 설계서 3-3) — 무료배송으로 나간 하위주문을 소비자 귀책으로 반품해 남는 상품액이 기준 아래가 됐다.
+     * 기준을 모르는 옛 주문은 무료배송 사실만으로 뺐다.
+     */
+    private static String deductionReason(OrderClaim claim) {
+        Integer deduction = claim.getCollection().getReturnDeduction();
+        if (deduction == null || deduction <= 0) {
+            return null;
+        }
+        Integer threshold = claim.getDeliveryGroup().getFreeShippingThreshold();
+        return threshold == null
+                ? String.format("무료배송으로 발송된 주문이라 최초 배송비 %,d원 차감(소비자 귀책 반품)", deduction)
+                : String.format("무료배송 기준 %,d원 미만이 되어 최초 배송비 %,d원 차감(소비자 귀책 반품)", threshold, deduction);
     }
 
     /**

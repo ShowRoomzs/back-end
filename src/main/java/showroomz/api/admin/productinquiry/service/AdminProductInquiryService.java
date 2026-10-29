@@ -59,10 +59,10 @@ public class AdminProductInquiryService {
     @Transactional(readOnly = true)
     public AdminProductInquiryDto.ListResponse getList(AdminProductInquiryStatusFilter statusFilter,
                                                         ProductInquiryType type, String keyword, Long userId,
-                                                        Pageable pageable) {
+                                                        Long marketId, Pageable pageable) {
         String normalizedKeyword = normalize(keyword);
         Page<ProductInquiry> page = adminProductInquiryQueryRepository.search(
-                statusFilter, type, normalizedKeyword, userId, pageable);
+                statusFilter, type, normalizedKeyword, userId, marketId, pageable);
 
         List<AdminProductInquiryDto.ListItem> content = page.getContent().stream()
                 .map(this::toListItem)
@@ -71,7 +71,7 @@ public class AdminProductInquiryService {
         return AdminProductInquiryDto.ListResponse.builder()
                 .content(content)
                 .pageInfo(new PaginationInfo(page))
-                .statusCounts(buildStatusCounts(type, normalizedKeyword, userId))
+                .statusCounts(buildStatusCounts(type, normalizedKeyword, userId, marketId))
                 .deleteRequestedCount(adminProductInquiryQueryRepository.countAllDeleteRequested())
                 .build();
     }
@@ -95,11 +95,12 @@ public class AdminProductInquiryService {
 
     @Transactional(readOnly = true)
     public AdminProductInquiryDto.DetailResponse getDetail(Long inquiryId, AdminProductInquiryStatusFilter statusFilter,
-                                                            ProductInquiryType type, String keyword, Long userId) {
+                                                            ProductInquiryType type, String keyword, Long userId,
+                                                            Long marketId) {
         ProductInquiry inquiry = getInquiry(inquiryId);
 
         List<Long> orderedIds = adminProductInquiryQueryRepository.findOrderedIds(
-                statusFilter, type, normalize(keyword), userId);
+                statusFilter, type, normalize(keyword), userId, marketId);
         int index = orderedIds.indexOf(inquiryId);
         Long prevId = index > 0 ? orderedIds.get(index - 1) : null;
         Long nextId = (index >= 0 && index < orderedIds.size() - 1) ? orderedIds.get(index + 1) : null;
@@ -186,9 +187,10 @@ public class AdminProductInquiryService {
                 .build();
     }
 
-    private AdminProductInquiryDto.StatusCounts buildStatusCounts(ProductInquiryType type, String keyword, Long userId) {
+    private AdminProductInquiryDto.StatusCounts buildStatusCounts(ProductInquiryType type, String keyword, Long userId,
+                                                                  Long marketId) {
         Map<AdminProductInquiryStatusFilter, Long> counts =
-                adminProductInquiryQueryRepository.countByStatus(type, keyword, userId);
+                adminProductInquiryQueryRepository.countByStatus(type, keyword, userId, marketId);
 
         return AdminProductInquiryDto.StatusCounts.builder()
                 .all(counts.get(AdminProductInquiryStatusFilter.ALL))

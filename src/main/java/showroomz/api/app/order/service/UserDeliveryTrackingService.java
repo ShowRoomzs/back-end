@@ -73,6 +73,9 @@ public class UserDeliveryTrackingService {
                 .orderedAt(order.getCreatedAt())
                 .orderId(order.getId())
                 .item(UserOrderDto.TrackingItem.builder()
+                        .productId(product.getVariant() != null && product.getVariant().getProduct() != null
+                                ? product.getVariant().getProduct().getProductId() : null)
+                        .shipLeadBusinessDays(group != null ? group.getShipDueBusinessDays() : null)
                         .brandName(group != null ? group.getMarketName() : null)
                         .productName(product.getProductName())
                         .optionName(product.getOptionName())

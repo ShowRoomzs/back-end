@@ -38,6 +38,18 @@ public interface ContractTerminationRequestRepository extends JpaRepository<Cont
                 .collect(Collectors.toMap(r -> r.getContract().getId(), Function.identity(), (a, b) -> a));
     }
 
+    List<ContractTerminationRequest> findByContract_IdIn(Collection<Long> contractIds);
+
+    /** 계약별 가장 최근 요청(상태 무관) — 파트너 공구 목록(58 계획 6-3). 계약당 요청은 몇 건이라 메모리에서 고른다. */
+    default Map<Long, ContractTerminationRequest> findLatestByContractIds(Collection<Long> contractIds) {
+        if (contractIds.isEmpty()) {
+            return Map.of();
+        }
+        return findByContract_IdIn(contractIds).stream().collect(Collectors.toMap(r -> r.getContract().getId(),
+                Function.identity(), (a, b) -> java.util.Comparator.comparing(ContractTerminationRequest::getRequestedAt)
+                        .thenComparing(ContractTerminationRequest::getId).compare(a, b) >= 0 ? a : b));
+    }
+
     long countByStatus(ContractTerminationRequestStatus status);
 
     /** 공구가 열리면 해지 요청은 닫힌다 — 오픈 뒤는 공구 중단 요청으로(파트너 08 C9 안내). @return 닫은 요청 수 */

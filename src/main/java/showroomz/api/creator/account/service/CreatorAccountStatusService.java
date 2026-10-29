@@ -38,6 +38,6 @@ public class CreatorAccountStatusService {
                 MemberAccountStatusResponse.blankToNull(s.getReasonDetail()), s.getSuspendedAt(), s.isPayoutHeld(),
                 operatorChannelService.findCreatorChannelThreadId(creator).orElse(null), s.getSuspendCardId(),
                 MemberAccountStatusResponse.Term.of(s.getEndsOn(), s.getSuspendedAt(), s.getAppealDeadlineAt(),
-                        termPolicy.appealReviewBusinessDays()));
+                        termPolicy));
     }
 }

@@ -78,6 +78,13 @@ public class CreatorApplication extends BaseTimeEntity {
     @Column(name = "REJECT_REASON_DETAIL", length = 1000)
     private String rejectReasonDetail;
 
+    /** 반려 통지 메일 발송 성공 시각(58 계획 5-24) — 커밋 뒤 비동기 발송 결과를 따로 기록한다. */
+    @Column(name = "NOTICE_MAIL_SENT_AT")
+    private LocalDateTime noticeMailSentAt;
+
+    @Column(name = "NOTICE_MAIL_FAILED_AT")
+    private LocalDateTime noticeMailFailedAt;
+
     public static CreatorApplication createApplication(
             Users user,
             SnsType snsType,
@@ -100,6 +107,14 @@ public class CreatorApplication extends BaseTimeEntity {
                 .phoneNumber(phoneNumber)
                 .status(CreatorApplicationStatus.PENDING)
                 .build();
+    }
+
+    /** 반려 통지 메일 결과 — 성공 true · 실패 false · 기록 없음 null(이 기록 이전 반려 · 업무 이메일 없음 · 발송 중). */
+    public Boolean noticeSent() {
+        if (noticeMailSentAt != null) {
+            return true;
+        }
+        return noticeMailFailedAt != null ? false : null;
     }
 
     public void approve(String processorEmail) {

@@ -2,11 +2,13 @@ package showroomz.api.admin.transaction.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import showroomz.api.admin.transaction.dto.AdminOrderDto;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionKind;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderClaimCollection;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.service.OrderStallChoiceService;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.utils.BusinessCalendar;
@@ -81,7 +83,7 @@ public class AdminOrderExceptionAssembler {
                     group.getMarketId(), group.getMarketName(), row.dueAt(), dueBasisLabel(row), row.basisAt(), null,
                     elapsedHours, businessDays, businessDays + "영업일", true, noticeCount, lastNoticeAt, nextNoticeAt,
                     row.actOnBehalf(), nextStepLabel(kind, noticeCount, nextNoticeAt), nextStepNote(kind, noticeCount),
-                    null, null, link);
+                    null, null, link, null);
         }
 
         AdminOrderExceptionDto.Invoice invoice;
@@ -117,7 +119,10 @@ public class AdminOrderExceptionAssembler {
         return new AdminOrderExceptionDto.ExceptionItem(kind.tab(), kind, kind.getLabel(), row.targetNumber(),
                 group.getSubOrderNumber(), group.getOrder().getId(), group.getId(), claim == null ? null : claim.getId(),
                 group.getMarketId(), group.getMarketName(), null, null, row.basisAt(), basisLabel, elapsedHours, null,
-                elapsedLabel, true, null, null, null, row.actOnBehalf(), null, null, invoice, handlerLabel, link);
+                elapsedLabel, true, null, null, null, row.actOnBehalf(), null, null, invoice, handlerLabel, link,
+                // 추적 정지 행 — 「선택 개방까지 N일」 · 소비자 선택(06d · 1021 기-15 · 58 계획 5-12). 06a 하위주문 상세와 같은 값
+                kind == ExceptionKind.TRACKING_STALLED
+                        ? AdminOrderDto.StallChoice.of(OrderStallChoiceService.view(group, now)) : null);
     }
 
     /** 기한 보조 문장 — 기한의 출처(40 설계서 1-1). */

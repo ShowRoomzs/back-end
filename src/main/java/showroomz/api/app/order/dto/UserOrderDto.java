@@ -50,6 +50,11 @@ public class UserOrderDto {
     @Builder
     @Schema(description = "배송 조회의 상품")
     public static class TrackingItem {
+        @Schema(description = "상품 ID — 상품 상세로 가는 키(58 계획 5-1)", example = "101", nullable = true)
+        private Long productId;
+        @Schema(description = "발송 기한 영업일 — 주문 시점 값(C10-2 FAQ 「영업일 N일 내 발송」). 모르면 null", example = "3",
+                nullable = true)
+        private Integer shipLeadBusinessDays;
         private String brandName;
         private String productName;
         private String optionName;

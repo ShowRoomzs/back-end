@@ -716,7 +716,8 @@ class AdminOrderIntegrationTest extends OrderFlowTestSupport {
             throws Exception {
         return adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/defect-claims", Map.of(
                 "items", List.of(Map.of("orderProductId", orderProductId, "quantity", 1)),
-                "reasonCode", reasonCode, "detail", "1:1 문의 — 구매확정 후 용기 파손 발견", "evidenceImageUrls", evidence));
+                "reasonCode", reasonCode, "detail", "1:1 문의 — 구매확정 후 용기 파손 발견", "evidenceImageUrls", evidence,
+                "defectNoticedOn", java.time.LocalDate.now().toString()));
     }
 
     private ResultActions adminGet(String url) throws Exception {

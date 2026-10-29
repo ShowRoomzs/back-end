@@ -68,6 +68,8 @@ public interface AdminProductInquiryControllerDocs {
             @RequestParam(value = "keyword", required = false) String keyword,
             @Parameter(description = "작성한 소비자 ID — 소비자 상세에서 넘어온 진입(선택)", example = "88231")
             @RequestParam(value = "userId", required = false) Long userId,
+            @Parameter(description = "브랜드(마켓) ID — 브랜드 상세에서 넘어온 진입(선택 · 58 계획 5-31)", example = "39")
+            @RequestParam(value = "marketId", required = false) Long marketId,
             @ModelAttribute PagingRequest pagingRequest
     );
 
@@ -135,7 +137,9 @@ public interface AdminProductInquiryControllerDocs {
             @Parameter(description = "목록 검색어 — 이전·다음 계산용", example = "보습")
             @RequestParam(value = "keyword", required = false) String keyword,
             @Parameter(description = "목록 소비자 ID — 이전·다음 계산용", example = "88231")
-            @RequestParam(value = "userId", required = false) Long userId
+            @RequestParam(value = "userId", required = false) Long userId,
+            @Parameter(description = "목록 브랜드 ID — 이전·다음 계산용", example = "39")
+            @RequestParam(value = "marketId", required = false) Long marketId
     );
 
     @Operation(

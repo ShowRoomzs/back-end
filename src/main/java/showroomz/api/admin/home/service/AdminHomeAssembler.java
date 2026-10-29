@@ -67,7 +67,8 @@ public class AdminHomeAssembler {
                 snapshot.menuTotal(AdminHomeQueueReader.GROUP_BUYS),
                 snapshot.menuTotal(AdminHomeQueueReader.TRANSACTIONS),
                 snapshot.menuTotal(AdminHomeQueueReader.SETTLEMENTS),
-                new AdminHomeDto.Cs(snapshot.menuTotal(AdminHomeQueueReader.CS), inquiries),
+                new AdminHomeDto.Cs(snapshot.menuTotal(AdminHomeQueueReader.CS), inquiries,
+                        snapshot.productInquiryDeleteRequests()),
                 new AdminHomeDto.Posts(posts, posts, operatorThreadUnread()));
     }
 

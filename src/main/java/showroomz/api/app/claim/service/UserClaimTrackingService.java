@@ -222,6 +222,9 @@ public class UserClaimTrackingService {
                 .orderId(order.getId())
                 // 실제로 가는 물건 — 교환이면 새 옵션, 반려면 원래 옵션.
                 .item(UserOrderDto.TrackingItem.builder()
+                        .productId(product.getVariant() != null && product.getVariant().getProduct() != null
+                                ? product.getVariant().getProduct().getProductId() : null)
+                        .shipLeadBusinessDays(claim.getDeliveryGroup().getShipDueBusinessDays())
                         .brandName(claim.getDeliveryGroup().getMarketName())
                         .productName(product.getProductName())
                         .optionName(rejected || claim.getExchangeOptionName() == null ? product.getOptionName()

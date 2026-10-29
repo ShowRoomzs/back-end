@@ -66,7 +66,9 @@ public class AdminContractQueryService {
         }
         Map<AdminContractQueue, Long> queues = new EnumMap<>(AdminContractQueue.class);
         for (AdminContractQueue queue : AdminContractQueue.values()) queues.put(queue, adminContracts.countQueue(queue, now));
-        return new Summary(queues, tabs, queues.values().stream().mapToLong(Long::longValue).sum());
+        // 재발송 요청은 소통 스레드에서 끝난다 — 사이드바 「계약 관리」 배지 · 조치 필요 합에서 뺀다(01-contracts rev.8 ② · 58 계획 5-33)
+        return new Summary(queues, tabs, queues.entrySet().stream().filter(e -> e.getKey() != AdminContractQueue.RESEND)
+                .mapToLong(Map.Entry::getValue).sum());
     }
 
     /** 큐에서 가장 오래 기다린 건의 기준 시각 — 어드민 홈 대기 행의 경과(55 계획서 A1). 비면 null. */

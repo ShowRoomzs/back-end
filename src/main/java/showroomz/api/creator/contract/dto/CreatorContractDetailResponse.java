@@ -87,7 +87,7 @@ public record CreatorContractDetailResponse(
         List<Document> documents,
         Permissions permissions,
 
-        @Schema(description = "이력 — 화이트리스트 7종만(설계서 6-4). 필터는 쿼리 단계에서 걸린다")
+        @Schema(description = "이력 — 화이트리스트 10종만(설계서 6-4 · 성립 · 해지 요청 · 해지 포함). 필터는 쿼리 단계에서 걸린다")
         List<HistoryEntry> history,
 
         Navigation navigation,
@@ -111,7 +111,9 @@ public record CreatorContractDetailResponse(
             @Schema(example = "상품 품질 이슈") String reasonLabel,
             @Schema(description = "브랜드 메모 — 운영팀 채널 동의 확인 카드와 같은 문구", nullable = true) String memo,
             LocalDateTime requestedAt,
-            @Schema(description = "동의 확인 카드가 붙은 내 운영팀 채널 메시지", nullable = true) Long consentCardMessageId) {
+            @Schema(description = "동의 확인 카드가 붙은 내 운영팀 채널 메시지", nullable = true) Long consentCardMessageId,
+            @Schema(description = "요청자 — 지금은 SELLER(브랜드)만 요청할 수 있다", example = "SELLER")
+            showroomz.domain.contract.type.ContractActorType requesterType) {
     }
 
     @Schema(description = "계약을 보낸 브랜드")
@@ -358,7 +360,7 @@ public record CreatorContractDetailResponse(
 
     @Schema(description = "이력 1건")
     public record HistoryEntry(
-            @Schema(description = "화이트리스트 7종 + 합성된 연결 성립") ContractEventType eventType,
+            @Schema(description = "화이트리스트 10종 + 합성된 연결 성립") ContractEventType eventType,
             @Schema(description = "주체 — **ADMIN의 표시명 「운영자」는 FE가 고른다**. "
                     + "파트너는 같은 값을 「어드민」으로 그린다(§25-9)") ContractActorType actorType,
             @Schema(description = "표시명 스냅샷 — 브랜드명·쇼룸명", nullable = true) String actorDisplayName,

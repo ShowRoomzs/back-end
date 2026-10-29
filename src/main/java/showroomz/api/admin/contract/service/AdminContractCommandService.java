@@ -181,8 +181,9 @@ public class AdminContractCommandService {
         if (request.reasonCode().requiresMemo() && memo == null) fail(ErrorCode.CONTRACT_CANCEL_REASON_MEMO_REQUIRED);
         LocalDateTime now = LocalDateTime.now();
         ContractCancelRequester requester = requireRequester(c, request, now);
-        // 1021 기-06 【잠정】 — 당사자 요청이면 요청하지 않은 쪽의 동의를 운영팀 채널에서 확인해야 취소한다. 직권은 동의 대상이 없다.
-        if (requester.type() != ContractActorType.ADMIN && !Boolean.TRUE.equals(request.counterpartyConsentConfirmed())) {
+        // 1021 기-06 【잠정】 — 양측 동의를 운영팀 채널에서 확인해야 취소한다. 직권(ADMIN)도 같다 — 시안 C6 은 발의자와 무관하게
+        // 체크를 받는다(58 계획 5-20 · D5).
+        if (!Boolean.TRUE.equals(request.counterpartyConsentConfirmed())) {
             fail(ErrorCode.CONTRACT_CHECKLIST_REQUIRED);
         }
         transition(c, ContractStatus.CANCELED);

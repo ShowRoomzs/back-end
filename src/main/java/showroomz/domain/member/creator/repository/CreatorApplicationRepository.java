@@ -13,6 +13,20 @@ import java.util.Optional;
 
 public interface CreatorApplicationRepository extends JpaRepository<CreatorApplication, Long> {
 
+    /** 반려 통지 메일 성공 기록(58 계획 5-24) — 커밋 뒤에 부른다. afterCommit 안에서는 끝난 트랜잭션에 참여하므로 새 트랜잭션으로 쓴다. */
+    @org.springframework.transaction.annotation.Transactional(
+            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE CreatorApplication a SET a.noticeMailSentAt = :at WHERE a.id = :id")
+    int markNoticeMailSent(@Param("id") Long id, @Param("at") java.time.LocalDateTime at);
+
+    /** 반려 통지 메일 실패 기록 — 실패는 로그 + 이 시각(재발송은 하지 않는다 · 1021 9절). */
+    @org.springframework.transaction.annotation.Transactional(
+            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE CreatorApplication a SET a.noticeMailFailedAt = :at WHERE a.id = :id")
+    int markNoticeMailFailed(@Param("id") Long id, @Param("at") java.time.LocalDateTime at);
+
     boolean existsByUser_IdAndStatus(Long userId, CreatorApplicationStatus status);
 
     Optional<CreatorApplication> findTopByUser_IdOrderByCreatedAtDesc(Long userId);

@@ -65,7 +65,10 @@ public record GroupBuyDetailResponse(
         Navigation navigation,
 
         @Schema(description = "정지 보류 보조 배지 — 내 정지(MINE · 경고) · 상대 사정(COUNTERPARTY · 중립). 없으면 null(1017 설계서 8-4 · 8-5)", nullable = true)
-        SanctionHoldView sanctionHold
+        SanctionHoldView sanctionHold,
+
+        @Schema(description = "해지 요청 — 이 공구 계약의 가장 최근 요청(상태 무관 · 계약 상세와 같은 출처). 요청이 없으면 null", nullable = true)
+        GroupBuyTerminationRequestView terminationRequest
 ) {
 
     public record Summary(

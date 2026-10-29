@@ -297,7 +297,7 @@ public class RefundTransitions {
             case OPERATOR_REASON -> "운영자 사유 환불";
             case USER_CANCEL_BEFORE_PREPARE -> "결제완료 소비자 취소";
             case LOST_IN_TRANSIT -> "배송 분실 처리";
-            case CLAIM_PAYMENT_CANCELLED -> "교환 재발송비 환불";
+            case CLAIM_PAYMENT_CANCELLED -> "재발송 배송비";
             case FREIGHT_REFUND -> "운임 환급";
             case STALL_REFUND_CHOSEN -> "추적 정지 · 소비자 환불 선택";
         };

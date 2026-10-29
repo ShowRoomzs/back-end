@@ -101,7 +101,7 @@ public class AdminMessageAssembler {
                     adjustment.respondedAt(), null, null, adjustment.resultLabel(), false);
             return new Card(view.cardType(), view.title(), view.tone(), view.contractId(), view.contractNumber(),
                     view.groupBuyTitle(), new CardDetail(null, null, null, null, null, null, null,
-                    MessageCardResponse.AdjustmentDetail.of(adjustment.snapshot()), null, null), action);
+                    MessageCardResponse.AdjustmentDetail.of(adjustment.snapshot(), view.cardType()), null, null), action);
         }
         boolean resend = view.cardType() == MessageCardType.CONTRACT_RESEND_REQUEST;
         CardDetail detail = resend

@@ -30,6 +30,15 @@ public interface OrderClaimChargeRepository extends JpaRepository<OrderClaimChar
     List<Object[]> sumByGroupBuy(@Param("groupBuyId") Long groupBuyId,
                                  @Param("statuses") Collection<showroomz.domain.order.type.ClaimChargeStatus> statuses);
 
+    /**
+     * {@link #sumByGroupBuy}의 건수를 청구 종류별로 — [종류, 건수](07b 「재발송비 · 교환 N · 반려 N · 번복 N」 · 58 계획 5-16).
+     * 정산 행은 합계 건수만 들어 조회 때 센다.
+     */
+    @Query("SELECT h.type, COUNT(h) FROM OrderClaimCharge h JOIN h.collection c "
+            + "WHERE c.deliveryGroup.groupBuy.id = :groupBuyId AND h.status IN :statuses GROUP BY h.type")
+    List<Object[]> countByGroupBuyAndType(@Param("groupBuyId") Long groupBuyId,
+                                          @Param("statuses") Collection<showroomz.domain.order.type.ClaimChargeStatus> statuses);
+
     /** 소비자 탈퇴 차단(1021 기-31) — 아직 내지 않은 재발송비 · 사유 번복 결제. */
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(c) FROM OrderClaimCharge c WHERE c.collection.userId = :userId "
             + "AND c.status = showroomz.domain.order.type.ClaimChargeStatus.PENDING")

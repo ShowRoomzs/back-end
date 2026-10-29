@@ -429,8 +429,8 @@ public final class AdminOrderDto {
             ClaimReason reasonCode,
             @NotBlank @Size(max = 1000) @Schema(description = "하자 내용 — 1:1 문의 요약") String detail,
             @NotEmpty @Schema(description = "증빙 사진 URL — 1장 이상(문의에 첨부된 사진)") List<String> evidenceImageUrls,
-            @Schema(description = "하자 인지일(선택) — 법정 청약철회 기한 「인지 + 30일」의 기산점. 배송완료일 이후 · 오늘 이전. "
-                    + "06b 상세 `legalDeadline` 에 나온다", example = "2026-09-17", nullable = true)
+            @NotNull @Schema(description = "하자 인지일(필수 · 58 계획 5-11) — 법정 청약철회 기한 「인지 + 30일」의 기산점. 배송완료일 이후 · 오늘 이전. "
+                    + "06b 상세 `legalDeadline` 에 나온다", example = "2026-09-17")
             LocalDate defectNoticedOn
     ) {
     }

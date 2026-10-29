@@ -102,7 +102,8 @@ public class CreatorPerformanceDetailAssembler {
                         Percent.oneDecimal(followerBuyers, buyers),
                         CreatorPerformanceDistribution.of(f.buyers().stream()
                                 .map(b -> new CreatorPerformanceDistribution.Person(b.gender(), b.birthday())).toList(),
-                                KstDates.toKstDate(f.periodEnd()))),
+                                KstDates.toKstDate(f.periodEnd())),
+                        Percent.oneDecimal(buyers - repeat, buyers)),
                 followers(f, estimated),
                 reward(f, stage, status, s, adjustment, agreed, originalReward, finalReward, totalReward, creator),
                 new CreatorPerformanceDto.Recollaboration(groupBuy.getMarket().getId(),
@@ -169,7 +170,7 @@ public class CreatorPerformanceDetailAssembler {
         return new CreatorPerformanceDto.Funnel(visitors, o.orderCount(), Math.max(0, visitors - o.orderCount()),
                 o.confirmedCount(), o.cancelledCount(), o.returnedCount(), o.deliveryExceptionCount(),
                 Percent.oneDecimal(o.confirmedCount(), o.orderCount()),
-                Percent.oneDecimal(o.confirmedCount(), visitors), estimated);
+                Percent.oneDecimal(o.confirmedCount(), visitors), estimated, Percent.oneDecimal(o.orderCount(), visitors));
     }
 
     private static CreatorPerformanceDto.Sales sales(PerformanceFacts f, boolean estimated, Long agreedDelta) {

@@ -38,13 +38,15 @@ public record MemberAccountStatusResponse(
             @Schema(description = "정지 기간(일) — 시작일 · 종료일 포함", example = "7", nullable = true) Integer periodDays,
             @Schema(description = "이의 신청 기한 — 통지 + N영업일 23:59:59(기한 뒤에도 접수한다)", nullable = true)
             LocalDateTime appealDeadlineAt,
-            @Schema(description = "소명 검토 N영업일 — [정책값 미정]이면 null", nullable = true) Integer appealReviewBusinessDays
+            @Schema(description = "소명 검토 N영업일 — [정책값 미정]이면 null", nullable = true) Integer appealReviewBusinessDays,
+            @Schema(description = "이의 신청 기한 영업일 수 — 「통지 후 N영업일 이내」 문구(member.sanction.appeal-business-days)",
+                    example = "3") int appealBusinessDays
     ) {
         public static Term of(java.time.LocalDate endsOn, LocalDateTime suspendedAt, LocalDateTime appealDeadlineAt,
-                              Integer appealReviewBusinessDays) {
+                              showroomz.domain.member.common.service.SanctionTermPolicy policy) {
             return new Term(endsOn, showroomz.domain.member.common.service.SanctionTermPolicy.autoReleaseAt(endsOn),
                     showroomz.domain.member.common.service.SanctionTermPolicy.periodDays(suspendedAt, endsOn),
-                    appealDeadlineAt, appealReviewBusinessDays);
+                    appealDeadlineAt, policy.appealReviewBusinessDays(), policy.appealBusinessDays());
         }
     }
 

@@ -77,6 +77,13 @@ class AdminMetricsIntegrationTest extends SettlementTestSupport {
             chartSum += point.get("value").asDouble();
         }
         assertThat(chartSum).isEqualTo(body.at("/chart/total").asDouble()).isEqualTo(CREAM_PRICE * 2.0 + SERUM_PRICE);
+        // 58 계획 5-32 — 비교 기간(어제) 같은 단위 · 같은 버킷 수 · 합 = 비교 기간 값
+        assertThat(body.at("/chart/comparePoints")).hasSize(body.at("/chart/points").size());
+        double compareSum = 0;
+        for (JsonNode point : body.at("/chart/comparePoints")) {
+            compareSum += point.get("value").asDouble();
+        }
+        assertThat(compareSum).isEqualTo(rows.get("GMV").get("previous").asDouble());
         assertThat(kept.orderId()).isNotNull();
         assertThat(body.at("/breakdown/rows/0/0").asText()).isEqualTo("글로우 크림 앵콜 공구");
     }

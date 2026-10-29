@@ -98,7 +98,7 @@ public class CreatorContractDetailAssembler {
     private CreatorContractDetailResponse.TerminationRequested terminationRequested(Contract contract) {
         return terminationRequestRepository.findPending(contract.getId())
                 .map(r -> new CreatorContractDetailResponse.TerminationRequested(r.getReasonCode().getLabel(),
-                        r.getMemo(), r.getRequestedAt(), r.getConsentCardId()))
+                        r.getMemo(), r.getRequestedAt(), r.getConsentCardId(), r.getRequesterType()))
                 .orElse(null);
     }
 

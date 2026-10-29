@@ -149,7 +149,33 @@ public final class AdminSettlementDto {
 
     @Schema(name = "AdminSettlementBreakdown", description = "금액 분해(두 축) — 요율은 정산 행의 스냅샷")
     public record Breakdown(BrandAxis brand, CreatorAxis creator,
-                            @Schema(description = "플랫폼 몫") long platformShareAmount) {
+                            @Schema(description = "플랫폼 몫") long platformShareAmount,
+                            @Schema(description = "리워드율 표기(기-11 · 58 계획 5-18) — 계약 상품의 율이 하나면 「10%」, 여럿이면 「상품별」 · 없으면 null",
+                                    example = "10%", nullable = true) String rewardRateLabel) {
+    }
+
+    @Schema(name = "AdminSettlementReshipFee", description = "+ 재발송비 — 건수를 청구 종류별로 나눈다(58 계획 5-16)")
+    public record ReshipFee(
+            @Schema(example = "6000") long amount,
+            @Schema(description = "합계 건수", example = "2") int count,
+            @Schema(description = "교환 재발송(교환 요청 때 결제)", example = "1") long exchangeCount,
+            @Schema(description = "반려 재발송", example = "1") long rejectCount,
+            @Schema(description = "사유 번복 재발송", example = "0") long overturnCount) {
+    }
+
+    @Schema(name = "AdminSettlementFreightAdjustment", description = "± 운임 정산(1021 기-93) — 부호 있는 합 + 클레임별 줄(58 계획 5-17)")
+    public record FreightAdjustment(
+            @Schema(description = "부호 있음", example = "-3000") long amount,
+            int count,
+            List<FreightItem> items) {
+    }
+
+    @Schema(name = "AdminSettlementFreightItem")
+    public record FreightItem(
+            @Schema(description = "접수번호 — 요청 단위 행이면 null", example = "CLM-3021", nullable = true) String claimNumber,
+            @Schema(description = "CHARGE_CONSUMER(소비자 부담 · +) · REFUND_CONSUMER(소비자 환급 · −)", example = "REFUND_CONSUMER")
+            String direction,
+            @Schema(description = "부호 있음", example = "-3000") long amount) {
     }
 
     @Schema(name = "AdminSettlementBrandAxis")
@@ -164,10 +190,10 @@ public final class AdminSettlementDto {
             @Schema(description = "원래 리워드 — rewardAmount 와 다르면 합의로 바뀐 것") long originalRewardAmount,
             long rewardAmount,
             RateAmount rewardVat,
-            SettlementPartyDto.AmountCount reshipFee,
+            ReshipFee reshipFee,
             long consumerDeliveryFee,
             @Schema(description = "+ 반품 시 차감한 최초 배송비(1021 기-18)") SettlementPartyDto.AmountCount returnDeductionFee,
-            @Schema(description = "± 운임 정산(1021 기-93) — 부호 있음") SettlementPartyDto.AmountCount freightAdjustment,
+            @Schema(description = "± 운임 정산(1021 기-93) — 부호 있음") FreightAdjustment freightAdjustment,
             long payoutBeforeClawback,
             long clawbackAmount,
             long payoutAmount) {
@@ -277,7 +303,17 @@ public final class AdminSettlementDto {
                               long supplyAmount, long vatAmount, long totalAmount, String status, String statusLabel,
                               @Schema(description = "앞 8 · 뒤 4 마스킹") String approvalNumber, LocalDate issuedDate,
                               LocalDate dueDate, LocalDateTime submittedAt, LocalDateTime verifiedAt, String rejectReason,
-                              String rejectReasonLabel, String fileName, TaxDocumentActions actions) {
+                              String rejectReasonLabel, String fileName, TaxDocumentActions actions,
+                              @Schema(description = "공급받는자(M4 · 설계 6-5 · 58 계획 5-19) — 브랜드 세금계산서만(받는 쪽 = 운영사). "
+                                      + "인플루언서 세금계산서 · 영수증은 null", nullable = true) Recipient recipient) {
+    }
+
+    @Schema(name = "AdminSettlementTaxRecipient", description = "세금계산서 공급받는자 — 운영사 사업자 정보(company.*)")
+    public record Recipient(@Schema(example = "쇼룸즈", nullable = true) String name,
+                            @Schema(nullable = true) String representative,
+                            @Schema(nullable = true) String registrationNumber,
+                            @Schema(nullable = true) String address,
+                            @Schema(description = "세금계산서 수신 이메일 — 미설정이면 null", nullable = true) String taxEmail) {
     }
 
     @Schema(name = "AdminSettlementTaxDocumentActions")

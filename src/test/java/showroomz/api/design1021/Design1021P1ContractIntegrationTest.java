@@ -89,7 +89,15 @@ class Design1021P1ContractIntegrationTest extends AdminThreadTestSupport {
                 .andExpect(status().isOk());
         adminMessages(creatorChannel)
                 .andExpect(jsonPath("$.content[0].card.cardType").value("CONTRACT_CLOSE_CONSENT_REQUEST"))
-                .andExpect(jsonPath("$.content[0].card.detail.notice.kind").value("CANCEL"));
+                .andExpect(jsonPath("$.content[0].card.detail.notice.kind").value("CANCEL"))
+                // 취소 · 해지가 한 카드 종류라 제목을 안내 종류로 나눈다(58 계획 5-22)
+                .andExpect(jsonPath("$.content[0].card.title").value("계약 취소 동의 확인"));
+
+        // 직권(ADMIN)도 동의 확인이 필수다(58 계획 5-20)
+        cancel(signing, true, ContractCloseReasonCode.PARTY_RENEGOTIATION, null, ContractActorType.ADMIN, null, null,
+                null)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("CONTRACT_CHECKLIST_REQUIRED"));
 
         cancel(signing, true, ContractCloseReasonCode.PARTY_RENEGOTIATION, null, ContractActorType.SELLER,
                 ContractCancelRequestChannel.THREAD, now.minusHours(1), true)

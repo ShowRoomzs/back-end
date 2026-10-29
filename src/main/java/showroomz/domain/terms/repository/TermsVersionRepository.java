@@ -33,6 +33,12 @@ public interface TermsVersionRepository extends JpaRepository<TermsVersion, Long
     List<TermsVersion> findAllByStatusAndEffectiveDateLessThanEqualOrderByEffectiveDateAscIdAsc(
             TermsVersionStatus status, LocalDate date);
 
+    /** 어드민 소비자 동의 내역(58 계획 5-29) — 유형 · 대상의 모든 버전. 동의 시각에 시행 중이던 버전은 호출자가 고른다. */
+    @Query("select v from TermsVersion v join fetch v.document d where d.type in :types and d.target in :targets")
+    List<TermsVersion> findAllByDocumentTypesAndTargets(
+            @Param("types") java.util.Collection<showroomz.domain.terms.type.TermsType> types,
+            @Param("targets") java.util.Collection<showroomz.domain.terms.type.TermsTarget> targets);
+
     /** 소비자 화면 — 시행중 버전만 노출한다. 문서 정보를 함께 쓰므로 조인해 가져온다 (기획 §21-6) */
     @Query("select v from TermsVersion v join fetch v.document d where v.status = :status")
     List<TermsVersion> findAllByStatusWithDocument(@Param("status") TermsVersionStatus status);

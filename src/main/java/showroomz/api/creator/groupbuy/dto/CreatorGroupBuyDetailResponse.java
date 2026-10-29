@@ -242,7 +242,9 @@ public record CreatorGroupBuyDetailResponse(
             String code,
             @Schema(description = "운영자 설명", nullable = true) String detail,
             @Schema(description = "노출 중지 시각", example = "2026-08-16T15:20:00") LocalDateTime hiddenAt,
-            @Schema(description = "노출 중지 N일차 — 양끝 포함", example = "2") int hiddenDays
+            @Schema(description = "노출 중지 N일차 — 양끝 포함", example = "2") int hiddenDays,
+            @Schema(description = "소명 · 문의를 남길 내 운영팀 채널(B5a [운영팀에 문의] · 58 계획 5-7) — 채널이 없으면 null",
+                    example = "44", nullable = true) Long operatorChannelThreadId
     ) {
     }
 
