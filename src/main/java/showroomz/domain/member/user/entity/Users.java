@@ -136,7 +136,7 @@ public class Users {
     private String identityDiEnc;
 
     @JsonIgnore
-    @Column(name = "IDENTITY_DI_HASH", length = 64, unique = true)
+    @Column(name = "IDENTITY_DI_HASH", columnDefinition = "char(64)", unique = true)
     private String identityDiHash;
 
     @Column(name = "IDENTITY_OPERATOR", length = 10)
