@@ -6,6 +6,7 @@ import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -39,7 +40,7 @@ public class DeliveryArrivalEstimator {
             return null;
         }
         int leadDays = leadDays(carrier);
-        LocalDate date = pickedUpAt.toLocalDate();
+        LocalDate date = KstDates.toKstDate(pickedUpAt);
         for (int counted = 0; counted < leadDays; ) {
             date = date.plusDays(1);
             if (isDeliveryDay(date)) {
@@ -82,7 +83,7 @@ public class DeliveryArrivalEstimator {
     private LeadDays load(LocalDateTime now) {
         Map<DeliveryCarrier, int[]> sums = new EnumMap<>(DeliveryCarrier.class);
         for (Object[] row : deliveryGroupRepository.findTransitSamples(now.minusDays(orderProperties.getArrivalStatsWindowDays()))) {
-            int days = deliveryDaysBetween(((LocalDateTime) row[1]).toLocalDate(), ((LocalDateTime) row[2]).toLocalDate());
+            int days = deliveryDaysBetween(KstDates.toKstDate(((LocalDateTime) row[1])), KstDates.toKstDate(((LocalDateTime) row[2])));
             if (days < 1) {
                 continue; // 집화와 완료를 같은 회차에 본 송장 — 소요일을 말해 주지 않는다.
             }

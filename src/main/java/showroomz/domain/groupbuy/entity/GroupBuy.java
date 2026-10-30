@@ -13,6 +13,7 @@ import showroomz.domain.groupbuy.type.GroupBuyCloseType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.market.entity.Market;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -160,7 +161,7 @@ public class GroupBuy extends BaseTimeEntity {
     }
 
     public static int daysInclusive(LocalDateTime from, LocalDateTime to) {
-        return (int) ChronoUnit.DAYS.between(from.toLocalDate(), to.toLocalDate()) + 1;
+        return (int) ChronoUnit.DAYS.between(KstDates.toKstDate(from), KstDates.toKstDate(to)) + 1;
     }
 
     // ── 상태 전이에 딸린 부수 필드 ────────────────────────────────────────────

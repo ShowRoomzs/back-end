@@ -30,6 +30,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -79,7 +80,7 @@ public class AdminClaimService {
         Map<Long, OneToOneInquiry> disputes = inquiryRepository.findAllById(claims.values().stream()
                         .map(OrderClaim::getDisputeInquiryId).filter(Objects::nonNull).toList()).stream()
                 .collect(Collectors.toMap(OneToOneInquiry::getId, Function.identity()));
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
         List<AdminTransactionDto.ClaimListItem> rows = page.getContent().stream().map(row -> {
             OrderClaim claim = claims.get(row.claimId());
             return new AdminTransactionDto.ClaimListItem(row, claim == null ? null : claim.getDeliveryGroup().getMarketName(),
@@ -89,7 +90,7 @@ public class AdminClaimService {
                     claim == null ? null : claim.getDisputedAt(),
                     // 「경과」 영업일(46 수정계획 3-1) — 파트너 elapsedDays 와 같은 기준점 · 같은 영업일 함수(검수 기한 초과와 같다).
                     row.stageEnteredAt() == null ? 0
-                            : businessCalendar.businessDaysBetween(row.stageEnteredAt().toLocalDate(), today));
+                            : businessCalendar.businessDaysBetween(KstDates.toKstDate(row.stageEnteredAt()), today));
         }).toList();
         // 같은 쪽수 정보로 다시 싼다 — 행만 어드민 열을 더한 것으로 바꾼다.
         return new PageResponse<>(rows, new PageImpl<>(rows, PageRequest.of(Math.max(page.getPageInfo().getCurrentPage() - 1, 0),
@@ -113,7 +114,7 @@ public class AdminClaimService {
         LocalDateTime now = LocalDateTime.now();
         Integer inspectOverdue = claim.getStatus() == ClaimStatus.RECEIVED && claim.getInspectDueAt() != null
                 && claim.getInspectDueAt().isBefore(now)
-                ? businessCalendar.businessDaysBetween(claim.getInspectDueAt().toLocalDate(), now.toLocalDate()) : null;
+                ? businessCalendar.businessDaysBetween(KstDates.toKstDate(claim.getInspectDueAt()), KstDates.today(now)) : null;
         boolean unanswered = claimService.isInspectionUnanswered(claim, now);
         return new AdminTransactionDto.ClaimDetail(detail, claim.getOrderId(), claim.getDeliveryGroup().getId(),
                 claim.getDeliveryGroup().getMarketName(), claim.getFeeBearer(),
@@ -125,7 +126,29 @@ public class AdminClaimService {
                 settlementReader.readByDeliveryGroup(claim.getDeliveryGroup().getId())
                         .map(s -> new AdminTransactionDto.ClaimSettlement(s.settlementNumber(), s.status(),
                                 s.statusLabel(), s.confirmedAt(), isDeductedOnPass(claim)))
-                        .orElse(null));
+                        .orElse(null),
+                deductionReason(claim),
+                acceptable ? disputePreview(claimService.previewDisputeFreight(claimId)) : null);
+    }
+
+    private static AdminTransactionDto.DisputePreview disputePreview(OrderClaimService.DisputeFreightPreview preview) {
+        return preview == null ? null : new AdminTransactionDto.DisputePreview(preview.prepaidFreightRefund(),
+                preview.initialFeeRestored(), preview.total());
+    }
+
+    /**
+     * 최초 배송비 차감 근거(58 계획 5-13 · 1021 설계서 3-3) — 무료배송으로 나간 하위주문을 소비자 귀책으로 반품해 남는 상품액이 기준 아래가 됐다.
+     * 기준을 모르는 옛 주문은 무료배송 사실만으로 뺐다.
+     */
+    private static String deductionReason(OrderClaim claim) {
+        Integer deduction = claim.getCollection().getReturnDeduction();
+        if (deduction == null || deduction <= 0) {
+            return null;
+        }
+        Integer threshold = claim.getDeliveryGroup().getFreeShippingThreshold();
+        return threshold == null
+                ? String.format("무료배송으로 발송된 주문이라 최초 배송비 %,d원 차감(소비자 귀책 반품)", deduction)
+                : String.format("무료배송 기준 %,d원 미만이 되어 최초 배송비 %,d원 차감(소비자 귀책 반품)", threshold, deduction);
     }
 
     /**
@@ -136,7 +159,7 @@ public class AdminClaimService {
         if (claim.getOpenedBy() != ClaimOpenedBy.OPERATOR || claim.getDeliveryGroup().getDeliveredAt() == null) {
             return null;
         }
-        LocalDate supplied = claim.getDeliveryGroup().getDeliveredAt().toLocalDate();
+        LocalDate supplied = KstDates.toKstDate(claim.getDeliveryGroup().getDeliveredAt());
         LocalDate supplyDeadline = supplied.plusMonths(LEGAL_SUPPLY_MONTHS);
         LocalDate noticed = claim.getDefectNoticedOn();
         LocalDate noticeDeadline = noticed == null ? null : noticed.plusDays(LEGAL_NOTICE_DAYS);

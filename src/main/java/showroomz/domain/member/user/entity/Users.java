@@ -125,6 +125,26 @@ public class Users {
     @Column(name = "IDENTITY_VERIFIED_AT")
     private LocalDateTime identityVerifiedAt;
 
+    // 포트원 KCP 본인인증 결과(57 설계서 1-1) — CI · DI 는 PersonalDataCipher 암호문, 해시는 DI 중복 가입 차단 키(UNIQUE · V217).
+    // 원문 · 암호문은 API 응답 · 어드민 화면 · 로그 어디에도 내리지 않는다.
+    @JsonIgnore
+    @Column(name = "IDENTITY_CI_ENC", length = 512)
+    private String identityCiEnc;
+
+    @JsonIgnore
+    @Column(name = "IDENTITY_DI_ENC", length = 512)
+    private String identityDiEnc;
+
+    @JsonIgnore
+    @Column(name = "IDENTITY_DI_HASH", columnDefinition = "char(64)", unique = true)
+    private String identityDiHash;
+
+    @Column(name = "IDENTITY_OPERATOR", length = 10)
+    private String identityOperator; // SKT · KT · LGU · *_MVNO
+
+    @Column(name = "IDENTITY_FOREIGNER")
+    private Boolean identityForeigner;
+
     @Embedded
     private NotificationSetting notificationSetting;
 
@@ -225,6 +245,21 @@ public class Users {
     }
 
     /**
+     * 포트원 KCP 본인인증 결과 반영(57 설계서 1-3) — 가입(C0-2) · 재인증(C15-2) 공통. {@link #updateIdentity} 에 CI · DI · 통신사 ·
+     * 외국인 여부를 더한 것이다. 암호문 · 해시는 호출자(서비스)가 만든다 — 엔티티는 키를 모른다.
+     */
+    public void applyIdentity(String name, String birthday, String gender, String phoneNumber,
+                              String operator, Boolean foreigner, String ciEnc, String diEnc, String diHash,
+                              LocalDateTime verifiedAt) {
+        updateIdentity(name, birthday, gender, phoneNumber, verifiedAt);
+        this.identityOperator = operator;
+        this.identityForeigner = foreigner;
+        this.identityCiEnc = ciEnc;
+        this.identityDiEnc = diEnc;
+        this.identityDiHash = diHash;
+    }
+
+    /**
      * C15-4 탈퇴 시 계정 식별 정보 파기.
      * 팔로잉·좋아요·장바구니 등 활동 기록은 각 리포지토리에서 삭제하고, 여기서는 회원 행에 남는 값만 지운다.
      * 주문·결제 기록은 전자상거래법상 법정 기간 동안 분리 보관해야 하므로 건드리지 않는다.
@@ -237,6 +272,12 @@ public class Users {
         this.gender = null;
         this.profileImageUrl = null;
         this.identityVerifiedAt = null;
+        // CI · DI 도 파기한다 — 해시가 비므로 같은 사람이 다른 소셜로 재가입하면 새 계정이다(57 설계서 5절 · 13절 #3)
+        this.identityCiEnc = null;
+        this.identityDiEnc = null;
+        this.identityDiHash = null;
+        this.identityOperator = null;
+        this.identityForeigner = null;
         this.refundAccount = null;
         this.marketingAgree = false;
         this.marketingAgreeChangedAt = LocalDateTime.now();

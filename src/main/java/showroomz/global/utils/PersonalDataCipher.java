@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
@@ -13,6 +14,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Base64;
+import java.util.HexFormat;
 
 /**
  * 고유식별정보(주민등록번호) 양방향 암호화 — AES-256-GCM(1009 기획 수정본 7-a). 원천징수 신고(지급명세서)에 원문이
@@ -32,12 +34,17 @@ public class PersonalDataCipher {
     private static final int IV_LENGTH = 12;
     private static final int TAG_BITS = 128;
 
+    private static final String HMAC = "HmacSHA256";
+
     private final SecretKeySpec key;
+    private final byte[] hmacKey;
     private final SecureRandom random = new SecureRandom();
 
     public PersonalDataCipher(@Value("${showroomz.crypto.personal-data-key:}") String base64Key,
                               @Value("${jwt.secret:}") String fallbackSecret) {
-        this.key = new SecretKeySpec(resolveKey(base64Key, fallbackSecret), "AES");
+        byte[] master = resolveKey(base64Key, fallbackSecret);
+        this.key = new SecretKeySpec(master, "AES");
+        this.hmacKey = deriveHmacKey(master);
     }
 
     public String encrypt(String plain) {
@@ -68,6 +75,34 @@ public class PersonalDataCipher {
             return new String(cipher.doFinal(all, IV_LENGTH, all.length - IV_LENGTH), StandardCharsets.UTF_8);
         } catch (GeneralSecurityException | IllegalArgumentException e) {
             throw new IllegalStateException("고유식별정보 복호화 실패", e);
+        }
+    }
+
+    /**
+     * 조회용 결정적 해시(57 설계서 4절) — DI 중복 가입 차단 키. 암호문은 IV 가 매번 달라 비교할 수 없으므로 HMAC-SHA256 hex 를
+     * 따로 저장한다. MAC 키는 암호화 키를 그대로 쓰지 않고 라벨로 파생한다. 키를 바꾸면 해시도 다시 계산해야 한다.
+     */
+    public String hmac(String plain) {
+        if (plain == null) {
+            return null;
+        }
+        try {
+            Mac mac = Mac.getInstance(HMAC);
+            mac.init(new SecretKeySpec(hmacKey, HMAC));
+            return HexFormat.of().formatHex(mac.doFinal(plain.getBytes(StandardCharsets.UTF_8)));
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("고유식별정보 해시 실패", e);
+        }
+    }
+
+    private static byte[] deriveHmacKey(byte[] masterKey) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            digest.update("showroomz-di-hash:".getBytes(StandardCharsets.UTF_8));
+            digest.update(masterKey);
+            return digest.digest();
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException(e);
         }
     }
 

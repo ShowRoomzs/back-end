@@ -41,7 +41,10 @@ public final class AdminMetricsDto {
             @Schema(description = "HOUR · DAY · WEEK · MONTH", example = "DAY") String unit,
             @Schema(example = "8420000") double total,
             @Schema(description = "비교 기간 합계 대비 증감", example = "1250000") double delta,
-            List<Point> points
+            List<Point> points,
+            @Schema(description = "비교 기간의 같은 지표 — 같은 단위 버킷 · 현재 버킷 수만큼. i 번째가 points[i] 와 짝이다(겹쳐 그리기용). "
+                    + "비교 기간이 짧으면 개수가 적을 수 있다")
+            List<Point> comparePoints
     ) {
     }
 

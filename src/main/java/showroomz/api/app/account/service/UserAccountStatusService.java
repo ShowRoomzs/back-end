@@ -77,7 +77,7 @@ public class UserAccountStatusService {
         return new Suspension(open.getReason().name(), open.getReason().getAppLabel(), open.getSuspendedAt(),
                 open.isNoticePending(), pendingAppealId,
                 showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(open.getEndsOn(),
-                        open.getSuspendedAt(), open.getAppealDeadlineAt(), termPolicy.appealReviewBusinessDays()));
+                        open.getSuspendedAt(), open.getAppealDeadlineAt(), termPolicy));
     }
 
     private Users load(Long userId) {

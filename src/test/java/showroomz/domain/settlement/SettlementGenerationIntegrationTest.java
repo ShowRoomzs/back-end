@@ -299,7 +299,8 @@ class SettlementGenerationIntegrationTest extends SettlementTestSupport {
         long claimId = json(adminPost(ADMIN_ORDERS + "/groups/" + group.getId() + "/defect-claims", java.util.Map.of(
                 "items", List.of(java.util.Map.of("orderProductId", itemsOf(group).get(0).getId(), "quantity", 1)),
                 "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "구매확정 후 용기 파손",
-                "evidenceImageUrls", List.of("https://img.test/d.jpg"))).andExpect(status().isOk()))
+                "evidenceImageUrls", List.of("https://img.test/d.jpg"), "defectNoticedOn", java.time.LocalDate.now().toString()))
+                .andExpect(status().isOk()))
                 .get("claimIds").get(0).asLong();
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .put("/v1/user/claims/" + claimId + "/collection-invoice")

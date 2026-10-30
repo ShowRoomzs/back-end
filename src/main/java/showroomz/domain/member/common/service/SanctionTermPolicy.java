@@ -6,10 +6,10 @@ import showroomz.global.config.properties.MemberProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 
 /**
@@ -24,26 +24,24 @@ import java.time.temporal.ChronoUnit;
 @RequiredArgsConstructor
 public class SanctionTermPolicy {
 
-    private static final LocalTime END_OF_DAY = LocalTime.of(23, 59, 59);
-
     private final MemberProperties properties;
     private final BusinessCalendar businessCalendar;
 
     /** 종료일 검사 — 비어 있으면 기간 없음(null). 오늘보다 앞이면 400. */
     public LocalDate requireEndsOn(LocalDate endsOn, LocalDateTime now) {
-        if (endsOn != null && endsOn.isBefore(now.toLocalDate())) {
+        if (endsOn != null && endsOn.isBefore(KstDates.today(now))) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "정지 종료일은 오늘 이후로 선택해 주세요.");
         }
         return endsOn;
     }
 
-    /** 이의 신청 기한 — 통지가 비영업일이면 다음 영업일을 기산일로 + N영업일의 끝. */
+    /** 이의 신청 기한 — 통지가 비영업일이면 다음 영업일을 기산일로 + N영업일의 끝(한국 날짜 23:59:59 · 서버 시각). */
     public LocalDateTime appealDeadline(LocalDateTime now) {
-        LocalDate base = now.toLocalDate();
+        LocalDate base = KstDates.today(now);
         while (!businessCalendar.isBusinessDay(base)) {
             base = base.plusDays(1);
         }
-        return businessCalendar.addBusinessDays(base, properties.getSanction().getAppealBusinessDays()).atTime(END_OF_DAY);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(base, properties.getSanction().getAppealBusinessDays()));
     }
 
     /** 이의 신청 기한 영업일 수({@code member.sanction.appeal-business-days}) — 정지 모달 「통지 후 N영업일 이상」. */
@@ -56,14 +54,14 @@ public class SanctionTermPolicy {
         return properties.getSanction().getAppealReviewBusinessDays();
     }
 
-    /** 자동 해제 시각 — 종료일 다음 날 00:00. */
+    /** 자동 해제 시각 — 종료일(한국 날짜) 다음 날 00:00 KST · 서버 시각. */
     public static LocalDateTime autoReleaseAt(LocalDate endsOn) {
-        return endsOn == null ? null : endsOn.plusDays(1).atStartOfDay();
+        return endsOn == null ? null : KstDates.startOfDay(endsOn.plusDays(1));
     }
 
-    /** 정지 기간(일) — 시작일 · 종료일 포함. */
+    /** 정지 기간(일) — 시작일 · 종료일 포함(한국 날짜). */
     public static Integer periodDays(LocalDateTime suspendedAt, LocalDate endsOn) {
         return endsOn == null || suspendedAt == null ? null
-                : (int) ChronoUnit.DAYS.between(suspendedAt.toLocalDate(), endsOn) + 1;
+                : (int) ChronoUnit.DAYS.between(KstDates.toKstDate(suspendedAt), endsOn) + 1;
     }
 }

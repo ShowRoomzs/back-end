@@ -108,6 +108,8 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
     @Autowired private OrderCancelRequestRepository cancelRequestRepository;
     @Autowired private OrderRefundTaskRepository refundTaskRepository;
     @Autowired private UserStatusHistoryRepository statusHistoryRepository;
+    @Autowired private showroomz.domain.terms.repository.TermsDocumentRepository termsDocumentRepository;
+    @Autowired private showroomz.domain.terms.repository.TermsVersionRepository termsVersionRepository;
 
     private String adminToken;
     private Seller admin;
@@ -291,6 +293,51 @@ class AdminConsumerDetailIntegrationTest extends IntegrationTestSupport {
                 .consentType(ConsentType.IDENTITY_VERIFICATION).agreed(true).build());
         detail(hong).andExpect(jsonPath("$.identity.firstVerifiedAt").doesNotExist())
                 .andExpect(jsonPath("$.identity.renewedAt", org.hamcrest.Matchers.startsWith(iso(verifiedAt))));
+    }
+
+    @Test
+    @DisplayName("[58 5-29] 약관 동의 내역 — 버전은 동의 시각에 시행 중이던 버전 · 소비자 문서 우선 · 문서 없으면 버전 null")
+    void consents() throws Exception {
+        Users hong = createConsumer("hong", UserStatus.NORMAL);
+        LocalDateTime marketingAt = LocalDateTime.now().minusDays(1).withNano(0);
+        jdbc.update("UPDATE users SET service_agree = true, privacy_agree = true, marketing_agree = false, "
+                + "marketing_agree_changed_at = ? WHERE user_id = ?", marketingAt, hong.getId());
+        LocalDate today = LocalDate.now();
+        termsVersion("이용약관(소비자)", showroomz.domain.terms.type.TermsType.TERMS_OF_SERVICE,
+                showroomz.domain.terms.type.TermsTarget.USER, "v1.0", today.minusDays(30));
+        termsVersion("이용약관(소비자) 개정", showroomz.domain.terms.type.TermsType.TERMS_OF_SERVICE,
+                showroomz.domain.terms.type.TermsTarget.USER, "v2.0", today.plusDays(10));   // 가입 뒤 시행 — 아니다
+        termsVersion("이용약관(브랜드)", showroomz.domain.terms.type.TermsType.TERMS_OF_SERVICE,
+                showroomz.domain.terms.type.TermsTarget.BRAND, "v9.0", today.minusDays(1));  // 대상이 다르다
+        termsVersion("개인정보처리방침", showroomz.domain.terms.type.TermsType.PRIVACY_POLICY,
+                showroomz.domain.terms.type.TermsTarget.ALL, "v1.1", today.minusDays(5));
+
+        mockMvc.perform(get(PATH + hong.getId() + "/consents").header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content.length()").value(3))
+                .andExpect(jsonPath("$.content[0].termsType").value("TERMS_OF_SERVICE"))
+                .andExpect(jsonPath("$.content[0].termsName").value("이용약관(소비자)"))
+                .andExpect(jsonPath("$.content[0].version").value("v1.0"))
+                .andExpect(jsonPath("$.content[0].agreed").value(true))
+                .andExpect(jsonPath("$.content[0].agreedAt").isNotEmpty())
+                .andExpect(jsonPath("$.content[1].termsType").value("PRIVACY_POLICY"))
+                .andExpect(jsonPath("$.content[1].version").value("v1.1"))
+                .andExpect(jsonPath("$.content[2].termsType").value("MARKETING_CONSENT"))
+                .andExpect(jsonPath("$.content[2].termsName").value("마케팅 동의"))
+                .andExpect(jsonPath("$.content[2].version").doesNotExist())
+                .andExpect(jsonPath("$.content[2].agreed").value(false))
+                .andExpect(jsonPath("$.content[2].agreedAt", org.hamcrest.Matchers.startsWith(iso(marketingAt))));
+
+        mockMvc.perform(get(PATH + "999999/consents").header(HttpHeaders.AUTHORIZATION, adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    private void termsVersion(String name, showroomz.domain.terms.type.TermsType type,
+                              showroomz.domain.terms.type.TermsTarget target, String version, LocalDate effectiveDate) {
+        var document = termsDocumentRepository.save(showroomz.domain.terms.entity.TermsDocument.builder()
+                .name(name).type(type).target(target).build());
+        termsVersionRepository.save(showroomz.domain.terms.entity.TermsVersion.builder()
+                .document(document).versionNumber(version).effectiveDate(effectiveDate).content("본문").build());
     }
 
     @Test

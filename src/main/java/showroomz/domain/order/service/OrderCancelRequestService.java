@@ -169,9 +169,6 @@ public class OrderCancelRequestService {
         if (reasonCode == null || (reasonCode == CancelRejectReason.ETC && trimmed == null)) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "거부 사유를 입력해 주세요.");
         }
-        if (!reasonCode.isSelectable()) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "선택할 수 없는 거부 사유입니다.");
-        }
         OrderCancelRequest request = cancelRequestRepository.findWithGroup(cancelRequestId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
         Long groupId = request.getDeliveryGroup().getId();

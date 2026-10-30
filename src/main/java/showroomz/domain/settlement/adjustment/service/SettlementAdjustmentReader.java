@@ -12,6 +12,7 @@ import showroomz.domain.settlement.adjustment.type.AdjustmentTurn;
 import showroomz.domain.settlement.adjustment.type.ProposalStatus;
 import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -118,12 +119,12 @@ public class SettlementAdjustmentReader {
         Map<Long, List<SettlementAdjustmentProposal>> proposals = proposalRepository
                 .findByAdjustmentIdIn(adjustments.stream().map(SettlementAdjustment::getId).toList()).stream()
                 .collect(Collectors.groupingBy(SettlementAdjustmentProposal::getAdjustmentId));
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
         for (SettlementAdjustment a : adjustments) {
             List<ProposalView> views = proposals.getOrDefault(a.getId(), List.of()).stream()
                     .map(SettlementAdjustmentReader::view).toList();
             Integer remaining = a.getStatus() == AdjustmentStatus.OPEN
-                    ? calendar.businessDaysBetween(today, a.getDeadlineAt().toLocalDate()) : null;
+                    ? calendar.businessDaysBetween(today, KstDates.toKstDate(a.getDeadlineAt())) : null;
             result.put(a.getId(), new AdjustmentSummary(a.getId(), a.getSettlementId(), a.getSettlementNumber(),
                     a.getGroupBuyId(), a.getMarketId(), a.getCreatorId(), a.getThreadId(), a.getStatus(),
                     a.getRequesterType(), a.getOriginalRewardAmount(), a.getMaxRewardAmount(),

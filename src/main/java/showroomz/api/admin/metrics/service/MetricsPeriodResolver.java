@@ -5,6 +5,7 @@ import showroomz.api.admin.metrics.type.MetricsPreset;
 import showroomz.api.admin.metrics.type.MetricsUnit;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -17,6 +18,9 @@ import java.util.List;
 /**
  * 운영 지표 기간 규칙(1017 설계서 7-0 ② · 7-1) — 서버가 확정해 응답에 적는다. 기준 시각은 오늘 00:00(TODAY 만 지금).
  * 비교는 언제나 직전 같은 길이다(M1 만 전월 1일 ~ 같은 일). 프리셋을 넘기지 않으면 M1(한 달)이다.
+ *
+ * <p>날짜 경계(오늘 0시 · 월초 · 주 시작)와 라벨은 <b>한국 시각</b>으로 정하고, 결과 구간은 서버 시각으로 돌려준다(58 계획 1-5) —
+ * 그대로 서버 날짜로 자르면 운영(UTC)에서 「오늘」이 KST 09:00 에 시작했다.
  */
 @Component
 public class MetricsPeriodResolver {
@@ -29,7 +33,16 @@ public class MetricsPeriodResolver {
     /** 기간을 고르지 않았을 때 — 시안 21 「한 달(기본)」. */
     static final MetricsPreset DEFAULT_PRESET = MetricsPreset.M1;
 
+    /** 서버 시각 {@code now} 기준 기간 — 구간 끝점은 서버 시각이다. */
     public Resolved resolve(MetricsPreset preset, LocalDate from, LocalDate to, LocalDateTime now) {
+        Resolved kst = resolveKst(preset, from, to, KstDates.toKst(now));
+        return new Resolved(kst.preset(), KstDates.fromKst(kst.from()), KstDates.fromKst(kst.to()),
+                KstDates.fromKst(kst.compareFrom()), KstDates.fromKst(kst.compareTo()), kst.unit(), kst.label(),
+                kst.compareLabel());
+    }
+
+    /** 한국 벽시계로 정한 기간 — 라벨도 여기서 만든다. */
+    private Resolved resolveKst(MetricsPreset preset, LocalDate from, LocalDate to, LocalDateTime now) {
         LocalDateTime today = now.toLocalDate().atStartOfDay();
         return switch (preset == null ? DEFAULT_PRESET : preset) {
             case TODAY -> new Resolved(MetricsPreset.TODAY, today, now, today.minusDays(1), now.minusDays(1),
@@ -82,29 +95,34 @@ public class MetricsPeriodResolver {
         return from.format(MD) + " ~ " + to.minusDays(1).format(MD) + " (" + days + "일)";
     }
 
-    /** 버킷 — [시작, 끝) 목록. 주는 월요일 시작이다. */
+    /** 버킷 — [시작, 끝) 목록(서버 시각). 경계는 한국 시각의 정시 · 0시 · 월요일 · 1일이다. */
     public static List<LocalDateTime[]> buckets(LocalDateTime from, LocalDateTime to, MetricsUnit unit) {
+        LocalDateTime kstFrom = KstDates.toKst(from);
+        LocalDateTime kstTo = KstDates.toKst(to);
         List<LocalDateTime[]> buckets = new ArrayList<>();
         LocalDateTime cursor = switch (unit) {
-            case HOUR -> from.truncatedTo(ChronoUnit.HOURS);
-            case DAY -> from.toLocalDate().atStartOfDay();
-            case WEEK -> from.toLocalDate().minusDays(from.getDayOfWeek().getValue() - 1L).atStartOfDay();
-            case MONTH -> from.toLocalDate().withDayOfMonth(1).atStartOfDay();
+            case HOUR -> kstFrom.truncatedTo(ChronoUnit.HOURS);
+            case DAY -> kstFrom.toLocalDate().atStartOfDay();
+            case WEEK -> kstFrom.toLocalDate().minusDays(kstFrom.getDayOfWeek().getValue() - 1L).atStartOfDay();
+            case MONTH -> kstFrom.toLocalDate().withDayOfMonth(1).atStartOfDay();
         };
-        while (cursor.isBefore(to)) {
+        while (cursor.isBefore(kstTo)) {
             LocalDateTime next = switch (unit) {
                 case HOUR -> cursor.plusHours(1);
                 case DAY -> cursor.plusDays(1);
                 case WEEK -> cursor.plusWeeks(1);
                 case MONTH -> cursor.plusMonths(1);
             };
-            buckets.add(new LocalDateTime[]{cursor.isBefore(from) ? from : cursor, next.isAfter(to) ? to : next});
+            buckets.add(new LocalDateTime[]{cursor.isBefore(kstFrom) ? from : KstDates.fromKst(cursor),
+                    next.isAfter(kstTo) ? to : KstDates.fromKst(next)});
             cursor = next;
         }
         return buckets;
     }
 
-    public static String bucketLabel(LocalDateTime start, MetricsUnit unit) {
+    /** 버킷 라벨 — 버킷 시작(서버 시각)을 한국 시각으로 읽는다. */
+    public static String bucketLabel(LocalDateTime serverStart, MetricsUnit unit) {
+        LocalDateTime start = KstDates.toKst(serverStart);
         return switch (unit) {
             case HOUR -> start.getHour() + "시";
             case DAY -> start.format(MD);

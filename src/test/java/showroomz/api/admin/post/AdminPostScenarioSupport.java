@@ -428,8 +428,9 @@ abstract class AdminPostScenarioSupport extends IntegrationTestSupport {
         postLifecycleService.expireOverdueSuspensions(LocalDateTime.now(), 100);
     }
 
+    /** 응답 시각 — 서버 벽시계 + {@code Z}(58 계획 1-6 · 게시물 DTO 도 전역 형식). */
     protected static LocalDateTime at(JsonNode node) {
-        return node == null || node.isNull() ? null : LocalDateTime.parse(node.asText());
+        return node == null || node.isNull() ? null : LocalDateTime.parse(node.asText().replace("Z", ""));
     }
 
     protected static List<String> texts(JsonNode array, String field) {

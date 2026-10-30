@@ -17,6 +17,7 @@ import showroomz.domain.post.service.PostMetricsService;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.Percent;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -122,7 +123,7 @@ public class PostInsightService {
 
         Map<String, Long> ageGroups = Demographics.newCountMap(Demographics.AGE_LABELS);
         Map<String, Long> genders = Demographics.newCountMap(Demographics.GENDER_LABELS);
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
 
         for (Object[] row : rows) {
             String gender = (String) row[1];

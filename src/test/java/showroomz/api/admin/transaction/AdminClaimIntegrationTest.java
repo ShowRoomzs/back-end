@@ -183,9 +183,14 @@ class AdminClaimIntegrationTest extends ClaimTestSupport {
                 .andExpect(jsonPath("$.canAcceptDispute").value(true))
                 .andExpect(jsonPath("$.disputeRefundAmount").value(CREAM_PRICE))
                 .andExpect(jsonPath("$.inspectOverdueBusinessDays").doesNotExist());
+        // 58 계획 5-13 — 인용 전 운임 환급 예정액(합 = 선불 운임 + 최초 배송비 환원)
+        JsonNode preview = json(adminGet(ADMIN_CLAIMS + "/" + rejected)).get("disputePreview");
+        assertThat(preview.get("total").asInt())
+                .isEqualTo(preview.get("prepaidFreightRefund").asInt() + preview.get("initialFeeRestored").asInt());
         adminGet(ADMIN_CLAIMS + "/" + exchangeRejected)
                 .andExpect(jsonPath("$.canAcceptDispute").value(false))
-                .andExpect(jsonPath("$.disputeRefundAmount").doesNotExist());
+                .andExpect(jsonPath("$.disputeRefundAmount").doesNotExist())
+                .andExpect(jsonPath("$.disputePreview").doesNotExist());
         JsonNode detail = json(adminGet(ADMIN_CLAIMS + "/" + receivedId));
         assertThat(detail.get("canAcceptDispute").asBoolean()).isFalse();
         assertThat(detail.get("inspectNotice").get("count").asInt()).isEqualTo(2);

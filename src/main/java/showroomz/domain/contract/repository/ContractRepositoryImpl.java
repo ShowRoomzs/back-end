@@ -18,6 +18,7 @@ import showroomz.domain.contract.type.CreatorContractSortType;
 import showroomz.domain.contract.type.CreatorContractTab;
 import showroomz.domain.market.entity.QMarket;
 import showroomz.domain.member.creator.entity.QCreator;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -59,10 +60,10 @@ public class ContractRepositoryImpl implements ContractRepositoryCustom {
         // 공구 기간이 조회 구간과 겹치는 계약. 기간이 비어 있는 작성중 행은 기간 조건을 걸면 빠진다 —
         // 「기간으로 찾는다」는 요구 자체가 기간이 있는 계약을 대상으로 하므로 그대로 둔다.
         if (startDate != null) {
-            where.and(contract.groupBuyEndAt.goe(startDate.atStartOfDay()));
+            where.and(contract.groupBuyEndAt.goe(KstDates.startOfDay(startDate)));
         }
         if (endDate != null) {
-            where.and(contract.groupBuyStartAt.loe(LocalDateTime.of(endDate, LocalTime.MAX)));
+            where.and(contract.groupBuyStartAt.loe(KstDates.at(endDate, LocalTime.MAX)));
         }
 
         List<Contract> content = queryFactory

@@ -98,14 +98,14 @@ class AdminContractListIntegrationTest extends AdminContractTestSupport {
         }
 
         @Test
-        @DisplayName("요약: 조치 큐 2·1·1·1, 탭 10·2·3·1·1·2, 조치 필요 5건 — 시안 A1의 숫자 그대로다")
+        @DisplayName("요약: 조치 큐 2·1·1·1, 탭 10·2·3·1·1·2, 조치 필요 4건(재발송 요청 제외 · rev.8 ②)")
         void summaryMatchesSpecNumbers() throws Exception {
             summary().andExpect(status().isOk())
                     .andExpect(jsonPath("$.queues.REVIEW").value(2))
                     .andExpect(jsonPath("$.queues.CONCLUSION").value(1))
                     .andExpect(jsonPath("$.queues.EXPIRY").value(1))
                     .andExpect(jsonPath("$.queues.RESEND").value(1))
-                    .andExpect(jsonPath("$.actionRequiredCount").value(5))
+                    .andExpect(jsonPath("$.actionRequiredCount").value(4))
                     .andExpect(jsonPath("$.tabCounts.ALL").value(10))
                     .andExpect(jsonPath("$.tabCounts.REVIEW_PENDING").value(2))
                     .andExpect(jsonPath("$.tabCounts.SIGNING").value(3))
@@ -157,7 +157,7 @@ class AdminContractListIntegrationTest extends AdminContractTestSupport {
                     "여름 수분 세럼 공구", new String[]{"서명 진행중", "INFO"},
                     "데일리 토너 공구", new String[]{"공구 생성 대기", "INFO"},
                     "앰플 리필 공구", new String[]{"검토 반려", "WARNING"},
-                    "글로우 크림 앵콜 공구", new String[]{"체결완료", "SUCCESS"},
+                    "글로우 크림 앵콜 공구", new String[]{"계약 성립", "SUCCESS"},
                     "봄 클렌저 공구", new String[]{"거절", "DANGER"},
                     "클렌징 오일 여름 공구", new String[]{"취소", "NEUTRAL"});
             for (var entry : expected.entrySet()) {
@@ -228,7 +228,7 @@ class AdminContractListIntegrationTest extends AdminContractTestSupport {
                     .andExpect(jsonPath("$.content").isEmpty())
                     .andExpect(jsonPath("$.pageInfo.totalResults").value(0));
 
-            summary().andExpect(jsonPath("$.actionRequiredCount").value(5))
+            summary().andExpect(jsonPath("$.actionRequiredCount").value(4))
                     .andExpect(jsonPath("$.tabCounts.ALL").value(10));
         }
 

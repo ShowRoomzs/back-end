@@ -3,6 +3,7 @@ package showroomz.api.design1021;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
+import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.service.SettlementAmounts;
 import showroomz.domain.settlement.service.SettlementCalculator;
 import showroomz.domain.settlement.service.SettlementInput;
@@ -10,6 +11,7 @@ import showroomz.domain.settlement.service.SettlementRates;
 import showroomz.global.error.exception.BusinessException;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -94,6 +96,47 @@ class Design1021SettlementCalculatorTest {
                 a.rewardClawbackCarryover(), 0, 0);
 
         assertThatThrownBy(() -> calculator.verify(broken)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("조정 상한도 최초 배송비 · 운임 정산을 넣는다 — 운임 환급(−)이 있어도 상한 금액 합의가 검산을 통과한다")
+    void maxRewardIncludesFeeLines() {
+        // 운임 환급 −50,000 · 리워드 0 이면 브랜드 수취액 = 1,000,000 − 30,000 − 50,000 = 920,000 → 상한 = floor10(920,000 ÷ 1.1)
+        Settlement minus = settlement(calculate(1_000_000, 100_000, 0, 0, 0, 0, -50_000));
+        long upper = calculator.maxRewardAmount(minus);
+
+        assertThat(upper).isEqualTo(836_360);
+        SettlementAmounts atUpper = calculator.recalculateForReward(minus, upper);
+        assertThat(atUpper.brandPayoutAmount()).isBetween(0L, 20L);
+        // 빠뜨렸던 식(1021 이전)으로 구한 상한이면 브랜드 수취액이 음수라 합의 확정이 막힌다.
+        assertThatThrownBy(() -> calculator.recalculateForReward(minus, 881_810)).isInstanceOf(BusinessException.class);
+    }
+
+    @Test
+    @DisplayName("최초 배송비(+) · 소비자 부담 운임(+)은 상한을 그만큼 올린다")
+    void maxRewardRaisedByPlusLines() {
+        Settlement none = settlement(calculate(1_000_000, 100_000, 0, 0, 0, 0, 0));
+        Settlement plus = settlement(calculate(1_000_000, 100_000, 0, 0, 0, 3_000, 8_000));
+
+        // 11,000 ÷ 1.1 = 10,000 — 10원 절사 전후 같은 값
+        assertThat(calculator.maxRewardAmount(plus) - calculator.maxRewardAmount(none)).isEqualTo(10_000);
+        assertThat(calculator.recalculateForReward(plus, calculator.maxRewardAmount(plus)).brandPayoutAmount())
+                .isBetween(0L, 20L);
+    }
+
+    private static Settlement settlement(SettlementAmounts amounts) {
+        LocalDateTime now = LocalDateTime.of(2026, 10, 22, 10, 0);
+        return Settlement.builder()
+                .settlementNumber("STL-2610-021")
+                .creatorBusinessType(amounts.businessType())
+                .periodStartAt(now.minusDays(20))
+                .periodEndAt(now.minusDays(10))
+                .ordersClosedAt(now)
+                .createdAt(now)
+                .reviewDueAt(now.plusDays(3))
+                .breakdown(new Settlement.Breakdown(amounts.confirmedSalesAmount(), 0, 0, 0, 0, 0, 0, 0))
+                .amounts(amounts)
+                .build();
     }
 
     @Test

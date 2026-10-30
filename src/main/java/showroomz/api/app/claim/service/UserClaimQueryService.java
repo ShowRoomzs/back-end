@@ -41,6 +41,7 @@ import showroomz.domain.order.type.ClaimResult;
 import showroomz.domain.order.type.ClaimStatus;
 import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.DeliveryCarrier;
+import showroomz.domain.order.type.FreightAdjustmentTrigger;
 import showroomz.domain.order.type.FulfillmentStatus;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.domain.order.type.UserClaimPhase;
@@ -49,6 +50,7 @@ import showroomz.domain.payment.repository.PaymentRepository;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -282,7 +284,7 @@ public class UserClaimQueryService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.CLAIM_NOT_FOUND));
         OrderClaimCollection collection = focused.getCollection();
         Order order = focused.getDeliveryGroup().getOrder();
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
 
         // 철회·취소로 사라진 항목은 빼되, 진입한 항목은 취소됐어도 싣는다(알림 딥링크로 열린다).
         List<OrderClaim> shown = claimRepository.findByCollectionId(collection.getId()).stream()
@@ -321,7 +323,7 @@ public class UserClaimQueryService {
                         .collectionInvoice(!collection.hasInvoice() ? null : new UserClaimDto.Invoice(
                                 collection.getCarrier(), collection.getCarrier().getLabel(),
                                 collection.getTrackingNumber()))
-                        .invoiceDueDate(invoiceMissing ? collection.getInvoiceDueAt().toLocalDate() : null)
+                        .invoiceDueDate(invoiceMissing ? KstDates.toKstDate(collection.getInvoiceDueAt()) : null)
                         .reshipInvoice(focused.getReshipTrackingNumber() == null ? null : new UserClaimDto.Invoice(
                                 focused.getReshipCarrier(), focused.getReshipCarrier().getLabel(),
                                 focused.getReshipTrackingNumber()))
@@ -384,7 +386,7 @@ public class UserClaimQueryService {
         UserClaimDto.OverturnPayment payment = null;
         if (overturnCharge) {
             int total = charge.getAmount() == null ? 0 : charge.getAmount();
-            LocalDate dueDate = charge.getDueAt() == null ? null : charge.getDueAt().toLocalDate();
+            LocalDate dueDate = charge.getDueAt() == null ? null : KstDates.toKstDate(charge.getDueAt());
             payment = UserClaimDto.OverturnPayment.builder()
                     .reshipFee(Math.max(0, total - collectFreight))
                     .collectFreight(collectFreight)
@@ -537,16 +539,20 @@ public class UserClaimQueryService {
                 anyRefunded |= claim.getResult() == ClaimResult.REFUNDED;
             }
         }
-        int reshipDeduction = rejectCharge != null && rejectCharge.getStatus() == ClaimChargeStatus.DEDUCTED
+        int chargeDeduction = rejectCharge != null && rejectCharge.getStatus() == ClaimChargeStatus.DEDUCTED
                 ? rejectCharge.getAmount() : 0;
+        // 착불 신청 반려의 착불 운임은 반려 재발송비 청구에 합쳐 차감된다 — 화면이 두 줄로 그리도록 나눠 내린다(58 계획 2-4).
+        int collectFreightDeduction = chargeDeduction == 0 ? 0
+                : Math.min(chargeDeduction, collectFreightOf(collection, FreightAdjustmentTrigger.REJECT_WITH_COLLECT));
         int returnDeduction = approved > 0 ? collection.getReturnDeduction() : 0;
         long amount = collection.getRefundAmount() != null ? collection.getRefundAmount()
-                : Math.max(0, approved - returnDeduction - reshipDeduction);
+                : Math.max(0, approved - returnDeduction - chargeDeduction);
         return UserClaimDto.Refund.builder()
                 .rejectedAmount(anyRejected ? rejected : null)
                 .returnDeduction(returnDeduction)
                 .approvedAmount(approved)
-                .reshipDeduction(reshipDeduction)
+                .reshipDeduction(chargeDeduction - collectFreightDeduction)
+                .collectFreightDeduction(collectFreightDeduction)
                 .amount(amount)
                 .confirmed(anyRefunded && !anyPending)
                 .refundMethodLabel(refundMethodLabel(order))
@@ -574,6 +580,9 @@ public class UserClaimQueryService {
         OrderClaim rejected = shown.stream().filter(claim -> claim.getRejectedAt() != null).findFirst().orElse(null);
         // 사유 번복 청구(1021 설계서 4-4)도 같은 [결제] 블록이다 — 반려가 아니라 판정 종료를 기다리지 않는다.
         boolean overturn = rejectCharge != null && rejectCharge.getType() == ClaimChargeType.OVERTURN_RESHIP;
+        // 미결제 고지 · 보관 기한은 보류 중인 건이 센다 — 번복 보류도 반려 보류와 같은 길이다(58 계획 5-6 · 1021 17-2)
+        OrderClaim held = rejected != null ? rejected : !overturn ? null
+                : shown.stream().filter(claim -> claim.getStatus() == ClaimStatus.REJECT_HOLD).findFirst().orElse(null);
         if (rejected == null && !overturn) {
             return null;
         }
@@ -581,18 +590,26 @@ public class UserClaimQueryService {
             return UserClaimDto.ReshipFee.builder().state(ReshipFeeState.WAITING)
                     .amount(rejectCharge == null ? null : rejectCharge.getAmount()).build();
         }
+        // 결제 필요는 결제 대기뿐이다 — 브랜드 부담 · 취소 · 소멸을 default 로 흘리면 0원 청구가 「결제 필요」로 보였다(58 계획 3-1).
         ReshipFeeState state = switch (rejectCharge.getStatus()) {
+            case PENDING -> ReshipFeeState.PAYABLE;
             case PAID -> ReshipFeeState.PAID;
             case DEDUCTED -> ReshipFeeState.DEDUCTED;
             case COVERED -> ReshipFeeState.COVERED;
-            default -> ReshipFeeState.PAYABLE;
+            case WAIVED -> ReshipFeeState.WAIVED;
+            case VOID, REFUNDED -> ReshipFeeState.CANCELLED;
         };
-        LocalDate dueDate = rejectCharge.getDueAt() == null ? null : rejectCharge.getDueAt().toLocalDate();
+        LocalDate dueDate = rejectCharge.getDueAt() == null ? null : KstDates.toKstDate(rejectCharge.getDueAt());
         boolean overdue = state == ReshipFeeState.PAYABLE && dueDate != null && dueDate.isBefore(today);
         LocalDateTime now = LocalDateTime.now();
+        int total = rejectCharge.getAmount() == null ? 0 : rejectCharge.getAmount();
+        int collectFreight = Math.min(total, collectFreightOf(collection, overturn
+                ? FreightAdjustmentTrigger.REASON_OVERTURNED : FreightAdjustmentTrigger.REJECT_WITH_COLLECT));
         return UserClaimDto.ReshipFee.builder()
                 .state(state)
                 .amount(rejectCharge.getAmount())
+                .reshipFee(total - collectFreight)
+                .collectFreight(collectFreight)
                 .dueDate(state == ReshipFeeState.PAYABLE ? dueDate : null)
                 // 기한 경과(46 수정계획 7-3) — 목록 할 일 줄은 날짜를 빼는데 상세는 지난 날짜를 그대로 내려 「…까지 결제해 주세요」가 됐다.
                 .overdue(overdue)
@@ -600,9 +617,20 @@ public class UserClaimQueryService {
                 .methodLabel(state != ReshipFeeState.PAID || rejectCharge.getPaidPaymentId() == null ? null
                         : claimPaymentRepository.findById(rejectCharge.getPaidPaymentId())
                         .map(OrderClaimPayment::methodLabel).orElse(null))
-                .storage(!overdue || rejected == null ? null : new UserClaimDto.Storage(rejected.getNoticeCount(),
-                        storagePolicy.storageDueAt(rejected.getNoticeCount(), rejected.getLastNoticeAt()),
-                        storagePolicy.phase(rejected.getNoticeCount(), rejected.getLastNoticeAt(), now)))
+                .storage(!overdue || held == null ? null : new UserClaimDto.Storage(held.getNoticeCount(),
+                        storagePolicy.storageDueAt(held.getNoticeCount(), held.getLastNoticeAt()),
+                        storagePolicy.phase(held.getNoticeCount(), held.getLastNoticeAt(), now)))
                 .build();
+    }
+
+    /**
+     * 재발송비 청구에 합쳐 받은 착불 운임(58 계획 2-4 · 1021 기-93) — 착불 신청 반려는 {@code REJECT_WITH_COLLECT}, 교환 사유 번복은
+     * {@code REASON_OVERTURNED} 운임 정산 행(소비자 부담)의 착불 운임 합이다.
+     */
+    private int collectFreightOf(OrderClaimCollection collection, FreightAdjustmentTrigger trigger) {
+        return freightAdjustmentRepository.findByClaimCollectionIdOrderByIdAsc(collection.getId()).stream()
+                .filter(row -> row.getTrigger() == trigger)
+                .mapToInt(showroomz.domain.order.entity.OrderClaimFreightAdjustment::getCollectFreight)
+                .sum();
     }
 }

@@ -41,6 +41,7 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.SettlementAccountMasker;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -106,10 +107,10 @@ public class SellerSettlementQueryService {
     /** 「지급(예정)일」 — 브랜드 행 기준. 사업자 인플루언서 건은 인플루언서 행과 날짜가 다르지만 브랜드는 자기 행만 본다. */
     private static SellerSettlementDto.Schedule schedule(Settlement s, SettlementPayout brand) {
         if (s.getStatus() == SettlementStatus.REVIEWING) {
-            return new SellerSettlementDto.Schedule("REVIEW_DUE", s.getReviewDueAt().toLocalDate());
+            return new SellerSettlementDto.Schedule("REVIEW_DUE", KstDates.toKstDate(s.getReviewDueAt()));
         }
         if (brand != null && brand.getStatus() == PayoutStatus.PAID && brand.getPaidAt() != null) {
-            return new SellerSettlementDto.Schedule("PAID", brand.getPaidAt().toLocalDate());
+            return new SellerSettlementDto.Schedule("PAID", KstDates.toKstDate(brand.getPaidAt()));
         }
         if (brand != null && brand.getDueDate() != null && (brand.getStatus() == PayoutStatus.SCHEDULED
                 || brand.getStatus() == PayoutStatus.REQUESTED)) {

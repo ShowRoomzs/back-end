@@ -9,6 +9,7 @@ import showroomz.api.app.inquiry.dto.InquiryCategoryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryResponse;
 import showroomz.api.app.inquiry.dto.ProductInquiryRegisterRequest;
 import showroomz.api.app.inquiry.dto.ProductInquiryUpdateRequest;
+import showroomz.api.app.inquiry.dto.PublicProductInquiryResponse;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.inquiry.entity.ProductInquiry;
 import showroomz.domain.inquiry.entity.ProductInquiryHistory;
@@ -68,6 +69,21 @@ public class ProductInquiryService {
                 : productInquiryRepository.findByUserIdAndStatus(userId, status, pageable);
         return PageResponse.of(page.map(inquiry ->
                 ProductInquiryResponse.of(inquiry, resolveImageUrl(inquiry))));
+    }
+
+    /**
+     * 상품 상세 「문의」 탭(58 계획 2-3) — 비로그인도 본다. 비밀글은 작성자 본인에게만 본문을 싣는다.
+     *
+     * @param viewerUserId 로그인한 소비자 id(비로그인 · 소비자 아님이면 null)
+     */
+    public PageResponse<PublicProductInquiryResponse> getProductInquiries(Long productId, ProductInquiryType type,
+                                                                           InquiryStatus status, Long viewerUserId,
+                                                                           Pageable pageable) {
+        if (!productRepository.existsById(productId)) {
+            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
+        }
+        return PageResponse.of(productInquiryRepository.findPublicByProductId(productId, type, status, pageable)
+                .map(inquiry -> PublicProductInquiryResponse.of(inquiry, viewerUserId)));
     }
 
     public ProductInquiryResponse getInquiryDetail(Long userId, Long inquiryId) {

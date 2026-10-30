@@ -31,7 +31,7 @@ public record CreatorGroupBuyListItem(
 
         @Schema(description = "「내 게시물」 열 — 게시물 8종(저장값이 아니라 공구 상태에서 파생). NOT_WRITTEN(미작성) · WRITING(작성중) · "
                 + "PENDING_APPROVAL(승인대기) · REJECTED(반려) · SCHEDULED(예약 — 승인됐고 시작 전) · EXPOSED(노출중) · EXPOSURE_SUSPENDED(노출 중지) · "
-                + "CLOSED(종료 — 종결 3종 공통)", example = "NOT_WRITTEN")
+                + "CLOSED(종료 — 종결 4종 공통)", example = "NOT_WRITTEN")
         GroupBuyPostStatus postStatus,
 
         @Schema(description = "게시물 상태 배지 문구 — FE가 그대로 쓴다", example = "미작성") String postStatusLabel,
@@ -39,8 +39,8 @@ public record CreatorGroupBuyListItem(
         @Schema(description = "게시물 상태 배지 색 — NEUTRAL · INFO · WARNING · SUCCESS · DANGER", example = "NEUTRAL")
         GroupBuyTone postStatusTone,
 
-        @Schema(description = "공구 상태 7종 — PREPARING(준비중) · READY(준비완료) · IN_PROGRESS(진행중) · "
-                + "SUSPENSION_SCHEDULED(중단 예정) · ENDED(종료) · SETTLED(정산완료) · SUSPENDED(중단). "
+        @Schema(description = "공구 상태 8종 — PREPARING(준비중) · READY(준비완료) · IN_PROGRESS(진행중) · "
+                + "SUSPENSION_SCHEDULED(중단 예정) · ENDED(종료) · SETTLED(정산완료) · SUSPENDED(중단) · TERMINATED(해지). "
                 + "탭 묶음이 아니라 개별 값이다 — 진행중 탭 안의 중단 예정도 그대로 내린다", example = "PREPARING")
         GroupBuyStatus status,
 

@@ -30,6 +30,7 @@ import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -110,7 +111,7 @@ public class BrandSanctionService {
      */
     public BrandSanction releaseByTerm(Long marketId, LocalDateTime now) {
         BrandSanction open = sanctionRepository.findByMarketIdAndReleasedAtIsNull(marketId).orElse(null);
-        if (open == null || !open.isTermEnded(now.toLocalDate())) {
+        if (open == null || !open.isTermEnded(KstDates.today(now))) {
             return null;
         }
         BrandSanction released = releaseInternal(marketId, SanctionReleaseReason.TERM_ENDED, null, null, null, now);
@@ -135,7 +136,7 @@ public class BrandSanctionService {
             sanction.release(resolved, normalizedNote, operatorId, operatorName, now);
             if (sanction.isPayoutHeld()) {
                 payoutHolds.release(SettlementPayee.BRAND, marketId, PayoutBlockReason.BRAND_SUSPENDED,
-                        PayoutHoldTransitions.DueRule.NEXT_BUSINESS_DAY, now.toLocalDate(), now);
+                        PayoutHoldTransitions.DueRule.NEXT_BUSINESS_DAY, KstDates.today(now), now);
             }
             MessageThread channel = operatorChannelService.requireMarketChannel(market);
             sanction.recordReleaseCard(channelGateway.postReleasedCard(channel, SanctionKind.BRAND, sanction.getId(),

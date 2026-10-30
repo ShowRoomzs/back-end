@@ -22,7 +22,7 @@ public enum NotificationTargetType {
     /** 스레드 · 메시지 — id = thread_id · sub = message id(카드 위치) */
     THREAD,
     PRODUCT,
-    /** 기본정보 관리 탭 — sub = 탭 키 */
+    /** 기본정보 관리 탭 — sub = 탭 키(소문자 · FE 탭 키 · account · settlement · 변경 요청 유형) */
     BASIC_INFO_TAB,
     /** 연결 요청함 */
     CONNECTION_REQUESTS,

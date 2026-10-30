@@ -240,8 +240,11 @@ public interface AuthControllerDocs {
             summary = "회원가입 완료",
             description = "소셜 로그인 후 닉네임과 약관 동의를 입력하여 회원가입을 완료합니다. Register Token이 필요합니다.\n\n" +
                     "**입력 항목:** 닉네임 + 약관 동의 4종([필수] 만 14세 이상 · 서비스 이용약관 · 개인정보 수집·이용 / [선택] 광고성 정보 수신)\n" +
-                    "**실명·생년월일·성별·연락처:** 본인인증(PASS) 결과로 저장되므로 요청에 포함하지 않습니다.\n" +
-                    "**본인인증:** PASS 연동 전까지는 서버가 임시 인증 데이터를 사용합니다. 만 14세 미만이면 403 UNDER_MIN_AGE로 차단됩니다."
+                    "**실명·생년월일·성별·연락처:** 본인인증(포트원 KCP) 결과로 저장되므로 요청에 포함하지 않습니다.\n" +
+                    "**본인인증(선행 · 57 설계서 3-3):** 같은 registerToken 으로 `POST /v1/user/identity-verifications`(purpose=SIGNUP) → " +
+                    "포트원 SDK 창 → `POST /v1/user/identity-verifications/{id}/complete` 가 10분 안에 끝나 있어야 합니다. " +
+                    "없으면 400 `IDENTITY_VERIFICATION_REQUIRED`. 만 14세 차단(403 `UNDER_MIN_AGE`)과 명의 중복(409)은 완료 API 에서 납니다. " +
+                    "registerToken 이 만료돼 다시 로그인해도 10분 안의 인증은 그대로 쓰입니다."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -267,11 +270,18 @@ public interface AuthControllerDocs {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 형식 오류",
+                    description = "입력값 형식 오류 · 본인인증 미완료(`IDENTITY_VERIFICATION_REQUIRED` — 완료 API 가 선행되지 않았거나 10분이 지남)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ValidationErrorResponse.class),
                             examples = {
+                                    @ExampleObject(
+                                            name = "본인인증 미완료",
+                                            value = "{\n" +
+                                                    "  \"code\": \"IDENTITY_VERIFICATION_REQUIRED\",\n" +
+                                                    "  \"message\": \"본인인증을 먼저 완료해 주세요.\"\n" +
+                                                    "}"
+                                    ),
                                     @ExampleObject(
                                             name = "입력값 오류 예시",
                                             value = "{\n" +
@@ -343,17 +353,17 @@ public interface AuthControllerDocs {
                     )
             ),
             @ApiResponse(
-                    responseCode = "403",
-                    description = "만 14세 미만 가입 제한 (본인인증 결과 기준)",
+                    responseCode = "409",
+                    description = "본인인증 명의 중복 — 같은 명의의 활성 회원이 동시에 가입을 끝낸 경쟁(완료 API 의 409 와 같은 코드)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
                             examples = {
                                     @ExampleObject(
-                                            name = "만 14세 미만 예시",
+                                            name = "명의 중복",
                                             value = "{\n" +
-                                                    "  \"code\": \"UNDER_MIN_AGE\",\n" +
-                                                    "  \"message\": \"만 14세 미만은 가입할 수 없습니다.\"\n" +
+                                                    "  \"code\": \"IDENTITY_ALREADY_REGISTERED\",\n" +
+                                                    "  \"message\": \"이미 가입된 본인인증 정보입니다.\"\n" +
                                                     "}"
                                     )
                             }

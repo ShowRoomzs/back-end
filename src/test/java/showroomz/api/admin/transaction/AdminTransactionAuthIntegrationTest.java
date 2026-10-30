@@ -123,7 +123,7 @@ class AdminTransactionAuthIntegrationTest extends OrderFlowTestSupport {
             "cancel", "{\"reasonCode\":\"DEFECT\",\"consumerMessage\":\"회수\"}",
             "refund-tasks", "{\"reason\":\"RECALL\",\"amount\":1000,\"detail\":\"근거\"}",
             "defect-claims", "{\"items\":[{\"orderProductId\":1,\"quantity\":1}],\"reasonCode\":\"DAMAGED_OR_DEFECTIVE\","
-                    + "\"detail\":\"내용\",\"evidenceImageUrls\":[\"https://img.test/d.jpg\"]}",
+                    + "\"detail\":\"내용\",\"evidenceImageUrls\":[\"https://img.test/d.jpg\"],\"defectNoticedOn\":\"2026-10-01\"}",
             "lost", "{\"reason\":\"분실\"}",
             "delivered", "{\"deliveredAt\":\"2026-10-01T10:00:00\",\"reason\":\"수령\"}",
             "dispute-acceptance", "{\"detail\":\"근거\"}",

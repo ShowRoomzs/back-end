@@ -12,7 +12,8 @@ public enum AdminTermsTypeFilter {
     ALL("전체", null),
     TERMS_OF_SERVICE("이용 약관", TermsType.TERMS_OF_SERVICE),
     PRIVACY_POLICY("개인정보처리방침", TermsType.PRIVACY_POLICY),
-    MARKETING_CONSENT("마케팅 동의", TermsType.MARKETING_CONSENT);
+    MARKETING_CONSENT("마케팅 동의", TermsType.MARKETING_CONSENT),
+    OPERATION_POLICY("운영정책", TermsType.OPERATION_POLICY);
 
     private final String description;
     private final TermsType type;

@@ -10,6 +10,7 @@ import showroomz.domain.notification.type.NotificationTargetType;
 import showroomz.domain.notification.type.NotificationType;
 import showroomz.domain.notification.type.NotificationActorType;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -40,7 +41,7 @@ public class NotificationDeadlineNoticeService {
 
     /** @return 발행한 건수(동의 · 중복 판정 전) */
     public int noticeGroupBuyEnding(LocalDateTime now) {
-        LocalDateTime from = now.toLocalDate().plusDays(1).atStartOfDay();
+        LocalDateTime from = KstDates.startOfDay(KstDates.today(now).plusDays(1));
         LocalDateTime to = from.plusDays(1);
         List<Object[]> carts = em.createQuery("""
                 SELECT DISTINCT c.user.id, gb.id, p.name, p.thumbnailUrl FROM Cart c
@@ -83,9 +84,9 @@ public class NotificationDeadlineNoticeService {
 
     public int noticePurchaseConfirm(LocalDateTime now) {
         int days = orderProperties.getPurchaseConfirmDays();
-        LocalDate tomorrow = now.toLocalDate().plusDays(1);
+        LocalDate tomorrow = KstDates.today(now).plusDays(1);
         // 예정 = 기준 시각 + N일 — 예정일이 내일인 하위주문(기준 시각이 내일 − N일).
-        LocalDateTime from = tomorrow.minusDays(days).atStartOfDay();
+        LocalDateTime from = KstDates.startOfDay(tomorrow.minusDays(days));
         LocalDateTime to = from.plusDays(1);
         List<Object[]> rows = em.createQuery("""
                 SELECT g.id, o.user.id FROM OrderDeliveryGroup g JOIN g.order o
@@ -111,7 +112,7 @@ public class NotificationDeadlineNoticeService {
     }
 
     public int noticeSignatureDeadline(LocalDateTime now) {
-        LocalDateTime from = now.toLocalDate().plusDays(1).atStartOfDay();
+        LocalDateTime from = KstDates.startOfDay(KstDates.today(now).plusDays(1));
         LocalDateTime to = from.plusDays(1);
         List<Object[]> rows = em.createQuery("""
                 SELECT c.id, c.market.id, c.creator.id, c.title, c.brandSignedAt, c.creatorSignedAt FROM Contract c
@@ -128,13 +129,13 @@ public class NotificationDeadlineNoticeService {
                 commands.add(NotificationCommand.toSeller((Long) row[1], NotificationType.CONTRACT_SIGN_DEADLINE_D1)
                         .actorType(NotificationActorType.SYSTEM).title(sentence)
                         .targetType(NotificationTargetType.CONTRACT).targetId(contractId)
-                        .dedupKey("SIGN_D1:SELLER:" + contractId + ":" + from.toLocalDate()).build());
+                        .dedupKey("SIGN_D1:SELLER:" + contractId + ":" + KstDates.toKstDate(from)).build());
             }
             if (row[5] == null && row[2] != null) {
                 commands.add(NotificationCommand.toCreator((Long) row[2], NotificationType.CONTRACT_SIGN_DEADLINE_D1)
                         .actorType(NotificationActorType.SYSTEM).title(sentence)
                         .targetType(NotificationTargetType.CONTRACT).targetId(contractId)
-                        .dedupKey("SIGN_D1:CREATOR:" + contractId + ":" + from.toLocalDate()).build());
+                        .dedupKey("SIGN_D1:CREATOR:" + contractId + ":" + KstDates.toKstDate(from)).build());
             }
         }
         commands.forEach(publisher::publish);

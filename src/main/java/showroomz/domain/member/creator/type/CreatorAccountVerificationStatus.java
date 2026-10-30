@@ -14,7 +14,7 @@ public enum CreatorAccountVerificationStatus {
     UNVERIFIED("확인 전", "NEUTRAL"),
     /** 1021 기-22 — 라벨 「운영자 확인」 계열(값 유지). 승인 뒤 PG 계좌 실존 확인이 도는 동안이다. */
     VERIFYING("운영자 확인 중", "INFO"),
-    VERIFIED("확인 완료", "SUCCESS"),
+    VERIFIED("운영자 확인 완료", "SUCCESS"),
     FAILED("확인 실패", "WARNING"),
     /** 사업자 구분 변경 뒤 예금주 규칙 위반(T10) — 상호 명의 계좌를 받기 전까지(§55 B-9)는 생기지 않는다. */
     CHANGE_REQUIRED("변경 필요", "WARNING");

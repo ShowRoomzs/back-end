@@ -25,7 +25,7 @@ public enum ContractStatus {
     REVIEW_REJECTED("검토 반려", ContractStatusTone.WARNING, false),
     SIGNING("서명 진행중", ContractStatusTone.INFO, false),
     CONCLUSION_PENDING("공구 생성 대기", ContractStatusTone.INFO, false),
-    CONCLUDED("체결완료", ContractStatusTone.SUCCESS, true),
+    CONCLUDED("계약 성립", ContractStatusTone.SUCCESS, true),
     DECLINED("거절", ContractStatusTone.DANGER, true),
     EXPIRED("만료", ContractStatusTone.NEUTRAL, true),
     CANCELED("취소", ContractStatusTone.NEUTRAL, true),

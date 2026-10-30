@@ -239,7 +239,8 @@ public final class AdminBrandDto {
     @Schema(name = "AdminBrandMemo")
     public record Memo(Long memoId, String authorName, String content, LocalDateTime createdAt,
                        @Schema(description = "값이 있으면 「수정됨」") LocalDateTime modifiedAt,
-                       @Schema(description = "작성자 본인 · 24시간 이내 · 탈퇴 계정 아님") boolean editable) {
+                       @Schema(description = "작성자 본인 · 24시간 이내 · 탈퇴 계정 아님") boolean editable,
+                       @Schema(description = "내가 쓴 메모 — 작성자 = 요청 운영자(편집 가능 여부 `editable` 과 별개 · 58 계획 5-27)") boolean mine) {
     }
 
     @Schema(name = "AdminBrandMemoPage")

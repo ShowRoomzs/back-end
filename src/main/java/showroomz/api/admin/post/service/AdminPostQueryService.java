@@ -53,6 +53,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.MaskingUtils;
 import showroomz.global.utils.NicknameMasker;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -420,7 +421,7 @@ public class AdminPostQueryService {
             origin.ifPresent(s -> builder
                     .originSuspensionId(s.getId())
                     .daysAfterSuspension(post.getDeletedAt() == null ? null
-                            : ChronoUnit.DAYS.between(s.getSuspendedAt().toLocalDate(), post.getDeletedAt().toLocalDate()))
+                            : ChronoUnit.DAYS.between(KstDates.toKstDate(s.getSuspendedAt()), KstDates.toKstDate(post.getDeletedAt())))
                     .appealDeadlineAtDeletion(s.getAppealDeadline()));
             return builder.build();
         }

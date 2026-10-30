@@ -14,6 +14,7 @@ import showroomz.global.payment.settlement.toss.TossPayoutsDtos.Payout;
 import showroomz.global.payment.settlement.toss.TossPayoutsDtos.PayoutRequest;
 import showroomz.global.payment.settlement.toss.TossPayoutsDtos.Seller;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -30,7 +31,9 @@ import java.util.Optional;
  * 산식 그대로(0-2). 지시 시각이 EXPRESS 창 안이면 당일, 아니면 다음 영업일 SCHEDULED(0-4). 결과는 웹훅({@link #fromWebhook}) ·
  * 폴링({@link #lookup}) 이 같은 매핑(5-4)으로 닫는다.
  *
- * <p>통신 · 5xx · 「처리 중」 코드는 예외로 던진다 — 서비스가 전 행을 REQUESTED 로 두고, 멱등 키가 같아 재시도해도 중복이 없다(0-6).
+ * <p>지급 요청의 통신 · 5xx · 「처리 중」 코드(결과 모름)는 <b>그 행만</b> REQUESTED(id 없음 · 참조 id 있음) 로 돌려주고 다음 행으로 간다 —
+ * 멱등 키가 같아 재시도해도 중복이 없고(0-6), 웹훅({@code refPayoutId}) · 폴링(목록)이 닫는다. 서비스의 「전 행 REQUESTED」 폴백은 그 밖의
+ * 예외(버그)용으로 남는다. 요청 <b>전</b>(셀러 조회 · 계좌 동기화)의 통신 실패는 아직 아무것도 보내지 않았으니 DEFERRED(다음 영업일 · attempt 불변).
  */
 @Slf4j
 public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
@@ -86,8 +89,22 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
                         ? TossPayoutFailureClassifier.PARTNER_NOT_READY : TossPayoutFailureClassifier.ACCOUNT_SYNC_FAILED;
                 results.add(new LineResult(line.payoutId(), Outcome.FAILED, null, code, e.getMessage()));
                 continue;
+            } catch (PaymentGatewayException e) {
+                // 지급 요청 전의 통신 · 5xx — 아직 아무것도 보내지 않았다. 지시를 되돌려 다음 영업일에 다시(attempt 불변 · DEFERRED 경로).
+                log.warn("토스 셀러 계좌 동기화 실패(결과 모름 아님 · 요청 전) - ref: {}, {}", payoutRef, e.getMessage());
+                results.add(new LineResult(line.payoutId(), Outcome.DEFERRED, null, TossPayoutFailureClassifier.ACCOUNT_SYNC_FAILED,
+                        "셀러 계좌 동기화 통신 실패 — " + e.getMessage(), payoutRef, null, null));
+                continue;
             }
-            results.add(request(command, line, payoutRef, schedule));
+            try {
+                results.add(request(command, line, payoutRef, schedule));
+            } catch (PaymentGatewayException e) {
+                // 결과 모름(통신 · 5xx · 429 · 처리 중 코드) — 이 행만 REQUESTED(id 없음) 로 두고 다음 행으로. 참조 id 는 돌려주어
+                // 웹훅(refPayoutId) · 폴링(목록)이 찾을 수 있게 한다. 다른 행의 확정된 결과를 함께 버리지 않는다(0-6 · 5-2 ④).
+                log.error("토스 지급 요청 결과 미확인 — REQUESTED 로 둔다 - ref: {}", payoutRef, e);
+                results.add(new LineResult(line.payoutId(), Outcome.REQUESTED, null, null, null, payoutRef, schedule.type(),
+                        schedule.payoutDate()));
+            }
         }
         return new PayoutResult(results);
     }
@@ -136,7 +153,7 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
     private void syncAccount(PayoutLine line) {
         Seller seller = client.getSeller(line.partnerExternalId());
         Account current = seller.account();
-        boolean sameNumber = current != null && digits(current.accountNumber()).equals(digits(line.accountNumber()));
+        boolean sameNumber = current != null && sameAccountNumber(current.accountNumber(), line.accountNumber());
         boolean sameBank = current != null && current.bankCode() != null
                 && (line.bankCode() == null || current.bankCode().trim().equals(line.bankCode().trim()));
         if (sameNumber && sameBank) {
@@ -153,7 +170,7 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
 
     /** 지시 시각 → 유형(0-4). 영업일 [start, end) 안이면 EXPRESS, 아니면 다음 영업일 SCHEDULED. */
     Schedule scheduleFor(LocalDateTime requestedAt) {
-        LocalDate day = requestedAt.toLocalDate();
+        LocalDate day = KstDates.toKstDate(requestedAt);
         LocalTime time = requestedAt.toLocalTime();
         boolean inWindow = businessCalendar.isBusinessDay(day) && !time.isBefore(properties.getExpressWindowStart())
                 && time.isBefore(properties.getExpressWindowEnd());
@@ -183,14 +200,14 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
                     continue;
                 }
                 // 결과 모름(지시 중 통신 실패) — 지급일 범위 목록에서 참조 id 로 찾는다.
-                LocalDate from = lookup.requestedAt() == null ? LocalDate.now().minusDays(7) : lookup.requestedAt().toLocalDate();
+                LocalDate from = lookup.requestedAt() == null ? KstDates.today().minusDays(7) : KstDates.toKstDate(lookup.requestedAt());
                 LocalDate to = businessCalendar.addBusinessDays(from, 1);
                 Payout found = client.listPayouts(from, to).stream().filter(p -> payoutRef.equals(p.refPayoutId()))
                         .findFirst().orElse(null);
                 if (found != null) {
                     results.add(fromPayout(lookup.payoutId(), lookup.amount(), payoutRef, found, false));
-                } else if (lookup.requestedAt() != null && !businessCalendar.addBusinessDays(lookup.requestedAt().toLocalDate(),
-                        properties.getNotFoundGraceBusinessDays()).isAfter(LocalDate.now())) {
+                } else if (lookup.requestedAt() != null && !businessCalendar.addBusinessDays(KstDates.toKstDate(lookup.requestedAt()),
+                        properties.getNotFoundGraceBusinessDays()).isAfter(KstDates.today())) {
                     // 유예가 지났는데도 없다 — 지시가 토스에 닿지 않았다. 재분배가 새 ref 로 올린다(9-5 절차 뒤).
                     results.add(new LineResult(lookup.payoutId(), Outcome.FAILED, null, TossPayoutFailureClassifier.TRANSFER_NOT_FOUND,
                             "PG 지급 미생성 — " + payoutRef, payoutRef, null, null));
@@ -269,6 +286,29 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
         } catch (RuntimeException e) {
             return null;
         }
+    }
+
+    /**
+     * 토스가 돌려주는 계좌번호는 <b>마스킹</b>돼 있다(가이드 응답 예 {@code 123*****90123} · 응답 최대 20자). 숫자만 비교하면 늘 다르다고 보아
+     * 지시마다 셀러 수정을 부르고, 미완료 지급이 있는 셀러는 {@code FORBIDDEN_SELLER_MODIFY} 로 지급이 실패한다. 길이가 같고 {@code *} 가
+     * 아닌 자리가 모두 같으면 같은 계좌로 본다 — 마스킹이 없는 응답(평문)도 그대로 맞는다.
+     */
+    static boolean sameAccountNumber(String fromToss, String ours) {
+        if (fromToss == null || ours == null) {
+            return false;
+        }
+        String masked = fromToss.replaceAll("[^0-9*]", "");
+        String plain = digits(ours);
+        if (masked.isEmpty() || masked.length() != plain.length()) {
+            return false;
+        }
+        for (int i = 0; i < masked.length(); i++) {
+            char c = masked.charAt(i);
+            if (c != '*' && c != plain.charAt(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static String digits(String value) {

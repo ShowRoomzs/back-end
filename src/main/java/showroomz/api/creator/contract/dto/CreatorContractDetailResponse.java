@@ -87,7 +87,7 @@ public record CreatorContractDetailResponse(
         List<Document> documents,
         Permissions permissions,
 
-        @Schema(description = "이력 — 화이트리스트 7종만(설계서 6-4). 필터는 쿼리 단계에서 걸린다")
+        @Schema(description = "이력 — 화이트리스트 10종만(설계서 6-4 · 성립 · 해지 요청 · 해지 포함). 필터는 쿼리 단계에서 걸린다")
         List<HistoryEntry> history,
 
         Navigation navigation,
@@ -111,7 +111,9 @@ public record CreatorContractDetailResponse(
             @Schema(example = "상품 품질 이슈") String reasonLabel,
             @Schema(description = "브랜드 메모 — 운영팀 채널 동의 확인 카드와 같은 문구", nullable = true) String memo,
             LocalDateTime requestedAt,
-            @Schema(description = "동의 확인 카드가 붙은 내 운영팀 채널 메시지", nullable = true) Long consentCardMessageId) {
+            @Schema(description = "동의 확인 카드가 붙은 내 운영팀 채널 메시지", nullable = true) Long consentCardMessageId,
+            @Schema(description = "요청자 — 지금은 SELLER(브랜드)만 요청할 수 있다", example = "SELLER")
+            showroomz.domain.contract.type.ContractActorType requesterType) {
     }
 
     @Schema(description = "계약을 보낸 브랜드")
@@ -348,13 +350,17 @@ public record CreatorContractDetailResponse(
                     + "「회복 경로는 [스레드에서 협의하기] 하나」가 §27-1 #5의 결론이다")
             boolean canOpenThread,
             @Schema(description = "CONCLUDED이고 문서 2종이 있을 때") boolean canDownloadDocuments,
-            @Schema(description = "이미 생성된 공구로 **이동**할 뿐이다") boolean canOpenGroupBuy
+            @Schema(description = "이미 생성된 공구로 **이동**할 뿐이다") boolean canOpenGroupBuy,
+            @Schema(description = "계정 이용 정지로 막힌 버튼의 안내 — 정지 중이면 `canRequestResend` 가 false 이고 이 문구를 함께 보인다"
+                    + "(거절은 정지 중에도 된다 · 58 계획 3-2). 정지가 아니면 null",
+                    example = "계정 이용 정지 중에는 서명 안내 재발송을 요청할 수 없습니다.", nullable = true)
+            String suspensionBlockedMessage
     ) {
     }
 
     @Schema(description = "이력 1건")
     public record HistoryEntry(
-            @Schema(description = "화이트리스트 7종 + 합성된 연결 성립") ContractEventType eventType,
+            @Schema(description = "화이트리스트 10종 + 합성된 연결 성립") ContractEventType eventType,
             @Schema(description = "주체 — **ADMIN의 표시명 「운영자」는 FE가 고른다**. "
                     + "파트너는 같은 값을 「어드민」으로 그린다(§25-9)") ContractActorType actorType,
             @Schema(description = "표시명 스냅샷 — 브랜드명·쇼룸명", nullable = true) String actorDisplayName,

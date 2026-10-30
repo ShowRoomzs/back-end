@@ -89,7 +89,7 @@ public class AdminPostDto {
         private PostMonitoringStatus monitoringStatus;
 
         @Schema(description = "이의 신청 기한 — 중지 조치에만")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime appealDeadline;
 
         @Schema(description = "닫은 신고 수 — 신고 종결 · 노출 중지에만", example = "3")
@@ -146,15 +146,15 @@ public class AdminPostDto {
         private PostSuspensionReason reasonCode;
 
         @Schema(description = "신청 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime submittedAt;
 
         @Schema(description = "심사 기한 — 접수 + 3영업일(주말 · 공휴일 제외). D-n은 FE가 센다")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime reviewDueAt;
 
         @Schema(description = "심사 시각")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime reviewedAt;
 
         @Schema(description = "심사 운영자 이름")
@@ -164,7 +164,7 @@ public class AdminPostDto {
         private String reviewComment;
 
         @Schema(description = "원본 내려받기 유예 만료 — 반려된 건에만")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime graceUntil;
     }
 }

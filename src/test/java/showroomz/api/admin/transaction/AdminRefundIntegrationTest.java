@@ -412,7 +412,7 @@ class AdminRefundIntegrationTest extends ClaimTestSupport {
         assertThat(task).containsEntry("status", "DONE").containsEntry("payment_kind", "ADDITIONAL")
                 .containsEntry("payment_id", paymentId).containsEntry("source_id", collectionIdOf(claimId));
         JsonNode row = json(adminGet(ADMIN_REFUNDS + "?tab=DONE&route=EXCHANGE")).get("content").get(0);
-        assertThat(row.get("sourceLabel").asText()).isEqualTo("교환 재발송비 환불 · 교환 철회");
+        assertThat(row.get("sourceLabel").asText()).isEqualTo("재발송 배송비 · 교환 철회");
         assertThat(row.get("paymentLabel").asText()).isEqualTo("카드 · 추가");
         assertThat(row.get("sourceRef").asText()).isEqualTo("CLM-" + claimId);
         // 두 번 닫혀도 기록은 한 번이다.

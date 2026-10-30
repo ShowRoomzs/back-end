@@ -99,6 +99,9 @@ public interface AdminSettlementControllerDocs {
             AdminSettlementTab tab,
             @Parameter(description = "STL- 정산번호 전방 일치 · 공구명 · 브랜드명 · 쇼룸명. [차감 탭] CLW- · 주문번호도", example = "STL-2609")
             String keyword,
+            @Parameter(description = "브랜드(마켓) ID — 브랜드 상세에서 넘어온 진입(선택 · 58 계획 5-31). 정산 탭에만 걸리고 증빙 · 차감 탭은 전체",
+                    example = "39")
+            Long marketId,
             @Parameter(description = "[ALL 탭] SCHEDULE_DESC(기본) · SALES_DESC — 다른 탭은 고정 정렬이라 무시", example = "SCHEDULE_DESC")
             AdminSettlementSort sort,
             PagingRequest paging);

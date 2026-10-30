@@ -84,7 +84,7 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.account.accountNumber").value("****234567"))
                 .andExpect(jsonPath("$.pendingAccountChange").doesNotExist())
                 .andExpect(jsonPath("$.account.verification.status").value("VERIFIED"))
-                .andExpect(jsonPath("$.account.verification.label").value("확인 완료"))
+                .andExpect(jsonPath("$.account.verification.label").value("운영자 확인 완료"))
                 .andExpect(jsonPath("$.account.verification.verifiedAt").isNotEmpty())
                 .andExpect(jsonPath("$.account.bankbook.fileName").value("통장사본_신한은행.jpg"))
                 .andExpect(jsonPath("$.account.bankbook.submittedAt").isNotEmpty());
@@ -115,7 +115,7 @@ class CreatorAccountChangeIntegrationTest extends SettlementTestSupport {
         assertThat(verificationFailedTitles()).containsExactly("정산 계좌 확인에 실패했어요 · 예금주 불일치");
         assertThat(jdbc.queryForObject("SELECT target_sub FROM notification WHERE recipient_type = 'CREATOR' "
                 + "AND recipient_id = ? AND type = 'ACCOUNT_VERIFICATION_FAILED'", String.class, creator.getId()))
-                .isEqualTo("SETTLEMENT");
+                .isEqualTo("settlement");
 
         payoutService.releaseBlocked(LocalDate.now());
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);

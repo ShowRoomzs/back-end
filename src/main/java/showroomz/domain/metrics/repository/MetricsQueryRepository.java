@@ -2,6 +2,8 @@ package showroomz.domain.metrics.repository;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import jakarta.persistence.Query;
+import jakarta.persistence.TypedQuery;
 import org.springframework.stereotype.Repository;
 import showroomz.domain.contract.entity.ContractItem;
 
@@ -21,14 +23,29 @@ import java.util.Set;
 @Repository
 public class MetricsQueryRepository {
 
+    /**
+     * 지표 쿼리 하나의 상한(58 계획 1-1) — 넘으면 쿼리가 취소된다. 계산 하나가 커넥션을 끝까지 잡으므로 느린 쿼리가 풀을 말리지 않게 한다
+     * (10-26 개발 서버 무응답).
+     */
+    public static final int QUERY_TIMEOUT_MILLIS = 10_000;
+    public static final String QUERY_TIMEOUT_HINT = "jakarta.persistence.query.timeout";
+
     @PersistenceContext
     private EntityManager em;
+
+    private <T> TypedQuery<T> query(String jpql, Class<T> type) {
+        return em.createQuery(jpql, type).setHint(QUERY_TIMEOUT_HINT, QUERY_TIMEOUT_MILLIS);
+    }
+
+    private Query query(String jpql) {
+        return em.createQuery(jpql).setHint(QUERY_TIMEOUT_HINT, QUERY_TIMEOUT_MILLIS);
+    }
 
     // ------------------------------------------------------------------ 거래 · 수요
 
     /** 공구 결제 줄 — 결제 시각 기준 · 취소 포함. */
     public List<PaidLine> paidLines(LocalDateTime from, LocalDateTime to) {
-        List<Object[]> rows = em.createQuery("SELECT o.id, o.user.id, o.paidAt, g.id, g.creator.id, g.market.id, "
+        List<Object[]> rows = query("SELECT o.id, o.user.id, o.paidAt, g.id, g.creator.id, g.market.id, "
                         + "op.price * op.quantity, op.quantity, op.status FROM OrderProduct op JOIN op.order o JOIN op.groupBuy g "
                         + "WHERE o.paidAt >= :from AND o.paidAt < :to", Object[].class)
                 .setParameter("from", from).setParameter("to", to).getResultList();
@@ -42,14 +59,14 @@ public class MetricsQueryRepository {
 
     /** 배송완료 하위주문 — 공구별 [공구 id, 건수]. 반품 · 교환율의 분모(배송완료 기준). */
     public Map<Long, Long> deliveredByGroupBuy(LocalDateTime from, LocalDateTime to) {
-        return toLongMap(em.createQuery("SELECT g.groupBuy.id, COUNT(g) FROM OrderDeliveryGroup g "
+        return toLongMap(query("SELECT g.groupBuy.id, COUNT(g) FROM OrderDeliveryGroup g "
                         + "WHERE g.deliveredAt >= :from AND g.deliveredAt < :to GROUP BY g.groupBuy.id", Object[].class)
                 .setParameter("from", from).setParameter("to", to).getResultList());
     }
 
     /** 반품 · 교환 접수(결제 대기 제외) — 브랜드 귀책 = 배송비 브랜드 부담 ∨ 귀책 변경. */
     public List<ClaimLine> claims(LocalDateTime from, LocalDateTime to) {
-        List<Object[]> rows = em.createQuery("SELECT c.type, c.feeBearer, c.faultChangedToSeller, op.groupBuy.id "
+        List<Object[]> rows = query("SELECT c.type, c.feeBearer, c.faultChangedToSeller, op.groupBuy.id "
                         + "FROM OrderClaim c JOIN c.orderProduct op WHERE c.requestedAt >= :from AND c.requestedAt < :to "
                         + "AND c.status <> showroomz.domain.order.type.ClaimStatus.PAYMENT_PENDING", Object[].class)
                 .setParameter("from", from).setParameter("to", to).getResultList();
@@ -66,7 +83,7 @@ public class MetricsQueryRepository {
         if (userIds.isEmpty()) {
             return Set.of();
         }
-        return new HashSet<>(em.createQuery("SELECT DISTINCT o.user.id FROM Order o WHERE o.user.id IN :ids "
+        return new HashSet<>(query("SELECT DISTINCT o.user.id FROM Order o WHERE o.user.id IN :ids "
                         + "AND o.paidAt < :before", Long.class)
                 .setParameter("ids", userIds).setParameter("before", before).getResultList());
     }
@@ -77,7 +94,7 @@ public class MetricsQueryRepository {
         if (creatorIds.isEmpty() || userIds.isEmpty()) {
             return follows;
         }
-        for (Object[] r : em.createQuery("SELECT e.creatorId, e.userId, MIN(e.occurredAt) FROM CreatorFollowEvent e "
+        for (Object[] r : query("SELECT e.creatorId, e.userId, MIN(e.occurredAt) FROM CreatorFollowEvent e "
                         + "WHERE e.eventType = showroomz.domain.member.creator.type.FollowEventType.FOLLOW "
                         + "AND e.creatorId IN :creators AND e.userId IN :users GROUP BY e.creatorId, e.userId", Object[].class)
                 .setParameter("creators", creatorIds).setParameter("users", userIds).getResultList()) {
@@ -91,7 +108,7 @@ public class MetricsQueryRepository {
         if (creatorIds.isEmpty()) {
             return Map.of();
         }
-        return toLongMap(em.createQuery("SELECT cf.creator.id, COUNT(cf) FROM CreatorFollow cf WHERE cf.creator.id IN :ids "
+        return toLongMap(query("SELECT cf.creator.id, COUNT(cf) FROM CreatorFollow cf WHERE cf.creator.id IN :ids "
                         + "AND cf.createdAt < :at GROUP BY cf.creator.id", Object[].class)
                 .setParameter("ids", creatorIds).setParameter("at", at).getResultList());
     }
@@ -99,7 +116,7 @@ public class MetricsQueryRepository {
     /** 신규 소비자 — 가입 경로별. */
     public Map<String, Long> signupsByProvider(LocalDateTime from, LocalDateTime to) {
         Map<String, Long> counts = new HashMap<>();
-        for (Object[] r : em.createQuery("SELECT u.providerType, COUNT(u) FROM Users u "
+        for (Object[] r : query("SELECT u.providerType, COUNT(u) FROM Users u "
                         + "WHERE u.roleType = showroomz.api.app.auth.entity.RoleType.USER "
                         + "AND u.createdAt >= :from AND u.createdAt < :to GROUP BY u.providerType", Object[].class)
                 .setParameter("from", from).setParameter("to", to).getResultList()) {
@@ -122,7 +139,7 @@ public class MetricsQueryRepository {
         if (creatorIds.isEmpty()) {
             return Set.of();
         }
-        return new HashSet<>(em.createQuery("SELECT DISTINCT g.creator.id FROM GroupBuy g WHERE g.creator.id IN :ids "
+        return new HashSet<>(query("SELECT DISTINCT g.creator.id FROM GroupBuy g WHERE g.creator.id IN :ids "
                         + "AND g.openedAt < :before", Long.class)
                 .setParameter("ids", creatorIds).setParameter("before", before).getResultList());
     }
@@ -131,17 +148,23 @@ public class MetricsQueryRepository {
         if (marketIds.isEmpty()) {
             return Set.of();
         }
-        return new HashSet<>(em.createQuery("SELECT DISTINCT g.market.id FROM GroupBuy g WHERE g.market.id IN :ids "
+        return new HashSet<>(query("SELECT DISTINCT g.market.id FROM GroupBuy g WHERE g.market.id IN :ids "
                         + "AND g.openedAt < :before", Long.class)
                 .setParameter("ids", marketIds).setParameter("before", before).getResultList());
     }
 
-    /** 오픈 이력이 있는 공구 전부 — [공구 id, 인플루언서 id, 시작, 종료(실제), 상태, 계약 체결, 오픈]. 공구 수가 적어 한 번에 읽는다. */
-    public List<GroupBuyLine> openedGroupBuys() {
+    /**
+     * 기간에 걸친 오픈 공구 — [공구 id, 인플루언서 id, 시작, 종료(실제), 상태, 계약 체결, 오픈]. 실제 종료가 {@code from} 이후이고 시작이
+     * {@code until} 이전인 것만 읽는다(58 계획 1-1 — 전부 읽던 것을 기간으로 좁혔다). {@code until} 은 기간 끝 + 재공구 판정 창이다 —
+     * 기간 중 끝난 공구의 다음 공구가 창 안에서 시작했는지 봐야 한다.
+     */
+    public List<GroupBuyLine> openedGroupBuys(LocalDateTime from, LocalDateTime until) {
         List<GroupBuyLine> lines = new ArrayList<>();
-        for (Object[] r : em.createQuery("SELECT g.id, g.creator.id, g.market.id, g.startAt, COALESCE(g.endedAt, g.endAt), "
+        for (Object[] r : query("SELECT g.id, g.creator.id, g.market.id, g.startAt, COALESCE(g.endedAt, g.endAt), "
                 + "g.status, c.concludedAt, g.openedAt, c.title, m.marketName, cr.showroomName, c.fixedFeeAmount "
-                + "FROM GroupBuy g JOIN g.contract c JOIN g.market m JOIN g.creator cr WHERE g.openedAt IS NOT NULL", Object[].class)
+                + "FROM GroupBuy g JOIN g.contract c JOIN g.market m JOIN g.creator cr WHERE g.openedAt IS NOT NULL "
+                + "AND g.startAt <= :until AND COALESCE(g.endedAt, g.endAt) >= :from", Object[].class)
+                .setParameter("from", from).setParameter("until", until)
                 .getResultList()) {
             lines.add(new GroupBuyLine((Long) r[0], (Long) r[1], (Long) r[2], (LocalDateTime) r[3], (LocalDateTime) r[4],
                     String.valueOf(r[5]), (LocalDateTime) r[6], (LocalDateTime) r[7], (String) r[8], (String) r[9],
@@ -150,11 +173,31 @@ public class MetricsQueryRepository {
         return lines;
     }
 
-    /** 체결 계약 — [브랜드 id, 체결 시각]. 재계약률 · 주별 체결 차트. */
-    public List<Object[]> concludedContracts(LocalDateTime before) {
-        return em.createQuery("SELECT c.market.id, c.concludedAt FROM Contract c WHERE c.concludedAt IS NOT NULL "
-                        + "AND c.concludedAt < :before AND c.deletedAt IS NULL", Object[].class)
-                .setParameter("before", before).getResultList();
+    /** 이 시각 전에 오픈한 공구 수 — 인플루언서별(「누적 공구」). */
+    public Map<Long, Long> openedCountByCreator(Collection<Long> creatorIds, LocalDateTime before) {
+        if (creatorIds.isEmpty()) {
+            return Map.of();
+        }
+        return toLongMap(query("SELECT g.creator.id, COUNT(g) FROM GroupBuy g WHERE g.creator.id IN :ids "
+                        + "AND g.openedAt < :before GROUP BY g.creator.id", Object[].class)
+                .setParameter("ids", creatorIds).setParameter("before", before).getResultList());
+    }
+
+    /** 기간 중 체결 계약 — [브랜드 id, 체결 시각]. 재계약률 분모 · 주별 체결 차트. */
+    public List<Object[]> concludedContracts(LocalDateTime from, LocalDateTime to) {
+        return query("SELECT c.market.id, c.concludedAt FROM Contract c WHERE c.concludedAt >= :from "
+                        + "AND c.concludedAt < :to AND c.deletedAt IS NULL", Object[].class)
+                .setParameter("from", from).setParameter("to", to).getResultList();
+    }
+
+    /** 이 시각 전에 체결한 계약이 있는 브랜드 — 재계약 판정. */
+    public Set<Long> marketsConcludedBefore(Collection<Long> marketIds, LocalDateTime before) {
+        if (marketIds.isEmpty()) {
+            return Set.of();
+        }
+        return new HashSet<>(query("SELECT DISTINCT c.market.id FROM Contract c WHERE c.market.id IN :ids "
+                        + "AND c.concludedAt < :before AND c.deletedAt IS NULL", Long.class)
+                .setParameter("ids", marketIds).setParameter("before", before).getResultList());
     }
 
     /** 연결 → 체결 — 기간 중 요청된 연결(PAIR) 수 · 그중 그 연결로 체결된 계약이 있는 수. */
@@ -187,7 +230,7 @@ public class MetricsQueryRepository {
         if (groupBuyIds.isEmpty()) {
             return Map.of();
         }
-        return toLongMap(em.createQuery("SELECT op.groupBuy.id, COALESCE(SUM(op.quantity), 0) FROM OrderProduct op JOIN op.order o "
+        return toLongMap(query("SELECT op.groupBuy.id, COALESCE(SUM(op.quantity), 0) FROM OrderProduct op JOIN op.order o "
                         + "WHERE op.groupBuy.id IN :ids AND o.paidAt IS NOT NULL "
                         + "AND op.status <> showroomz.domain.order.type.OrderProductStatus.CANCELLED "
                         + "GROUP BY op.groupBuy.id", Object[].class)
@@ -199,7 +242,7 @@ public class MetricsQueryRepository {
         if (groupBuyIds.isEmpty()) {
             return Map.of();
         }
-        return toLongMap(em.createQuery("SELECT op.groupBuy.id, COALESCE(SUM(op.price * op.quantity), 0) FROM OrderProduct op "
+        return toLongMap(query("SELECT op.groupBuy.id, COALESCE(SUM(op.price * op.quantity), 0) FROM OrderProduct op "
                         + "JOIN op.order o WHERE op.groupBuy.id IN :ids AND o.paidAt IS NOT NULL GROUP BY op.groupBuy.id",
                         Object[].class)
                 .setParameter("ids", groupBuyIds).getResultList());
@@ -211,7 +254,7 @@ public class MetricsQueryRepository {
         if (groupBuyIds.isEmpty()) {
             return items;
         }
-        for (Object[] r : em.createQuery("SELECT g.id, i FROM GroupBuy g, ContractItem i WHERE i.contract = g.contract "
+        for (Object[] r : query("SELECT g.id, i FROM GroupBuy g, ContractItem i WHERE i.contract = g.contract "
                         + "AND g.id IN :ids", Object[].class)
                 .setParameter("ids", groupBuyIds).getResultList()) {
             items.computeIfAbsent((Long) r[0], k -> new ArrayList<>()).add((ContractItem) r[1]);
@@ -224,7 +267,7 @@ public class MetricsQueryRepository {
         if (groupBuyIds.isEmpty()) {
             return Map.of();
         }
-        return toLongMap(em.createQuery("SELECT s.groupBuy.id, s.rewardAmount FROM Settlement s WHERE s.groupBuy.id IN :ids",
+        return toLongMap(query("SELECT s.groupBuy.id, s.rewardAmount FROM Settlement s WHERE s.groupBuy.id IN :ids",
                         Object[].class)
                 .setParameter("ids", groupBuyIds).getResultList());
     }
@@ -258,7 +301,7 @@ public class MetricsQueryRepository {
             default -> throw new IllegalArgumentException(queue);
         };
         List<LocalDateTime[]> pairs = new ArrayList<>();
-        for (Object[] r : em.createQuery(jpql, Object[].class).setParameter("from", from).setParameter("to", to)
+        for (Object[] r : query(jpql, Object[].class).setParameter("from", from).setParameter("to", to)
                 .getResultList()) {
             pairs.add(new LocalDateTime[]{(LocalDateTime) r[0], (LocalDateTime) r[1]});
         }
@@ -285,7 +328,7 @@ public class MetricsQueryRepository {
 
     /** 기간 끝까지 공개된 게시물 — 신고율 분모. */
     public long countPublishedPosts(LocalDateTime before) {
-        return em.createQuery("SELECT COUNT(p) FROM Post p WHERE p.status = showroomz.domain.post.type.PostStatus.PUBLISHED "
+        return query("SELECT COUNT(p) FROM Post p WHERE p.status = showroomz.domain.post.type.PostStatus.PUBLISHED "
                         + "AND p.publishedAt < :before", Long.class)
                 .setParameter("before", before).getSingleResult();
     }
@@ -295,7 +338,7 @@ public class MetricsQueryRepository {
      * 재시도가 성공하면 사유가 지워지므로 그 건은 {@code null} 이다.
      */
     public List<String> refundFailureReasons(LocalDateTime from, LocalDateTime to) {
-        return em.createQuery("SELECT t.lastError FROM OrderRefundTask t WHERE t.failedAt >= :from AND t.failedAt < :to",
+        return query("SELECT t.lastError FROM OrderRefundTask t WHERE t.failedAt >= :from AND t.failedAt < :to",
                         String.class)
                 .setParameter("from", from).setParameter("to", to).getResultList();
     }
@@ -303,7 +346,7 @@ public class MetricsQueryRepository {
     // ------------------------------------------------------------------
 
     private long count(String jpql, LocalDateTime from, LocalDateTime to) {
-        Object value = em.createQuery(jpql).setParameter("from", from).setParameter("to", to).getSingleResult();
+        Object value = query(jpql).setParameter("from", from).setParameter("to", to).getSingleResult();
         return value instanceof Number number ? number.longValue() : 0L;
     }
 

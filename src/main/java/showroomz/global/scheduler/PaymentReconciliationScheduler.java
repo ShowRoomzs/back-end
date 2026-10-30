@@ -6,6 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import showroomz.api.app.order.service.PaymentReconciliationService;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,7 +29,7 @@ public class PaymentReconciliationScheduler {
     @Scheduled(cron = "0 0 5 * * *", zone = "Asia/Seoul")
     public void reconcileYesterday() {
         LocalDate yesterday = LocalDate.now(KST).minusDays(1);
-        LocalDateTime from = yesterday.atStartOfDay();
+        LocalDateTime from = KstDates.startOfDay(yesterday);
         try {
             reconciliationService.reconcile(from, from.plusDays(1), LocalDateTime.now());
         } catch (Exception e) {

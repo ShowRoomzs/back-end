@@ -24,6 +24,7 @@ import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.config.ContractPdfAsyncConfig;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -148,7 +149,7 @@ public class WithholdingReceiptGenerator {
             return null;
         }
         LocalDate paidDate = payoutRepository.findBySettlementIdAndPayee(s.getId(), SettlementPayee.CREATOR)
-                .map(SettlementPayout::getPaidAt).map(LocalDateTime::toLocalDate).orElse(LocalDate.now());
+                .map(SettlementPayout::getPaidAt).map(LocalDateTime::toLocalDate).orElse(KstDates.today());
         long gross = s.getRewardAfterClawback();
         long incomeTax = BigDecimal.valueOf(gross).multiply(s.getWithholdingIncomeRate())
                 .setScale(0, RoundingMode.DOWN).longValue();
@@ -170,7 +171,7 @@ public class WithholdingReceiptGenerator {
         values.put("localRate", percent(s.getWithholdingLocalRate()));
         values.put("localTax", "%,d".formatted(localTax));
         values.put("netAmount", "%,d".formatted(s.getCreatorPayoutAmount()));
-        values.put("issuedDate", DATE.format(LocalDate.now()));
+        values.put("issuedDate", DATE.format(KstDates.today()));
         return new Receipt(s.getId(), s.getSettlementNumber(), "원천징수영수증_" + s.getSettlementNumber() + ".pdf",
                 values);
     }

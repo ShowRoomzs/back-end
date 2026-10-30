@@ -48,10 +48,10 @@ public interface CreatorGroupBuyControllerDocs {
                     - `tab` — 생략 시 `ALL`. 탭은 **필터일 뿐**이고 응답 `status`는 항상 7종 개별 값이다.
                       - `ALL` 전체 · `PREPARING` 준비중 · `READY` 준비완료
                       - `IN_PROGRESS` 진행중 — `IN_PROGRESS` + **`SUSPENSION_SCHEDULED`(중단 예정)** 포함. 중단 예정 행은 `status`가 그대로 `SUSPENSION_SCHEDULED`(경고 톤)로 내려온다
-                      - `ENDED` 종료·정산 — `ENDED` + `SETTLED` + **`SUSPENDED`(중단)** — 종결 3종 전부. 중단 탭은 따로 없다(시안 A1 5탭)
+                      - `ENDED` 종료·정산 — `ENDED` + `SETTLED` + **`SUSPENDED`(중단)** + `TERMINATED`(해지) — 종결 4종 전부. 중단 탭은 따로 없다(시안 A1 5탭)
                     - `keyword` — **부분 일치**(앞뒤 공백 제거, 빈 문자열은 미적용). 대상: 공구명(계약명) · 브랜드명 · 공구번호
                     - `sort` — 생략 시 `START_AT_ASC`
-                      - `START_AT_ASC` — **비종결 먼저(시작일 오름차순) → 종결 3종(시작일 내림차순) → id 내림차순.** 순수 오름차순이 아니다 —
+                      - `START_AT_ASC` — **비종결 먼저(시작일 오름차순) → 종결 4종(시작일 내림차순) → id 내림차순.** 순수 오름차순이 아니다 —
                         지금 챙겨야 할 공구가 위, 끝난 공구는 최근 것부터 아래에 온다
                       - `ACTION_REQUIRED_FIRST` — `actionRequired = true`인 행을 먼저 두고, 그 안팎은 `START_AT_ASC`와 같다
                     - `page`(1부터 · 기본 1) · `size`(기본 20)
@@ -61,7 +61,7 @@ public interface CreatorGroupBuyControllerDocs {
                     - `endAt`은 **현재 종료 예정** — 연장이 수락되면 바뀐 값이 내려온다.
                     - `postStatus` — 「내 게시물」 열. 게시물 8종이며 저장값이 아니라 공구 상태에서 파생한다:
                       `NOT_WRITTEN` 미작성 · `WRITING` 작성중 · `PENDING_APPROVAL` 승인대기 · `REJECTED` 반려 ·
-                      `SCHEDULED` 예약(승인됐고 시작 전) · `EXPOSED` 노출중 · `HIDDEN` 숨김 · `CLOSED` 종료(종결 3종 공통)
+                      `SCHEDULED` 예약(승인됐고 시작 전) · `EXPOSED` 노출중 · `EXPOSURE_SUSPENDED` 노출 중지 · `CLOSED` 종료(종결 4종 공통)
                     - `*Label` · `*Tone`(`NEUTRAL` · `INFO` · `WARNING` · `SUCCESS` · `DANGER`)은 배지 문구·색이다. FE가 매핑하지 않고 그대로 쓴다.
                     - `actionRequired` — 요약 API의 `actionRequiredCount`와 **같은 판정식**이다(판정 조건은 요약 API 설명 참고).
 
@@ -148,7 +148,7 @@ public interface CreatorGroupBuyControllerDocs {
                     | `extension` | 브랜드가 연장을 요청한 적이 있을 때(대기·수락·거절·만료 모두) |
                     | `activeRequest` | 검토 중(PENDING)인 중단·조기 마감 요청이 있을 때(요청자 무관) |
                     | `adminSuspension` | `SUSPENSION_SCHEDULED`(진행 중 직권 중단 통지)에서만 |
-                    | `closure` | 종결 3종(`ENDED` · `SETTLED` · `SUSPENDED`) |
+                    | `closure` | 종결 4종(`ENDED` · `SETTLED` · `SUSPENDED` · `TERMINATED`) |
                     | `settlement` | `SETTLED` |
                     | `afterEnd` | `ENDED` · `SETTLED` (`SUSPENDED`는 null) |
 
@@ -357,7 +357,7 @@ public interface CreatorGroupBuyControllerDocs {
                     - 승인대기(`PENDING_APPROVAL`) — 409 `POST_UNDER_REVIEW`
                     - 미승인(없음·작성중·반려) — 준비중에는 임시저장·제출 API를 쓴다
                     - **중단 예정(`SUSPENSION_SCHEDULED`)** — 직권 중단은 통지 시점의 게시물을 근거로 판정하므로 도중에 근거가 바뀌면 안 된다
-                    - 종결 3종
+                    - 종결 4종(해지 포함)
 
                     **입력 규칙** — 제목(40자)·본문(2,000자) **모두 필수**. 노출 중인 게시물의 제목·본문이 사라지면 안 된다.
 

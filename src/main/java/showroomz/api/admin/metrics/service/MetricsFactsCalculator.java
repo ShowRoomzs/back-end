@@ -1,6 +1,7 @@
 package showroomz.api.admin.metrics.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.metrics.type.MetricKey;
@@ -15,6 +16,7 @@ import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -35,11 +37,14 @@ import java.util.stream.Collectors;
  * 운영 지표 계산(1017 설계서 7-2) — 기간 [from, to) 의 원천 행을 읽어 지표 값을 만든다. 공구당 지표는 중앙값(ⓒ), 재공구 판정
  * 60일(ⓐ · {@code admin.metrics.regroupbuy-window-days}). 탭 조립(차트 · 분해 표)이 같은 원천을 다시 쓰도록 {@link Facts}에 함께 담는다.
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MetricsFactsCalculator {
 
+    /** 이 이상 걸린 계산은 WARN 으로 단계별 소요를 남긴다. */
+    static final long SLOW_LOG_MILLIS = 3_000;
     static final List<String> SLA_QUEUES = List.of("INQUIRY", "OPEN_REVIEW", "SELLER_APPLICATION", "CREATOR_APPLICATION",
             "CHANGE_REQUEST", "POST_REPORT");
     /** 활성 인플루언서 · 브랜드 설명의 정의 부분(시안 21 K2) — 셈은 「기간 중 결제가 1건 이상 있는 공구」다({@link MetricKey}). */
@@ -54,12 +59,26 @@ public class MetricsFactsCalculator {
 
     public Facts compute(LocalDateTime from, LocalDateTime to, LocalDateTime now) {
         Facts facts = new Facts(from, to);
-        trade(facts);
-        supply(facts, now);
-        groupBuys(facts);
-        demand(facts);
-        operation(facts);
+        Map<String, Long> elapsed = new LinkedHashMap<>();
+        timed(elapsed, "trade", () -> trade(facts));
+        timed(elapsed, "supply", () -> supply(facts, now));
+        timed(elapsed, "groupBuys", () -> groupBuys(facts));
+        timed(elapsed, "demand", () -> demand(facts));
+        timed(elapsed, "operation", () -> operation(facts));
+        // 단계별 소요(58 계획 1-1) — 느린 계산은 운영 로그(INFO 이상)에 남아 원인 단계를 바로 찾는다.
+        long total = elapsed.values().stream().mapToLong(Long::longValue).sum();
+        if (total >= SLOW_LOG_MILLIS) {
+            log.warn("[운영 지표] 계산 지연 {}ms · 기간 {} ~ {} · 단계 {}", total, from, to, elapsed);
+        } else {
+            log.debug("[운영 지표] 계산 {}ms · 기간 {} ~ {} · 단계 {}", total, from, to, elapsed);
+        }
         return facts;
+    }
+
+    private static void timed(Map<String, Long> elapsed, String step, Runnable body) {
+        long started = System.nanoTime();
+        body.run();
+        elapsed.put(step, (System.nanoTime() - started) / 1_000_000);
     }
 
     // ------------------------------------------------------------------ 거래(핵심)
@@ -96,14 +115,15 @@ public class MetricsFactsCalculator {
         Set<Long> returningCreators = repository.creatorsOpenedBefore(creators, f.from);
         Set<Long> returningBrands = repository.marketsOpenedBefore(brands, f.from);
         f.returningCreators = returningCreators;
+        f.cumulativeByCreator = repository.openedCountByCreator(creators, f.to);
         // 설명 = 정의 + 이번 기간 값(시안 21 K2 「기간 중 공구 1건 이상 · 신규 1 · 재공구 4」)
         f.put(MetricKey.ACTIVE_CREATORS, Value.of(creators.size()).withNote(ACTIVE_LEAD + " · 신규 "
                 + (creators.size() - returningCreators.size()) + " · 재공구 " + returningCreators.size()));
         f.put(MetricKey.ACTIVE_BRANDS, Value.of(brands.size()).withNote(ACTIVE_LEAD + " · 신규 "
                 + (brands.size() - returningBrands.size()) + " · 재공구 " + returningBrands.size()));
 
-        f.groupBuys = repository.openedGroupBuys();
         int window = adminProperties.getMetrics().getRegroupbuyWindowDays();
+        f.groupBuys = repository.openedGroupBuys(f.from, f.to.plusDays(window));
         long regroup = 0;
         long judged = 0;
         for (GroupBuyLine g : endedIn(f)) {
@@ -116,22 +136,15 @@ public class MetricsFactsCalculator {
         }
         f.put(MetricKey.CREATOR_REGROUPBUY_RATE, Value.rate(regroup, judged));
 
-        f.concluded = repository.concludedContracts(f.to);
+        f.concluded = repository.concludedContracts(f.from, f.to);
         Set<Long> concludedBrands = new HashSet<>();
-        Set<Long> earlierBrands = new HashSet<>();
-        long concludedCount = 0;
         for (Object[] row : f.concluded) {
-            LocalDateTime at = (LocalDateTime) row[1];
-            if (!at.isBefore(f.from)) {
-                concludedBrands.add((Long) row[0]);
-                concludedCount++;
-            } else {
-                earlierBrands.add((Long) row[0]);
-            }
+            concludedBrands.add((Long) row[0]);
         }
+        Set<Long> earlierBrands = repository.marketsConcludedBefore(concludedBrands, f.from);
         long recontract = concludedBrands.stream().filter(earlierBrands::contains).count();
         f.put(MetricKey.BRAND_RECONTRACT_RATE, Value.rate(recontract, concludedBrands.size()));
-        f.put(MetricKey.CONTRACTS_CONCLUDED, Value.of(concludedCount));
+        f.put(MetricKey.CONTRACTS_CONCLUDED, Value.of(f.concluded.size()));
 
         long[] connection = repository.connectionConversion(f.from, f.to);
         f.put(MetricKey.CONNECTION_CONVERSION, Value.rate(connection[1], connection[0]));
@@ -334,7 +347,7 @@ public class MetricsFactsCalculator {
 
     /** 처리 쌍의 영업일 소요 — 진입일 다음 날부터 처리일까지의 영업일 수(같은 날 처리 = 0). 오픈 승인 소요 · 큐별 처리가 같이 쓴다. */
     int businessDays(LocalDateTime[] pair) {
-        return businessCalendar.businessDaysBetween(pair[0].toLocalDate(), pair[1].toLocalDate());
+        return businessCalendar.businessDaysBetween(KstDates.toKstDate(pair[0]), KstDates.toKstDate(pair[1]));
     }
 
     // ------------------------------------------------------------------
@@ -346,7 +359,7 @@ public class MetricsFactsCalculator {
     }
 
     private LocalDateTime dueAt(LocalDateTime base, int businessDays) {
-        return businessCalendar.addBusinessDays(base.toLocalDate(), businessDays).atTime(23, 59, 59);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(KstDates.toKstDate(base), businessDays));
     }
 
     private static Integer minQuantity(List<ContractItem> items) {
@@ -443,6 +456,9 @@ public class MetricsFactsCalculator {
         Map<Long, Long> gmvByGroupBuy = Map.of();
         List<GroupBuyLine> groupBuys = List.of();
         Set<Long> returningCreators = Set.of();
+        /** 기간 끝 전에 오픈한 공구 수 — 인플루언서별(「누적 공구」). */
+        Map<Long, Long> cumulativeByCreator = Map.of();
+        /** 기간 중 체결 계약 — [브랜드 id, 체결 시각]. */
         List<Object[]> concluded = List.of();
         Map<Long, Long> followers = Map.of();
         final Map<Long, Long> convertedByCreator = new HashMap<>();

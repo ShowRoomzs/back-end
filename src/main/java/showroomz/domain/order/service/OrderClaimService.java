@@ -60,6 +60,7 @@ import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -338,8 +339,8 @@ public class OrderClaimService {
             throw new BusinessException(ErrorCode.CLAIM_NOT_ELIGIBLE, "배송완료 후 3개월이 지나 열 수 없습니다.");
         }
         // 하자 인지일(46 수정계획 3-2) — 표시용 기산점이다. 30일 기한으로 개설을 막지 않는다(법무 판단 대기).
-        if (defectNoticedOn != null && (defectNoticedOn.isBefore(group.getDeliveredAt().toLocalDate())
-                || defectNoticedOn.isAfter(now.toLocalDate()))) {
+        if (defectNoticedOn != null && (defectNoticedOn.isBefore(KstDates.toKstDate(group.getDeliveredAt()))
+                || defectNoticedOn.isAfter(KstDates.today(now)))) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "하자 인지일은 배송완료일 이후 · 오늘 이전이어야 합니다.");
         }
         Set<Long> ids = new HashSet<>();
@@ -1485,6 +1486,31 @@ public class OrderClaimService {
     public Integer previewDisputeRefund(Long claimId) {
         return claimRepository.findById(claimId).filter(OrderClaimService::isDisputeAcceptable)
                 .map(claim -> planDispute(claim).amount()).orElse(null);
+    }
+
+    /**
+     * B2 인용 전 운임 환급 예정액(58 계획 5-13 · 1021 설계서 4-3) — 인용하면 생길 운임 정산 행과 같은 식({@link #acceptSellerFaultWithFreight}
+     * · {@link #freightRefundOf}). 이미 브랜드 귀책이면 운임 행이 생기지 않아 0, 인용할 수 없으면 null.
+     */
+    @Transactional(readOnly = true)
+    public DisputeFreightPreview previewDisputeFreight(Long claimId) {
+        return claimRepository.findById(claimId).filter(OrderClaimService::isDisputeAcceptable).map(claim -> {
+            OrderClaimCollection collection = claim.getCollection();
+            if (collection.getFeeBearer() != ClaimFeeBearer.CONSUMER) {
+                return new DisputeFreightPreview(0, 0);
+            }
+            // 판정 종료 뒤라 통과분 환불에서 실제로 뺐을 때만 환원할 몫이 있다
+            int restored = collection.getRefundAmount() != null && collection.getRefundAmount() > 0
+                    ? collection.getReturnDeduction() : 0;
+            return new DisputeFreightPreview(feePolicy.freightFlat(claim.getDeliveryGroup()), restored);
+        }).orElse(null);
+    }
+
+    /** @param initialFeeRestored 차감했던 최초 배송비 환원 — 인용하면 운임 환급에 더해진다 */
+    public record DisputeFreightPreview(int prepaidFreightRefund, int initialFeeRestored) {
+        public int total() {
+            return prepaidFreightRefund + initialFeeRestored;
+        }
     }
 
     private DisputePlan planDispute(OrderClaim claim) {

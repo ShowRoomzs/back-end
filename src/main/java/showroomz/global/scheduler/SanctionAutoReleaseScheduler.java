@@ -13,6 +13,7 @@ import showroomz.domain.member.creator.repository.CreatorSanctionRepository;
 import showroomz.domain.member.creator.service.CreatorSanctionService;
 import showroomz.domain.member.user.repository.UserSanctionRepository;
 import showroomz.domain.member.user.service.UserSanctionService;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -45,11 +46,11 @@ public class SanctionAutoReleaseScheduler {
     @Scheduled(cron = "0 5 0 * * *", zone = "Asia/Seoul")
     public void tick() {
         LocalDateTime now = LocalDateTime.now();
-        int released = run("브랜드", brandSanctions.findMemberIdsToAutoRelease(now.toLocalDate()),
+        int released = run("브랜드", brandSanctions.findMemberIdsToAutoRelease(KstDates.today(now)),
                 (id, at) -> brandSanctionService.releaseByTerm(id, at) != null, now)
-                + run("인플루언서", creatorSanctions.findMemberIdsToAutoRelease(now.toLocalDate()),
+                + run("인플루언서", creatorSanctions.findMemberIdsToAutoRelease(KstDates.today(now)),
                 (id, at) -> creatorSanctionService.releaseByTerm(id, at) != null, now)
-                + run("소비자", userSanctions.findMemberIdsToAutoRelease(now.toLocalDate()),
+                + run("소비자", userSanctions.findMemberIdsToAutoRelease(KstDates.today(now)),
                 (id, at) -> userSanctionService.releaseByTerm(id, at) != null, now);
         if (released > 0) {
             log.info("정지 기간 종료 자동 해제 - {}건", released);

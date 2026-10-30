@@ -65,6 +65,23 @@ public interface ProductInquiryRepository extends JpaRepository<ProductInquiry, 
                                                @Param("status") InquiryStatus status,
                                                Pageable pageable);
 
+    /**
+     * 상품 상세 「문의」 탭(58 계획 2-3) — 그 상품의 문의 최신순. 삭제 집행된 문의는 질문 · 답변이 함께 내려간다(§23-5) · 삭제 요청 검토
+     * 중인 문의는 집행 전까지 보인다. 유형 · 답변 상태는 비우면 전체.
+     */
+    @Query(value = "SELECT pi FROM ProductInquiry pi JOIN FETCH pi.user u " +
+           "WHERE pi.product.productId = :productId " +
+           "AND pi.exposureStatus <> showroomz.domain.inquiry.type.InquiryExposureStatus.DELETED " +
+           "AND (:type IS NULL OR pi.type = :type) AND (:status IS NULL OR pi.status = :status) " +
+           "ORDER BY pi.createdAt DESC, pi.id DESC",
+           countQuery = "SELECT COUNT(pi) FROM ProductInquiry pi WHERE pi.product.productId = :productId " +
+           "AND pi.exposureStatus <> showroomz.domain.inquiry.type.InquiryExposureStatus.DELETED " +
+           "AND (:type IS NULL OR pi.type = :type) AND (:status IS NULL OR pi.status = :status)")
+    Page<ProductInquiry> findPublicByProductId(@Param("productId") Long productId,
+                                               @Param("type") ProductInquiryType type,
+                                               @Param("status") InquiryStatus status,
+                                               Pageable pageable);
+
     @Query("SELECT pi FROM ProductInquiry pi " +
            "JOIN FETCH pi.user u " +
            "JOIN FETCH pi.product p " +

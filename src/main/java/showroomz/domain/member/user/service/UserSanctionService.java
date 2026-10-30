@@ -19,6 +19,7 @@ import showroomz.domain.member.user.type.UserSuspensionReason;
 import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -117,7 +118,7 @@ public class UserSanctionService {
     /** 정지 기간 종료 자동 해제(1021 기-02) — 시스템 · 사유 「제재 기간 종료」. 기간이 없거나 남았거나 이미 풀렸으면 null. */
     public UserSanction releaseByTerm(Long userId, LocalDateTime now) {
         UserSanction open = sanctionRepository.findByUserIdAndReleasedAtIsNull(userId).orElse(null);
-        if (open == null || !open.isTermEnded(now.toLocalDate())) {
+        if (open == null || !open.isTermEnded(KstDates.today(now))) {
             return null;
         }
         UserSanction released = release(userId, UserReleaseReason.TERM_ENDED, null, null, now);

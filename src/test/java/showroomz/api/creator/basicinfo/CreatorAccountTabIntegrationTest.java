@@ -93,7 +93,7 @@ class CreatorAccountTabIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.withdrawal.conditions[0].breakdown[0].label").value("진행중"))
                 .andExpect(jsonPath("$.withdrawal.conditions[1].code").value("UNFINISHED_CONTRACTS"))
                 .andExpect(jsonPath("$.withdrawal.conditions[1].breakdown[0].key").value("CONCLUDED"))
-                .andExpect(jsonPath("$.withdrawal.conditions[1].breakdown[0].label").value("체결완료"))
+                .andExpect(jsonPath("$.withdrawal.conditions[1].breakdown[0].label").value("계약 성립"))
                 .andExpect(jsonPath("$.withdrawal.conditions[1].count").value(1))
                 .andExpect(jsonPath("$.withdrawal.conditions[2].code").value("UNSETTLED"))
                 .andExpect(jsonPath("$.withdrawal.conditions[2].breakdown[0].key").value("ADJUSTING"))

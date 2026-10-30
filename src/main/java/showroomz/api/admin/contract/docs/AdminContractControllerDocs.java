@@ -50,11 +50,11 @@ public interface AdminContractControllerDocs {
             @Parameter(description = "일반 목록 정렬. 기본 REVIEW_REQUESTED_ASC", example = "REVIEW_REQUESTED_ASC") AdminContractSort sort,
             PagingRequest paging);
 
-    @Operation(summary = "조치 큐·상태 탭 건수", description = "검색어와 무관한 전체 계약 기준입니다. `actionRequiredCount`는 다섯 조치 큐의 건수를 합한 값이며, 같은 계약이 여러 큐에 속하면 각각 셉니다. 사이드바 「계약 관리」 배지(`GET /v1/admin/badges`의 `contracts`)와 같은 값입니다. 작성중·삭제된 계약은 제외합니다.")
+    @Operation(summary = "조치 큐·상태 탭 건수", description = "검색어와 무관한 전체 계약 기준입니다. `actionRequiredCount`는 조치 큐의 건수를 합한 값이며(재발송 요청 `RESEND` 는 소통 스레드에서 끝나 뺀다 · rev.8 ②), 같은 계약이 여러 큐에 속하면 각각 셉니다. 사이드바 「계약 관리」 배지(`GET /v1/admin/badges`의 `contracts`)와 같은 값입니다. 작성중·삭제된 계약은 제외합니다.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "큐·탭별 건수",
                     content = @Content(schema = @Schema(implementation = Summary.class), examples = @ExampleObject(value = """
-                            {"queues":{"REVIEW":3,"CONCLUSION":2,"EXPIRY":1,"RESEND":1,"TERMINATION":1},"tabCounts":{"ALL":18,"REVIEW_PENDING":3,"SIGNING":5,"CONCLUSION_PENDING":2,"CONCLUDED":4,"CLOSED":4},"actionRequiredCount":8}
+                            {"queues":{"REVIEW":3,"CONCLUSION":2,"EXPIRY":1,"RESEND":1,"TERMINATION":1},"tabCounts":{"ALL":18,"REVIEW_PENDING":3,"SIGNING":5,"CONCLUSION_PENDING":2,"CONCLUDED":4,"CLOSED":4},"actionRequiredCount":7}
                             """))),
             @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
@@ -189,7 +189,7 @@ public interface AdminContractControllerDocs {
                               @Parameter(hidden = true) UserPrincipal principal);
 
     @Operation(summary = "계약 취소 동의 확인 카드 발송", description = """
-            1021 결정 노트 기-06 【잠정】 — 서명 진행중 계약의 취소 요청이 들어오면, 요청하지 않은 쪽 운영팀 채널에 「계약 취소 · 해지 동의 확인」 카드를 보냅니다.
+            1021 결정 노트 기-06 【잠정】 — 서명 진행중 계약의 취소 요청이 들어오면, 요청하지 않은 쪽 운영팀 채널에 「계약 취소 동의 확인」 카드를 보냅니다.
             카드에는 버튼이 없습니다 — 동의는 답글로 받고, 확인한 뒤 [계약 취소]에서 `counterpartyConsentConfirmed=true` 로 처리합니다.""")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "발송 완료", content = @Content(schema = @Schema(implementation = CardResponse.class))),
@@ -218,7 +218,7 @@ public interface AdminContractControllerDocs {
 
     @Operation(summary = "계약 취소", description = "서명 요청 발송 이후 성립 전(SIGNING)만 — 양측 서명이 끝나 성립한 계약은 해지(`POST /{id}/terminate`)입니다(1021 기-05). "
             + "이 구간은 브랜드가 취소할 수 없다. 모두싸인 서명 요청 회수 확인(signatureRequestWithdrawn) 필수 · "
-            + "당사자 요청이면 상대방 동의 확인(counterpartyConsentConfirmed) 필수(1021 기-06) · "
+            + "상대방 동의 확인(counterpartyConsentConfirmed) 필수 — 직권(ADMIN) 포함(1021 기-06 · 58 계획 5-20) · "
             + "사유(C6) · ETC면 메모 필수. 결과 카드는 양측 운영팀 채널에 붙고 양측에 통지합니다. "
             + "요청자(requesterType) 필수 — SELLER·CREATOR면 요청 경로(requestChannel)·요청 시각(requestedAt)도 필수(현재 이전 · 계약 생성 이후), "
             + "ADMIN(직권)이면 둘 다 보내지 않는다. 위반은 400 CONTRACT_CANCEL_REQUESTER_INVALID(어느 값인지는 message). "

@@ -37,6 +37,7 @@ import showroomz.domain.groupbuy.type.GroupBuyTone;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.RewardCalculator;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -132,9 +133,9 @@ public class CreatorGroupBuyDetailAssembler {
         int elapsedDays = now.isBefore(startAt) ? 0
                 : Math.min(GroupBuy.daysInclusive(startAt, now.isBefore(cap) ? now : cap), totalDays);
         Integer daysUntilStart = now.isBefore(startAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), startAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(startAt)) : null;
         Integer daysUntilEnd = groupBuy.getStatus().isSelling() && now.isBefore(endAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), endAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(endAt)) : null;
         boolean startOverdue = groupBuy.getStatus() == GroupBuyStatus.PREPARING && !now.isBefore(startAt);
 
         return new Timeline(startAt, endAt, contract.getGroupBuyEndAt(), totalDays, elapsedDays,
@@ -166,7 +167,7 @@ public class CreatorGroupBuyDetailAssembler {
     }
 
     /**
-     * 「내가 받는 금액」 — 종결 3종은 null이다. 시안 B7~B12에 이 카드가 없고, 종결 후 금액은 KPI와 정산 블록이 말한다.
+     * 「내가 받는 금액」 — 종결 4종은 null이다. 시안 B7~B12에 이 카드가 없고, 종결 후 금액은 KPI와 정산 블록이 말한다.
      * 공제 계산은 하지 않는다(정산 관리 소관). 미보증 고지 문장은 FE 상수이고 서버는 분기 값만 준다.
      */
     private Payout payout(GroupBuy groupBuy, Contract contract, Long myReward, Long pairThreadId) {
@@ -203,8 +204,8 @@ public class CreatorGroupBuyDetailAssembler {
 
         int sla = properties.getOpenReview().getSlaBusinessDays();
         // 승인이 시작일 전날까지 나야 한다 — 제출 후 SLA 영업일 안에 끝나는 가장 늦은 제출일(31 설계 4-4).
-        LocalDate deadline = businessCalendar.latestStartToFinishBefore(groupBuy.getStartAt().toLocalDate(), sla);
-        boolean overdue = !myPostDone && now.toLocalDate().isAfter(deadline);
+        LocalDate deadline = businessCalendar.latestStartToFinishBefore(KstDates.toKstDate(groupBuy.getStartAt()), sla);
+        boolean overdue = !myPostDone && KstDates.today(now).isAfter(deadline);
         return new Readiness(gates, deadline, overdue, sla);
     }
 
@@ -224,7 +225,7 @@ public class CreatorGroupBuyDetailAssembler {
         }
         boolean terminal = groupBuy.getStatus().isTerminal();
         LocalDate expectedReviewDate = post.isPendingReview() && post.getSubmittedAt() != null
-                ? businessCalendar.addBusinessDays(post.getSubmittedAt().toLocalDate(),
+                ? businessCalendar.addBusinessDays(KstDates.toKstDate(post.getSubmittedAt()),
                         properties.getOpenReview().getSlaBusinessDays())
                 : null;
         Rejection rejection = post.getReviewStatus() == GroupBuyPostReviewStatus.REJECTED
@@ -232,7 +233,8 @@ public class CreatorGroupBuyDetailAssembler {
                 : null;
         Hidden hidden = !terminal && post.isHidden()
                 ? new Hidden(post.getHiddenReasonCode(), post.getHiddenReasonDetail(), post.getHiddenAt(),
-                        GroupBuy.daysInclusive(post.getHiddenAt(), now))
+                        GroupBuy.daysInclusive(post.getHiddenAt(), now),
+                        operatorChannelService.findCreatorChannelThreadId(groupBuy.getCreator()).orElse(null))
                 : null;
         return new Post(
                 status,
@@ -372,8 +374,8 @@ public class CreatorGroupBuyDetailAssembler {
                         notice.getNoticedAt(),
                         notice.getExecuteScheduledAt(),
                         notice.getExecuteScheduledAt() == null ? null
-                                : businessCalendar.businessDaysBetween(now.toLocalDate(),
-                                        notice.getExecuteScheduledAt().toLocalDate()),
+                                : businessCalendar.businessDaysBetween(KstDates.today(now),
+                                        KstDates.toKstDate(notice.getExecuteScheduledAt())),
                         notice.getAppealDeadlineAt(),
                         operatorChannelService.findCreatorChannelThreadId(groupBuy.getCreator()).orElse(null)))
                 .orElse(null);

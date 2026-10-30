@@ -30,10 +30,13 @@ public class AdminProductInquiryQueryRepository {
     private static final QProductInquiry inquiry = QProductInquiry.productInquiry;
     private static final QProduct product = QProduct.product;
 
-    /** @param userId 작성한 소비자 — 소비자 상세 · 진행 중 칩 「열린 문의」 진입(56 C1). null 이면 전체 */
+    /**
+     * @param userId   작성한 소비자 — 소비자 상세 · 진행 중 칩 「열린 문의」 진입(56 C1). null 이면 전체
+     * @param marketId 상품의 브랜드 — 브랜드 상세에서 들어온 진입(58 계획 5-31). null 이면 전체
+     */
     public Page<ProductInquiry> search(AdminProductInquiryStatusFilter statusFilter, ProductInquiryType type,
-                                       String keyword, Long userId, Pageable pageable) {
-        BooleanBuilder where = createWhere(statusFilter, type, keyword, userId);
+                                       String keyword, Long userId, Long marketId, Pageable pageable) {
+        BooleanBuilder where = createWhere(statusFilter, type, keyword, userId, marketId);
 
         List<ProductInquiry> content = queryFactory
                 .selectFrom(inquiry)
@@ -57,24 +60,24 @@ public class AdminProductInquiryQueryRepository {
 
     /** 상세의 ‹ 이전 · 다음 › — 현재 탭·필터의 목록 순서를 따른다 (§18-3) */
     public List<Long> findOrderedIds(AdminProductInquiryStatusFilter statusFilter, ProductInquiryType type,
-                                     String keyword, Long userId) {
+                                     String keyword, Long userId, Long marketId) {
         return queryFactory
                 .select(inquiry.id)
                 .from(inquiry)
                 .join(inquiry.product, product)
-                .where(createWhere(statusFilter, type, keyword, userId))
+                .where(createWhere(statusFilter, type, keyword, userId, marketId))
                 .orderBy(inquiry.createdAt.desc(), inquiry.id.desc())
                 .fetch();
     }
 
     /** 탭 건수 — 유형·검색어 · 소비자는 그대로 반영하고 상태 조건만 제외한다 */
     public Map<AdminProductInquiryStatusFilter, Long> countByStatus(ProductInquiryType type, String keyword,
-                                                                    Long userId) {
+                                                                    Long userId, Long marketId) {
         List<Tuple> rows = queryFactory
                 .select(inquiry.status, inquiry.exposureStatus, inquiry.count())
                 .from(inquiry)
                 .join(inquiry.product, product)
-                .where(createWhere(AdminProductInquiryStatusFilter.ALL, type, keyword, userId))
+                .where(createWhere(AdminProductInquiryStatusFilter.ALL, type, keyword, userId, marketId))
                 .groupBy(inquiry.status, inquiry.exposureStatus)
                 .fetch();
 
@@ -108,11 +111,14 @@ public class AdminProductInquiryQueryRepository {
     }
 
     private BooleanBuilder createWhere(AdminProductInquiryStatusFilter statusFilter, ProductInquiryType type,
-                                       String keyword, Long userId) {
+                                       String keyword, Long userId, Long marketId) {
         BooleanBuilder where = new BooleanBuilder();
 
         if (userId != null) {
             where.and(inquiry.user.id.eq(userId));
+        }
+        if (marketId != null) {
+            where.and(product.market.id.eq(marketId));
         }
         if (statusFilter != null) {
             if (statusFilter.getStatus() != null) {

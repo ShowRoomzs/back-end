@@ -15,6 +15,7 @@ import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.message.repository.MessageThreadRepository;
 import showroomz.domain.message.type.ThreadKind;
 import showroomz.global.dto.PageResponse;
+import showroomz.global.utils.KstDates;
 import java.time.*;
 import java.util.*;
 
@@ -65,7 +66,9 @@ public class AdminContractQueryService {
         }
         Map<AdminContractQueue, Long> queues = new EnumMap<>(AdminContractQueue.class);
         for (AdminContractQueue queue : AdminContractQueue.values()) queues.put(queue, adminContracts.countQueue(queue, now));
-        return new Summary(queues, tabs, queues.values().stream().mapToLong(Long::longValue).sum());
+        // 재발송 요청은 소통 스레드에서 끝난다 — 사이드바 「계약 관리」 배지 · 조치 필요 합에서 뺀다(01-contracts rev.8 ② · 58 계획 5-33)
+        return new Summary(queues, tabs, queues.entrySet().stream().filter(e -> e.getKey() != AdminContractQueue.RESEND)
+                .mapToLong(Map.Entry::getValue).sum());
     }
 
     /** 큐에서 가장 오래 기다린 건의 기준 시각 — 어드민 홈 대기 행의 경과(55 계획서 A1). 비면 null. */
@@ -73,14 +76,17 @@ public class AdminContractQueryService {
         return adminContracts.oldestInQueue(queue, now);
     }
 
-    /** 서명 기한 제안값(1021 설계서 1-7) — 공구 시작 N일 전 그날 지정 시각. 이미 지났으면 제안하지 않는다. */
+    /**
+     * 서명 기한 제안값(1021 설계서 1-7) — 공구 시작의 한국 날짜 N일 전 그날 지정 시각(KST) · 서버 시각. 이미 지났으면 제안하지 않는다.
+     * 서버 날짜로 자르면 KST 오전에 시작하는 공구의 제안이 하루 밀렸다(58 계획 1-7).
+     */
     LocalDateTime suggestedDeadline(Contract c, LocalDateTime now) {
         if (c.getGroupBuyStartAt() == null) {
             return null;
         }
-        LocalDateTime suggested = c.getGroupBuyStartAt().toLocalDate()
-                .minusDays(contractProperties.getSignatureDeadlineDaysBeforeStart())
-                .atTime(contractProperties.getSignatureDeadlineSuggestTime());
+        LocalDateTime suggested = KstDates.at(KstDates.toKstDate(c.getGroupBuyStartAt())
+                        .minusDays(contractProperties.getSignatureDeadlineDaysBeforeStart()),
+                contractProperties.getSignatureDeadlineSuggestTime());
         return suggested.isAfter(now) ? suggested : null;
     }
 

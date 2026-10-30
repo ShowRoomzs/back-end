@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * C10 주문 내역 · C10-1 주문 상세의 항목 행 DTO(C10 설계서 1-5). 목록과 상세가 같은 행을 쓴다.
- * 라벨·색·보조 문구·버튼은 서버가 내린다(0-4). 시각은 기존 주문 API 와 같은 규약({@link OrderDto#TIME_PATTERN} · KST).
+ * 라벨·색·보조 문구·버튼은 서버가 내린다(0-4). 시각은 기존 주문 API 와 같은 규약({@link OrderDto#TIME_PATTERN} · UTC).
  */
 public class UserOrderDto {
 
@@ -50,6 +50,11 @@ public class UserOrderDto {
     @Builder
     @Schema(description = "배송 조회의 상품")
     public static class TrackingItem {
+        @Schema(description = "상품 ID — 상품 상세로 가는 키(58 계획 5-1)", example = "101", nullable = true)
+        private Long productId;
+        @Schema(description = "발송 기한 영업일 — 주문 시점 값(C10-2 FAQ 「영업일 N일 내 발송」). 모르면 null", example = "3",
+                nullable = true)
+        private Integer shipLeadBusinessDays;
         private String brandName;
         private String productName;
         private String optionName;
@@ -187,7 +192,7 @@ public class UserOrderDto {
     @NoArgsConstructor
     @AllArgsConstructor
     @Builder
-    @Schema(description = "항목 버튼 — 서버가 내린 것만 그린다")
+    @Schema(name = "UserOrderAction", description = "항목 버튼 — 서버가 내린 것만 그린다")
     public static class Action {
         private UserOrderAction type;
         @Schema(example = "주문 취소")
@@ -289,6 +294,9 @@ public class UserOrderDto {
     @Schema(description = "주문 항목 행 — 목록·상세 공용")
     public static class ItemRow {
         private Long orderProductId;
+        @Schema(description = "하위주문(배송 그룹) — 취소 요청 생성(`POST …/cancel-requests`)의 `deliveryGroupId`", example = "911",
+                nullable = true)
+        private Long deliveryGroupId;
         private Long productId;
         private Long variantId;
         @Schema(description = "브랜드명 — 주문 시점 스냅샷", example = "라보에이치", nullable = true)

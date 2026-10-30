@@ -116,8 +116,10 @@ public class AdminRefundService {
         tabs.put(RefundTab.FAILED.name(), new AdminTransactionDto.RefundTabStat(failed[0], failed[1], waitingDays, null, null));
         tabs.put(RefundTab.DONE.name(), new AdminTransactionDto.RefundTabStat(done[0], done[1], null, doneDays,
                 byOrigin));
+        long transferAmount = refundTaskRepository.sumAmountByMethodAndStatus(RefundMethod.BANK_TRANSFER, RefundTaskStatus.PENDING);
         return new AdminTransactionDto.RefundSummary(tabs, pending[0] + failed[0],
-                refundTaskRepository.countByMethodAndStatus(RefundMethod.BANK_TRANSFER, RefundTaskStatus.PENDING));
+                refundTaskRepository.countByMethodAndStatus(RefundMethod.BANK_TRANSFER, RefundTaskStatus.PENDING),
+                Math.max(0, pending[1] - transferAmount), transferAmount);
     }
 
     /** 상세 — M1 집행 재확인 · M2 재시도 다이얼로그의 데이터. 소멸(VOID) 건도 돌려준다(주문 상세에서 링크로 올 수 있다). */

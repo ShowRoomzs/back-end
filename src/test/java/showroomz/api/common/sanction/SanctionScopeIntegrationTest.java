@@ -29,6 +29,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -91,6 +92,54 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .delete("/v1/seller/contracts/" + draft.getId()).header(HttpHeaders.AUTHORIZATION, brandToken))
                 .andExpect(status().is2xxSuccessful());
+    }
+
+    @Test
+    @DisplayName("SC-01b 브랜드 정지 — 막히는 버튼은 상세 권한도 false · 안내 문구(누르기 전에 안다 · 58 계획 3-2) · 조기 마감 · 해제 후 복귀")
+    void brandPermissionsReflectSuspension() throws Exception {
+        Contract draft = seedContract(ContractStatus.DRAFT, null);
+        Contract signing = seedContract(ContractStatus.SIGNING, LocalDateTime.now().plusDays(5));
+        anyGet("/v1/seller/group-buys/" + groupBuy.getId(), brandToken)
+                .andExpect(jsonPath("$.permissions.canRequestExtension").value(true))
+                .andExpect(jsonPath("$.permissions.suspensionBlockedMessage").value(nullValue()));
+        suspendBrand("PRODUCT_INFO_FALSIFIED", null);
+
+        anyGet("/v1/seller/contracts/" + draft.getId(), brandToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions.canEdit").value(false))
+                .andExpect(jsonPath("$.permissions.canRequestReview").value(false))
+                .andExpect(jsonPath("$.permissions.canDelete").value(true))
+                .andExpect(jsonPath("$.permissions.suspensionBlockedMessage").isNotEmpty());
+        anyGet("/v1/seller/contracts/" + signing.getId(), brandToken)
+                .andExpect(jsonPath("$.permissions.canRequestResend").value(false));
+        anyGet("/v1/seller/group-buys/" + groupBuy.getId(), brandToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions.canRequestExtension").value(false))
+                .andExpect(jsonPath("$.permissions.canRequestEarlyClose").value(true))
+                .andExpect(jsonPath("$.permissions.suspensionBlockedMessage").value(containsString("기간 연장")));
+
+        releaseBrand();
+        anyGet("/v1/seller/contracts/" + draft.getId(), brandToken)
+                .andExpect(jsonPath("$.permissions.canEdit").value(true))
+                .andExpect(jsonPath("$.permissions.suspensionBlockedMessage").value(nullValue()));
+    }
+
+    @Test
+    @DisplayName("SC-02b 인플루언서 정지 — 서명 안내 재발송 · 연장 수락 권한 false(거절 · 응답은 그대로) · 안내 문구(58 계획 3-2)")
+    void creatorPermissionsReflectSuspension() throws Exception {
+        Contract signing = seedContract(ContractStatus.SIGNING, LocalDateTime.now().plusDays(5));
+        seedExtension();
+        anyGet("/v1/creator/group-buys/" + groupBuy.getId(), creatorToken)
+                .andExpect(jsonPath("$.permissions.canAcceptExtension").value(true))
+                .andExpect(jsonPath("$.permissions.acceptExtensionBlockedMessage").value(nullValue()));
+        suspendCreator("AD_LAW_VIOLATION_REPEATED", null);
+
+        anyGet("/v1/creator/contracts/" + signing.getId(), creatorToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions.canDecline").value(true))
+                .andExpect(jsonPath("$.permissions.canRequestResend").value(false))
+                .andExpect(jsonPath("$.permissions.suspensionBlockedMessage").value(containsString("서명 안내 재발송")));
+        anyGet("/v1/creator/group-buys/" + groupBuy.getId(), creatorToken).andExpect(status().isOk())
+                .andExpect(jsonPath("$.permissions.canRespondExtension").value(true))
+                .andExpect(jsonPath("$.permissions.canAcceptExtension").value(false))
+                .andExpect(jsonPath("$.permissions.acceptExtensionBlockedMessage").value("연장 수락은 정지 해제 후 할 수 있어요"));
     }
 
     // ------------------------------------------------------------------ SC-02 인플루언서 가드
@@ -470,7 +519,6 @@ class SanctionScopeIntegrationTest extends SettlementTestSupport {
                 .contentType(MediaType.APPLICATION_JSON).content(toJson(body)));
     }
 
-    @SuppressWarnings("unused")
     private ResultActions anyGet(String url, String token) throws Exception {
         return mockMvc.perform(get(url).header(HttpHeaders.AUTHORIZATION, token));
     }

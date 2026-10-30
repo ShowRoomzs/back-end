@@ -227,11 +227,20 @@ public final class AdminCreatorDto {
     public record Activity(
             long groupBuyPostCount,
             @Schema(description = "공구 게시물 검토 반려 횟수 — 사실 기록만") long reviewRejectCount,
-            @Schema(description = "노출 중지 횟수 — 공구 게시물 노출 중지 + 일반 게시물 노출 중지") long hiddenCount,
+            @Schema(description = "**[호환 · 1릴리스 뒤 제거]** `exposureSuspendedCount` 와 같은 값", deprecated = true)
+            long hiddenCount,
             long generalPostCount,
             @Schema(description = "쇼룸 팔로워 — 앱 내 팔로우 수(인스타 팔로워 아님)") long followerCount,
             long threadCount,
-            long openThreadCount) {
+            long openThreadCount,
+            @Schema(description = "노출 중지 횟수 — 공구 게시물 노출 중지 + 일반 게시물 노출 중지(1021 기-08 「숨김」→「노출 중지」 · 58 계획 5-30)")
+            long exposureSuspendedCount) {
+
+        public Activity(long groupBuyPostCount, long reviewRejectCount, long exposureSuspendedCount, long generalPostCount,
+                        long followerCount, long threadCount, long openThreadCount) {
+            this(groupBuyPostCount, reviewRejectCount, exposureSuspendedCount, generalPostCount, followerCount, threadCount,
+                    openThreadCount, exposureSuspendedCount);
+        }
     }
 
     public record SettlementList(long total, List<SettlementRow> content) {
@@ -295,7 +304,8 @@ public final class AdminCreatorDto {
     }
 
     public record Memo(Long memoId, String authorName, String content, LocalDateTime createdAt,
-                       LocalDateTime modifiedAt, @Schema(description = "작성자 본인 ∧ 24시간 이내") boolean editable) {
+                       LocalDateTime modifiedAt, @Schema(description = "작성자 본인 ∧ 24시간 이내") boolean editable,
+                       @Schema(description = "내가 쓴 메모 — 작성자 = 요청 운영자(편집 가능 여부 `editable` 과 별개 · 58 계획 5-27)") boolean mine) {
     }
 
     public record MemoPage(long total, List<Memo> content) {

@@ -23,6 +23,7 @@ import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -179,7 +180,7 @@ public class BrandWithdrawalChecklist {
 
         List<Breakdown> rows = new ArrayList<>();
         addIfPositive(rows, new Breakdown(SettlementStatus.REVIEWING.name(), SettlementStatus.REVIEWING.getLabel(),
-                reviewing, BrandWithdrawalBreakdownGroup.WAIT, null, reviewDue == null ? null : reviewDue.toLocalDate(),
+                reviewing, BrandWithdrawalBreakdownGroup.WAIT, null, reviewDue == null ? null : KstDates.toKstDate(reviewDue),
                 null, null, null, null, List.of()));
         if (adjusting > 0) {
             rows.add(new Breakdown(SettlementStatus.ADJUSTING.name(), SettlementStatus.ADJUSTING.getLabel(), adjusting,

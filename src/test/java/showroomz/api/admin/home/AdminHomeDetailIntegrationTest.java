@@ -350,8 +350,8 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("[56 E1] 대기 행 경과 — 처리 지연(발송 기한) · 배송 예외(마지막 추적) · 신고 게시물(대기 신고 접수) · 상품 문의 삭제 요청(요청 시각) · "
-            + "소명 검토(제출 시각, 미제출이면 소명 기한) 중 가장 오래된 시각")
+    @DisplayName("[56 E1] 대기 행 경과 — 처리 지연(발송 기한) · 배송 예외(마지막 추적) · 신고 게시물(대기 신고 접수) · "
+            + "소명 검토(제출 시각, 미제출이면 소명 기한) 중 가장 오래된 시각 · 상품 문의 삭제 요청은 할 일이 아니다(58 5-33)")
     void waitingRowAgesFromEntryTimes() throws Exception {
         LocalDateTime now = LocalDateTime.now();
         // 처리 지연 — 발송 기한이 2일 · 1시간 전에 지난 2건 → 오래된 쪽
@@ -391,7 +391,10 @@ class AdminHomeDetailIntegrationTest extends SettlementTestSupport {
         assertThat(rowsOf(todo, "PROCESSING_DELAY").get(0).get("ageText").asText()).isEqualTo("2일 경과");
         assertThat(rowsOf(todo, "DELIVERY_EXCEPTION").get(0).get("ageText").asText()).isEqualTo("8일 경과");
         assertThat(rowsOf(todo, "POST_REPORT").get(0).get("ageText").asText()).isEqualTo("3일 경과");
-        assertThat(rowsOf(todo, "PRODUCT_INQUIRY_DELETE").get(0).get("ageText").asText()).isEqualTo("4일 경과");
+        // 상품 문의 삭제 요청은 할 일이 아니다 — 사이드바 cs.productInquiryDeleteRequests 하위 숫자로만(rev.8 ② · 58 계획 5-33)
+        assertThat(rowsOf(todo, "PRODUCT_INQUIRY_DELETE")).isEmpty();
+        JsonNode cs = json(adminGet("/v1/admin/badges").andExpect(status().isOk())).get("cs");
+        assertThat(cs.get("productInquiryDeleteRequests").asLong()).isPositive();
         JsonNode appeal = rowsOf(todo, "APPEAL_REVIEW").get(0);
         assertThat(appeal.get("count").asLong()).isEqualTo(2);
         assertThat(appeal.get("ageText").asText()).as("제출된 소명은 통지 · 기한이 아니라 제출 시각").isEqualTo("6일 경과");

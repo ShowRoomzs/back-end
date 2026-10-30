@@ -21,6 +21,7 @@ import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -211,8 +212,8 @@ public class SettlementPayoutService {
         for (SettlementPayout payout : requested) {
             bySettlement.computeIfAbsent(payout.getSettlementId(), id -> new ArrayList<>()).add(payout);
         }
-        boolean staleTick = now.getHour() == properties.getPayoutHour() && now.getMinute() < 30;
-        LocalDate today = now.toLocalDate();
+        boolean staleTick = KstDates.toKst(now).getHour() == properties.getPayoutHour() && now.getMinute() < 30;
+        LocalDate today = KstDates.today(now);
         for (Map.Entry<Long, List<SettlementPayout>> entry : bySettlement.entrySet()) {
             Long settlementId = entry.getKey();
             try {
@@ -233,7 +234,7 @@ public class SettlementPayoutService {
                         boolean closed = results.stream().anyMatch(r -> r.payoutId().equals(payout.getId())
                                 && r.outcome() != Outcome.REQUESTED);
                         if (!closed && payout.getRequestedAt() != null
-                                && !businessCalendar.addBusinessDays(payout.getRequestedAt().toLocalDate(),
+                                && !businessCalendar.addBusinessDays(KstDates.toKstDate(payout.getRequestedAt()),
                                 properties.getPayout().getResultStaleBusinessDays()).isAfter(today)) {
                             transitions.markStale(settlementId, payout.getPayee(), now);
                         }
@@ -272,9 +273,10 @@ public class SettlementPayoutService {
         }
     }
 
+    /** PG 지급일 = 오늘인 행(REQUESTED · PAID · FAILED · 지급 id 있음) — PG 목록 조회와 같은 기준으로 센다. */
     @Transactional(readOnly = true)
     public Object[] countRequested(LocalDate today) {
-        List<Object[]> rows = payoutRepository.countRequestedBetween(today.atStartOfDay(), today.plusDays(1).atStartOfDay());
+        List<Object[]> rows = payoutRepository.countByPgPayoutDate(today);
         return rows.isEmpty() ? new Object[]{0L, 0L} : rows.get(0);
     }
 

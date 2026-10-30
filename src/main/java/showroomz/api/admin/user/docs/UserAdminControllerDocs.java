@@ -491,6 +491,29 @@ public interface UserAdminControllerDocs {
     );
 
     @Operation(
+            summary = "소비자 약관 동의 내역",
+            description = "동의 대상 약관 3종(이용 약관 · 개인정보처리방침 · 마케팅 동의)의 현재 동의 상태 · 시각 · 버전입니다(58 계획 5-29).\n\n" +
+                    "- 이용 약관 · 개인정보처리방침의 시각은 가입 시각, 마케팅 동의는 마지막 동의 · 철회 시각입니다\n" +
+                    "- 동의 기록에는 버전이 없어 **동의 시각에 시행 중이던 버전**으로 파생합니다(소비자 문서 우선 · 없으면 전체 문서). 찾을 수 없으면 `version = null`\n" +
+                    "- 「운영정책」은 열람 전용이라 포함하지 않습니다\n\n" +
+                    "**권한:** ADMIN"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "조회 성공",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = AdminUserDto.ConsentList.class),
+                            examples = @ExampleObject(value = "{\n" +
+                                    "  \"content\": [\n" +
+                                    "    { \"termsType\": \"TERMS_OF_SERVICE\", \"termsName\": \"쇼룸즈 이용약관\", \"version\": \"v1.0\", \"agreed\": true, \"agreedAt\": \"2026-02-01T10:00:00Z\" },\n" +
+                                    "    { \"termsType\": \"PRIVACY_POLICY\", \"termsName\": \"개인정보처리방침\", \"version\": \"v1.1\", \"agreed\": true, \"agreedAt\": \"2026-02-01T10:00:00Z\" },\n" +
+                                    "    { \"termsType\": \"MARKETING_CONSENT\", \"termsName\": \"마케팅 동의\", \"version\": null, \"agreed\": false, \"agreedAt\": \"2026-05-03T09:12:00Z\" }\n" +
+                                    "  ]\n" +
+                                    "}"))),
+            @ApiResponse(responseCode = "404", description = "회원 없음 — USER_NOT_FOUND",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<AdminUserDto.ConsentList> getConsents(@Parameter(description = "소비자 id", example = "1") Long userId);
+
+    @Operation(
             summary = "관리자 메모 목록",
             description = "누적 메모(최신순)입니다(§25-6). `editable` = 작성자 본인 ∧ 24시간 이내 ∧ 탈퇴 아님. " +
                     "옛 단일 메모는 「이전 단일 메모(작성자 미기록)」 한 건으로 이관돼 있고 수정 · 삭제할 수 없습니다.\n\n" +

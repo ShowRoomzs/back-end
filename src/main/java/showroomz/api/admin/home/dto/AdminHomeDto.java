@@ -108,7 +108,8 @@ public final class AdminHomeDto {
     public record Badges(
             Onboarding onboarding,
             Members members,
-            @Schema(description = "계약 — 검토 대기 · 공구 생성 대기 · 만료 확인 · 재발송 요청 · 해지 요청(계약 요약 actionRequiredCount 와 같다)",
+            @Schema(description = "계약 — 검토 대기 · 공구 생성 대기 · 만료 확인 · 해지 요청(계약 요약 actionRequiredCount 와 같다). "
+                    + "재발송 요청은 소통 스레드에서 끝나 넣지 않는다(rev.8 ②)",
                     example = "5") long contracts,
             @Schema(description = "공구 — 오픈 승인 · 중단 요청 · 조기 마감 요청 · 소명 검토") long groupBuys,
             @Schema(description = "거래 — 환불 실패 · 사유 환불 집행 대기 · 처리 지연 · 배송 예외(배지 범위 ALL 일 때) · 반려 이의") long transactions,
@@ -133,8 +134,10 @@ public final class AdminHomeDto {
 
     @Schema(name = "AdminBadgesCs")
     public record Cs(
-            @Schema(description = "1:1 문의 답변 대기 + 상품 문의 삭제 요청") long total,
-            @Schema(description = "1:1 문의 답변 대기") long inquiries
+            @Schema(description = "CS 조치 필요 합 = 1:1 문의 답변 대기(홈 할 일에 드는 큐만 · 상품 문의 삭제 요청은 더하지 않는다 · rev.8 ②)") long total,
+            @Schema(description = "1:1 문의 답변 대기") long inquiries,
+            @Schema(description = "상품 문의 삭제 요청(브랜드) — 상품 문의 메뉴 하위 숫자. total 과 홈 할 일 합계에는 들지 않는다", example = "1")
+            long productInquiryDeleteRequests
     ) {
     }
 

@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -133,7 +134,25 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
                 .andExpect(jsonPath("$.inspection.payment.total").value(base * 2))
                 .andExpect(jsonPath("$.inspection.attachments[0]").value(EVIDENCE));
         sellerGet(SELLER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.inspection.overturnFee").value(base * 2))
-                .andExpect(jsonPath("$.actions.canOverturn").value(false));
+                .andExpect(jsonPath("$.actions.canOverturn").value(false))
+                // 목록 행도 번복 청구를 재발송비로 · 판정 요약(58 계획 3-3)
+                .andExpect(jsonPath("$.summary.reshipFee.amount").value(base * 2))
+                .andExpect(jsonPath("$.summary.inspectionResult").value("REASON_OVERTURNED"));
+        userGet(USER_CLAIMS + "/" + claimId)
+                .andExpect(jsonPath("$.reshipFee.reshipFee").value(base))
+                .andExpect(jsonPath("$.reshipFee.collectFreight").value(base))
+                .andExpect(jsonPath("$.reshipFee.storage").doesNotExist());
+
+        // 58 계획 5-6 — 결제 기한이 지나면 번복 보류도 반려 보류처럼 미결제 고지 · 보관 기한 블록이 붙는다
+        Object dueAt = charge.get("due_at");
+        jdbc.update("UPDATE order_claim_charge SET due_at = ? WHERE collection_id = ? AND type = 'OVERTURN_RESHIP'",
+                LocalDateTime.now().minusDays(2), collectionIdOf(claimId));
+        userGet(USER_CLAIMS + "/" + claimId)
+                .andExpect(jsonPath("$.reshipFee.overdue").value(true))
+                .andExpect(jsonPath("$.reshipFee.storage.noticeCount").value(0))
+                .andExpect(jsonPath("$.reshipFee.storage.phase").value("NOTICE_PENDING"));
+        jdbc.update("UPDATE order_claim_charge SET due_at = ? WHERE collection_id = ? AND type = 'OVERTURN_RESHIP'",
+                dueAt, collectionIdOf(claimId));
 
         String paymentId = json(userPost(USER_CLAIMS + "/" + claimId + "/reship-fee/payments", CARD)
                 .andExpect(status().isOk())).get("paymentId").asText();
@@ -193,7 +212,10 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
             assertThat(row.getSettledVia()).isEqualTo(FreightSettledVia.CHARGE);
         });
         userGet(USER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.reshipFee.state").value("PAYABLE"))
-                .andExpect(jsonPath("$.reshipFee.amount").value(base * 2));
+                .andExpect(jsonPath("$.reshipFee.amount").value(base * 2))
+                // 합계를 재발송 배송비 · 착불 운임 두 줄로(58 계획 2-4)
+                .andExpect(jsonPath("$.reshipFee.reshipFee").value(base))
+                .andExpect(jsonPath("$.reshipFee.collectFreight").value(base));
     }
 
     @Test
@@ -203,6 +225,12 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
         Long claimId = received(requestClaim(group, ClaimType.RETURN, ClaimReason.DAMAGED_OR_DEFECTIVE,
                 allItems(group), newInvoice()).claimIds().get(0));
         int base = baseFee(group);
+        // 판정 전 운임 미리보기 — 기본 배송비 · 재발송 배송비 · 원래 결제액 · PG 환급 한도(58 계획 5-4)
+        sellerGet(SELLER_CLAIMS + "/" + claimId).andExpect(status().isOk())
+                .andExpect(jsonPath("$.freightPreview.baseDeliveryFee").value(base))
+                .andExpect(jsonPath("$.freightPreview.reshipFee").value(base))
+                .andExpect(jsonPath("$.freightPreview.originalPaidAmount").isNumber())
+                .andExpect(jsonPath("$.freightPreview.pgRefundableAmount").isNumber());
 
         Map<String, Object> body = new HashMap<>(rejectBody());
         body.put("rejectedQuantity", 1);
@@ -214,6 +242,11 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
             assertThat(task.getSource()).isEqualTo(RefundTaskSource.CLAIM_RETURN_PASSED);
             assertThat(task.getRefundAmount()).isEqualTo(CREAM_PRICE - base * 2);
         });
+        // 차감은 재발송 배송비 · 착불 운임 두 줄로(58 계획 2-4) · 판정 뒤에는 미리보기가 없다
+        userGet(USER_CLAIMS + "/" + claimId)
+                .andExpect(jsonPath("$.refund.reshipDeduction").value(base))
+                .andExpect(jsonPath("$.refund.collectFreightDeduction").value(base));
+        sellerGet(SELLER_CLAIMS + "/" + claimId).andExpect(jsonPath("$.freightPreview").value(nullValue()));
     }
 
     // ------------------------------------------------------------------ 4-4 이의 인용
@@ -249,6 +282,12 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
         OrderDeliveryGroup group = deliveredGroup(creamVariant, 2);   // 54,400 · 무료배송
         Long claimId = rejectedClaim(returnClaim(group));
         int base = baseFee(group);
+
+        // 58 계획 5-13 — 인용 전 예정액: 선불 운임 · 통과분 환불이 없어 최초 배송비 환원은 0 (인용 뒤 송금 대기 금액과 같다)
+        JsonNode before = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));
+        assertThat(before.at("/disputePreview/prepaidFreightRefund").asInt()).isEqualTo(base);
+        assertThat(before.at("/disputePreview/initialFeeRestored").asInt()).isZero();
+        assertThat(before.at("/disputePreview/total").asInt()).isEqualTo(base);
 
         accept(claimId).andExpect(status().isOk());
 

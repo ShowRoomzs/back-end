@@ -39,12 +39,14 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -78,6 +80,8 @@ public class SellerClaimQueryService {
     private final SellerClaimAssembler assembler;
     private final OrderProperties orderProperties;
     private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
+    private final showroomz.domain.order.service.ClaimFeePolicy feePolicy;
+    private final showroomz.domain.order.service.OrderFulfillmentService fulfillmentService;
 
     public PageResponse<SellerClaimListItem> getClaims(String sellerEmail, ClaimTab tab, Set<ClaimType> types,
                                                        ClaimReason reason, LocalDate from, LocalDate to,
@@ -229,7 +233,20 @@ public class SellerClaimQueryService {
                         status == ClaimStatus.RECEIVED
                                 && collection.getFeeBearer() == showroomz.domain.order.type.ClaimFeeBearer.SELLER),
                 reshipFeeCharged,
-                inspection(collection, charges));
+                inspection(collection, charges),
+                PREVIEW_STATUSES.contains(status) ? freightPreview(group) : null);
+    }
+
+    /** 운임 미리보기를 내리는 단계 — 판정 전. */
+    private static final Set<ClaimStatus> PREVIEW_STATUSES = EnumSet.of(ClaimStatus.REQUESTED, ClaimStatus.COLLECTING,
+            ClaimStatus.ARRIVED, ClaimStatus.RECEIVED);
+
+    /** 판정 전 운임 미리보기(58 계획 5-4) — 판정이 쓰는 정액(기본 배송비 · 재발송 배송비)과 PG 환급 한도. */
+    private SellerClaimDetailResponse.FreightPreview freightPreview(OrderDeliveryGroup group) {
+        long[] payment = fulfillmentService.paymentRefundable(group);
+        return new SellerClaimDetailResponse.FreightPreview(feePolicy.freightFlat(group),
+                group.getRegionSurcharge() == null ? 0 : group.getRegionSurcharge(), feePolicy.reshipFee(group),
+                payment == null ? null : payment[0], payment == null ? null : payment[1]);
     }
 
     /** 검수 판정 · 운임 정산(1021 설계서 4-3 · 4-4) — 판정 기록도 운임 정산 행도 없으면 null. */
@@ -268,7 +285,7 @@ public class SellerClaimQueryService {
     private SellerClaimSearchCondition buildCondition(Long marketId, ClaimTab tab, Set<ClaimType> types,
                                                       ClaimReason reason, LocalDate from, LocalDate to,
                                                       String keyword, LocalDateTime now) {
-        LocalDate resolvedTo = to != null ? to : now.toLocalDate();
+        LocalDate resolvedTo = to != null ? to : KstDates.today(now);
         LocalDate resolvedFrom = from != null ? from : resolvedTo.minusDays(DEFAULT_PERIOD_DAYS);
         // 역전된 기간은 빈 목록이 아니라 입력 오류다 — 주문 관리와 같은 규칙.
         if (resolvedFrom.isAfter(resolvedTo)) {
@@ -288,7 +305,7 @@ public class SellerClaimQueryService {
             }
         }
         return new SellerClaimSearchCondition(marketId, tab == null ? ClaimTab.COLLECT_WAIT : tab, types, reason,
-                resolvedFrom.atStartOfDay(), resolvedTo.atTime(LocalTime.MAX), claimId, orderNumber);
+                KstDates.startOfDay(resolvedFrom), KstDates.at(resolvedTo, LocalTime.MAX), claimId, orderNumber);
     }
 
     /** 자릿수가 넘치는 접수번호는 없는 번호다 — 0 건이 되도록 존재할 수 없는 id 로 바꾼다. */

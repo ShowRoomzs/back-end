@@ -22,6 +22,7 @@ import showroomz.global.delivery.tracker.DeliveryTrackerPort;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -70,7 +71,7 @@ public class AdminOrderCommandService {
                     restart.plus(Duration.between(before, request.deliveredAt())));
         }
         fulfillmentService.appendHistory(deliveryGroupId, FulfillmentEventType.DELIVERED_AT_CORRECTED,
-                FulfillmentActorType.ADMIN, adminId, before.toLocalDate() + " → " + request.deliveredAt().toLocalDate()
+                FulfillmentActorType.ADMIN, adminId, KstDates.toKstDate(before) + " → " + KstDates.toKstDate(request.deliveredAt())
                         + " · " + request.reason(), now);
         return queryService.getOrder(orderId);
     }

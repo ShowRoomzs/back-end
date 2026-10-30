@@ -1,5 +1,6 @@
 package showroomz.global.payment.settlement.toss;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
@@ -28,9 +29,12 @@ public final class TossPayoutsDtos {
     public record ErrorBody(String code, String message) {
     }
 
-    /** 목록 — {@code hasMore · nextCursor · items}. 토스가 {@code entityBody} 로 감싸 주면 클라이언트가 벗긴다. */
+    /**
+     * 목록 — {@code hasMore · nextCursor · items}(부가 API 레퍼런스 셀러 · 지급 목록). req-res 의 리스트 객체 일반 설명은
+     * {@code hasNext · lastCursor} 라 별칭으로 둘 다 받는다. 토스가 {@code entityBody} 로 감싸 주면 클라이언트가 벗긴다.
+     */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Page<T>(Boolean hasMore, String nextCursor, List<T> items) {
+    public record Page<T>(@JsonAlias("hasNext") Boolean hasMore, @JsonAlias("lastCursor") String nextCursor, List<T> items) {
         public List<T> itemsOrEmpty() {
             return items == null ? List.of() : items;
         }

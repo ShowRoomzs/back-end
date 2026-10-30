@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class UserOrderClaimDisplayIntegrationTest extends SellerOrderTestSupport {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("MM.dd");
-    private static final DateTimeFormatter APP_TIME = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+    private static final DateTimeFormatter APP_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
     @Autowired private OrderClaimService claimService;
 
@@ -155,7 +155,8 @@ class UserOrderClaimDisplayIntegrationTest extends SellerOrderTestSupport {
         Long collectionId = jdbc.queryForObject("SELECT collection_id FROM order_claim WHERE claim_id = ?", Long.class,
                 claimId);
         LocalDateTime rejectedAt = LocalDateTime.now().withNano(0);
-        setClaim(claimId, "status = 'REJECT_HOLD', rejected_at = '" + rejectedAt.format(APP_TIME) + "'");
+        setClaim(claimId, "status = 'REJECT_HOLD', rejected_at = '"
+                + rejectedAt.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "'");
 
         // 같은 박스의 판정이 다 끝나기 전 — 결제를 열지 않는다.
         firstItem().andExpect(jsonPath("$.status").value("RETURN_IN_PROGRESS"))

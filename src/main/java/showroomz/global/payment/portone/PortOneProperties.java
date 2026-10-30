@@ -39,6 +39,8 @@ public class PortOneProperties {
 
     private ChannelKeys channelKeys = new ChannelKeys();
 
+    private Identity identity = new Identity();
+
     @Getter
     @Setter
     public static class ChannelKeys {
@@ -46,5 +48,21 @@ public class PortOneProperties {
         private String kakaopay;
         private String naverpay;
         private String tosspay;
+        /** KCP 휴대폰 본인확인 채널(57 설계서 6-1) — 결제 채널과 다른 키. 결제 게이트웨이의 기동 검증은 이 값을 보지 않는다. */
+        private String identity;
+    }
+
+    /**
+     * 본인인증(57 설계서 6-1). {@code enabled=false} 면 결제가 켜져 있어도 {@code FakeIdentityGateway} 가 붙는다 — 채널 계약이 늦어도
+     * 결제는 운영 자격으로 뜨게 하기 위한 분리 스위치다.
+     */
+    @Getter
+    @Setter
+    public static class Identity {
+        private boolean enabled = true;
+        /** 시작 → 완료 상한(분). 지나면 READY · VERIFIED 행을 만료로 읽는다. */
+        private int ttlMinutes = 10;
+        /** DI 중복 가입 차단 — 확정(0-5). 장애 때만 끄는 킬 스위치이고 끄더라도 DB UNIQUE 는 남는다. */
+        private boolean duplicateBlock = true;
     }
 }

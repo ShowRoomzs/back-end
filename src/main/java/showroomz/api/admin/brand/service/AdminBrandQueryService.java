@@ -420,7 +420,7 @@ public class AdminBrandQueryService {
         return new AdminBrandDto.Sanction(s.getId(), s.getReason().name(), s.getReason().getLabel(), s.getReasonDetail(),
                 s.isPayoutHeld(), s.getSuspendedAt(), s.getSuspendedByName(), threadId,
                 showroomz.api.common.account.dto.MemberAccountStatusResponse.Term.of(s.getEndsOn(), s.getSuspendedAt(),
-                        s.getAppealDeadlineAt(), termPolicy.appealReviewBusinessDays()));
+                        s.getAppealDeadlineAt(), termPolicy));
     }
 
     /** 진행 중 칩 8종 — 1건 이상만(§52-3). */
@@ -494,6 +494,6 @@ public class AdminBrandQueryService {
     private static AdminBrandDto.Memo toMemo(BrandAdminMemo memo, Long operatorId, boolean purged, LocalDateTime now) {
         boolean editable = !purged && memo.isEditableBy(operatorId, now);
         return new AdminBrandDto.Memo(memo.getId(), memo.getAuthorName(), memo.getContent(), memo.getCreatedAt(),
-                memo.getModifiedAt(), editable);
+                memo.getModifiedAt(), editable, memo.isAuthor(operatorId));
     }
 }

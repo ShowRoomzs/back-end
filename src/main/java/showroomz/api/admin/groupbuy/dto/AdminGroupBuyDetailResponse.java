@@ -385,7 +385,13 @@ public record AdminGroupBuyDetailResponse(
                     + "UNCLOSED_ORDERS · FULFILLMENT_PENDING · FULFILLMENT_DISPUTE · CLOSURE_UNKNOWN")
             List<SettlementBlocker> blockers,
             @Schema(nullable = true) Watch watch,
-            Preview preview
+            Preview preview,
+            @Schema(description = "정산 — 정산 상세로 가는 키(58 계획 5-23). 정산이 아직 없으면 null", example = "88", nullable = true)
+            Long settlementId,
+            @Schema(description = "정산번호 — 정산이 아직 없으면 null", example = "STL-2609-006", nullable = true)
+            String settlementNumber,
+            @Schema(description = "단계 라벨 — 정산이 있으면 정산 상태(정산 확인 중 · 조정 협의 · 지급 예정 · 지급 완료 · 분배 실패), "
+                    + "없으면 「정산 대기」", example = "정산 확인 중") String stageLabel
     ) {
     }
 

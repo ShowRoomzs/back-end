@@ -117,7 +117,8 @@ public class OrderClaimRepositoryImpl implements OrderClaimRepositoryCustom {
             case COLLECTING, RESHIP -> c.stageEnteredAt.asc();
             // 도착 순 — 입고 확인을 눌러도 순서가 뒤로 밀리지 않는다. 추적이 꺼진 기간에는 도착 시각이 없어 입고 확인 시각.
             case INSPECTION -> k.arrivedAt.coalesce(c.receivedAt, c.stageEnteredAt).asc();
-            case REJECT_HOLD -> c.rejectedAt.asc();
+            // 교환 사유 번복 보류는 반려 시각이 없다 — 보류에 들어온 시각(번복 시각)으로 같이 줄 세운다(58 계획 5-6)
+            case REJECT_HOLD -> c.rejectedAt.coalesce(c.stageEnteredAt).asc();
             case DONE -> c.completedAt.coalesce(c.stageEnteredAt).desc();
         };
     }

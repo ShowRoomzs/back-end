@@ -258,7 +258,8 @@ public class AdminUserDto {
 
     public record Memo(Long memoId, String authorName, String content, LocalDateTime createdAt,
                        LocalDateTime modifiedAt,
-                       @Schema(description = "작성자 본인 ∧ 24시간 이내 ∧ 탈퇴 아님") boolean editable) {
+                       @Schema(description = "작성자 본인 ∧ 24시간 이내 ∧ 탈퇴 아님") boolean editable,
+                       @Schema(description = "내가 쓴 메모 — 작성자 = 요청 운영자(편집 가능 여부 `editable` 과 별개 · 58 계획 5-27)") boolean mine) {
     }
 
     public record MemoPage(long total, List<Memo> content) {
@@ -286,6 +287,24 @@ public class AdminUserDto {
     }
 
     public record HistoryPage(long total, int page, int size, List<HistoryItem> content) {
+    }
+
+    @Schema(description = "약관 동의 한 줄(58 계획 5-29) — 소비자 동의 대상 약관 3종")
+    public record ConsentRow(
+            @Schema(description = "TERMS_OF_SERVICE · PRIVACY_POLICY · MARKETING_CONSENT", example = "TERMS_OF_SERVICE")
+            showroomz.domain.terms.type.TermsType termsType,
+            @Schema(description = "약관 문서 이름 — 동의 시각에 시행 중이던 문서. 문서가 없으면 유형 이름", example = "이용 약관")
+            String termsName,
+            @Schema(description = "동의 시각에 시행 중이던 버전 — 동의 기록에 버전이 없어 시행일로 파생한다. 찾을 수 없으면 null",
+                    example = "v1.2", nullable = true)
+            String version,
+            @Schema(description = "현재 동의 상태 — 마케팅은 철회하면 false") boolean agreed,
+            @Schema(description = "동의(철회) 시각 — 필수 약관은 가입 시각 · 마케팅은 마지막 변경 시각. 기록이 없으면 null",
+                    nullable = true)
+            LocalDateTime agreedAt) {
+    }
+
+    public record ConsentList(List<ConsentRow> content) {
     }
 
     @Getter

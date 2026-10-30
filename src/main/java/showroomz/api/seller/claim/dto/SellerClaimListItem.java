@@ -54,8 +54,12 @@ public record SellerClaimListItem(
         @Schema(nullable = true) DeliveryCarrier reshipCarrier,
         @Schema(example = "CJ대한통운", nullable = true) String reshipCarrierLabel,
         @Schema(nullable = true) String reshipTrackingNumber,
-        @Schema(description = "재발송비(결정 14) — 반려 건은 반려 재발송 배송비, 교환은 고객 귀책 교환의 선결제분. "
-                + "청구가 없으면 null(브랜드 귀책 교환 · 반려 판정 전)", nullable = true) ReshipFee reshipFee,
+        @Schema(description = "재발송비(결정 14) — 반려 건은 반려 재발송 배송비, 교환은 사유 번복 청구(재발송 배송비 + 착불 운임)가 있으면 "
+                + "그것 · 없으면 고객 귀책 교환의 선결제분. 청구가 없으면 null(브랜드 귀책 교환 · 반려 판정 전)", nullable = true) ReshipFee reshipFee,
+        @Schema(description = "검수 판정 요약(요청 단위 · 1021 설계서 4-1) — PASSED · REASON_OVERTURNED · REJECTED · PARTIALLY_REJECTED. "
+                + "판정 전이면 null", example = "REASON_OVERTURNED", nullable = true)
+        showroomz.domain.order.type.ClaimInspectionResult inspectionResult,
+        @Schema(example = "사유 번복", nullable = true) String inspectionResultLabel,
         @Schema(description = "반려 사유", example = "개봉·사용 흔적", nullable = true) String rejectReasonLabel,
         @Schema(description = "브랜드 반려 증빙 수", example = "0") int sellerEvidenceCount,
         @Schema(nullable = true) LocalDateTime rejectedAt,

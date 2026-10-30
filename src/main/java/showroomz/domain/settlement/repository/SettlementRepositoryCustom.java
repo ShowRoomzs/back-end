@@ -26,6 +26,12 @@ public interface SettlementRepositoryCustom {
     Page<Settlement> searchForAdmin(Collection<SettlementStatus> statuses, String keyword, SettlementAdminSort sort,
                                     Pageable pageable);
 
+    /** {@link #searchForAdmin} + 브랜드(마켓) — 브랜드 상세에서 들어온 진입(58 계획 5-31). marketId 가 null 이면 전체. */
+    Page<Settlement> searchForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId,
+                                    SettlementAdminSort sort, Pageable pageable);
+
     /** 어드민 07a 합계 행 · 툴바 — {@link #searchForAdmin}과 같은 조건의 금액 합. */
     SettlementTotals totalsForAdmin(Collection<SettlementStatus> statuses, String keyword);
+
+    SettlementTotals totalsForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId);
 }

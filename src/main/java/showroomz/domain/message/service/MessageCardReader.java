@@ -124,13 +124,29 @@ public class MessageCardReader {
                 .toList();
     }
 
+    /**
+     * 카드 제목 — 동의 확인 카드는 취소 · 해지가 한 종류라 저장된 안내 종류({@code notice.kind})로 제목을 나눈다(58 계획 5-22).
+     * 이미 보낸 카드도 같은 값을 들고 있어 그대로 나뉜다.
+     */
+    static String titleOf(MessageCardType type, MessageCardPayload.Notice notice) {
+        if (type == MessageCardType.CONTRACT_CLOSE_CONSENT_REQUEST && notice != null) {
+            if ("CANCEL".equals(notice.kind())) {
+                return "계약 취소 동의 확인";
+            }
+            if ("TERMINATE".equals(notice.kind())) {
+                return "계약 해지 동의 확인";
+            }
+        }
+        return type.getTitle();
+    }
+
     private CardView toView(Message card, ContractResendRequest resend) {
         MessageCardPayload p = MessageCardPayload.parse(card.getCardPayload());
         MessageCardType type = card.getCardType();
         if (type != MessageCardType.CONTRACT_RESEND_REQUEST) {
             // 결과 카드는 종결이다 — 조치가 남지 않는다.
             // 동의 확인 · 사전 통지 카드는 요청자 · 요청 시각을 함께 보인다(1021 설계서 1-6 · 2-3).
-            return new CardView(type, type.getTitle(),
+            return new CardView(type, titleOf(type, p.notice()),
                     type == MessageCardType.CONTRACT_CLOSE_CONSENT_REQUEST
                             || type == MessageCardType.GROUP_BUY_SUSPENSION_NOTICE
                             ? MessageCardTone.WARNING : MessageCardTone.NEUTRAL,

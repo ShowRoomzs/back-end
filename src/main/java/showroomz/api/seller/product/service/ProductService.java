@@ -32,8 +32,8 @@ import showroomz.domain.product.type.ProductListSortType;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -226,7 +226,7 @@ public class ProductService {
      * XXX는 해당 일자의 순차 번호 (001, 002, ...)
      */
     private String generateProductNumber() {
-        String datePrefix = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String datePrefix = KstDates.today().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         String prefix = "SRZ-" + datePrefix + "-";
         
         // 해당 일자의 마지막 상품 번호 찾기

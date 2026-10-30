@@ -39,6 +39,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -159,7 +160,7 @@ public class AdminGroupBuyQueryService {
     private static AdminGroupBuySummaryResponse.NearestDeadline deadline(AdminGroupBuyQueue queue, DeadlineRow row,
                                                                          LocalDateTime dueAt, LocalDateTime now) {
         return new AdminGroupBuySummaryResponse.NearestDeadline(queue, row.groupBuyId(), row.title(), dueAt,
-                ChronoUnit.DAYS.between(now.toLocalDate(), dueAt.toLocalDate()));
+                ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(dueAt)));
     }
 
     /** 조치와 다른 축 — 기한을 넘겨도 조치 큐에 넣지 않는다. 중단 공구의 정산 지연은 세지 않는다(13-2 #12). */
@@ -169,7 +170,7 @@ public class AdminGroupBuyQueryService {
         DeadlineRow earliest = groupBuyRepository.findEarliestEnded();
         AdminGroupBuySummaryResponse.Nearest nearest = earliest == null ? null
                 : new AdminGroupBuySummaryResponse.Nearest(earliest.groupBuyId(), earliest.title(),
-                        earliest.at().toLocalDate().plusDays(watchDays),
+                        KstDates.toKstDate(earliest.at()).plusDays(watchDays),
                         !now.isBefore(earliest.at().plusDays(watchDays)));
         return new AdminGroupBuySummaryResponse.SettlementWatch(watching, overdue, nearest);
     }
@@ -252,10 +253,10 @@ public class AdminGroupBuyQueryService {
         GroupBuy groupBuy = access.read(groupBuyId);
         GroupBuyFacts facts = factsLoader.load(groupBuy);
         LocalDateTime now = LocalDateTime.now();
-        LocalDateTime minAppeal = schedule.minAppealDeadline(now.toLocalDate());
+        LocalDateTime minAppeal = schedule.minAppealDeadline(KstDates.today(now));
         AdminGroupBuyDetailResponse.NoticeUnavailableReason reason = permissionPolicy.noticeUnavailableReason(facts, now);
         return new AdminGroupBuyDto.NoticeOptionsResponse(
-                now.toLocalDate(),
+                KstDates.today(now),
                 new AdminGroupBuyDto.AppealDeadline(minAppeal, minAppeal),
                 schedule.executionDates(groupBuy, now),
                 groupBuy.getEndAt(),

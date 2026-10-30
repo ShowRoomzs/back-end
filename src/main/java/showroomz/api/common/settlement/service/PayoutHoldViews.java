@@ -15,6 +15,7 @@ import showroomz.domain.settlement.type.TaxDocumentStatus;
 import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -72,7 +73,7 @@ public class PayoutHoldViews {
             return documentRepository.findBySettlementIdAndTypeAndClawbackIdIsNull(settlement.getId(),
                             TaxDocumentType.CREATOR_TAX_INVOICE)
                     .filter(d -> d.getStatus() == TaxDocumentStatus.VERIFIED && d.getVerifiedAt() != null)
-                    .map(d -> businessCalendar.addBusinessDays(d.getVerifiedAt().toLocalDate(),
+                    .map(d -> businessCalendar.addBusinessDays(KstDates.toKstDate(d.getVerifiedAt()),
                             properties.getPayoutBusinessDays()))
                     .orElse(null);
         }

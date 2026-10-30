@@ -66,11 +66,22 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
     @Override
     public Page<Settlement> searchForAdmin(Collection<SettlementStatus> statuses, String keyword,
                                            SettlementAdminSort sort, Pageable pageable) {
-        return page(adminWhere(statuses, keyword), adminOrder(sort), pageable);
+        return searchForAdmin(statuses, keyword, null, sort, pageable);
+    }
+
+    @Override
+    public Page<Settlement> searchForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId,
+                                           SettlementAdminSort sort, Pageable pageable) {
+        return page(adminWhere(statuses, keyword, marketId), adminOrder(sort), pageable);
     }
 
     @Override
     public SettlementTotals totalsForAdmin(Collection<SettlementStatus> statuses, String keyword) {
+        return totalsForAdmin(statuses, keyword, null);
+    }
+
+    @Override
+    public SettlementTotals totalsForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId) {
         Tuple row = queryFactory.select(settlement.count(),
                         settlement.confirmedSalesAmount.sum().coalesce(0L),
                         settlement.brandPayoutAmount.sum().coalesce(0L),
@@ -84,7 +95,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
                 .join(settlement.contract, contract)
                 .join(settlement.market, market)
                 .join(settlement.creator, creator)
-                .where(adminWhere(statuses, keyword))
+                .where(adminWhere(statuses, keyword, marketId))
                 .fetchOne();
         if (row == null) {
             return SettlementTotals.EMPTY;
@@ -95,8 +106,11 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
                 longOf(row.get(8, Long.class)));
     }
 
-    private static BooleanBuilder adminWhere(Collection<SettlementStatus> statuses, String keyword) {
+    private static BooleanBuilder adminWhere(Collection<SettlementStatus> statuses, String keyword, Long marketId) {
         BooleanBuilder where = new BooleanBuilder(settlement.status.in(statuses));
+        if (marketId != null) {
+            where.and(settlement.market.id.eq(marketId));
+        }
         if (keyword == null || keyword.isBlank()) {
             return where;
         }

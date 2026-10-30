@@ -41,6 +41,7 @@ public class UserAdminController implements UserAdminControllerDocs {
     private final AdminUserCommandService commandService;
     private final AdminUserMemoService memoService;
     private final AdminUserPrivacyService privacyService;
+    private final showroomz.api.admin.user.service.AdminUserConsentReader consentReader;
 
     @Override
     @GetMapping
@@ -115,6 +116,12 @@ public class UserAdminController implements UserAdminControllerDocs {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size) {
         return ResponseEntity.ok(adminUserService.getHistories(userId, page, size));
+    }
+
+    @Override
+    @GetMapping("/{userId}/consents")
+    public ResponseEntity<AdminUserDto.ConsentList> getConsents(@PathVariable("userId") Long userId) {
+        return ResponseEntity.ok(consentReader.read(userId));
     }
 
     @Override

@@ -226,6 +226,7 @@ public class AdminOperationsQueryRepository {
         for (String[] source : PROCESSED_SOURCES) {
             times.addAll(em.createQuery("SELECT " + source[1] + " FROM " + source[0] + " x WHERE " + where(source),
                             LocalDateTime.class)
+                    .setHint(MetricsQueryRepository.QUERY_TIMEOUT_HINT, MetricsQueryRepository.QUERY_TIMEOUT_MILLIS)
                     .setParameter("from", from).setParameter("to", to).getResultList());
         }
         return times;

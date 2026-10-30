@@ -25,6 +25,7 @@ import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -263,7 +264,7 @@ public class SettlementAdjustmentService {
         cards.deadlineNotice(adjustment, s);
         settlementPort.recordEvent(adjustment.getSettlementId(), SettlementEventType.ADJUSTMENT_DEADLINE_NOTICED, null,
                 null, "합의 기한 %s · 합의가 없으면 원래 금액으로 확정".formatted(
-                        adjustment.getDeadlineAt().toLocalDate()));
+                        KstDates.toKstDate(adjustment.getDeadlineAt())));
         Long settlementId = adjustment.getSettlementId();
         AfterCommit.run(() -> notifier.adjustmentDeadlineD1(settlementId));
         return true;
@@ -292,18 +293,18 @@ public class SettlementAdjustmentService {
     /** 협의 기한 — 개설 + N영업일(기산일 불산입 · 다음 영업일부터) + 마감 시각 · 연장 없음(1-6). */
     public LocalDateTime deadlineOf(LocalDateTime openedAt) {
         SettlementProperties.Adjustment config = properties.getAdjustment();
-        return calendar.addBusinessDays(openedAt.toLocalDate(), config.getDeadlineBusinessDays())
-                .atTime(config.getDeadlineTime());
+        return KstDates.at(calendar.addBusinessDays(KstDates.toKstDate(openedAt), config.getDeadlineBusinessDays()),
+                config.getDeadlineTime());
     }
 
     /** D-1 통지 예정 — 마감일의 N영업일 전 + 통지 시각(1-6). */
     public LocalDateTime noticeDueOf(LocalDateTime deadlineAt) {
         SettlementProperties.Adjustment config = properties.getAdjustment();
-        LocalDate date = deadlineAt.toLocalDate();
+        LocalDate date = KstDates.toKstDate(deadlineAt);
         for (int i = 0; i < config.getNoticeBusinessDaysBefore(); i++) {
             date = calendar.previousBusinessDay(date);
         }
-        return date.atTime(config.getNoticeTime());
+        return KstDates.at(date, config.getNoticeTime());
     }
 
     private SettlementAdjustment lockForParty(Long adjustmentId, SettlementParty party, Long partyId) {

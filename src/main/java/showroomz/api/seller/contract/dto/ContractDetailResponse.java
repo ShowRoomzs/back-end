@@ -123,8 +123,8 @@ public record ContractDetailResponse(
 
     @Schema(description = "공구 기간")
     public record Period(
-            @Schema(description = "공구 시작 일시(Asia/Seoul)", example = "2026-09-01T10:00:00", nullable = true) LocalDateTime startAt,
-            @Schema(description = "공구 종료 일시(Asia/Seoul)", example = "2026-09-17T23:59:00", nullable = true) LocalDateTime endAt,
+            @Schema(description = "공구 시작 일시(UTC)", example = "2026-09-01T01:00:00Z", nullable = true) LocalDateTime startAt,
+            @Schema(description = "공구 종료 일시(UTC)", example = "2026-09-17T14:59:00Z", nullable = true) LocalDateTime endAt,
             @Schema(description = "일수 — 시작·종료 일자 양끝 포함", example = "17", nullable = true) Integer days
     ) {
     }
@@ -279,7 +279,12 @@ public record ContractDetailResponse(
             @Schema(description = "이 조건으로 새 계약 작성 가능") boolean canDuplicate,
             @Schema(description = "[해지 요청](B5 · 1021 기-05) — 성립 뒤 · 공구 오픈 전 ∧ 처리 대기 요청 없음") boolean canRequestTermination,
             @Schema(description = "해지 요청 철회 — 처리 대기 요청이 있을 때") boolean canWithdrawTermination,
-            @Schema(description = "초안 승인 기록 추가(1021 기-30) — 계약 성립 이후") boolean canRecordDraftApproval
+            @Schema(description = "초안 승인 기록 추가(1021 기-30) — 계약 성립 이후") boolean canRecordDraftApproval,
+            @Schema(description = "계정 이용 정지로 막힌 버튼의 안내 — 정지 중이면 `canEdit` · `canRequestReview` · `canRequestResend` · "
+                    + "`canDuplicate` 가 false 이고 이 문구를 함께 보인다(58 계획 3-2). 정지가 아니면 null",
+                    example = "계정 이용 정지 중에는 계약 수정 · 검토 요청 · 서명 안내 재발송 · 새 계약 작성을 할 수 없습니다. 운영팀 소통 스레드로 문의해 주세요.",
+                    nullable = true)
+            String suspensionBlockedMessage
     ) {
     }
 

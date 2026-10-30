@@ -21,6 +21,7 @@ import showroomz.domain.order.type.UserOrderAction;
 import showroomz.domain.order.type.UserOrderItemStatus;
 import showroomz.domain.order.type.UserOrderTone;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.utils.KstDates;
 
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -124,7 +125,7 @@ public class UserOrderItemAssembler {
 
         public static Context of(Collection<OrderCancelRequest> requests, Set<Long> refundPendingGroupIds,
                                  Set<Long> cancellableOrderIds) {
-            return of(requests, refundPendingGroupIds, cancellableOrderIds, LocalDate.now());
+            return of(requests, refundPendingGroupIds, cancellableOrderIds, KstDates.today());
         }
 
         /** {@code requests}는 PENDING · REJECTED 요청(항목 포함) — 다른 상태는 무시한다. */
@@ -174,6 +175,7 @@ public class UserOrderItemAssembler {
 
         return UserOrderDto.ItemRow.builder()
                 .orderProductId(product.getId())
+                .deliveryGroupId(group != null ? group.getId() : null)
                 .productId(product.getVariant() != null && product.getVariant().getProduct() != null
                         ? product.getVariant().getProduct().getProductId() : null)
                 .variantId(product.getVariantId())

@@ -4,9 +4,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import showroomz.domain.order.type.StoragePhase;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 /**
  * 거절 보류 상품의 보관 기한(35 설계서 1-9) — <b>저장하지 않는 계산값</b>이다. 고지가 N회(2) 이상 쌓였을 때
@@ -25,7 +25,7 @@ public class ClaimStoragePolicy {
         if (lastNoticeAt == null || noticeCount < claim.getStorageRequiredNotices()) {
             return null;
         }
-        return lastNoticeAt.toLocalDate().plusMonths(claim.getStorageMonths()).atTime(LocalTime.of(23, 59, 59));
+        return KstDates.endOfDay(KstDates.toKstDate(lastNoticeAt).plusMonths(claim.getStorageMonths()));
     }
 
     public StoragePhase phase(int noticeCount, LocalDateTime lastNoticeAt, LocalDateTime now) {

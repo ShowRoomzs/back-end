@@ -319,7 +319,8 @@ class AdminClaimDetailIntegrationTest extends ClaimTestSupport {
         long claimId = json(adminPost("/v1/admin/orders/groups/" + group.getId() + "/defect-claims", Map.of(
                 "items", List.of(Map.of("orderProductId", items(group).get(0).getId(), "quantity", 1)),
                 "reasonCode", "DAMAGED_OR_DEFECTIVE", "detail", "1:1 문의 — 구매확정 후 용기 파손 발견",
-                "evidenceImageUrls", List.of("https://img.test/d.jpg"))).andExpect(status().isOk()))
+                "evidenceImageUrls", List.of("https://img.test/d.jpg"), "defectNoticedOn", java.time.LocalDate.now().toString()))
+                .andExpect(status().isOk()))
                 .get("claimIds").get(0).asLong();
 
         JsonNode detail = json(adminGet(ADMIN_CLAIMS + "/" + claimId).andExpect(status().isOk()));

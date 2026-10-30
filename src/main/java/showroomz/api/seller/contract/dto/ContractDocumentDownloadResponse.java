@@ -21,6 +21,6 @@ public record ContractDocumentDownloadResponse(
 
         @Schema(description = "MIME 형식", example = "application/pdf", nullable = true) String contentType,
 
-        @Schema(description = "문서 등록 시각(Asia/Seoul)", example = "2026-08-20T15:00:00") LocalDateTime uploadedAt
+        @Schema(description = "문서 등록 시각(UTC)", example = "2026-08-20T06:00:00Z") LocalDateTime uploadedAt
 ) {
 }

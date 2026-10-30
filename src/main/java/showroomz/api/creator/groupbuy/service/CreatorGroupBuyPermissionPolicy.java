@@ -19,16 +19,24 @@ import java.time.LocalDateTime;
 @Component
 public class CreatorGroupBuyPermissionPolicy {
 
+    /** 연장 수락이 정지로 막혔을 때 — 스튜디오 홈 할 일 카드({@code CreatorHomeTodoBuilder})와 같은 문구. */
+    static final String EXTENSION_ACCEPT_BLOCKED = "연장 수락은 정지 해제 후 할 수 있어요";
+
     public CreatorGroupBuyDetailResponse.Permissions evaluate(GroupBuyFacts facts, boolean hasPairThread,
                                                               LocalDateTime now) {
+        boolean respondable = canRespondExtension(facts, now);
+        // 정지 중 연장 수락은 정지 가드가 막는다 — 거절은 허용이라 응답 판정은 그대로 두고 수락만 끈다(58 계획 3-2).
+        boolean suspended = facts.groupBuy().getCreator() != null && facts.groupBuy().getCreator().isSuspended();
         return new CreatorGroupBuyDetailResponse.Permissions(
                 canWritePost(facts),
                 canEditPost(facts),
-                canRespondExtension(facts, now),
+                respondable,
                 canRequestSuspension(facts),
                 canCheckFulfillment(facts),
                 hasPairThread,
-                canEditPost(facts) && !GroupBuyPostPolicy.isTitleLocked(facts.post(), facts.groupBuy()));
+                canEditPost(facts) && !GroupBuyPostPolicy.isTitleLocked(facts.post(), facts.groupBuy()),
+                respondable && !suspended,
+                respondable && suspended ? EXTENSION_ACCEPT_BLOCKED : null);
     }
 
     /** 임시저장과 제출이 같은 조건 — PREPARING ∧ 게시물 없음·작성중·반려. 승인대기는 취소·재제출도 불가(B2). */

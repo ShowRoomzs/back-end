@@ -16,6 +16,7 @@ import showroomz.domain.groupbuy.repository.GroupBuyExtensionRequestRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyPostRepository;
 import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -51,8 +52,8 @@ public class CreatorHomeCalendarService {
         YearMonth yearMonth = HomeCalendarRules.parseMonth(month);
         LocalDate from = yearMonth.atDay(1).minusDays(HomeCalendarRules.PAD_DAYS);
         LocalDate to = yearMonth.atEndOfMonth().plusDays(HomeCalendarRules.PAD_DAYS);
-        LocalDateTime fromAt = from.atStartOfDay();
-        LocalDateTime toAt = to.plusDays(1).atStartOfDay();
+        LocalDateTime fromAt = KstDates.startOfDay(from);
+        LocalDateTime toAt = KstDates.startOfDay(to.plusDays(1));
 
         List<CreatorHomeDto.CalendarGroupBuy> bars = groupBuyRepository
                 .findOverlappingForCreator(creatorId, fromAt, toAt).stream()
@@ -79,12 +80,12 @@ public class CreatorHomeCalendarService {
             CreatorHomeDto.Target target = new CreatorHomeDto.Target("GROUP_BUY", groupBuy.getId());
             GroupBuyPostStatus postStatus = GroupBuyPostStatus.of(posts.get(groupBuy.getId()), groupBuy);
             if (groupBuy.getStartAt().isAfter(now)) {
-                events.add(new CreatorHomeDto.Upcoming(groupBuy.getStartAt().toLocalDate(), "공구 오픈 · " + name,
+                events.add(new CreatorHomeDto.Upcoming(KstDates.toKstDate(groupBuy.getStartAt()), "공구 오픈 · " + name,
                         "오픈되면 게시물이 공개되고 판매가 시작돼요", target, GROUP_BUY_OPEN, groupBuy.getStatus(),
                         postStatus));
             }
             if (groupBuy.getEndAt().isAfter(now)) {
-                events.add(new CreatorHomeDto.Upcoming(groupBuy.getEndAt().toLocalDate(), "공구 종료 · " + name,
+                events.add(new CreatorHomeDto.Upcoming(KstDates.toKstDate(groupBuy.getEndAt()), "공구 종료 · " + name,
                         "종료 후 주문이 모두 끝나면 정산이 생성돼요", target, GROUP_BUY_END, groupBuy.getStatus(),
                         postStatus));
             }
@@ -101,14 +102,14 @@ public class CreatorHomeCalendarService {
             LocalDateTime due = contract.getSignatureDeadlineAt();
             // 체결 보류 중이면 기한이 멈춰 있다 — 달력에 찍지 않는다.
             if (due != null && !contract.isHeldBySanction() && !due.isBefore(fromAt) && due.isBefore(toAt)) {
-                deadlines.add(new CreatorHomeDto.Deadline(due.toLocalDate(), SIGN_DUE, "서명 기한 · " + contract.getTitle(),
+                deadlines.add(new CreatorHomeDto.Deadline(KstDates.toKstDate(due), SIGN_DUE, "서명 기한 · " + contract.getTitle(),
                         "CONTRACT", contract.getId()));
             }
         }
         for (GroupBuyExtensionRequest request : extensionRequestRepository.findPendingForCreator(creatorId, fromAt)) {
             GroupBuy groupBuy = request.getGroupBuy();
             if (groupBuy.getEndAt().isBefore(toAt)) {
-                deadlines.add(new CreatorHomeDto.Deadline(groupBuy.getEndAt().toLocalDate(), EXTENSION_RESPOND_DUE,
+                deadlines.add(new CreatorHomeDto.Deadline(KstDates.toKstDate(groupBuy.getEndAt()), EXTENSION_RESPOND_DUE,
                         "연장 응답 · " + groupBuy.getContract().getTitle(), "GROUP_BUY", groupBuy.getId()));
             }
         }

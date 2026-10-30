@@ -18,6 +18,7 @@ import showroomz.domain.order.type.ClaimType;
 import showroomz.domain.order.type.OrderBadgeTone;
 import showroomz.domain.order.type.OrderProductStatus;
 import showroomz.global.config.properties.OrderProperties;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -86,7 +87,7 @@ public class SellerClaimAssembler {
                 OrderBadgeTone.NEUTRAL,
                 claim.getRequestedAt(),
                 claim.getStageEnteredAt(),
-                (int) Math.max(0, ChronoUnit.DAYS.between(claim.getStageEnteredAt().toLocalDate(), now.toLocalDate())),
+                (int) Math.max(0, ChronoUnit.DAYS.between(KstDates.toKstDate(claim.getStageEnteredAt()), KstDates.today(now))),
                 isOverdue(claim, now),
                 new SellerClaimListItem.Collection(
                         collection.getId(),
@@ -106,6 +107,8 @@ public class SellerClaimAssembler {
                 claim.getReshipCarrier() == null ? null : claim.getReshipCarrier().getLabel(),
                 claim.getReshipTrackingNumber(),
                 reshipFee(claim, charges),
+                collection.getInspectionResult(),
+                collection.getInspectionResult() == null ? null : collection.getInspectionResult().getLabel(),
                 claim.getRejectReasonCode() == null ? null : claim.getRejectReasonCode().getLabel(),
                 sellerPhotos,
                 claim.getRejectedAt(),
@@ -145,13 +148,18 @@ public class SellerClaimAssembler {
     }
 
     /**
-     * 재발송비(결정 14) — 반려 건은 반려 재발송 배송비({@code REJECT_RESHIP}), 반려되지 않은 교환은 요청 때 낸 선결제분
-     * ({@code EXCHANGE_RESHIP}). 같은 종류가 여럿이면 마지막 청구가 지금 값이다. 청구가 없으면 null.
+     * 재발송비(결정 14) — 반려 건은 반려 재발송 배송비({@code REJECT_RESHIP}), 반려되지 않은 교환은 사유 번복 청구
+     * ({@code OVERTURN_RESHIP} · 재발송 배송비 + 착불 운임)가 있으면 그것, 없으면 요청 때 낸 선결제분({@code EXCHANGE_RESHIP}) —
+     * 번복 청구를 빼면 목록에서 그 재발송비가 보이지 않았다(58 계획 3-3). 같은 종류가 여럿이면 마지막 청구가 지금 값이다. 청구가 없으면 null.
      */
     static SellerClaimListItem.ReshipFee reshipFee(OrderClaim claim, List<OrderClaimCharge> charges) {
-        ClaimChargeType wanted = claim.getRejectedAt() != null ? ClaimChargeType.REJECT_RESHIP
-                : claim.getType() == ClaimType.EXCHANGE ? ClaimChargeType.EXCHANGE_RESHIP : null;
-        if (wanted == null) {
+        ClaimChargeType wanted;
+        if (claim.getRejectedAt() != null) {
+            wanted = ClaimChargeType.REJECT_RESHIP;
+        } else if (claim.getType() == ClaimType.EXCHANGE) {
+            wanted = charges.stream().anyMatch(charge -> charge.getType() == ClaimChargeType.OVERTURN_RESHIP)
+                    ? ClaimChargeType.OVERTURN_RESHIP : ClaimChargeType.EXCHANGE_RESHIP;
+        } else {
             return null;
         }
         return charges.stream()

@@ -46,8 +46,11 @@ public class SecurityConfig {
             "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/api-docs/**", // Swagger
 
             //auth 관련
-            "/v1/user/auth/social/login", 
-            "/v1/user/auth/social/signup", 
+            "/v1/user/auth/social/login",
+            "/v1/user/auth/social/signup",
+            // 본인인증 시작 · 완료(57 설계서 6-2) — 가입 중(GUEST) 은 role 없는 registerToken 이라 필터가 인증을 채우지 않는다.
+            // 컨트롤러가 register() 와 같은 식으로 토큰을 직접 검증한다. 토큰 없으면 401.
+            "/v1/user/identity-verifications", "/v1/user/identity-verifications/*/complete",
             "/v1/user/auth/refresh",
             "/v1/user/auth/local/signup", "/v1/user/auth/local/login",
             "/v1/creator/auth/social/login",

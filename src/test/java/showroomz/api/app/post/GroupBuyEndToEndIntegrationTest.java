@@ -252,8 +252,8 @@ class GroupBuyEndToEndIntegrationTest extends GroupBuyPostTestSupport {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.extension.status").value("ACCEPTED"));
         JsonNode after = consumerPostJson(postId);
         assertThat(after.at("/groupBuy/dDay").asInt()).isEqualTo(dDay + 3);
-        assertThat(LocalDateTime.parse(after.at("/groupBuy/endAt").asText()))
-                .isEqualTo(LocalDateTime.parse(before.at("/groupBuy/endAt").asText()).plusDays(3));
+        assertThat(LocalDateTime.parse(after.at("/groupBuy/endAt").asText().replace("Z", "")))
+                .isEqualTo(LocalDateTime.parse(before.at("/groupBuy/endAt").asText().replace("Z", "")).plusDays(3));
 
         setStock(cream, 0);
         consumerPost(postId).andExpect(jsonPath("$.groupBuy.saleState").value("SOLD_OUT"))

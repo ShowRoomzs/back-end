@@ -141,8 +141,10 @@ public class MailService {
      * 문안은 {@code CreatorRejectionNotice} 가 만든다(어드민 미리보기와 같은 문안).
      */
     @Async
-    public void sendCreatorRejectionNotice(String to, String subject, String htmlBody) {
+    public java.util.concurrent.CompletableFuture<Void> sendCreatorRejectionNotice(String to, String subject, String htmlBody) {
+        // 결과를 돌려준다 — 실패하면 미래가 예외로 끝나고, 호출 쪽이 반려 상세의 noticeSent 로 기록한다(58 계획 5-24)
         sendEmail(to, subject, htmlBody);
+        return java.util.concurrent.CompletableFuture.completedFuture(null);
     }
 
     /** @deprecated 상세 사유를 신청자에게 보낸다 — 1021 기-36 으로 {@link #sendCreatorRejectionNotice} 로 대체. */

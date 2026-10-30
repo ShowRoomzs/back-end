@@ -21,6 +21,13 @@ public interface UserRepository extends JpaRepository<Users, Long>, JpaSpecifica
     @Query("SELECT u FROM Users u WHERE u.id = :userId")
     Optional<Users> findForUpdate(@Param("userId") Long userId);
 
+    /** DI 중복 가입 차단(57 설계서 0-5) — 활성 회원만. GUEST 는 해시가 없고 탈퇴는 파기돼 조건이 사실상 UNIQUE 와 겹친다. */
+    @org.springframework.data.jpa.repository.Query("""
+            SELECT u FROM Users u
+            WHERE u.identityDiHash = :diHash AND u.roleType <> 'GUEST' AND u.status <> 'WITHDRAWN'
+            """)
+    Optional<Users> findActiveByIdentityDiHash(@Param("diHash") String diHash);
+
     Boolean existsByUsername(String username);
     Boolean existsByNickname(String nickname);
     Boolean existsByEmail(String email);

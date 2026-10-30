@@ -28,6 +28,7 @@ import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 
@@ -110,7 +111,7 @@ public class CreatorSanctionService {
     /** 정지 기간 종료 자동 해제(1021 기-02) — 시스템. 기간이 없거나 남았거나 이미 풀렸으면 null. */
     public CreatorSanction releaseByTerm(Long creatorId, LocalDateTime now) {
         CreatorSanction open = sanctions.findByCreatorIdAndReleasedAtIsNull(creatorId).orElse(null);
-        if (open == null || !open.isTermEnded(now.toLocalDate())) {
+        if (open == null || !open.isTermEnded(KstDates.today(now))) {
             return null;
         }
         CreatorSanction released = releaseInternal(creatorId, SanctionReleaseReason.TERM_ENDED, null, null, null, now);
@@ -139,7 +140,7 @@ public class CreatorSanctionService {
             sanction.release(resolved, normalizedNote, operatorId, operatorName, now);
             if (sanction.isPayoutHeld()) {
                 payoutHolds.release(SettlementPayee.CREATOR, creatorId, PayoutBlockReason.CREATOR_SUSPENDED,
-                        PayoutHoldTransitions.DueRule.NEXT_BUSINESS_DAY, now.toLocalDate(), now);
+                        PayoutHoldTransitions.DueRule.NEXT_BUSINESS_DAY, KstDates.today(now), now);
             }
             MessageThread channel = operatorChannels.requireCreatorChannel(creator);
             sanction.recordReleaseCard(sanctionCards.postReleasedCard(channel, SanctionKind.CREATOR, sanction.getId(),

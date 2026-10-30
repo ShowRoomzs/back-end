@@ -12,6 +12,7 @@ import showroomz.domain.contract.repository.ContractRepository;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.repository.GroupBuyRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -46,8 +47,8 @@ public class SellerHomeCalendarService {
         YearMonth yearMonth = HomeCalendarRules.parseMonth(month);
         LocalDate from = yearMonth.atDay(1).minusDays(HomeCalendarRules.PAD_DAYS);
         LocalDate to = yearMonth.atEndOfMonth().plusDays(HomeCalendarRules.PAD_DAYS);
-        LocalDateTime fromAt = from.atStartOfDay();
-        LocalDateTime toAt = to.plusDays(1).atStartOfDay();
+        LocalDateTime fromAt = KstDates.startOfDay(from);
+        LocalDateTime toAt = KstDates.startOfDay(to.plusDays(1));
 
         List<GroupBuy> groupBuys = groupBuyRepository.findOverlappingForMarket(marketId, fromAt, toAt);
         List<SellerHomeDto.CalendarGroupBuy> bars = groupBuys.stream()
@@ -58,7 +59,7 @@ public class SellerHomeCalendarService {
 
         List<SellerHomeDto.Deadline> deadlines = new ArrayList<>(shipDeadlines(marketId, fromAt, toAt, groupBuys));
         for (Contract contract : contractRepository.findSignatureDeadlinesForMarket(marketId, fromAt, toAt)) {
-            deadlines.add(new SellerHomeDto.Deadline(contract.getSignatureDeadlineAt().toLocalDate(), SIGN_DUE,
+            deadlines.add(new SellerHomeDto.Deadline(KstDates.toKstDate(contract.getSignatureDeadlineAt()), SIGN_DUE,
                     "서명 기한 · " + contract.getTitle(), "CONTRACT", contract.getId()));
         }
         deadlines.sort(Comparator.comparing(SellerHomeDto.Deadline::date)
@@ -74,7 +75,7 @@ public class SellerHomeCalendarService {
         Map<Long, Set<LocalDate>> datesByGroupBuy = new LinkedHashMap<>();
         for (Object[] row : deliveryGroupRepository.findShipDueForMarket(marketId, fromAt, toAt)) {
             datesByGroupBuy.computeIfAbsent((Long) row[0], id -> new TreeSet<>())
-                    .add(((LocalDateTime) row[1]).toLocalDate());
+                    .add(KstDates.toKstDate(((LocalDateTime) row[1])));
         }
         if (datesByGroupBuy.isEmpty()) {
             return List.of();

@@ -17,6 +17,7 @@ import showroomz.domain.settlement.type.TaxDocumentStatus;
 import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -83,7 +84,7 @@ public class CreatorSettlementDocumentService {
                     .setScale(0, RoundingMode.DOWN).longValue();
             long localTax = s.getWithholdingAmount() - incomeTax;
             List<Object> line = new ArrayList<>(List.of(s.getSettlementNumber(), s.getContract().getTitle(),
-                    s.getMarket().getMarketName(), paidAt.toLocalDate().toString(), s.getRewardAmount(),
+                    s.getMarket().getMarketName(), KstDates.toKstDate(paidAt).toString(), s.getRewardAmount(),
                     s.getRewardClawbackAmount()));
             if (business) {
                 line.add(s.getCreatorVatAmount());

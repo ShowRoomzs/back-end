@@ -72,11 +72,11 @@ public class AdminPostReportDto {
         private Long pendingCountOnPost;
 
         @Schema(description = "접수 시각", example = "2026-08-17T12:34:56")
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime reportedAt;
 
         @Schema(description = "처리 시각 — 미처리면 null", nullable = true)
-        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
+        @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss'Z'")
         private LocalDateTime handledAt;
 
         @Schema(description = "처리자(운영자) ID — 미처리면 null", nullable = true)

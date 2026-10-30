@@ -18,7 +18,7 @@ public class AdminTermsPageResponse {
     @Schema(description = "페이징 정보 (totalResults = 툴바의 '총 N건')")
     private PaginationInfo pageInfo;
 
-    @Schema(description = "유형 탭 건수 (전체 + 3종, 검색어 적용 기준)")
+    @Schema(description = "유형 탭 건수 (전체 + 4종, 검색어 적용 기준)")
     private List<AdminTermsTypeCount> typeCounts;
 
     @Schema(description = "툴바의 '시행 예정 N건' (현재 탭·검색어 기준)", example = "1")

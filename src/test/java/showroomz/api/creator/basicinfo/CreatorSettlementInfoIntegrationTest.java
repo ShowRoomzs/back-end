@@ -122,7 +122,7 @@ class CreatorSettlementInfoIntegrationTest extends SettlementTestSupport {
 
         verification("VERIFIED", null, LocalDateTime.of(2026, 7, 2, 10, 15, 30));
         creatorGet(SETTLEMENT)
-                .andExpect(jsonPath("$.account.verification.label").value("확인 완료"))
+                .andExpect(jsonPath("$.account.verification.label").value("운영자 확인 완료"))
                 .andExpect(jsonPath("$.account.verification.tone").value("SUCCESS"))
                 .andExpect(jsonPath("$.account.verification.verifiedAt").value("2026-07-02T10:15:30Z"));
 

@@ -25,6 +25,7 @@ import showroomz.domain.showroom.repository.ShowroomVisitRepository;
 import showroomz.domain.showroom.type.ShowroomVisitSource;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -164,7 +165,7 @@ public class ShowroomStatsService {
 
         Map<String, Long> ageGroups = newCountMap("18–24세", "25–34세", "35–44세", "45세 이상", UNKNOWN_LABEL);
         Map<String, Long> genders = newCountMap("여성", "남성", UNKNOWN_LABEL);
-        LocalDate today = LocalDate.now();
+        LocalDate today = KstDates.today();
 
         for (Object[] row : demographics) {
             String gender = (String) row[0];

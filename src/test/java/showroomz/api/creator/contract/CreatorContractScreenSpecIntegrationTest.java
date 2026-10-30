@@ -84,8 +84,8 @@ class CreatorContractScreenSpecIntegrationTest extends CreatorContractTestSuppor
                         "□□ 뷰티랩", "□□ 뷰티랩", "○○ 브랜드", "△△ 코스메틱")))
                 .andExpect(jsonPath("$.content[*].itemCount").value(contains(2, 1, 2, 1, 1, 1, 1, 1)))
                 .andExpect(jsonPath("$.content[*].statusLabel").value(contains(
-                        "서명 진행중", "서명 진행중", "공구 생성 대기", "체결완료",
-                        "체결완료", "거절", "만료", "취소")))
+                        "서명 진행중", "서명 진행중", "공구 생성 대기", "계약 성립",
+                        "계약 성립", "거절", "만료", "취소")))
                 // 상태 색은 파트너센터와 같다(원칙②③) — 서명 진행중을 「내 몫」이라고 경고색으로 바꾸지 않는다.
                 .andExpect(jsonPath("$.content[*].statusTone").value(contains(
                         "INFO", "INFO", "INFO", "SUCCESS", "SUCCESS", "DANGER", "NEUTRAL", "NEUTRAL")))
@@ -469,7 +469,7 @@ class CreatorContractScreenSpecIntegrationTest extends CreatorContractTestSuppor
 
         detail(contractId)
                 .andExpect(jsonPath("$.status").value("CONCLUDED"))
-                .andExpect(jsonPath("$.statusLabel").value("체결완료"))
+                .andExpect(jsonPath("$.statusLabel").value("계약 성립"))
                 .andExpect(jsonPath("$.statusTone").value("SUCCESS"))
                 // 헤더 「… 체결」 · 스텝퍼 4단 완료
                 .andExpect(jsonPath("$.stepper.concludedAt").value(iso(concludedAt)))

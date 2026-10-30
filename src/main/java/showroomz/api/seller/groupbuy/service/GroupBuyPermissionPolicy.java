@@ -11,6 +11,8 @@ import showroomz.domain.groupbuy.service.GroupBuyFacts;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
 import showroomz.domain.groupbuy.type.GroupBuyActorType;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
+import showroomz.domain.market.entity.Market;
+import showroomz.domain.member.brand.type.BrandBlockedAction;
 import showroomz.global.config.properties.GroupBuyProperties;
 
 import java.time.LocalDateTime;
@@ -29,17 +31,24 @@ public class GroupBuyPermissionPolicy {
     private final GroupBuyProperties properties;
     private final ContractTerminationRequestRepository terminationRequestRepository;
 
+    /**
+     * 계정 이용 정지 중이면 정지 가드가 막는 [기간 연장](1017 8-1)도 false 로 내린다(58 계획 3-2). 실행 API 는 정지 가드를 이 판정보다 먼저
+     * 불러 오류 코드({@code BRAND_SUSPENDED})가 그대로다.
+     */
     public GroupBuyDetailResponse.Permissions evaluate(GroupBuyFacts facts, boolean hasPairThread, LocalDateTime now) {
+        Market market = facts.groupBuy().getMarket();
+        boolean suspended = market != null && market.isSuspended();
         return new GroupBuyDetailResponse.Permissions(
                 canConfirmStock(facts),
-                canRequestExtension(facts, now),
+                canRequestExtension(facts, now) && !suspended,
                 canRequestEarlyClose(facts),
                 canRequestSuspension(facts),
                 canSubmitAppeal(facts, now),
                 canOpenIssue(facts),
                 canCheckFulfillment(facts),
                 hasPairThread,
-                canRequestTermination(facts));
+                canRequestTermination(facts),
+                suspended ? BrandBlockedAction.GROUP_BUY_EXTENSION_REQUEST.message() : null);
     }
 
     /**

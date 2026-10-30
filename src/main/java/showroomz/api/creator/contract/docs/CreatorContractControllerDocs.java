@@ -155,7 +155,7 @@ public interface CreatorContractControllerDocs {
                       「내가 받는 금액」으로 보이는 사고가 된다
                     - `content`(콘텐츠 의무)는 반대로 종결 3종에서도 **그대로 내리고** `obligationAlive: false`를 준다
                     - `items[]`의 필드명이 스튜디오 관점이다 — `myRewardRate` · `brandSupplyQuantity`
-                    - `history[]`는 **화이트리스트 7종**만. 브랜드의 작성중 저장 · 검토 요청 · **검토 반려 사유**는
+                    - `history[]`는 **화이트리스트 10종**만(성립 · 해지 요청 · 해지 포함). 브랜드의 작성중 저장 · 검토 요청 · **검토 반려 사유**는
                       화면에 안 그려도 JSON에 실리면 이미 유출된 것이다. 필터는 쿼리 단계에서 걸린다
                     - `permissions`는 **5종**이고 파트너 7종과 교집합이 거의 없다
 

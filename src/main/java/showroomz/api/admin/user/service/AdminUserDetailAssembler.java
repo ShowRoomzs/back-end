@@ -35,6 +35,7 @@ import showroomz.domain.member.user.vo.NotificationSetting;
 import showroomz.domain.order.type.AdminOrderTab;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.Period;
@@ -149,7 +150,7 @@ public class AdminUserDetailAssembler {
         String gender = user.getGender();
         if (unmasked) {
             return new AdminUserDto.Identity(false, true, user.getName(), AdminMemberMasker.formatBirthday(user.getBirthday()),
-                    AdminMemberMasker.age(user.getBirthday(), now.toLocalDate()), gender, genderLabel(gender), null,
+                    AdminMemberMasker.age(user.getBirthday(), KstDates.today(now)), gender, genderLabel(gender), null,
                     AdminMemberMasker.formatPhone(user.getPhoneNumber()), null, firstVerifiedAt, renewedAt);
         }
         return new AdminUserDto.Identity(false, false, AdminMemberMasker.maskName(user.getName()),
@@ -343,9 +344,9 @@ public class AdminUserDetailAssembler {
         if (joinedAt == null) {
             return null;
         }
-        Period period = Period.between(joinedAt.toLocalDate(), now.toLocalDate());
+        Period period = Period.between(KstDates.toKstDate(joinedAt), KstDates.today(now));
         return new AdminUserDto.Elapsed((int) Math.max(0, period.toTotalMonths()), Math.max(0, period.getDays()),
-                Math.max(0, ChronoUnit.DAYS.between(joinedAt.toLocalDate(), now.toLocalDate())));
+                Math.max(0, ChronoUnit.DAYS.between(KstDates.toKstDate(joinedAt), KstDates.today(now))));
     }
 
     /** 상세 응답에 더해 싣는 값 — {@code UserDetailResponse.of}가 펼친다. */

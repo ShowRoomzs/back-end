@@ -38,6 +38,7 @@ import showroomz.domain.settlement.type.TaxDocumentType;
 import showroomz.global.config.properties.AdminProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
+import showroomz.global.utils.KstDates;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -135,10 +136,8 @@ public class AdminHomeQueueReader {
         long postActions = postQueryService.getSummary().getActionRequired();
         queues.add(waiting("POST_REPORT", POSTS, "신고 게시물 검토", "일반 게시물 신고 누적", postActions,
                 postActions == 0 ? null : postQueryService.oldestActionRequiredSince(), "/posts?tab=REPORTED", now));
+        // 상품 문의 삭제 요청은 할 일 · cs.total 이 아니다 — 상품 문의 메뉴 하위 숫자로만 낸다(rev.8 ② · 58 계획 5-33)
         long deleteRequests = productInquiryService.getSummary().getDeleteRequestedCount();
-        queues.add(waiting("PRODUCT_INQUIRY_DELETE", CS, "상품 문의 삭제 요청", null, deleteRequests,
-                deleteRequests == 0 ? null : opsRepository.oldestProductInquiryDeleteRequest(),
-                "/product-inquiries?status=DELETE_REQUESTED", now));
         queues.addAll(contracts(now));
         queues.add(waiting("SUSPEND_REQUEST", GROUP_BUYS, "중단 요청", null,
                 groupBuyQueues.getOrDefault(AdminGroupBuyQueue.SUSPEND_REQUEST, 0L),
@@ -152,7 +151,7 @@ public class AdminHomeQueueReader {
         queues.add(waiting("APPEAL_REVIEW", GROUP_BUYS, "소명 검토", null, appealReviews,
                 appealReviews == 0 ? null : opsRepository.oldestAppealReview(now),
                 "/group-buys?queue=APPEAL_REVIEW", now));
-        return new Snapshot(queues);
+        return new Snapshot(queues, deleteRequests);
     }
 
     // ------------------------------------------------------------------ 대기 행 보조줄(55 계획서 A3 · 00-home rev.4)
@@ -198,7 +197,8 @@ public class AdminHomeQueueReader {
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         for (OrderRefundTask task : opsRepository.findFailedRefunds(ROW_LIMIT)) {
             LocalDateTime failedAt = task.getFailedAt() != null ? task.getFailedAt() : task.getModifiedAt();
-            rows.add(row(TodoUrgency.FAILED, "실패", "REFUND_FAILED",
+            // 배지는 큐별로 — 「환불 실패」 · 「분배 실패」(58 계획 5-34)
+            rows.add(row(TodoUrgency.FAILED, "환불 실패", "REFUND_FAILED",
                     "환불 실패 · " + task.getOrder().getOrderNumber(),
                     join(task.getLastError(), won(task.getRefundAmount())), TRANSACTIONS, ageText(failedAt, now), null,
                     new AdminHomeDto.Target("REFUND", task.getId(), null), 1));
@@ -221,7 +221,7 @@ public class AdminHomeQueueReader {
                     .collect(Collectors.groupingBy(SettlementPayout::getSettlementId));
             for (Object[] row : failed) {
                 Settlement settlement = (Settlement) row[0];
-                rows.add(row(TodoUrgency.FAILED, "실패", "PAYOUT_FAILED", "분배 실패 · " + settlement.getSettlementNumber(),
+                rows.add(row(TodoUrgency.FAILED, "분배 실패", "PAYOUT_FAILED", "분배 실패 · " + settlement.getSettlementNumber(),
                         payoutFailureDetail(payouts.get(settlement.getId()), settlement), SETTLEMENTS,
                         ageText((LocalDateTime) row[1], now), null,
                         new AdminHomeDto.Target("SETTLEMENT", settlement.getId(), null), 1));
@@ -320,7 +320,7 @@ public class AdminHomeQueueReader {
                 LocalDateTime submittedAt = (LocalDateTime) row[2];
                 LocalDateTime base = submittedAt != null ? submittedAt : now;
                 items.add(new Dated((Long) row[0], "오픈 승인 · " + row[1], pair((String) row[3], (String) row[4]),
-                        dueAt(base.toLocalDate(), sla), base, "GROUP_BUY"));
+                        dueAt(KstDates.toKstDate(base), sla), base, "GROUP_BUY"));
             }
         }
         return deadlined("OPEN_REVIEW", GROUP_BUYS, "오픈 승인", count, items, "/group-buys?queue=OPEN_REVIEW", now);
@@ -333,13 +333,13 @@ public class AdminHomeQueueReader {
         for (Object[] row : opsRepository.findPendingSellerApplications()) {
             LocalDateTime createdAt = (LocalDateTime) row[2];
             brand.add(new Dated((Long) row[0], "브랜드 입점 심사 · " + row[1], documentDetail(row[3], row[4], row[5]),
-                    dueAt(createdAt.toLocalDate(), sla), createdAt, "SELLER_APPLICATION"));
+                    dueAt(KstDates.toKstDate(createdAt), sla), createdAt, "SELLER_APPLICATION"));
         }
         List<Dated> creator = new ArrayList<>();
         // 인플루언서 입점 심사의 건별 행 보조줄은 없다 — 시안에 인플루언서 D-1 행이 없다(56 E2).
         for (Object[] row : opsRepository.findPendingCreatorApplications()) {
             LocalDateTime createdAt = (LocalDateTime) row[2];
-            creator.add(new Dated((Long) row[0], "인플루언서 입점 심사 · " + row[1], null, dueAt(createdAt.toLocalDate(), sla),
+            creator.add(new Dated((Long) row[0], "인플루언서 입점 심사 · " + row[1], null, dueAt(KstDates.toKstDate(createdAt), sla),
                     createdAt, "CREATOR_APPLICATION"));
         }
         return List.of(
@@ -361,7 +361,7 @@ public class AdminHomeQueueReader {
                 .filter(d -> d.getType() == TaxDocumentType.CREATOR_TAX_INVOICE
                         && d.getStatus() == TaxDocumentStatus.SUBMITTED).toList();
 
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         LocalDate dueSoonLimit = businessCalendar.addBusinessDays(today, adminProperties.getTaxInvoiceDueSoonBusinessDays());
         List<SettlementTaxDocument> urgent = toIssue.stream()
                 .filter(d -> d.getDueDate() != null && !d.getDueDate().isAfter(dueSoonLimit))
@@ -422,7 +422,7 @@ public class AdminHomeQueueReader {
     /** 마감 있는 건 — 지났으면 기한 초과, 마감일이 다음 영업일 이내면 기한 임박(D-1 · 오늘 마감), 나머지는 대기 1행. */
     private Queue deadlined(String key, String menu, String label, long count, List<Dated> items, String filter,
                             LocalDateTime now) {
-        LocalDate today = now.toLocalDate();
+        LocalDate today = KstDates.today(now);
         LocalDate nextBusinessDay = businessCalendar.addBusinessDays(today, 1);
         List<AdminHomeDto.TodoRow> rows = new ArrayList<>();
         long itemized = 0;
@@ -430,7 +430,7 @@ public class AdminHomeQueueReader {
         LocalDateTime oldestWaiting = null;
         for (Dated item : items) {
             boolean overdue = item.dueAt().isBefore(now);
-            boolean dueSoon = !overdue && !item.dueAt().toLocalDate().isAfter(nextBusinessDay);
+            boolean dueSoon = !overdue && !KstDates.toKstDate(item.dueAt()).isAfter(nextBusinessDay);
             if (!overdue && !dueSoon) {
                 oldestWaiting = oldestWaiting == null || item.enteredAt().isBefore(oldestWaiting) ? item.enteredAt() : oldestWaiting;
                 continue;
@@ -440,7 +440,7 @@ public class AdminHomeQueueReader {
             if (rows.size() >= ROW_LIMIT) {
                 continue;
             }
-            String badge = overdue ? "기한 초과" : item.dueAt().toLocalDate().equals(today) ? "오늘 마감" : "D-1";
+            String badge = overdue ? "기한 초과" : KstDates.toKstDate(item.dueAt()).equals(today) ? "오늘 마감" : "D-1";
             rows.add(row(overdue ? TodoUrgency.OVERDUE : TodoUrgency.DUE_SOON, badge, key, item.title(), item.detail(), menu,
                     ageText(item.enteredAt(), now), "마감 " + item.dueAt().format(MONTH_DAY),
                     new AdminHomeDto.Target(item.targetType(), item.id(), null), 1));
@@ -490,7 +490,7 @@ public class AdminHomeQueueReader {
     }
 
     private LocalDateTime dueAt(LocalDate base, int slaBusinessDays) {
-        return businessCalendar.addBusinessDays(base, slaBusinessDays).atTime(23, 59, 59);
+        return KstDates.endOfDay(businessCalendar.addBusinessDays(base, slaBusinessDays));
     }
 
     // ------------------------------------------------------------------ 대기 큐 — 큐별 1행
@@ -504,6 +504,9 @@ public class AdminHomeQueueReader {
         Map<AdminContractQueue, Long> counts = contractQueryService.summary().queues();
         List<Queue> queues = new ArrayList<>();
         for (AdminContractQueue queue : AdminContractQueue.values()) {
+            if (queue == AdminContractQueue.RESEND) {
+                continue;   // 재발송 요청은 소통 스레드에서 끝난다 — 계약 배지 · 할 일에 넣지 않는다(rev.8 ② · 58 계획 5-33)
+            }
             long count = counts.getOrDefault(queue, 0L);
             queues.add(waiting("CONTRACT_" + queue.name(), CONTRACTS, contractLabel(queue), contractDetail(queue), count,
                     count == 0 ? null : contractQueryService.oldestInQueue(queue, now), "/contracts?queue=" + queue.name(),
@@ -617,7 +620,8 @@ public class AdminHomeQueueReader {
     public record Queue(String key, String menu, long count, List<AdminHomeDto.TodoRow> rows) {
     }
 
-    public record Snapshot(List<Queue> queues) {
+    /** @param productInquiryDeleteRequests 상품 문의 삭제 요청 — 할 일이 아니라 사이드바 하위 숫자로만(58 계획 5-33) */
+    public record Snapshot(List<Queue> queues, long productInquiryDeleteRequests) {
 
         public long count(String key) {
             return queues.stream().filter(q -> q.key().equals(key)).mapToLong(Queue::count).sum();

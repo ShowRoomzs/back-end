@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.api.admin.home.dto.AdminHomeDto;
 import showroomz.domain.metrics.repository.AdminOperationsQueryRepository;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,7 +22,7 @@ public class AdminTodayMetricsReader {
     private final AdminOperationsQueryRepository opsRepository;
 
     public AdminHomeDto.MetricsToday read(LocalDateTime now) {
-        LocalDateTime todayStart = now.toLocalDate().atStartOfDay();
+        LocalDateTime todayStart = KstDates.startOfDay(KstDates.today(now));
         LocalDateTime yesterdayStart = todayStart.minusDays(1);
         LocalDateTime yesterdayNow = now.minusDays(1);
         return new AdminHomeDto.MetricsToday(now, List.of(

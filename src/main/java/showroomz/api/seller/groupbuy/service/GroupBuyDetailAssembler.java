@@ -8,6 +8,8 @@ import showroomz.api.seller.groupbuy.dto.GroupBuyDetailResponse;
 import showroomz.api.seller.groupbuy.dto.GroupBuyDetailResponse.*;
 import showroomz.domain.contract.entity.Contract;
 import showroomz.domain.contract.entity.ContractItem;
+import showroomz.domain.contract.repository.ContractTerminationRequestRepository;
+import showroomz.api.seller.groupbuy.dto.GroupBuyTerminationRequestView;
 import showroomz.domain.groupbuy.entity.GroupBuy;
 import showroomz.domain.groupbuy.entity.GroupBuyAdminSuspension;
 import showroomz.domain.groupbuy.entity.GroupBuyChangeRequest;
@@ -35,6 +37,7 @@ import showroomz.domain.groupbuy.type.GroupBuyPostReviewStatus;
 import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.global.utils.RewardCalculator;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -62,6 +65,7 @@ public class GroupBuyDetailAssembler {
     private final GroupBuyThreadGateway threadGateway;
     private final GroupBuyPermissionPolicy permissionPolicy;
     private final GroupBuySettlementReader settlementReader;
+    private final ContractTerminationRequestRepository terminationRequestRepository;
     /** 정산 지연 감시 기준(§29-11) — 어드민 요약과 같은 설정값을 쓴다. */
     private final GroupBuyProperties properties;
 
@@ -100,7 +104,9 @@ public class GroupBuyDetailAssembler {
                 permissionPolicy.evaluate(facts, pairThreadId != null, now),
                 history(history),
                 navigation == null ? new Navigation(null, null) : navigation,
-                SanctionHoldView.forBrand(groupBuy));
+                SanctionHoldView.forBrand(groupBuy),
+                GroupBuyTerminationRequestView.of(terminationRequestRepository
+                        .findFirstByContract_IdOrderByRequestedAtDescIdDesc(contract.getId()).orElse(null)));
     }
 
     private Summary summary(GroupBuy groupBuy, Contract contract) {
@@ -133,9 +139,9 @@ public class GroupBuyDetailAssembler {
         int elapsedDays = now.isBefore(startAt) ? 0
                 : Math.min(GroupBuy.daysInclusive(startAt, now.isBefore(cap) ? now : cap), totalDays);
         Integer daysUntilStart = now.isBefore(startAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), startAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(startAt)) : null;
         Integer daysUntilEnd = groupBuy.getStatus().isSelling() && now.isBefore(endAt)
-                ? (int) ChronoUnit.DAYS.between(now.toLocalDate(), endAt.toLocalDate()) : null;
+                ? (int) ChronoUnit.DAYS.between(KstDates.today(now), KstDates.toKstDate(endAt)) : null;
         boolean startOverdue = groupBuy.getStatus() == GroupBuyStatus.PREPARING && !now.isBefore(startAt);
 
         return new Timeline(startAt, endAt, contract.getGroupBuyEndAt(), totalDays, elapsedDays,
@@ -213,7 +219,7 @@ public class GroupBuyDetailAssembler {
                 post.getRejectReasonCode() == null ? null : lastRejectedAt(history),
                 hidden ? new Reason(post.getHiddenReasonCode(), post.getHiddenReasonDetail()) : null,
                 hidden ? post.getHiddenAt() : null,
-                hidden ? (int) ChronoUnit.DAYS.between(post.getHiddenAt().toLocalDate(), now.toLocalDate()) : null);
+                hidden ? (int) ChronoUnit.DAYS.between(KstDates.toKstDate(post.getHiddenAt()), KstDates.today(now)) : null);
     }
 
     /**

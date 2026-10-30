@@ -83,7 +83,22 @@ public final class AdminTransactionDto {
             @Schema(description = "B4 법정 청약철회 기한 — 운영자가 대신 연 클레임(B6)만. 그 밖은 null", nullable = true)
             LegalDeadline legalDeadline,
             @Schema(description = "B4 정산 반영 — 그 하위주문이 들어간 정산. 정산 생성 전이면 null(「정산 전 · 생성 시 반영」)", nullable = true)
-            ClaimSettlement settlement
+            ClaimSettlement settlement,
+            @Schema(description = "최초 배송비 차감 근거(보조줄 · 1021 설계서 3-3) — 이 박스에서 최초 배송비를 뺐을 때만. 그 밖은 null",
+                    example = "무료배송 기준 50,000원 미만이 되어 최초 배송비 3,000원 차감(소비자 귀책 반품)", nullable = true)
+            String deductionReason,
+            @Schema(description = "B2 인용하면 생길 운임 환급 예정액 — 인용할 수 있을 때만(canAcceptDispute). 그 밖은 null. "
+                    + "인용 환불액(disputeRefundAmount)과 따로 운임 환급으로 나간다(원래 결제액을 넘으면 운영자 계좌 송금)", nullable = true)
+            DisputePreview disputePreview
+    ) {
+    }
+
+    @Schema(name = "AdminClaimDisputePreview", description = "B2 인용 전 운임 환급 예정액(1021 설계서 4-3 · 4-4)")
+    public record DisputePreview(
+            @Schema(description = "선불 운임 환급 — 귀책이 브랜드로 바뀌어 소비자가 낸 반품 운임을 돌려준다. 이미 브랜드 귀책이면 0", example = "3000")
+            int prepaidFreightRefund,
+            @Schema(description = "차감했던 최초 배송비 환원 — 통과분 환불에서 실제로 뺐을 때만", example = "3000") int initialFeeRestored,
+            @Schema(description = "합계", example = "6000") int total
     ) {
     }
 
@@ -249,7 +264,10 @@ public final class AdminTransactionDto {
     public record RefundSummary(
             @Schema(description = "탭별 건수 · 합계 — PENDING · FAILED · DONE") Map<String, RefundTabStat> tabs,
             @Schema(description = "사이드바 배지 = 집행 대기 + 실패", example = "2") long badge,
-            @Schema(description = "송금 대기 건수 — 집행 대기 탭에 함께 있다(1021 설계서 4-5)", example = "1") long transferPending
+            @Schema(description = "송금 대기 건수 — 집행 대기 탭에 함께 있다(1021 설계서 4-5)", example = "1") long transferPending,
+            @Schema(description = "집행 대기 중 PG 취소 금액 — 집행 대기 합계 − 계좌 송금 금액(58 계획 5-14)", example = "27200")
+            long pgCancelAmount,
+            @Schema(description = "송금 대기 금액(transferPending 건의 합)", example = "3000") long bankTransferAmount
     ) {
     }
 
@@ -311,7 +329,23 @@ public final class AdminTransactionDto {
             @Schema(description = "이 환불 건의 이력 — 오래된순") List<RefundHistory> history,
             @Schema(description = "환불 수단 — BANK_TRANSFER 면 `transfer` 가 있다", example = "PG_CANCEL") RefundMethod method,
             @Schema(description = "M3 계좌 송금 — 원래 결제액 초과 운임 환급 행만(1021 설계서 4-5) · 그 밖은 null", nullable = true)
-            RefundTransfer transfer
+            RefundTransfer transfer,
+            @Schema(description = "M1 운임 정산 요약 — 이 환불의 클레임 박스에 운임 정산 행이 있을 때만(58 계획 5-14). 그 밖은 null", nullable = true)
+            RefundFreightAdjustment freightAdjustment,
+            @Schema(description = "M3 짝 행 — 같은 환급을 나눈 다른 환불 행(계좌 송금 행이면 PG 취소 행 · PG 취소 행이면 계좌 송금 행). 나뉘지 않았으면 null",
+                    example = "919", nullable = true)
+            Long pairedRefundTaskId
+    ) {
+    }
+
+    @Schema(name = "AdminRefundFreightAdjustment", description = "M1 운임 정산 요약 — 브랜드 정산 「± 운임 정산」과 같은 행")
+    public record RefundFreightAdjustment(
+            @Schema(description = "REFUND_CONSUMER(소비자 환급) · CHARGE_CONSUMER(소비자 부담 · 환불액에서 차감)", example = "REFUND_CONSUMER")
+            showroomz.domain.order.type.FreightAdjustmentDirection direction,
+            @Schema(example = "소비자 환급") String directionLabel,
+            @Schema(description = "금액 — 환급은 선불 운임 + (이의 인용이면) 최초 배송비 환원 · 부담은 착불 운임", example = "6000") int amount,
+            @Schema(description = "원래 결제액을 넘어 계좌 송금으로 간 행 — 없으면 null", example = "920", nullable = true)
+            Long bankTransferRefundTaskId
     ) {
     }
 

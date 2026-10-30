@@ -295,11 +295,16 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "ORDER BY p.settlementId ASC, p.id ASC")
     List<SettlementPayout> findRequested(org.springframework.data.domain.Pageable pageable);
 
-    /** 오늘 지시한 행 수 · 합계 — 대조 알림(5-3). [count, sum]. */
+    /**
+     * PG 지급일이 그날인 행 수 · 합계 — 대조 알림(토스 설계서 5-3). PG 목록({@code payoutDateGte = Lte = D})과 같은 기준이라 ① 웹훅이 배치 직후
+     * 이미 PAID · FAILED 로 닫은 행 ② 전날 창 밖 재분배로 올라간 SCHEDULED({@code pg_payout_date = D}) 행이 빠지지 않는다. 결과 모름 행
+     * ({@code pg_payout_id} 없음)은 PG 에 있는지 모르니 세지 않는다 — 어긋남이 그 행을 가리킨다. [count, sum].
+     */
     @Query("SELECT COUNT(p), COALESCE(SUM(p.amount), 0) FROM SettlementPayout p "
-            + "WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED "
-            + "AND p.pgTransferId IS NOT NULL AND p.requestedAt >= :from AND p.requestedAt < :to")
-    List<Object[]> countRequestedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+            + "WHERE p.pgPayoutDate = :payoutDate AND p.pgPayoutId IS NOT NULL "
+            + "AND p.status IN (showroomz.domain.settlement.type.PayoutStatus.REQUESTED, "
+            + "    showroomz.domain.settlement.type.PayoutStatus.PAID, showroomz.domain.settlement.type.PayoutStatus.FAILED)")
+    List<Object[]> countByPgPayoutDate(@Param("payoutDate") LocalDate payoutDate);
 
     /**
      * 재분배(7-5 M3) — FAILED → SCHEDULED(오늘) · 횟수 + 1 · 계좌 재스냅샷(현재 회원 정보면 새 값 · 이전 계좌면 그대로).

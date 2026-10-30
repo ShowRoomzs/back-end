@@ -37,6 +37,7 @@ import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -179,7 +180,7 @@ public class SellerOrderQueryService {
                                               LocalDate to, OrderSearchType searchType, String keyword,
                                               OrderSortType sort, boolean shipOverdue, LocalDateTime now) {
         OrderTab resolvedTab = tab == null ? OrderTab.ALL : tab;
-        LocalDate resolvedTo = to != null ? to : now.toLocalDate();
+        LocalDate resolvedTo = to != null ? to : KstDates.today(now);
         LocalDate resolvedFrom = from != null ? from : resolvedTo.minusDays(resolvedTab.getDefaultPeriodDays());
         // 역전된 기간은 빈 목록이 아니라 입력 오류다 — 빈 결과로 내리면 「주문이 없다」로 읽힌다.
         if (resolvedFrom.isAfter(resolvedTo)) {
@@ -192,8 +193,8 @@ public class SellerOrderQueryService {
                 marketId,
                 resolvedTab,
                 dateBasis == null ? OrderDateBasis.PAID : dateBasis,
-                resolvedFrom.atStartOfDay(),
-                resolvedTo.atTime(LocalTime.MAX),
+                KstDates.startOfDay(resolvedFrom),
+                KstDates.at(resolvedTo, LocalTime.MAX),
                 searchType,
                 keyword,
                 sort == null ? resolvedTab.defaultSort() : sort,

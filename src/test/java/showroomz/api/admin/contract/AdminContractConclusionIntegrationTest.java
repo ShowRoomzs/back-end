@@ -181,7 +181,7 @@ class AdminContractConclusionIntegrationTest extends AdminContractTestSupport {
         assertThat(history.getLast().getEventType()).isEqualTo(ContractEventType.GROUP_BUY_CREATED);
         assertThat(history.getLast().getActorType()).isEqualTo(ContractActorType.SYSTEM);
 
-        detail(c).andExpect(jsonPath("$.contract.statusLabel").value("체결완료"))
+        detail(c).andExpect(jsonPath("$.contract.statusLabel").value("계약 성립"))
                 .andExpect(jsonPath("$.contract.statusTone").value("SUCCESS"))
                 .andExpect(jsonPath("$.stepper.concludedAt").exists())
                 .andExpect(jsonPath("$.stepper.concludedActorName").value(OPERATOR_NAME))

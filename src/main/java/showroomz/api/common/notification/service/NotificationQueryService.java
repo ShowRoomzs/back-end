@@ -13,6 +13,7 @@ import showroomz.domain.notification.entity.Notification;
 import showroomz.domain.notification.repository.NotificationRepository;
 import showroomz.domain.notification.type.NotificationImageKind;
 import showroomz.domain.notification.type.NotificationRecipientType;
+import showroomz.domain.notification.type.NotificationTargetType;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
@@ -46,7 +47,8 @@ public class NotificationQueryService {
         Page<Notification> result = notificationRepository.findInbox(type, recipientId, since(type), unreadOnly,
                 PageRequest.of(Math.max(page, 1) - 1, safeSize));
         Avatars avatars = avatars(result.getContent());
-        return new PageResponse<>(result.getContent().stream().map(n -> toItem(n, avatars)).toList(), result);
+        Map<Long, Long> orderIds = orderIds(result.getContent());
+        return new PageResponse<>(result.getContent().stream().map(n -> toItem(n, avatars, orderIds)).toList(), result);
     }
 
     public NotificationSummary summary(NotificationRecipientType type, Long recipientId) {
@@ -102,7 +104,24 @@ public class NotificationQueryService {
         return new Avatars(images, live);
     }
 
-    private static NotificationItem toItem(Notification n, Avatars avatars) {
+    /** ORDER_GROUP 대상의 하위주문 id → 주문 id(58 계획 6-4) — 페이지 단위 한 번. */
+    private Map<Long, Long> orderIds(List<Notification> rows) {
+        Set<Long> groupIds = rows.stream()
+                .filter(n -> n.getTargetType() == NotificationTargetType.ORDER_GROUP && n.getTargetId() != null)
+                .map(Notification::getTargetId).collect(Collectors.toSet());
+        if (groupIds.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, Long> orderIds = new HashMap<>();
+        for (Object[] row : em.createQuery("""
+                SELECT g.id, g.order.id FROM OrderDeliveryGroup g WHERE g.id IN :ids""", Object[].class)
+                .setParameter("ids", groupIds).getResultList()) {
+            orderIds.put((Long) row[0], (Long) row[1]);
+        }
+        return orderIds;
+    }
+
+    private static NotificationItem toItem(Notification n, Avatars avatars, Map<Long, Long> orderIds) {
         String imageUrl = n.getImageRef();
         boolean live = false;
         if (n.getImageKind() == NotificationImageKind.AVATAR) {
@@ -114,8 +133,17 @@ public class NotificationQueryService {
         return new NotificationItem(n.getId(), n.getType(), n.getCategory(), n.getActorType(), actorLabel, n.getTitle(),
                 n.getBody(), n.getEmphasis(),
                 n.getTargetType() == null ? null
-                        : new NotificationItem.Target(n.getTargetType(), n.getTargetId(), n.getTargetSub()),
+                        : new NotificationItem.Target(n.getTargetType(), n.getTargetId(), targetSub(n),
+                                n.getTargetType() == NotificationTargetType.ORDER_GROUP && n.getTargetId() != null
+                                        ? orderIds.get(n.getTargetId()) : null),
                 n.getImageKind(), imageUrl, live, n.isAdvertising(), n.getTodoDueAt(), n.isRead(), n.getCreatedAt());
+    }
+
+    /** 기본정보 탭 키는 FE 탭 키(소문자)로 — 대문자로 저장된 이전 행도 여기서 맞춘다(58 계획 6-4). */
+    private static String targetSub(Notification n) {
+        String sub = n.getTargetSub();
+        return n.getTargetType() == NotificationTargetType.BASIC_INFO_TAB && sub != null
+                ? sub.toLowerCase(java.util.Locale.ROOT) : sub;
     }
 
     private static Long parseLong(String value) {

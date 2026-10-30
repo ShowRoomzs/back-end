@@ -157,9 +157,9 @@ class UserDeliveryTrackingIntegrationTest extends SellerOrderTestSupport {
         return new TrackSnapshot(last, deliveredAt, false, false, List.of(events), null);
     }
 
-    /** 앱 주문 API 의 시각 규약 — {@code OrderDto.TIME_PATTERN}(오프셋 없음). */
+    /** 앱 주문 API 의 시각 규약 — {@code OrderDto.TIME_PATTERN}(서버 시각 + Z · 58 계획 1-6). */
     private static String appTime(LocalDateTime value) {
-        return value.withNano(0).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        return value.withNano(0).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + "Z";
     }
 
     private ResultActions tracking(OrderDeliveryGroup group) throws Exception {

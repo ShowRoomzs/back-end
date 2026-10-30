@@ -88,6 +88,8 @@ public class AdminRefundAssembler {
     private final BankRepository bankRepository;
     private final OneToOneInquiryRepository inquiryRepository;
     private final PersonalDataCipher cipher;
+    private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightAdjustmentRepository;
+    private final showroomz.domain.order.repository.OrderRefundTaskRepository refundTaskRepository;
 
     /** 한 페이지의 연관 — 행마다 쿼리하지 않는다. */
     private record Context(Map<String, Payment> payments, Map<Long, OrderCancelRequest> cancelRequests,
@@ -174,7 +176,35 @@ public class AdminRefundAssembler {
                 task.getStatus(), statusLabel(task), task.getAttempt(),
                 orderProperties.getRefundAutoMaxAttempts(), autoRetry(task, groupHistory), failure, execution,
                 executable(task), task.isVoidable(), manuallyCompletable(task), history, task.getMethod(),
-                transfer(task, names));
+                transfer(task, names), freightAdjustment(collectionId), pairedTaskId(task));
+    }
+
+    /** M1 운임 정산 요약(58 계획 5-14) — 박스의 마지막 운임 정산 행. 금액은 운임 환급 큐와 같은 식이다. */
+    private AdminTransactionDto.RefundFreightAdjustment freightAdjustment(Long collectionId) {
+        if (collectionId == null) {
+            return null;
+        }
+        return freightAdjustmentRepository.findByClaimCollectionIdOrderByIdAsc(collectionId).stream()
+                .reduce((first, second) -> second)
+                .map(row -> new AdminTransactionDto.RefundFreightAdjustment(row.getDirection(),
+                        row.getDirection() == showroomz.domain.order.type.FreightAdjustmentDirection.REFUND_CONSUMER
+                                ? "소비자 환급" : "소비자 부담",
+                        row.getDirection() == showroomz.domain.order.type.FreightAdjustmentDirection.REFUND_CONSUMER
+                                ? showroomz.domain.order.service.OrderClaimService.freightRefundOf(row) : row.getCollectFreight(),
+                        row.getSettledVia() == showroomz.domain.order.type.FreightSettledVia.BANK_TRANSFER
+                                ? row.getRefundTaskId() : null))
+                .orElse(null);
+    }
+
+    /** M3 짝 행 — 같은 출처에서 나뉜 다른 수단의 행(PG 취소 ↔ 계좌 송금). */
+    private Long pairedTaskId(OrderRefundTask task) {
+        if (task.getSourceId() == null) {
+            return null;
+        }
+        return refundTaskRepository.findBySourceAndSourceIdOrderByIdAsc(task.getSource(), task.getSourceId()).stream()
+                .filter(other -> !other.getId().equals(task.getId()) && other.getMethod() != task.getMethod()
+                        && other.getStatus() != RefundTaskStatus.VOID)
+                .map(OrderRefundTask::getId).reduce((first, second) -> second).orElse(null);
     }
 
     /**
@@ -325,7 +355,8 @@ public class AdminRefundAssembler {
                         || claims.get(0).getType() == showroomz.domain.order.type.ClaimType.EXCHANGE;
                 boolean withdrawn = !claims.isEmpty() && claims.stream()
                         .allMatch(c -> c.getResult() == ClaimResult.CANCELLED);
-                String base = exchange ? "교환 재발송비 환불" : "반려 재발송비 환불";
+                // 「교환 · 반려 재발송비」 명칭 폐기 — 「재발송 배송비」(1021 기-18 · 58 계획 5-15)
+                String base = "재발송 배송비";
                 yield withdrawn && exchange ? base + " · 교환 철회" : base;
             }
             case OPERATOR_REASON -> task.getReasonCode() == null ? "운영자 사유 환불" : task.getReasonCode().getLabel();

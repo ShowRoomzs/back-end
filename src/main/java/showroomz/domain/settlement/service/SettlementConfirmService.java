@@ -19,6 +19,7 @@ import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -90,7 +91,7 @@ public class SettlementConfirmService {
         if (settlementRepository.transition(settlementId, CONFIRMABLE, SettlementStatus.PAYOUT_SCHEDULED) != 1) {
             throw new BusinessException(ErrorCode.SETTLEMENT_STATE_CHANGED);
         }
-        LocalDate confirmedDate = confirmedAt.toLocalDate();
+        LocalDate confirmedDate = KstDates.toKstDate(confirmedAt);
         LocalDate payoutDueDate = schedule.payoutDueDate(confirmedDate);
         settlement.applyConfirmed(reason, confirmedAt, payoutDueDate);
         boolean creatorBlocked = blockPolicy.isBlocked(settlement);
