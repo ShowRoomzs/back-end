@@ -19,4 +19,17 @@ public class TestOrderDto {
             LocalDateTime deliveredAt
     ) {
     }
+
+    @Schema(description = "구매확정 처리 결과 (테스트)")
+    public record ConfirmedResponse(
+            @Schema(description = "주문번호", example = "20261018-000001")
+            String orderNumber,
+
+            @Schema(description = "구매확정으로 바뀐 하위주문번호", example = "[\"20261018-000001-01\"]")
+            List<String> confirmedSubOrderNumbers,
+
+            @Schema(description = "구매확정 시각", example = "2026-11-03T14:30:00")
+            LocalDateTime confirmedAt
+    ) {
+    }
 }
