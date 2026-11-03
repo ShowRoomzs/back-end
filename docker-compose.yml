@@ -14,14 +14,14 @@ services:
       - "127.0.0.1:3306:3306"
     volumes:
       - /home/ubuntu/mysql_data:/var/lib/mysql
-    # [변경됨] MySQL 메모리 점유의 핵심인 버퍼 풀을 128MB로 제한
-    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=128M
-    
-    # [추가됨] 컨테이너가 물리 메모리를 350MB 이상 못 쓰게 막음 (MySQL 8.0 최소 운영치)
+    # [변경] t3.small(2GB) 이전에 맞춰 버퍼 풀 128MB -> 256MB
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --innodb-buffer-pool-size=256M
+
+    # [변경] 컨테이너 메모리 상한 350MB -> 480MB (버퍼 풀 증량분 반영)
     deploy:
       resources:
         limits:
-          memory: 350M
+          memory: 480M
     
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DB_PASSWORD}"]
@@ -42,11 +42,13 @@ services:
       - /home/ubuntu/logs:/logs
       - /home/ubuntu/geoip:/geoip:ro
     entrypoint: ["/bin/sh", "-c"]
-    # [변경됨] JVM 힙 메모리(256MB) 및 메타스페이스 제한 추가
+    # [변경됨] JVM 힙 메모리 및 메타스페이스 제한 추가
     # [변경] Metaspace를 128m -> 256m으로 증량
+    # [변경] t3.small(2GB) 이전 — 힙 256m -> 640m (OutOfMemoryError: Java heap space 대응)
+    # OOM 시 힙 덤프를 /logs 에 남기고 프로세스를 종료해 restart: always 로 재기동한다.
     command:
       - |
-        java -Xms256m -Xmx256m -XX:MaxMetaspaceSize=256m -Dspring.profiles.active=prod -jar app.jar > /logs/app.log 2>&1
+        java -Xms640m -Xmx640m -XX:MaxMetaspaceSize=256m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/logs -XX:+ExitOnOutOfMemoryError -Dspring.profiles.active=prod -jar app.jar > /logs/app.log 2>&1
     depends_on:
       mysql:
         condition: service_healthy
@@ -55,7 +57,8 @@ services:
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
     
+    # [변경] 600MB -> 1280MB — 힙 640m + 메타스페이스 · 스레드 · 코드 캐시 + Playwright Chromium 여유분
     deploy:
       resources:
         limits:
-          memory: 600M
+          memory: 1280M
