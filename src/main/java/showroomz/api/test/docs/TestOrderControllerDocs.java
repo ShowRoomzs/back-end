@@ -78,4 +78,69 @@ public interface TestOrderControllerDocs {
             )
             @PathVariable("orderNumber") String orderNumber
     );
+
+    @Operation(
+            summary = "주문 구매확정 처리 (테스트)",
+            description = "주문번호의 **배송완료(DELIVERED)** 하위주문을 7일을 기다리지 않고 바로 **구매확정(CONFIRMED)** 으로 바꿉니다. " +
+                    "자동 구매확정 배치와 같은 전이라 처리 이력은 「시스템」으로 남습니다.\n\n" +
+                    "기다리는 기간만 건너뜁니다 — 진행 중인 반품·교환이 있거나 타이머가 멈춘 하위주문은 실제와 같이 확정되지 않습니다. " +
+                    "교환 건은 먼저 `POST /test/claims/{claimId}/reship-delivered` 로 재발송 도착을 처리하세요. " +
+                    "배송완료가 아닌 하위주문은 건너뜁니다.\n\n" +
+                    "공구의 모든 주문이 종결되면 정산 생성 배치(10분 주기)가 정산을 만듭니다.\n\n" +
+                    "**권한:** 없음 (테스트 전용)"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "구매확정 처리 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TestOrderDto.ConfirmedResponse.class),
+                            examples = @ExampleObject(
+                                    name = "성공",
+                                    value = "{\n" +
+                                            "  \"orderNumber\": \"20261018-000001\",\n" +
+                                            "  \"confirmedSubOrderNumbers\": [\"20261018-000001-01\"],\n" +
+                                            "  \"confirmedAt\": \"2026-11-03T14:30:00\"\n" +
+                                            "}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "주문 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "미존재",
+                                    value = "{\"code\": \"ORDER_NOT_FOUND\", \"message\": \"주문을 찾을 수 없습니다.\"}"
+                            )
+                    )
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "구매확정할 수 있는 하위주문 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(
+                                    name = "확정 불가",
+                                    value = "{\"code\": \"ORDER_STATE_CHANGED\", " +
+                                            "\"message\": \"구매확정할 수 있는 배송완료(DELIVERED) 하위주문이 없습니다 — " +
+                                            "진행 중인 반품·교환이 있으면 확정되지 않습니다. 현재: 20261018-000001-01 DELIVERED(타이머 정지)\"}"
+                            )
+                    )
+            )
+    })
+    ResponseEntity<TestOrderDto.ConfirmedResponse> confirmPurchase(
+            @Parameter(
+                    name = "orderNumber",
+                    description = "주문번호 (yyyyMMdd-NNNNNN)",
+                    required = true,
+                    example = "20261018-000001",
+                    in = ParameterIn.PATH
+            )
+            @PathVariable("orderNumber") String orderNumber
+    );
 }

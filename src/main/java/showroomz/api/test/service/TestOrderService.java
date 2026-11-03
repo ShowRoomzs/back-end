@@ -58,4 +58,36 @@ public class TestOrderService {
         }
         return new TestOrderDto.DeliveredResponse(orderNumber, delivered, now);
     }
+
+    /**
+     * 배송완료 하위주문을 7일을 기다리지 않고 구매확정한다 — 배치와 같은 조건부 UPDATE 에 기준 시각만 지금을 넣는다. 타이머 정지 ·
+     * 보류 클레임(진행 중이고 거절되지 않은 반품·교환) 조건은 그대로라 실제로 확정될 수 없는 하위주문은 건너뛴다.
+     */
+    @Transactional
+    public TestOrderDto.ConfirmedResponse confirmPurchase(String orderNumber) {
+        List<OrderDeliveryGroup> groups = deliveryGroupRepository.findByOrderNumber(orderNumber);
+        if (groups.isEmpty()) {
+            throw new BusinessException(ErrorCode.ORDER_NOT_FOUND);
+        }
+        LocalDateTime now = LocalDateTime.now();
+        List<String> confirmed = new ArrayList<>();
+        for (OrderDeliveryGroup group : groups) {
+            if (group.getFulfillmentStatus() != FulfillmentStatus.DELIVERED) {
+                continue;
+            }
+            if (fulfillmentService.confirmPurchase(group.getId(), now, now)) {
+                confirmed.add(group.getSubOrderNumber());
+            }
+        }
+        if (confirmed.isEmpty()) {
+            String current = groups.stream()
+                    .map(group -> group.getSubOrderNumber() + " " + group.getFulfillmentStatus()
+                            + (group.getConfirmPausedAt() != null ? "(타이머 정지)" : ""))
+                    .collect(Collectors.joining(", "));
+            throw new BusinessException(ErrorCode.ORDER_STATE_CHANGED,
+                    "구매확정할 수 있는 배송완료(DELIVERED) 하위주문이 없습니다 — 진행 중인 반품·교환이 있으면 확정되지 않습니다. 현재: "
+                            + current);
+        }
+        return new TestOrderDto.ConfirmedResponse(orderNumber, confirmed, now);
+    }
 }

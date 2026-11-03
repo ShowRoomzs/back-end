@@ -26,4 +26,11 @@ public class TestOrderController implements TestOrderControllerDocs {
             @PathVariable("orderNumber") String orderNumber) {
         return ResponseEntity.ok(testOrderService.markDelivered(orderNumber));
     }
+
+    @Override
+    @PostMapping("/{orderNumber}/confirm")
+    public ResponseEntity<TestOrderDto.ConfirmedResponse> confirmPurchase(
+            @PathVariable("orderNumber") String orderNumber) {
+        return ResponseEntity.ok(testOrderService.confirmPurchase(orderNumber));
+    }
 }
