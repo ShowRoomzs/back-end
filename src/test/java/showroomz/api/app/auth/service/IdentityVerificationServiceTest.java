@@ -591,6 +591,35 @@ class IdentityVerificationServiceTest {
         }
 
         @Test
+        @DisplayName("SV-42b 본인인증 필수가 아니면(required=false) 행이 없어도 가입을 막지 않는다 · 재인증은 그대로 400")
+        void notRequiredSkipsSignup() {
+            properties.getIdentity().setRequired(false);
+            given(verificationRepository.findLatestVerifiedUnconsumed(any(), any(), any())).willReturn(Optional.empty());
+
+            service.consumeForSignup(user, NOW);
+
+            assertThat(user.getName()).isNull();
+            assertThat(user.getIdentityVerifiedAt()).isNull();
+            verify(userRepository, never()).saveAndFlush(any());
+            assertCode(() -> service.consumeForReverify(user, NOW), ErrorCode.IDENTITY_VERIFICATION_REQUIRED);
+        }
+
+        @Test
+        @DisplayName("SV-42c 필수가 아니어도 인증 결과가 있으면 그대로 옮긴다")
+        void notRequiredStillConsumes() {
+            properties.getIdentity().setRequired(false);
+            IdentityVerification row = verifiedRow(IdentityVerificationPurpose.SIGNUP);
+            given(verificationRepository.findLatestVerifiedUnconsumed(USER_ID, IdentityVerificationPurpose.SIGNUP, NOW))
+                    .willReturn(Optional.of(row));
+
+            service.consumeForSignup(user, NOW);
+
+            assertThat(user.getName()).isEqualTo("홍길동");
+            assertThat(row.getStatus()).isEqualTo(IdentityVerificationStatus.CONSUMED);
+            verify(userRepository).saveAndFlush(user);
+        }
+
+        @Test
         @DisplayName("SV-43 UNIQUE(identity_di_hash) 충돌 — 409 IDENTITY_ALREADY_REGISTERED 로 바꾼다(동시 가입 경쟁의 2차 방어)")
         void uniqueViolationBecomesConflict() {
             IdentityVerification row = verifiedRow(IdentityVerificationPurpose.SIGNUP);

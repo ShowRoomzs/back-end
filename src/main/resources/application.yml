@@ -128,6 +128,7 @@ portone:
     enabled: ${PORTONE_IDENTITY_ENABLED:false}      # KCP 본인확인 연동 전이라 기본 꺼짐(11-04) — 연동하면 true 로 되돌린다
     ttl-minutes: 10                                 # 시작 → 완료 상한
     duplicate-block: ${IDENTITY_DUPLICATE_BLOCK:true}   # DI 중복 가입 차단(확정) — 장애 때만 false · DB UNIQUE 는 남는다
+    required: ${PORTONE_IDENTITY_REQUIRED:false}    # 가입에 본인인증 필수 — 연동 전이라 꺼짐(11-04) · 연동하면 true
 
 # TossPayoutsProperties.java — 토스페이먼츠 지급대행(Payouts v2) · 44_토스페이먼츠_지급대행_연동_BE_설계서.md 6-3. 결제(포트원 허브형)와 키를 공유하지 않는다
 toss:
