@@ -62,6 +62,8 @@ import java.lang.annotation.Target;
                 // 결제 — 포트원 대신 FakePaymentGateway(시나리오 지정 더블). 만료·수렴·대사·지표 스케줄러는 끄고 서비스를 직접 부른다
                 // (선행 수정 계획서 3-6). 웹훅 시크릿은 서명 테스트용 고정값이다(whsec_ + base64).
                 "portone.enabled=false",
+                // 가입 본인인증 필수 — 운영 기본값(연동 전 꺼짐)과 달리 테스트는 필수 동작을 검증한다.
+                "portone.identity.required=true",
                 "portone.webhook-secret=whsec_aW50ZWdyYXRpb24tdGVzdC13ZWJob29rLXNlY3JldA==",
                 "order.expiration-scheduler-enabled=false",
                 "order.reconciliation-enabled=false",

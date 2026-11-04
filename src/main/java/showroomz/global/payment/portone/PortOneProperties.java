@@ -64,5 +64,7 @@ public class PortOneProperties {
         private int ttlMinutes = 10;
         /** DI 중복 가입 차단 — 확정(0-5). 장애 때만 끄는 킬 스위치이고 끄더라도 DB UNIQUE 는 남는다. */
         private boolean duplicateBlock = true;
+        /** 가입에 본인인증 필수 — 끄면 인증 결과 없이도 가입을 마친다(실명 · DI 는 비어 있다). 본인확인 연동 전 임시 스위치. */
+        private boolean required = true;
     }
 }

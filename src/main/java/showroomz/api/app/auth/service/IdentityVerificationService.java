@@ -200,21 +200,28 @@ public class IdentityVerificationService {
 
     // ------------------------------------------------------------------ 소비
 
-    /** 회원가입(3-3) — 10분 내 VERIFIED · 미소비 SIGNUP 행을 Users 로 옮긴다. 없으면 400. */
+    /**
+     * 회원가입(3-3) — 10분 내 VERIFIED · 미소비 SIGNUP 행을 Users 로 옮긴다. 없으면 400.
+     * 본인인증이 필수가 아니면({@code portone.identity.required=false}) 행이 없을 때 인증 정보 없이 넘어간다.
+     */
     @Transactional
     public void consumeForSignup(Users user, LocalDateTime now) {
-        consume(user, IdentityVerificationPurpose.SIGNUP, now);
+        Optional<IdentityVerification> row =
+                verificationRepository.findLatestVerifiedUnconsumed(user.getId(), IdentityVerificationPurpose.SIGNUP, now);
+        if (row.isEmpty() && !properties.getIdentity().isRequired()) {
+            return;
+        }
+        consume(user, row, now);
     }
 
     /** 재인증(3-4) — REVERIFY 행만. SIGNUP 행을 집어 쓰지 못한다(0-4). */
     @Transactional
     public void consumeForReverify(Users user, LocalDateTime now) {
-        consume(user, IdentityVerificationPurpose.REVERIFY, now);
+        consume(user, verificationRepository.findLatestVerifiedUnconsumed(user.getId(), IdentityVerificationPurpose.REVERIFY, now), now);
     }
 
-    private void consume(Users user, IdentityVerificationPurpose purpose, LocalDateTime now) {
-        IdentityVerification row = verificationRepository.findLatestVerifiedUnconsumed(user.getId(), purpose, now)
-                .orElseThrow(() -> new BusinessException(ErrorCode.IDENTITY_VERIFICATION_REQUIRED));
+    private void consume(Users user, Optional<IdentityVerification> found, LocalDateTime now) {
+        IdentityVerification row = found.orElseThrow(() -> new BusinessException(ErrorCode.IDENTITY_VERIFICATION_REQUIRED));
         String di = cipher.decrypt(row.getVerifiedDiEnc());
         user.applyIdentity(row.getVerifiedName(), row.getVerifiedBirthDate(), row.getVerifiedGender(), row.getVerifiedPhone(),
                 row.getVerifiedOperator(), row.getVerifiedForeigner(), row.getVerifiedCiEnc(), row.getVerifiedDiEnc(),
