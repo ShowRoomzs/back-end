@@ -125,7 +125,7 @@ portone:
     tosspay: ${PORTONE_CHANNEL_TOSSPAY:}
     identity: ${PORTONE_CHANNEL_IDENTITY:}          # KCP 휴대폰 본인확인 채널(57 설계서 6-1) — 결제 채널과 다른 키
   identity:                                         # 본인인증 — enabled=false 면 결제가 켜져 있어도 FakeIdentityGateway
-    enabled: ${PORTONE_IDENTITY_ENABLED:true}
+    enabled: ${PORTONE_IDENTITY_ENABLED:false}      # KCP 본인확인 연동 전이라 기본 꺼짐(11-04) — 연동하면 true 로 되돌린다
     ttl-minutes: 10                                 # 시작 → 완료 상한
     duplicate-block: ${IDENTITY_DUPLICATE_BLOCK:true}   # DI 중복 가입 차단(확정) — 장애 때만 false · DB UNIQUE 는 남는다
 
