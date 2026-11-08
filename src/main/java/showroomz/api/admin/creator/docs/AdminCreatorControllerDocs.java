@@ -75,7 +75,7 @@ public interface AdminCreatorControllerDocs {
               "navigation": { "previousId": 3017, "nextId": 3019 },
               "basic": {
                 "showroomName": "소연 쇼룸", "profileImageUrl": "https://cdn…/profile/3018.jpg",
-                "showroomAddress": "soyeon_showroom", "showroomUrl": "https://showroomz.kr/soyeon_showroom", "showroomPublic": true,
+                "showroomAddress": "soyeon_showroom", "showroomUrl": "https://showroomz.co.kr/@soyeon_showroom", "showroomPublic": true,
                 "instagramUrl": "https://instagram.com/soyeon_showroom", "businessEmail": "soyeon@example.com",
                 "joinedAt": "2026-06-20T10:00:00", "onboardingApprovedAt": "2026-07-01T14:00:00",
                 "lastLoginAt": "2026-10-15T21:03:00", "lastLoginDevice": "IPHONE"

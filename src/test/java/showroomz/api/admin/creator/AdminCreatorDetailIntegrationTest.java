@@ -165,7 +165,7 @@ class AdminCreatorDetailIntegrationTest extends AdminCreatorTestSupport {
         adminGet(base).andExpect(status().isOk())
                 .andExpect(jsonPath("$.basic.showroomName").value("글로우_지민"))
                 .andExpect(jsonPath("$.basic.showroomAddress").value("soyeon_showroom"))
-                .andExpect(jsonPath("$.basic.showroomUrl").value("https://showroomz.kr/soyeon_showroom"))
+                .andExpect(jsonPath("$.basic.showroomUrl").value("https://showroomz.co.kr/@soyeon_showroom"))
                 .andExpect(jsonPath("$.basic.showroomPublic").value(true))
                 .andExpect(jsonPath("$.basic.instagramUrl").value("https://instagram.com/soyeon"))
                 .andExpect(jsonPath("$.basic.businessEmail").value("jimin-biz@showroomz.test"))

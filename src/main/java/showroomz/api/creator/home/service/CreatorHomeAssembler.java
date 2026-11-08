@@ -49,7 +49,7 @@ public class CreatorHomeAssembler {
     private final ShowroomVisitRepository visitRepository;
 
     /** 쇼룸 주소 규칙 — 내 쇼룸(프로필) 화면과 같은 {@code app.base-url + "/@" + 주소}. */
-    @Value("${app.base-url:https://showroomz.shop}")
+    @Value("${app.base-url:https://showroomz.co.kr}")
     private String baseUrl;
 
     public CreatorHomeDto.Home getHome(Long userId) {

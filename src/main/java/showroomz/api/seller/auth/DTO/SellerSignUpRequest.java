@@ -16,7 +16,7 @@ public class SellerSignUpRequest {
     // 1. 계정 정보
     @NotBlank(message = "이메일은 필수 입력값입니다.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
-    @Schema(description = "아이디(이메일)", example = "admin@showroomz.shop")
+    @Schema(description = "아이디(이메일)", example = "admin@showroomz.co.kr")
     private String email;
 
     @NotBlank(message = "비밀번호는 필수 입력값입니다.")
@@ -95,7 +95,7 @@ public class SellerSignUpRequest {
 
     @NotBlank(message = "이메일 주소를 입력해주세요.")
     @Email(message = "올바른 이메일 형식이 아닙니다. (예: example@domain.com)")
-    @Schema(description = "세금계산서(tax) 확인용 이메일", example = "tax@showroomz.shop")
+    @Schema(description = "세금계산서(tax) 확인용 이메일", example = "tax@showroomz.co.kr")
     private String taxEmail;
 
     @NotBlank(message = "사업자등록증 사본을 첨부해주세요.")

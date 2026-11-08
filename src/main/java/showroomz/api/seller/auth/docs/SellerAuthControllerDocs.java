@@ -285,7 +285,7 @@ public interface SellerAuthControllerDocs {
             @Parameter(
                     description = "중복 체크할 이메일 주소",
                     required = true,
-                    example = "seller@showroomz.shop"
+                    example = "seller@showroomz.co.kr"
             )
             @RequestParam String email
     );

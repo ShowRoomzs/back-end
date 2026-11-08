@@ -269,7 +269,7 @@ final class CreatorSettlementDocsExamples {
                 "cardStatus": "SUBMITTED",
                 "supplier": {
                   "name": "SHOWROOMZ TEST", "representative": "TEST 대표", "registrationNumber": "000-00-00000",
-                  "address": "TEST 주소", "taxEmail": "tax-test@showroomz.shop"
+                  "address": "TEST 주소", "taxEmail": "tax-test@showroomz.co.kr"
                 },
                 "supplyAmount": 548000, "vatAmount": 54800, "totalAmount": 602800,
                 "approvalNumber": "20261008-41000027-38475920", "submittedAt": "2026-10-08T16:40:00",

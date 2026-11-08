@@ -45,7 +45,7 @@ public final class CreatorHomeDto {
     public record ChecklistItem(
             @Schema(example = "PROFILE") String key,
             @Schema(description = "SHOWROOM_LINK 는 판정할 수 없어(복사는 기기 동작) null", nullable = true) Boolean done,
-            @Schema(description = "SHOWROOM_LINK 만 — 복사할 쇼룸 주소", example = "https://showroomz.shop/@beauty_log", nullable = true)
+            @Schema(description = "SHOWROOM_LINK 만 — 복사할 쇼룸 주소", example = "https://showroomz.co.kr/@beauty_log", nullable = true)
             String showroomUrl
     ) {
     }

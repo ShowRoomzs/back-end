@@ -86,7 +86,7 @@ public final class AdminCreatorDto {
             @Schema(example = "소연 쇼룸") String showroomName,
             String profileImageUrl,
             @Schema(description = "쇼룸 주소 핸들", example = "soyeon_showroom") String showroomAddress,
-            @Schema(description = "쇼룸 링크 — 탈퇴(비공개)면 null", example = "https://showroomz.kr/soyeon_showroom") String showroomUrl,
+            @Schema(description = "쇼룸 링크 — 탈퇴(비공개)면 null", example = "https://showroomz.co.kr/@soyeon_showroom") String showroomUrl,
             @Schema(description = "쇼룸 공개 여부 — 탈퇴면 false(주소 · 인스타 링크 해제)") boolean showroomPublic,
             @Schema(description = "인스타 — 미등록 · 파기면 null") String instagramUrl,
             @Schema(description = "업무용 이메일 — 탈퇴 후에도 보존") String businessEmail,

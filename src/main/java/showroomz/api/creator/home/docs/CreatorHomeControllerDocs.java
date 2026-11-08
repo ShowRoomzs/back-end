@@ -53,7 +53,7 @@ public interface CreatorHomeControllerDocs {
                                         {"key": "SETTLEMENT_INFO", "done": true, "showroomUrl": null},
                                         {"key": "PROFILE", "done": true, "showroomUrl": null},
                                         {"key": "FIRST_POST", "done": true, "showroomUrl": null},
-                                        {"key": "SHOWROOM_LINK", "done": null, "showroomUrl": "https://showroomz.shop/@beauty_log"}],
+                                        {"key": "SHOWROOM_LINK", "done": null, "showroomUrl": "https://showroomz.co.kr/@beauty_log"}],
                                         "completed": 3, "total": 4},
                                       "live": null,
                                       "todos": [
