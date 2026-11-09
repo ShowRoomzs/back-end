@@ -94,7 +94,8 @@ public class AdminCreatorQueryService {
     private final AdminCreatorListQueryRepository listQueries;
     private final showroomz.domain.connection.repository.ConnectionRepository connections;
 
-    @Value("${showroomz.showroom.base-url:https://showroomz.kr/}")
+    /** 쇼룸 주소 규칙 — 크리에이터 내 쇼룸 · 홈 화면과 같은 {@code app.base-url + "/@" + 주소}. */
+    @Value("${app.base-url:https://showroomz.co.kr}")
     private String showroomBaseUrl;
 
     // ------------------------------------------------------------------ 목록(ui-admin-16 rev.7 · 55 계획서 M1)
@@ -176,7 +177,7 @@ public class AdminCreatorQueryService {
         boolean unmasked = session != null && !purged;
 
         Basic basic = new Basic(creator.getShowroomName(), creator.getProfileImageUrl(), creator.getShowroomAddress(),
-                creator.isWithdrawn() || creator.getShowroomAddress() == null ? null : showroomBaseUrl + creator.getShowroomAddress(),
+                creator.isWithdrawn() || creator.getShowroomAddress() == null ? null : showroomBaseUrl + "/@" + creator.getShowroomAddress(),
                 !creator.isWithdrawn(), creator.getInstagramUrl(), creator.getBusinessEmail(), creator.getCreatedAt(),
                 approvedAt, user.getLastLoginAt(), device);
 

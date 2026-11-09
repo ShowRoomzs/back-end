@@ -35,7 +35,7 @@ public class CreatorShowroomService {
     private final CreatorRepository creatorRepository;
     private final CreatorSanctionGuard sanctionGuard;
 
-    @Value("${app.base-url:https://showroomz.shop}")
+    @Value("${app.base-url:https://showroomz.co.kr}")
     private String baseUrl;
 
     public ShowroomProfileResponse getProfile(Long userId) {

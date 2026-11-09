@@ -83,7 +83,7 @@ public class TestTokenGenerator {
         System.out.println(userToken);
         System.out.println("=".repeat(80));
         System.out.println("\ncurl 예시:");
-        System.out.println("curl -X POST 'https://api.showroomz.shop/v1/images?type=PROFILE' \\");
+        System.out.println("curl -X POST 'https://api.showroomz.co.kr/v1/images?type=PROFILE' \\");
         System.out.println("  -H 'Authorization: Bearer " + userToken + "' \\");
         System.out.println("  -F 'file=@/path/to/image.jpg'\n");
 
@@ -98,7 +98,7 @@ public class TestTokenGenerator {
         System.out.println(sellerToken);
         System.out.println("=".repeat(80));
         System.out.println("\ncurl 예시:");
-        System.out.println("curl -X GET 'https://api.showroomz.shop/v1/markets/me' \\");
+        System.out.println("curl -X GET 'https://api.showroomz.co.kr/v1/markets/me' \\");
         System.out.println("  -H 'Authorization: Bearer " + sellerToken + "'\n");
 
         // ADMIN 역할로 토큰 생성
@@ -112,7 +112,7 @@ public class TestTokenGenerator {
         System.out.println(adminToken);
         System.out.println("=".repeat(80));
         System.out.println("\ncurl 예시:");
-        System.out.println("curl -X PATCH 'https://api.showroomz.shop/v1/markets/1/image-status' \\");
+        System.out.println("curl -X PATCH 'https://api.showroomz.co.kr/v1/markets/1/image-status' \\");
         System.out.println("  -H 'Authorization: Bearer " + adminToken + "' \\");
         System.out.println("  -H 'Content-Type: application/json' \\");
         System.out.println("  -d '{\"status\":\"APPROVED\"}'\n");

@@ -47,11 +47,11 @@ class Design1021CompanyAliasBindingTest {
     @Test
     @DisplayName("company.* 를 바꾸면 정산 공급받는자도 따라간다")
     void companyOverrideFlowsToSettlement() throws IOException {
-        Binder binder = binder(Map.of("COMPANY_NAME", "주식회사 쇼룸즈", "COMPANY_TAX_EMAIL", "tax@showroomz.shop"));
+        Binder binder = binder(Map.of("COMPANY_NAME", "주식회사 쇼룸즈", "COMPANY_TAX_EMAIL", "tax@showroomz.co.kr"));
         SettlementProperties.Platform platform = binder.bind("settlement", SettlementProperties.class).get().getPlatform();
 
         assertThat(platform.getBusinessName()).isEqualTo("주식회사 쇼룸즈");
-        assertThat(platform.getTaxEmail()).isEqualTo("tax@showroomz.shop");
+        assertThat(platform.getTaxEmail()).isEqualTo("tax@showroomz.co.kr");
     }
 
     @Test
@@ -73,7 +73,7 @@ class Design1021CompanyAliasBindingTest {
                 .isInstanceOf(IllegalStateException.class).hasMessageContaining("tax-email");
 
         SettlementProperties real = binder(Map.of("settlement.launch-gate-enabled", "true",
-                "COMPANY_TAX_EMAIL", "tax@showroomz.shop")).bind("settlement", SettlementProperties.class).get();
+                "COMPANY_TAX_EMAIL", "tax@showroomz.co.kr")).bind("settlement", SettlementProperties.class).get();
         assertThatCode(() -> new SettlementPlatformConfig(real, prod())).doesNotThrowAnyException();
     }
 

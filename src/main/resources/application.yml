@@ -51,7 +51,7 @@ spring:
       max-file-size: 20MB
       max-request-size: 20MB
 app:
-  base-url: ${APP_BASE_URL:https://showroomz.shop}  # 마켓 URL 생성에 사용되는 기본 도메인
+  base-url: ${APP_BASE_URL:https://showroomz.co.kr}  # 마켓 URL 생성에 사용되는 기본 도메인
   auth:
     # JWT 시크릿 키 (32자 이상 권장, 임의의 긴 문자열 사용)
     tokenSecret: ${TOKEN_SECRET}
@@ -281,7 +281,7 @@ company:
   registration-number: ${COMPANY_REGISTRATION_NUMBER:791-12-03353}
   address: ${COMPANY_ADDRESS:경기도 용인시 수지구 죽전로 152, 글로컬산학협력단 B211-3호(죽전동, 단국대학교)}
   mail-order-report-number: ${COMPANY_MAIL_ORDER_REPORT_NUMBER:}   # 비면 「신고 예정 [출시 전 확정]」
-  tax-email: ${COMPANY_TAX_EMAIL:tax-test@showroomz.shop}          # [확인 필요] — 이름에 test 가 있어 런칭 게이트가 막는다(실제 값 필요)
+  tax-email: ${COMPANY_TAX_EMAIL:tax-test@showroomz.co.kr}          # [확인 필요] — 이름에 test 가 있어 런칭 게이트가 막는다(실제 값 필요)
   copyright: "© 2026 Showroomz"
   privacy-officer:
     name: ${COMPANY_PRIVACY_OFFICER_NAME:소병서}

@@ -62,7 +62,7 @@ class SettlementPlatformConfigTest {
         platform.setRepresentative("김대표");
         platform.setRegistrationNumber(registrationNumber);
         platform.setAddress("서울시 성동구 성수이로 1");
-        platform.setTaxEmail("tax@showroomz.shop");
+        platform.setTaxEmail("tax@showroomz.co.kr");
         return properties;
     }
 }

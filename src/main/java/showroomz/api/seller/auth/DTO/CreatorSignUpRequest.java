@@ -16,7 +16,7 @@ public class CreatorSignUpRequest {
 
     @NotBlank(message = "이메일은 필수 입력값입니다.")
     @Email(message = "이메일 형식이 올바르지 않습니다.")
-    @Schema(description = "아이디(이메일)", example = "creator@showroomz.shop")
+    @Schema(description = "아이디(이메일)", example = "creator@showroomz.co.kr")
     private String email;
 
     @NotBlank(message = "비밀번호는 필수 입력값입니다.")
