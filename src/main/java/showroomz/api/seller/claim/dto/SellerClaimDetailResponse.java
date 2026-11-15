@@ -57,7 +57,7 @@ public record SellerClaimDetailResponse(
             showroomz.domain.order.type.ClaimInspectionResult result,
             @Schema(example = "사유 번복", nullable = true) String resultLabel,
             @Schema(description = "사유 번복 설명 — 소비자에게 그대로 보인다", nullable = true) String explanation,
-            @Schema(description = "자동 입고 — 택배 도착 후 N영업일 동안 입고 확인이 없어 시스템이 입고 처리했다") boolean autoReceived,
+            @Schema(description = "자동 입고 — 2026-11-10 폐지 전 건만 true(이후는 검수 기한 경과 자동 승인)") boolean autoReceived,
             @Schema(description = "사유 번복 결제 금액(재발송 배송비 + 착불 운임) — 교환 사유 번복만", nullable = true, example = "6000")
             Integer overturnFee,
             @Schema(description = "운임 정산 — 브랜드 정산 「± 운임 정산」과 같은 행") List<FreightRow> freight

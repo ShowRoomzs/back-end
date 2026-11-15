@@ -20,7 +20,7 @@ public enum RewardStage {
         return switch (status) {
             case COLLECTING -> AFTER_SETTLEMENT;
             case ADJUSTING -> AFTER_AGREEMENT;
-            case SETTLED -> CONFIRMED;
+            case SETTLED, PAYOUT_FAILED -> CONFIRMED; // 분배 실패도 금액은 확정이다(지급만 다시 한다)
         };
     }
 }

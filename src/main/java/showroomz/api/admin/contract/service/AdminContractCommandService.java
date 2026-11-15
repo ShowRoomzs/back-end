@@ -83,6 +83,10 @@ public class AdminContractCommandService {
         if (c.getStatus() != ContractStatus.SIGNING && c.getStatus() != ContractStatus.CONCLUSION_PENDING) fail(ErrorCode.CONTRACT_STATUS_CONFLICT);
         if (!Objects.equals(c.getVersion(), request.version())) fail(ErrorCode.CONTRACT_MODIFIED_ELSEWHERE);
         LocalDateTime now = LocalDateTime.now();
+        // 서명 기한 경과 = 불성립(2026-11-10) — 서명 진행 중에 기한이 지났으면 입력을 받지 않는다(배치가 곧 만료로 닫는다).
+        if (c.getStatus() == ContractStatus.SIGNING && c.isSignatureDeadlinePassed(now)) {
+            fail(ErrorCode.CONTRACT_SIGNATURE_DEADLINE_PASSED);
+        }
         validateSignedAt(c, request.brandSignedAt(), now);
         validateSignedAt(c, request.creatorSignedAt(), now);
         List<String> changes = new ArrayList<>();
@@ -300,6 +304,9 @@ public class AdminContractCommandService {
     private void validateSignedAt(Contract c, LocalDateTime signedAt, LocalDateTime now) {
         if (signedAt != null && (c.getSignatureRequestedAt() == null || signedAt.isAfter(now)
                 || signedAt.isBefore(c.getSignatureRequestedAt()))) fail(ErrorCode.CONTRACT_SIGNATURE_TIME_INVALID);
+        // 기한 후 서명은 성립 근거가 아니다(2026-11-10). 정지 보류 중이면 기한이 멈춰 있다(보류가 끝나면 밀린 기한이 다시 선다).
+        if (signedAt != null && !c.isHeldBySanction() && c.getSignatureDeadlineAt() != null
+                && signedAt.isAfter(c.getSignatureDeadlineAt())) fail(ErrorCode.CONTRACT_SIGNATURE_DEADLINE_PASSED);
     }
     private void transition(Contract c, ContractStatus target) {
         if (contracts.transitionStatus(c.getId(), c.getStatus(), target) != 1) fail(ErrorCode.CONTRACT_STATUS_CONFLICT);

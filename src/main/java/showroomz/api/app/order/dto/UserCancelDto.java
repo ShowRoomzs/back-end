@@ -56,7 +56,7 @@ public final class UserCancelDto {
     public enum Phase {
         /** 브랜드 확인 중 — 응답 기한까지 확인하지 않으면 자동 취소된다. */
         REVIEWING,
-        /** 취소 완료 — 브랜드 승인 · 자동 승인 · 직접 취소 · 직권 취소. */
+        /** 취소 완료 — 브랜드 승인 · 운영자 승인 · 직접 취소 · 직권 취소(자동 승인은 2026-11-10 폐지 전 건). */
         CANCELLED,
         /** 브랜드가 거부했다 — 상품은 발송된다. */
         REJECTED
@@ -79,10 +79,12 @@ public final class UserCancelDto {
         private String phaseLabel;
         @Schema(description = "[취소 요청 철회] 노출 — 브랜드 확인 중인 취소 요청만. `POST /v1/user/orders/{orderId}/cancel-requests/{cancelRequestId}/withdraw`")
         private boolean withdrawable;
-        @Schema(description = "자동 승인으로 취소됐다(브랜드가 응답 기한 안에 확인하지 않았다)")
+        @Schema(description = "자동 승인으로 취소됐다 — 2026-11-10 자동 승인 폐지 전 건만 true")
         private boolean autoApproved;
+        @Schema(description = "브랜드가 응답 기한 안에 확인하지 않아 운영팀이 브랜드 확인 후 취소했다")
+        private boolean operatorApproved;
         @Schema(description = "상단 안내 문구 — 없으면 빈 목록",
-                example = "[\"브랜드가 1영업일(주말·공휴일 제외) 안에 확인하지 않으면 자동으로 취소돼요. 확인 전까지는 요청을 철회할 수 있어요\"]")
+                example = "[\"브랜드가 2영업일(주말·공휴일 제외) 안에 확인하지 않으면 운영팀이 브랜드에 확인한 뒤 취소해 드려요. 확인 전까지는 요청을 철회할 수 있어요\"]")
         private List<String> notices;
         @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = OrderDto.TIME_PATTERN)
         private LocalDateTime requestedAt;

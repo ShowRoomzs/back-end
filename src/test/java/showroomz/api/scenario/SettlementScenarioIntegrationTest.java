@@ -353,7 +353,7 @@ class SettlementScenarioIntegrationTest extends SettlementTestSupport {
     // ================================================================== E2E-5
 
     @Test
-    @DisplayName("E2E-5 분배 실패 · 재분배 — 인플루언서 행 거절 → 07a 분배 실패 탭 · 파트너 · 스튜디오는 PAID + 자기 행만 「지급 확인 중」 → M3 → PAID · 공구 SETTLED")
+    @DisplayName("E2E-5 분배 실패 · 재분배 — 인플루언서 행 거절 → 07a 분배 실패 탭 · 파트너 · 스튜디오도 분배 실패가 보인다(2026-11-10) → M3 → PAID · 공구 SETTLED")
     void payoutFailedThenRedistributed() throws Exception {
         hangulDayOnly();
         readyToPay();
@@ -375,14 +375,15 @@ class SettlementScenarioIntegrationTest extends SettlementTestSupport {
         Surfaces broken = surfaces(failed);
         broken.assertSameNumbers(failed);
         assertThat(broken.admin().at("/actions/canRedistribute").asBoolean()).isTrue();
-        // 파트너 — 정산 라벨 PAID · 자기(브랜드) 행 지급 완료.
-        assertThat(broken.partner().at("/status").asText()).isEqualTo("PAID");
+        // 파트너 — 정산 라벨 분배 실패 · 자기(브랜드) 행 지급 완료 · 인플루언서 행 실패가 그대로 보인다.
+        assertThat(broken.partner().at("/status").asText()).isEqualTo("PAYOUT_FAILED");
         assertThat(broken.partner().at("/payouts/0/status").asText()).isEqualTo("PAID");
-        sellerGet(PARTNER).andExpect(jsonPath("$.content[0].status").value("PAID"));
-        // 스튜디오 — 정산 라벨 PAID · 자기(인플루언서) 행만 「지급 확인 중」.
-        assertThat(broken.studio().at("/settlement/status").asText()).isEqualTo("PAID");
+        assertThat(broken.partner().at("/payouts/1/status").asText()).isEqualTo("FAILED");
+        sellerGet(PARTNER).andExpect(jsonPath("$.content[0].status").value("PAYOUT_FAILED"));
+        // 스튜디오 — 정산 라벨 분배 실패 · 자기(인플루언서) 행 「지급 실패 · 재지급 예정」.
+        assertThat(broken.studio().at("/settlement/status").asText()).isEqualTo("PAYOUT_FAILED");
         assertThat(broken.studio().at("/payouts/rows/0/status").asText()).isEqualTo("FAILED");
-        assertThat(broken.studio().at("/payouts/rows/0/statusLabel").asText()).isEqualTo("지급 확인 중");
+        assertThat(broken.studio().at("/payouts/rows/0/statusLabel").asText()).isEqualTo("지급 실패 · 재지급 예정");
         assertThat(broken.studio().at("/withholding/receiptAvailable").asBoolean()).isFalse();
 
         // ② 재분배(지난 계좌) — PAID · 공구 SETTLED · 이력 운영자.

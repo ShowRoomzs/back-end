@@ -26,7 +26,7 @@ public interface GroupBuySettlementReader {
     }
 
     /**
-     * @param status         수취자 화면 상태({@link SettlementStatus#toPartyStatus()} — 분배 실패는 지급 완료로 접는다)
+     * @param status         수취자 화면 상태({@link SettlementStatus#toPartyStatus()} — 분배 실패도 그대로 · 2026-11-10)
      * @param reviewDueAt    정산 확인 기한
      * @param ordersClosedAt 주문 종결 시각
      */

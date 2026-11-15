@@ -294,6 +294,7 @@ public enum ErrorCode {
     CONTRACT_DOCUMENT_REQUIRED(HttpStatus.CONFLICT, "CONTRACT_DOCUMENT_REQUIRED", "서명 PDF와 감사추적인증서가 모두 필요합니다."),
     CONTRACT_DOCUMENT_LOCKED(HttpStatus.CONFLICT, "CONTRACT_DOCUMENT_LOCKED", "체결 완료된 계약의 문서는 변경할 수 없습니다."),
     CONTRACT_EXPIRE_NOT_DUE(HttpStatus.CONFLICT, "CONTRACT_EXPIRE_NOT_DUE", "서명 기한이 지나지 않았습니다."),
+    CONTRACT_SIGNATURE_DEADLINE_PASSED(HttpStatus.CONFLICT, "CONTRACT_SIGNATURE_DEADLINE_PASSED", "서명 기한이 지나 계약이 성립하지 않습니다. 기한 후 서명은 입력할 수 없습니다."),
     CONTRACT_DOCUMENT_INVALID(HttpStatus.BAD_REQUEST, "CONTRACT_DOCUMENT_INVALID", "업로드한 PDF 문서 정보를 확인해 주세요."),
     CONTRACT_PDF_GENERATION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "CONTRACT_PDF_GENERATION_FAILED", "계약서 생성에 실패했습니다. 다시 시도해 주세요."),
     CONTRACT_NOT_FOUND(HttpStatus.NOT_FOUND, "CONTRACT_NOT_FOUND", "존재하지 않는 계약입니다."),
@@ -394,6 +395,7 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "주문을 찾을 수 없습니다."),
     ORDER_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER_ITEMS_EMPTY", "주문할 상품이 없습니다."),
     ORDER_ADDRESS_REQUIRED(HttpStatus.BAD_REQUEST, "ORDER_ADDRESS_REQUIRED", "배송지를 선택해 주세요."),
+    ORDER_THIRD_PARTY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "ORDER_THIRD_PARTY_CONSENT_REQUIRED", "브랜드에 대한 개인정보 제3자 제공에 동의해 주세요."),
     ORDER_AMOUNT_CHANGED(HttpStatus.CONFLICT, "ORDER_AMOUNT_CHANGED", "상품 가격 또는 배송비가 변경되었습니다. 주문서를 다시 확인해 주세요."),
     ORDER_ALREADY_CLOSED(HttpStatus.CONFLICT, "ORDER_ALREADY_CLOSED", "이미 만료되었거나 취소된 주문입니다."),
     ORDER_NOT_CANCELLABLE(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "지금 상태에서는 주문을 취소할 수 없습니다."),
@@ -416,6 +418,7 @@ public enum ErrorCode {
     INVOICE_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "INVOICE_FORMAT_INVALID", "송장번호 형식이 올바르지 않습니다. 다시 확인해 주세요."),
     CANCEL_REQUEST_ALREADY_DECIDED(HttpStatus.CONFLICT, "CANCEL_REQUEST_ALREADY_DECIDED", "이미 처리된 취소 요청입니다."),
     CANCEL_REQUEST_PENDING_EXISTS(HttpStatus.CONFLICT, "CANCEL_REQUEST_PENDING_EXISTS", "검토 중인 취소 요청이 있습니다. 요청을 먼저 처리해 주세요."),
+    CANCEL_REQUEST_NOT_OVERDUE(HttpStatus.CONFLICT, "CANCEL_REQUEST_NOT_OVERDUE", "브랜드 응답 기한이 지나지 않은 취소 요청입니다. 기한이 지난 뒤 운영자가 취소할 수 있습니다."),
     CANCEL_REQUEST_REJECT_REASON_REQUIRED(HttpStatus.BAD_REQUEST, "CANCEL_REQUEST_REJECT_REASON_REQUIRED", "소비자에게 전달할 거부 사유를 입력해 주세요."),
     // 어드민 거래 관리(1009 기획 수정본 8절)
     ORDER_ACT_ON_BEHALF_NOT_ALLOWED(HttpStatus.CONFLICT, "ORDER_ACT_ON_BEHALF_NOT_ALLOWED", "대행 조건(발송 기한 경과 · 자동 알림 무응답)을 충족하지 않았습니다."),
@@ -432,7 +435,7 @@ public enum ErrorCode {
     /** 소비자 앱 — 준비 시작 후에는 취소 요청 경로만 남는다(약관 제17조② · 제18조①). */
     ORDER_CANCEL_WINDOW_CLOSED(HttpStatus.CONFLICT, "ORDER_CANCEL_WINDOW_CLOSED", "배송 준비가 시작되어 바로 취소할 수 없습니다. 판매자에게 취소 요청을 보내 주세요."),
     ORDER_ADDRESS_NOT_CHANGEABLE(HttpStatus.CONFLICT, "ORDER_ADDRESS_NOT_CHANGEABLE", "배송 준비가 시작되어 배송지를 변경할 수 없습니다."),
-    SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED", "요청을 철회할 수 없습니다. 내가 보낸 요청에 상대가 아직 응답하지 않았을 때만 철회할 수 있어요."),
+    SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED(HttpStatus.CONFLICT, "SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED", "요청을 철회할 수 없습니다. 처음 요청한 쪽만, 협의 중이고 기한이 지나기 전에 철회할 수 있어요."),
     ORDER_STALL_CHOICE_NOT_OPEN(HttpStatus.CONFLICT, "ORDER_STALL_CHOICE_NOT_OPEN", "아직 선택할 수 없는 주문입니다. 배송 추적이 멈추고 일정 기간이 지나면 선택할 수 있어요."),
     ORDER_STALL_CHOICE_ALREADY_MADE(HttpStatus.CONFLICT, "ORDER_STALL_CHOICE_ALREADY_MADE", "이미 처리 방법을 선택했습니다."),
     ORDER_ADDRESS_REGION_CHANGED(HttpStatus.CONFLICT, "ORDER_ADDRESS_REGION_CHANGED", "제주 · 도서산간 추가 배송비가 달라지는 배송지로는 변경할 수 없습니다. 주문을 취소한 뒤 다시 주문해 주세요."),

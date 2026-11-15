@@ -341,7 +341,9 @@ public class AdminRefundAssembler {
             case CANCEL_REQUEST_APPROVED -> {
                 OrderCancelRequest request = task.getSourceId() == null ? null
                         : context.cancelRequests().get(task.getSourceId());
-                yield request != null && request.isAutoApproved() ? "취소 요청 자동 승인" : "취소 요청 승인";
+                yield request == null ? "취소 요청 승인"
+                        : request.isOperatorApproved() ? "취소 요청 운영자 승인"
+                        : request.isAutoApproved() ? "취소 요청 자동 승인" : "취소 요청 승인";
             }
             case SELLER_DIRECT_CANCEL -> context.adminCancelledGroups().contains(task.getDeliveryGroup().getId())
                     ? "운영자 대행 직권 취소" : "브랜드 직권 취소";

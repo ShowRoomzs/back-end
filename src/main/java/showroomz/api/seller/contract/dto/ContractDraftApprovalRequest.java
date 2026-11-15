@@ -14,5 +14,11 @@ public record ContractDraftApprovalRequest(
         @Schema(description = "승인 일시 — 생략하면 지금 · 미래 불가", example = "2026-08-12T06:40:00Z", nullable = true)
         LocalDateTime approvedAt,
         @Schema(description = "근거 — 연결·소통 스레드에서 확인한 초안 메시지 ID(선택)", nullable = true) Long threadMessageId,
-        @Schema(description = "메모 — 300자", nullable = true) @Size(max = 300) String note) {
+        @Schema(description = "메모 — 300자", nullable = true) @Size(max = 300) String note,
+        @Schema(description = "회신하는 초안 제출(B-13) — 넣으면 그 제출이 「승인」으로 닫힌다(회신 대기일 때만)", nullable = true)
+        Long submissionId) {
+
+    public ContractDraftApprovalRequest(String title, LocalDateTime approvedAt, Long threadMessageId, String note) {
+        this(title, approvedAt, threadMessageId, note, null);
+    }
 }

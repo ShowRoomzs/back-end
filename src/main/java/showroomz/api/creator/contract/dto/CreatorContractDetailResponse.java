@@ -103,7 +103,10 @@ public record CreatorContractDetailResponse(
         TerminationRequested terminationRequested,
 
         @Schema(description = "초안 승인 기록(1021 기-30) — 브랜드가 남긴 기록(읽기 전용). 없으면 빈 배열")
-        List<showroomz.api.seller.contract.dto.ContractDetailResponse.DraftApproval> draftApprovals
+        List<showroomz.api.seller.contract.dto.ContractDetailResponse.DraftApproval> draftApprovals,
+
+        @Schema(description = "사전 검수 초안 제출(B-13) — 내가 제출한 초안과 회신 상태. 없으면 빈 배열")
+        List<showroomz.api.seller.contract.dto.ContractDetailResponse.DraftSubmission> draftSubmissions
 ) {
 
     @Schema(description = "상대(브랜드)의 해지 요청")

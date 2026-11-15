@@ -391,11 +391,11 @@ class SellerPerformanceBlocksIntegrationTest extends SettlementTestSupport {
         }
         assertThat(scheduled.at("/kpi/payout/basis").asText()).doesNotContain("합의 반영");
 
-        // 지급 완료 · 분배 실패 — 같은 화면(FS-02)
+        // 지급 완료 · 분배 실패 — 금액 블록은 같고 상태는 따로 보인다(FS-02 · 2026-11-10)
         moveSettlement(s, "PAID");
         assertSettledFinal(detail(), "PAID", "SUCCESS");
         moveSettlement(s, "PAYOUT_FAILED");
-        assertSettledFinal(detail(), "PAID", "SUCCESS");
+        assertSettledFinal(detail(), "PAYOUT_FAILED", "DANGER");
 
         // 합의 반영(D4) — 리워드 −1,000 · 정산액은 저장값 · 원래 값은 정산 계산기가 원래 리워드로 낸 값
         long agreed = reward - 1_000;

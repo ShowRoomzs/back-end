@@ -8,6 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.global.utils.KstDates;
+import showroomz.domain.order.service.BusinessDayCalculator;
 import showroomz.api.seller.claim.ClaimTestSupport;
 import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.notification.entity.Notification;
@@ -29,6 +31,7 @@ import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.domain.product.entity.ProductVariant;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -57,6 +60,7 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
     @Autowired private OrderRefundTaskRepository refundTaskRepository;
     @Autowired private NotificationRepository notificationRepository;
 
+    @Autowired private BusinessDayCalculator businessDayCalculator;
     private String admin;
 
     @BeforeEach
@@ -65,36 +69,38 @@ class Design1021ClaimInspectionDetailIntegrationTest extends ClaimTestSupport {
         admin = adminToken(operator);
     }
 
-    // ------------------------------------------------------------------ 4-2 자동 입고
+    // ------------------------------------------------------------------ 반품 검수 자동 승인(2026-11-10 · 자동 입고 폐지)
 
     @Test
-    @DisplayName("토요일 도착 — 다음 영업일(월)부터 3영업일(목) 끝까지는 그대로 · 금요일에 시스템 입고 · 검수 기한 발급 · 회수 중은 대상 아님")
-    void autoReceiveCountsFromNextBusinessDay() throws Exception {
+    @DisplayName("토요일 도착 — 검수 기한은 다음 영업일(월)로 미룬 뒤 + 2영업일(수) 끝 · 기한 전 그대로 · 지나면 자동 승인 · 교환 · 회수 중은 대상 아님")
+    void returnAutoApprovalCountsFromNextBusinessDay() throws Exception {
         Long claimId = returnClaim(deliveredGroup(creamVariant, 1));
         Long collecting = returnClaim(deliveredGroup(creamVariant, 1));
         LocalDateTime saturday = LocalDateTime.of(2026, 11, 7, 10, 0);
         markArrived(claimId, saturday);
+        LocalDateTime due = businessDayCalculator.dueAt(saturday, 2);
+        jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?", due, claimId);
         jdbc.update("UPDATE order_claim_collection SET arrived_at = ? WHERE collection_id = "
                 + "(SELECT collection_id FROM order_claim WHERE claim_id = ?)", saturday, collecting);
+        assertThat(KstDates.toKstDate(due)).isEqualTo(LocalDate.of(2026, 11, 11));
 
-        LocalDateTime thursdayNight = LocalDateTime.of(2026, 11, 12, 23, 0);
-        assertThat(claimService.autoReceive(claimId, thursdayNight)).isFalse();
+        assertThat(claimService.autoApproveReturn(claimId, due.minusMinutes(1))).isFalse();
         assertThat(claimStatus(claimId)).isEqualTo("ARRIVED");
 
-        LocalDateTime friday = LocalDateTime.of(2026, 11, 13, 0, 10);
-        assertThat(claimService.findIdsToAutoReceive(friday, 100)).contains(claimId).doesNotContain(collecting);
-        assertThat(claimService.autoReceive(collecting, friday)).isFalse();
-        assertThat(claimService.autoReceive(claimId, friday)).isTrue();
+        LocalDateTime after = due.plusMinutes(10);
+        assertThat(claimService.findReturnIdsToAutoApprove(after, 100)).contains(claimId).doesNotContain(collecting);
+        assertThat(claimService.autoApproveReturn(collecting, after)).isFalse();
+        assertThat(claimService.autoApproveReturn(claimId, after)).isTrue();
 
-        Map<String, Object> row = jdbc.queryForMap("SELECT status, received_by, inspect_due_at FROM order_claim "
+        Map<String, Object> row = jdbc.queryForMap("SELECT status, received_by, inspected_by FROM order_claim "
                 + "WHERE claim_id = ?", claimId);
-        assertThat(row.get("status")).isEqualTo("RECEIVED");
+        assertThat(row.get("status")).isIn("REFUND_PENDING", "COMPLETED");
         assertThat(row.get("received_by")).isNull();
-        assertThat(row.get("inspect_due_at")).isNotNull();
+        assertThat(row.get("inspected_by")).isNull();
         assertThat(jdbc.queryForObject("SELECT detail FROM order_claim_history WHERE claim_id = ? "
-                + "AND event_type = 'AUTO_RECEIVED'", String.class, claimId)).contains("3영업일 경과");
+                + "AND event_type = 'INSPECTION_AUTO_APPROVED'", String.class, claimId)).contains("2영업일").contains("자동 승인");
         sellerGet(SELLER_CLAIMS + "/" + claimId).andExpect(status().isOk())
-                .andExpect(jsonPath("$.inspection.autoReceived").value(true));
+                .andExpect(jsonPath("$.inspection.autoReceived").value(false));
     }
 
     // ------------------------------------------------------------------ 4-3 교환 사유 번복

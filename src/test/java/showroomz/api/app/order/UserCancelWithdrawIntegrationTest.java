@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
+import showroomz.global.error.exception.BusinessException;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.scenario.OrderFlowTestSupport;
 import showroomz.domain.member.user.entity.Users;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -82,7 +84,8 @@ class UserCancelWithdrawIntegrationTest extends OrderFlowTestSupport {
         withdraw(orderOf(withdrawnGroup), withdrawnId).andExpect(status().isOk());
         approveRequest(request(withdrawnId)).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("CANCEL_REQUEST_ALREADY_DECIDED"));
-        assertThat(cancelRequestService.autoApproveIfOverdue(withdrawnId, LocalDateTime.now().plusDays(30))).isFalse();
+        assertThatThrownBy(() -> cancelRequestService.approveByOperator(withdrawnId, 1L, "브랜드 확인",
+                LocalDateTime.now().plusDays(30))).isInstanceOf(BusinessException.class);
         assertThat(itemsOf(withdrawnGroup)).allSatisfy(item -> assertThat(item.getStatus().name()).isEqualTo("PAID"));
 
         OrderDeliveryGroup rejectedGroup = preparingGroup();

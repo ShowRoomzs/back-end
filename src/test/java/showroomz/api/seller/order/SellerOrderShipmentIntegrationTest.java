@@ -308,16 +308,22 @@ class SellerOrderShipmentIntegrationTest extends SellerOrderTestSupport {
                     .andExpect(jsonPath("$.timeline.trackingNumber").value("777788889999"))
                     .andExpect(jsonPath("$.timeline.lastTrackingAt").value(nullValue()))
                     .andExpect(jsonPath("$.overlays.trackingAlert").value(nullValue()))
-                    .andExpect(jsonPath("$.history[0].eventType").value("INVOICE_UPDATED"));
+                    // 추적 정지 건의 새 송장은 소비자 재발송 선택의 처리다(1021 기-15) — 「추적 정지 후 재발송」이 하나 더 남는다.
+                    .andExpect(jsonPath("$.history[0].eventType").value("RESHIPPED_AFTER_STALL"))
+                    .andExpect(jsonPath("$.history[1].eventType").value("INVOICE_UPDATED"));
 
             OrderDeliveryGroup updated = reload(group);
             assertThat(updated.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
             assertThat(updated.getTrackingAlert()).isNull();
             assertThat(updated.getLastTrackingAt()).isNull();
             assertThat(updated.getShippedAt()).isEqualTo(stalled.getShippedAt());
-            OrderFulfillmentHistory latest = history(group).get(0);
-            assertThat(latest.getDetail()).isEqualTo("CJ대한통운 444455556666 → 한진택배 777788889999");
-            assertThat(latest.getActorType()).isEqualTo(FulfillmentActorType.SELLER);
+            OrderFulfillmentHistory reshipped = history(group).get(0);
+            assertThat(reshipped.getEventType()).isEqualTo(FulfillmentEventType.RESHIPPED_AFTER_STALL);
+            assertThat(reshipped.getDetail()).isEqualTo("소비자 선택 전");
+            OrderFulfillmentHistory updatedInvoice = history(group).get(1);
+            assertThat(updatedInvoice.getEventType()).isEqualTo(FulfillmentEventType.INVOICE_UPDATED);
+            assertThat(updatedInvoice.getDetail()).isEqualTo("CJ대한통운 444455556666 → 한진택배 777788889999");
+            assertThat(updatedInvoice.getActorType()).isEqualTo(FulfillmentActorType.SELLER);
         }
 
         @Test

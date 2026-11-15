@@ -432,6 +432,10 @@ public class SellerBasicInfoDto {
         private Integer jejuSurcharge;
         @Schema(description = "도서산간 추가비 — 제주 제외", example = "5000")
         private Integer remoteAreaSurcharge;
+        @Schema(description = "청약철회 제한 안내 문구(수정요청 C) — 개봉 화장품 반품 제한. 비어 있으면 기본 문구가 표시된다", nullable = true)
+        private String withdrawalRestrictionNotice;
+        @Schema(description = "소비자 상품 상세에 실제로 보이는 문구 — 브랜드 문구 또는 기본 문구")
+        private String withdrawalRestrictionNoticeShown;
     }
 
     @Getter
@@ -462,5 +466,9 @@ public class SellerBasicInfoDto {
         @jakarta.validation.constraints.Min(value = 0, message = "도서산간 추가비는 0 이상이어야 합니다.")
         @Schema(description = "도서산간 추가비 — 제주 제외 · 비우면 0", example = "5000", nullable = true)
         private Integer remoteAreaSurcharge;
+
+        @jakarta.validation.constraints.Size(max = 500, message = "청약철회 제한 안내 문구는 500자 이내로 입력해 주세요.")
+        @Schema(description = "청약철회 제한 안내 문구(수정요청 C) — 비우면 기본 문구. 생략하면 그대로", nullable = true)
+        private String withdrawalRestrictionNotice;
     }
 }

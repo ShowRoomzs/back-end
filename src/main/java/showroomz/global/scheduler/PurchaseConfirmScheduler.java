@@ -13,7 +13,8 @@ import java.util.List;
 
 /**
  * 구매확정 배치(34 설계서 3-4) — 배송완료 + 7일 자동(약관 제19조①). 돈의 시점을 바꾸는 전이라
- * 이해당사자가 만지지 않는다 — 자동 아니면 운영자다(§34-0).
+ * 이해당사자가 만지지 않는다 — 자동 아니면 운영자다(§34-0). 배송완료가 확인되지 않은 배송중 하위주문은 송장 등록 + 28일에
+ * 자동 확정한다(대표 결정 2026-11-10).
  *
  * <p>반송중은 DELIVERED 가 아니므로 타이머 취소가 구조적으로 성립한다 — 별도 플래그가 없다.
  * 매시 주기면 최대 1시간 지연이 생기지만, 7일 기한에서 1시간은 소비자에게 불리하지 않은 방향(확정이 늦어진다)이다.
@@ -46,8 +47,19 @@ public class PurchaseConfirmScheduler {
                 log.error("구매확정 처리 실패 - deliveryGroupId: {}", id, e);
             }
         }
-        if (confirmed > 0) {
-            log.info("구매확정 처리 완료 - {}건", confirmed);
+        LocalDateTime shippedBefore = now.minusDays(orderProperties.getPurchaseConfirmUndeliveredDays());
+        int undelivered = 0;
+        for (Long id : fulfillmentService.findIdsToConfirmUndelivered(shippedBefore, MAX_PER_RUN)) {
+            try {
+                if (fulfillmentService.confirmUndelivered(id, now, shippedBefore)) {
+                    undelivered++;
+                }
+            } catch (Exception e) {
+                log.error("배송완료 미확인 구매확정 처리 실패 - deliveryGroupId: {}", id, e);
+            }
+        }
+        if (confirmed > 0 || undelivered > 0) {
+            log.info("구매확정 처리 완료 - 배송완료 + N일 {}건 · 배송완료 미확인 {}건", confirmed, undelivered);
         }
     }
 }

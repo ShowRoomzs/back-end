@@ -106,7 +106,8 @@ public class CreatorPerformanceQueryService {
         for (PerformanceFacts f : facts.values()) {
             CreatorPerformanceStatus status = CreatorPerformanceStatus.of(f.status());
             counts.merge(status, 1L, Long::sum);
-            if (status == CreatorPerformanceStatus.SETTLED) {
+            // 분배 실패도 금액은 확정이다 — KPI 에 넣는다(2026-11-10 · 지급만 다시 한다).
+            if (status == CreatorPerformanceStatus.SETTLED || status == CreatorPerformanceStatus.PAYOUT_FAILED) {
                 settled.add(f);
             }
         }

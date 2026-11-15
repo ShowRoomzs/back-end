@@ -14,6 +14,7 @@ import showroomz.domain.member.user.entity.Users;
 import showroomz.domain.order.entity.DeliveryTrackingEvent;
 import showroomz.domain.order.entity.Order;
 import showroomz.domain.order.entity.OrderCancelRequest;
+import showroomz.domain.order.service.OrderCancelRequestService;
 import showroomz.domain.order.entity.OrderCancelRequestItem;
 import showroomz.domain.order.entity.OrderClaimCharge;
 import showroomz.domain.order.entity.OrderClaimPayment;
@@ -273,10 +274,22 @@ public class AdminOrderQueryService {
         FulfillmentStatus status = group.getFulfillmentStatus();
         int confirmDays = orderProperties.getPurchaseConfirmDays();
         boolean paused = group.getConfirmPausedAt() != null;
-        AdminOrderDto.PurchaseConfirm purchaseConfirm = group.confirmBaseAt() == null ? null
-                : new AdminOrderDto.PurchaseConfirm(paused, group.confirmRemainingDays(confirmDays, now),
-                paused || group.getConfirmedAt() != null ? null : group.confirmBaseAt().plusDays(confirmDays),
-                group.getConfirmedAt());
+        AdminOrderDto.PurchaseConfirm purchaseConfirm;
+        if (group.confirmBaseAt() != null) {
+            purchaseConfirm = new AdminOrderDto.PurchaseConfirm(paused, group.confirmRemainingDays(confirmDays, now),
+                    paused || group.getConfirmedAt() != null ? null : group.confirmBaseAt().plusDays(confirmDays),
+                    group.getConfirmedAt(), "DELIVERED");
+        } else if (group.getShippedAt() != null
+                && (status == FulfillmentStatus.SHIPPING || status == FulfillmentStatus.CONFIRMED)) {
+            // 배송완료 미확인 — 송장 등록 + N일 자동 확정(2026-11-10). 추적 정지 소비자 선택이 있으면 확정하지 않는다.
+            LocalDateTime due = group.getShippedAt().plusDays(orderProperties.getPurchaseConfirmUndeliveredDays());
+            boolean waiting = group.getConfirmedAt() == null && group.getStallChoice() == null;
+            purchaseConfirm = new AdminOrderDto.PurchaseConfirm(false,
+                    waiting ? Math.max(0, (long) Math.ceil(java.time.Duration.between(now, due).toMinutes() / (24.0 * 60))) : null,
+                    waiting ? due : null, group.getConfirmedAt(), "SHIPPED");
+        } else {
+            purchaseConfirm = null;
+        }
         List<OrderRefundTask> refunds = refundTaskRepository.findByDeliveryGroupIdOrderByIdAsc(group.getId());
         // 파트너용 공용 조회는 최신순이다 — 송장 출처는 이 순서로 맨 앞 것을, 06a ⑤ 이력은 뒤집어(오래된순 · 37 설계서 2-5) 쓴다.
         List<OrderFulfillmentHistory> latestFirst = historyRepository.findByDeliveryGroupId(group.getId());
@@ -314,6 +327,7 @@ public class AdminOrderQueryService {
                 pendingRequest == null ? null : new AdminOrderDto.CancelRequest(pendingRequest.getId(),
                         pendingRequest.getReasonCode().getLabel(), pendingRequest.getReasonDetail(),
                         pendingRequest.getRequestedAt(), pendingRequest.getRespondDueAt(),
+                        OrderCancelRequestService.isRespondOverdue(pendingRequest, now),
                         pendingRequest.getItems().stream().map(OrderCancelRequestItem::getOrderProduct)
                                 .map(OrderProduct::getId).toList()),
                 items.stream().sorted(Comparator.comparing(OrderProduct::getId)).map(item -> new AdminOrderDto.Item(
@@ -330,7 +344,7 @@ public class AdminOrderQueryService {
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
                 settlementReader.readByDeliveryGroup(group.getId()).map(AdminOrderQueryService::settlement).orElse(null),
-                actions(group, pendingRequest != null, refundable, now),
+                actions(group, pendingRequest, refundable, now),
                 AdminOrderDto.StallChoice.of(showroomz.domain.order.service.OrderStallChoiceService.view(group, now)));
     }
 
@@ -428,8 +442,9 @@ public class AdminOrderQueryService {
     }
 
     /** @param refundable 운영자 사유 환불 상한({@link OperatorRefundLimit}) — null 이면 결제가 없는 주문(상한 없음) */
-    AdminOrderDto.Actions actions(OrderDeliveryGroup group, boolean cancelRequested, Integer refundable,
+    AdminOrderDto.Actions actions(OrderDeliveryGroup group, OrderCancelRequest pendingRequest, Integer refundable,
                                   LocalDateTime now) {
+        boolean cancelRequested = pendingRequest != null;
         FulfillmentStatus status = group.getFulfillmentStatus();
         boolean actOnBehalf = actOnBehalfPolicy.canActOnBehalf(group, now);
         boolean deliveredWithin3Months = group.getDeliveredAt() != null
@@ -445,7 +460,9 @@ public class AdminOrderQueryService {
                 (status == FulfillmentStatus.CONFIRMED || status == FulfillmentStatus.DELIVERED)
                         && deliveredWithin3Months,
                 stalledPolicy.isResolvable(group, now),
-                stalledPolicy.isResolvable(group, now));
+                stalledPolicy.isResolvable(group, now),
+                cancelRequested && FulfillmentStatus.WORKABLE.contains(status)
+                        && OrderCancelRequestService.isRespondOverdue(pendingRequest, now));
     }
 
     private Map<Long, List<OrderProduct>> itemsByGroup(List<OrderDeliveryGroup> groups) {

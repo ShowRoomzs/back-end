@@ -68,8 +68,9 @@ class AdminTermsServiceTest {
             return saved;
         });
 
+        // 고지 기간 — 개정은 등록일 + 7일 이후 시행(2026-11-10).
         Long versionId = adminTermsService.registerVersion(
-                DOCUMENT_ID, versionRequest("3.2", TOMORROW), OPERATOR_ID);
+                DOCUMENT_ID, versionRequest("3.2", TOMORROW.plusDays(6)), OPERATOR_ID);
 
         ArgumentCaptor<TermsVersion> captor = ArgumentCaptor.forClass(TermsVersion.class);
         verify(termsVersionRepository).save(captor.capture());
@@ -160,6 +161,27 @@ class AdminTermsServiceTest {
     }
 
     @Test
+    @DisplayName("고지 기간 — 개정은 등록일 + 7일 전 시행 거부 · 불리한 변경은 + 30일 전 시행 거부(2026-11-10)")
+    void rejectsShortNoticePeriod() {
+        TermsDocument document = document(false);
+        givenDocument(document);
+        given(termsVersionRepository.findAllByDocumentId(DOCUMENT_ID))
+                .willReturn(List.of(version(document, "3.1", LocalDate.now().minusMonths(2))));
+        given(termsVersionRepository.existsByDocumentIdAndVersionNumber(DOCUMENT_ID, "3.2")).willReturn(false);
+
+        assertThatThrownBy(() -> adminTermsService.registerVersion(
+                DOCUMENT_ID, versionRequest("3.2", TOMORROW.plusDays(5)), OPERATOR_ID))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("7일 전");
+
+        AdminTermsVersionRegisterRequest unfavorable = versionRequest("3.2", TOMORROW.plusDays(28));
+        ReflectionTestUtils.setField(unfavorable, "unfavorableChange", true);
+        assertThatThrownBy(() -> adminTermsService.registerVersion(DOCUMENT_ID, unfavorable, OPERATOR_ID))
+                .isInstanceOf(BusinessException.class)
+                .hasMessageContaining("30일 전");
+    }
+
+    @Test
     @DisplayName("구버전 문서에는 새 버전을 등록할 수 없다")
     void rejectsVersionOnSupersededDocument() {
         givenDocument(document(true));
@@ -232,6 +254,7 @@ class AdminTermsServiceTest {
         ReflectionTestUtils.setField(request, "versionNumber", versionNumber);
         ReflectionTestUtils.setField(request, "effectiveDate", effectiveDate);
         ReflectionTestUtils.setField(request, "content", "제1조(목적) ...");
+        ReflectionTestUtils.setField(request, "unfavorableChange", false);
         return request;
     }
 

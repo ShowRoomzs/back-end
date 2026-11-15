@@ -346,8 +346,8 @@ public interface OrderControllerDocs {
 
                     - 요청이 걸리면 **그 하위주문 전체가 발송 보류**된다 — 브랜드가 송장을 등록할 수 없다. 요청하지 않은 항목은
                       주문 상세에서 버튼이 사라지고 「취소 요청이 처리될 때까지 이 주문의 상품은 발송되지 않아요」가 붙는다
-                    - **브랜드 응답 기한 = 요청 + 1영업일(주말·공휴일 제외)의 끝.** 그때까지 브랜드가 확인하지 않으면 **자동으로 취소**되고
-                      PG 가 즉시 환불한다(응답의 `respondDueAt`)
+                    - **브랜드 응답 기한 = 요청 + 2영업일(주말·공휴일 제외)의 끝**(응답의 `respondDueAt`). 자동 취소는 없다 — 기한이 지나면
+                      운영팀이 브랜드에 확인한 뒤 취소하고 PG 가 즉시 환불한다
                     - 사유 `reasonCode` — `CHANGE_OF_MIND`(단순 변심) · `ORDER_MISTAKE`(주문 실수) · `PAYMENT_CHANGE`(다른 결제 수단으로 변경) ·
                       `ETC`(기타 — `reasonDetail` 필수 · 300자)
                     - 응답은 취소 상세와 같은 모양이다 — 접수 화면을 그대로 그린다
@@ -373,7 +373,7 @@ public interface OrderControllerDocs {
                     - **요청 단위다** — 그 요청에 담긴 항목이 함께 결제완료(상품준비중)로 돌아간다
                     - 발송 보류가 풀린다 — 브랜드가 다시 송장을 등록할 수 있다
                     - 철회 뒤 다시 요청할 수 있다(검토 중 요청이 없으면 낼 수 있다는 조건 그대로)
-                    - 브랜드 승인 · 거부 · 자동 승인과 동시에 들어오면 한쪽만 성공한다 — 진 쪽은 409
+                    - 브랜드 승인 · 거부 · 운영자 승인과 동시에 들어오면 한쪽만 성공한다 — 진 쪽은 409
 
                     **권한:** USER (본인 주문만)
                     """)
@@ -382,7 +382,7 @@ public interface OrderControllerDocs {
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserCancelDto.WithdrawResponse.class))),
             @ApiResponse(responseCode = "404", description = "ORDER_NOT_FOUND — 남의 주문 · 다른 주문의 요청 · 없는 요청",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 승인 · 거부 · 자동 승인 · 철회됐다",
+            @ApiResponse(responseCode = "409", description = "CANCEL_REQUEST_ALREADY_DECIDED — 이미 승인 · 거부 · 운영자 승인 · 철회됐다",
                     content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     ResponseEntity<UserCancelDto.WithdrawResponse> withdrawCancelRequest(

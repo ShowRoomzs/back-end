@@ -150,6 +150,9 @@ public class SellerBasicInfoService {
                 .freeShippingThreshold(market.getFreeShippingThreshold())
                 .jejuSurcharge(market.getJejuSurcharge())
                 .remoteAreaSurcharge(market.getRemoteAreaSurcharge())
+                .withdrawalRestrictionNotice(market.getWithdrawalRestrictionNotice())
+                .withdrawalRestrictionNoticeShown(showroomz.domain.product.type.WithdrawalRestrictionPolicy.noticeOf(true,
+                        market.getWithdrawalRestrictionNotice()))
                 .build();
     }
 
@@ -173,6 +176,9 @@ public class SellerBasicInfoService {
         market.setFreeShippingThreshold(FreeShippingPolicy.effective(request.getFreeShippingThreshold()));
         market.setJejuSurcharge(request.getJejuSurcharge() != null ? request.getJejuSurcharge() : 0);
         market.setRemoteAreaSurcharge(request.getRemoteAreaSurcharge() != null ? request.getRemoteAreaSurcharge() : 0);
+        if (request.getWithdrawalRestrictionNotice() != null) {
+            market.setWithdrawalRestrictionNotice(normalizeBlank(request.getWithdrawalRestrictionNotice()));
+        }
     }
 
     public SellerBasicInfoDto.AccountInfoResponse getAccountInfo(String sellerEmail) {

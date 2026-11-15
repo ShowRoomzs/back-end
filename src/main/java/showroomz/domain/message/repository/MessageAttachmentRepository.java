@@ -21,6 +21,9 @@ public interface MessageAttachmentRepository extends JpaRepository<MessageAttach
 
     List<MessageAttachment> findAllByIdIn(List<Long> ids);
 
+    /** 보존 기간 경과 파기 — 스레드의 첨부 전부(상태 무관). */
+    List<MessageAttachment> findByThread_Id(Long threadId);
+
     /**
      * §4-6 고아 정리 대상 — 상태와 나이만으로 뽑는다. 조건이 인덱스
      * `idx_message_attachment_status_created (status, created_at)`(V94)와 정확히 맞는다.

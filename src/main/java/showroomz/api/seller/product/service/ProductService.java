@@ -88,6 +88,8 @@ public class ProductService {
         product.setIsRecommended(false);
         product.setDescription(request.getDescription());
         product.setProductNumber(productNumber);
+        // 청약철회 제한 표시(수정요청 C) — 생략하면 적용.
+        product.setOpenedWithdrawalRestricted(!Boolean.FALSE.equals(request.getOpenedWithdrawalRestricted()));
 
         // 5. 상품정보제공고시 JSON 변환
         if (request.getProductNotice() != null) {
@@ -666,6 +668,9 @@ public class ProductService {
         }
         if (request.getDescription() != null) {
             product.setDescription(request.getDescription());
+        }
+        if (request.getOpenedWithdrawalRestricted() != null) {
+            product.setOpenedWithdrawalRestricted(request.getOpenedWithdrawalRestricted());
         }
 
         // 5. 상품정보제공고시 JSON 변환 (제공된 경우)

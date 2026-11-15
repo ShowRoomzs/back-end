@@ -80,6 +80,17 @@ public class ContractNotifier {
                 actorName = creatorName(contract);
                 sentence = "「" + title + "」 계약서에 서명했습니다";
             }
+            case "DRAFT_SUBMITTED" -> {
+                type = NotificationType.CONTRACT_DRAFT_SUBMITTED;
+                actor = NotificationActorType.CREATOR;
+                actorName = creatorName(contract);
+                sentence = "「" + title + "」 콘텐츠 초안이 도착했습니다 — 3영업일 안에 회신하지 않으면 승인한 것으로 봅니다";
+            }
+            case "DRAFT_DEEMED_APPROVED" -> {
+                type = NotificationType.CONTRACT_DRAFT_DEEMED_APPROVED;
+                actor = NotificationActorType.SYSTEM;
+                sentence = "「" + title + "」 콘텐츠 초안이 3영업일 무회신으로 승인 간주되었습니다";
+            }
             default -> {
                 return;
             }
@@ -156,6 +167,17 @@ public class ContractNotifier {
                 actor = NotificationActorType.BRAND;
                 actorName = brand;
                 sentence = brand + "가 「" + title + "」 고정 지급비 지급을 기록했어요";
+            }
+            case "DRAFT_REVISION_REQUESTED" -> {
+                type = NotificationType.CONTRACT_DRAFT_REVISION_REQUESTED;
+                actor = NotificationActorType.BRAND;
+                actorName = brand;
+                sentence = brand + "가 「" + title + "」 콘텐츠 초안 수정을 요청했어요";
+            }
+            case "DRAFT_DEEMED_APPROVED" -> {
+                type = NotificationType.CONTRACT_DRAFT_DEEMED_APPROVED;
+                actor = NotificationActorType.SYSTEM;
+                sentence = "「" + title + "」 초안이 3영업일 무회신으로 승인 간주됐어요";
             }
             default -> {
                 return;

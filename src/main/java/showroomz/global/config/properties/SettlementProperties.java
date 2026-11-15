@@ -31,6 +31,12 @@ public class SettlementProperties {
     /** 정상 요율 — 표시용(파트너 분해 「정상 2%」). */
     private BigDecimal platformFeeNormalRate = new BigDecimal("0.02");
     private BigDecimal rewardVatRate = new BigDecimal("0.10");
+
+    /**
+     * 리워드 = 부가세 포함 금액(대표 결정 2026-11-10 · 세무 확인 필요). true 면 브랜드의 리워드 부가세 별도 부담이 없고, 사업자 인플루언서의
+     * 부가세는 리워드 안에서 나뉜다(공급가 = 리워드 ÷ (1 + 부가세율)). 생성 때 정산 행에 스냅샷한다.
+     */
+    private boolean rewardVatInclusive = true;
     /** 플랫폼 종사자 세율 개정 가능성 — 문구에 고정하지 않는다. */
     private BigDecimal withholdingIncomeRate = new BigDecimal("0.03");
     private BigDecimal withholdingLocalRate = new BigDecimal("0.003");

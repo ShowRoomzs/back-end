@@ -583,7 +583,11 @@ public interface SellerContractControllerDocs {
 
     @Operation(summary = "초안 승인 기록 추가", description = """
             1021 결정 노트 기-30 — 인플루언서 콘텐츠 초안을 브랜드가 승인한 사실을 기록합니다(체결완료 상세의 「초안 승인 기록」 카드).
-            기록 전용입니다 — 계약 · 공구 상태를 바꾸지 않습니다. 계약 성립(양측 서명 완료) 이후에만.""")
+            기록 전용입니다 — 계약 · 공구 상태를 바꾸지 않습니다. 계약 성립(양측 서명 완료) 이후에만.
+
+            **사전 검수 회신(B-13 · 계약서 제8조)** — `submissionId` 를 넣으면 그 초안 제출(`draftSubmissions[]`)이 「승인」으로 닫힙니다.
+            제출(= 수령) + 3영업일 안에 승인 · 수정 요청이 없으면 시스템이 **승인 간주**를 기록합니다(`sourceLabel` 「초안 수령 후 3영업일 무회신 · 승인 간주」).
+            이미 회신했거나 승인 간주된 제출이면 409.""")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "기록 완료 — 상세(draftApprovals)",
                     content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
@@ -593,6 +597,24 @@ public interface SellerContractControllerDocs {
     ResponseEntity<ContractDetailResponse> recordDraftApproval(
             @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
             @Valid @RequestBody ContractDraftApprovalRequest request);
+
+    @Operation(summary = "사전 검수 초안 수정 요청(B-13)", description = """
+            인플루언서가 제출한 초안(`draftSubmissions[]`)에 수정을 요청합니다 — 회신 기한(수령 + 3영업일) 안에 보내면 승인 간주되지 않습니다.
+            인플루언서에게 알림이 가고, 고친 초안은 새 제출로 다시 들어옵니다. 회신 대기가 아니면 409.""")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "수정 요청 — 상세(draftSubmissions)",
+                    content = @Content(schema = @Schema(implementation = ContractDetailResponse.class))),
+            @ApiResponse(responseCode = "400", description = "내용 누락(INVALID_INPUT)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "이 계약의 제출이 아님(CONTRACT_NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "이미 회신 · 승인 간주(CONTRACT_STATUS_CONFLICT)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<ContractDetailResponse> requestDraftRevision(
+            @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId,
+            @Parameter(description = "초안 제출 ID", example = "5") @PathVariable Long submissionId,
+            @Valid @RequestBody showroomz.api.seller.contract.dto.ContractDraftRevisionRequest request);
 
     @Operation(summary = "초안 승인 기록 삭제", description = "잘못 적은 기록을 지웁니다(행은 남습니다).")
     @ApiResponses(value = {

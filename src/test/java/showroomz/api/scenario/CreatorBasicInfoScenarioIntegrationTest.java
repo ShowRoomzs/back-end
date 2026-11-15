@@ -10,7 +10,6 @@ import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.common.settlement.SettlementTestSupport;
 import showroomz.domain.connection.entity.Connection;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
-import showroomz.domain.member.creator.repository.CreatorAdminHistoryRepository;
 import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
@@ -41,7 +40,8 @@ class CreatorBasicInfoScenarioIntegrationTest extends SettlementTestSupport {
     private static final String BASE = "/v1/creator/basic-info";
     private static final String QUEUE = "/v1/admin/change-requests";
 
-    @Autowired private CreatorAdminHistoryRepository adminHistories;
+    /** 사업자 구분 변경 승인 · 반려 이력은 요청 행에서 파생한다(정합 계획서 R1-8) — 화면과 같은 리더로 읽는다. */
+    @Autowired private showroomz.domain.member.creator.service.CreatorAdminHistoryReader adminHistoryReader;
 
     @Test
     @DisplayName("[E2E-1] 계정 탭 — S4 → S5 → S6 · S7(연결 수락 막힘) → 취소(풀림) → 재요청 → 반려 S8 → [확인] → S5")
@@ -247,8 +247,8 @@ class CreatorBasicInfoScenarioIntegrationTest extends SettlementTestSupport {
     }
 
     private List<CreatorAdminEventType> adminEvents() {
-        return adminHistories.findByCreatorIdOrderByCreatedAtDescIdDesc(creator.getId()).stream()
-                .map(h -> h.getEventType()).toList().reversed();
+        return adminHistoryReader.read(creatorRepository.findById(creator.getId()).orElseThrow()).stream()
+                .map(showroomz.domain.member.creator.service.CreatorAdminHistoryReader.Item::type).toList().reversed();
     }
 
     private static int sequenceOf(String requestCode) {

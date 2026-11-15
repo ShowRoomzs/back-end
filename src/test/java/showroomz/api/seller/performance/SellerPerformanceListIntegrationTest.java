@@ -229,10 +229,13 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
 
         // LS-03 상태 필터
         assertThat(ids(PERF + "/group-buys?status=AGGREGATING")).containsExactly(s.gb3().getId());
-        assertThat(ids(PERF + "/group-buys?status=PAID")).containsExactly(s.gb4().getId(), s.gb2().getId());
+        // 분배 실패는 지급 완료로 접지 않는다(2026-11-10) — 따로 고른다.
+        assertThat(ids(PERF + "/group-buys?status=PAID")).containsExactly(s.gb2().getId());
+        assertThat(ids(PERF + "/group-buys?status=PAYOUT_FAILED")).containsExactly(s.gb4().getId());
+        assertThat(ids(PERF + "/group-buys?status=PAID&status=PAYOUT_FAILED")).containsExactly(s.gb4().getId(), s.gb2().getId());
         assertThat(ids(PERF + "/group-buys?status=REVIEWING&status=ADJUSTING")).containsExactly(s.gb1().getId());
         assertThat(ids(PERF + "/group-buys?status=AGGREGATING&status=REVIEWING&status=ADJUSTING"
-                + "&status=PAYOUT_SCHEDULED&status=PAID")).isEqualTo(ids(PERF + "/group-buys"));
+                + "&status=PAYOUT_SCHEDULED&status=PAID&status=PAYOUT_FAILED")).isEqualTo(ids(PERF + "/group-buys"));
         sellerGet(PERF + "/group-buys?status=FOO").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
 
@@ -283,7 +286,7 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
         assertThat(gb1Row.at("/payout/state").asText()).isEqualTo("FINAL");
         assertThat(gb1Row.at("/payout/value").asLong()).isEqualTo(s.s1().getBrandPayoutAmount());
         assertThat(gb1Row.has("returnRate")).isFalse(); // 기간 · 반품취소율 열은 없다(§48-1)
-        assertThat(row(rows, s.gb4().getId()).at("/status").asText()).isEqualTo("PAID");
+        assertThat(row(rows, s.gb4().getId()).at("/status").asText()).isEqualTo("PAYOUT_FAILED");
 
         // 조정 협의 행 — 정산액만 「협의 중」 + 원래 값
         jdbc.update("UPDATE settlement SET status = 'ADJUSTING' WHERE settlement_id = ?", s.s1().getId());
@@ -303,21 +306,24 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
         Seeded s = seedFour(true);
 
         JsonNode summary = json(sellerGet(PERF + "/summary").andExpect(status().isOk()));
-        assertThat(summary.at("/population/statuses").toString()).isEqualTo("[\"PAYOUT_SCHEDULED\",\"PAID\"]");
+        assertThat(summary.at("/population/statuses").toString()).isEqualTo("[\"PAYOUT_SCHEDULED\",\"PAID\",\"PAYOUT_FAILED\"]");
         assertThat(summary.at("/population/status").isMissingNode()).isTrue(); // 55 계획서 P1 — status 는 없어졌다
         assertThat(summary.at("/population/count").asLong()).isEqualTo(2); // GB2 지급 완료 + GB4 분배 실패
         assertThat(summary.at("/population/breakdown/PAYOUT_SCHEDULED").asLong()).isZero();
-        assertThat(summary.at("/population/breakdown/PAID").asLong()).isEqualTo(2);
+        // 분배 실패는 지급 완료로 접지 않는다(2026-11-10) — 모집단에는 그대로 든다.
+        assertThat(summary.at("/population/breakdown/PAID").asLong()).isEqualTo(1);
+        assertThat(summary.at("/population/breakdown/PAYOUT_FAILED").asLong()).isEqualTo(1);
         assertThat(summary.at("/statusCounts/AGGREGATING").asLong()).isEqualTo(1);
         assertThat(summary.at("/statusCounts/REVIEWING").asLong()).isEqualTo(1);
         assertThat(summary.at("/statusCounts/ADJUSTING").asLong()).isZero();
         assertThat(summary.at("/statusCounts/PAYOUT_SCHEDULED").asLong()).isZero();
-        assertThat(summary.at("/statusCounts/PAID").asLong()).isEqualTo(2);
+        assertThat(summary.at("/statusCounts/PAID").asLong()).isEqualTo(1);
+        assertThat(summary.at("/statusCounts/PAYOUT_FAILED").asLong()).isEqualTo(1);
 
         long sales = s.s2().getConfirmedSalesAmount() + s.s4().getConfirmedSalesAmount();
         assertThat(sales).isEqualTo(2L * CREAM_PRICE + 24_000);
         assertThat(summary.at("/confirmedSales/value").asLong()).isEqualTo(sales);
-        assertThat(summary.at("/confirmedSales/basis").asText()).isEqualTo("정산 2건 합산(지급 예정 0 · 지급 완료 2)");
+        assertThat(summary.at("/confirmedSales/basis").asText()).isEqualTo("정산 2건 합산(지급 예정 0 · 지급 완료 1 · 분배 실패 1)");
         // 합산 비율 — 전환율 3 ÷ 100(평균의 평균이면 10.6) · 구매확정률 3 ÷ 6(62.5 아님) · AOV 78,400 ÷ 3(25,600 아님)
         assertThat(summary.at("/visitors/value").asLong()).isEqualTo(100);
         assertThat(summary.at("/visitors/basis").asText()).isEqualTo("2건 누적 · 고유 방문");
@@ -333,12 +339,12 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
         // 성비 — 여 2 · 남 1 → 67 / 33(합 100) · 재구매 0
         assertThat(summary.at("/genderRatio/female").asInt()).isEqualTo(67);
         assertThat(summary.at("/genderRatio/male").asInt()).isEqualTo(33);
-        assertThat(summary.at("/genderRatio/basis").asText()).isEqualTo("정산 2건 합산(지급 예정 0 · 지급 완료 2)");
+        assertThat(summary.at("/genderRatio/basis").asText()).isEqualTo("정산 2건 합산(지급 예정 0 · 지급 완료 1 · 분배 실패 1)");
         assertThat(summary.at("/avgRepurchaseRate/value").decimalValue()).isEqualByComparingTo("0.0");
         assertThat(summary.at("/avgRepurchaseRate/basis").asText()).isEqualTo("구매확정 3명 중 재구매 0명");
 
         // SM-09 목록 대조 · SM-05 목록 필터는 요약을 바꾸지 않는다
-        JsonNode paidRows = json(sellerGet(PERF + "/group-buys?status=PAID&keyword=앵콜")).at("/content");
+        JsonNode paidRows = json(sellerGet(PERF + "/group-buys?status=PAID&status=PAYOUT_FAILED&keyword=앵콜")).at("/content");
         long rowSales = 0, rowVisitors = 0;
         for (JsonNode row : paidRows) {
             rowSales += row.at("/confirmedSales/value").asLong();
@@ -350,7 +356,7 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("55 계획서 P1 · D3 KPI 모집단 — 지급 예정 1 + 지급 완료(분배 실패) 1 = 정산 2건 · 내역 · 정산 확인 중 · 조정 협의는 빠진다")
+    @DisplayName("55 계획서 P1 · D3 KPI 모집단 — 지급 예정 1 + 분배 실패 1 = 정산 2건 · 내역 · 정산 확인 중 · 조정 협의는 빠진다")
     void summaryPopulationScope() throws Exception {
         Seeded s = seedFour(false);
         // GB2 지급 완료 → 지급 예정 · GB4 분배 실패(= 지급 완료) · GB1 정산 확인 중 · GB3 집계 중
@@ -359,10 +365,11 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
         JsonNode summary = json(sellerGet(PERF + "/summary").andExpect(status().isOk()));
         assertThat(summary.at("/population/count").asLong()).isEqualTo(2);
         assertThat(summary.at("/population/breakdown/PAYOUT_SCHEDULED").asLong()).isEqualTo(1);
-        assertThat(summary.at("/population/breakdown/PAID").asLong()).isEqualTo(1);
+        assertThat(summary.at("/population/breakdown/PAID").asLong()).isZero();
+        assertThat(summary.at("/population/breakdown/PAYOUT_FAILED").asLong()).isEqualTo(1);
         assertThat(summary.at("/confirmedSales/value").asLong())
                 .isEqualTo(s.s2().getConfirmedSalesAmount() + s.s4().getConfirmedSalesAmount());
-        assertThat(summary.at("/confirmedSales/basis").asText()).isEqualTo("정산 2건 합산(지급 예정 1 · 지급 완료 1)");
+        assertThat(summary.at("/confirmedSales/basis").asText()).isEqualTo("정산 2건 합산(지급 예정 1 · 지급 완료 0 · 분배 실패 1)");
         // ROAS 분모 — 지급 예정에도 정산 행이 있어 리워드가 그대로 들어간다
         long spend = 2 * FIXED_FEE + s.s2().getRewardAmount() + s.s4().getRewardAmount();
         assertThat(summary.at("/avgRoas/basis").asText()).isEqualTo("확정 거래액 ÷ 총 집행비 %,d원".formatted(spend));
@@ -373,7 +380,7 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
         assertThat(adjusting.at("/population/count").asLong()).isEqualTo(1);
         assertThat(adjusting.at("/population/breakdown/PAYOUT_SCHEDULED").asLong()).isZero();
         assertThat(adjusting.at("/confirmedSales/value").asLong()).isEqualTo(s.s4().getConfirmedSalesAmount());
-        assertThat(adjusting.at("/confirmedSales/basis").asText()).isEqualTo("정산 1건 합산(지급 예정 0 · 지급 완료 1)");
+        assertThat(adjusting.at("/confirmedSales/basis").asText()).isEqualTo("정산 1건 합산(지급 예정 0 · 지급 완료 0 · 분배 실패 1)");
         assertThat(adjusting.at("/statusCounts/REVIEWING").asLong()).isEqualTo(1); // GB1 — 칩에는 있고 모집단에는 없다
         assertThat(adjusting.at("/statusCounts/ADJUSTING").asLong()).isEqualTo(1);
     }
@@ -389,7 +396,7 @@ class SellerPerformanceListIntegrationTest extends SettlementTestSupport {
             assertThat(empty.at("/" + figure + "/basis").asText()).as(figure).isEqualTo("집계된 공구 없음");
         }
         assertThat(empty.at("/genderRatio/female").isNull()).isTrue();
-        assertThat(empty.at("/statusCounts").size()).isEqualTo(5);
+        assertThat(empty.at("/statusCounts").size()).isEqualTo(6);
 
         // 집행비 0 공구(고정 지급비 없음 · 리워드 0) — 성별 미확인 소비자
         confirmedGroup(creamVariant, 1);

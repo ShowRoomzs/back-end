@@ -63,6 +63,10 @@ public class MessageThread extends BaseTimeEntity {
     @Column(name = "last_message_sender_type", length = 20)
     private ParticipantType lastMessageSenderType;
 
+    /** 보존 기간(연결 해제 · 탈퇴 + 1년) 경과로 메시지 · 첨부를 파기한 시각 — 파트너 약관 제12조③. */
+    @Column(name = "purged_at")
+    private LocalDateTime purgedAt;
+
     public static MessageThread openFor(Connection connection) {
         return MessageThread.builder()
                 .connection(connection)
@@ -95,6 +99,13 @@ public class MessageThread extends BaseTimeEntity {
 
     public boolean isOpen() {
         return this.status == ThreadStatus.OPEN;
+    }
+
+    /** 보존 기간 경과 파기 — 메시지 · 첨부는 서비스가 지우고, 스레드는 미리보기를 비우고 휴면으로 남긴다. */
+    public void markPurged(LocalDateTime now) {
+        this.purgedAt = now;
+        this.lastMessagePreview = null;
+        this.status = ThreadStatus.DORMANT;
     }
 
     /** 첨부만 전송된 경우 등을 대비해 목록 미리보기는 표시용 텍스트를 그대로 받는다(P3에서 첨부 케이스 문구를 결정). */

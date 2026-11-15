@@ -325,6 +325,27 @@ public class OrderFulfillmentService {
         return true;
     }
 
+    @Transactional(readOnly = true)
+    public List<Long> findIdsToConfirmUndelivered(LocalDateTime shippedBefore, int limit) {
+        return deliveryGroupRepository.findIdsToConfirmUndelivered(shippedBefore, PageRequest.of(0, limit));
+    }
+
+    /**
+     * 배송완료 미확인 자동 구매확정(대표 결정 2026-11-10) — 송장 등록 + N일(기본 28)이 지나도 배송완료가 확인되지 않은 배송중
+     * 하위주문. 미취소 항목을 PURCHASE_CONFIRMED 로 올리는 것은 배송완료 + 7일 확정과 같다.
+     */
+    @Transactional
+    public boolean confirmUndelivered(Long deliveryGroupId, LocalDateTime now, LocalDateTime shippedBefore) {
+        if (deliveryGroupRepository.confirmUndelivered(deliveryGroupId, now, shippedBefore) != 1) {
+            return false;
+        }
+        orderProductRepository.transitionByGroup(deliveryGroupId, EnumSet.of(OrderProductStatus.PAID),
+                OrderProductStatus.PURCHASE_CONFIRMED);
+        appendHistory(deliveryGroupId, FulfillmentEventType.PURCHASE_CONFIRMED, FulfillmentActorType.SYSTEM, null,
+                "배송완료 미확인 · 송장 등록 + " + orderProperties.getPurchaseConfirmUndeliveredDays() + "일 자동 구매확정", now);
+        return true;
+    }
+
     /**
      * 단건 구매확정 시도(35 설계서 3-6) — 배치와 같은 조건부 UPDATE 를 그 자리에서 연다. 클레임이 구매확정 보류를 푸는
      * 순간(검수 거절 · 철회 · 자동 취소)에 부른다 — 기준 시각 + N일이 이미 지났고 다른 보류 클레임이 없으면 배치 회차를

@@ -135,7 +135,8 @@ public class SellerClaimAssembler {
     /** 기한 ①(회수 대기 방치 — 소비자 미발송) · 기한 ②(검수 — 브랜드 귀책). 「경과」 열과 섞지 않는다. */
     static boolean isOverdue(OrderClaim claim, LocalDateTime now) {
         return (claim.getStatus() == ClaimStatus.REQUESTED && now.isAfter(claim.getCollectDueAt()))
-                || (claim.getStatus() == ClaimStatus.RECEIVED && claim.getInspectDueAt() != null
+                || ((claim.getStatus() == ClaimStatus.RECEIVED || claim.getStatus() == ClaimStatus.ARRIVED)
+                && claim.getInspectDueAt() != null
                 && now.isAfter(claim.getInspectDueAt()));
     }
 

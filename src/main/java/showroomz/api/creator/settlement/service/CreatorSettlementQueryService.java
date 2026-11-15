@@ -97,9 +97,6 @@ public class CreatorSettlementQueryService {
                                                                        Set<SettlementStatus> statuses, String keyword,
                                                                        SettlementPartySort sort, PagingRequest paging) {
         Creator creator = resolveCreator(creatorEmail);
-        if (statuses != null && statuses.contains(SettlementStatus.PAYOUT_FAILED)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "PAYOUT_FAILED 는 필터로 받지 않습니다 — PAID 에 포함됩니다.");
-        }
         Page<Settlement> page = settlementRepository.searchForCreator(creator.getId(),
                 SettlementStatus.expandPartyFilter(statuses), keyword,
                 sort == null ? SettlementPartySort.CREATED_DESC : sort, pageable(paging));
@@ -174,7 +171,7 @@ public class CreatorSettlementQueryService {
                 new CreatorSettlementDto.CountKpi(counts.get(SettlementStatus.ADJUSTING)),
                 new SettlementPartyDto.StatusCounts(counts.get(SettlementStatus.REVIEWING),
                         counts.get(SettlementStatus.ADJUSTING), counts.get(SettlementStatus.PAYOUT_SCHEDULED),
-                        counts.get(SettlementStatus.PAID)),
+                        counts.get(SettlementStatus.PAID), counts.get(SettlementStatus.PAYOUT_FAILED)),
                 openReview + blocks.taxInvoiceAttentionCount(creator.getId()),
                 payoutRepository.existsBlockedByUnverifiedTaxInvoice(creator.getId()) ? PAYOUT_CONDITION_TAX_INVOICE : null);
     }
@@ -245,7 +242,7 @@ public class CreatorSettlementQueryService {
                 s.getWithholdingAmount(), s.getRewardVatRate(), s.getCreatorVatAmount(), s.getCreatorPayoutAmount());
     }
 
-    /** 3자 분배 — 내 행 첫 줄. 내 행 실패는 「지급 확인 중」 · 브랜드 행 실패는 「지급 예정」으로 접는다(어드민 설계서 0-4 · §46 A-4). */
+    /** 3자 분배 — 내 행 첫 줄. 분배 실패는 행마다 「지급 실패 · 재지급 예정」으로 보인다(2026-11-10). */
     private List<CreatorSettlementDto.PayoutRow> payoutRows(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
                                                             PayoutHoldView myHold) {
         String withholdingRate = SettlementPartyViews.percent(
@@ -255,20 +252,23 @@ public class CreatorSettlementQueryService {
                 .map(payee -> {
                     SettlementPayout payout = payouts.get(payee);
                     boolean mine = payee == SettlementPayee.CREATOR;
-                    PayoutStatus shown = !mine && payout.getStatus() == PayoutStatus.FAILED
-                            ? PayoutStatus.SCHEDULED : payout.getStatus();
+                    // 분배 실패는 누구 행이든 그대로 보인다(2026-11-10 — 이전에는 남의 행을 「지급 예정」으로 접었다).
+                    PayoutStatus shown = payout.getStatus();
                     String name = switch (payee) {
                         case CREATOR -> s.getCreator().getShowroomName();
                         case BRAND -> s.getMarket().getMarketName();
                         case PLATFORM -> platformName();
                     };
                     String note = switch (payee) {
-                        case CREATOR -> s.isBusinessCreator()
+                        case CREATOR -> s.isBusinessCreator() && s.isRewardVatInclusive()
+                                ? "리워드 %,d(부가세 %,d 포함)".formatted(s.getRewardAfterClawback(), s.getCreatorVatAmount())
+                                : s.isBusinessCreator()
                                 ? "리워드 %,d + 부가세 %,d".formatted(s.getRewardAfterClawback(), s.getCreatorVatAmount())
                                 : "리워드 %,d − 원천징수 %,d(%s)".formatted(s.getRewardAfterClawback(),
                                         s.getWithholdingAmount(), withholdingRate);
                         case BRAND -> null;
-                        case PLATFORM -> s.isBusinessCreator() ? "부가세는 인플루언서에게 지급" : "플랫폼 신고 · 납부";
+                        case PLATFORM -> s.isRewardVatInclusive() ? "플랫폼 수수료"
+                                : s.isBusinessCreator() ? "부가세는 인플루언서에게 지급" : "플랫폼 신고 · 납부";
                     };
                     LocalDate date = shown == PayoutStatus.PAID && payout.getPaidAt() != null
                             ? KstDates.toKstDate(payout.getPaidAt()) : payout.getDueDate();
@@ -287,7 +287,7 @@ public class CreatorSettlementQueryService {
             case BLOCKED -> payee == SettlementPayee.CREATOR ? blocks.blockedLabel(s, myHold) : "지급 보류";
             case SCHEDULED, REQUESTED -> day + "지급 예정";
             case PAID -> day + "지급 완료";
-            case FAILED -> "지급 확인 중";
+            case FAILED -> showroomz.api.seller.settlement.service.SellerSettlementQueryService.FAILED_LABEL;
             case NOT_APPLICABLE -> "—";
         };
     }

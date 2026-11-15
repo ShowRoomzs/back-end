@@ -40,6 +40,8 @@ public class AdminInquiryDto {
         private String elapsedText;
         @Schema(description = "미답변 && 경과 3일 초과 — true면 상태 배지를 'SLA 초과'로 교체한다", example = "true")
         private boolean slaExceeded;
+        @Schema(description = "처리 결과 통지 기한 — 접수 + 10영업일(수정요청 C). 소명 문의는 null", nullable = true)
+        private LocalDateTime resultDueAt;
         @Schema(description = "상태", example = "WAITING")
         private InquiryStatus status;
         @Schema(description = "계정 이용 정지 소명 문의 — true 면 typeName 이 「계정 이용 정지」다. 유형 탭 집계는 계정(ACCOUNT)에 들어간다",
@@ -130,6 +132,10 @@ public class AdminInquiryDto {
         private InquiryStatus status;
         @Schema(description = "미답변 && 경과 3일 초과", example = "false")
         private boolean slaExceeded;
+        @Schema(description = "처리 결과 통지 기한 — 접수 + 10영업일(수정요청 C · 소비자 불만 · 분쟁 처리 기한)", nullable = true)
+        private LocalDateTime resultDueAt;
+        @Schema(description = "처리 경과 통지 시각 — 접수 + 3영업일 미답변이면 시스템이 소비자에게 1회 알린다", nullable = true)
+        private LocalDateTime progressNoticedAt;
         @Schema(description = "소비자 회원 ID — 회원 상세 링크용", example = "108")
         private Long userId;
         @Schema(example = "김민서")

@@ -132,7 +132,8 @@ public class AdminOrderExceptionAssembler {
                 Integer n = row.group().getShipDueBusinessDays();
                 yield "공구 마감 + " + (n == null ? "?" : n) + "영업일(주문 시점 값)";
             }
-            case INSPECT_OVERDUE -> "입고 + " + orderProperties.getClaim().getInspectDueBusinessDays() + "영업일";
+            case CANCEL_REQUEST_OVERDUE -> "취소 요청 + " + orderProperties.getCancelRequestRespondBusinessDays() + "영업일";
+            case INSPECT_OVERDUE -> "돌려받은 날 + " + orderProperties.getClaim().getInspectDueBusinessDays() + "영업일";
             case RESHIP_DELAYED -> (row.claim().getRejectedAt() != null ? "재발송비 결제" : "검수 통과") + " + "
                     + orderProperties.getException().getReshipDueBusinessDays() + "영업일";
             default -> null;
@@ -143,6 +144,9 @@ public class AdminOrderExceptionAssembler {
     private String nextStepLabel(ExceptionKind kind, Integer noticeCount, LocalDateTime nextNoticeAt) {
         if (kind == ExceptionKind.RESHIP_DELAYED) {
             return "브랜드가 재발송 송장을 등록해야 합니다";
+        }
+        if (kind == ExceptionKind.CANCEL_REQUEST_OVERDUE) {
+            return "브랜드 확인 후 운영자 취소 가능";
         }
         int threshold = actOnBehalfPolicy.threshold();
         if (noticeCount != null && noticeCount >= threshold) {
@@ -157,6 +161,9 @@ public class AdminOrderExceptionAssembler {
     private String nextStepNote(ExceptionKind kind, Integer noticeCount) {
         if (kind == ExceptionKind.RESHIP_DELAYED) {
             return "자동 알림 없음 — 근거 대기";
+        }
+        if (kind == ExceptionKind.CANCEL_REQUEST_OVERDUE) {
+            return "취소 요청 승인 — 주문 상세(자동 승인 없음)";
         }
         if (noticeCount == null || !actOnBehalfPolicy.thresholdReached(noticeCount)) {
             return null;

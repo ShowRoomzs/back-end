@@ -7,8 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
  */
 @Schema(description = "정책 기한 값 — 설정이 바뀌면 같이 바뀐다")
 public record PolicyValuesResponse(
-        @Schema(description = "자동 입고 — 회수 택배 도착 후 N영업일(order.claim.auto-receive-business-days)", example = "3")
-        int claimAutoReceiveBusinessDays,
+        @Schema(description = "반품 검수 기한 — 반품을 돌려받은 날(회수 배송완료) + N영업일. 기한 안에 판정이 없으면 자동 승인"
+                + "(order.claim.inspect-due-business-days · 2026-11-10 · 자동 입고 폐지)", example = "2")
+        int claimInspectDueBusinessDays,
+        @Schema(description = "검수 승인 후 PG 환불 기한 — N영업일(order.claim.refund-due-business-days)", example = "1")
+        int claimRefundDueBusinessDays,
         @Schema(description = "추적 정지 판정 — 마지막 추적 이벤트 후 N일 갱신 없음(delivery.tracker.stall-alert-days)", example = "7")
         int trackingStallAlertDays,
         @Schema(description = "소비자 선택(재발송 · 환불) 개방 — 추적 정지 판정 + N일(delivery.tracker.consumer-choice-days). "
@@ -27,8 +30,8 @@ public record PolicyValuesResponse(
         @Schema(description = "계정 이용 정지 소명 검토 N영업일 — 정책값 미정이면 null(member.sanction.appeal-review-business-days)",
                 nullable = true)
         Integer sanctionAppealReviewBusinessDays,
-        @Schema(description = "취소 요청 응답 기한 — 요청 + N영업일, 넘기면 자동 승인(order.cancel-request-respond-business-days)",
-                example = "1")
+        @Schema(description = "취소 요청 응답 기한 — 요청 + N영업일. 자동 승인 없음 — 넘기면 운영팀이 브랜드 확인 후 취소(order.cancel-request-respond-business-days)",
+                example = "2")
         int cancelRequestRespondBusinessDays,
         @Schema(description = "인플루언서 정산 계좌 확인 N영업일 — 정책값 미정이면 null", nullable = true)
         Integer creatorAccountReviewBusinessDays,

@@ -94,6 +94,10 @@ public class OneToOneInquiry extends BaseTimeEntity {
     @Column(name = "STATUS", nullable = false)
     private InquiryStatus status;
 
+    /** 처리 경과 통지(수정요청 C) — 접수 + 3영업일 안에 답하지 못하면 1회. 결과(답변)는 접수 + 10영업일 안이다. */
+    @Column(name = "progress_noticed_at")
+    private LocalDateTime progressNoticedAt;
+
     @Builder
     public OneToOneInquiry(Users user, CsCategory type, String content, List<String> imageUrls, Long orderId,
                            Long claimId, Long sanctionId, Long refundTaskId) {
@@ -132,6 +136,10 @@ public class OneToOneInquiry extends BaseTimeEntity {
     }
 
     /** 운영자 답변 등록 — 1회만 가능하며 등록 즉시 답변완료로 전환된다 (§17-4) */
+    public void markProgressNoticed(LocalDateTime now) {
+        this.progressNoticedAt = now;
+    }
+
     public void registerAnswer(String answerContent, Long operatorId) {
         this.answerContent = answerContent;
         this.answeredAt = LocalDateTime.now();

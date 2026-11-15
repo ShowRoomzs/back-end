@@ -97,6 +97,14 @@ public class CreatorContractController implements CreatorContractControllerDocs 
     }
 
     @Override
+    @PostMapping("/{contractId}/draft-submissions")
+    public ResponseEntity<CreatorContractDetailResponse> submitDraft(
+            @PathVariable Long contractId,
+            @Valid @RequestBody showroomz.api.creator.contract.dto.CreatorContractDraftSubmitRequest request) {
+        return ResponseEntity.ok(creatorContractCommandService.submitDraft(getCurrentUserEmail(), contractId, request));
+    }
+
+    @Override
     @PostMapping("/{contractId}/resend-request")
     public ResponseEntity<CreatorContractResendRequestResponse> requestResend(@PathVariable Long contractId) {
         return ResponseEntity.ok(

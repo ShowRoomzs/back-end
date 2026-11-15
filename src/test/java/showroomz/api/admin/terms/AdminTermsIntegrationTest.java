@@ -82,6 +82,51 @@ class AdminTermsIntegrationTest extends IntegrationTestSupport {
     }
 
     @Test
+    @DisplayName("고지 기간(2026-11-10) — 개정은 등록일 + 7일, 불리한 변경은 + 30일 이후 시행 · 불리 여부 누락은 400 · 고지일 · 불리 여부 저장")
+    void validatesNoticePeriod() throws Exception {
+        Long documentId = registerDocument();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        String url = "/v1/admin/terms/{documentId}/versions";
+
+        Map<String, Object> missing = versionRequest("2.0", FIRST_EFFECTIVE_DATE.plusDays(30));
+        missing.remove("unfavorableChange");
+        mockMvc.perform(post(url, documentId).header(HttpHeaders.AUTHORIZATION, opsToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(missing)))
+                .andExpect(status().isBadRequest());
+
+        Map<String, Object> unfavorable = versionRequest("2.0", today.plusDays(29).isAfter(FIRST_EFFECTIVE_DATE)
+                ? today.plusDays(29) : FIRST_EFFECTIVE_DATE.plusDays(1));
+        unfavorable.put("unfavorableChange", true);
+        mockMvc.perform(post(url, documentId).header(HttpHeaders.AUTHORIZATION, opsToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(unfavorable)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("30일 전")));
+
+        unfavorable.put("effectiveDate", today.plusDays(30).toString());
+        String location = mockMvc.perform(post(url, documentId).header(HttpHeaders.AUTHORIZATION, opsToken)
+                        .contentType(MediaType.APPLICATION_JSON).content(toJson(unfavorable)))
+                .andExpect(status().isCreated()).andReturn().getResponse().getHeader(HttpHeaders.LOCATION);
+        Long versionId = Long.valueOf(location.substring(location.lastIndexOf('/') + 1));
+        mockMvc.perform(get("/v1/admin/terms/{documentId}/versions/{versionId}", documentId, versionId)
+                        .header(HttpHeaders.AUTHORIZATION, opsToken))
+                .andExpect(jsonPath("$.unfavorableChange").value(true))
+                .andExpect(jsonPath("$.noticedOn").value(today.toString()));
+    }
+
+    @Test
+    @DisplayName("개정은 등록일 + 7일 전 시행이면 400")
+    void rejectsRevisionWithinSevenDays() throws Exception {
+        Long documentId = registerDocument();
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Asia/Seoul"));
+        // 첫 버전(오늘 + 10일)보다 뒤여야 하므로 7일 미만 시행은 이 문서에서 만들 수 없다 — 새 문서의 첫 버전을 오늘 + 1일로 두고 본다.
+        mockMvc.perform(post("/v1/admin/terms/{documentId}/versions", documentId)
+                        .header(HttpHeaders.AUTHORIZATION, opsToken).contentType(MediaType.APPLICATION_JSON)
+                        .content(toJson(versionRequest("2.0", today.plusDays(6)))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
     @DisplayName("새 버전을 등록하면 이력에 쌓이고, 시행일이 지나면 배치가 교체하며 과거 버전은 남는다")
     void effectuatesNewVersionAndKeepsHistory() throws Exception {
         Long documentId = registerDocument();
@@ -193,6 +238,7 @@ class AdminTermsIntegrationTest extends IntegrationTestSupport {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put("versionNumber", versionNumber);
         request.put("effectiveDate", effectiveDate.toString());
+        request.put("unfavorableChange", false);
         request.put("content", "제1조(목적) 개정 원문");
         return request;
     }

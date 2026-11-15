@@ -22,8 +22,14 @@ public class AdminTermsVersionRegisterRequest {
 
     @NotNull(message = "시행일은 필수 입력값입니다.")
     @JsonFormat(pattern = "yyyy-MM-dd")
-    @Schema(description = "시행일 (필수) — 오늘 이후만 가능하다", example = "2026-09-01", type = "string", format = "date")
+    @Schema(description = "시행일 (필수) — 등록일(고지일) + 7일 이후. 불리한 변경이면 + 30일 이후(2026-11-10)",
+            example = "2026-09-01", type = "string", format = "date")
     private LocalDate effectiveDate;
+
+    @NotNull(message = "불리한 변경 여부는 필수 입력값입니다.")
+    @Schema(description = "이용자에게 불리한 변경인가 (필수) — true 면 시행 30일 전, false 면 7일 전까지 고지해야 한다. "
+            + "고지일은 등록일이다(소비자 대상은 등록 즉시 알림함 공지)", example = "false")
+    private Boolean unfavorableChange;
 
     @NotBlank(message = "본문은 필수 입력값입니다.")
     @Schema(description = "본문 (필수) — 등록 후 수정할 수 없다", example = "제1조(목적) ...")

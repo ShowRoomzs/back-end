@@ -36,6 +36,12 @@ public enum ContractEventType {
     TERMINATED,
     /** 초안 승인 기록(1021 기-30) — 브랜드가 콘텐츠 초안을 승인한 사실. */
     DRAFT_APPROVAL_RECORDED,
+    /** 사전 검수 초안 제출(B-13) — 인플루언서 제출 = 브랜드 수령. 회신 기한 = 수령 + 3영업일. */
+    DRAFT_SUBMITTED,
+    /** 사전 검수 수정 요청 회신(B-13). */
+    DRAFT_REVISION_REQUESTED,
+    /** 사전 검수 승인 간주(B-13) — 수령 후 3영업일 무회신 · 시스템. */
+    DRAFT_DEEMED_APPROVED,
     /** 브랜드 삭제(작성중·검토 반려) — 행을 남기는 표시라 이력도 남는다. */
     DELETED
 }

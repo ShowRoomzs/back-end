@@ -9,6 +9,7 @@ import showroomz.domain.order.entity.OrderProduct;
 import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.repository.OrderProductRepository;
+import showroomz.domain.order.service.OrderCancelRequestService;
 import showroomz.domain.order.service.OrderClaimService;
 import showroomz.domain.order.service.OrderFulfillmentService;
 import showroomz.domain.order.type.FulfillmentActorType;
@@ -41,6 +42,7 @@ public class AdminOrderCommandService {
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final OrderFulfillmentService fulfillmentService;
     private final OrderClaimService claimService;
+    private final OrderCancelRequestService cancelRequestService;
     private final AdminOrderQueryService queryService;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
     private final StalledPolicy stalledPolicy;
@@ -136,6 +138,18 @@ public class AdminOrderCommandService {
                 FulfillmentActorType.ADMIN, adminId, "운영자 대행 · " + request.reasonCode().getLabel() + " · "
                         + request.consumerMessage(), now);
         return queryService.getOrder(orderId);
+    }
+
+    /**
+     * 취소 요청 운영자 승인(대표 결정 2026-11-10) — 자동 승인 대신. 브랜드 응답 마감(요청 + 2영업일)이 지난 검토 중 요청을, 운영자가
+     * 브랜드에 확인한 뒤 승인한다. 요청 항목 취소 · 재고 원복 · PG 즉시 자동 환불은 브랜드 승인과 같다.
+     */
+    @Transactional
+    public AdminOrderDto.DetailResponse approveCancelRequest(Long adminId, Long cancelRequestId,
+                                                             AdminOrderDto.CancelRequestApproveCommand request) {
+        LocalDateTime now = LocalDateTime.now();
+        Long groupId = cancelRequestService.approveByOperator(cancelRequestId, adminId, request.brandConfirmNote(), now);
+        return queryService.getOrder(loadGroup(groupId).getOrder().getId());
     }
 
     /**

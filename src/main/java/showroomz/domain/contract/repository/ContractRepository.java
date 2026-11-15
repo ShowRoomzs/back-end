@@ -15,6 +15,15 @@ import java.util.Optional;
 
 public interface ContractRepository extends JpaRepository<Contract, Long>, ContractRepositoryCustom {
 
+    /**
+     * 서명 기한 경과 자동 불성립 대상(2026-11-10) — 서명 진행 중 ∧ 기한 경과 ∧ 정지 보류 아님. 판정은 잠근 뒤 한 번 더 한다.
+     */
+    @Query("SELECT c.id FROM Contract c WHERE c.status = showroomz.domain.contract.type.ContractStatus.SIGNING "
+            + "AND c.deletedAt IS NULL AND c.signatureDeadlineAt IS NOT NULL AND c.signatureDeadlineAt < :now "
+            + "AND c.sanctionHoldSince IS NULL ORDER BY c.signatureDeadlineAt ASC, c.id ASC")
+    java.util.List<Long> findIdsToExpireBySignatureDeadline(@Param("now") java.time.LocalDateTime now,
+                                                            org.springframework.data.domain.Pageable pageable);
+
     /** 문서 변경과 체결 검증도 동일한 계약 행을 잠가 원자적으로 처리한다. */
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Contract c WHERE c.id = :contractId AND c.deletedAt IS NULL")

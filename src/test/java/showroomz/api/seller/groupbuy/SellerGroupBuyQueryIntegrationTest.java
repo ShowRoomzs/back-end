@@ -230,7 +230,8 @@ class SellerGroupBuyQueryIntegrationTest extends GroupBuyTestSupport {
     @Test
     @DisplayName("버튼 판정은 상태 × 요청 × 통지 × 게시물로 갈린다 — 원칙으로 집행한다")
     void permissionsFollowFacts() throws Exception {
-        assertPermissions(seedIn(GroupBuyStatus.READY).getId(), "canRequestSuspension", "canOpenPairThread");
+        // 준비완료의 중단 요청은 계약 해지 요청이 됐다(1021 기-05) — 공구 버튼은 열리지 않는다.
+        assertPermissions(seedIn(GroupBuyStatus.READY).getId(), "canOpenPairThread");
         assertPermissions(seedIn(GroupBuyStatus.IN_PROGRESS).getId(),
                 "canRequestExtension", "canRequestEarlyClose", "canRequestSuspension", "canOpenPairThread");
 

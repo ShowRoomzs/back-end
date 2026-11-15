@@ -141,7 +141,7 @@ public class OrderClaimCollection {
     @Column(name = "inspection_note", length = 1000)
     private String inspectionNote;
 
-    /** 택배 도착 후 N영업일 자동 입고(1021 기-17). */
+    /** 택배 도착 후 N영업일 자동 입고(1021 기-17) — 2026-11-10 폐지. 이전 행의 기록이다. */
     @Column(name = "auto_received", nullable = false)
     private boolean autoReceived;
 

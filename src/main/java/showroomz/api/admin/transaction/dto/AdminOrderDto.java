@@ -329,7 +329,9 @@ public final class AdminOrderDto {
             boolean paused,
             @Schema(nullable = true) Long remainingDays,
             @Schema(description = "확정 예정 — 정지 중이면 null", nullable = true) LocalDateTime dueAt,
-            @Schema(nullable = true) LocalDateTime confirmedAt
+            @Schema(nullable = true) LocalDateTime confirmedAt,
+            @Schema(description = "기준 — DELIVERED(배송완료 + 7일) · SHIPPED(배송완료 미확인 · 송장 등록 + 28일 · 2026-11-10)",
+                    example = "DELIVERED") String basis
     ) {
     }
 
@@ -344,7 +346,9 @@ public final class AdminOrderDto {
             String reasonLabel,
             @Schema(nullable = true) String reasonDetail,
             LocalDateTime requestedAt,
-            @Schema(description = "응답 마감 — 지나면 자동 승인 · PG 즉시 환불. 운영자 조치는 없다") LocalDateTime respondDueAt,
+            @Schema(description = "브랜드 응답 마감(요청 + 2영업일). 자동 승인은 없다 — 지나면 운영자가 브랜드 확인 후 승인한다(`actions.canApproveCancelRequest`)")
+            LocalDateTime respondDueAt,
+            @Schema(description = "응답 마감 경과 — 처리 지연 「취소 요청 미응답」") boolean respondOverdue,
             List<Long> orderProductIds
     ) {
     }
@@ -376,7 +380,9 @@ public final class AdminOrderDto {
             @Schema(description = "B5 운영자 사유 환불 편입 — 배송중 · 배송완료 · 구매확정(반송 중은 자동 환불이라 제외)") boolean canEnqueueRefund,
             @Schema(description = "B6 구매확정 후 하자 반품 대신 열기 — 구매확정(또는 배송완료) ∧ 배송완료 3개월 안") boolean canOpenDefectClaim,
             @Schema(description = "분실 처리 — 배송중 ∧ 추적 정지 ∧ 마지막 추적 + N일(기본 28) 경과(41 보고 3번)") boolean canMarkLost,
-            @Schema(description = "배송완료 처리 — 분실 처리와 같은 조건 · 운영자가 둘 중 하나를 고른다") boolean canMarkDelivered
+            @Schema(description = "배송완료 처리 — 분실 처리와 같은 조건 · 운영자가 둘 중 하나를 고른다") boolean canMarkDelivered,
+            @Schema(description = "취소 요청 운영자 승인 — 검토 중 취소 요청 ∧ 브랜드 응답 마감(요청 + 2영업일) 경과. 브랜드 확인 후 승인한다")
+            boolean canApproveCancelRequest
     ) {
     }
 
@@ -414,6 +420,13 @@ public final class AdminOrderDto {
     public record CancelCommand(
             @NotNull @Schema(example = "DEFECT") SellerCancelReason reasonCode,
             @NotBlank @Size(max = 300) @Schema(description = "소비자에게 그대로 전달되는 설명") String consumerMessage
+    ) {
+    }
+
+    @Schema(name = "AdminCancelRequestApproveRequest", description = "취소 요청 운영자 승인 — 브랜드 응답 마감 경과 후, 브랜드에 확인한 내용")
+    public record CancelRequestApproveCommand(
+            @NotBlank @Size(max = 500) @Schema(description = "브랜드 확인 내용 — 이력에 남고 브랜드 알림에는 들어가지 않는다",
+                    example = "11.12 브랜드 담당자 통화 — 미발송 확인, 취소 동의") String brandConfirmNote
     ) {
     }
 

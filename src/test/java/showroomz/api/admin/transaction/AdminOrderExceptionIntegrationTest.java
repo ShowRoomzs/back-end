@@ -153,7 +153,7 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
     }
 
     @Test
-    @DisplayName("[AE-05] 검수 지연 — 접수번호 · 「입고 + 2영업일」 · 열기는 클레임 · 3회면 운영자 환불 가능 · 판정하면 빠진다")
+    @DisplayName("[AE-05] 검수 지연 — 접수번호 · 「돌려받은 날 + 2영업일」 · 열기는 클레임 · 3회면 운영자 환불 가능 · 판정하면 빠진다")
     void inspectOverdue() throws Exception {
         Long claimId = received(returnClaim(deliveredGroup(creamVariant, 1)));
         jdbc.update("UPDATE order_claim SET inspect_due_at = ? WHERE claim_id = ?",
@@ -162,7 +162,7 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         JsonNode row = only(rows("?tab=DELAY"));
         assertThat(row.get("kind").asText()).isEqualTo("INSPECT_OVERDUE");
         assertThat(row.get("targetNumber").asText()).isEqualTo("CLM-" + claimId);
-        assertThat(row.get("dueBasisLabel").asText()).isEqualTo("입고 + 2영업일");
+        assertThat(row.get("dueBasisLabel").asText()).isEqualTo("돌려받은 날 + 2영업일");
         assertThat(row.at("/link/type").asText()).isEqualTo("CLAIM");
         assertThat(row.at("/link/claimId").asLong()).isEqualTo(claimId);
 
@@ -319,7 +319,7 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
     }
 
     @Test
-    @DisplayName("[AE-11] 요약 — 처리 지연 = 목록 건수 · 유형 7키 · 배지 범위(ALL 합 · DELAY 처리 지연만)")
+    @DisplayName("[AE-11] 요약 — 처리 지연 = 목록 건수 · 유형 8키 · 배지 범위(ALL 합 · DELAY 처리 지연만)")
     void exceptionSummary() throws Exception {
         OrderDeliveryGroup overdue = prepared(paidGroup());
         backdateShipDueAt(overdue, LocalDateTime.now().minusDays(2));
@@ -328,7 +328,7 @@ class AdminOrderExceptionIntegrationTest extends ClaimTestSupport {
         JsonNode summary = json(adminGet(EXCEPTIONS + "/summary").andExpect(status().isOk()));
         assertThat(summary.at("/tabCounts/DELAY").asLong()).isEqualTo(rows("?tab=DELAY").size()).isEqualTo(1);
         assertThat(summary.at("/tabCounts/DELIVERY").asLong()).isEqualTo(1);
-        assertThat(summary.get("kindCounts").size()).isEqualTo(7);
+        assertThat(summary.get("kindCounts").size()).isEqualTo(8);
         assertThat(summary.get("badge").asLong()).isEqualTo(2);
         assertThat(summary.get("badgeScope").asText()).isEqualTo("ALL");
 

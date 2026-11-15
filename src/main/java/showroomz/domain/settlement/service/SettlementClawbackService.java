@@ -183,7 +183,8 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
             creatorAmount = BigDecimal.valueOf(creatorAmount).multiply(BigDecimal.valueOf(origin.getRewardAmount()))
                     .divide(BigDecimal.valueOf(origin.getOriginalRewardAmount()), 0, RoundingMode.DOWN).longValue();
         }
-        long creatorVat = floor(creatorAmount, origin.getRewardVatRate());
+        // 부가세 포함 정산(2026-11-10)은 브랜드가 따로 낸 리워드 부가세가 없다 — 역산에서 뺄 부가세가 없다.
+        long creatorVat = origin.isRewardVatInclusive() ? 0 : floor(creatorAmount, origin.getRewardVatRate());
         // 브랜드 몫은 원래 지급액 역산 — 환불분에서 그 정산의 PG · 플랫폼 수수료(요율 스냅샷)를 뺀 실수령분만 회수한다(1021 기-13 【잠정】).
         long refund = target.refundAmount();
         long brandAmount = Math.max(0, refund - floor(refund, origin.getPgFeeRate())
@@ -342,10 +343,18 @@ public class SettlementClawbackService implements SettlementClawbackLedger {
             return;
         }
         Settlement origin = settlementRepository.findById(brandRow.getOriginSettlementId()).orElse(settlement);
-        long vat = BigDecimal.valueOf(reward).multiply(origin.getRewardVatRate()).setScale(0, RoundingMode.DOWN)
-                .longValue();
+        long supply = reward;
+        long vat;
+        if (origin.isRewardVatInclusive()) {
+            // 리워드 = 부가세 포함(2026-11-10) — 환불된 리워드분 안에서 공급가 · 부가세를 나눈다.
+            vat = SettlementCalculator.includedVat(reward, origin.getRewardVatRate());
+            supply = reward - vat;
+        } else {
+            vat = BigDecimal.valueOf(reward).multiply(origin.getRewardVatRate()).setScale(0, RoundingMode.DOWN)
+                    .longValue();
+        }
         SettlementTaxDocument credit = SettlementTaxDocument.create(settlement.getId(),
-                TaxDocumentType.BRAND_TAX_INVOICE_CREDIT, TaxDocumentStatus.PENDING_ISSUE, -reward, -vat,
+                TaxDocumentType.BRAND_TAX_INVOICE_CREDIT, TaxDocumentStatus.PENDING_ISSUE, -supply, -vat,
                 settlement.getMarket().getMarketName(), null, null, null, now);
         documentRepository.save(credit.withClawback(brandRow.getId()));
     }

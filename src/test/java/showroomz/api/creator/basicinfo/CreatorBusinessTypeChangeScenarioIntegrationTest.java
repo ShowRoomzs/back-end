@@ -12,7 +12,6 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.web.servlet.ResultActions;
 import showroomz.api.admin.changerequest.service.CreatorBusinessTypeChangeApplier;
 import showroomz.api.app.auth.entity.RoleType;
@@ -23,9 +22,8 @@ import showroomz.domain.changerequest.repository.ChangeRequestRepository;
 import showroomz.domain.changerequest.type.ChangeRequestStatus;
 import showroomz.domain.changerequest.type.ChangeRequesterType;
 import showroomz.domain.member.creator.entity.Creator;
-import showroomz.domain.member.creator.entity.CreatorAdminHistory;
-import showroomz.domain.member.creator.repository.CreatorAdminHistoryRepository;
-import showroomz.domain.member.creator.service.CreatorAdminHistoryRecorder;
+import showroomz.domain.member.creator.service.CreatorAdminHistoryReader;
+import showroomz.api.admin.changerequest.service.CreatorBusinessTypeChangeApplier;
 import showroomz.domain.member.common.service.MemberNotifier;
 import showroomz.domain.member.creator.type.CreatorAdminEventType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
@@ -77,12 +75,13 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
     private static final long TEN_MB = 10L * 1024 * 1024;
 
     @Autowired private ChangeRequestRepository brandChangeRequests;
-    @Autowired private CreatorAdminHistoryRepository adminHistories;
+    /** 처리 이력 — 사업자 구분 변경 승인 · 반려는 저장하지 않고 요청 행에서 파생한다(정합 계획서 R1-8 · D-2). 화면과 같은 리더로 읽는다. */
+    @Autowired private CreatorAdminHistoryReader adminHistoryReader;
     @Autowired private SettlementTaxDocumentRepository taxDocuments;
 
     @MockitoSpyBean private MemberNotifier notifier;
     @MockitoSpyBean private CreatorBusinessTypeChangeApplier applier;
-    @MockitoSpyBean private CreatorAdminHistoryRecorder historyRecorder;
+    @MockitoSpyBean private CreatorBusinessTypeChangeApplier businessTypeChangeApplier;
 
     // ================================================================== 5-1 생성
 
@@ -665,12 +664,15 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
             long id = created(toBusiness(creatorToken, "214-37-55120"));
             approve(id).andExpect(status().isOk());
 
-            CreatorAdminHistory history = onlyHistory(creator.getId());
-            assertThat(history.getEventType()).isEqualTo(CreatorAdminEventType.BUSINESS_TYPE_CHANGE_APPROVED);
-            assertThat(history.getActorName()).isEqualTo("김운영");
-            assertThat(history.getDetail()).isEqualTo("개인 (비사업자) → 개인사업자 · " + request(id).getRequestCode());
-            assertThat(history.getRefType()).isEqualTo("CHANGE_REQUEST");
-            assertThat(history.getRefId()).isEqualTo(id);
+            CreatorAdminHistoryReader.Item history = onlyHistory(creator.getId());
+            assertThat(history.type()).isEqualTo(CreatorAdminEventType.BUSINESS_TYPE_CHANGE_APPROVED);
+            assertThat(history.actorName()).isEqualTo("김운영");
+            assertThat(history.detail()).isEqualTo("개인 (비사업자) → 개인사업자 · " + request(id).getRequestCode());
+            assertThat(history.refType()).isEqualTo("CHANGE_REQUEST");
+            assertThat(history.refId()).isEqualTo(id);
+            // 파생이라 저장 행은 생기지 않는다(이중 기록 방지 · R1-8).
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM creator_admin_history WHERE creator_id = ? "
+                    + "AND ref_type = 'CHANGE_REQUEST'", Long.class, creator.getId())).isZero();
             verify(notifier, times(1)).businessTypeChangeApproved(creator.getId(), "jimin-biz@showroomz.test",
                     request(id).getRequestCode());
 
@@ -708,7 +710,7 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
 
             long id = created(toIndividual(creatorToken, RESIDENT));
             approve(id).andExpect(status().isOk());
-            assertThat(onlyHistory(creator.getId()).getDetail())
+            assertThat(onlyHistory(creator.getId()).detail())
                     .isEqualTo("개인사업자 → 개인 (비사업자) · " + request(id).getRequestCode());
 
             Settlement retained = confirm(settlement(before.getId()));
@@ -765,13 +767,11 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
         }
 
         @Test
-        @DisplayName("[AP-05] 승인 트랜잭션 안에서 이력 저장이 실패하면 회원 구분 · 요청 상태가 함께 롤백되고 알림은 나가지 않는다")
-        void rollbackOnHistoryFailure() throws Exception {
+        @DisplayName("[AP-05] 승인 트랜잭션 안에서 반영 뒤 단계(결과 알림 예약)가 실패하면 회원 구분 · 요청 상태가 함께 롤백되고 알림은 나가지 않는다")
+        void rollbackOnLateFailure() throws Exception {
             long id = created(toBusiness(creatorToken, "214-37-55120"));
-            // 기록기는 @Transactional(MANDATORY) 프록시 안에 스파이가 있다 — 스터빙은 프록시를 건너 대상에 건다.
-            CreatorAdminHistoryRecorder target = AopTestUtils.getUltimateTargetObject(historyRecorder);
-            doThrow(new IllegalStateException("이력 저장 실패(테스트)")).when(target)
-                    .byOperator(any(), any(), any(), any(), any(), any(), any(), any());
+            // 승인 이력은 파생이라(R1-8) 저장 단계가 없다 — 회원 구분 반영 · 요청 승인 뒤에 도는 알림 예약을 실패시킨다.
+            doThrow(new IllegalStateException("알림 예약 실패(테스트)")).when(businessTypeChangeApplier).notifyApproved(any());
 
             approve(id).andExpect(status().is5xxServerError());
 
@@ -1080,13 +1080,20 @@ class CreatorBusinessTypeChangeScenarioIntegrationTest extends SettlementTestSup
         return creatorRepository.findById(creator.getId()).orElseThrow();
     }
 
-    private List<CreatorAdminEventType> events(Long creatorId) {
-        return adminHistories.findByCreatorIdOrderByCreatedAtDescIdDesc(creatorId).stream()
-                .map(CreatorAdminHistory::getEventType).toList();
+    /** 사업자 구분 변경 처리 이력(파생) — 최신순. 가입 · 입점 승인 같은 다른 파생 행은 뺀다. */
+    private List<CreatorAdminHistoryReader.Item> businessTypeHistories(Long creatorId) {
+        return adminHistoryReader.read(creatorRepository.findById(creatorId).orElseThrow()).stream()
+                .filter(item -> item.type() == CreatorAdminEventType.BUSINESS_TYPE_CHANGE_APPROVED
+                        || item.type() == CreatorAdminEventType.BUSINESS_TYPE_CHANGE_REJECTED)
+                .toList();
     }
 
-    private CreatorAdminHistory onlyHistory(Long creatorId) {
-        List<CreatorAdminHistory> histories = adminHistories.findByCreatorIdOrderByCreatedAtDescIdDesc(creatorId);
+    private List<CreatorAdminEventType> events(Long creatorId) {
+        return businessTypeHistories(creatorId).stream().map(CreatorAdminHistoryReader.Item::type).toList();
+    }
+
+    private CreatorAdminHistoryReader.Item onlyHistory(Long creatorId) {
+        List<CreatorAdminHistoryReader.Item> histories = businessTypeHistories(creatorId);
         assertThat(histories).hasSize(1);
         return histories.get(0);
     }

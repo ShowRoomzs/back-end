@@ -1,7 +1,6 @@
 package showroomz.domain.order.service;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.order.entity.OrderCancelRequest;
@@ -33,8 +32,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 취소 요청(34 설계서 1-5 · 1009 기획 수정본 3절) — 소비자가 만들고, 브랜드가 승인 · 거부하고, <b>응답 기한(1영업일)이 지나면
- * 시스템이 자동 승인</b>한다. 승인은 사람이든 시스템이든 같은 메서드를 탄다 — 요청 항목 취소 · 재고 원복 · 환불 큐(PG 즉시 자동).
+ * 취소 요청(34 설계서 1-5 · 1009 기획 수정본 3절) — 소비자가 만들고, 브랜드가 승인 · 거부한다. <b>자동 승인은 없다</b>(대표 결정
+ * 2026-11-10) — 응답 기한(요청 + 2영업일)이 지나면 어드민 예외 관리 처리 지연에 올라오고, 운영자가 브랜드에 확인한 뒤 승인한다.
+ * 브랜드 승인과 운영자 승인은 같은 길이다 — 요청 항목 취소 · 재고 원복 · 환불 큐(PG 즉시 자동).
  *
  * <p>요청이 걸린 하위주문은 <b>전체</b>가 발송 보류된다(결정 13) — 준비 시작 · 송장 등록 · 직권 취소의 조건부 UPDATE 가
  * 「검토 중 요청 없음」을 WHERE 에 넣고 있다.
@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 public class OrderCancelRequestService {
 
     private static final int DETAIL_MAX_LENGTH = 300;
+    private static final int OPERATOR_NOTE_MAX_LENGTH = 500;
 
     private final OrderCancelRequestRepository cancelRequestRepository;
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
@@ -125,22 +126,60 @@ public class OrderCancelRequestService {
         return request;
     }
 
-    // ------------------------------------------------------------------ 승인 · 거부 · 자동 승인
+    // ------------------------------------------------------------------ 승인 · 거부 · 운영자 승인
 
     /**
-     * 승인 — 요청 항목만 취소 · 남은 항목 발송 · 환불은 PG 즉시 자동(환불 큐). 브랜드 승인과 자동 승인이 같은 길이다.
+     * 브랜드 승인 — 요청 항목만 취소 · 남은 항목 발송 · 환불은 PG 즉시 자동(환불 큐).
      *
-     * @param sellerId 브랜드 승인이면 그 셀러, 자동 승인이면 null
      * @return 승인한 요청의 하위주문 id
      */
     @Transactional
-    public Long approve(Long cancelRequestId, Long sellerId, boolean auto, LocalDateTime now) {
+    public Long approve(Long cancelRequestId, Long sellerId, LocalDateTime now) {
+        return approveInternal(cancelRequestId, FulfillmentActorType.SELLER, sellerId, null, now);
+    }
+
+    /**
+     * 운영자 승인(대표 결정 2026-11-10) — 자동 승인이 없어졌다. 응답 기한이 지난 검토 중 요청만, 운영자가 브랜드에 확인한 뒤 취소한다.
+     * 브랜드 확인 내용은 필수다. 취소 · 재고 원복 · 환불 경로는 브랜드 승인과 같다.
+     *
+     * @return 승인한 요청의 하위주문 id
+     */
+    @Transactional
+    public Long approveByOperator(Long cancelRequestId, Long adminId, String brandConfirmNote, LocalDateTime now) {
+        String note = brandConfirmNote == null || brandConfirmNote.isBlank() ? null : brandConfirmNote.trim();
+        if (note == null) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "브랜드 확인 내용을 입력해 주세요.");
+        }
+        if (note.length() > OPERATOR_NOTE_MAX_LENGTH) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
+                    "브랜드 확인 내용은 " + OPERATOR_NOTE_MAX_LENGTH + "자 이내로 입력해 주세요.");
+        }
+        OrderCancelRequest request = cancelRequestRepository.findById(cancelRequestId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
+        if (request.getStatus() != CancelRequestStatus.PENDING) {
+            throw new BusinessException(ErrorCode.CANCEL_REQUEST_ALREADY_DECIDED);
+        }
+        if (!isRespondOverdue(request, now)) {
+            throw new BusinessException(ErrorCode.CANCEL_REQUEST_NOT_OVERDUE);
+        }
+        return approveInternal(cancelRequestId, FulfillmentActorType.ADMIN, adminId, note, now);
+    }
+
+    /** 운영자 승인 조건 — 검토 중이고 응답 기한이 지났다. 어드민 상세 · 예외 관리가 같은 식을 쓴다. */
+    public static boolean isRespondOverdue(OrderCancelRequest request, LocalDateTime now) {
+        return request.getStatus() == CancelRequestStatus.PENDING && request.getRespondDueAt() != null
+                && request.getRespondDueAt().isBefore(now);
+    }
+
+    private Long approveInternal(Long cancelRequestId, FulfillmentActorType actorType, Long actorId, String note,
+                                 LocalDateTime now) {
         OrderCancelRequest request = cancelRequestRepository.findWithGroup(cancelRequestId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.ORDER_GROUP_NOT_FOUND));
         OrderDeliveryGroup group = request.getDeliveryGroup();
         Long groupId = group.getId();
         List<OrderProduct> targets = request.getItems().stream().map(OrderCancelRequestItem::getOrderProduct).toList();
-        if (cancelRequestRepository.approve(cancelRequestId, sellerId, auto, now) != 1) {
+        boolean operator = actorType == FulfillmentActorType.ADMIN;
+        if (cancelRequestRepository.approve(cancelRequestId, actorId, operator, note, now) != 1) {
             throw decisionFailure(cancelRequestId);
         }
         List<OrderProduct> cancelled = fulfillmentService.cancelItemsWithRestock(targets,
@@ -154,10 +193,9 @@ public class OrderCancelRequestService {
         OrderDeliveryGroup reloaded = deliveryGroupRepository.findById(groupId).orElseThrow();
         fulfillmentService.enqueueRefund(reloaded, RefundTaskSource.CANCEL_REQUEST_APPROVED, cancelRequestId,
                 refundAmount);
-        fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_APPROVED,
-                auto ? FulfillmentActorType.SYSTEM : FulfillmentActorType.SELLER, sellerId,
-                (auto ? "자동 승인 · 응답 기한 경과 · " : "") + "요청 " + cancelled.size() + "건 취소 · 환불 "
-                        + String.format("%,d", refundAmount) + "원(PG 자동)", now);
+        fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_APPROVED, actorType, actorId,
+                (operator ? "운영자 승인 · 응답 기한 경과 · 브랜드 확인: " + note + " · " : "") + "요청 " + cancelled.size()
+                        + "건 취소 · 환불 " + String.format("%,d", refundAmount) + "원(PG 자동)", now);
         return groupId;
     }
 
@@ -200,29 +238,6 @@ public class OrderCancelRequestService {
         fulfillmentService.appendHistory(groupId, FulfillmentEventType.CANCEL_REQUEST_WITHDRAWN,
                 FulfillmentActorType.CONSUMER, userId, "요청 " + itemCount + "건 철회 · 발송 재개", now);
         return request;
-    }
-
-    @Transactional(readOnly = true)
-    public List<Long> findOverdueIds(LocalDateTime now, int limit) {
-        return cancelRequestRepository.findOverdueIds(now, PageRequest.of(0, limit));
-    }
-
-    /**
-     * 자동 승인 — 응답 기한이 지났고 아직 검토 중일 때만. 그사이 브랜드가 결정했으면 조용히 false 다.
-     */
-    @Transactional
-    public boolean autoApproveIfOverdue(Long cancelRequestId, LocalDateTime now) {
-        OrderCancelRequest request = cancelRequestRepository.findById(cancelRequestId).orElse(null);
-        if (request == null || request.getStatus() != CancelRequestStatus.PENDING
-                || request.getRespondDueAt() == null || !request.getRespondDueAt().isBefore(now)) {
-            return false;
-        }
-        try {
-            approve(cancelRequestId, null, true, now);
-            return true;
-        } catch (BusinessException e) {
-            return false;
-        }
     }
 
     /** 승인·거부 0행 — 요청이 이미 결정됐으면 409 ALREADY_DECIDED, 아직 PENDING 이면 그룹이 작업 큐를 벗어난 것이다. */

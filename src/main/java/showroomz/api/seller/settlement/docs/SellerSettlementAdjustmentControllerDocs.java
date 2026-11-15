@@ -235,13 +235,14 @@ public interface SellerSettlementAdjustmentControllerDocs {
 
     @Operation(summary = "요청 철회 (1021 기-14)",
             description = """
-                    내가 처음 보낸 조정 요청을 상대가 응답하기 전에 거둡니다 — **원래 금액으로 확정 · 이슈 종결 · 재요청 불가**(정산당 협의 1건).
+                    내가 처음 보낸 조정 요청을 거둡니다 — 협의 중 · 기한 전이면 **언제든**(상대가 반대 · 다른 금액을 낸 뒤에도 · 2026-11-10).
+                    **원래 금액으로 확정 · 이슈 종결 · 재요청 불가**(정산당 협의 1건).
                     정산은 「지급 예정」(철회 확정 · 확정일 = 철회일 · 지급 예정일 = +N영업일)이 되고 상대에게 알림이 갑니다.
 
                     **권한:** SELLER
 
-                    - `permissions.canWithdraw = true` 일 때만 — 처음 요청한 쪽 ∧ 최신 제안이 내 것 ∧ 응답 대기
-                    - 상대가 반대 · 다른 금액을 낸 뒤면 철회가 아니라 협의입니다 — 409 `SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED`
+                    - `permissions.canWithdraw = true` 일 때만 — 처음 요청한 쪽 ∧ 협의 중 ∧ 기한 전. 상대 쪽이면 409 `SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED`
+                    - 상대의 「동의」와 겹치면 먼저 반영된 쪽만 남습니다 — 진 쪽은 409 `SETTLEMENT_ADJUSTMENT_STATE_CHANGED`
                     - 종결 · 기한 경과는 다른 응답과 같은 409
                     """)
     @ApiResponses({

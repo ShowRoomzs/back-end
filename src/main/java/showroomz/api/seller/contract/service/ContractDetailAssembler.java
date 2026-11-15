@@ -41,6 +41,7 @@ public class ContractDetailAssembler {
     private final showroomz.global.config.properties.ContractProperties contractProperties;
     private final showroomz.domain.contract.repository.ContractTerminationRequestRepository terminationRequestRepository;
     private final showroomz.domain.contract.repository.ContractDraftApprovalRepository draftApprovalRepository;
+    private final showroomz.domain.contract.repository.ContractDraftSubmissionRepository draftSubmissionRepository;
 
     public ContractDetailResponse assemble(Contract contract) {
         ContractStatus status = contract.getStatus();
@@ -73,7 +74,20 @@ public class ContractDetailAssembler {
                 SanctionHoldView.deadlinePaused(contract),
                 contract.getEstablishedAt(),
                 terminationRequest(contract),
-                draftApprovals(contract));
+                draftApprovals(contract),
+                draftSubmissions(contract));
+    }
+
+    /** 사전 검수 초안 제출(B-13) — 세 서피스가 같은 모양을 쓴다. */
+    public List<ContractDetailResponse.DraftSubmission> draftSubmissions(Contract contract) {
+        if (contract.getId() == null) {
+            return List.of();
+        }
+        return draftSubmissionRepository.findByContractIdOrderBySubmittedAtAscIdAsc(contract.getId()).stream()
+                .map(s -> new ContractDetailResponse.DraftSubmission(s.getId(), s.getTitle(), s.getSubmittedAt(),
+                        s.getReviewDueAt(), s.getStatus().name(), s.getStatus().getLabel(), s.getThreadMessageId(),
+                        s.getNote(), s.getDecidedAt(), s.getDecisionNote(), s.getApprovalId()))
+                .toList();
     }
 
     /** 가장 최근 해지 요청 — 처리 대기 · 처리됨 · 철회 · 닫힘(1021 설계서 1-4). */

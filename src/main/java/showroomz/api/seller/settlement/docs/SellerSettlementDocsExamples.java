@@ -416,10 +416,6 @@ final class SellerSettlementDocsExamples {
             {"code": "INVALID_INPUT", "message": "size 는 1 ~ 100 이어야 합니다."}
             """;
 
-    static final String ERR_PAYOUT_FAILED_FILTER = """
-            {"code": "INVALID_INPUT", "message": "PAYOUT_FAILED 는 필터로 받지 않습니다 — PAID 에 포함됩니다."}
-            """;
-
     static final String ERR_NOT_NULL = """
             {"code": "INVALID_INPUT", "message": "널이어서는 안됩니다"}
             """;

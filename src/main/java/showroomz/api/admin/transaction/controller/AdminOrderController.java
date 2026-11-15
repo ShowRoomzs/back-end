@@ -132,6 +132,14 @@ public class AdminOrderController implements AdminOrderControllerDocs {
     }
 
     @Override
+    @PostMapping("/cancel-requests/{cancelRequestId}/approve")
+    public ResponseEntity<AdminOrderDto.DetailResponse> approveCancelRequest(
+            @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long cancelRequestId,
+            @Valid @RequestBody AdminOrderDto.CancelRequestApproveCommand request) {
+        return ResponseEntity.ok(commandService.approveCancelRequest(operatorId(principal), cancelRequestId, request));
+    }
+
+    @Override
     @PostMapping("/groups/{deliveryGroupId}/refund-tasks")
     public ResponseEntity<AdminOrderDto.DetailResponse> enqueueRefund(
             @AuthenticationPrincipal UserPrincipal principal, @PathVariable Long deliveryGroupId,

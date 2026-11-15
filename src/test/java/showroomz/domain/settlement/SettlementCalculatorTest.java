@@ -34,6 +34,54 @@ class SettlementCalculatorTest {
         return calculator.calculate(new SettlementInput(confirmedSales, reward, 0, 0, 0, 0, type, RATES));
     }
 
+    /** 리워드 = 부가세 포함(2026-11-10 · 수정요청 A-5) — 새 정산의 운영 기본값. */
+    private static final SettlementRates INCLUSIVE = new SettlementRates(new BigDecimal("0.03"), new BigDecimal("0.00"),
+            new BigDecimal("0.10"), new BigDecimal("0.03"), new BigDecimal("0.003"), true);
+
+    @Nested
+    @DisplayName("A-5 리워드 = 부가세 포함(2026-11-10)")
+    class VatInclusive {
+
+        @Test
+        @DisplayName("비사업자 — 브랜드 별도 부가세 0 · 원천징수는 리워드 기준 · 플랫폼 몫에 부가세 항 없음 · 검산")
+        void individual() {
+            SettlementAmounts a = calculator.calculate(new SettlementInput(5_480_000, 548_000, 0, 0, 0, 0,
+                    CreatorBusinessType.INDIVIDUAL, INCLUSIVE));
+
+            assertThat(a.rewardVatAmount()).isZero();
+            assertThat(a.brandPayoutAmount()).isEqualTo(5_480_000 - 164_400 - 548_000);
+            assertThat(a.withholdingAmount()).isEqualTo(18_084);
+            assertThat(a.creatorPayoutAmount()).isEqualTo(529_916);
+            assertThat(a.creatorVatAmount()).isZero();
+            assertThat(a.platformShareAmount()).isZero();
+            calculator.verify(a);
+        }
+
+        @Test
+        @DisplayName("사업자 — 지급액 = 리워드 그대로 · 부가세는 리워드 안(공급가 = 리워드 ÷ 1.1 절사 · 부가세 = 나머지) · 검산")
+        void business() {
+            SettlementAmounts a = calculator.calculate(new SettlementInput(5_480_000, 548_000, 0, 0, 0, 0,
+                    CreatorBusinessType.BUSINESS, INCLUSIVE));
+
+            assertThat(a.rewardVatAmount()).isZero();
+            assertThat(a.creatorPayoutAmount()).isEqualTo(548_000);
+            assertThat(a.creatorVatAmount()).isEqualTo(548_000 - 498_181);   // 548,000 ÷ 1.1 = 498,181.8 → 498,181
+            assertThat(a.withholdingAmount()).isZero();
+            assertThat(a.platformShareAmount()).isZero();
+            assertThat(a.brandPayoutAmount()).isEqualTo(5_480_000 - 164_400 - 548_000);
+            calculator.verify(a);
+        }
+
+        @Test
+        @DisplayName("부가세분 — 0 · 음수는 0 · 1원 단위 절사 쪽이 공급가")
+        void includedVat() {
+            assertThat(SettlementCalculator.includedVat(0, new BigDecimal("0.10"))).isZero();
+            assertThat(SettlementCalculator.includedVat(-100, new BigDecimal("0.10"))).isZero();
+            assertThat(SettlementCalculator.includedVat(110_000, new BigDecimal("0.10"))).isEqualTo(10_000);
+            assertThat(SettlementCalculator.includedVat(100_000, new BigDecimal("0.10"))).isEqualTo(9_091);
+        }
+    }
+
     @Nested
     @DisplayName("ST-01 · ST-02 — 시안 더미 수치")
     class Dummy {

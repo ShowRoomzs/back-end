@@ -42,7 +42,9 @@ public class SettlementCalculator {
 
         long pgFee = apply(confirmedSales, rates.pgFeeRate());
         long platformFee = apply(confirmedSales, rates.platformFeeRate());
-        long rewardVat = apply(reward, rates.rewardVatRate());
+        // 리워드 = 부가세 포함(2026-11-10)이면 브랜드의 별도 부가세 부담이 없다. 그 전 정산은 리워드 × 10% 를 브랜드가 따로 냈다.
+        boolean inclusive = rates.rewardVatInclusive();
+        long rewardVat = inclusive ? 0 : apply(reward, rates.rewardVatRate());
 
         // 1021 설계서 6-1 — 리워드 부가세 다음에 「+ 배송비 · + 재발송비 · + 반품 시 차감한 최초 배송비 · ± 운임 정산」.
         long brandBeforeClawback = confirmedSales - pgFee - platformFee - reward - rewardVat
@@ -61,16 +63,23 @@ public class SettlementCalculator {
         long creatorVat = 0;
         long creatorPayout;
         if (in.businessType() == CreatorBusinessType.BUSINESS) {
-            creatorVat = apply(creatorBase, rates.rewardVatRate());
-            creatorPayout = creatorBase + creatorVat;
+            if (inclusive) {
+                // 리워드 안에 부가세가 들어 있다 — 공급가 = 리워드 ÷ (1 + 부가세율) 절사 · 부가세 = 나머지. 지급액은 리워드 그대로.
+                creatorVat = includedVat(creatorBase, rates.rewardVatRate());
+                creatorPayout = creatorBase;
+            } else {
+                creatorVat = apply(creatorBase, rates.rewardVatRate());
+                creatorPayout = creatorBase + creatorVat;
+            }
         } else {
             withholdingIncome = apply(creatorBase, rates.withholdingIncomeRate());
             withholdingLocal = apply(creatorBase, rates.withholdingLocalRate());
             creatorPayout = creatorBase - withholdingIncome - withholdingLocal;
         }
         long withholding = withholdingIncome + withholdingLocal;
-        // 사업자 건은 리워드 부가세를 그대로 넘기므로 차감이 없으면 0 — 차감이 있으면 회수된 리워드분의 부가세가 남는다.
-        long platformShare = platformFee + (rewardVat - creatorVat) + brandClawback + rewardClawback;
+        // 별도 부담 정산 — 사업자 건은 리워드 부가세를 그대로 넘기므로 차감이 없으면 0 · 차감이 있으면 회수된 리워드분의 부가세가 남는다.
+        // 부가세 포함 정산 — 브랜드가 따로 낸 부가세가 없고 사업자 부가세는 리워드 안에 있어 플랫폼 몫에 부가세 항이 없다.
+        long platformShare = platformFee + (inclusive ? 0 : rewardVat - creatorVat) + brandClawback + rewardClawback;
 
         return new SettlementAmounts(rates, in.businessType(), confirmedSales, pgFee, platformFee, reward, rewardVat,
                 in.reshipFeeAmount(), in.consumerDeliveryFeeAmount(), brandClawback, brandPayout, rewardClawback,
@@ -115,7 +124,7 @@ public class SettlementCalculator {
 
     public SettlementRates ratesOf(Settlement s) {
         return new SettlementRates(s.getPgFeeRate(), s.getPlatformFeeRate(), s.getRewardVatRate(),
-                s.getWithholdingIncomeRate(), s.getWithholdingLocalRate());
+                s.getWithholdingIncomeRate(), s.getWithholdingLocalRate(), s.isRewardVatInclusive());
     }
 
     /**
@@ -155,10 +164,23 @@ public class SettlementCalculator {
         if (base <= 0) {
             return 0;
         }
-        long upper = BigDecimal.valueOf(base)
+        // 부가세 포함 정산은 브랜드가 리워드만 낸다 — 나눌 부가세가 없다.
+        long upper = s.isRewardVatInclusive() ? base : BigDecimal.valueOf(base)
                 .divide(BigDecimal.ONE.add(s.getRewardVatRate()), 0, ROUNDING)
                 .longValueExact();
         return upper - upper % 10;
+    }
+
+    /**
+     * 부가세 포함 금액의 부가세분(2026-11-10) — 공급가 = 금액 ÷ (1 + 부가세율) 절사, 부가세 = 금액 − 공급가. 사업자 인플루언서 지급 ·
+     * 세금계산서(브랜드 · 인플루언서 · 수정분)가 같은 식을 쓴다. 원 단위 처리는 세무 확인 대상이다(13절 B-2).
+     */
+    public static long includedVat(long amount, BigDecimal rate) {
+        if (amount <= 0 || rate == null || rate.signum() == 0) {
+            return 0;
+        }
+        long supply = BigDecimal.valueOf(amount).divide(BigDecimal.ONE.add(rate), 0, ROUNDING).longValueExact();
+        return amount - supply;
     }
 
     private static long apply(long amount, BigDecimal rate) {

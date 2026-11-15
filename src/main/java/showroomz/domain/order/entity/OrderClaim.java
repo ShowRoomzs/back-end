@@ -103,7 +103,7 @@ public class OrderClaim {
     @Column(name = "received_by")
     private Long receivedBy;
 
-    /** 기한 ② — 입고 확인 때 발급. */
+    /** 기한 ② — 반품을 돌려받은 날 + N영업일(2026-11-10). 추적상 도착 때 발급, 도착 감지가 없으면 입고 확인 때 발급. */
     @Column(name = "inspect_due_at")
     private LocalDateTime inspectDueAt;
 

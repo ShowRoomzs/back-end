@@ -73,14 +73,24 @@ public class TermsVersion extends BaseTimeEntity {
     @Column(name = "REGISTERED_BY", updatable = false)
     private Long registeredBy;
 
+    /** 이용자에게 불리한 변경 — 시행 30일 전 고지(아니면 7일 · 2026-11-10). 첫 버전 · 기존 행은 false. */
+    @Column(name = "unfavorable_change", nullable = false, updatable = false)
+    private boolean unfavorableChange;
+
+    /** 고지일(KST) — 등록일. 시행일과의 간격이 고지 기간이다. 기존 행은 null. */
+    @Column(name = "noticed_on", updatable = false)
+    private LocalDate noticedOn;
+
     @Builder
     public TermsVersion(TermsDocument document, String versionNumber, LocalDate effectiveDate,
-                        String content, Long registeredBy) {
+                        String content, Long registeredBy, boolean unfavorableChange, LocalDate noticedOn) {
         this.document = document;
         this.versionNumber = versionNumber;
         this.effectiveDate = effectiveDate;
         this.content = content;
         this.registeredBy = registeredBy;
+        this.unfavorableChange = unfavorableChange;
+        this.noticedOn = noticedOn;
         // 등록 시점은 언제나 시행 예정이다 — 시행일 00:00에 배치가 교체한다 (기획 §21-6)
         this.status = TermsVersionStatus.SCHEDULED;
     }

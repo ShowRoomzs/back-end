@@ -59,6 +59,9 @@ import java.util.Set;
 @Transactional(readOnly = true)
 public class SellerSettlementQueryService {
 
+    /** 분배 실패 행 문구 — 파트너 · 스튜디오 공통(2026-11-10 · 실패를 「지급 완료」로 보이지 않는다). 운영팀이 재분배한다. */
+    public static final String FAILED_LABEL = "지급 실패 · 재지급 예정";
+
     private static final int MAX_PAGE_SIZE = 100;
     private static final int PREVIEW_SIZE = 5;
 
@@ -82,9 +85,6 @@ public class SellerSettlementQueryService {
                                                                       String keyword, SettlementPartySort sort,
                                                                       PagingRequest paging) {
         Market market = accessGuard.resolveMarket(sellerEmail);
-        if (statuses != null && statuses.contains(SettlementStatus.PAYOUT_FAILED)) {
-            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "PAYOUT_FAILED 는 필터로 받지 않습니다 — PAID 에 포함됩니다.");
-        }
         Page<Settlement> page = settlementRepository.searchForMarket(market.getId(),
                 SettlementStatus.expandPartyFilter(statuses), keyword,
                 sort == null ? SettlementPartySort.CREATED_DESC : sort, pageable(paging));
@@ -157,7 +157,7 @@ public class SellerSettlementQueryService {
                 counts.get(SettlementStatus.REVIEWING), reviewingDueAt, counts.get(SettlementStatus.ADJUSTING),
                 new SettlementPartyDto.StatusCounts(counts.get(SettlementStatus.REVIEWING),
                         counts.get(SettlementStatus.ADJUSTING), counts.get(SettlementStatus.PAYOUT_SCHEDULED),
-                        counts.get(SettlementStatus.PAID)),
+                        counts.get(SettlementStatus.PAID), counts.get(SettlementStatus.PAYOUT_FAILED)),
                 reviewing, countAdjustmentMyTurn(market.getId()));
     }
 
@@ -200,7 +200,7 @@ public class SellerSettlementQueryService {
                 hold);
     }
 
-    /** 3자 분배 — 브랜드 첫 행. 남의 행의 분배 실패는 「지급 예정」으로 접는다 · 브랜드 행 실패만 「지급 확인 중」(0-4 · §46 A-4). */
+    /** 3자 분배 — 브랜드 첫 행. 분배 실패는 행마다 「지급 실패 · 재지급 예정」으로 보인다(2026-11-10). */
     private List<SellerSettlementDto.Payout> payouts(Settlement s, Map<SettlementPayee, SettlementPayout> payouts,
                                                      PayoutHoldView myHold) {
         String withholdingRate = SettlementPartyViews.percent(
@@ -210,8 +210,8 @@ public class SellerSettlementQueryService {
                 .map(payee -> {
                     SettlementPayout payout = payouts.get(payee);
                     boolean mine = payee == SettlementPayee.BRAND;
-                    PayoutStatus shown = !mine && payout.getStatus() == PayoutStatus.FAILED
-                            ? PayoutStatus.SCHEDULED : payout.getStatus();
+                    // 분배 실패는 누구 행이든 그대로 보인다(2026-11-10 — 이전에는 남의 행을 「지급 예정」으로 접었다).
+                    PayoutStatus shown = payout.getStatus();
                     String label = switch (payee) {
                         case BRAND -> "우리";
                         case CREATOR -> s.getCreator().getShowroomName();
@@ -219,11 +219,14 @@ public class SellerSettlementQueryService {
                     };
                     String note = switch (payee) {
                         case BRAND -> null;
-                        case CREATOR -> s.isBusinessCreator()
+                        case CREATOR -> s.isBusinessCreator() && s.isRewardVatInclusive()
+                                ? "리워드 %,d(부가세 %,d 포함)".formatted(s.getRewardAfterClawback(), s.getCreatorVatAmount())
+                                : s.isBusinessCreator()
                                 ? "리워드 %,d + 부가세 %,d".formatted(s.getRewardAfterClawback(), s.getCreatorVatAmount())
                                 : "리워드 %,d − 원천징수 %,d(%s)".formatted(s.getRewardAfterClawback(),
                                         s.getWithholdingAmount(), withholdingRate);
-                        case PLATFORM -> s.isBusinessCreator() ? "부가세는 인플루언서에게 지급" : "리워드 부가세";
+                        case PLATFORM -> s.isRewardVatInclusive() ? "플랫폼 수수료"
+                                : s.isBusinessCreator() ? "부가세는 인플루언서에게 지급" : "리워드 부가세";
                     };
                     return new SellerSettlementDto.Payout(payee, label, payout.getAmount(), note, shown,
                             statusLabel(s, payee, shown), payout.getDueDate(),
@@ -234,7 +237,7 @@ public class SellerSettlementQueryService {
 
     private static String statusLabel(Settlement s, SettlementPayee payee, PayoutStatus status) {
         return switch (status) {
-            case FAILED -> "지급 확인 중";
+            case FAILED -> FAILED_LABEL;
             case BLOCKED -> payee == SettlementPayee.CREATOR && s.isBusinessCreator() ? "발행 확인 후 지급" : "지급 예정";
             case REQUESTED -> PayoutStatus.SCHEDULED.getLabel();
             default -> status.getLabel();

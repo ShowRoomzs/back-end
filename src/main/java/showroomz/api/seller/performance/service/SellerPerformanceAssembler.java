@@ -127,8 +127,10 @@ public class SellerPerformanceAssembler {
                 male += "MALE".equalsIgnoreCase(b.gender()) ? 1 : 0;
             }
         }
-        String scope = "정산 %d건 합산(지급 예정 %d · 지급 완료 %d)".formatted(n,
-                population.breakdown().get(PerformanceStatus.PAYOUT_SCHEDULED), population.breakdown().get(PerformanceStatus.PAID));
+        Long failed = population.breakdown().getOrDefault(PerformanceStatus.PAYOUT_FAILED, 0L);
+        String scope = "정산 %d건 합산(지급 예정 %d · 지급 완료 %d%s)".formatted(n,
+                population.breakdown().get(PerformanceStatus.PAYOUT_SCHEDULED), population.breakdown().get(PerformanceStatus.PAID),
+                failed == null || failed == 0 ? "" : " · 분배 실패 " + failed);
         GenderSplit split = GenderSplit.of(female, male);
         return new SellerPerformanceDto.Summary(population,
                 PerformanceFigure.fin(sales, scope),

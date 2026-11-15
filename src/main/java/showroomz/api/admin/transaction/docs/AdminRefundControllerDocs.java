@@ -61,7 +61,7 @@ public interface AdminRefundControllerDocs {
 
             | 열 | 필드 |
             |---|---|
-            | 경로 | `sourceLabel`(예: 「반려 이의 인용」 · 「취소 요청 자동 승인」 · 「운영자 대행 직권 취소」) + 회색 `sourceRef`(`CLM-` · `CRQ-` 번호) |
+            | 경로 | `sourceLabel`(예: 「반려 이의 인용」 · 「취소 요청 운영자 승인」 · 「운영자 대행 직권 취소」) + 회색 `sourceRef`(`CLM-` · `CRQ-` 번호) |
             | 출처 | `originLabel` — 「PG 자동」(중립) · 「운영자 사유」(경고) |
             | 결제 | `paymentLabel` — 「카드 · 원래 부분」 · 「간편결제 · 추가」. `paymentKind` = `ORIGINAL` 원래 결제 · `ADDITIONAL` 추가 결제(재발송비) |
             | 상태 | `statusLabel` + `statusNote`(「편입 10.09 14:20 · 김운영」 · 실패 사유 · 「집행 김운영 · 재확인」) |

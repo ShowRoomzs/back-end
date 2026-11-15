@@ -44,7 +44,7 @@ public final class CreatorSettlementDto {
             long withholdingAmount,
             long creatorVatAmount,
             @Schema(description = "실지급액") long creatorPayoutAmount,
-            @Schema(description = "4종 — 분배 실패는 PAID 로 접힌다") SettlementStatus status,
+            @Schema(description = "5종 — 분배 실패는 PAYOUT_FAILED(2026-11-10 부터 접지 않는다)") SettlementStatus status,
             String statusLabel,
             SettlementTone statusTone,
             @Schema(description = "내 행의 지급 예정일 · 지급일 — 확인 중 · 협의 · 보류 · 실패면 null", nullable = true) LocalDate payoutDate,
@@ -183,7 +183,7 @@ public final class CreatorSettlementDto {
             @Schema(example = "소연_쇼룸") String name,
             long amount,
             @Schema(nullable = true) String note,
-            @Schema(description = "내 행 실패만 FAILED(「지급 확인 중」) · 브랜드 행 실패는 SCHEDULED(「지급 예정」)로 접힌다") PayoutStatus status,
+            @Schema(description = "분배 실패는 누구 행이든 FAILED(「지급 실패 · 재지급 예정」)") PayoutStatus status,
             @Schema(example = "10.12 지급 예정") String statusLabel,
             @Schema(nullable = true) LocalDate date,
             @Schema(description = "[내 행] 보류 이유", nullable = true) PayoutHoldView hold

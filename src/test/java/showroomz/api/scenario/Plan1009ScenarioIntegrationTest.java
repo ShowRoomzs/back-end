@@ -24,6 +24,8 @@ import showroomz.domain.order.type.OrderStatus;
 import showroomz.domain.payment.entity.Payment;
 import showroomz.domain.payment.type.PaymentStatus;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
+import showroomz.global.error.exception.BusinessException;
+import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.payment.portone.FakePaymentGateway;
 import showroomz.global.payment.portone.PortOneCancelResult;
 import showroomz.support.IntegrationTest;
@@ -36,6 +38,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -134,8 +137,8 @@ class Plan1009ScenarioIntegrationTest extends OrderFlowTestSupport {
     // ================================================================== 3 취소 요청
 
     @Test
-    @DisplayName("[3] 소비자 취소 요청 — 하위주문 전체 발송 보류 · 응답 기한 1영업일 · 기한 경과 자동 승인 → PG 자동 환불 · 취소 상세")
-    void cancelRequestAutoApproved() throws Exception {
+    @DisplayName("[3] 소비자 취소 요청 — 하위주문 전체 발송 보류 · 응답 기한 2영업일 · 자동 승인 없음 · 기한 경과 뒤 운영자 승인 → PG 자동 환불 · 취소 상세")
+    void cancelRequestApprovedByOperatorAfterDue() throws Exception {
         Purchase purchase = purchase(creamVariant, 1);
         OrderDeliveryGroup group = preparing(purchase.group());
         OrderProduct item = itemsOf(group).get(0);
@@ -157,14 +160,23 @@ class Plan1009ScenarioIntegrationTest extends OrderFlowTestSupport {
         sellerOrder(group).andExpect(jsonPath("$.cancelRequest.respondDueAt").exists());
 
         OrderCancelRequest request = cancelRequestRepository.findById(requestId).orElseThrow();
-        assertThat(cancelRequestService.autoApproveIfOverdue(requestId, LocalDateTime.now())).isFalse();
-        assertThat(cancelRequestService.autoApproveIfOverdue(requestId, request.getRespondDueAt().plusMinutes(1)))
-                .isTrue();
+        // 응답 기한 = 요청 + 2영업일의 끝 — 영업일 2개를 건너뛰므로 최소 이틀 뒤다.
+        assertThat(request.getRespondDueAt()).isAfter(request.getRequestedAt().plusDays(2).minusMinutes(1));
+        // 기한 전에는 운영자도 승인할 수 없다 — 기한이 지나도 시스템이 승인하지 않는다(대표 결정 2026-11-10).
+        assertThatThrownBy(() -> cancelRequestService.approveByOperator(requestId, 1L, "브랜드 확인", LocalDateTime.now()))
+                .isInstanceOf(BusinessException.class)
+                .extracting(e -> ((BusinessException) e).getErrorCode()).isEqualTo(ErrorCode.CANCEL_REQUEST_NOT_OVERDUE);
+        assertThat(cancelRequestRepository.findById(requestId).orElseThrow().getStatus())
+                .isEqualTo(CancelRequestStatus.PENDING);
+        cancelRequestService.approveByOperator(requestId, 1L, "브랜드 담당자 통화 — 취소 동의",
+                request.getRespondDueAt().plusMinutes(1));
 
         OrderCancelRequest approved = cancelRequestRepository.findById(requestId).orElseThrow();
         assertThat(approved.getStatus()).isEqualTo(CancelRequestStatus.APPROVED);
-        assertThat(approved.isAutoApproved()).isTrue();
-        assertThat(approved.getDecidedBy()).isNull();
+        assertThat(approved.isAutoApproved()).isFalse();
+        assertThat(approved.isOperatorApproved()).isTrue();
+        assertThat(approved.getOperatorNote()).isEqualTo("브랜드 담당자 통화 — 취소 동의");
+        assertThat(approved.getDecidedBy()).isEqualTo(1L);
         assertThat(reloadGroup(group).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.CANCELLED);
         assertThat(refundTasks(group)).containsExactly(
                 new RefundTask("CANCEL_REQUEST_APPROVED", CREAM_PRICE + DELIVERY_FEE, "DONE"));
@@ -172,7 +184,8 @@ class Plan1009ScenarioIntegrationTest extends OrderFlowTestSupport {
         userGet(ORDERS + "/" + purchase.orderId() + "/items/" + item.getId() + "/cancel").andExpect(status().isOk())
                 .andExpect(jsonPath("$.kind").value("REQUEST"))
                 .andExpect(jsonPath("$.phase").value("CANCELLED"))
-                .andExpect(jsonPath("$.autoApproved").value(true))
+                .andExpect(jsonPath("$.autoApproved").value(false))
+                .andExpect(jsonPath("$.operatorApproved").value(true))
                 .andExpect(jsonPath("$.refund.status").value("DONE"));
     }
 

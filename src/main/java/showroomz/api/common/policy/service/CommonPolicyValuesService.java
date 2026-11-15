@@ -21,7 +21,8 @@ public class CommonPolicyValuesService {
 
     public PolicyValuesResponse get() {
         return new PolicyValuesResponse(
-                orderProperties.getClaim().getAutoReceiveBusinessDays(),
+                orderProperties.getClaim().getInspectDueBusinessDays(),
+                orderProperties.getClaim().getRefundDueBusinessDays(),
                 trackerProperties.getStallAlertDays(),
                 trackerProperties.getConsumerChoiceDays(),
                 settlementProperties.getReviewBusinessDays(),

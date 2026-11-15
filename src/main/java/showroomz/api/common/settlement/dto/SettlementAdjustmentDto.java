@@ -131,7 +131,7 @@ public final class SettlementAdjustmentDto {
     @Schema(name = "SettlementAdjustmentPermissions", description = "버튼 권한 — 서버가 판정한다(FE 는 식을 들지 않는다)")
     public record Permissions(boolean canAccept, boolean canReject, boolean canCounter,
                               @Schema(description = "메시지 전송 — 종결이면 false") boolean canSend,
-                              @Schema(description = "[요청 철회] — 처음 요청한 쪽 ∧ 최신 제안이 내 것 ∧ 응답 대기(1021 기-14)")
+                              @Schema(description = "[요청 철회] — 처음 요청한 쪽 ∧ 협의 중 ∧ 기한 전이면 언제든(2026-11-10 · 상대가 반대 · 수정 제안을 낸 뒤에도)")
                               boolean canWithdraw) {
     }
 }

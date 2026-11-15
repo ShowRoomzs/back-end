@@ -19,6 +19,8 @@ public class ContractDraftApproval {
 
     public static final String SOURCE_THREAD = "THREAD";
     public static final String SOURCE_ETC = "ETC";
+    /** 초안 수령 후 3영업일 무회신 — 시스템이 남긴 승인 간주(수정요청 B-13 · 계약서 제8조). */
+    public static final String SOURCE_DEEMED = "DEEMED";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -68,11 +70,22 @@ public class ContractDraftApproval {
         return a;
     }
 
+    /** 승인 간주 기록(B-13) — 승인자는 계약의 브랜드, 승인 시각은 회신 기한이다. */
+    public static ContractDraftApproval deemed(Long contractId, Long marketId, String title, LocalDateTime approvedAt,
+                                               Long threadMessageId, String note, LocalDateTime now) {
+        ContractDraftApproval a = of(contractId, marketId, title, approvedAt, threadMessageId, note, now);
+        a.source = SOURCE_DEEMED;
+        return a;
+    }
+
     public void delete(LocalDateTime now) {
         this.deletedAt = now;
     }
 
     public String sourceLabel() {
+        if (SOURCE_DEEMED.equals(source)) {
+            return "초안 수령 후 3영업일 무회신 · 승인 간주";
+        }
         return SOURCE_THREAD.equals(source) ? "연결·소통 스레드에서 확인한 초안" : "직접 기록";
     }
 }

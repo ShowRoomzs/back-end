@@ -51,11 +51,15 @@ public interface SettlementAdjustmentRepository extends JpaRepository<Settlement
             + "AND a.deadlineAt < :now")
     int closeAsExpired(@Param("adjustmentId") Long adjustmentId, @Param("now") LocalDateTime now);
 
-    /** 요청자 철회(1021 기-14) — 원래 금액 · 협의 중일 때만. 0행이면 상대가 먼저 응답했거나 종결됐다. */
+    /**
+     * 요청자 철회(1021 기-14 · 2026-11-10 조건 완화) — 원래 금액 · 협의 중 ∧ 기한 전일 때만. 0행이면 상대가 먼저 동의했거나 종결 · 만료됐다
+     * (동의 · 철회가 겹쳐도 한쪽만 반영된다).
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE SettlementAdjustment a SET a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.WITHDRAWN, "
             + "a.finalRewardAmount = a.originalRewardAmount, a.closedAt = :now "
-            + "WHERE a.id = :adjustmentId AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN")
+            + "WHERE a.id = :adjustmentId AND a.status = showroomz.domain.settlement.adjustment.type.AdjustmentStatus.OPEN "
+            + "AND a.deadlineAt >= :now")
     int closeAsWithdrawn(@Param("adjustmentId") Long adjustmentId, @Param("now") LocalDateTime now);
 
     /** D-1 통지 표지(6-1 ①) — 멱등. */

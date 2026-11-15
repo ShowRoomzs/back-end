@@ -78,6 +78,7 @@ public class UserClaimTrackingService {
             String description = switch (history.getEventType()) {
                 case RECEIVED -> "입고 · 검수 시작";
                 case INSPECTION_PASSED -> exchange ? "검수 완료 · 새 상품 발송 준비" : "검수 완료 · 환불 진행";
+                case INSPECTION_AUTO_APPROVED -> "검수 완료 · 환불 진행";
                 case INSPECTION_REJECTED -> "검수 완료 · 반려";
                 default -> null;
             };

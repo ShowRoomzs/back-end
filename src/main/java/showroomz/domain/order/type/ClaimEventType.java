@@ -13,12 +13,15 @@ public enum ClaimEventType {
     ARRIVED("회수 완료 · 브랜드 도착"),
     RECEIVED("입고 확인"),
     INSPECTION_PASSED("검수 통과"),
+    /** 반품 검수 기한(돌려받은 날 + N영업일) 경과 자동 승인 — 2026-11-10. 이후 경로는 검수 통과와 같다. */
+    INSPECTION_AUTO_APPROVED("검수 기한 경과 자동 승인"),
     INSPECTION_REJECTED("검수 반려"),
     /** 검수 사유 번복 — 착불(브랜드 귀책) 신청이 소비자 귀책으로(1021 기-17). */
     REASON_OVERTURNED("검수 사유 번복"),
     /** 검수 통과 때 브랜드 귀책으로 인정 — 선불 운임 · 최초 배송비 환급(1021 기-93). */
     FAULT_ACCEPTED_ON_PASS("브랜드 귀책 인정"),
     /** 택배 도착 후 N영업일 자동 입고(1021 기-17). */
+    /** 폐지(2026-11-10) — 이미 쌓인 이력 행 때문에 남긴다. */
     AUTO_RECEIVED("자동 입고"),
     RESHIP_FEE_PAID("소비자 재배송비 결제"),
     RESHIP_FEE_SETTLED("재배송비 정산"),

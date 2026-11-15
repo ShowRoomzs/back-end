@@ -140,11 +140,11 @@ public class SettlementPartyViews {
                         p.status().name(), p.proposedAt(), p.respondedAt())).toList());
     }
 
-    /** 상태 칩 숫자 — 수취자 화면은 분배 실패를 지급 완료로 접는다(0-4). 0 인 상태도 키가 있다. */
+    /** 상태 칩 숫자 — 분배 실패도 따로 센다(2026-11-10). 0 인 상태도 키가 있다. */
     public static Map<SettlementStatus, Long> partyStatusCounts(List<Object[]> rows) {
         Map<SettlementStatus, Long> counts = new LinkedHashMap<>();
         for (SettlementStatus status : List.of(SettlementStatus.REVIEWING, SettlementStatus.ADJUSTING,
-                SettlementStatus.PAYOUT_SCHEDULED, SettlementStatus.PAID)) {
+                SettlementStatus.PAYOUT_SCHEDULED, SettlementStatus.PAID, SettlementStatus.PAYOUT_FAILED)) {
             counts.put(status, 0L);
         }
         for (Object[] row : rows) {

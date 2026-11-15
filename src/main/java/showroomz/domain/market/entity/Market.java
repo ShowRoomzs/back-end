@@ -53,6 +53,10 @@ public class Market {
     @Column(name = "brand_site_url", length = 512)
     private String brandSiteUrl; // 브랜드 사이트 링크(§15-2). MARKET_URL과 별개 — 자동 생성 쇼룸 주소가 아니다
 
+    /** 청약철회 제한 안내 문구(수정요청 C) — 개봉 화장품 반품 제한을 브랜드가 쓰는 문장. 비우면 기본 문구. */
+    @Column(name = "withdrawal_restriction_notice", length = 500)
+    private String withdrawalRestrictionNotice;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "MAIN_CATEGORY_ID")
     private Category mainCategory; // 대표 카테고리

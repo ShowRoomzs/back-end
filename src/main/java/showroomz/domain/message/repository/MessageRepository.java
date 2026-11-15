@@ -92,4 +92,9 @@ public interface MessageRepository extends JpaRepository<Message, Long> {
            "GROUP BY c.type")
     List<Object[]> sumUnreadForOperatorTeamByConnectionType(@Param("types") Collection<ConnectionType> types,
                                                             @Param("teamParticipantId") Long teamParticipantId);
+
+    /** 보존 기간 경과 파기(연결 해제 + 1년) — 스레드의 메시지 전부. 첨부를 먼저 지운 뒤 부른다(FK). */
+    @org.springframework.data.jpa.repository.Modifying(flushAutomatically = true, clearAutomatically = true)
+    @org.springframework.data.jpa.repository.Query("DELETE FROM Message m WHERE m.thread.id = :threadId")
+    int deleteByThreadId(@org.springframework.data.repository.query.Param("threadId") Long threadId);
 }

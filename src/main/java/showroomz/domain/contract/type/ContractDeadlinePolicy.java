@@ -10,8 +10,8 @@ import java.time.LocalDateTime;
  * 둘 중 하나가 거짓말이 된다. 확정 전까지 D-3으로 집행한다.
  *
  * <p>기한 임박 알림 배치(설계서 8-2 · 미결 #3)가 생기면 그 배치도 이 상수를 읽는다.
- * 그 배치는 <b>상태를 바꾸지 않는다</b> — §25-3의 「만료는 자동 판정이 아니다」는 상태를 자동으로
- * 닫지 말라는 뜻이지 알리지 말라는 뜻이 아니다.
+ * 서명 기한 경과는 2026-11-10 부터 <b>자동 불성립</b>이다({@code ContractSignatureExpiryService}) — §25-3의 「만료는 자동
+ * 판정이 아니다」는 폐기됐다.
  */
 public final class ContractDeadlinePolicy {
 

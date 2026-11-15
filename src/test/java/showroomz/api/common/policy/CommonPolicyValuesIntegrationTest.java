@@ -23,7 +23,9 @@ class CommonPolicyValuesIntegrationTest extends IntegrationTestSupport {
     @DisplayName("인증 없이 설정값 그대로 · 설정 없는 값은 null")
     void defaults() throws Exception {
         mockMvc.perform(get("/v1/common/policy-values")).andExpect(status().isOk())
-                .andExpect(jsonPath("$.claimAutoReceiveBusinessDays").value(3))
+                .andExpect(jsonPath("$.claimInspectDueBusinessDays").value(2))
+                .andExpect(jsonPath("$.claimRefundDueBusinessDays").value(1))
+                .andExpect(jsonPath("$.claimAutoReceiveBusinessDays").doesNotExist())
                 .andExpect(jsonPath("$.trackingStallAlertDays").value(7))
                 .andExpect(jsonPath("$.stallConsumerChoiceDays").value(7))
                 .andExpect(jsonPath("$.settlementReviewBusinessDays").value(3))
@@ -32,7 +34,7 @@ class CommonPolicyValuesIntegrationTest extends IntegrationTestSupport {
                 .andExpect(jsonPath("$.fixedFeePaymentBusinessDays").value(nullValue()))
                 .andExpect(jsonPath("$.sanctionAppealBusinessDays").value(3))
                 .andExpect(jsonPath("$.sanctionAppealReviewBusinessDays").value(nullValue()))
-                .andExpect(jsonPath("$.cancelRequestRespondBusinessDays").value(1))
+                .andExpect(jsonPath("$.cancelRequestRespondBusinessDays").value(2))
                 .andExpect(jsonPath("$.creatorAccountReviewBusinessDays").value(nullValue()))
                 .andExpect(jsonPath("$.groupBuySuspensionAppealBusinessDays").value(3));
     }
@@ -40,16 +42,16 @@ class CommonPolicyValuesIntegrationTest extends IntegrationTestSupport {
     @Test
     @DisplayName("설정이 바뀌면 응답도 바뀐다")
     void followsProperties() throws Exception {
-        int autoReceive = orderProperties.getClaim().getAutoReceiveBusinessDays();
+        int inspectDue = orderProperties.getClaim().getInspectDueBusinessDays();
         Integer review = memberProperties.getSanction().getAppealReviewBusinessDays();
         try {
-            orderProperties.getClaim().setAutoReceiveBusinessDays(5);
+            orderProperties.getClaim().setInspectDueBusinessDays(5);
             memberProperties.getSanction().setAppealReviewBusinessDays(4);
             mockMvc.perform(get("/v1/common/policy-values")).andExpect(status().isOk())
-                    .andExpect(jsonPath("$.claimAutoReceiveBusinessDays").value(5))
+                    .andExpect(jsonPath("$.claimInspectDueBusinessDays").value(5))
                     .andExpect(jsonPath("$.sanctionAppealReviewBusinessDays").value(4));
         } finally {
-            orderProperties.getClaim().setAutoReceiveBusinessDays(autoReceive);
+            orderProperties.getClaim().setInspectDueBusinessDays(inspectDue);
             memberProperties.getSanction().setAppealReviewBusinessDays(review);
         }
     }

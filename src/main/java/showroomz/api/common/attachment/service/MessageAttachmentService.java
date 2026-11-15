@@ -267,8 +267,8 @@ public class MessageAttachmentService {
         deleteObject(key);
     }
 
-    /** 삭제 성공 여부를 반환한다 — 정리 스케줄러는 실패 시 행을 남겨야 하므로 결과를 알아야 한다. */
-    private boolean deleteObject(String key) {
+    /** 삭제 성공 여부를 반환한다 — 정리 스케줄러 · 보존 기간 파기는 실패 시 행을 남겨야 하므로 결과를 알아야 한다. */
+    public boolean deleteObject(String key) {
         try {
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(s3Properties.getBucket())

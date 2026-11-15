@@ -73,9 +73,8 @@ import java.lang.annotation.Target;
                 // 회수 송장 미등록 자동 취소 배치(매시)도 끄고 서비스를 직접 부른다.
                 "order.claim.invoice-expiry-scheduler-enabled=false",
                 "order.claim.payment-reconcile-scheduler-enabled=false",
-                // 환불 재시도 · 취소 요청 자동 승인 배치(10분)도 끄고 서비스를 직접 부른다(1009 기획 수정본 2 · 3절).
+                // 환불 재시도 배치(10분)도 끄고 서비스를 직접 부른다(1009 기획 수정본 2절). 취소 요청 자동 승인은 폐지됐다(2026-11-10).
                 "order.refund-retry-scheduler-enabled=false",
-                "order.cancel-request-auto-approve-scheduler-enabled=false",
                 "order.overdue-notice-scheduler-enabled=false",
                 // 택배 추적 연동은 끈다 — application.yml 이 .env 를 불러오므로 기본값에 기대면 .env 의
                 // DELIVERY_TRACKER_ENABLED=true 가 실키로 스마트택배를 부르는 감시 배치를 띄운다(조회 한도가 줄어든다).
@@ -84,6 +83,18 @@ import java.lang.annotation.Target;
                 "delivery.tracker.api-key=",
                 // 제출본 PDF는 운영에서 커밋 이후 비동기로 만든다 — 테스트는 같은 스레드에서 돌려 검토 요청 직후 확인한다.
                 "contract.pdf.async-enabled=false",
+                // 서명 기한 경과 불성립 배치(2026-11-10)는 끄고 서비스를 직접 부른다.
+                "contract.signature-expiry-scheduler-enabled=false",
+                "member.creator-application.purge-scheduler-enabled=false",
+                "contract.draft-deemed-approval-scheduler-enabled=false",
+                "message.retention-purge-scheduler-enabled=false",
+                "member.marketing-reconfirm-scheduler-enabled=false",
+                "admin.inquiry-deadline-scheduler-enabled=false",
+                // 결제 화면 제3자 제공 필수 동의(수정요청 C) — 기존 주문 시나리오는 이 필드 없이 짜여 있다. 필수 판정은 CheckoutThirdPartyConsentIntegrationTest 가 켜고 본다.
+                "order.third-party-consent-required=false",
+                // 리워드 부가세 — 기존 정산 시나리오(1021 시안 숫자)는 별도 부담 산식으로 짜여 있다. 부가세 포함 산식(2026-11-10 · 운영 기본값)은
+                // SettlementVatInclusiveIntegrationTest · SettlementCalculatorTest 가 설정을 켜고 따로 본다.
+                "settlement.reward-vat-inclusive=false",
                 "sentry.dsn=",
                 "logging.level.org.hibernate.SQL=WARN"
         })

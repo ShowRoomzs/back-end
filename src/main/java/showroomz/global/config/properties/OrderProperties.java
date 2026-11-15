@@ -39,6 +39,12 @@ public class OrderProperties {
     /** 운영 지표 10분 주기(4-8). */
     private boolean healthCheckEnabled = true;
 
+    /**
+     * 결제 화면 「브랜드 개인정보 제3자 제공」 필수 동의(수정요청 C) — true 면 동의 없는 주문 생성을 400 으로 막는다. 앱 배포 전 짧게
+     * 끌 수 있게 설정으로 둔다. 동의가 오면 설정과 무관하게 주문에 동의 시각 · 제공받는 자를 남긴다.
+     */
+    private boolean thirdPartyConsentRequired = true;
+
     /** 포트원 customer 블록에 이메일을 실을지 — 개인정보 제3자 제공 범위(9-1 ②) 법무 결과에 따라 끈다. */
     private boolean customerEmailEnabled = true;
 
@@ -46,6 +52,12 @@ public class OrderProperties {
 
     /** 구매확정 — 배송완료 + N일 자동(약관 제19조①). 약관 개정은 배포 없이 따라간다. */
     private int purchaseConfirmDays = 7;
+
+    /**
+     * 배송완료 미확인 자동 구매확정 — 송장 등록(발송) + N일(대표 결정 2026-11-10). 배송완료가 끝내 확인되지 않은 배송중 하위주문을
+     * 확정한다. 추적이 꺼져 있거나(Noop) 추적이 멈춘 건이 대상이다 — 소비자가 추적 정지 선택(재발송 · 환불)을 했으면 제외한다.
+     */
+    private int purchaseConfirmUndeliveredDays = 28;
 
     /** 구매확정 배치(매시) 가동 여부. */
     private boolean purchaseConfirmSchedulerEnabled = true;
@@ -95,11 +107,11 @@ public class OrderProperties {
 
     // ------------------------------------------------------------------ 취소 요청(1009 기획 수정본 3절)
 
-    /** 취소 요청 응답 기한 — 요청 + N영업일. 지나면 자동 승인되고 PG 가 즉시 환불한다(거래 관리 결정 8 · 15). */
-    private int cancelRequestRespondBusinessDays = 1;
-
-    /** 취소 요청 자동 승인 배치(10분). */
-    private boolean cancelRequestAutoApproveSchedulerEnabled = true;
+    /**
+     * 취소 요청 응답 기한 — 요청 + N영업일. 자동 승인은 없다(대표 결정 2026-11-10) — 지나면 어드민 예외 관리 처리 지연에 올라오고,
+     * 운영자가 브랜드에 확인한 뒤 취소(승인)한다.
+     */
+    private int cancelRequestRespondBusinessDays = 2;
 
     // ------------------------------------------------------------------ 처리 지연 자동 알림(1009 기획 수정본 8-4)
 
@@ -148,11 +160,17 @@ public class OrderProperties {
         /** 기한 ① 회수 대기 방치 — 신청 + N영업일. 지나면 파트너센터에 「지연」으로 보인다(자동 취소와 다른 기한). */
         private int collectDueBusinessDays = 2;
 
-        /** 기한 ② 검수 완료 — 입고 확인 + N영업일. */
+        /**
+         * 기한 ② 검수 — <b>반품을 돌려받은 날(회수 배송완료)</b> + N영업일(대표 결정 2026-11-10). 추적상 도착이 없으면(추적 꺼짐)
+         * 입고 확인 시각이 기산점이다. 반품은 기한 안에 판정이 없으면 자동 승인되고 PG 가 즉시 환불한다.
+         */
         private int inspectDueBusinessDays = 2;
 
-        /** 기한 ②의 기산점 — RECEIVED(입고 확인 · 시안) | ARRIVED(추적상 도착 · 약관 제20조①). §35-9 A-5 확정 대기. */
-        private String inspectDueBasis = "RECEIVED";
+        /** 검수 승인 후 PG 환불 기한 — N영업일(대표 결정 2026-11-10 · 총 3영업일). 환불 큐는 승인 즉시 PG 자동 집행한다(표시값). */
+        private int refundDueBusinessDays = 1;
+
+        /** 반품 검수 기한 경과 자동 승인 배치(매시) 가동 여부. */
+        private boolean inspectAutoApproveSchedulerEnabled = true;
 
         /** 회수 송장 등록 기한 — 접수 + N일의 끝. 지나면 요청이 자동 취소된다. 송장 수정 기한도 같다. */
         private int invoiceDueDays = 7;
@@ -187,10 +205,5 @@ public class OrderProperties {
         /** 클레임 결제 정리 배치(5분) 가동 여부 — 미확정 결제 수렴 · 결제 없는 초안 삭제 · 취소 재시도. */
         private boolean paymentReconcileSchedulerEnabled = true;
 
-        /** 자동 입고 — 택배 도착(추적상) 후 N영업일이 지나도 입고 확인이 없으면 시스템이 입고 처리(1021 기-17 [정책값 미정]). */
-        private int autoReceiveBusinessDays = 3;
-
-        /** 자동 입고 배치 가동 여부. */
-        private boolean autoReceiveSchedulerEnabled = true;
     }
 }

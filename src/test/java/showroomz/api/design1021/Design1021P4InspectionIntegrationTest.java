@@ -23,7 +23,10 @@ import showroomz.domain.order.type.RefundMethod;
 import showroomz.domain.order.type.RefundTaskSource;
 import showroomz.domain.order.type.RefundTaskStatus;
 import showroomz.domain.settlement.entity.Settlement;
+import showroomz.global.delivery.tracker.DeliveryTrackerPort.TrackSnapshot;
+import showroomz.global.utils.KstDates;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 1021 설계서 P4 — 검수 3갈래(통과 · 사유 번복 · 반려) · 귀책 변경 운임 정산 · 자동 입고 · 초과 환급 송금 · 1:1 문의 연결(4절).
  */
-@DisplayName("1021 P4 — 자동 입고 · 통과 귀책 변경 · 사유 번복 · 초과분 계좌 송금 · 환불 계좌 안내 문의")
+@DisplayName("1021 P4 — 반품 검수 자동 승인 · 통과 귀책 변경 · 사유 번복 · 초과분 계좌 송금 · 환불 계좌 안내 문의")
 class Design1021P4InspectionIntegrationTest extends SettlementTestSupport {
 
     private static final String EVIDENCE = "https://cdn.example.com/claims/evidence-1.jpg";
@@ -47,31 +50,41 @@ class Design1021P4InspectionIntegrationTest extends SettlementTestSupport {
     @Autowired private OrderRefundTaskRepository refundTaskRepository;
 
     @Test
-    @DisplayName("자동 입고 — 도착 + 3영업일 끝까지는 그대로 · 지나면 시스템 입고 · 검수 기한 발급 · 표식 · 이력")
-    void autoReceive() {
+    @DisplayName("반품 검수 자동 승인(2026-11-10) — 돌려받은 날(월) + 2영업일(수) 끝까지는 그대로 · 지나면 입고 + 승인 · PG 자동 환불 · 이력 SYSTEM · 교환은 대상 아님")
+    void returnAutoApprovedAfterInspectDue() {
         fixHolidays();
         OrderDeliveryGroup group = deliveredFrom(purchase(creamVariant, 1).group());
         Long claimId = returnClaim(group, itemsOf(group).get(0), 1, ClaimReason.CHANGE_OF_MIND);
         LocalDateTime arrivedAt = LocalDateTime.of(2026, 11, 2, 10, 0);   // 월
-        jdbc.update("UPDATE order_claim SET status = 'ARRIVED' WHERE claim_id = ?", claimId);
-        jdbc.update("UPDATE order_claim_collection SET arrived_at = ? WHERE collection_id = "
-                + "(SELECT collection_id FROM order_claim WHERE claim_id = ?)", arrivedAt, claimId);
+        OrderClaimCollection collection = collectionOf(claimId);
+        claimService.applyCollectionTracking(collection.getId(), collection.getCarrier(), collection.getTrackingNumber(),
+                new TrackSnapshot(arrivedAt, arrivedAt, false, false, List.of(), 6), arrivedAt);
 
-        LocalDateTime thursdayNoon = LocalDateTime.of(2026, 11, 5, 12, 0);
-        assertThat(claimService.findIdsToAutoReceive(thursdayNoon, 100)).doesNotContain(claimId);
-        assertThat(claimService.autoReceive(claimId, thursdayNoon)).isFalse();
+        var arrived = claimRepository.findById(claimId).orElseThrow();
+        assertThat(arrived.getStatus()).isEqualTo(ClaimStatus.ARRIVED);
+        // 검수 기한은 도착(돌려받은 날)에 발급된다 — 입고 확인을 기다리지 않는다.
+        assertThat(arrived.getInspectDueAt()).isNotNull();
+        assertThat(KstDates.toKstDate(arrived.getInspectDueAt())).isEqualTo(LocalDate.of(2026, 11, 4));
 
-        LocalDateTime fridayMorning = LocalDateTime.of(2026, 11, 6, 0, 10);
-        assertThat(claimService.findIdsToAutoReceive(fridayMorning, 100)).contains(claimId);
-        assertThat(claimService.autoReceive(claimId, fridayMorning)).isTrue();
-        assertThat(claimService.autoReceive(claimId, fridayMorning)).isFalse();
+        LocalDateTime beforeDue = arrived.getInspectDueAt().minusMinutes(1);
+        assertThat(claimService.findReturnIdsToAutoApprove(beforeDue, 100)).doesNotContain(claimId);
+        assertThat(claimService.autoApproveReturn(claimId, beforeDue)).isFalse();
+
+        LocalDateTime afterDue = arrived.getInspectDueAt().plusMinutes(10);
+        assertThat(claimService.findReturnIdsToAutoApprove(afterDue, 100)).contains(claimId);
+        assertThat(claimService.autoApproveReturn(claimId, afterDue)).isTrue();
+        assertThat(claimService.autoApproveReturn(claimId, afterDue)).isFalse();
 
         var claim = claimRepository.findById(claimId).orElseThrow();
-        assertThat(claim.getStatus()).isEqualTo(ClaimStatus.RECEIVED);
-        assertThat(claim.getInspectDueAt()).isNotNull();
-        assertThat(collectionOf(claimId).isAutoReceived()).isTrue();
+        assertThat(claim.getStatus()).isIn(ClaimStatus.REFUND_PENDING, ClaimStatus.COMPLETED);
+        assertThat(claim.getReceivedAt()).isNotNull();
         assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM order_claim_history WHERE claim_id = ? "
-                + "AND event_type = 'AUTO_RECEIVED' AND actor_type = 'SYSTEM'", Long.class, claimId)).isEqualTo(1L);
+                + "AND event_type = 'INSPECTION_AUTO_APPROVED' AND actor_type = 'SYSTEM'", Long.class, claimId))
+                .isEqualTo(1L);
+        assertThat(refundTaskRepository.findAll()).anySatisfy(task -> {
+            assertThat(task.getSource()).isEqualTo(RefundTaskSource.CLAIM_RETURN_PASSED);
+            assertThat(task.getDeliveryGroup().getId()).isEqualTo(group.getId());
+        });
     }
 
     @Test
