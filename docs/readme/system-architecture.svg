@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 400" width="960" height="400" role="img" aria-label="시스템 구성: 클라이언트 4종이 Spring Boot API를 호출하고, API는 MySQL과 외부 서비스 5종에 연동합니다. 포트원과 토스페이먼츠는 웹훅으로 결과를 알려줍니다.">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+      .m { font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, 'D2Coding', monospace; }
+    </style>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8F96A3"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#DF793E"/></marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="400" rx="16" fill="#F5F4F0"/>
+  <g class="t">
+    <!-- column labels -->
+    <text x="32" y="44" font-size="13" font-weight="700" fill="#6A6E76">클라이언트</text>
+    <text x="748" y="44" font-size="13" font-weight="700" fill="#6A6E76">외부 연동</text>
+
+    <!-- clients -->
+    <g>
+      <rect x="32" y="60" width="180" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="48" y="82" font-size="15" font-weight="700" fill="#1E2430">유저 앱</text>
+      <text x="48" y="101" font-size="12.5" fill="#6A6E76">구매자 · <tspan class="m">api.app</tspan></text>
+
+      <rect x="32" y="124" width="180" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="48" y="146" font-size="15" font-weight="700" fill="#1E2430">쇼룸 스튜디오</text>
+      <text x="48" y="165" font-size="12.5" fill="#6A6E76">인플루언서 · <tspan class="m">api.creator</tspan></text>
+
+      <rect x="32" y="188" width="180" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="48" y="210" font-size="15" font-weight="700" fill="#1E2430">파트너센터</text>
+      <text x="48" y="229" font-size="12.5" fill="#6A6E76">브랜드 · <tspan class="m">api.seller</tspan></text>
+
+      <rect x="32" y="252" width="180" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="48" y="274" font-size="15" font-weight="700" fill="#1E2430">어드민</text>
+      <text x="48" y="293" font-size="12.5" fill="#6A6E76">운영자 · <tspan class="m">api.admin</tspan></text>
+    </g>
+
+    <!-- client bus -->
+    <g stroke="#8F96A3" stroke-width="1.6" fill="none">
+      <path d="M212 86 H244 M212 150 H244 M212 214 H244 M212 278 H244"/>
+      <path d="M244 86 V278"/>
+      <path d="M244 168 H296" marker-end="url(#ah)"/>
+    </g>
+    <text x="252" y="160" font-size="11.5" fill="#6A6E76">HTTPS</text>
+
+    <!-- API -->
+    <rect x="300" y="120" width="260" height="96" rx="12" fill="#1E2430"/>
+    <text x="430" y="158" font-size="19" font-weight="700" fill="#F5F4F0" text-anchor="middle">Spring Boot API</text>
+    <text x="430" y="182" font-size="12.5" fill="#B6BDCA" text-anchor="middle">Java 21 · Spring Boot 3.5</text>
+    <text x="430" y="200" font-size="12.5" fill="#B6BDCA" text-anchor="middle">JWT · OAuth2 · 배치 스케줄러</text>
+
+    <!-- MySQL -->
+    <path d="M430 216 V264" stroke="#8F96A3" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+    <g>
+      <path d="M368 280 V334 A62 12 0 0 0 492 334 V280" fill="#DCE5FA" stroke="#C3D2F4" stroke-width="1.5"/>
+      <ellipse cx="430" cy="280" rx="62" ry="12" fill="#EEF2FB" stroke="#C3D2F4" stroke-width="1.5"/>
+      <text x="430" y="314" font-size="15" font-weight="700" fill="#1E2430" text-anchor="middle">MySQL 8</text>
+      <text x="430" y="333" font-size="12.5" fill="#4A4E54" text-anchor="middle">Flyway</text>
+    </g>
+
+    <!-- external bus (calls) -->
+    <g stroke="#8F96A3" stroke-width="1.6" fill="none">
+      <path d="M560 168 H660"/>
+      <path d="M660 84 V316"/>
+      <path d="M660 84 H744" marker-end="url(#ah)"/>
+      <path d="M660 142 H744" marker-end="url(#ah)"/>
+      <path d="M660 200 H744" marker-end="url(#ah)"/>
+      <path d="M660 258 H744" marker-end="url(#ah)"/>
+      <path d="M660 316 H744" marker-end="url(#ah)"/>
+    </g>
+    <text x="580" y="160" font-size="11.5" fill="#6A6E76">호출</text>
+
+    <!-- webhooks (dashed, orange) -->
+    <g stroke="#DF793E" stroke-width="1.6" fill="none" stroke-dasharray="5 4">
+      <path d="M748 72 H616 V136 H564" marker-end="url(#ao)"/>
+      <path d="M748 130 H628 V146 H564" marker-end="url(#ao)"/>
+    </g>
+    <text x="574" y="128" font-size="11.5" font-weight="700" fill="#B85A24">웹훅</text>
+
+    <!-- externals -->
+    <g>
+      <rect x="748" y="60" width="180" height="48" rx="10" fill="#FCFCFA" stroke="#DF793E" stroke-width="1.5"/>
+      <text x="764" y="80" font-size="14.5" font-weight="700" fill="#1E2430">포트원 V2</text>
+      <text x="764" y="98" font-size="12" fill="#6A6E76">결제 · 웹훅 · 본인인증</text>
+
+      <rect x="748" y="118" width="180" height="48" rx="10" fill="#FCFCFA" stroke="#DF793E" stroke-width="1.5"/>
+      <text x="764" y="138" font-size="14.5" font-weight="700" fill="#1E2430">토스페이먼츠</text>
+      <text x="764" y="156" font-size="12" fill="#6A6E76">지급대행</text>
+
+      <rect x="748" y="176" width="180" height="48" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="764" y="196" font-size="14.5" font-weight="700" fill="#1E2430">스위트트래커</text>
+      <text x="764" y="214" font-size="12" fill="#6A6E76">배송 조회</text>
+
+      <rect x="748" y="234" width="180" height="48" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="764" y="254" font-size="14.5" font-weight="700" fill="#1E2430">AWS S3</text>
+      <text x="764" y="272" font-size="12" fill="#6A6E76">파일 · 세무 문서</text>
+
+      <rect x="748" y="292" width="180" height="48" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="764" y="312" font-size="14.5" font-weight="700" fill="#1E2430">FCM</text>
+      <text x="764" y="330" font-size="12" fill="#6A6E76">푸시 알림</text>
+    </g>
+
+    <!-- legend -->
+    <g font-size="12" fill="#6A6E76">
+      <path d="M32 374 H60" stroke="#8F96A3" stroke-width="1.6"/>
+      <text x="68" y="378">호출</text>
+      <path d="M112 374 H140" stroke="#DF793E" stroke-width="1.6" stroke-dasharray="5 4"/>
+      <text x="148" y="378">웹훅 수신 (결과 통보)</text>
+    </g>
+  </g>
+</svg>

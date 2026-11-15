@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 312" width="960" height="312" role="img" aria-label="재고 예약 조건부 UPDATE 쿼리와 동시성 통합 테스트 결과: 재고 1개에 다른 사용자 주문 2건 동시 요청은 201과 400, 같은 멱등키 주문 2건 동시 요청은 201과 201이며 주문 1건만 생성">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+      .m { font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, 'D2Coding', monospace; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="960" height="312" rx="16" fill="#F5F4F0"/>
+  <g class="t">
+    <!-- code -->
+    <text x="32" y="48" class="m" font-size="12.5" fill="#6A6E76">ProductVariantRepository.reserveStock</text>
+    <rect x="32" y="60" width="516" height="170" rx="12" fill="#1E2430"/>
+    <g class="m" font-size="14" fill="#E3E6EC" xml:space="preserve" style="white-space:pre">
+      <text x="56" y="96" xml:space="preserve"><tspan fill="#8EB2FE">UPDATE</tspan> ProductVariant v</text>
+      <text x="56" y="122" xml:space="preserve">   <tspan fill="#8EB2FE">SET</tspan> v.stock = v.stock - :quantity</text>
+      <text x="56" y="148" xml:space="preserve"> <tspan fill="#8EB2FE">WHERE</tspan> v.variantId = :variantId</text>
+      <text x="56" y="174" xml:space="preserve">   <tspan fill="#8EB2FE">AND</tspan> v.stock &gt;= :quantity</text>
+      <text x="56" y="208" fill="#8B909A">-- 0행 = 재고 부족 → 주문 전체 롤백</text>
+    </g>
+
+    <!-- tags -->
+    <g font-size="12.5" fill="#1E2430" text-anchor="middle">
+      <rect x="32" y="248" width="140" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="102" y="269">조건부 UPDATE 1회</text>
+      <rect x="182" y="248" width="184" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="274" y="269"><tspan class="m" font-size="12">variant_id</tspan> 오름차순 잠금</text>
+      <rect x="376" y="248" width="124" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="438" y="269">멱등키 중복 차단</text>
+    </g>
+
+    <!-- test results -->
+    <rect x="580" y="32" width="348" height="248" rx="14" fill="#1E2430"/>
+    <text x="604" y="62" font-size="13.5" font-weight="700" fill="#8EB2FE">동시성 통합 테스트</text>
+    <text x="604" y="92" font-size="13" fill="#DCE1EA">재고 1개 · 서로 다른 사용자 주문 2건 동시</text>
+    <text x="604" y="132" class="m" font-size="30" font-weight="500" fill="#F5F4F0">201 · 400</text>
+    <text x="604" y="156" font-size="12.5" fill="#B6BDCA">남은 재고 0 · 주문 1건</text>
+    <path d="M604 176 H904" stroke="#3A4252" stroke-width="1.5"/>
+    <text x="604" y="202" font-size="13" fill="#DCE1EA">같은 멱등키 주문 2건 동시</text>
+    <text x="604" y="242" class="m" font-size="30" font-weight="500" fill="#F5F4F0">201 · 201</text>
+    <text x="604" y="266" font-size="12.5" fill="#B6BDCA">주문 1건 · 재고 1개만 차감</text>
+  </g>
+</svg>

@@ -8,7 +8,7 @@
 - 단국대학교 창업지원단 창업동아리 · 3인 창업팀
 - 출시 준비 중
 
-**API 문서 (Swagger)**: https://api.showroomz.shop/swagger-ui/index.html
+**API 문서 (Swagger)**: https://api.showroomz.shop/swagger-ui/index.html<br>
 **시연 영상**: https://www.youtube.com/watch?si=RIisrhyNu1J3Cakk&v=ml0Lpiww7lA&feature=youtu.be
 <br>
 
@@ -53,158 +53,103 @@
 
 <br>
 
-## 시스템 구성
+<h2 id="시스템-구성">시스템 구성</h2>
 
-```mermaid
-flowchart LR
-    subgraph Clients[클라이언트]
-        APP[유저 앱]
-        STUDIO[쇼룸 스튜디오<br/>인플루언서]
-        PARTNER[파트너센터<br/>브랜드]
-        ADMIN[어드민]
-    end
+<p align="center">
+  <img src="docs/readme/system-architecture.svg" width="100%" alt="시스템 구성: 클라이언트 4종이 Spring Boot API를 호출하고, API는 MySQL과 포트원 · 토스페이먼츠 · 스위트트래커 · S3 · FCM에 연동합니다. 포트원과 토스페이먼츠는 웹훅으로 결과를 알려줍니다.">
+</p>
 
-    APP & STUDIO & PARTNER & ADMIN --> API[Spring Boot API]
-    API --> DB[(MySQL 8<br/>Flyway)]
+<h3>규모 <sub>2026.10 기준</sub></h3>
 
-    API --> PORTONE[포트원 V2<br/>결제 · 본인인증]
-    API --> TOSS[토스페이먼츠<br/>지급대행]
-    API --> TRACKER[스위트트래커<br/>배송 조회]
-    API --> S3[AWS S3<br/>파일 · 세무 문서]
-    API --> FCM[FCM 푸시]
-
-    PORTONE -. 웹훅 .-> API
-    TOSS -. 웹훅 .-> API
-```
-
-### 규모 (2026.10 기준)
-
-| 항목 | 수치 |
-|---|---|
-| API 엔드포인트 | 530+ |
-| JPA 엔티티 | 149 |
-| Flyway 마이그레이션 | 215 |
-| 테스트 | 테스트 클래스 381 · 테스트 메서드 3,600+ |
-| 정기 배치 작업 | 30+ (대사 · 만료 · 배송 조회 · 정산 · 지급 등) |
+<p align="center">
+  <img src="docs/readme/scale.svg" width="100%" alt="API 엔드포인트 530+ · JPA 엔티티 149 · Flyway 마이그레이션 215 · 테스트 메서드 3,600+ (테스트 클래스 381) · 정기 배치 작업 30+">
+</p>
 
 <br>
 
-## 주문부터 정산까지
+<h2 id="주문부터-정산까지">주문부터 정산까지</h2>
 
-| 단계 | 내용 |
-|---|---|
-| 1. 주문 생성 | 옵션별 재고 예약(조건부 UPDATE), 멱등키로 중복 주문 차단 |
-| 2. 결제 확정 | 포트원 V2 결제 조회 결과로만 확정, 웹훅 · 일일 대사로 누락 보정 |
-| 3. 발주 · 출고 | 결제 시 하위주문 생성, 발주서 엑셀 다운로드 · 송장 엑셀 일괄 업로드 |
-| 4. 배송 | 스위트트래커 배송 조회 배치, 처리 지연 자동 알림 |
-| 5. 구매확정 · 클레임 | 취소 · 반품 · 교환 처리, 환불 큐로 부분 환불 집행 |
-| 6. 정산 · 지급 | 정산 생성 · 자동 확정, 토스 지급대행, 환불 차감 회수 |
+<p align="center">
+  <img src="docs/readme/order-to-settlement.svg" width="100%" alt="1 주문 생성 · 2 결제 확정 · 3 발주 · 출고 · 4 배송 · 5 구매확정 · 클레임 · 6 정산 · 지급">
+</p>
 
-모든 단계의 상태 전이를 **조건부 UPDATE**로 정의해, 중복 호출이나 재시도가 와도 결과는 한 번만 반영되도록 했습니다.
+<p>모든 단계의 상태 전이를 <b>조건부 UPDATE</b>로 정의해, 중복 호출이나 재시도가 와도 결과는 한 번만 반영되도록 했습니다.</p>
 
 <br>
 
-## 주요 설계
+<h2 id="주요-설계">주요 설계</h2>
 
-### 1. 결제 확정 — 네 갈래 요청, 하나의 `confirm`
+<h3>1. 결제 확정 — 네 갈래 요청, 하나의 <code>confirm</code></h3>
 
-앱 결제 완료 콜백 · 포트원 웹훅 · 주문 만료 전 조회 · 일일 대사가 모두 같은 `confirm(paymentId)`를 호출합니다.
+<p>앱 결제 완료 콜백 · 포트원 웹훅 · 주문 만료 전 조회 · 일일 대사가 모두 같은 <code>confirm(paymentId)</code>를 호출합니다.</p>
 
-```mermaid
-flowchart TD
-    A[앱 결제 완료 콜백] --> C
-    B[포트원 웹훅] --> C
-    E[주문 만료 전 조회] --> C
-    F[일일 대사] --> C
-    C["confirm(paymentId)"] --> G[포트원 결제 조회<br/>트랜잭션 밖에서 호출]
-    G --> H{상점 ID · 통화 · 금액 검증}
-    H -- 통과 --> I[조건부 UPDATE<br/>PAYMENT_PENDING → PAID]
-    H -- 불일치 --> J[자동 취소 선점<br/>선점한 호출만 PG 취소 1회]
-    I -- 1행 --> K[결제 확정 · 하위주문 활성화 · 이벤트 발행]
-    I -- 0행 --> L{이미 이 결제로 확정?}
-    L -- 예 --> M[현재 상태 반환]
-    L -- 아니오 --> J
-```
+<p align="center">
+  <img src="docs/readme/payment-confirm.svg" width="100%" alt="confirm 흐름: 포트원 결제 조회 → 상점 ID · 통화 · 금액 검증 → 조건부 UPDATE(PAYMENT_PENDING → PAID). 1행이면 확정, 0행이면 이미 확정됐는지 확인하고 아니면 자동 취소를 선점합니다.">
+</p>
 
-- 앱이 보낸 결제창 결과는 로그용 힌트로만 쓰고, **확정은 포트원 조회 결과만 신뢰**합니다.
-- 외부 HTTP 호출은 트랜잭션 밖에서 하고, 상태 전이는 짧은 트랜잭션의 조건부 UPDATE로만 합니다.
-- 경합은 예외가 아니라 **반환 행 수(0/1)** 로 판단합니다. 동시에 두 요청이 와도 1행을 얻는 쪽은 하나뿐입니다.
+<ul>
+  <li>앱이 보낸 결제창 결과는 로그용 힌트로만 쓰고, <b>확정은 포트원 조회 결과만 신뢰</b>합니다.</li>
+  <li>외부 HTTP 호출은 트랜잭션 밖에서 하고, 상태 전이는 짧은 트랜잭션의 조건부 UPDATE로만 합니다.</li>
+  <li>경합은 예외가 아니라 <b>반환 행 수(0/1)</b>로 판단합니다. 동시에 두 요청이 와도 1행을 얻는 쪽은 하나뿐입니다.</li>
+</ul>
 
-```java
-// OrderRepository.markPaid (요약)
-@Query("UPDATE Order o SET o.status = PAID, o.paidPaymentId = :paymentId, o.paidAt = :paidAt "
-     + "WHERE o.id = :orderId AND o.status = PAYMENT_PENDING")
-int markPaid(Long orderId, String paymentId, LocalDateTime paidAt);
-```
+<p>관련 코드: <a href="src/main/java/showroomz/api/app/order/service/PaymentConfirmService.java"><code>PaymentConfirmService</code></a> · <a href="src/main/java/showroomz/api/app/order/service/PaymentTransitions.java"><code>PaymentTransitions</code></a> · <a href="src/main/java/showroomz/domain/order/repository/OrderRepository.java"><code>OrderRepository</code></a></p>
 
-관련 코드: [`PaymentConfirmService`](src/main/java/showroomz/api/app/order/service/PaymentConfirmService.java) · [`PaymentTransitions`](src/main/java/showroomz/api/app/order/service/PaymentTransitions.java) · [`OrderRepository`](src/main/java/showroomz/domain/order/repository/OrderRepository.java)
+<br>
 
-### 2. 웹훅 수신과 일일 대사
+<h3>2. 웹훅 수신과 일일 대사</h3>
 
-**웹훅**
+<p>웹훅과 콜백은 모두 "요청이 서버에 도달했다"를 전제하므로, 매일 전날 결제를 포트원 목록과 대조하는 배치를 마지막 안전망으로 둡니다.</p>
 
-- 원문 바이트 그대로 서명을 검증합니다(HMAC-SHA256). JSON을 먼저 파싱하면 공백 · 순서가 바뀌어 서명이 맞지 않기 때문입니다.
-- `webhookId` 유니크 이벤트 행으로 중복 수신을 막습니다.
-- 일시 장애는 500으로 응답해 포트원이 재전송하게 하고, 모르는 결제 · 관심 없는 이벤트는 200으로 끝냅니다.
+<p align="center">
+  <img src="docs/readme/webhook-reconciliation.svg" width="100%" alt="웹훅: 원문 바이트로 HMAC-SHA256 서명 검증, webhookId 유니크 행으로 중복 차단, 일시 장애는 500 · 모르는 이벤트는 200. 일일 대사: 미반영 · 취소 어긋남은 confirm 재호출로 수렴, 금액 불일치 · 포트원에 없는 결제는 Sentry 경보.">
+</p>
 
-**일일 대사** — 웹훅과 콜백은 모두 "요청이 서버에 도달했다"를 전제하므로, 매일 전날 결제를 포트원 목록과 대조하는 배치를 마지막 안전망으로 둡니다.
+<p>관련 코드: <a href="src/main/java/showroomz/api/common/payment/service/PaymentWebhookService.java"><code>PaymentWebhookService</code></a> · <a href="src/main/java/showroomz/global/payment/portone/PortOneWebhookVerifier.java"><code>PortOneWebhookVerifier</code></a> · <a href="src/main/java/showroomz/api/app/order/service/PaymentReconciliationService.java"><code>PaymentReconciliationService</code></a></p>
 
-| 어긋남 유형 | 처리 |
-|---|---|
-| 포트원 결제완료 · 우리 미반영 | 이슈 기록 후 `confirm` 재호출로 수렴 |
-| 포트원 취소 · 우리 결제완료 | 이슈 기록 후 `confirm` 재호출로 수렴 |
-| 금액 불일치 | 이슈 기록 · Sentry 경보 |
-| 우리 결제완료 · 포트원에 없음 | 이슈 기록 · Sentry 경보 |
+<br>
 
-대사 배치의 자동 수정은 **`confirm` 재호출뿐**입니다. 배치가 상태를 직접 쓰면 두 경로가 서로를 고치는 루프가 생기기 때문입니다. 같은 결제 · 유형의 이슈는 매일 새로 쌓지 않고 갱신합니다.
+<h3>3. 결과를 모를 때도 상태로 남기기</h3>
 
-관련 코드: [`PaymentWebhookService`](src/main/java/showroomz/api/common/payment/service/PaymentWebhookService.java) · [`PortOneWebhookVerifier`](src/main/java/showroomz/global/payment/portone/PortOneWebhookVerifier.java) · [`PaymentReconciliationService`](src/main/java/showroomz/api/app/order/service/PaymentReconciliationService.java)
+<p>외부 호출의 결과를 모르는 순간을 예외로 끝내지 않고, 다음 실행이 이어받을 수 있는 상태로 저장합니다.</p>
 
-### 3. 결과를 모를 때도 상태로 남기기
+<p align="center">
+  <img src="docs/readme/unknown-state.svg" width="100%" alt="취소 응답 없음 → CANCEL_REQUESTED 후 지수 백오프 재조회, 승인 중 만료 → 5분씩 최대 3회 연장, 재고 복원 → stock_released_at 선점으로 주문당 1회, 금액 불일치 → CANCELLED_MISMATCH, 지급대행 결과 모름 → REQUESTED 후 웹훅 · 폴링으로 확정">
+</p>
 
-외부 호출의 결과를 모르는 순간을 예외로 끝내지 않고, 다음 실행이 이어받을 수 있는 상태로 저장합니다.
+<br>
 
-| 상황 | 처리 |
-|---|---|
-| 결제 취소 요청 후 응답 없음 | `CANCEL_REQUESTED`로 두고 지수 백오프로 재조회, 상한 도달 시 `CANCEL_FAILED` 전환 후 운영자 경보 |
-| 승인 진행 중에 주문 만료 시각 도래 | 만료를 5분씩 최대 3회 미루고 다시 확인 |
-| 주문 만료 · 취소 시 재고 복원 | 주문당 1회 — `stock_released_at`을 조건부 UPDATE로 선점한 쪽만 복원 |
-| 결제 금액 불일치 | 롤백 대신 `CANCELLED_MISMATCH`로 남기고 Sentry 경보 |
-| 지급대행 요청 결과 모름 | 그 건만 `REQUESTED`로 두고 웹훅 · 폴링이 확정, 같은 멱등 키로 재시도해 중복 지급 없음 |
+<h3>4. 재고와 동시성</h3>
 
-### 4. 재고와 동시성
+<p>공동구매는 짧은 시간에 주문이 몰리기 때문에, 재고 차감을 조건부 UPDATE 한 번으로 처리합니다.</p>
 
-공동구매는 짧은 시간에 주문이 몰리기 때문에, 재고 차감을 조건부 UPDATE 한 번으로 처리합니다.
+<p align="center">
+  <img src="docs/readme/stock-concurrency.svg" width="100%" alt="reserveStock 조건부 UPDATE와 동시성 통합 테스트 결과: 재고 1개에 다른 사용자 주문 2건 동시 요청은 201 · 400, 같은 멱등키 주문 2건 동시 요청은 201 · 201(주문 1건)">
+</p>
 
-```java
-// ProductVariantRepository.reserveStock
-@Query("UPDATE ProductVariant v SET v.stock = v.stock - :quantity "
-     + "WHERE v.variantId = :variantId AND v.stock >= :quantity")
-int reserveStock(Long variantId, int quantity);   // 0행 = 재고 부족 → 주문 전체 롤백
-```
+<ul>
+  <li>한 주문의 옵션별 수량을 합산한 뒤 <code>variant_id</code> 오름차순으로 차감합니다. 잠금 순서를 고정해 데드락을 막습니다.</li>
+  <li>같은 멱등키로 동시에 들어온 주문은 1건만 생성됩니다.</li>
+  <li>공구 상태 변경은 공구 행을 <code>PESSIMISTIC_WRITE</code>로 잠근 뒤, 권한 판정과 실행을 한 트랜잭션에서 처리합니다(잠금 순서: 공구 → 공구 게시물 → 하위 테이블).</li>
+</ul>
 
-- 한 주문의 옵션별 수량을 합산한 뒤 `variant_id` 오름차순으로 차감합니다. 잠금 순서를 고정해 데드락을 막습니다.
-- 같은 멱등키로 동시에 들어온 주문은 1건만 생성됩니다.
-- 공구 상태 변경은 공구 행을 `PESSIMISTIC_WRITE`로 잠근 뒤, 권한 판정과 실행을 한 트랜잭션에서 처리합니다(잠금 순서: 공구 → 공구 게시물 → 하위 테이블).
+<p>동시성 테스트: <a href="src/test/java/showroomz/api/app/order/OrderCheckoutIntegrationTest.java"><code>OrderCheckoutIntegrationTest</code></a></p>
 
-동시성은 통합 테스트로 확인합니다([`OrderCheckoutIntegrationTest`](src/test/java/showroomz/api/app/order/OrderCheckoutIntegrationTest.java)).
+<br>
 
-| 시나리오 | 결과 |
-|---|---|
-| 재고 1개에 서로 다른 사용자 주문 2건 동시 요청 | `201` / `400`, 남은 재고 0, 주문 1건 |
-| 같은 멱등키 주문 2건 동시 요청 | `201` / `201`, 주문 1건, 재고 1개만 차감 |
+<h3>5. 정산 · 지급대행 · 차감</h3>
 
-### 5. 정산 · 지급대행 · 차감
+<p align="center">
+  <img src="docs/readme/settlement.svg" width="100%" alt="구매확정 → 정산 생성 → 자동 확정 → 토스 지급대행 → 지급 결과 확정(웹훅 · 폴링). 환불은 각자의 다음 정산에서 차감합니다.">
+</p>
 
-```mermaid
-flowchart LR
-    A[구매확정] --> B[정산 생성] --> C[자동 확정] --> D[토스 지급대행] --> E[지급 결과 확정<br/>웹훅 · 폴링]
-```
+<ul>
+  <li><b>산식은 한 클래스에서</b> — 정산 · 성과 · 조정 미리보기 화면이 모두 <a href="src/main/java/showroomz/domain/settlement/service/SettlementCalculator.java"><code>SettlementCalculator</code></a>를 거쳐 같은 숫자를 봅니다. 원 단위 절사 규칙을 한 곳에서 관리하고, 상태가 없어 스프링 없이 단위 테스트합니다.</li>
+  <li><b>지급대행은 건별로</b> — 수취자 1명당 지급 요청 1건입니다. 묶음 요청은 한 건만 실패해도 전체가 실패해 쓰지 않았습니다. 요청 본문은 JWE(A256GCM)로 암호화하고, 요청 시각에 따라 당일 또는 다음 영업일로 지급합니다(<a href="src/main/java/showroomz/global/payment/settlement/toss/TossSettlementPayoutGateway.java"><code>TossSettlementPayoutGateway</code></a>).</li>
+  <li><b>환불은 다음 정산에서 회수</b> — 정산 생성 뒤 발생한 환불은 이미 만든 정산 금액을 고치지 않고(스냅샷), 브랜드와 인플루언서 각자의 다음 정산에서 따로 차감합니다(<a href="src/main/java/showroomz/domain/settlement/service/SettlementClawbackService.java"><code>SettlementClawbackService</code></a>).</li>
+</ul>
 
-- **산식은 한 클래스에서** — 정산 · 성과 · 조정 미리보기 화면이 모두 [`SettlementCalculator`](src/main/java/showroomz/domain/settlement/service/SettlementCalculator.java)를 거쳐 같은 숫자를 봅니다. 원 단위 절사 규칙을 한 곳에서 관리하고, 상태가 없어 스프링 없이 단위 테스트합니다.
-- **지급대행은 건별로** — 수취자 1명당 지급 요청 1건입니다. 묶음 요청은 한 건만 실패해도 전체가 실패해 쓰지 않았습니다. 요청 본문은 JWE(A256GCM)로 암호화하고, 요청 시각에 따라 당일 또는 다음 영업일로 지급합니다([`TossSettlementPayoutGateway`](src/main/java/showroomz/global/payment/settlement/toss/TossSettlementPayoutGateway.java)).
-- **환불은 다음 정산에서 회수** — 정산 생성 뒤 발생한 환불은 이미 만든 정산 금액을 고치지 않고(스냅샷), 브랜드와 인플루언서 각자의 다음 정산에서 따로 차감합니다([`SettlementClawbackService`](src/main/java/showroomz/domain/settlement/service/SettlementClawbackService.java)).
-
+<br>
 
 ## 배포
 
