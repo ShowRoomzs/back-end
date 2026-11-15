@@ -14,8 +14,10 @@ import showroomz.domain.contract.type.ContractActorType;
 import showroomz.domain.contract.type.ContractDocumentType;
 import showroomz.domain.contract.type.ContractEventType;
 import showroomz.domain.contract.type.ContractStatus;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -101,7 +103,7 @@ public class ContractDraftGenerator {
         documents.save(document);
         storage.deleteAfterCommit(oldKey);
         history.record(c, ContractEventType.CONTRACT_PDF_GENERATED, actorType, actorId, actorName,
-                "제출본 기준 " + c.getReviewRequestedAt(), now);
+                "제출본 기준 " + formatKst(c.getReviewRequestedAt()), now);
         return document;
     }
 
@@ -114,6 +116,11 @@ public class ContractDraftGenerator {
         tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         tx.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
         return tx;
+    }
+
+    /** 이력 문구의 제출 시각 — 서버 벽시계(운영 UTC)를 한국 시각으로. */
+    private static String formatKst(LocalDateTime time) {
+        return time == null ? "" : KstDates.toKst(time).format(DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm"));
     }
 
     /** 렌더링 입력과, 그것이 어느 제출본에서 나왔는지. */

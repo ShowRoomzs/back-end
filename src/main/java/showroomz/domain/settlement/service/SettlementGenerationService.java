@@ -40,6 +40,7 @@ import showroomz.global.utils.MaskingUtils;
 import java.math.BigDecimal;
 import showroomz.domain.order.entity.OrderClaimFreightAdjustment;
 import showroomz.domain.order.type.FreightSettledVia;
+import showroomz.global.utils.KstDates;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -170,7 +171,7 @@ public class SettlementGenerationService {
         clawbackLedger.applyTo(settlement, amounts, now);
         historyRecorder.recordBySystem(settlementId, SettlementEventType.CREATED,
                 "공구 종료 · 주문 %d건 종결 · 금액 공개 · 확인 기간 %s까지".formatted(closure.totalCount(),
-                        reviewDueAt.format(DUE_FORMAT)), now);
+                        KstDates.toKst(reviewDueAt).format(DUE_FORMAT)), now);
         groupBuyCommandService.recordSalesFinalized(groupBuyId, now);
         AfterCommit.run(() -> notifier.settlementGenerated(settlementId));
         log.info("정산 생성 - groupBuyId: {}, settlementId: {}, number: {}", groupBuyId, settlementId,
@@ -220,7 +221,7 @@ public class SettlementGenerationService {
         historyRecorder.recordBySystem(settlementId, SettlementEventType.RECALCULATED,
                 "%s · 브랜드 %,d → %,d · 리워드 %,d → %,d · 확인 기간 %s까지 재시작".formatted(cause, brandBefore,
                         amounts.brandPayoutAmount(), rewardBefore, amounts.rewardAmount(),
-                        reviewDueAt.format(DUE_FORMAT)), now);
+                        KstDates.toKst(reviewDueAt).format(DUE_FORMAT)), now);
         // 아래 UPDATE 들이 엔티티 변경을 먼저 flush 한다 — 엔티티는 여기까지만 만진다.
         itemRepository.deleteAllBySettlementId(settlementId);
         itemRepository.saveAll(collected.drafts().stream().map(draft -> draft.toItem(settlementId)).toList());

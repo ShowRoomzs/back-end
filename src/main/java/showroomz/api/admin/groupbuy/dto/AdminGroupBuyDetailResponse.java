@@ -16,6 +16,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.groupbuy.type.GroupBuyTone;
 import showroomz.domain.groupbuy.type.SuspensionReasonClause;
 import showroomz.domain.groupbuy.service.port.GroupBuySettlementGateway.SettlementStage;
+import showroomz.domain.settlement.type.SettlementTone;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -117,7 +118,8 @@ public record AdminGroupBuyDetailResponse(
             @Schema(nullable = true) Long variantId,
             @Schema(nullable = true) String variantName,
             @Schema(description = "옵션 판매가 = 공구가 + 옵션가", nullable = true) Integer salePrice,
-            @Schema(description = "옵션별 최소 준비 물량") Integer minQuantity
+            @Schema(description = "옵션별 최소 준비 물량") Integer minQuantity,
+            @Schema(description = "옵션 개당 리워드(원) = ⌊옵션 판매가 × 리워드율 ÷ 100⌋ — 정산(주문 단가 × 리워드율) · 계약서 PDF와 같은 계산. 옵션가가 있으면 상품 개당 리워드와 다르다", nullable = true) Long unitReward
     ) {
     }
 
@@ -391,7 +393,9 @@ public record AdminGroupBuyDetailResponse(
             @Schema(description = "정산번호 — 정산이 아직 없으면 null", example = "STL-2609-006", nullable = true)
             String settlementNumber,
             @Schema(description = "단계 라벨 — 정산이 있으면 정산 상태(정산 확인 중 · 조정 협의 · 지급 예정 · 지급 완료 · 분배 실패), "
-                    + "없으면 「정산 대기」", example = "정산 확인 중") String stageLabel
+                    + "없으면 「정산 대기」", example = "정산 확인 중") String stageLabel,
+            @Schema(description = "단계 톤 — 정산이 있으면 정산 상태의 톤(정산 목록과 같은 값), 없으면 NEUTRAL", example = "INFO")
+            SettlementTone stageTone
     ) {
     }
 
@@ -427,7 +431,10 @@ public record AdminGroupBuyDetailResponse(
                     nullable = true)
             Integer purchaseConfirmedCount,
             @Schema(description = "종결 중 환불(결제 후 취소) — B5 「환불」. 판매 모듈이 모르면 null", nullable = true)
-            Integer refundedCount
+            Integer refundedCount,
+            @Schema(description = "주문 종결 시각 — 정산 상세 ordersClosedAt 과 같은 값. 정산이 아직 없으면 null",
+                    example = "2026-09-04T15:00:00Z", nullable = true)
+            LocalDateTime ordersClosedAt
     ) {
     }
 

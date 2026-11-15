@@ -335,7 +335,10 @@ h2, h3 { break-after:avoid; }
 </tr>
 <tr class="opt" th:each="option : ${item['옵션']}">
 <td class="l optname">└ 옵션 <span class="v" th:text="${option['옵션명']}"></span></td>
-<td class="blank" colspan="4"></td>
+<td class="blank"></td>
+<td class="r"><span class="v" th:text="${option['옵션판매가']}"></span>원</td>
+<td class="blank"></td>
+<td class="r"><span class="v" th:text="${option['옵션개당리워드']}"></span>원</td>
 <td class="r"><span class="v" th:text="${option['옵션최소물량']}"></span>개</td>
 </tr>
 </th:block>

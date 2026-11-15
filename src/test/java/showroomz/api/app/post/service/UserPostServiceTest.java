@@ -22,6 +22,7 @@ import showroomz.domain.groupbuy.service.GroupBuyPostCardLoader;
 import showroomz.domain.groupbuy.type.GroupBuyProductState;
 import showroomz.domain.groupbuy.type.GroupBuySaleState;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorBlockRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.user.entity.Users;
@@ -86,6 +87,8 @@ class UserPostServiceTest {
     private GroupBuyPostCardLoader groupBuyPostCardLoader;
     @Mock
     private JPAQueryFactory queryFactory;
+    @Mock
+    private CreatorBlockRepository creatorBlockRepository;
 
     private final PostPolicies postPolicies = new PostPolicies(List.of(new GeneralPostPolicy()));
 
@@ -96,7 +99,7 @@ class UserPostServiceTest {
         userPostService = new UserPostService(
                 postRepository, postLikeRepository, postImageRepository,
                 creatorFollowRepository, creatorRepository, userRepository,
-                connectionRepository, postPolicies, groupBuyPostCardLoader, queryFactory);
+                connectionRepository, postPolicies, groupBuyPostCardLoader, queryFactory, creatorBlockRepository);
 
         Users user = new Users();
         user.setId(USER_ID);

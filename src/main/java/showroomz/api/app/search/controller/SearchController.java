@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.search.docs.SearchControllerDocs;
 import showroomz.api.app.search.dto.AutoCompleteResponse;
 import showroomz.api.app.search.dto.ShowroomSearchItem;
@@ -32,10 +34,11 @@ public class SearchController implements SearchControllerDocs {
     @Override
     @GetMapping("/showrooms")
     public ResponseEntity<PageResponse<ShowroomSearchItem>> searchShowrooms(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword,
             @ParameterObject @ModelAttribute PagingRequest pagingRequest
     ) {
-        return ResponseEntity.ok(searchService.searchShowrooms(keyword, pagingRequest));
+        return ResponseEntity.ok(searchService.searchShowrooms(userId(userPrincipal), keyword, pagingRequest));
     }
 
     /**
@@ -44,14 +47,16 @@ public class SearchController implements SearchControllerDocs {
     @Override
     @GetMapping("/showrooms/active")
     public ResponseEntity<List<ShowroomSearchItem>> getActiveShowrooms(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "size", required = false) Integer size
     ) {
-        return ResponseEntity.ok(searchService.getActiveShowrooms(size));
+        return ResponseEntity.ok(searchService.getActiveShowrooms(userId(userPrincipal), size));
     }
 
     @Override
     @GetMapping("/autocomplete")
     public ResponseEntity<AutoCompleteResponse> getAutocomplete(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestParam(value = "keyword", required = false) String keyword
     ) {
         if (keyword == null || keyword.trim().isEmpty()) {
@@ -61,6 +66,11 @@ public class SearchController implements SearchControllerDocs {
                     .build());
         }
 
-        return ResponseEntity.ok(searchService.getAutocomplete(keyword.trim()));
+        return ResponseEntity.ok(searchService.getAutocomplete(userId(userPrincipal), keyword.trim()));
+    }
+
+    /** 비로그인도 검색한다 — 토큰이 있으면 차단한 쇼룸을 뺀다(App Store 1.2). */
+    private static Long userId(UserPrincipal userPrincipal) {
+        return userPrincipal == null ? null : userPrincipal.getUserId();
     }
 }

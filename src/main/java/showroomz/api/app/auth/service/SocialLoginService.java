@@ -19,7 +19,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import jakarta.annotation.PostConstruct;
+import showroomz.global.config.properties.SocialLoginProperties;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -51,18 +52,22 @@ public class SocialLoginService {
     private final SocialPolicyService socialPolicyService; // 주입 추가
     private final UserSanctionService userSanctionService;
 
-    // application.yml 등에 설정된 구글 클라이언트 ID (Android/iOS 등)
-    // 예: spring.security.oauth2.client.registration.google.client-id 와 같은 경로의 값
-    // 테스트 단계라 설정 파일에 없다면 일단 하드코딩해서 테스트 하셔도 됩니다.
-    @Value("${app.google.client-id:dummy_id}") 
-    private String googleClientId; 
-
-    @Value("${app.apple.client-id:dummy_id}") 
-    private String appleClientId; 
+    // aud 허용 목록 — 구글은 안드로이드 · iOS · 웹 클라이언트 ID, 애플은 앱 번들 ID · 웹 Services ID. 비어 있으면 검증하지 않는다.
+    private final SocialLoginProperties socialLoginProperties;
 
     private static final String APPLE_JWK_URL = "https://appleid.apple.com/auth/keys";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @PostConstruct
+    void warnIfAudienceUnchecked() {
+        if (socialLoginProperties.getGoogle().allowedAudiences().isEmpty()) {
+            log.warn("social-login.google.client-ids(GOOGLE_CLIENT_IDS)가 비어 있어 구글 토큰 aud 를 검증하지 않는다");
+        }
+        if (socialLoginProperties.getApple().allowedAudiences().isEmpty()) {
+            log.warn("social-login.apple.client-ids(APPLE_CLIENT_IDS)가 비어 있어 애플 id_token aud 를 검증하지 않는다");
+        }
+    }
 
     @Transactional
     public SocialLoginResult loginOrSignup(ProviderType providerType, String accessToken) {
@@ -169,35 +174,38 @@ public class SocialLoginService {
 
     /**
      * 구글 Access Token 검증 (Token Introspection)
-     * 토큰의 대상(aud)이 우리 앱의 Client ID와 일치하는지 확인
+     * 토큰의 대상(aud · azp)이 우리 클라이언트 ID 중 하나인지 확인한다 — 다른 앱이 받은 토큰으로 우리 계정에 로그인하지 못하게.
+     * 안드로이드 · iOS · 웹이 서로 다른 클라이언트 ID 를 쓰므로 허용 목록이다. 목록이 비어 있으면 aud 는 보지 않는다.
      */
     private void verifyGoogleToken(String accessToken) {
         // 구글은 토큰 정보를 확인하는 별도 URL을 제공합니다.
-    	String checkUrl = UriComponentsBuilder
+        String checkUrl = UriComponentsBuilder
                 .fromUriString("https://www.googleapis.com/oauth2/v3/tokeninfo")
                 .queryParam("access_token", accessToken)
                 .build()
                 .toUriString();
 
-
+        Map<String, Object> result;
         try {
             @SuppressWarnings("unchecked")
-            Map<String, Object> result = restTemplate.getForObject(checkUrl, Map.class);
-            
-            if (result == null || result.get("aud") == null) {
-                throw new IllegalArgumentException("토큰 정보를 확인할 수 없습니다.");
-            }
-
-            String aud = (String) result.get("aud");
-            // 설정해둔 내 앱의 Client ID와 비교
-            // (주의: 테스트 중이라 Client ID 설정이 번거롭다면, 이 부분 주석 처리하고 넘어가도 되지만 배포 전엔 꼭 해야 합니다)
-            if (!aud.equals(googleClientId)) {
-                 // log.error("Client ID 불일치! token_aud={}, my_app_id={}", aud, googleClientId);
-                 // throw new IllegalArgumentException("타 앱에서 발급된 토큰입니다.");
-            }
-
+            Map<String, Object> fetched = restTemplate.getForObject(checkUrl, Map.class);
+            result = fetched;
         } catch (Exception e) {
             log.error("구글 토큰 검증 실패: {}", e.getMessage());
+            throw new IllegalArgumentException("유효하지 않은 구글 토큰입니다.");
+        }
+        if (result == null || result.get("aud") == null) {
+            throw new IllegalArgumentException("유효하지 않은 구글 토큰입니다.");
+        }
+
+        List<String> allowed = socialLoginProperties.getGoogle().allowedAudiences();
+        if (allowed.isEmpty()) {
+            return;
+        }
+        Object aud = result.get("aud");
+        Object azp = result.get("azp");
+        if (!allowed.contains(String.valueOf(aud)) && (azp == null || !allowed.contains(String.valueOf(azp)))) {
+            log.warn("구글 토큰 aud 불일치 - aud: {}, azp: {}", aud, azp);
             throw new IllegalArgumentException("유효하지 않은 구글 토큰입니다.");
         }
     }
@@ -258,15 +266,21 @@ public class SocialLoginService {
             // 2) Apple JWK 조회 후 kid 매칭
             RSAPublicKey publicKey = loadApplePublicKey(kid, alg);
 
-            // 3) 서명 및 issuer 검증 (aud 검증은 필요 시 추가)
+            // 3) 서명 및 issuer 검증
             Jws<Claims> jws = Jwts.parserBuilder()
                     .setSigningKey(publicKey)
                     .requireIssuer("https://appleid.apple.com")
-                    //.requireAudience(appleClientId)
                     .build()
                     .parseClaimsJws(idToken);
 
             Claims claims = jws.getBody();
+
+            // 4) aud 검증 — 앱은 번들 ID, 웹은 Services ID 가 aud 다. 목록이 비어 있으면 보지 않는다.
+            List<String> allowed = socialLoginProperties.getApple().allowedAudiences();
+            if (!allowed.isEmpty() && !allowed.contains(claims.getAudience())) {
+                log.warn("애플 id_token aud 불일치 - aud: {}", claims.getAudience());
+                throw new IllegalArgumentException("유효하지 않은 애플 토큰입니다.");
+            }
             return new HashMap<>(claims);
         } catch (Exception e) {
             log.error("애플 토큰 파싱 실패: {}", e.getMessage());

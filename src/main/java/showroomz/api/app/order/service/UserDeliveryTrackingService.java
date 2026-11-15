@@ -111,7 +111,7 @@ public class UserDeliveryTrackingService {
                     // 공구 진행 중이면 기한이 아직 없다 — 약정 문구(마감 후 N영업일)를 그대로 보여 준다.
                     .sub(group == null ? null : group.getShipDueAt() == null
                             ? ShipDuePolicy.noticeText(group.getShipDueBusinessDays())
-                            : group.getShipDueAt().format(DAY) + "까지 발송 예정이에요")
+                            : KstDates.toKst(group.getShipDueAt()).format(DAY) + "까지 발송 예정이에요")
                     .build();
             case IN_TRANSIT -> {
                 LocalDate due = arrivalDueDate(group);
@@ -135,7 +135,7 @@ public class UserDeliveryTrackingService {
     }
 
     private static String lastScan(DeliveryTrackingEvent event) {
-        String at = event.getOccurredAt().format(DAY_TIME);
+        String at = KstDates.toKst(event.getOccurredAt()).format(DAY_TIME);
         return event.getLocation() == null || event.getLocation().isBlank() ? at : event.getLocation() + " · " + at;
     }
 

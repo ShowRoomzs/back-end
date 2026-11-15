@@ -26,6 +26,7 @@ import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
 import showroomz.global.utils.SettlementAccountMasker;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -215,7 +216,7 @@ public class SellerBasicInfoService {
             if (now.isBefore(nextChangeableAt)) {
                 throw new BusinessException(ErrorCode.EMAIL_CHANGE_LIMIT_EXCEEDED,
                         "로그인 이메일은 월 1회만 변경할 수 있습니다. 다음 변경 가능일은 "
-                                + nextChangeableAt.format(NEXT_CHANGEABLE_DATE_FORMAT) + "입니다.");
+                                + KstDates.toKst(nextChangeableAt).format(NEXT_CHANGEABLE_DATE_FORMAT) + "입니다.");
             }
         }
 

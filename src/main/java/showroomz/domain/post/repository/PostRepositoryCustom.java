@@ -12,6 +12,9 @@ public interface PostRepositoryCustom {
     /** 소비자 전체 피드 — 게시중만. 일반 + 진행 중 공구(C1과 같은 규칙) */
     Page<Post> findDisplayedPosts(Pageable pageable);
 
+    /** {@link #findDisplayedPosts} − 이 쇼룸들(소비자가 차단한 쇼룸). 목록이 비면 {@link #findDisplayedPosts}와 같다. */
+    Page<Post> findDisplayedPostsExcluding(List<Long> excludedCreatorIds, Pageable pageable);
+
     /**
      * C4 쇼룸 아래 피드 — 게시중만. 일반 + 마감 게시물(종료 3일 이내). 진행 중 공구는 고정 섹션
      * ({@link #findOngoingGroupBuyPostsByCreatorId})과 겹치지 않게 뺀다.

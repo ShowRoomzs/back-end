@@ -34,4 +34,8 @@ public class RegisterRequest {
     
     @Schema(description = "[선택] 광고성 정보 수신 동의", example = "true", nullable = true)
     private Boolean marketingAgree; // 선택사항
+
+    @Schema(description = "기기 플랫폼 (선택) — WEB 이면 리프레시 토큰을 바디 대신 httpOnly 쿠키로 내린다. 앱은 보내지 않아도 된다",
+            example = "WEB", nullable = true)
+    private String platform;
 }

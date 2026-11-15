@@ -29,6 +29,7 @@ import showroomz.domain.settlement.adjustment.type.AdjustmentStatus;
 import showroomz.domain.settlement.adjustment.type.SettlementParty;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -129,12 +130,12 @@ public class AdminIssuePanelAssembler {
      */
     static List<IssueStep> steps(AdjustmentSummary a, String requesterName) {
         IssueStep requested = new IssueStep("REQUESTED", "요청", "DONE",
-                "%s · %s".formatted(DAY.format(a.openedAt()), requesterName));
+                "%s · %s".formatted(DAY.format(KstDates.toKst(a.openedAt())), requesterName));
         return switch (a.status()) {
             case OPEN -> List.of(requested,
                     new IssueStep("OPEN", "협의", "CURRENT", "양측 직접"),
                     new IssueStep("AGREED", "합의 · 반영", "TODO", "동의 시 자동"),
-                    new IssueStep("CLOSED", "종결", "TODO", "합의 또는 " + DAY.format(a.deadlineAt())));
+                    new IssueStep("CLOSED", "종결", "TODO", "합의 또는 " + DAY.format(KstDates.toKst(a.deadlineAt()))));
             case AGREED -> List.of(requested,
                     new IssueStep("OPEN", "협의", "DONE", "양측 직접"),
                     new IssueStep("AGREED", "합의 · 반영", "DONE", dayOf(a.closedAt()) + " · 금액 변경"),
@@ -164,6 +165,6 @@ public class AdminIssuePanelAssembler {
     }
 
     private static String dayOf(LocalDateTime at) {
-        return at == null ? "" : DAY.format(at);
+        return at == null ? "" : DAY.format(KstDates.toKst(at));
     }
 }

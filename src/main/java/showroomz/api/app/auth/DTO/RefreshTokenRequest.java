@@ -8,7 +8,7 @@ import lombok.Setter;
 @Setter
 @Schema(description = "토큰 재발급 · 로그아웃 요청")
 public class RefreshTokenRequest {
-    @Schema(description = "리프레시 토큰 — 재발급 · 로그아웃 모두 필수", example = "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4gZXhhbXBsZQ")
+    @Schema(description = "리프레시 토큰 — 재발급 · 로그아웃 모두 필수. 웹(쿠키)은 생략하면 쿠키 값을 쓴다", example = "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4gZXhhbXBsZQ")
     private String refreshToken;
 
     /**

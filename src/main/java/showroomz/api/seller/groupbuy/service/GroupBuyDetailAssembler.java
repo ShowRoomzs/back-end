@@ -160,7 +160,7 @@ public class GroupBuyDetailAssembler {
                         item.getMinQuantity(),
                         item.getOptions().stream()
                                 .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
-                                        option.salePrice(), option.getMinQuantity()))
+                                        option.salePrice(), option.getMinQuantity(), option.unitReward()))
                                 .toList()))
                 .toList();
     }
@@ -254,14 +254,8 @@ public class GroupBuyDetailAssembler {
 
         return salesReader.readSales(groupBuy.getId())
                 .map(sales -> {
-                    long rewardAmount = sales.itemQuantities().stream()
-                            .mapToLong(quantity -> {
-                                ContractItem item = itemsByProduct.get(quantity.productId());
-                                Long unit = item == null ? null
-                                        : RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate());
-                                return unit == null ? 0L : unit * quantity.quantity();
-                            })
-                            .sum();
+                    // 주문 단가(공구가 + 옵션가) × 리워드율 — 정산 · 계약서와 같은 계산.
+                    long rewardAmount = sales.rewardAmount(itemsByProduct);
                     List<ItemQuantity> quantities = sales.itemQuantities().stream()
                             .map(quantity -> new ItemQuantity(quantity.productId(), quantity.quantity()))
                             .toList();

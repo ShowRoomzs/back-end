@@ -14,6 +14,7 @@ import showroomz.api.app.showroom.DTO.ShowroomListItem;
 import showroomz.api.app.user.repository.UserRepository;
 import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorBlockRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.PublicShowrooms;
 import showroomz.domain.member.user.entity.Users;
@@ -51,6 +52,7 @@ public class UserShowroomService {
     private final CreatorFollowRepository creatorFollowRepository;
     private final ConnectionRepository connectionRepository;
     private final PostRepository postRepository;
+    private final CreatorBlockRepository creatorBlockRepository;
 
     /**
      * 쇼룸 목록 — 키워드가 있으면 이름·아이디 부분 일치로 좁힌다.
@@ -61,7 +63,8 @@ public class UserShowroomService {
      */
     public PageResponse<ShowroomListItem> getShowrooms(String username, String keyword, PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
-        BooleanExpression where = PublicShowrooms.visible().and(matches(keyword));
+        // 차단한 쇼룸은 목록에서 뺀다(App Store 1.2)
+        BooleanExpression where = PublicShowrooms.visible().and(matches(keyword)).and(notBlocked(username));
 
         List<Creator> content = queryFactory
                 .selectFrom(creator)
@@ -106,16 +109,39 @@ public class UserShowroomService {
      * 알려주면 조치 사실이 드러난다. 비로그인도 열 수 있고, 이때 {@code isFollowing}은 false다.
      */
     public ShowroomDetailResponse getShowroom(String username, Long showroomId) {
+        return toDetail(username, findVisible(creator.id.eq(showroomId)));
+    }
+
+    /**
+     * 쇼룸 링크({@code /@핸들}) 착지 — 웹 · 앱 딥링크가 핸들만 들고 들어온다. 노출 규칙 · 응답은 ID 조회와 같다.
+     *
+     * <p>링크에 붙은 앞의 {@code @}는 떼고 맞춘다. 핸들은 유니크 인덱스가 걸린 칼럼이고 대소문자는 DB 정렬 규칙을 따른다.
+     */
+    public ShowroomDetailResponse getShowroomByAddress(String username, String showroomAddress) {
+        String handle = showroomAddress == null ? "" : showroomAddress.trim();
+        if (handle.startsWith("@")) {
+            handle = handle.substring(1);
+        }
+        if (handle.isEmpty()) {
+            throw new BusinessException(ErrorCode.SHOWROOM_NOT_FOUND);
+        }
+        return toDetail(username, findVisible(creator.showroomAddress.eq(handle)));
+    }
+
+    private Creator findVisible(BooleanExpression condition) {
         Creator found = queryFactory
                 .selectFrom(creator)
                 .join(creator.user, users)
-                .where(PublicShowrooms.visible().and(creator.id.eq(showroomId)))
+                .where(PublicShowrooms.visible().and(condition))
                 .fetchOne();
 
         if (found == null) {
             throw new BusinessException(ErrorCode.SHOWROOM_NOT_FOUND);
         }
+        return found;
+    }
 
+    private ShowroomDetailResponse toDetail(String username, Creator found) {
         List<Long> showroomIds = List.of(found.getId());
         return ShowroomDetailResponse.builder()
                 .showroomId(found.getId())
@@ -128,7 +154,23 @@ public class UserShowroomService {
                 .followerCount(creatorFollowRepository.countByCreator_Id(found.getId()))
                 .hasOngoingGroupBuy(ongoingGroupBuyIds(showroomIds).contains(found.getId()))
                 .isFollowing(followedIds(username, showroomIds).contains(found.getId()))
+                .isBlocked(isBlocked(username, found.getId()))
                 .build();
+    }
+
+    /** 차단한 쇼룸 제외 조건 — 비로그인 · 차단 없음이면 null(조건 없음). */
+    private BooleanExpression notBlocked(String username) {
+        Users user = username == null ? null : userRepository.findByUsername(username).orElse(null);
+        if (user == null) {
+            return null;
+        }
+        List<Long> blocked = creatorBlockRepository.findCreatorIdsByUserId(user.getId());
+        return blocked.isEmpty() ? null : creator.id.notIn(blocked);
+    }
+
+    private boolean isBlocked(String username, Long showroomId) {
+        Users user = username == null ? null : userRepository.findByUsername(username).orElse(null);
+        return user != null && creatorBlockRepository.existsByUser_IdAndCreator_Id(user.getId(), showroomId);
     }
 
     // ------------------------------------------------------------------ 내부

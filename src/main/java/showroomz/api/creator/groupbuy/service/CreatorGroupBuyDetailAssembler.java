@@ -26,6 +26,7 @@ import showroomz.domain.groupbuy.service.port.GroupBuySalesReader.GroupBuyOrderC
 import showroomz.domain.groupbuy.service.port.GroupBuySalesReader.GroupBuySales;
 import showroomz.domain.groupbuy.service.port.GroupBuySettlementReader;
 import showroomz.domain.groupbuy.service.port.GroupBuyThreadGateway;
+import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.domain.groupbuy.type.AdminSuspensionKind;
 import showroomz.domain.groupbuy.type.ExtensionRejectReason;
 import showroomz.domain.groupbuy.type.FulfillmentSide;
@@ -153,7 +154,7 @@ public class CreatorGroupBuyDetailAssembler {
                         RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate()),
                         item.getOptions().stream()
                                 .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
-                                        option.salePrice()))
+                                        option.salePrice(), option.unitReward()))
                                 .toList()))
                 .toList();
     }
@@ -284,19 +285,12 @@ public class CreatorGroupBuyDetailAssembler {
                 quantities, sales.amount(), myReward, ordersSinceHidden);
     }
 
-    /** 항목별 수량 × 개당 리워드의 합 — 파트너 KPI와 같은 계산이다. */
+    /** 주문 단가(공구가 + 옵션가)별 수량 × 개당 리워드의 합 — 파트너 KPI · 정산과 같은 계산이다. */
     private static long myReward(Contract contract, GroupBuySales sales) {
         Map<Long, ContractItem> itemsByProduct = contract.getItems().stream()
                 .filter(item -> item.getProductId() != null)
                 .collect(Collectors.toMap(ContractItem::getProductId, Function.identity(), (a, b) -> a));
-        return sales.itemQuantities().stream()
-                .mapToLong(quantity -> {
-                    ContractItem item = itemsByProduct.get(quantity.productId());
-                    Long unit = item == null ? null
-                            : RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate());
-                    return unit == null ? 0L : unit * quantity.quantity();
-                })
-                .sum();
+        return sales.rewardAmount(itemsByProduct);
     }
 
     private OrderClosure orderClosure(GroupBuy groupBuy, GroupBuyOrderClosure closure) {
@@ -416,17 +410,22 @@ public class CreatorGroupBuyDetailAssembler {
     }
 
     /**
-     * 정산 블록(44 어드민 설계서 8-7) — {@code settlementId} · 확정 리워드만. 확정 리워드는 정산 관리 값을 <b>그대로</b> 받는다.
-     * 고정 지급비 합산(공제 전 합계)은 §41-1 #14 로 삭제됐다 — 두 칸은 null 로 남긴다(필드 보존).
-     * 정산이 생기면(종료 후) 링크용으로 블록을 내리고, 정산완료 전에는 확정 리워드가 비어 있다.
+     * 정산 블록(44 어드민 설계서 8-7) — {@code settlementId} · 정산 상태 · 확인 기한 · 주문 종결 시각 · 확정 리워드.
+     * 확정 리워드는 정산 관리 값을 <b>그대로</b> 받는다. 고정 지급비 합산(공제 전 합계)은 §41-1 #14 로 삭제됐다 — 두 칸은
+     * null 로 남긴다(필드 보존). 정산이 생기면(종료 후) 종료(ENDED)에서도 블록을 내리고(B-10), 지급 완료 전에는 확정 리워드가 비어 있다.
      */
     private Settlement settlement(GroupBuy groupBuy, Contract contract) {
         Long settlementId = settlementReader.readSettlementId(groupBuy.getId()).orElse(null);
         if (groupBuy.getStatus() != GroupBuyStatus.SETTLED && settlementId == null) {
             return null;
         }
+        GroupBuySettlementReader.SettlementSummary summary = settlementId == null ? null
+                : settlementReader.readSummary(groupBuy.getId()).orElse(null);
+        SettlementStatus status = summary == null ? null : summary.status();
         Long confirmedReward = settlementReader.readConfirmedReward(groupBuy.getId()).orElse(null);
-        return new Settlement(groupBuy.getSettledAt(), null, confirmedReward, null, settlementId);
+        return new Settlement(groupBuy.getSettledAt(), null, confirmedReward, null, settlementId,
+                status, status == null ? null : status.getLabel(), status == null ? null : status.getTone(),
+                summary == null ? null : summary.reviewDueAt(), summary == null ? null : summary.ordersClosedAt());
     }
 
     /**

@@ -12,6 +12,7 @@ import org.springframework.web.util.HtmlUtils;
 
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,7 +35,7 @@ public class MailService {
     @Async
     public void sendApprovalEmail(String to, String marketName, LocalDateTime processedAt) {
         String safeMarket = HtmlUtils.htmlEscape(marketName);
-        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME);
         String subject = "[SHOWROOMZ] 입점 신청이 승인되었습니다.";
         String text = String.format("""
                 <html>
@@ -71,7 +72,7 @@ public class MailService {
                                    String reasonSummary, String reasonDetail) {
         String safeMarket = HtmlUtils.htmlEscape(marketName);
         String safeSummary = HtmlUtils.htmlEscape(reasonSummary);
-        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME);
         String detailBlock;
         if (reasonDetail != null && !reasonDetail.isBlank()) {
             detailBlock = HtmlUtils.htmlEscape(reasonDetail.strip());
@@ -114,7 +115,7 @@ public class MailService {
     @Async
     public void sendCreatorApprovalEmail(String to, String nickname, LocalDateTime processedAt) {
         String safeName = HtmlUtils.htmlEscape(nickname);
-        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME);
         String subject = "[SHOWROOMZ] 크리에이터 입점 신청이 승인되었습니다.";
         String text = String.format("""
                 <html>
@@ -154,7 +155,7 @@ public class MailService {
                                           String reasonSummary, String reasonDetail) {
         String safeName = HtmlUtils.htmlEscape(nickname);
         String safeSummary = HtmlUtils.htmlEscape(reasonSummary);
-        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME);
         String detailBlock = (reasonDetail != null && !reasonDetail.isBlank())
                 ? HtmlUtils.htmlEscape(reasonDetail.strip()) : "내용 없음";
 
@@ -186,7 +187,7 @@ public class MailService {
     @Async
     public void sendLoginEmailChangedNotice(String oldEmail, String newEmail, LocalDateTime changedAt) {
         String safeNewEmail = HtmlUtils.htmlEscape(newEmail);
-        String when = changedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(changedAt).format(SELLER_MAIL_DATETIME);
         String subject = "[SHOWROOMZ] 로그인 이메일이 변경되었습니다.";
         String text = String.format("""
                 <html>
@@ -210,7 +211,7 @@ public class MailService {
     @Async
     public void sendChangeRequestApprovedEmail(String to, String requestCode, String changedFieldLabels, LocalDateTime processedAt) {
         String safeLabels = HtmlUtils.htmlEscape(changedFieldLabels);
-        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME);
         String subject = "[SHOWROOMZ] 변경 요청이 승인되었습니다.";
         String text = String.format("""
                 <html>
@@ -237,7 +238,7 @@ public class MailService {
     public void sendChangeRequestRejectedEmail(String to, String requestCode, LocalDateTime processedAt,
                                                 String reasonSummary, String reasonDetail) {
         String safeSummary = HtmlUtils.htmlEscape(reasonSummary);
-        String when = processedAt.format(SELLER_MAIL_DATETIME);
+        String when = KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME);
         String detailBlock = (reasonDetail != null && !reasonDetail.isBlank())
                 ? HtmlUtils.htmlEscape(reasonDetail.strip()) : "";
         String subject = "[SHOWROOMZ] 변경 요청이 반려되었습니다.";
@@ -312,7 +313,7 @@ public class MailService {
                 </html>
                 """,
                 HtmlUtils.htmlEscape(nameOrDefault(memberName, audience)), audience.service,
-                processedAt.format(SELLER_MAIL_DATETIME), OPS_TEAM, notes, OPS_TEAM);
+                KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME), OPS_TEAM, notes, OPS_TEAM);
 
         sendEmail(to, subject, text);
     }
@@ -340,7 +341,7 @@ public class MailService {
                 </html>
                 """,
                 HtmlUtils.htmlEscape(nameOrDefault(memberName, audience)), audience.service,
-                processedAt.format(SELLER_MAIL_DATETIME), OPS_TEAM, HtmlUtils.htmlEscape(reasonLabel), noteBlock,
+                KstDates.toKst(processedAt).format(SELLER_MAIL_DATETIME), OPS_TEAM, HtmlUtils.htmlEscape(reasonLabel), noteBlock,
                 audience.service, OPS_TEAM);
 
         sendEmail(to, subject, text);

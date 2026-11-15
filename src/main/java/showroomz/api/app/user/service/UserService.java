@@ -55,6 +55,7 @@ public class UserService {
     private final showroomz.domain.order.repository.OrderRefundTaskRepository refundTaskRepository;
     private final BankRepository bankRepository;
     private final CreatorFollowRepository creatorFollowRepository;
+    private final showroomz.domain.member.creator.repository.CreatorBlockRepository creatorBlockRepository;
     private final CreatorRepository creatorRepository;
     private final WithdrawalHistoryRepository withdrawalHistoryRepository;
     private final UserStatusHistoryRepository userStatusHistoryRepository;
@@ -403,9 +404,10 @@ public class UserService {
                 .reason(request.getCustomReason() != null ? request.getCustomReason() : (request.getReason() != null ? request.getReason().name() : null))
                 .build());
 
-        // 6. 활동 기록 파기 — 팔로잉·좋아요·장바구니·푸시 기기
+        // 6. 활동 기록 파기 — 팔로잉·차단·좋아요·장바구니·푸시 기기
         //    기기 토큰을 남기면 탈퇴한 계정 앞으로 알림이 계속 나간다.
         creatorFollowRepository.deleteByUser(user);
+        creatorBlockRepository.deleteByUser(user);
         wishlistRepository.deleteByUser(user);
         cartRepository.deleteByUser(user);
         deviceTokenService.unregisterAll(user);
@@ -425,6 +427,14 @@ public class UserService {
         identityVerificationRepository.purgePersonalDataByUser(user.getId());
 
         // Dirty Checking(변경 감지)에 의해 트랜잭션 종료 시 자동으로 Update 쿼리가 실행됩니다.
+    }
+
+    /** 로그인 뒤 푸시 토큰 등록 · 갱신 — 같은 토큰이 있으면 이 회원에게 소유권을 넘긴다(로그인 때와 같은 저장소). */
+    @Transactional
+    public void registerDeviceToken(Long userId, showroomz.api.app.user.DTO.DeviceTokenRequest request) {
+        Users user = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
+        deviceTokenService.register(user, request.getFcmToken(), request.getPlatform());
     }
 
     /**

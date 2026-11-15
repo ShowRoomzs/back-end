@@ -89,12 +89,23 @@ public class BrandChangeRequestApplier implements ChangeRequestApplier {
                 "변경 요청(" + request.getRequestCode() + ")이 승인되었습니다 · " + String.join(", ", request.changedFieldLabels()));
     }
 
-    /** 파트너 알림 「기본정보 › 해당 탭」(16 알림 표) — 탭 키는 요청 유형이다. */
+    /** 파트너 알림 「기본정보 › 해당 탭」(16 알림 표) — 탭 키는 파트너센터 기본정보 탭 키(business · settlement)다. */
     private void notifyBrand(ChangeRequest request, NotificationType type, String sentence) {
         notificationPublisher.publish(NotificationCommand.toSeller(request.getMarket().getId(), type)
                 .actorType(NotificationActorType.OPERATOR).title(sentence)
                 .targetType(NotificationTargetType.BASIC_INFO_TAB).targetId(request.getId())
-                .targetSub(request.getType() == null ? null : request.getType().name().toLowerCase(java.util.Locale.ROOT)).build());
+                .targetSub(basicInfoTab(request.getType())).build());
+    }
+
+    static String basicInfoTab(ChangeRequestType type) {
+        if (type == null) {
+            return null;
+        }
+        return switch (type) {
+            case BUSINESS_INFO -> "business";
+            case SETTLEMENT_ACCOUNT -> "settlement";
+            default -> type.name().toLowerCase(java.util.Locale.ROOT);
+        };
     }
 
     @Override

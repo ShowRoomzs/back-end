@@ -52,4 +52,7 @@ public class ShowroomDetailResponse {
 
     @Schema(description = "현재 사용자의 팔로우 여부. 비로그인은 항상 false", example = "false")
     private final Boolean isFollowing;
+
+    @Schema(description = "현재 사용자가 이 쇼룸을 차단했는가 — 「차단 해제」 버튼용. 비로그인은 항상 false", example = "false")
+    private final Boolean isBlocked;
 }

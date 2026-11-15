@@ -169,6 +169,17 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
     List<Object[]> sumQuantityByProductForGroupBuy(@Param("groupBuyId") Long groupBuyId,
                                                    @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses);
 
+    /** 상품 · 주문 단가별 판매 수량 — [productId, price, quantity]. 유효 수량 기준 · 리워드 합계용(옵션가 포함 단가). */
+    @Query("SELECT op.variant.product.productId, op.price, COALESCE(SUM(op.quantity - op.returnedQuantity), 0) "
+            + "FROM OrderProduct op JOIN op.order o "
+            + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses "
+            + "AND op.status NOT IN (showroomz.domain.order.type.OrderProductStatus.CANCELLED, "
+            + "showroomz.domain.order.type.OrderProductStatus.RETURNED) "
+            + "GROUP BY op.variant.product.productId, op.price "
+            + "ORDER BY op.variant.product.productId ASC, op.price ASC")
+    List<Object[]> sumQuantityByProductAndPriceForGroupBuy(@Param("groupBuyId") Long groupBuyId,
+                                                           @Param("orderStatuses") Collection<showroomz.domain.order.type.OrderStatus> orderStatuses);
+
     /** 기준 시각 이후 결제 완료 주문 수 — 스튜디오 「숨김 이후 0건」. */
     @Query("SELECT COUNT(DISTINCT op.order.id) FROM OrderProduct op JOIN op.order o "
             + "WHERE op.groupBuy.id = :groupBuyId AND o.status IN :orderStatuses AND o.paidAt >= :since")

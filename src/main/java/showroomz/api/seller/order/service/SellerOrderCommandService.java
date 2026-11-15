@@ -45,6 +45,7 @@ import showroomz.global.delivery.tracker.DeliveryTrackerPort;
 import showroomz.global.delivery.tracker.DeliveryTrackerPort.ValidationResult;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -219,7 +220,7 @@ public class SellerOrderCommandService {
                 .build());
 
         byte[] content = excelWriter.write(columns, lines);
-        return new PurchaseOrderFile(content, "발주서_" + FILE_STAMP.format(now) + ".xlsx", rows.size(), prepared);
+        return new PurchaseOrderFile(content, "발주서_" + FILE_STAMP.format(KstDates.toKst(now)) + ".xlsx", rows.size(), prepared);
     }
 
     @Transactional(readOnly = true)

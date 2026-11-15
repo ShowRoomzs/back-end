@@ -1,5 +1,8 @@
 package showroomz.domain.groupbuy.service.port;
 
+import showroomz.domain.settlement.type.SettlementStatus;
+
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -15,5 +18,19 @@ public interface GroupBuySettlementReader {
     /** 그 공구의 정산 — 「정산 관리 ↗」 링크(44 어드민 설계서 8-7). 정산이 생기기 전이면 empty. */
     default Optional<Long> readSettlementId(Long groupBuyId) {
         return Optional.empty();
+    }
+
+    /** 그 공구의 정산 상태 · 기한 — 종료(ENDED) 공구 상세의 정산 블록(스튜디오 B-10). 정산이 생기기 전이면 empty. */
+    default Optional<SettlementSummary> readSummary(Long groupBuyId) {
+        return Optional.empty();
+    }
+
+    /**
+     * @param status         수취자 화면 상태({@link SettlementStatus#toPartyStatus()} — 분배 실패는 지급 완료로 접는다)
+     * @param reviewDueAt    정산 확인 기한
+     * @param ordersClosedAt 주문 종결 시각
+     */
+    record SettlementSummary(Long settlementId, SettlementStatus status, LocalDateTime reviewDueAt,
+                             LocalDateTime ordersClosedAt) {
     }
 }

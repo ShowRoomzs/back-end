@@ -83,7 +83,9 @@ public final class AdminOrderDto {
                     + "결제 대기(접수 전)와 요청 취소(소비자 철회 · 송장 미등록 자동 취소 · 운영자 직권 취소)는 세지 않는다. 없으면 null. "
                     + "`status`(배송 이행 상태)는 그대로이고, 소비자 상세 「최근 주문」의 「반품완료」 · 「교환완료」는 이 값으로 그린다",
                     nullable = true)
-            ClaimSummary claim
+            ClaimSummary claim,
+            @Schema(description = "추적 정지 · 소비자 선택 — 하위주문 상세 stallChoice 와 같은 값. 없으면 null", nullable = true)
+            StallChoice stallChoice
     ) {
     }
 
@@ -204,7 +206,9 @@ public final class AdminOrderDto {
 
     @Schema(name = "AdminOrderActiveClaim", description = "진행 중 반품·교환 — 06b 상세(`GET /v1/admin/claims/{claimId}`)로 간다")
     public record ActiveClaim(Long claimId, @Schema(example = "CLM-3015") String claimNumber, ClaimType type,
-                              ClaimStatus status, @Schema(example = "재발송 대기") String statusLabel) {
+                              ClaimStatus status, @Schema(example = "재발송 대기") String statusLabel,
+                              @Schema(description = "클레임 대상 주문 항목 — items[].orderProductId 와 같은 값", nullable = true)
+                              Long orderProductId) {
     }
 
     @Schema(name = "AdminOrderPayment")

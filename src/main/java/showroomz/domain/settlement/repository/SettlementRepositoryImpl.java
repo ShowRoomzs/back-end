@@ -72,7 +72,13 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
     @Override
     public Page<Settlement> searchForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId,
                                            SettlementAdminSort sort, Pageable pageable) {
-        return page(adminWhere(statuses, keyword, marketId), adminOrder(sort), pageable);
+        return searchForAdmin(statuses, keyword, marketId, null, sort, pageable);
+    }
+
+    @Override
+    public Page<Settlement> searchForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId,
+                                           Long creatorId, SettlementAdminSort sort, Pageable pageable) {
+        return page(adminWhere(statuses, keyword, marketId, creatorId), adminOrder(sort), pageable);
     }
 
     @Override
@@ -82,6 +88,12 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
 
     @Override
     public SettlementTotals totalsForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId) {
+        return totalsForAdmin(statuses, keyword, marketId, null);
+    }
+
+    @Override
+    public SettlementTotals totalsForAdmin(Collection<SettlementStatus> statuses, String keyword, Long marketId,
+                                           Long creatorId) {
         Tuple row = queryFactory.select(settlement.count(),
                         settlement.confirmedSalesAmount.sum().coalesce(0L),
                         settlement.brandPayoutAmount.sum().coalesce(0L),
@@ -95,7 +107,7 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
                 .join(settlement.contract, contract)
                 .join(settlement.market, market)
                 .join(settlement.creator, creator)
-                .where(adminWhere(statuses, keyword, marketId))
+                .where(adminWhere(statuses, keyword, marketId, creatorId))
                 .fetchOne();
         if (row == null) {
             return SettlementTotals.EMPTY;
@@ -106,10 +118,14 @@ public class SettlementRepositoryImpl implements SettlementRepositoryCustom {
                 longOf(row.get(8, Long.class)));
     }
 
-    private static BooleanBuilder adminWhere(Collection<SettlementStatus> statuses, String keyword, Long marketId) {
+    private static BooleanBuilder adminWhere(Collection<SettlementStatus> statuses, String keyword, Long marketId,
+                                             Long creatorId) {
         BooleanBuilder where = new BooleanBuilder(settlement.status.in(statuses));
         if (marketId != null) {
             where.and(settlement.market.id.eq(marketId));
+        }
+        if (creatorId != null) {
+            where.and(settlement.creator.id.eq(creatorId));
         }
         if (keyword == null || keyword.isBlank()) {
             return where;

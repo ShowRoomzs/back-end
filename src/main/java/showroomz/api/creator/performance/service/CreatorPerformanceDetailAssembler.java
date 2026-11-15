@@ -122,7 +122,7 @@ public class CreatorPerformanceDetailAssembler {
         if (status == CreatorPerformanceStatus.ADJUSTING && adjustment != null) {
             return new CreatorPerformanceDto.Notice(PerformanceTone.WARNING,
                     "정산 조정 협의 중이에요. 리워드는 브랜드와 합의한 금액으로 확정되고, 합의 기한(%s)까지 합의가 없으면 원래 금액으로 확정돼요. "
-                            .formatted(adjustment.deadlineAt().format(MONTH_DAY))
+                            .formatted(KstDates.toKst(adjustment.deadlineAt()).format(MONTH_DAY))
                             + "판매 · 유입 · 소비자 지표는 확정값입니다.",
                     "ISSUE_THREAD", adjustment.threadId());
         }
@@ -130,7 +130,7 @@ public class CreatorPerformanceDetailAssembler {
             return new CreatorPerformanceDto.Notice(PerformanceTone.NEUTRAL,
                     "정산 조정이 합의되어 반영됐어요. %s 금액에 %s 양측이 동의해 판매 리워드가 %s원 → %s원(%s원)으로 확정됐습니다.".formatted(
                             agreedProposalLabel(adjustment),
-                            adjustment.closedAt() == null ? "" : adjustment.closedAt().format(DATE),
+                            adjustment.closedAt() == null ? "" : KstDates.toKst(adjustment.closedAt()).format(DATE),
                             won(s.getOriginalRewardAmount()), won(s.getRewardAmount()),
                             signedWon(s.getRewardAmount() - s.getOriginalRewardAmount())),
                     "ISSUE_THREAD_HISTORY", adjustment.threadId());

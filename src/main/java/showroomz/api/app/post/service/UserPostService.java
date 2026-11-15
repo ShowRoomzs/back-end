@@ -14,6 +14,7 @@ import showroomz.domain.connection.repository.ConnectionRepository;
 import showroomz.domain.groupbuy.service.GroupBuyPostCard;
 import showroomz.domain.groupbuy.service.GroupBuyPostCardLoader;
 import showroomz.domain.member.creator.entity.Creator;
+import showroomz.domain.member.creator.repository.CreatorBlockRepository;
 import showroomz.domain.member.creator.repository.CreatorFollowRepository;
 import showroomz.domain.member.creator.repository.CreatorRepository;
 import showroomz.domain.member.creator.repository.PublicShowrooms;
@@ -75,6 +76,7 @@ public class UserPostService {
     private final PostPolicies postPolicies;
     private final GroupBuyPostCardLoader groupBuyPostCardLoader;
     private final JPAQueryFactory queryFactory;
+    private final CreatorBlockRepository creatorBlockRepository;
 
     /**
      * C5 상세. 공구 게시물은 마감이어도 종료 후 3일까지 열리고(투영식이 그때까지 PUBLISHED로 둔다), 이후 404다.
@@ -132,11 +134,15 @@ public class UserPostService {
 
     public PageResponse<PostDto.FeedItemResponse> getPostList(String username, PagingRequest pagingRequest, Long showroomId) {
         Pageable pageable = pagingRequest.toPageable();
+        Users user = findUser(username);
+        // 전체 피드는 차단한 쇼룸을 뺀다(App Store 1.2). 한 쇼룸의 게시물 목록은 그 쇼룸 프로필이라 그대로 연다.
+        List<Long> blocked = showroomId != null ? List.of() : blockedCreatorIds(user);
         Page<Post> postPage = showroomId != null
                 ? postRepository.findDisplayedPostsByCreatorId(showroomId, pageable)
-                : postRepository.findDisplayedPosts(pageable);
+                : blocked.isEmpty()
+                        ? postRepository.findDisplayedPosts(pageable)
+                        : postRepository.findDisplayedPostsExcluding(blocked, pageable);
 
-        Users user = findUser(username);
         return toFeed(postPage, likedPostIds(user, postPage.getContent()),
                 followedCreatorIds(user, postPage.getContent()));
     }
@@ -145,7 +151,9 @@ public class UserPostService {
         Users user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND));
 
-        List<Long> followingShowroomIds = creatorFollowRepository.findCreatorIdsByUserId(user.getId());
+        // 차단하면 팔로우가 끊기지만, 그 전에 남은 행이 있어도 차단한 쇼룸은 뺀다.
+        List<Long> followingShowroomIds = new ArrayList<>(creatorFollowRepository.findCreatorIdsByUserId(user.getId()));
+        followingShowroomIds.removeAll(blockedCreatorIds(user));
         Pageable pageable = pagingRequest.toPageable();
 
         // 팔로잉이 0이면 이 피드는 정의상 비어 있다 — C1 빈 상태는 추천 피드가 채운다
@@ -181,6 +189,7 @@ public class UserPostService {
         if (user != null) {
             excluded.addAll(creatorFollowRepository.findCreatorIdsByUserId(user.getId()));
             creatorRepository.findByUser_Id(user.getId()).ifPresent(creator -> excluded.add(creator.getId()));
+            excluded.addAll(blockedCreatorIds(user)); // 차단한 쇼룸(App Store 1.2)
         }
 
         Page<Post> postPage = postRepository.findRecommendedPosts(excluded, pagingRequest.toPageable());
@@ -369,6 +378,11 @@ public class UserPostService {
         }
         List<Long> creatorIds = posts.stream().map(post -> post.getCreator().getId()).distinct().toList();
         return Set.copyOf(creatorFollowRepository.findFollowedCreatorIds(user.getId(), creatorIds));
+    }
+
+    /** 소비자가 차단한 쇼룸 — 비로그인이면 빈 목록. */
+    private List<Long> blockedCreatorIds(Users user) {
+        return user == null ? List.of() : creatorBlockRepository.findCreatorIdsByUserId(user.getId());
     }
 
     private Users findUser(String username) {

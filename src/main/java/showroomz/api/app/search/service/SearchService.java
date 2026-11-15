@@ -20,6 +20,7 @@ import showroomz.domain.member.creator.entity.Creator;
 import showroomz.domain.member.creator.repository.PublicShowrooms;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.domain.product.type.ProductDisplayStatus;
+import showroomz.domain.member.creator.repository.CreatorBlockRepository;
 import showroomz.global.dto.PageResponse;
 import showroomz.global.dto.PagingRequest;
 
@@ -47,6 +48,7 @@ public class SearchService {
     private final JPAQueryFactory queryFactory;
     private final PostRepository postRepository;
     private final ConnectionRepository connectionRepository;
+    private final CreatorBlockRepository creatorBlockRepository;
 
     /**
      * C14 쇼룸 검색 — 검색 대상은 <b>쇼룸 이름과 아이디(@handle)</b>뿐이다(상품·카테고리는 범위 밖).
@@ -58,6 +60,11 @@ public class SearchService {
      * 아이디 부분 일치 순이고, 같은 등급 안에서는 이름이 짧은 순이다.
      */
     public PageResponse<ShowroomSearchItem> searchShowrooms(String keyword, PagingRequest pagingRequest) {
+        return searchShowrooms(null, keyword, pagingRequest);
+    }
+
+    /** @param userId 로그인 사용자 — 차단한 쇼룸을 뺀다(App Store 1.2). 비로그인은 null */
+    public PageResponse<ShowroomSearchItem> searchShowrooms(Long userId, String keyword, PagingRequest pagingRequest) {
         Pageable pageable = pagingRequest.toPageable(Sort.unsorted());
 
         String name = keyword == null ? "" : keyword.trim();
@@ -72,7 +79,7 @@ public class SearchService {
                 : creator.showroomName.containsIgnoreCase(name)
                         .or(creator.showroomAddress.containsIgnoreCase(handle));
 
-        BooleanExpression where = publicShowroom().and(match);
+        BooleanExpression where = publicShowroom(userId).and(match);
 
         NumberExpression<Integer> matchRank = new CaseBuilder()
                 .when(creator.showroomName.startsWithIgnoreCase(name)).then(0)
@@ -107,16 +114,24 @@ public class SearchService {
      * C2 팔로잉 기본 정렬과 같은 기준을 쓴다. 게시물이 아직 없는 쇼룸은 신규 등록순으로 뒤를 채운다.
      */
     public List<ShowroomSearchItem> getActiveShowrooms(Integer size) {
+        return getActiveShowrooms(null, size);
+    }
+
+    /** @param userId 로그인 사용자 — 차단한 쇼룸을 뺀다. 비로그인은 null */
+    public List<ShowroomSearchItem> getActiveShowrooms(Long userId, Integer size) {
         int limit = (size == null || size <= 0) ? DEFAULT_ACTIVE_SHOWROOM_SIZE : size;
 
         // 게시물이 있는 쇼룸이라도 탈퇴·정지 등으로 걸러질 수 있어 넉넉히 뽑아 두고 자른다.
         List<Long> postedCreatorIds = postRepository.findCreatorIdsOrderByLatestPost(
                 PageRequest.of(0, limit * 2));
 
-        List<Creator> picked = new ArrayList<>(orderByGivenIds(postedCreatorIds, limit));
+        List<Long> blocked = blockedCreatorIds(userId);
+        List<Creator> picked = new ArrayList<>(orderByGivenIds(postedCreatorIds.stream()
+                .filter(id -> !blocked.contains(id)).toList(), limit));
 
         if (picked.size() < limit) {
             Set<Long> excluded = picked.stream().map(Creator::getId).collect(Collectors.toSet());
+            excluded.addAll(blocked);
             picked.addAll(queryFactory
                     .selectFrom(creator)
                     .join(creator.user, users)
@@ -138,6 +153,11 @@ public class SearchService {
      * 없는 후보를 자동완성에 남겨 두면 탭했을 때 갈 곳이 없다.
      */
     public AutoCompleteResponse getAutocomplete(String keyword) {
+        return getAutocomplete(null, keyword);
+    }
+
+    /** @param userId 로그인 사용자 — 차단한 쇼룸을 쇼룸 후보에서 뺀다. 비로그인은 null */
+    public AutoCompleteResponse getAutocomplete(Long userId, String keyword) {
 
         // 1. 상품 검색
         List<AutoCompleteResponse.SearchDto> products = queryFactory
@@ -166,7 +186,7 @@ public class SearchService {
                 ))
                 .from(creator)
                 .join(creator.user, users)
-                .where(publicShowroom().and(showroomMatch))
+                .where(publicShowroom(userId).and(showroomMatch))
                 .orderBy(creator.showroomName.length().asc())
                 .limit(3)
                 .fetch();
@@ -183,6 +203,16 @@ public class SearchService {
      */
     private BooleanExpression publicShowroom() {
         return PublicShowrooms.visible();
+    }
+
+    /** {@link #publicShowroom()} − 이 사용자가 차단한 쇼룸. */
+    private BooleanExpression publicShowroom(Long userId) {
+        List<Long> blocked = blockedCreatorIds(userId);
+        return blocked.isEmpty() ? publicShowroom() : publicShowroom().and(creator.id.notIn(blocked));
+    }
+
+    private List<Long> blockedCreatorIds(Long userId) {
+        return userId == null ? List.of() : creatorBlockRepository.findCreatorIdsByUserId(userId);
     }
 
     /** 주어진 ID 순서를 유지한 채 공개 가능한 쇼룸만 남긴다. */

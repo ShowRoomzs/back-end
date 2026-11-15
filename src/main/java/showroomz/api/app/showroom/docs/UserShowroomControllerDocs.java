@@ -140,4 +140,33 @@ public interface UserShowroomControllerDocs {
             @AuthenticationPrincipal UserPrincipal userPrincipal,
             @Parameter(description = "쇼룸(크리에이터) ID", required = true, example = "12", in = ParameterIn.PATH)
             @PathVariable("showroomId") Long showroomId);
+
+    @Operation(
+            summary = "쇼룸 상세 조회 — 핸들(쇼룸 주소)로",
+            description = """
+                    쇼룸 링크 `{웹 도메인}/@{showroomAddress}` 를 연 웹 · 앱 딥링크가 쓴다. 핸들만 들고 들어오므로
+                    ID 대신 쇼룸 주소로 찾는다. **응답 · 노출 규칙은 `GET /v1/user/showrooms/{showroomId}` 와 같다**
+                    — 이후 팔로우 · 게시물 · 방문 API 는 응답의 `showroomId` 로 부른다.
+
+                    - 경로의 앞 `@` 는 붙여 보내도 된다(`/by-address/@jenny_beautyroom` 도 같은 쇼룸)
+                    - 노출할 수 없는 쇼룸(탈퇴·정지·등록 미완료)은 없는 쇼룸과 같은 404다
+
+                    **권한:** 인증 불필요 (비로그인 가능. 이때 `isFollowing`은 `false`)
+                    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "조회 성공 — 응답은 ID 상세 조회와 같다",
+                    content = @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ShowroomDetailResponse.class))),
+            @ApiResponse(responseCode = "404", description = "존재하지 않거나 노출할 수 없는 쇼룸",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class),
+                            examples = @ExampleObject(value = """
+                                    { "code": "SHOWROOM_NOT_FOUND", "message": "존재하지 않는 쇼룸입니다." }
+                                    """)))
+    })
+    ResponseEntity<ShowroomDetailResponse> getShowroomByAddress(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Parameter(description = "쇼룸 주소(핸들) — 쇼룸 링크의 `/@` 뒤 값", required = true,
+                    example = "jenny_beautyroom", in = ParameterIn.PATH)
+            @PathVariable("showroomAddress") String showroomAddress);
 }

@@ -277,7 +277,7 @@ public class UserClaimTrackingService {
     }
 
     private static String lastScan(DeliveryTrackingEvent event) {
-        String at = event.getOccurredAt().format(DAY_TIME);
+        String at = KstDates.toKst(event.getOccurredAt()).format(DAY_TIME);
         return event.getLocation() == null || event.getLocation().isBlank() ? at : event.getLocation() + " · " + at;
     }
 }

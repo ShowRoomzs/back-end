@@ -23,6 +23,8 @@ public enum ErrorCode {
     INVALID_ACCESS_TOKEN(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED", "유효하지 않은 액세스 토큰입니다."),
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "DUPLICATE_EMAIL", "이미 다른 계정에서 사용 중인 이메일입니다."),
     SOCIAL_LOGIN_SUSPENDED(HttpStatus.FORBIDDEN, "DISABLED_SOCIAL_VENDOR", "해당 소셜 로그인은 현재 일시 중단되었습니다."),
+    INVALID_AUTHORIZATION_CODE(HttpStatus.UNAUTHORIZED, "INVALID_AUTHORIZATION_CODE", "유효하지 않거나 만료된 인가 코드입니다. 다시 로그인해 주세요."),
+    INVALID_REDIRECT_URI(HttpStatus.BAD_REQUEST, "INVALID_REDIRECT_URI", "허용되지 않은 redirectUri입니다."),
 
     /* * 3. 회원가입 & 회원 정보 (Register & User Info)
      */

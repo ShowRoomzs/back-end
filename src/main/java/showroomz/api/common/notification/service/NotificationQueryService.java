@@ -139,11 +139,21 @@ public class NotificationQueryService {
                 n.getImageKind(), imageUrl, live, n.isAdvertising(), n.getTodoDueAt(), n.isRead(), n.getCreatedAt());
     }
 
-    /** 기본정보 탭 키는 FE 탭 키(소문자)로 — 대문자로 저장된 이전 행도 여기서 맞춘다(58 계획 6-4). */
+    /**
+     * 기본정보 탭 키는 FE 탭 키(소문자)로 — 대문자로 저장된 이전 행도 여기서 맞춘다(58 계획 6-4).
+     * 변경 요청 알림의 이전 행은 요청 유형(business_info · settlement_account)으로 저장돼 있어 파트너센터 탭 키로 바꾼다.
+     */
     private static String targetSub(Notification n) {
         String sub = n.getTargetSub();
-        return n.getTargetType() == NotificationTargetType.BASIC_INFO_TAB && sub != null
-                ? sub.toLowerCase(java.util.Locale.ROOT) : sub;
+        if (n.getTargetType() != NotificationTargetType.BASIC_INFO_TAB || sub == null) {
+            return sub;
+        }
+        String key = sub.toLowerCase(java.util.Locale.ROOT);
+        return switch (key) {
+            case "business_info" -> "business";
+            case "settlement_account" -> "settlement";
+            default -> key;
+        };
     }
 
     private static Long parseLong(String value) {
