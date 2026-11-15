@@ -22,7 +22,7 @@ public class SocialLoginProperties {
 
     private Kakao kakao = new Kakao();
     private Audience google = new Audience();
-    private Audience apple = new Audience();
+    private Apple apple = new Apple();
 
     @Getter
     @Setter
@@ -53,6 +53,31 @@ public class SocialLoginProperties {
         public List<String> allowedAudiences() {
             return clean(clientIds);
         }
+    }
+
+    /**
+     * 애플 — aud 허용 목록 + 탈퇴 시 토큰 철회(App Store 심사 5.1.1(v))용 키. 철회 키(team-id · key-id · private-key)가
+     * 하나라도 비어 있으면 철회를 건너뛴다(기동 시 WARN) — 탈퇴 자체는 막지 않는다.
+     */
+    @Getter
+    @Setter
+    public static class Apple extends Audience {
+        /** Apple Developer Team ID — client_secret JWT 의 iss. */
+        private String teamId;
+        /** Sign in with Apple 키 ID — client_secret JWT 헤더의 kid. */
+        private String keyId;
+        /** .p8 키 내용(PEM 헤더 포함 또는 본문만). 환경변수에서는 줄바꿈을 리터럴 「\n」으로 넣어도 된다. */
+        private String privateKey;
+        /** authorization code 를 받은 클라이언트 ID — 앱은 번들 ID. client_secret 의 sub 이자 client_id. */
+        private String revokeClientId;
+
+        public boolean revokeConfigured() {
+            return notBlank(teamId) && notBlank(keyId) && notBlank(privateKey) && notBlank(revokeClientId);
+        }
+    }
+
+    private static boolean notBlank(String value) {
+        return value != null && !value.isBlank();
     }
 
     private static List<String> clean(List<String> values) {

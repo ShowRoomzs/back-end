@@ -28,4 +28,9 @@ public class WithdrawalRequest {
 
     @Schema(description = "이유가 ETC일 때 자유 입력 (선택)", example = "쓸 일이 없어졌어요")
     private String customReason;
+
+    @Schema(description = "애플 로그인 회원만 — 탈퇴 직전 Sign in with Apple 을 다시 띄워 받은 authorizationCode(5분 유효 · 1회용). "
+            + "탈퇴가 끝난 뒤 서버가 애플 토큰을 철회(auth/revoke)한다. 없거나 철회에 실패해도 탈퇴는 진행된다",
+            example = "c1a2b3d4e5...", nullable = true)
+    private String appleAuthorizationCode;
 }

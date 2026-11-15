@@ -131,10 +131,10 @@ public record GroupBuyDetailResponse(
             @Schema(description = "정가(원)", example = "34000") Integer regularPrice,
             @Schema(description = "공구가(원)", example = "27200") Integer groupBuyPrice,
             @Schema(description = "리워드율(%)", example = "12") BigDecimal rewardRate,
-            @Schema(description = "개당 예상 리워드(원) — 공구가 × 리워드율 절사. 계약·정산·계약서 PDF와 같은 계산", example = "3264")
+            @Schema(description = "상품(기본 옵션) 개당 예상 리워드(원) — 공구가 × 리워드율 절사. 옵션가가 있는 옵션은 options[].unitReward(옵션 판매가 기준)가 정산 · 계약서 PDF와 같은 값이다", example = "3264")
             Long expectedUnitReward,
             @Schema(description = "최소 준비 물량(개) — 옵션별 최소 물량의 합계. 물량 확보 확인의 대상", example = "300") Integer minQuantity,
-            @Schema(description = "옵션별 판매가·최소 준비 물량 — 공구가·리워드율은 상품 단위라 옵션마다 같다")
+            @Schema(description = "옵션별 판매가·최소 준비 물량·개당 리워드 — 리워드율은 상품 단위지만 리워드는 옵션 판매가 기준이다")
             List<ItemOption> options
     ) {
     }
@@ -144,7 +144,8 @@ public record GroupBuyDetailResponse(
             @Schema(description = "옵션(variant) id — 상품 관리에서 지워졌으면 null", example = "301", nullable = true) Long variantId,
             @Schema(description = "옵션명(계약 스냅샷)", example = "2개 세트", nullable = true) String variantName,
             @Schema(description = "옵션 판매가(원) = 공구가 + 옵션가", example = "50000", nullable = true) Integer salePrice,
-            @Schema(description = "옵션별 최소 준비 물량(개)", example = "100") Integer minQuantity
+            @Schema(description = "옵션별 최소 준비 물량(개)", example = "100") Integer minQuantity,
+            @Schema(description = "옵션 개당 리워드(원) = ⌊옵션 판매가 × 리워드율 ÷ 100⌋ — 정산(주문 단가 × 리워드율) · 계약서 PDF와 같은 계산. 옵션가가 있으면 상품 개당 리워드와 다르다", example = "7500", nullable = true) Long unitReward
     ) {
     }
 
@@ -222,7 +223,7 @@ public record GroupBuyDetailResponse(
             @Schema(description = "LIVE(실시간 · 진행중/중단 예정) · SETTLED(정산 확정 실적) · AT_SUSPENSION(중단 시점 실적)") SalesBasis basis,
             @Schema(description = "주문 건수(취소·반품 반영)") int orderCount,
             @Schema(description = "판매 금액(원)") long amount,
-            @Schema(description = "예상 리워드 합계(원) — 항목별 수량 × 개당 예상 리워드의 합") long rewardAmount,
+            @Schema(description = "예상 리워드 합계(원) — Σ ⌊주문 단가(공구가 + 옵션가) × 리워드율⌋ × 수량. 정산과 같은 계산") long rewardAmount,
             @Schema(description = "상품별 판매 수량") List<ItemQuantity> itemQuantities
     ) {
     }

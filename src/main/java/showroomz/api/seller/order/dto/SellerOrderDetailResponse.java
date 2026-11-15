@@ -123,7 +123,7 @@ public record SellerOrderDetailResponse(
             @Schema(description = "소비자 상세 사유", example = "색상을 잘못 골랐어요", nullable = true) String reasonDetail,
             @Schema(description = "요청 시각", example = "2026-10-02T14:30:00Z") LocalDateTime requestedAt,
             @Schema(description = "응답 기한 — 요청 + 1영업일(주말·공휴일 제외)의 끝. 지나면 자동 승인 · PG 즉시 환불",
-                    example = "2026-10-05T23:59:59Z") LocalDateTime respondDueAt,
+                    example = "2026-10-05T14:59:59Z") LocalDateTime respondDueAt,
             @Schema(description = "요청 당시 이행 상태 라벨", example = "상품준비중") String statusAtRequestLabel,
             @Schema(description = "준비 시작 후 경과(시간) — 준비 시작 전 요청이면 null", example = "5", nullable = true)
             Long hoursSincePrepareStart,

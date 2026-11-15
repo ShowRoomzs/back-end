@@ -38,6 +38,7 @@ import showroomz.domain.inquiry.repository.OneToOneInquiryRepository;
 import showroomz.domain.member.user.vo.RefundAccount;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.utils.PersonalDataCipher;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -468,7 +469,7 @@ public class AdminRefundAssembler {
     private static String statusNote(OrderRefundTask task, Map<Long, String> names) {
         return switch (task.getStatus()) {
             case PENDING -> task.getOrigin() == RefundTaskOrigin.OPERATOR
-                    ? "편입 " + task.getCreatedAt().format(NOTE_TIME) + " · " + names.getOrDefault(task.getRequestedBy(), "운영자")
+                    ? "편입 " + KstDates.toKst(task.getCreatedAt()).format(NOTE_TIME) + " · " + names.getOrDefault(task.getRequestedBy(), "운영자")
                     : null;
             case EXECUTING -> "PG 응답 확인 중";
             case FAILED -> {

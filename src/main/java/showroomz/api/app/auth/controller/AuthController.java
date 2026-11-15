@@ -15,7 +15,10 @@ import showroomz.api.app.auth.docs.AuthControllerDocs;
 import showroomz.api.app.auth.entity.RoleType;
 import showroomz.api.app.auth.refreshToken.UserRefreshToken;
 import showroomz.api.app.auth.refreshToken.UserRefreshTokenRepository;
+import showroomz.api.app.auth.entity.ProviderType;
+import showroomz.api.app.auth.service.AppleTokenRevoker;
 import showroomz.api.app.auth.service.AuthService;
+import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.api.app.auth.service.IdentityVerificationService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
@@ -57,6 +60,7 @@ public class AuthController implements AuthControllerDocs {
     private final IdentityVerificationService identityVerificationService;
     private final UserConsentHistoryRepository userConsentHistoryRepository;
     private final WebRefreshTokenCookie webRefreshTokenCookie;
+    private final AppleTokenRevoker appleTokenRevoker;
     
     private final static long THREE_DAYS_MSEC = 259200000;
     private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
@@ -377,6 +381,12 @@ public class AuthController implements AuthControllerDocs {
 
         // 4. 회원 탈퇴 처리 (논리 삭제: 상태를 WITHDRAWN으로 변경)
         userService.withdrawUser(username, withdrawalRequest);
+
+        // 4-1. 애플 로그인 회원이면 커밋 뒤 애플 토큰 철회(App Store 5.1.1(v)) — 실패해도 탈퇴는 되돌리지 않는다.
+        if (user.getProviderType() == ProviderType.APPLE) {
+            String appleCode = withdrawalRequest.getAppleAuthorizationCode();
+            AfterCommit.run(() -> appleTokenRevoker.revoke(appleCode));
+        }
 
         // 5. SecurityContext 초기화
         SecurityContextHolder.clearContext();

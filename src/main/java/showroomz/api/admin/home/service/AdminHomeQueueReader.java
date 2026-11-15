@@ -442,7 +442,7 @@ public class AdminHomeQueueReader {
             }
             String badge = overdue ? "기한 초과" : KstDates.toKstDate(item.dueAt()).equals(today) ? "오늘 마감" : "D-1";
             rows.add(row(overdue ? TodoUrgency.OVERDUE : TodoUrgency.DUE_SOON, badge, key, item.title(), item.detail(), menu,
-                    ageText(item.enteredAt(), now), "마감 " + item.dueAt().format(MONTH_DAY),
+                    ageText(item.enteredAt(), now), "마감 " + KstDates.toKst(item.dueAt()).format(MONTH_DAY),
                     new AdminHomeDto.Target(item.targetType(), item.id(), null), 1));
         }
         long folded = itemized - rows.size();

@@ -296,7 +296,7 @@ public class UserOrderItemAssembler {
             case RETURNING -> "반송 처리 중";
             case DELIVERED -> view == View.LIST
                     ? day(confirmDueAt, " 구매확정 예정")
-                    : group.getDeliveredAt() == null ? null : group.getDeliveredAt().format(DAY_TIME);
+                    : group.getDeliveredAt() == null ? null : KstDates.toKst(group.getDeliveredAt()).format(DAY_TIME);
             case CONFIRMED -> group == null ? null : day(group.getConfirmedAt(), " 확정");
             case CANCEL_REQUESTED -> "브랜드 확인 중";
             case CANCELLED -> cancelledSub(product, group, context);

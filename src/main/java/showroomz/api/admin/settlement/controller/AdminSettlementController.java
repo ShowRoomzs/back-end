@@ -50,9 +50,10 @@ public class AdminSettlementController implements AdminSettlementControllerDocs 
     public AdminSettlementDto.ListResponse<?> list(@RequestParam(required = false) AdminSettlementTab tab,
                                                    @RequestParam(required = false) String keyword,
                                                    @RequestParam(required = false) Long marketId,
+                                                   @RequestParam(required = false) Long creatorId,
                                                    @RequestParam(required = false) AdminSettlementSort sort,
                                                    @ModelAttribute PagingRequest paging) {
-        return queries.list(tab, keyword, marketId, sort, paging);
+        return queries.list(tab, keyword, marketId, creatorId, sort, paging);
     }
 
     @Override

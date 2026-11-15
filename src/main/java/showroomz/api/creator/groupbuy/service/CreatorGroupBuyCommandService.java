@@ -45,6 +45,7 @@ import showroomz.domain.post.policy.PostPolicies;
 import showroomz.domain.post.repository.PostRepository;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -252,7 +253,7 @@ public class CreatorGroupBuyCommandService {
         groupBuy.applyExtended(extension.getAfterEndAt());
 
         historyRecorder.recordByCreator(groupBuy, GroupBuyEventType.EXTENSION_ACCEPTED,
-                "종료일 " + extension.getAfterEndAt().format(END_AT_FORMAT) + "로 변경", extension.getId(), now);
+                "종료일 " + KstDates.toKst(extension.getAfterEndAt()).format(END_AT_FORMAT) + "로 변경", extension.getId(), now);
         notifier.notifySeller(groupBuy, "EXTENSION_ACCEPTED");
         return detailAssembler.assemble(groupBuy, null);
     }

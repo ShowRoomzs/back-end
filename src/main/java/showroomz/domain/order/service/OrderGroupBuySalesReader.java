@@ -48,7 +48,14 @@ public class OrderGroupBuySalesReader implements GroupBuySalesReader {
                 quantities.add(new ItemQuantity(productId, quantity.intValue()));
             }
         }
-        return Optional.of(new GroupBuySales(orderCount, amount, quantities));
+        List<PricedQuantity> priced = new ArrayList<>();
+        for (Object[] row : orderProductRepository.sumQuantityByProductAndPriceForGroupBuy(groupBuyId, OrderStatus.PAID_OR_LATER)) {
+            if (row[0] instanceof Long productId && row[2] instanceof Number quantity) {
+                Integer unitPrice = row[1] instanceof Number price ? price.intValue() : null;
+                priced.add(new PricedQuantity(productId, unitPrice, quantity.intValue()));
+            }
+        }
+        return Optional.of(new GroupBuySales(orderCount, amount, quantities, priced));
     }
 
     @Override

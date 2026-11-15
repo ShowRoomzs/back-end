@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import showroomz.domain.settlement.type.SettlementPayee;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 
@@ -39,12 +40,12 @@ public class SettlementNotifier {
     public void settlementGenerated(Long settlementId) {
         stub("BOTH", "SETTLEMENT_GENERATED", settlementId);
         load(settlementId, s -> {
-            String due = s.getReviewDueAt() == null ? "" : " · " + s.getReviewDueAt().format(MD) + " 23:59까지 확인할 수 있습니다";
+            String due = s.getReviewDueAt() == null ? "" : " · " + KstDates.toKst(s.getReviewDueAt()).format(MD) + " 23:59까지 확인할 수 있습니다";
             toBrand(s, NotificationType.SETTLEMENT_CREATED, NotificationActorType.SYSTEM, null,
                     "「" + title(s) + "」 정산이 생성되었습니다" + due);
             toCreator(s, NotificationType.SETTLEMENT_CREATED, NotificationActorType.PLATFORM, null,
                     title(s) + " 공구 정산이 생성됐어요" + (s.getReviewDueAt() == null ? ""
-                            : " · " + s.getReviewDueAt().format(MD) + "까지 확인할 수 있어요"));
+                            : " · " + KstDates.toKst(s.getReviewDueAt()).format(MD) + "까지 확인할 수 있어요"));
         });
     }
 
@@ -53,12 +54,12 @@ public class SettlementNotifier {
     public void settlementRecalculated(Long settlementId) {
         stub("BOTH", "SETTLEMENT_RECALCULATED", settlementId);
         load(settlementId, s -> {
-            String due = s.getReviewDueAt() == null ? "" : " · " + s.getReviewDueAt().format(MD) + " 23:59까지 다시 확인할 수 있습니다";
+            String due = s.getReviewDueAt() == null ? "" : " · " + KstDates.toKst(s.getReviewDueAt()).format(MD) + " 23:59까지 다시 확인할 수 있습니다";
             toBrand(s, NotificationType.SETTLEMENT_RECALCULATED, NotificationActorType.SYSTEM, null,
                     "「" + title(s) + "」 정산이 환불로 재계산되었습니다" + due);
             toCreator(s, NotificationType.SETTLEMENT_RECALCULATED, NotificationActorType.PLATFORM, null,
                     title(s) + " 공구 정산이 환불로 다시 계산됐어요" + (s.getReviewDueAt() == null ? ""
-                            : " · " + s.getReviewDueAt().format(MD) + "까지 확인할 수 있어요"));
+                            : " · " + KstDates.toKst(s.getReviewDueAt()).format(MD) + "까지 확인할 수 있어요"));
         });
     }
 

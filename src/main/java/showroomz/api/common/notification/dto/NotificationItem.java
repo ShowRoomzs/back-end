@@ -40,7 +40,7 @@ public record NotificationItem(
             @Schema(description = "대상 id — ORDER_GROUP 은 하위주문 id · SHOWROOM 은 creatorId(쇼룸 API 의 showroomId 와 같은 값) · "
                     + "CLAIM 은 클레임 id · THREAD 는 스레드 id", nullable = true) Long id,
             @Schema(description = "부가 식별 — 문의 종류(ONE_TO_ONE · PRODUCT) · 스레드 메시지 id(카드 위치) · "
-                    + "BASIC_INFO_TAB 의 탭 키(소문자 — account · settlement · 변경 요청 유형 소문자)", nullable = true)
+                    + "BASIC_INFO_TAB 의 탭 키(소문자 — account · business · settlement · 인플루언서 변경 요청 유형 소문자)", nullable = true)
             String sub,
             @Schema(description = "주문 id — ORDER_GROUP 일 때만(앱 주문 상세 경로용). 그 밖은 null", nullable = true)
             Long orderId) {

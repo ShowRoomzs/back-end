@@ -36,6 +36,11 @@ public class PostRepositoryImpl implements PostRepositoryCustom {
     }
 
     @Override
+    public Page<Post> findDisplayedPostsExcluding(List<Long> excludedCreatorIds, Pageable pageable) {
+        return findRecommendedPosts(excludedCreatorIds, pageable);
+    }
+
+    @Override
     public Page<Post> findDisplayedPostsByCreatorId(Long creatorId, Pageable pageable) {
         return findPublished(post.creator.id.eq(creatorId), GroupBuyScope.GENERAL_AND_CLOSED, pageable);
     }

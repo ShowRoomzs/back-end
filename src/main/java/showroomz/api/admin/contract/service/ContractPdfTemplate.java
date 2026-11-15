@@ -7,6 +7,7 @@ import org.thymeleaf.context.Context;
 import showroomz.domain.contract.entity.*;
 import showroomz.domain.contract.type.SecondaryUsePeriodType;
 import showroomz.domain.member.creator.type.CreatorBusinessType;
+import showroomz.global.utils.KstDates;
 import showroomz.global.utils.RewardCalculator;
 import java.text.NumberFormat;
 import java.time.*;
@@ -81,16 +82,20 @@ public class ContractPdfTemplate {
     /**
      * 제5조 상품 행 + 옵션 하위 행(계약서 생성규격 v0.2 §4-4). 상품 행의 최소 물량은 옵션 합계이고,
      * 옵션이 1개뿐인 상품도 하위 행을 생략하지 않는다 — 어느 옵션에 물량을 약속했는지가 계약 내용이다.
+     * 옵션 행에는 옵션 판매가(공구가 + 옵션가)와 그 기준의 개당 리워드를 찍는다 — 정산이 주문 단가 × 리워드율로 계산한다.
      */
     private Map<String, Object> item(ContractItem i) {
+        Long itemUnitReward = RewardCalculator.calcUnitReward(i.getGroupBuyPrice(), i.getRewardRate());
         List<Map<String, String>> options = i.getOptions().stream()
                 .map(option -> Map.of(
                         "옵션명", optionName(option),
+                        "옵션판매가", number(option.salePrice() != null ? option.salePrice() : i.getGroupBuyPrice()),
+                        "옵션개당리워드", number(option.unitReward() != null ? option.unitReward() : itemUnitReward),
                         "옵션최소물량", number(option.getMinQuantity())))
                 .toList();
         return Map.of("상품명", text(i.getProductName()), "정가", number(i.getRegularPrice()),
                 "공구가", number(i.getGroupBuyPrice()), "리워드율", text(i.getRewardRate()),
-                "개당리워드", number(RewardCalculator.calcUnitReward(i.getGroupBuyPrice(), i.getRewardRate())),
+                "개당리워드", number(itemUnitReward),
                 "최소물량합계", number(i.getMinQuantity()),
                 "옵션", options,
                 "행수", 1 + options.size());
@@ -103,7 +108,8 @@ public class ContractPdfTemplate {
     private void put(Map<String, String> values, String key, Object value) { values.put(key, text(value)); }
     private String text(Object value) { return value == null ? "" : value.toString(); }
     private String number(Number value) { return value == null ? "0" : NumberFormat.getIntegerInstance(Locale.KOREA).format(value); }
-    private String format(LocalDateTime time) { return time == null ? "" : time.format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH:mm")); }
+    /** 저장 시각은 서버 벽시계(운영 UTC)다 — 서명하는 문서라 한국 시각으로 바꿔 찍는다. */
+    private String format(LocalDateTime time) { return time == null ? "" : KstDates.toKst(time).format(DateTimeFormatter.ofPattern("yyyy년 MM월 dd일 HH:mm")); }
 
     static String koreanAmount(long amount) {
         if (amount == 0) return "영";

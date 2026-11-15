@@ -83,6 +83,12 @@ public class AdminSettlementQueryService {
     /** @param marketId 브랜드 상세에서 들어온 진입(58 계획 5-31) — 정산 탭에만 건다(증빙 · 차감 탭은 전체). null 이면 전체 */
     public AdminSettlementDto.ListResponse<?> list(AdminSettlementTab tab, String keyword, Long marketId,
                                                    AdminSettlementSort sort, PagingRequest paging) {
+        return list(tab, keyword, marketId, null, sort, paging);
+    }
+
+    /** @param creatorId 인플루언서 상세에서 들어온 진입 — marketId 와 같이 정산 탭에만 건다. null 이면 전체 */
+    public AdminSettlementDto.ListResponse<?> list(AdminSettlementTab tab, String keyword, Long marketId, Long creatorId,
+                                                   AdminSettlementSort sort, PagingRequest paging) {
         AdminSettlementTab target = tab == null ? AdminSettlementTab.ALL : tab;
         Pageable pageable = pageable(paging);
         if (target == AdminSettlementTab.EVIDENCE) {
@@ -93,7 +99,7 @@ public class AdminSettlementQueryService {
         }
         SettlementAdminSort order = target.getFixedSort() != null ? target.getFixedSort()
                 : (sort == null ? AdminSettlementSort.SCHEDULE_DESC : sort).getDomainSort();
-        Page<Settlement> page = settlementRepository.searchForAdmin(target.getStatuses(), keyword, marketId, order, pageable);
+        Page<Settlement> page = settlementRepository.searchForAdmin(target.getStatuses(), keyword, marketId, creatorId, order, pageable);
         List<Long> ids = page.getContent().stream().map(Settlement::getId).toList();
         Map<Long, Map<SettlementPayee, SettlementPayout>> payouts = views.payoutsOf(ids);
         Map<Long, LocalDateTime> deadlines = ids.isEmpty() ? Map.of()
@@ -103,7 +109,7 @@ public class AdminSettlementQueryService {
                 .map(s -> item(s, payouts.getOrDefault(s.getId(), Map.of()), deadlines.get(s.getId())))
                 .toList();
         return new AdminSettlementDto.ListResponse<>(content, new PaginationInfo(page),
-                target == AdminSettlementTab.ALL ? footer(settlementRepository.totalsForAdmin(FOOTER_STATUSES, keyword, marketId))
+                target == AdminSettlementTab.ALL ? footer(settlementRepository.totalsForAdmin(FOOTER_STATUSES, keyword, marketId, creatorId))
                         : null,
                 toolbar(target, keyword));
     }

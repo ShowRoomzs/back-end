@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
+import showroomz.api.app.user.DTO.DeviceTokenRequest;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.RefundAccountRequest;
 import showroomz.api.app.user.DTO.RefundAccountResponse;
@@ -193,5 +194,17 @@ public class UserController implements UserControllerDocs {
         userService.updateRefundAccount(userPrincipal.getUserId(), request);
         return ResponseEntity.ok().build();
     }
-}
 
+    @Override
+    @PutMapping("/device-token")
+    public ResponseEntity<Void> registerDeviceToken(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @Valid @RequestBody DeviceTokenRequest request
+    ) {
+        if (userPrincipal == null) {
+            throw new BusinessException(ErrorCode.INVALID_AUTH_INFO);
+        }
+        userService.registerDeviceToken(userPrincipal.getUserId(), request);
+        return ResponseEntity.noContent().build();
+    }
+}

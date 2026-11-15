@@ -227,7 +227,8 @@ public class CreatorContractDetailAssembler {
                 option.getRegularPrice(),
                 option.optionExtraPrice(),
                 option.salePrice(),
-                option.getMinQuantity());
+                option.getMinQuantity(),
+                option.unitReward());
     }
 
     /**

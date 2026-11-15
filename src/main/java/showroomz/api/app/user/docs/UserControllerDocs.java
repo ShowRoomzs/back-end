@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import showroomz.api.app.auth.DTO.ErrorResponse;
 import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.auth.DTO.ValidationErrorResponse;
+import showroomz.api.app.user.DTO.DeviceTokenRequest;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.RefundAccountRequest;
 import showroomz.api.app.user.DTO.RefundAccountResponse;
@@ -681,5 +682,25 @@ public interface UserControllerDocs {
     ResponseEntity<Void> updateRefundAccount(
             @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
             @RequestBody RefundAccountRequest request
+    );
+
+    @Operation(
+            summary = "푸시 토큰 등록 · 갱신",
+            description = "로그인한 기기의 FCM 토큰을 등록한다. 알림 권한을 로그인 뒤에 받았거나 FCM 토큰이 바뀌었을 때(onTokenRefresh) 부른다.\n\n"
+                    + "- 같은 토큰이 이미 있으면 지금 로그인한 회원에게 소유권을 넘긴다(기기를 다른 계정으로 쓰는 경우).\n"
+                    + "- 한 회원이 여러 기기를 가질 수 있다 — 다른 기기의 토큰은 지우지 않는다.\n"
+                    + "- 로그아웃 시 해제는 기존대로 `POST /v1/user/auth/logout` 의 `fcmToken` 으로 한다.\n"
+                    + "- 로그인 · 가입 요청의 `fcmToken` 과 같은 저장소다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "등록됨"),
+            @ApiResponse(responseCode = "400", description = "fcmToken 누락 · 512자 초과",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ValidationErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "인증 정보가 유효하지 않음",
+                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<Void> registerDeviceToken(
+            @Parameter(hidden = true) @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @RequestBody DeviceTokenRequest request
     );
 }

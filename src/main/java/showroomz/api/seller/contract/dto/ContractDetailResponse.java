@@ -49,11 +49,11 @@ public record ContractDetailResponse(
 
         @Schema(description = "브랜드의 마지막 임시저장 시각 — 작성 화면의 「마지막 저장」. "
                 + "어드민 반려·서명 반영 같은 다른 변경에는 바뀌지 않는다. 한 번도 저장하지 않았으면 null",
-                example = "2026-08-13T10:32:05", nullable = true)
+                example = "2026-08-13T01:32:05Z", nullable = true)
         LocalDateTime updatedAt,
 
         @Schema(description = "체결 시각 — 체결완료가 아니면 null. closure는 종결 3종(거절·만료·취소) 전용이라 "
-                + "체결은 거기에 담기지 않는다", example = "2026-08-20T15:00:00", nullable = true)
+                + "체결은 거기에 담기지 않는다", example = "2026-08-20T06:00:00Z", nullable = true)
         LocalDateTime concludedAt,
 
         @Schema(description = "계약 상대 — 미선택 초안도 객체이며 내부 값이 null") Counterparty counterparty,
@@ -105,7 +105,7 @@ public record ContractDetailResponse(
     public record DraftApproval(
             Long approvalId,
             @Schema(description = "대상", example = "릴스 1차 초안") String title,
-            @Schema(example = "2026-08-12T15:40:00") LocalDateTime approvedAt,
+            @Schema(example = "2026-08-12T06:40:00Z") LocalDateTime approvedAt,
             @Schema(description = "승인자 — 브랜드명", example = "무드코스메틱") String approvedByName,
             @Schema(description = "출처", example = "연결·소통 스레드에서 확인한 초안") String sourceLabel,
             @Schema(description = "근거 스레드 메시지", nullable = true) Long threadMessageId,
@@ -160,7 +160,8 @@ public record ContractDetailResponse(
             Integer optionExtraPrice,
             @Schema(description = "옵션 판매가 = 공구가 + 옵션가 — 소비자가 이 옵션을 사는 가격. 공구가가 없으면 null",
                     example = "50000", nullable = true) Integer salePrice,
-            @Schema(description = "옵션별 최소 물량", example = "100", nullable = true) Integer minQuantity
+            @Schema(description = "옵션별 최소 물량", example = "100", nullable = true) Integer minQuantity,
+            @Schema(description = "옵션 개당 리워드(원) = ⌊옵션 판매가 × 리워드율 ÷ 100⌋ — 정산(주문 단가 × 리워드율) · 계약서 PDF와 같은 계산. 옵션가가 있으면 상품 개당 리워드와 다르다", example = "7500", nullable = true) Long unitReward
     ) {
     }
 

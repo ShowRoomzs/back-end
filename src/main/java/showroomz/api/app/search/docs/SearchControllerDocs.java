@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestParam;
+import showroomz.api.app.auth.entity.UserPrincipal;
 import showroomz.api.app.search.dto.AutoCompleteResponse;
 import showroomz.api.app.search.dto.ShowroomSearchItem;
 import showroomz.global.dto.PageResponse;
@@ -102,6 +103,7 @@ public interface SearchControllerDocs {
             )
     })
     ResponseEntity<PageResponse<ShowroomSearchItem>> searchShowrooms(
+            @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(
                     name = "keyword",
                     description = "검색어 — 쇼룸 이름 또는 아이디(@handle). 없거나 공백만 있으면 빈 결과",
@@ -155,6 +157,7 @@ public interface SearchControllerDocs {
             )
     })
     ResponseEntity<List<ShowroomSearchItem>> getActiveShowrooms(
+            @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(name = "size", description = "가져올 쇼룸 수 (기본값 10)", example = "10")
             @RequestParam(value = "size", required = false) Integer size
     );
@@ -215,6 +218,7 @@ public interface SearchControllerDocs {
             )
     })
     ResponseEntity<AutoCompleteResponse> getAutocomplete(
+            @Parameter(hidden = true) UserPrincipal userPrincipal,
             @Parameter(
                     name = "keyword",
                     description = "검색 키워드. 없거나 공백만 있으면 빈 배열로 응답",

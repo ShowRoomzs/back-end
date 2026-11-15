@@ -243,7 +243,7 @@ public record CreatorContractDetailResponse(
                     example = "4200", nullable = true) Long expectedUnitReward,
             @Schema(description = "**브랜드 준비 물량** — 옵션별 준비 물량의 합계", example = "300", nullable = true)
             Integer brandSupplyQuantity,
-            @Schema(description = "옵션별 판매가·브랜드 준비 물량 — 공구가·리워드율은 상품 단위라 옵션마다 같다")
+            @Schema(description = "옵션별 판매가·브랜드 준비 물량·개당 리워드 — 공구가·리워드율은 상품 단위지만 리워드는 옵션 판매가 기준이다")
             List<ItemOption> options
     ) {
     }
@@ -255,7 +255,8 @@ public record CreatorContractDetailResponse(
             @Schema(description = "옵션 정가(스냅샷)", example = "60000", nullable = true) Integer regularPrice,
             @Schema(description = "옵션가 = 옵션 정가 − 상품 정가", example = "28000", nullable = true) Integer optionExtraPrice,
             @Schema(description = "옵션 판매가 = 공구가 + 옵션가", example = "50000", nullable = true) Integer salePrice,
-            @Schema(description = "**브랜드 준비 물량**(옵션별)", example = "100", nullable = true) Integer brandSupplyQuantity
+            @Schema(description = "**브랜드 준비 물량**(옵션별)", example = "100", nullable = true) Integer brandSupplyQuantity,
+            @Schema(description = "옵션 개당 리워드(원) = ⌊옵션 판매가 × 리워드율 ÷ 100⌋ — 정산(주문 단가 × 리워드율) · 계약서 PDF와 같은 계산. 옵션가가 있으면 상품 개당 리워드와 다르다", example = "7500", nullable = true) Long unitReward
     ) {
     }
 

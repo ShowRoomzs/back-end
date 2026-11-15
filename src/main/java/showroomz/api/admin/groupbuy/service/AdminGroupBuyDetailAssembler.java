@@ -55,6 +55,7 @@ import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.RewardCalculator;
 import showroomz.global.utils.KstDates;
+import showroomz.domain.settlement.type.SettlementTone;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -173,7 +174,7 @@ public class AdminGroupBuyDetailAssembler {
                         item.getMinQuantity(),
                         item.getOptions().stream()
                                 .map(option -> new ItemOption(option.getVariantId(), option.getVariantName(),
-                                        option.salePrice(), option.getMinQuantity()))
+                                        option.salePrice(), option.getMinQuantity(), option.unitReward()))
                                 .toList()))
                 .toList();
     }
@@ -289,7 +290,7 @@ public class AdminGroupBuyDetailAssembler {
         if (post.getSubmittedAt() == null) {
             return null;
         }
-        return "POST-GB-%s-%d".formatted(post.getSubmittedAt().format(POST_NUMBER_DATE), post.getPostId());
+        return "POST-GB-%s-%d".formatted(KstDates.toKst(post.getSubmittedAt()).format(POST_NUMBER_DATE), post.getPostId());
     }
 
     // ── 판매 · 판단 근거 ────────────────────────────────────────────────────────
@@ -307,14 +308,8 @@ public class AdminGroupBuyDetailAssembler {
         Map<Long, ContractItem> itemsByProduct = contract.getItems().stream()
                 .filter(item -> item.getProductId() != null)
                 .collect(Collectors.toMap(ContractItem::getProductId, Function.identity(), (a, b) -> a));
-        long rewardAmount = sales.itemQuantities().stream()
-                .mapToLong(quantity -> {
-                    ContractItem item = itemsByProduct.get(quantity.productId());
-                    Long unit = item == null ? null
-                            : RewardCalculator.calcUnitReward(item.getGroupBuyPrice(), item.getRewardRate());
-                    return unit == null ? 0L : unit * quantity.quantity();
-                })
-                .sum();
+        // 주문 단가(공구가 + 옵션가) × 리워드율 — 정산 · 계약서와 같은 계산.
+        long rewardAmount = sales.rewardAmount(itemsByProduct);
         return new Sales(basis, sales.orderCount(), sales.amount(), rewardAmount,
                 sales.itemQuantities().stream().map(q -> new ItemQuantity(q.productId(), q.quantity())).toList());
     }
@@ -496,7 +491,9 @@ public class AdminGroupBuyDetailAssembler {
                         closure.unclosedStages() == null ? List.of() : closure.unclosedStages().stream()
                                 .map(stage -> new UnclosedStage(stage.stage(), stage.label(), stage.count()))
                                 .toList(),
-                        closure.purchaseConfirmedCount(), closure.refundedCount()))
+                        closure.purchaseConfirmedCount(), closure.refundedCount(),
+                        settlementRepository.findByGroupBuyId(groupBuy.getId())
+                                .map(showroomz.domain.settlement.entity.Settlement::getOrdersClosedAt).orElse(null)))
                 .orElse(null);
         OpenIssue openIssue = facts.openIssue() == null ? null : new OpenIssue(
                 facts.openIssue().getId(), facts.openIssue().getIssueType(),
@@ -599,7 +596,8 @@ public class AdminGroupBuyDetailAssembler {
         return new Settlement(stage, source, permissionPolicy.settlementBlockers(facts), watch,
                 new Preview(sales == null ? null : sales.amount(), rewardRates, null),
                 row == null ? null : row.getId(), row == null ? null : row.getSettlementNumber(),
-                row == null ? "정산 대기" : row.getStatus().getLabel());
+                row == null ? "정산 대기" : row.getStatus().getLabel(),
+                row == null ? SettlementTone.NEUTRAL : row.getStatus().getTone());
     }
 
     /** B6 · 조기 마감 종결(4-9). 액션이 없다 — 판매 리워드 문구는 규칙 고지라 FE 상수다. */

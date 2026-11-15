@@ -28,6 +28,7 @@ import showroomz.domain.order.type.DeliveryCarrier;
 import showroomz.global.config.properties.OrderProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -140,7 +141,7 @@ public class SellerClaimReshipService {
                 .prepareStarted(false)
                 .downloadedAt(now)
                 .build());
-        return new ExportFile(excel.write(columns, lines), "재발송목록_" + FILE_STAMP.format(now) + ".xlsx");
+        return new ExportFile(excel.write(columns, lines), "재발송목록_" + FILE_STAMP.format(KstDates.toKst(now)) + ".xlsx");
     }
 
     /**
@@ -164,7 +165,7 @@ public class SellerClaimReshipService {
                 ? product.getOptionName() : claim.getExchangeOptionName());
         values.put(ClaimReshipColumn.QUANTITY, String.valueOf(claim.getQuantity()));
         values.put(ClaimReshipColumn.RESHIP_REASON, rejected ? "반려 반송" : "교환 재발송");
-        values.put(ClaimReshipColumn.REQUESTED_AT, DATE_TIME.format(claim.getRequestedAt()));
+        values.put(ClaimReshipColumn.REQUESTED_AT, DATE_TIME.format(KstDates.toKst(claim.getRequestedAt())));
         values.put(ClaimReshipColumn.ORDER_NUMBER, group.getOrder().getOrderNumber());
         values.put(ClaimReshipColumn.GROUP_BUY_NAME, group.getGroupBuy() == null
                 || group.getGroupBuy().getContract() == null ? null : group.getGroupBuy().getContract().getTitle());

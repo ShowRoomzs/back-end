@@ -38,6 +38,7 @@ import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.groupbuy.type.SuspensionReasonClause;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -234,8 +235,8 @@ public class AdminGroupBuyCommandService {
         }
         historyRecorder.record(groupBuy, GroupBuyEventType.SUSPENSION_NOTICED, admin,
                 "%s · 집행 예정 %s · 소명 기한 %s".formatted(request.clause().getLabel(),
-                        request.executeScheduledAt().format(NOTICE_EXECUTE_FORMAT),
-                        request.appealDeadlineAt().format(NOTICE_APPEAL_FORMAT)),
+                        KstDates.toKst(request.executeScheduledAt()).format(NOTICE_EXECUTE_FORMAT),
+                        KstDates.toKst(request.appealDeadlineAt()).format(NOTICE_APPEAL_FORMAT)),
                 notice.getId(), now);
         notifier.notifyBothParties(groupBuy, "SUSPENSION_NOTICED");
         // 양측 운영팀 채널에 「직권 중단 사전 통지 · 소명 요청」 카드(1021 기-21 · 20a A8 ①) — 의견은 답글로, 브랜드 소명 자료는 /appeal 로도.

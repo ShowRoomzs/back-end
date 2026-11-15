@@ -15,6 +15,8 @@ import showroomz.domain.groupbuy.type.GroupBuyPostStatus;
 import showroomz.domain.groupbuy.type.GroupBuyStatus;
 import showroomz.domain.groupbuy.type.GroupBuyTone;
 import showroomz.domain.groupbuy.type.SuspensionReasonClause;
+import showroomz.domain.settlement.type.SettlementStatus;
+import showroomz.domain.settlement.type.SettlementTone;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -51,7 +53,7 @@ public record CreatorGroupBuyDetailResponse(
         @Schema(description = "진행 중인 직권 중단 통지 — 중단 예정(SUSPENSION_SCHEDULED)에서만", nullable = true)
         AdminSuspension adminSuspension,
         @Schema(description = "종결 정보 — 종결 4종(ENDED·SETTLED·SUSPENDED·TERMINATED)에서만", nullable = true) Closure closure,
-        @Schema(description = "정산 — 정산완료(SETTLED)에서만", nullable = true) Settlement settlement,
+        @Schema(description = "정산 — 정산이 생긴 뒤(종료 ENDED · 정산완료 SETTLED). 정산 생성 전이면 null", nullable = true) Settlement settlement,
         @Schema(description = "종료 후 이행 확인 — 종료·정산완료에서만(중단은 null)", nullable = true) AfterEnd afterEnd,
         @Schema(description = "버튼 노출 판정 — 항상") Permissions permissions,
         @Schema(description = "이력 — 최신순(발생 시각 내림차순)") List<HistoryEntry> history,
@@ -123,7 +125,7 @@ public record CreatorGroupBuyDetailResponse(
             @Schema(example = "글로우 수분 세럼 50ml") String productName,
             @Schema(description = "공구가(원)", example = "28000") Integer groupBuyPrice,
             @Schema(description = "내 리워드율(%)", example = "15.0") BigDecimal myRewardRate,
-            @Schema(description = "개당 리워드(원) = ⌊공구가 × 리워드율 ÷ 100⌋ — RewardCalculator.calcUnitReward(계약·파트너·정산과 같은 메서드)",
+            @Schema(description = "상품(기본 옵션) 개당 리워드(원) = ⌊공구가 × 리워드율 ÷ 100⌋. 옵션가가 있는 옵션은 options[].unitReward(옵션 판매가 기준)가 정산과 같은 값이다",
                     example = "4200")
             Long unitReward,
             @Schema(description = "옵션별 판매가 — 최소 준비 물량은 싣지 않는다(브랜드 소관)")
@@ -131,11 +133,12 @@ public record CreatorGroupBuyDetailResponse(
     ) {
     }
 
-    @Schema(description = "공구 상품 옵션 — 판매가 = 공구가 + 옵션가. 리워드는 상품 공구가 기준이라 옵션마다 같다")
+    @Schema(description = "공구 상품 옵션 — 판매가 = 공구가 + 옵션가. 리워드는 옵션 판매가 기준이라 옵션마다 다를 수 있다")
     public record ItemOption(
             @Schema(example = "301", nullable = true) Long variantId,
             @Schema(description = "옵션명(계약 스냅샷)", example = "2개 세트", nullable = true) String variantName,
-            @Schema(description = "옵션 판매가(원)", example = "50000", nullable = true) Integer salePrice
+            @Schema(description = "옵션 판매가(원)", example = "50000", nullable = true) Integer salePrice,
+            @Schema(description = "옵션 개당 리워드(원) = ⌊옵션 판매가 × 리워드율 ÷ 100⌋ — 정산(주문 단가 × 리워드율) · 계약서 PDF와 같은 계산. 옵션가가 있으면 상품 개당 리워드와 다르다", example = "7500", nullable = true) Long unitReward
     ) {
     }
 
@@ -261,7 +264,7 @@ public record CreatorGroupBuyDetailResponse(
             Integer refundedCount,
             @Schema(description = "상품별 판매 수량") List<ItemQuantity> itemQuantities,
             @Schema(description = "판매액(원)") long amount,
-            @Schema(description = "내 리워드(원) — 항목별 수량 × 개당 리워드의 합") long myReward,
+            @Schema(description = "내 리워드(원) — Σ ⌊주문 단가(공구가 + 옵션가) × 리워드율⌋ × 수량. 정산과 같은 계산") long myReward,
             @Schema(description = "노출 중지 이후 주문 수 — 노출 중지 중일 때만. 판매 모듈이 모르면 null(0이 아니다)", nullable = true)
             Long ordersSinceHidden
     ) {
@@ -383,7 +386,14 @@ public record CreatorGroupBuyDetailResponse(
             Long confirmedReward,
             @Schema(description = "**폐기 — 항상 null.** 고정 지급비 합산 삭제(§41-1 #14)", nullable = true, deprecated = true)
             Long totalBeforeDeduction,
-            @Schema(description = "정산 — 「정산 관리 ↗」 링크(스튜디오 12 상세)", nullable = true) Long settlementId
+            @Schema(description = "정산 — 「정산 관리 ↗」 링크(스튜디오 12 상세)", nullable = true) Long settlementId,
+            @Schema(description = "정산 상태(수취자 화면 기준) — REVIEWING · ADJUSTING · PAYOUT_SCHEDULED · PAID", example = "REVIEWING", nullable = true)
+            SettlementStatus status,
+            @Schema(description = "정산 상태 라벨 — 정산 관리 목록과 같은 문구", example = "정산 확인 중", nullable = true) String statusLabel,
+            @Schema(description = "정산 상태 톤", example = "INFO", nullable = true) SettlementTone statusTone,
+            @Schema(description = "정산 확인 기한", example = "2026-09-12T14:59:59Z", nullable = true) LocalDateTime reviewDueAt,
+            @Schema(description = "주문 종결 시각 — 정산 상세 ordersClosedAt 과 같은 값", example = "2026-09-04T15:00:00Z", nullable = true)
+            LocalDateTime ordersClosedAt
     ) {
     }
 

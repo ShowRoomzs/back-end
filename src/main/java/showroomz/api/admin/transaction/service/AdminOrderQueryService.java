@@ -263,7 +263,8 @@ public class AdminOrderQueryService {
                 group.getProductTotal() + group.getDeliveryFee(), group.getCarrier(),
                 group.getCarrier() == null ? null : group.getCarrier().getLabel(), group.getTrackingNumber(),
                 groupBuy == null ? null : groupBuy.getContract().getTitle(),
-                issue == null ? null : issue.since(), issue == null ? null : issue.label(), claim);
+                issue == null ? null : issue.since(), issue == null ? null : issue.label(), claim,
+                AdminOrderDto.StallChoice.of(showroomz.domain.order.service.OrderStallChoiceService.view(group, now)));
     }
 
     private AdminOrderDto.GroupDetail detail(OrderDeliveryGroup group, List<OrderProduct> items, GroupBuy groupBuy,
@@ -323,7 +324,8 @@ public class AdminOrderQueryService {
                         task.getOrigin().getLabel(), task.getRefundAmount(), task.getStatus(), task.getLastError(),
                         task.getExecutedAt(), task.getCreatedAt())).toList(),
                 activeClaims.stream().map(claim -> new AdminOrderDto.ActiveClaim(claim.getId(), claim.claimNumber(),
-                        claim.getType(), claim.getStatus(), claim.getStatus().getLabel())).toList(),
+                        claim.getType(), claim.getStatus(), claim.getStatus().getLabel(),
+                        claim.getOrderProduct() == null ? null : claim.getOrderProduct().getId())).toList(),
                 latestFirst.reversed().stream()
                         .map(h -> new AdminOrderDto.History(h.getEventType().name(), h.getEventType().getLabel(),
                                 h.getActorType().name(), h.getDetail(), h.getOccurredAt())).toList(),
@@ -397,7 +399,7 @@ public class AdminOrderQueryService {
         }
         if (group.getFulfillmentStatus() == FulfillmentStatus.RETURNING && group.getReturnCompletedAt() == null
                 && group.getReturnDetectedAt() != null) {
-            return new Issue(group.getReturnDetectedAt(), "감지 " + group.getReturnDetectedAt().format(MONTH_DAY));
+            return new Issue(group.getReturnDetectedAt(), "감지 " + KstDates.toKst(group.getReturnDetectedAt()).format(MONTH_DAY));
         }
         return null;
     }

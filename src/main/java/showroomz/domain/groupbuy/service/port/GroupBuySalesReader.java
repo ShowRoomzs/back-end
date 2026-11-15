@@ -1,7 +1,11 @@
 package showroomz.domain.groupbuy.service.port;
 
+import showroomz.domain.contract.entity.ContractItem;
+import showroomz.global.utils.RewardCalculator;
+
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -33,10 +37,43 @@ public interface GroupBuySalesReader {
      */
     Optional<Long> countOneToOneInquiriesSince(Long groupBuyId, LocalDateTime since);
 
-    record GroupBuySales(int orderCount, long amount, List<ItemQuantity> itemQuantities) {
+    /**
+     * @param pricedQuantities 상품 · 주문 단가(공구가 + 옵션가)별 유효 수량 — 리워드 합계용. 정산이 주문 단가 × 리워드율로
+     *                         계산하므로(SettlementGenerationService) 화면 리워드도 같은 단가를 쓴다
+     */
+    record GroupBuySales(int orderCount, long amount, List<ItemQuantity> itemQuantities,
+                         List<PricedQuantity> pricedQuantities) {
+
+        /** 단가를 모르는 집계 — 리워드는 계약 공구가 기준으로 센다. */
+        public GroupBuySales(int orderCount, long amount, List<ItemQuantity> itemQuantities) {
+            this(orderCount, amount, itemQuantities, itemQuantities.stream()
+                    .map(q -> new PricedQuantity(q.productId(), null, q.quantity())).toList());
+        }
+
+        /**
+         * 판매 리워드 합계 = Σ ⌊주문 단가 × 리워드율⌋ × 수량 — 정산 · 계약서와 같은 계산(옵션가 포함).
+         * 단가를 모르는 행은 계약 공구가로 센다. 계약 항목이 없는 상품은 0이다.
+         */
+        public long rewardAmount(Map<Long, ContractItem> itemsByProduct) {
+            return pricedQuantities.stream()
+                    .mapToLong(q -> {
+                        ContractItem item = itemsByProduct.get(q.productId());
+                        if (item == null) {
+                            return 0L;
+                        }
+                        Integer unitPrice = q.unitPrice() != null ? q.unitPrice() : item.getGroupBuyPrice();
+                        Long unit = RewardCalculator.calcUnitReward(unitPrice, item.getRewardRate());
+                        return unit == null ? 0L : unit * q.quantity();
+                    })
+                    .sum();
+        }
     }
 
     record ItemQuantity(Long productId, int quantity) {
+    }
+
+    /** 상품 · 주문 단가별 유효 수량. {@code unitPrice} 가 null 이면 계약 공구가로 본다. */
+    record PricedQuantity(Long productId, Integer unitPrice, int quantity) {
     }
 
     /**

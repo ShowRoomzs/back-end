@@ -25,6 +25,7 @@ import showroomz.domain.settlement.entity.SettlementTaxDocument;
 import showroomz.domain.settlement.repository.SettlementTaxDocumentRepository;
 import showroomz.domain.settlement.type.TaxDocumentStatus;
 import showroomz.global.config.properties.MemberProperties;
+import showroomz.global.utils.KstDates;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -114,7 +115,7 @@ public class CreatorHomeTodoBuilder {
             extra.put("rejected", rejected);
             String description = rejected
                     ? "승인번호가 반려됐어요 · 세금계산서를 확인하고 다시 입력해 주세요"
-                    : (confirmedAt == null ? "" : confirmedAt.format(MONTH_DAY) + " 정산 자동 확정 · ")
+                    : (confirmedAt == null ? "" : KstDates.toKst(confirmedAt).format(MONTH_DAY) + " 정산 자동 확정 · ")
                     + "세금계산서를 발행하고 승인번호를 입력하면 지급돼요";
             todos.add(new CreatorHomeDto.Todo(TAX_INVOICE_ISSUE, null, "지급 대기", "세금계산서 발행 · " + groupBuyName,
                     description, rejected ? "다시 입력" : "승인번호 입력",
@@ -134,7 +135,7 @@ public class CreatorHomeTodoBuilder {
         extra.put("brandName", brandName);
         String dueLabel = contract.isHeldBySanction() ? "보류 중"
                 : contract.getSignatureDeadlineAt() == null ? null
-                : "서명 기한 " + contract.getSignatureDeadlineAt().format(MONTH_DAY);
+                : "서명 기한 " + KstDates.toKst(contract.getSignatureDeadlineAt()).format(MONTH_DAY);
         String description = brandSigned
                 ? brandName + " 브랜드가 서명했어요 · 메일 · 문자로 받은 링크에서 서명해 주세요"
                 : "메일 · 문자로 받은 링크에서 서명해 주세요";
@@ -158,7 +159,7 @@ public class CreatorHomeTodoBuilder {
             extra.put("acceptBlockedMessage", EXTENSION_ACCEPT_BLOCKED);
         }
         return new CreatorHomeDto.Todo(EXTENSION_RESPOND, groupBuy.getEndAt(),
-                "응답 기한 " + groupBuy.getEndAt().format(MONTH_DAY), "연장 요청 응답 · " + groupBuy.getContract().getTitle(),
+                "응답 기한 " + KstDates.toKst(groupBuy.getEndAt()).format(MONTH_DAY), "연장 요청 응답 · " + groupBuy.getContract().getTitle(),
                 brandName + " 브랜드가 " + request.getExtensionDays() + "일 연장을 요청했어요 · 공구 종료 전에 응답해 주세요",
                 "응답하기", new CreatorHomeDto.Target("GROUP_BUY", groupBuy.getId()), null, extra);
     }
@@ -177,7 +178,7 @@ public class CreatorHomeTodoBuilder {
             GroupBuyPostStatus postStatus = GroupBuyPostStatus.of(posts.get(groupBuy.getId()), groupBuy);
             String name = groupBuy.getContract().getTitle();
             CreatorHomeDto.Target target = new CreatorHomeDto.Target("GROUP_BUY", groupBuy.getId());
-            String openLabel = "오픈 " + groupBuy.getStartAt().format(MONTH_DAY);
+            String openLabel = "오픈 " + KstDates.toKst(groupBuy.getStartAt()).format(MONTH_DAY);
             if (groupBuy.getStatus() == GroupBuyStatus.PREPARING
                     && (postStatus == GroupBuyPostStatus.NOT_WRITTEN || postStatus == GroupBuyPostStatus.WRITING)) {
                 // dueAt = 오픈일 — 재등록 카드와 같다. 제출 마감 규칙은 없어 달력에는 넣지 않는다(55 계획서 S10 · 시안 「카드에는 오픈일」).

@@ -151,7 +151,7 @@ public class AdminOrderExceptionAssembler {
                     : "자동 알림 " + threshold + "회 무응답 · 운영자 환불 가능";
         }
         int next = (noticeCount == null ? 0 : noticeCount) + 1;
-        return "자동 알림 대기 · " + next + "회차" + (nextNoticeAt == null ? "" : " " + nextNoticeAt.format(MONTH_DAY));
+        return "자동 알림 대기 · " + next + "회차" + (nextNoticeAt == null ? "" : " " + KstDates.toKst(nextNoticeAt).format(MONTH_DAY));
     }
 
     private String nextStepNote(ExceptionKind kind, Integer noticeCount) {

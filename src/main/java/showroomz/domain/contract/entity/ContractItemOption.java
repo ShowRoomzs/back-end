@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import showroomz.domain.product.entity.ProductVariant;
+import showroomz.global.utils.RewardCalculator;
 
 /**
  * 계약 상품 옵션 항목 — 옵션별 최소 물량(옵션 계획서 2-2).
@@ -109,5 +110,13 @@ public class ContractItemOption {
             return null;
         }
         return groupBuyPrice + extra;
+    }
+
+    /**
+     * 옵션 개당 리워드 = ⌊옵션 판매가 × 리워드율 ÷ 100⌋ — 정산이 주문 단가(공구가 + 옵션가) × 율로 계산하므로 같은 값이다.
+     * 옵션 판매가 · 리워드율 중 하나라도 비어 있으면 null.
+     */
+    public Long unitReward() {
+        return RewardCalculator.calcUnitReward(salePrice(), contractItem == null ? null : contractItem.getRewardRate());
     }
 }

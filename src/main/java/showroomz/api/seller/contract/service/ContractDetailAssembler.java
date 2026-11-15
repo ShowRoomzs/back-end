@@ -159,7 +159,8 @@ public class ContractDetailAssembler {
                 option.getRegularPrice(),
                 option.optionExtraPrice(),
                 option.salePrice(),
-                option.getMinQuantity());
+                option.getMinQuantity(),
+                option.unitReward());
     }
 
     private ContractDetailResponse.FixedFee fixedFee(Contract contract) {

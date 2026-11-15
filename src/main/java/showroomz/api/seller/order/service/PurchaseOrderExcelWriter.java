@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import showroomz.domain.order.type.PurchaseOrderColumn;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.KstDates;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -86,7 +87,7 @@ public class PurchaseOrderExcelWriter {
             case QUANTITY -> cell.setCellValue(line.quantity());
             case DELIVERY_MEMO -> cell.setCellValue(nullSafe(line.deliveryMemo()));
             case GROUP_BUY_NAME -> cell.setCellValue(nullSafe(line.groupBuyName()));
-            case ORDERED_AT -> cell.setCellValue(line.orderedAt() == null ? "" : DATE_TIME.format(line.orderedAt()));
+            case ORDERED_AT -> cell.setCellValue(line.orderedAt() == null ? "" : DATE_TIME.format(KstDates.toKst(line.orderedAt())));
             case PAID_AMOUNT -> cell.setCellValue(line.amount());
         }
     }

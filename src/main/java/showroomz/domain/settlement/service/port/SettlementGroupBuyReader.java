@@ -30,4 +30,11 @@ public class SettlementGroupBuyReader implements GroupBuySettlementReader {
     public Optional<Long> readSettlementId(Long groupBuyId) {
         return settlementRepository.findByGroupBuyId(groupBuyId).map(Settlement::getId);
     }
+
+    @Override
+    public Optional<SettlementSummary> readSummary(Long groupBuyId) {
+        return settlementRepository.findByGroupBuyId(groupBuyId)
+                .map(s -> new SettlementSummary(s.getId(), s.getStatus().toPartyStatus(), s.getReviewDueAt(),
+                        s.getOrdersClosedAt()));
+    }
 }
