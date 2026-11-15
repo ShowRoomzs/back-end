@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" width="960" height="380" role="img" aria-label="웹훅 수신 규칙 3가지와 일일 대사 처리 표. 대사 배치의 자동 수정은 confirm 재호출뿐이다.">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+      .m { font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, 'D2Coding', monospace; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="960" height="380" rx="16" fill="#F5F4F0"/>
+  <g class="t">
+    <!-- webhook card -->
+    <rect x="24" y="24" width="368" height="252" rx="12" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+    <text x="44" y="56" font-size="16" font-weight="700" fill="#1E2430">웹훅 수신</text>
+
+    <circle cx="55" cy="87" r="11" fill="#2B5AD5"/>
+    <text x="55" y="91.5" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+    <text x="76" y="92" font-size="14" font-weight="700" fill="#1E2430">원문 바이트로 서명 검증 <tspan class="m" font-size="12.5" fill="#2B5AD5">HMAC-SHA256</tspan></text>
+    <text x="76" y="113" font-size="12.5" fill="#6A6E76">JSON을 먼저 파싱하면 공백 · 순서가 바뀌어</text>
+    <text x="76" y="131" font-size="12.5" fill="#6A6E76">서명이 맞지 않기 때문입니다.</text>
+
+    <circle cx="55" cy="163" r="11" fill="#2B5AD5"/>
+    <text x="55" y="167.5" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+    <text x="76" y="168" font-size="14" font-weight="700" fill="#1E2430">중복 수신 차단</text>
+    <text x="76" y="189" font-size="12.5" fill="#6A6E76"><tspan class="m" fill="#2B5AD5">webhookId</tspan> 유니크 이벤트 행으로 막습니다.</text>
+
+    <circle cx="55" cy="221" r="11" fill="#2B5AD5"/>
+    <text x="55" y="225.5" font-size="12" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+    <text x="76" y="226" font-size="14" font-weight="700" fill="#1E2430">일시 장애는 <tspan class="m" fill="#B85A24">500</tspan> → 포트원이 재전송</text>
+    <text x="76" y="247" font-size="12.5" fill="#6A6E76">모르는 결제 · 관심 없는 이벤트는 <tspan class="m" fill="#2B5AD5">200</tspan>으로 종료</text>
+
+    <!-- reconciliation card -->
+    <rect x="412" y="24" width="524" height="252" rx="12" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+    <text x="432" y="56" font-size="16" font-weight="700" fill="#1E2430">일일 대사 — 마지막 안전망</text>
+    <text x="432" y="80" font-size="12.5" fill="#6A6E76">매일 전날 결제를 포트원 결제 목록과 대조합니다.</text>
+
+    <rect x="432" y="96" width="484" height="28" rx="6" fill="#E4E3DE"/>
+    <text x="446" y="115" font-size="12.5" font-weight="700" fill="#4A4E54">어긋남 유형</text>
+    <text x="666" y="115" font-size="12.5" font-weight="700" fill="#4A4E54">처리</text>
+
+    <g font-size="13" fill="#1E2430">
+      <text x="446" y="146">포트원 결제완료 · 우리 미반영</text>
+      <text x="666" y="146">이슈 기록 후 <tspan class="m" font-size="12.5" fill="#2B5AD5">confirm</tspan> 재호출로 수렴</text>
+      <path d="M432 158 H916" stroke="#ECEAE4" stroke-width="1.2"/>
+      <text x="446" y="180">포트원 취소 · 우리 결제완료</text>
+      <text x="666" y="180">이슈 기록 후 <tspan class="m" font-size="12.5" fill="#2B5AD5">confirm</tspan> 재호출로 수렴</text>
+      <path d="M432 192 H916" stroke="#ECEAE4" stroke-width="1.2"/>
+      <text x="446" y="214">금액 불일치</text>
+      <text x="666" y="214">이슈 기록 · <tspan fill="#B85A24" font-weight="700">Sentry 경보</tspan></text>
+      <path d="M432 226 H916" stroke="#ECEAE4" stroke-width="1.2"/>
+      <text x="446" y="248">우리 결제완료 · 포트원에 없음</text>
+      <text x="666" y="248">이슈 기록 · <tspan fill="#B85A24" font-weight="700">Sentry 경보</tspan></text>
+    </g>
+
+    <!-- rule strip -->
+    <rect x="24" y="296" width="912" height="60" rx="12" fill="#1E2430"/>
+    <text x="44" y="321" font-size="14.5" font-weight="700" fill="#F5F4F0">대사 배치의 자동 수정은 <tspan class="m" fill="#8EB2FE">confirm</tspan> 재호출뿐</text>
+    <text x="44" y="343" font-size="12.5" fill="#B6BDCA">배치가 상태를 직접 쓰면 두 경로가 서로를 고치는 루프가 생기기 때문 · 같은 결제 · 유형의 이슈는 매일 쌓지 않고 갱신</text>
+  </g>
+</svg>

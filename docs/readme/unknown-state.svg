@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 336" width="960" height="336" role="img" aria-label="외부 호출 결과를 모를 때의 처리 표: 결제 취소 응답 없음, 승인 중 주문 만료, 재고 복원, 결제 금액 불일치, 지급대행 결과 모름">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+      .m { font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, 'D2Coding', monospace; }
+    </style>
+    <clipPath id="tb"><rect x="24" y="24" width="912" height="288" rx="12"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="960" height="336" rx="16" fill="#F5F4F0"/>
+  <g class="t">
+    <g clip-path="url(#tb)">
+      <rect x="24" y="24" width="912" height="288" fill="#FCFCFA"/>
+      <rect x="24" y="24" width="912" height="34" fill="#E4E3DE"/>
+      <g stroke="#ECEAE4" stroke-width="1.2">
+        <path d="M24 118 H936 M24 162 H936 M24 206 H936 M24 250 H936"/>
+        <path d="M324 58 V312"/>
+      </g>
+    </g>
+    <rect x="24" y="24" width="912" height="288" rx="12" fill="none" stroke="#DEDCD6" stroke-width="1.5"/>
+
+    <text x="44" y="46" font-size="13" font-weight="700" fill="#4A4E54">상황</text>
+    <text x="344" y="46" font-size="13" font-weight="700" fill="#4A4E54">처리</text>
+
+    <!-- row 1 -->
+    <text x="44" y="93" font-size="14" font-weight="700" fill="#1E2430">결제 취소 요청 후 응답 없음</text>
+    <text x="344" y="83" font-size="14" fill="#4A4E54"><tspan class="m" font-size="13" fill="#2B5AD5">CANCEL_REQUESTED</tspan>로 두고 지수 백오프로 재조회,</text>
+    <text x="344" y="105" font-size="14" fill="#4A4E54">상한 도달 시 <tspan class="m" font-size="13" fill="#B85A24">CANCEL_FAILED</tspan> 전환 후 운영자 경보</text>
+
+    <!-- row 2 -->
+    <text x="44" y="145" font-size="14" font-weight="700" fill="#1E2430">승인 진행 중에 주문 만료 시각 도래</text>
+    <text x="344" y="145" font-size="14" fill="#4A4E54">만료를 5분씩 최대 3회 미루고 다시 확인</text>
+
+    <!-- row 3 -->
+    <text x="44" y="189" font-size="14" font-weight="700" fill="#1E2430">주문 만료 · 취소 시 재고 복원</text>
+    <text x="344" y="189" font-size="14" fill="#4A4E54">주문당 1회 — <tspan class="m" font-size="13" fill="#2B5AD5">stock_released_at</tspan>을 조건부 UPDATE로 선점한 쪽만 복원</text>
+
+    <!-- row 4 -->
+    <text x="44" y="233" font-size="14" font-weight="700" fill="#1E2430">결제 금액 불일치</text>
+    <text x="344" y="233" font-size="14" fill="#4A4E54">롤백 대신 <tspan class="m" font-size="13" fill="#B85A24">CANCELLED_MISMATCH</tspan>로 남기고 Sentry 경보</text>
+
+    <!-- row 5 -->
+    <text x="44" y="286" font-size="14" font-weight="700" fill="#1E2430">지급대행 요청 결과 모름</text>
+    <text x="344" y="276" font-size="14" fill="#4A4E54">그 건만 <tspan class="m" font-size="13" fill="#2B5AD5">REQUESTED</tspan>로 두고 웹훅 · 폴링이 확정,</text>
+    <text x="344" y="298" font-size="14" fill="#4A4E54">같은 멱등 키로 재시도해 중복 지급 없음</text>
+  </g>
+</svg>

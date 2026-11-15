@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 424" width="960" height="424" role="img" aria-label="주문부터 정산까지 6단계: 주문 생성, 결제 확정, 발주와 출고, 배송, 구매확정과 클레임, 정산과 지급">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+      .m { font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, 'D2Coding', monospace; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="960" height="424" rx="16" fill="#F5F4F0"/>
+  <g class="t">
+    <!-- spine -->
+    <path d="M56 50 V374" stroke="#C9D6F2" stroke-width="3" fill="none"/>
+
+    <g>
+      <rect x="88" y="24" width="848" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <circle cx="56" cy="50" r="17" fill="#2B5AD5"/>
+      <text x="56" y="55.5" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">1</text>
+      <text x="108" y="56" font-size="16" font-weight="700" fill="#1E2430">주문 생성</text>
+      <text x="290" y="56" font-size="14.5" fill="#4A4E54">옵션별 재고 예약(조건부 UPDATE), 멱등키로 중복 주문 차단</text>
+    </g>
+    <g>
+      <rect x="88" y="88" width="848" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <circle cx="56" cy="114" r="17" fill="#2B5AD5"/>
+      <text x="56" y="119.5" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">2</text>
+      <text x="108" y="120" font-size="16" font-weight="700" fill="#1E2430">결제 확정</text>
+      <text x="290" y="120" font-size="14.5" fill="#4A4E54">포트원 V2 결제 조회 결과로만 확정, 웹훅 · 일일 대사로 누락 보정</text>
+    </g>
+    <g>
+      <rect x="88" y="152" width="848" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <circle cx="56" cy="178" r="17" fill="#2B5AD5"/>
+      <text x="56" y="183.5" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">3</text>
+      <text x="108" y="184" font-size="16" font-weight="700" fill="#1E2430">발주 · 출고</text>
+      <text x="290" y="184" font-size="14.5" fill="#4A4E54">결제 시 하위주문 생성, 발주서 엑셀 다운로드 · 송장 엑셀 일괄 업로드</text>
+    </g>
+    <g>
+      <rect x="88" y="216" width="848" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <circle cx="56" cy="242" r="17" fill="#2B5AD5"/>
+      <text x="56" y="247.5" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">4</text>
+      <text x="108" y="248" font-size="16" font-weight="700" fill="#1E2430">배송</text>
+      <text x="290" y="248" font-size="14.5" fill="#4A4E54">스위트트래커 배송 조회 배치, 처리 지연 자동 알림</text>
+    </g>
+    <g>
+      <rect x="88" y="280" width="848" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <circle cx="56" cy="306" r="17" fill="#2B5AD5"/>
+      <text x="56" y="311.5" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">5</text>
+      <text x="108" y="312" font-size="16" font-weight="700" fill="#1E2430">구매확정 · 클레임</text>
+      <text x="290" y="312" font-size="14.5" fill="#4A4E54">취소 · 반품 · 교환 처리, 환불 큐로 부분 환불 집행</text>
+    </g>
+    <g>
+      <rect x="88" y="344" width="848" height="52" rx="10" fill="#FCFCFA" stroke="#DF793E" stroke-width="1.5"/>
+      <circle cx="56" cy="370" r="17" fill="#DF793E"/>
+      <text x="56" y="375.5" font-size="14" font-weight="700" fill="#FFFFFF" text-anchor="middle">6</text>
+      <text x="108" y="376" font-size="16" font-weight="700" fill="#1E2430">정산 · 지급</text>
+      <text x="290" y="376" font-size="14.5" fill="#4A4E54">정산 생성 · 자동 확정, 토스 지급대행, 환불 차감 회수</text>
+    </g>
+  </g>
+</svg>

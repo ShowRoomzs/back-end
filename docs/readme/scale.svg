@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 148" width="960" height="148" role="img" aria-label="규모: API 엔드포인트 530개 이상, JPA 엔티티 149개, Flyway 마이그레이션 215개, 테스트 메서드 3,600개 이상(테스트 클래스 381개), 정기 배치 작업 30개 이상">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+    </style>
+  </defs>
+  <g class="t">
+    <g>
+      <rect x="0" y="0" width="182" height="148" rx="14" fill="#F5F4F0"/>
+      <text x="20" y="54" font-size="34" font-weight="700" fill="#2B5AD5" letter-spacing="-0.5">530+</text>
+      <text x="20" y="86" font-size="14.5" font-weight="700" fill="#1E2430">API 엔드포인트</text>
+      <text x="20" y="108" font-size="12.5" fill="#6A6E76">역할별 API 5종</text>
+    </g>
+    <g transform="translate(194 0)">
+      <rect x="0" y="0" width="182" height="148" rx="14" fill="#F5F4F0"/>
+      <text x="20" y="54" font-size="34" font-weight="700" fill="#2B5AD5" letter-spacing="-0.5">149</text>
+      <text x="20" y="86" font-size="14.5" font-weight="700" fill="#1E2430">JPA 엔티티</text>
+      <text x="20" y="108" font-size="12.5" fill="#6A6E76">주문 · 결제 · 정산 · 공구</text>
+    </g>
+    <g transform="translate(388 0)">
+      <rect x="0" y="0" width="182" height="148" rx="14" fill="#F5F4F0"/>
+      <text x="20" y="54" font-size="34" font-weight="700" fill="#2B5AD5" letter-spacing="-0.5">215</text>
+      <text x="20" y="86" font-size="14.5" font-weight="700" fill="#1E2430">Flyway 마이그레이션</text>
+      <text x="20" y="108" font-size="12.5" fill="#6A6E76">스키마 변경 전부 버전 관리</text>
+    </g>
+    <g transform="translate(582 0)">
+      <rect x="0" y="0" width="182" height="148" rx="14" fill="#F5F4F0"/>
+      <text x="20" y="54" font-size="34" font-weight="700" fill="#2B5AD5" letter-spacing="-0.5">3,600+</text>
+      <text x="20" y="86" font-size="14.5" font-weight="700" fill="#1E2430">테스트 메서드</text>
+      <text x="20" y="108" font-size="12.5" fill="#6A6E76">테스트 클래스 381</text>
+    </g>
+    <g transform="translate(776 0)">
+      <rect x="0" y="0" width="184" height="148" rx="14" fill="#F5F4F0"/>
+      <text x="20" y="54" font-size="34" font-weight="700" fill="#2B5AD5" letter-spacing="-0.5">30+</text>
+      <text x="20" y="86" font-size="14.5" font-weight="700" fill="#1E2430">정기 배치 작업</text>
+      <text x="20" y="108" font-size="12.5" fill="#6A6E76">대사 · 만료 · 배송 조회</text>
+      <text x="20" y="126" font-size="12.5" fill="#6A6E76">정산 · 지급 등</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 488" width="960" height="488" role="img" aria-label="결제 확정 흐름: 앱 결제 완료 콜백, 포트원 웹훅, 주문 만료 전 조회, 일일 대사가 모두 confirm(paymentId)를 호출한다. 포트원 결제를 조회하고 상점 ID, 통화, 금액을 검증한 뒤, 통과하면 조건부 UPDATE로 PAYMENT_PENDING을 PAID로 바꾼다. 1행이면 확정, 0행이면 이미 이 결제로 확정됐는지 확인해 맞으면 현재 상태를 반환하고 아니면 자동 취소를 선점한다. 검증 불일치도 자동 취소를 선점하며, 선점한 호출만 PG 취소를 1회 호출한다.">
+  <defs>
+    <style>
+      .t { font-family: Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', 'Noto Sans CJK KR', sans-serif; }
+      .m { font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Consolas, 'D2Coding', monospace; }
+    </style>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#8F96A3"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2B5AD5"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#DF793E"/></marker>
+  </defs>
+  <rect x="0" y="0" width="960" height="488" rx="16" fill="#F5F4F0"/>
+  <g class="t">
+    <!-- entry points -->
+    <g font-size="13" fill="#1E2430" text-anchor="middle">
+      <rect x="24" y="24" width="144" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="96" y="45">앱 결제 완료 콜백</text>
+      <rect x="178" y="24" width="100" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="228" y="45">포트원 웹훅</text>
+      <rect x="288" y="24" width="134" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="355" y="45">주문 만료 전 조회</text>
+      <rect x="432" y="24" width="88" height="32" rx="16" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+      <text x="476" y="45">일일 대사</text>
+    </g>
+    <g stroke="#8F96A3" stroke-width="1.6" fill="none">
+      <path d="M96 56 V72 M228 56 V72 M355 56 V72 M476 56 V72 M96 72 H476"/>
+      <path d="M200 72 V88" marker-end="url(#ah)"/>
+    </g>
+
+    <!-- confirm -->
+    <rect x="60" y="92" width="280" height="52" rx="10" fill="#1E2430"/>
+    <text x="200" y="115" class="m" font-size="16" font-weight="700" fill="#F5F4F0" text-anchor="middle">confirm(paymentId)</text>
+    <text x="200" y="134" font-size="12" fill="#B6BDCA" text-anchor="middle">어디서 호출해도 같은 순서로 실행</text>
+    <path d="M200 144 V162" stroke="#8F96A3" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+
+    <!-- lookup -->
+    <rect x="60" y="166" width="280" height="46" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+    <text x="200" y="186" font-size="14.5" font-weight="700" fill="#1E2430" text-anchor="middle">포트원 결제 조회</text>
+    <text x="200" y="204" font-size="12" fill="#6A6E76" text-anchor="middle">트랜잭션 밖에서 호출</text>
+    <path d="M200 212 V228" stroke="#8F96A3" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+
+    <!-- verify diamond -->
+    <polygon points="70,266 200,232 330,266 200,300" fill="#FCFCFA" stroke="#8F96A3" stroke-width="1.5"/>
+    <text x="200" y="271" font-size="13" font-weight="700" fill="#1E2430" text-anchor="middle">상점 ID · 통화 · 금액 검증</text>
+
+    <!-- pass -->
+    <path d="M200 300 V324" stroke="#2B5AD5" stroke-width="1.8" fill="none" marker-end="url(#ab)"/>
+    <text x="210" y="317" font-size="12" font-weight="700" fill="#2B5AD5">통과</text>
+
+    <!-- mismatch -->
+    <path d="M330 266 H376" stroke="#DF793E" stroke-width="1.8" fill="none" marker-end="url(#ao)"/>
+    <text x="334" y="257" font-size="12" font-weight="700" fill="#B85A24">불일치</text>
+
+    <!-- auto cancel -->
+    <rect x="380" y="240" width="196" height="52" rx="10" fill="#FBEDE4" stroke="#DF793E" stroke-width="1.5"/>
+    <text x="478" y="262" font-size="14.5" font-weight="700" fill="#B85A24" text-anchor="middle">자동 취소 선점</text>
+    <text x="478" y="281" font-size="12" fill="#4A4E54" text-anchor="middle">선점한 호출만 PG 취소 1회</text>
+
+    <!-- conditional update -->
+    <rect x="60" y="328" width="280" height="52" rx="10" fill="#FCFCFA" stroke="#2B5AD5" stroke-width="1.5"/>
+    <text x="200" y="349" font-size="14.5" font-weight="700" fill="#1E2430" text-anchor="middle">조건부 UPDATE</text>
+    <text x="200" y="369" class="m" font-size="12.5" fill="#2B5AD5" text-anchor="middle">PAYMENT_PENDING → PAID</text>
+
+    <!-- 1 row -->
+    <path d="M200 380 V404" stroke="#2B5AD5" stroke-width="1.8" fill="none" marker-end="url(#ab)"/>
+    <text x="210" y="397" font-size="12" font-weight="700" fill="#2B5AD5">1행</text>
+    <rect x="60" y="408" width="280" height="52" rx="10" fill="#E3EAFB" stroke="#2B5AD5" stroke-width="1.5"/>
+    <text x="200" y="429" font-size="14.5" font-weight="700" fill="#2B5AD5" text-anchor="middle">결제 확정</text>
+    <text x="200" y="448" font-size="12" fill="#4A4E54" text-anchor="middle">하위주문 활성화 · 이벤트 발행</text>
+
+    <!-- 0 rows -->
+    <path d="M340 354 H374" stroke="#8F96A3" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+    <text x="344" y="346" font-size="12" font-weight="700" fill="#6A6E76">0행</text>
+    <polygon points="378,354 478,324 578,354 478,384" fill="#FCFCFA" stroke="#8F96A3" stroke-width="1.5"/>
+    <text x="478" y="359" font-size="12.5" font-weight="700" fill="#1E2430" text-anchor="middle">이미 이 결제로 확정?</text>
+
+    <!-- no → cancel -->
+    <path d="M478 324 V296" stroke="#DF793E" stroke-width="1.8" fill="none" marker-end="url(#ao)"/>
+    <text x="486" y="315" font-size="12" font-weight="700" fill="#B85A24">아니오</text>
+
+    <!-- yes → current state -->
+    <path d="M478 384 V404" stroke="#8F96A3" stroke-width="1.6" fill="none" marker-end="url(#ah)"/>
+    <text x="486" y="399" font-size="12" font-weight="700" fill="#6A6E76">예</text>
+    <rect x="380" y="408" width="196" height="52" rx="10" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+    <text x="478" y="439" font-size="14.5" font-weight="700" fill="#1E2430" text-anchor="middle">현재 상태 반환</text>
+
+    <!-- code -->
+    <text x="616" y="44" class="m" font-size="12.5" fill="#6A6E76">OrderRepository.markPaid</text>
+    <rect x="616" y="56" width="320" height="168" rx="12" fill="#1E2430"/>
+    <g class="m" font-size="12.5" fill="#E3E6EC" xml:space="preserve" style="white-space:pre">
+      <text x="636" y="88" xml:space="preserve"><tspan fill="#8EB2FE">UPDATE</tspan> Order o</text>
+      <text x="636" y="110" xml:space="preserve">   <tspan fill="#8EB2FE">SET</tspan> o.status = <tspan fill="#F2B48C">PAID</tspan>,</text>
+      <text x="636" y="132" xml:space="preserve">       o.paidPaymentId = :paymentId,</text>
+      <text x="636" y="154" xml:space="preserve">       o.paidAt = :paidAt</text>
+      <text x="636" y="176" xml:space="preserve"> <tspan fill="#8EB2FE">WHERE</tspan> o.id = :orderId</text>
+      <text x="636" y="198" xml:space="preserve">   <tspan fill="#8EB2FE">AND</tspan> o.status = <tspan fill="#F2B48C">PAYMENT_PENDING</tspan></text>
+    </g>
+
+    <!-- callout -->
+    <rect x="616" y="240" width="320" height="84" rx="12" fill="#FCFCFA" stroke="#DEDCD6" stroke-width="1.5"/>
+    <text x="636" y="268" font-size="14.5" font-weight="700" fill="#1E2430">경합은 예외가 아니라 반환 행 수로</text>
+    <text x="636" y="290" font-size="12.5" fill="#4A4E54">동시에 두 요청이 와도</text>
+    <text x="636" y="309" font-size="12.5" fill="#4A4E54">1행을 얻는 쪽은 하나뿐입니다.</text>
+
+    <!-- legend -->
+    <g font-size="12" fill="#6A6E76">
+      <path d="M616 430 H644" stroke="#2B5AD5" stroke-width="1.8"/>
+      <text x="652" y="434">확정 경로</text>
+      <path d="M736 430 H764" stroke="#DF793E" stroke-width="1.8"/>
+      <text x="772" y="434">취소 경로</text>
+    </g>
+  </g>
+</svg>
