@@ -55,6 +55,15 @@ public class UserShowroomController implements UserShowroomControllerDocs {
                 userShowroomService.getShowroom(usernameOrNull(userPrincipal), showroomId));
     }
 
+    @Override
+    @GetMapping("/by-address/{showroomAddress}")
+    public ResponseEntity<ShowroomDetailResponse> getShowroomByAddress(
+            @AuthenticationPrincipal UserPrincipal userPrincipal,
+            @PathVariable("showroomAddress") String showroomAddress) {
+        return ResponseEntity.ok(
+                userShowroomService.getShowroomByAddress(usernameOrNull(userPrincipal), showroomAddress));
+    }
+
     private static String usernameOrNull(UserPrincipal userPrincipal) {
         return userPrincipal != null ? userPrincipal.getUsername() : null;
     }

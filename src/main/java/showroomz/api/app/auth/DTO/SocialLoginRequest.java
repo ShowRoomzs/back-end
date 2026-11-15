@@ -13,10 +13,19 @@ public class SocialLoginRequest {
     @Schema(description = "소셜 공급자 — KAKAO · NAVER · GOOGLE · APPLE (대소문자 무시)", example = "KAKAO")
     private String providerType; // "KAKAO", "NAVER", "APPLE"
 
-    @NotNull(message = "token은 필수 입력값입니다.")
-    @Schema(description = "공급자가 발급한 토큰 — APPLE은 idToken, KAKAO · NAVER · GOOGLE은 accessToken",
+    @Schema(description = "공급자가 발급한 토큰 — APPLE은 idToken, KAKAO · NAVER · GOOGLE은 accessToken. "
+            + "카카오 웹 로그인처럼 authorizationCode 를 보낼 때만 생략한다",
             example = "eyJhbGciOiJIUzI1NiJ9...")
     private String token; // 애플은 idToken, 카카오/네이버는 accessToken
+
+    @Schema(description = "카카오 인가 코드 (KAKAO 웹 로그인 전용) — 카카오 JS SDK 는 웹에서 액세스 토큰 대신 인가 코드를 준다. "
+            + "보내면 서버가 카카오에 토큰을 교환한 뒤 앱 로그인과 같이 처리한다. token 과 함께 오면 token 이 우선",
+            example = "Xb3kR9...authorization_code")
+    private String authorizationCode;
+
+    @Schema(description = "인가 코드를 받을 때 쓴 redirect_uri (authorizationCode 와 함께 필수) — 서버 허용 목록에 있는 값만 받는다",
+            example = "https://showroomz.co.kr/auth/kakao/callback")
+    private String redirectUri;
 
     @Schema(description = "실명 (선택) — APPLE 로그인에서만 사용. 애플은 첫 로그인 때만 이름을 주므로 그때 보낸다. 다른 공급자는 무시",
             example = "홍길동")
@@ -29,6 +38,7 @@ public class SocialLoginRequest {
     // (optional) "ANDROID" / "IOS" / "WEB". 보내지 않으면 UNKNOWN으로 저장된다.
     // 발송 자체에는 필요 없지만(FCM은 토큰만으로 보낸다), 나중에 플랫폼별 알림 규칙을
     // 나눠야 할 때 이미 쌓인 토큰을 되짚어 분류할 방법이 없어 지금부터 받아 둔다.
-    @Schema(description = "기기 플랫폼 (선택) — ANDROID · IOS · WEB. 없거나 모르는 값이면 UNKNOWN으로 저장", example = "IOS")
+    @Schema(description = "기기 플랫폼 (선택) — ANDROID · IOS · WEB. 없거나 모르는 값이면 UNKNOWN으로 저장. "
+            + "유저 앱 로그인에서 WEB 이면 리프레시 토큰을 바디 대신 httpOnly 쿠키로 내린다", example = "IOS")
     private String platform;
 }

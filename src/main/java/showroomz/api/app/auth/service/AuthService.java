@@ -3,6 +3,7 @@ package showroomz.api.app.auth.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import showroomz.api.app.auth.DTO.SocialLoginRequest;
 import showroomz.api.app.auth.DTO.TokenResponse;
@@ -39,6 +40,7 @@ public class AuthService {
     private final GeoLocationService geoLocationService;
     private final SocialLoginService socialLoginService;
     private final DeviceTokenService deviceTokenService;
+    private final KakaoAuthorizationCodeClient kakaoAuthorizationCodeClient;
 
     /**
      * 소셜 로그인 공통 진입점.
@@ -48,7 +50,8 @@ public class AuthService {
      */
     @Transactional
     public SocialLoginResult authenticateSocial(SocialLoginRequest request, boolean allowSignup) {
-        if (request.getToken() == null || request.getToken().isEmpty()) {
+        boolean hasToken = StringUtils.hasText(request.getToken());
+        if (!hasToken && !StringUtils.hasText(request.getAuthorizationCode())) {
             throw new BusinessException(ErrorCode.MISSING_TOKEN);
         }
         if (request.getProviderType() == null || request.getProviderType().isEmpty()) {
@@ -62,15 +65,17 @@ public class AuthService {
             throw new BusinessException(ErrorCode.INVALID_SOCIAL_PROVIDER);
         }
 
+        String token = hasToken ? request.getToken() : exchangeAuthorizationCode(providerType, request);
+
         try {
             if (providerType == ProviderType.APPLE && request.getName() != null) {
                 return allowSignup
-                        ? socialLoginService.loginOrSignup(providerType, request.getToken(), request.getName())
-                        : socialLoginService.loginOnly(providerType, request.getToken(), request.getName());
+                        ? socialLoginService.loginOrSignup(providerType, token, request.getName())
+                        : socialLoginService.loginOnly(providerType, token, request.getName());
             }
             return allowSignup
-                    ? socialLoginService.loginOrSignup(providerType, request.getToken())
-                    : socialLoginService.loginOnly(providerType, request.getToken());
+                    ? socialLoginService.loginOrSignup(providerType, token)
+                    : socialLoginService.loginOnly(providerType, token);
         } catch (IllegalArgumentException e) {
             String message = e.getMessage();
             if (message != null && message.contains("탈퇴")) {
@@ -87,6 +92,17 @@ public class AuthService {
             }
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    /**
+     * 인가 코드 → 공급자 액세스 토큰. 지금은 카카오 웹 로그인만 인가 코드로 들어온다(JS SDK 가 토큰을 주지 않는다).
+     * 다른 공급자가 코드만 보내면 토큰 누락과 같다.
+     */
+    private String exchangeAuthorizationCode(ProviderType providerType, SocialLoginRequest request) {
+        if (providerType != ProviderType.KAKAO) {
+            throw new BusinessException(ErrorCode.MISSING_TOKEN);
+        }
+        return kakaoAuthorizationCodeClient.exchange(request.getAuthorizationCode(), request.getRedirectUri());
     }
 
     /**

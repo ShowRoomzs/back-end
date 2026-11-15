@@ -122,7 +122,7 @@ public interface CreatorAuthControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "소셜 로그인 요청",
+            description = "소셜 로그인 요청 — 카카오 웹은 token 대신 authorizationCode + redirectUri 를 보낸다(유저 소셜 로그인과 같은 규칙)",
             required = true,
             content = @Content(
                     mediaType = "application/json",

@@ -90,6 +90,8 @@ public class SecurityConfig {
             // `/v1/user/showrooms/following`까지 함께 열려 버린다.
             "/v1/user/showrooms",
             "/v1/user/showrooms/{showroomId:[0-9]+}",
+            // 쇼룸 링크(/@핸들) 착지 — SNS 링크로 비로그인이 들어오는 첫 화면이다.
+            "/v1/user/showrooms/by-address/*",
 
             // 검색 자동완성 (비로그인 허용)
             "/v1/user/search/autocomplete",

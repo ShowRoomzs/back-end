@@ -4,6 +4,7 @@ import java.util.List;
 import showroomz.domain.member.user.type.NotificationToggle;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import showroomz.api.app.auth.service.IdentityVerificationService;
 import showroomz.api.app.auth.service.SocialLoginService.SocialLoginResult;
 import showroomz.api.app.auth.token.AuthToken;
 import showroomz.api.app.auth.token.AuthTokenProvider;
+import showroomz.api.app.auth.token.WebRefreshTokenCookie;
 import showroomz.api.app.user.DTO.NicknameCheckResponse;
 import showroomz.api.app.user.DTO.WithdrawalRequest;
 import showroomz.api.app.user.repository.UserRepository;
@@ -39,6 +41,7 @@ import jakarta.validation.Valid;
 import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/v1/user/auth")
@@ -53,6 +56,7 @@ public class AuthController implements AuthControllerDocs {
     private final AuthService authService;
     private final IdentityVerificationService identityVerificationService;
     private final UserConsentHistoryRepository userConsentHistoryRepository;
+    private final WebRefreshTokenCookie webRefreshTokenCookie;
     
     private final static long THREE_DAYS_MSEC = 259200000;
     private final static long REGISTER_TOKEN_EXPIRY_MSEC = 5 * 60 * 1000;
@@ -101,7 +105,8 @@ public class AuthController implements AuthControllerDocs {
         authService.saveDeviceToken(user.getId(),
                 socialLoginRequest.getFcmToken(), socialLoginRequest.getPlatform());
 
-        return ResponseEntity.ok(tokenResponse);
+        return withWebRefreshCookie(HttpStatus.OK,
+                webRefreshTokenCookie.isWeb(socialLoginRequest.getPlatform()), tokenResponse);
     }
     
     @Override
@@ -195,8 +200,8 @@ public class AuthController implements AuthControllerDocs {
         authService.saveLoginHistory(user.getId(), clientIp, userAgent);
 
         // 6. 토큰 발급 및 반환
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.generateTokens(username, user.getRoleType(), user.getId(), false));
+        return withWebRefreshCookie(HttpStatus.CREATED, webRefreshTokenCookie.isWeb(registerRequest.getPlatform()),
+                authService.generateTokens(username, user.getRoleType(), user.getId(), false));
     }
 
     @Override
@@ -204,9 +209,11 @@ public class AuthController implements AuthControllerDocs {
     @Transactional
     public ResponseEntity<?> refreshToken(
             HttpServletRequest request,
-            @RequestBody RefreshTokenRequest refreshRequest) {
-        // 1. Refresh Token 확인 (Body)
-        String refreshTokenStr = refreshRequest.getRefreshToken();
+            @RequestBody(required = false) RefreshTokenRequest refreshRequest) {
+        // 1. Refresh Token 확인 — 바디 우선(앱), 바디가 비면 웹 쿠키
+        String bodyToken = refreshRequest != null ? refreshRequest.getRefreshToken() : null;
+        boolean fromCookie = bodyToken == null || bodyToken.isEmpty();
+        String refreshTokenStr = fromCookie ? webRefreshTokenCookie.read(request).orElse(null) : bodyToken;
         if (refreshTokenStr == null || refreshTokenStr.isEmpty()) {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN);
         }
@@ -287,15 +294,16 @@ public class AuthController implements AuthControllerDocs {
         response.setRefreshTokenExpiresIn(refreshTokenExpiresInSeconds);
         response.setRole(roleType.toString()); // 권한 정보 추가
         // isNewMember는 null로 유지하여 응답에서 제외
-        
-        return ResponseEntity.ok(response);
+
+        // 쿠키로 들어온 웹 요청은 쿠키로 돌려준다(갱신됐으면 새 토큰, 아니면 같은 토큰으로 수명만 맞춘다)
+        return withWebRefreshCookie(HttpStatus.OK, fromCookie, response);
     }
     
     @Override
     @PostMapping("/logout")
     public ResponseEntity<?> logout(
             HttpServletRequest request,
-            @RequestBody RefreshTokenRequest refreshRequest
+            @RequestBody(required = false) RefreshTokenRequest refreshRequest
     ) {
         // 1. Authorization 헤더에서 Access Token 확인
         String accessToken = HeaderUtil.getAccessToken(request);
@@ -310,8 +318,10 @@ public class AuthController implements AuthControllerDocs {
             throw new BusinessException(ErrorCode.UNAUTHORIZED_ACCESS);
         }
 
-        // 2. Body에 Refresh Token 확인
-        String refreshToken = refreshRequest.getRefreshToken();
+        // 2. Refresh Token 확인 — 바디 우선(앱), 바디가 비면 웹 쿠키
+        String bodyToken = refreshRequest != null ? refreshRequest.getRefreshToken() : null;
+        Optional<String> cookieToken = webRefreshTokenCookie.read(request);
+        String refreshToken = (bodyToken != null && !bodyToken.isEmpty()) ? bodyToken : cookieToken.orElse(null);
         if (refreshToken == null || refreshToken.isEmpty()) {
             throw new BusinessException(ErrorCode.MISSING_REFRESH_TOKEN_LOGOUT);
         }
@@ -321,13 +331,13 @@ public class AuthController implements AuthControllerDocs {
 
         // 3-1. 이 기기를 푸시 발송 대상에서 뺀다 (fcmToken을 보낸 경우).
         //      다른 기기의 로그인은 건드리지 않는다 — 폰에서 로그아웃했다고 태블릿 알림까지 끊기면 안 된다.
-        authService.removeDeviceToken(refreshRequest.getFcmToken());
+        authService.removeDeviceToken(refreshRequest != null ? refreshRequest.getFcmToken() : null);
 
         // 4. SecurityContext 초기화
         SecurityContextHolder.clearContext();
 
-        // 5. 성공 응답 반환
-        return ResponseEntity.ok(Map.of("message", "로그아웃이 완료되었습니다."));
+        // 5. 성공 응답 반환 (웹 쿠키가 있었으면 지운다)
+        return clearingWebRefreshCookie(request).body(Map.of("message", "로그아웃이 완료되었습니다."));
     }
 
     @Override
@@ -371,7 +381,25 @@ public class AuthController implements AuthControllerDocs {
         // 5. SecurityContext 초기화
         SecurityContextHolder.clearContext();
 
-        // 6. 성공 응답 반환
-        return ResponseEntity.ok(Map.of("message", "회원 탈퇴가 완료되었습니다."));
+        // 6. 성공 응답 반환 (웹 쿠키가 있었으면 지운다)
+        return clearingWebRefreshCookie(request).body(Map.of("message", "회원 탈퇴가 완료되었습니다."));
+    }
+
+    /** {@code platform=WEB} 이면 리프레시 토큰을 httpOnly 쿠키로 옮기고 바디에서는 뺀다. 앱은 그대로 바디로 받는다. */
+    private ResponseEntity<TokenResponse> withWebRefreshCookie(HttpStatus status, boolean web, TokenResponse body) {
+        if (!web || body.getRefreshToken() == null) {
+            return ResponseEntity.status(status).body(body);
+        }
+        String cookie = webRefreshTokenCookie.issue(body.getRefreshToken());
+        body.setRefreshToken(null);
+        return ResponseEntity.status(status).header(HttpHeaders.SET_COOKIE, cookie).body(body);
+    }
+
+    private ResponseEntity.BodyBuilder clearingWebRefreshCookie(HttpServletRequest request) {
+        ResponseEntity.BodyBuilder ok = ResponseEntity.ok();
+        if (webRefreshTokenCookie.read(request).isPresent()) {
+            ok.header(HttpHeaders.SET_COOKIE, webRefreshTokenCookie.expire());
+        }
+        return ok;
     }
 }

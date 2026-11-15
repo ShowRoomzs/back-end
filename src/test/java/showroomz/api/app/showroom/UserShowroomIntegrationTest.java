@@ -246,6 +246,67 @@ class UserShowroomIntegrationTest extends IntegrationTestSupport {
         }
     }
 
+    /** 쇼룸 링크({@code /@핸들})를 연 웹 · 앱 딥링크는 ID 없이 핸들만 들고 온다. */
+    @Nested
+    @DisplayName("핸들로 쇼룸 상세")
+    class ShowroomByAddress {
+
+        private static final String BY_ADDRESS_PATH = "/v1/user/showrooms/by-address/%s";
+
+        @Test
+        @DisplayName("비로그인도 핸들로 열 수 있고, 응답은 ID 상세와 같다")
+        void anonymousOpensByHandle() throws Exception {
+            Creator showroom = createShowroom("소연 뷰티", "soyeon");
+
+            mockMvc.perform(get(BY_ADDRESS_PATH.formatted("soyeon")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.showroomId").value(showroom.getId()))
+                    .andExpect(jsonPath("$.showroomName").value("소연 뷰티"))
+                    .andExpect(jsonPath("$.showroomAddress").value("soyeon"))
+                    .andExpect(jsonPath("$.isFollowing").value(false));
+        }
+
+        @Test
+        @DisplayName("링크에 붙은 앞의 @는 떼고 찾는다")
+        void leadingAtIsIgnored() throws Exception {
+            Creator showroom = createShowroom("소연 뷰티", "soyeon");
+
+            mockMvc.perform(get(BY_ADDRESS_PATH.formatted("@soyeon")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.showroomId").value(showroom.getId()));
+        }
+
+        @Test
+        @DisplayName("로그인 상태면 팔로우 여부가 채워진다")
+        void followStateIsReflected() throws Exception {
+            Long showroomId = createShowroom("소연 뷰티", "soyeon").getId();
+            follow(showroomId);
+
+            mockMvc.perform(get(BY_ADDRESS_PATH.formatted("soyeon"))
+                            .header(HttpHeaders.AUTHORIZATION, userToken))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.isFollowing").value(true));
+        }
+
+        @Test
+        @DisplayName("없는 핸들 · 부분 일치 · 탈퇴한 쇼룸은 404다")
+        void unknownOrHiddenIsNotFound() throws Exception {
+            Creator withdrawn = createShowroom("탈퇴 쇼룸", "gone");
+            Users owner = withdrawn.getUser();
+            owner.updateStatus(UserStatus.WITHDRAWN);
+            userRepository.save(owner);
+            createShowroom("소연 뷰티", "soyeon_room");
+
+            mockMvc.perform(get(BY_ADDRESS_PATH.formatted("nobody")))
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.code").value("SHOWROOM_NOT_FOUND"));
+            mockMvc.perform(get(BY_ADDRESS_PATH.formatted("soyeon")))
+                    .andExpect(status().isNotFound());
+            mockMvc.perform(get(BY_ADDRESS_PATH.formatted("gone")))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
     /**
      * {@code /v1/user/showrooms} 아래에는 이미 팔로우·방문·게시물 경로가 살고 있다.
      * 목록과 상세가 그 자리를 빼앗지 않는지 본다 — 라우팅과 보안 규칙이 함께 걸리는 지점이다.

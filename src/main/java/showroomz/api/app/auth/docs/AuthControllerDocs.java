@@ -25,8 +25,13 @@ public interface AuthControllerDocs {
             summary = "소셜 로그인",
             description = "카카오, 네이버, 구글, 애플 소셜 로그인을 처리합니다. 신규 회원인 경우 registerToken을 반환하고, 기존 회원인 경우 accessToken과 refreshToken을 반환합니다.\n\n" +
                     "**registerToken 유효기간:** 5분 (회원가입 완료에 사용)\n" +
-                    "**role:** 사용자 권한 (USER, GUEST)\n\n" +
-                    "**크리에이터 로그인:** `POST /v1/creator/auth/social/login`을 사용하세요."
+                    "**role:** 사용자 권한 (USER, GUEST)\n" +
+                    "**카카오 웹 로그인:** 카카오 JS SDK 는 웹에서 액세스 토큰 대신 인가 코드만 줍니다. `token` 대신 `authorizationCode` + `redirectUri` 를 보내면 " +
+                    "서버가 카카오에 토큰을 교환한 뒤 같은 로직으로 처리합니다. 코드가 만료 · 재사용됐으면 401 `INVALID_AUTHORIZATION_CODE`, " +
+                    "허용 목록에 없는 redirectUri 는 400 `INVALID_REDIRECT_URI`.\n" +
+                    "**웹(platform=WEB) 리프레시 토큰:** 바디의 `refreshToken` 을 빼고 httpOnly · Secure 쿠키(`showroomz_rt`, Path=/v1/user/auth)로 내립니다. " +
+                    "브라우저는 `credentials: 'include'` 로 호출해야 쿠키를 받고 보냅니다. 앱(ANDROID · IOS · 미지정)은 지금처럼 바디로 받습니다.\n" +
+                    "\n**크리에이터 로그인:** `POST /v1/creator/auth/social/login`을 사용하세요."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -186,10 +191,11 @@ public interface AuthControllerDocs {
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "소셜 로그인 요청 정보\n" +
                     "- providerType: 필수, 소셜 공급자 타입 (KAKAO, NAVER, GOOGLE, APPLE)\n" +
-                    "- token: 필수, 애플은 idToken, 카카오/네이버/구글은 accessToken\n" +
+                    "- token: 필수(카카오 인가 코드 로그인만 생략), 애플은 idToken, 카카오/네이버/구글은 accessToken\n" +
+                    "- authorizationCode · redirectUri: 카카오 웹 로그인 전용. token 대신 보낸다\n" +
                     "- name: 선택, 애플 로그인에서만 사용 (첫 로그인 시 이름)\n" +
                     "- fcmToken: 선택, 푸시 알림 전송용 FCM 토큰. 보내면 이 기기가 발송 대상으로 등록된다(같은 토큰이 다른 계정에 등록돼 있었다면 이번 로그인 계정으로 옮겨진다)\n" +
-                    "- platform: 선택, ANDROID / IOS / WEB. 보내지 않으면 UNKNOWN으로 저장된다",
+                    "- platform: 선택, ANDROID / IOS / WEB. 보내지 않으면 UNKNOWN으로 저장된다. WEB 이면 리프레시 토큰을 쿠키로 내린다",
             required = true,
             content = @Content(
                     mediaType = "application/json",
@@ -207,6 +213,15 @@ public interface AuthControllerDocs {
                                     value = "{\n" +
                                             "  \"providerType\": \"KAKAO\",\n" +
                                             "  \"token\": \"eyJhbGciOiJIUzI1NiJ9...\"\n" +
+                                            "}"
+                            ),
+                            @ExampleObject(
+                                    name = "카카오 웹 로그인 예시 (인가 코드)",
+                                    value = "{\n" +
+                                            "  \"providerType\": \"KAKAO\",\n" +
+                                            "  \"authorizationCode\": \"Xb3kR9...\",\n" +
+                                            "  \"redirectUri\": \"https://showroomz.co.kr/auth/kakao/callback\",\n" +
+                                            "  \"platform\": \"WEB\"\n" +
                                             "}"
                             ),
                             @ExampleObject(
@@ -244,7 +259,8 @@ public interface AuthControllerDocs {
                     "**본인인증(선행 · 57 설계서 3-3):** 같은 registerToken 으로 `POST /v1/user/identity-verifications`(purpose=SIGNUP) → " +
                     "포트원 SDK 창 → `POST /v1/user/identity-verifications/{id}/complete` 가 10분 안에 끝나 있어야 합니다. " +
                     "없으면 400 `IDENTITY_VERIFICATION_REQUIRED`. 만 14세 차단(403 `UNDER_MIN_AGE`)과 명의 중복(409)은 완료 API 에서 납니다. " +
-                    "registerToken 이 만료돼 다시 로그인해도 10분 안의 인증은 그대로 쓰입니다."
+                    "registerToken 이 만료돼 다시 로그인해도 10분 안의 인증은 그대로 쓰입니다.\n\n" +
+                    "**웹:** `platform: \"WEB\"` 을 보내면 리프레시 토큰을 바디 대신 httpOnly 쿠키로 내립니다(소셜 로그인과 같은 규칙)."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -420,6 +436,8 @@ public interface AuthControllerDocs {
     @Operation(
             summary = "Access Token 재발급",
             description = "Refresh Token을 사용하여 새로운 Access Token을 발급받습니다. Refresh Token이 만료 3일 이내인 경우 새로운 Refresh Token도 함께 발급됩니다.\n\n" +
+                    "**웹:** 바디의 `refreshToken` 을 비워(또는 바디 없이) 보내면 쿠키(`showroomz_rt`)의 리프레시 토큰을 씁니다. 이때 응답 바디에는 `refreshToken` 이 없고 " +
+                    "쿠키가 다시 내려갑니다(`credentials: 'include'` 필요). 바디에 값이 있으면 바디가 우선입니다(앱).\n\n" +
                     "**권한:** 없음\n" +
                     "**요청 헤더:** 없음"
     )
@@ -515,8 +533,8 @@ public interface AuthControllerDocs {
             )
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = "Refresh Token 재발급 요청",
-            required = true,
+            description = "Refresh Token 재발급 요청 — 웹은 바디 없이 쿠키로 보낸다",
+            required = false,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = RefreshTokenRequest.class),
@@ -537,11 +555,12 @@ public interface AuthControllerDocs {
                     hidden = true
             )
             HttpServletRequest request,
-            @RequestBody RefreshTokenRequest refreshRequest);
+            @RequestBody(required = false) RefreshTokenRequest refreshRequest);
 
     @Operation(
             summary = "로그아웃",
-            description = "사용자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다.\n\n" +
+            description = "사용자를 로그아웃 처리합니다. Authorization 헤더에 Bearer {access_token}이 필요하며, Body에 refreshToken을 전달해야 합니다. " +
+                    "웹은 바디의 refreshToken 을 비우면 쿠키의 토큰으로 로그아웃하고, 응답으로 쿠키를 지웁니다.\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -616,9 +635,9 @@ public interface AuthControllerDocs {
     })
     @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = "로그아웃 요청 (Refresh Token 필요)\n" +
-                    "- refreshToken: 필수\n" +
+                    "- refreshToken: 필수(웹은 생략 — 쿠키를 쓴다)\n" +
                     "- fcmToken: 선택, 이 기기를 푸시 발송 대상에서 미리 제외한다. 보내지 않으면 로그아웃 후에도 그 기기로 알림이 계속 간다(다른 기기의 로그인은 유지된다)",
-            required = true,
+            required = false,
             content = @Content(
                     mediaType = "application/json",
                     schema = @Schema(implementation = RefreshTokenRequest.class),
@@ -640,7 +659,7 @@ public interface AuthControllerDocs {
                     hidden = true
             )
             HttpServletRequest request,
-            @RequestBody RefreshTokenRequest refreshRequest
+            @RequestBody(required = false) RefreshTokenRequest refreshRequest
     );
 
     @Operation(

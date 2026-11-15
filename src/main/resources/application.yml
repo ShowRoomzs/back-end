@@ -57,6 +57,23 @@ app:
     tokenSecret: ${TOKEN_SECRET}
     tokenExpiry: 1800000      # 액세스 토큰 만료 시간 (30분, 밀리초 단위)
     refreshTokenExpiry: 604800000 # 리프레시 토큰 만료 시간 (7일)
+  # 유저 웹(platform=WEB) 리프레시 토큰 쿠키 — httpOnly · Secure. 다른 사이트(localhost 등)에서 쓰려면 SameSite=None
+  web-refresh-cookie:
+    name: showroomz_rt
+    path: /v1/user/auth
+    same-site: ${WEB_REFRESH_COOKIE_SAME_SITE:Lax}
+    secure: ${WEB_REFRESH_COOKIE_SECURE:true}
+
+# SocialLoginProperties.java — client-ids 가 비어 있으면 그 공급자는 aud 를 검증하지 않는다(기동 시 WARN)
+social-login:
+  kakao:
+    rest-api-key: ${KAKAO_REST_API_KEY:}
+    client-secret: ${KAKAO_CLIENT_SECRET:}
+    allowed-redirect-uris: ${KAKAO_ALLOWED_REDIRECT_URIS:https://showroomz.co.kr/auth/kakao/callback,http://localhost:8081/auth/kakao/callback}
+  google:
+    client-ids: ${GOOGLE_CLIENT_IDS:}   # 안드로이드 · iOS · 웹(+ 스튜디오) 클라이언트 ID, 쉼표 구분
+  apple:
+    client-ids: ${APPLE_CLIENT_IDS:}    # 앱 번들 ID(com.showroomz.app) · 웹 Services ID, 쉼표 구분
 
 # JwtConfig.java 관련 설정 
 jwt:
@@ -64,7 +81,7 @@ jwt:
 
 # CorsProperties.java 관련 설정
 cors:
-  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:8080,http://api.showroomz.shop,https://api.showroomz.shop,http://54.180.85.237:8080,https://54.180.85.237:8080,https://front-end-partners-one.vercel.app,https://front-end-admin-seven-brown.vercel.app,https://admin.showroomz.shop,https://seller.showroomz.shop,https://front-end-studio-one.vercel.app,https://seller.showroomz.co.kr,https://admin.showroomz.co.kr,http://api.showroomz.co.kr,https://api.showroomz.co.kr,https://showroomz.co.kr,https://www.showroomz.co.kr,https://studio.showroomz.co.kr
+  allowed-origins: http://localhost:3000,http://localhost:5173,http://localhost:8080,http://api.showroomz.shop,https://api.showroomz.shop,http://54.180.85.237:8080,https://54.180.85.237:8080,https://front-end-partners-one.vercel.app,https://front-end-admin-seven-brown.vercel.app,https://admin.showroomz.shop,https://seller.showroomz.shop,https://front-end-studio-one.vercel.app,https://seller.showroomz.co.kr,https://admin.showroomz.co.kr,http://api.showroomz.co.kr,https://api.showroomz.co.kr,https://showroomz.co.kr,https://www.showroomz.co.kr,https://studio.showroomz.co.kr,http://localhost:8081
   allowed-methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
   allowed-headers: '*'
   max-age: 3600
