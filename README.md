@@ -8,7 +8,7 @@
 - 단국대학교 창업지원단 창업동아리 · 3인 창업팀
 - 출시 준비 중
 
-**API 문서 (Swagger)**: https://api.showroomz.shop/swagger-ui/index.html<br>
+**API 문서 (Swagger)**: https://api.showroomz.co.kr/swagger-ui/index.html<br>
 **시연 영상**: https://www.youtube.com/watch?si=RIisrhyNu1J3Cakk&v=ml0Lpiww7lA&feature=youtu.be
 <br>
 
@@ -238,7 +238,7 @@ SETTLEMENT_PAYOUT_MODE=SIMULATED # 지급을 즉시 완료로 처리
 ./gradlew bootRun
 ```
 
-- 로컬 Swagger UI: `http://localhost:8080/swagger-ui/index.html` (운영: https://api.showroomz.shop/swagger-ui/index.html)
+- 로컬 Swagger UI: `http://localhost:8080/swagger-ui/index.html` (운영: https://api.showroomz.co.kr/swagger-ui/index.html)
 - 그 밖의 환경 변수(AWS S3, 메일, Sentry 등)는 [`application.yml`](src/main/resources/application.yml)을 참고하세요.
 
 <br>
