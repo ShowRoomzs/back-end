@@ -180,6 +180,32 @@ class OrderFulfillmentSchedulerIntegrationTest extends SellerOrderTestSupport {
     }
 
     @Test
+    @DisplayName("[TR-02b] 배송완료 미확인 자동 구매확정(2026-11-10) — 송장 등록 + 28일이 지난 배송중만 확정 · 배송완료일은 비운다 · 추적 정지 소비자 선택 건은 제외")
+    void undeliveredConfirmedAfterInvoicePlus28Days() throws Exception {
+        LocalDateTime now = LocalDateTime.now().withNano(0);
+        OrderDeliveryGroup overdue = shippingGroup("740010002100");
+        OrderDeliveryGroup recent = shippingGroup("740010002101");
+        OrderDeliveryGroup chosen = shippingGroup("740010002102");
+        jdbc.update("UPDATE order_delivery_group SET shipped_at = ? WHERE delivery_group_id IN (?, ?)",
+                now.minusDays(28).minusHours(1), overdue.getId(), chosen.getId());
+        jdbc.update("UPDATE order_delivery_group SET shipped_at = ? WHERE delivery_group_id = ?",
+                now.minusDays(27), recent.getId());
+        jdbc.update("UPDATE order_delivery_group SET stall_choice = 'REFUND' WHERE delivery_group_id = ?", chosen.getId());
+
+        new PurchaseConfirmScheduler(fulfillmentService, new OrderProperties()).tick();
+
+        OrderDeliveryGroup confirmed = reload(overdue);
+        assertThat(confirmed.getFulfillmentStatus()).isEqualTo(FulfillmentStatus.CONFIRMED);
+        assertThat(confirmed.getDeliveredAt()).isNull();
+        assertThat(confirmed.getConfirmedAt()).isNotNull();
+        assertThat(items(confirmed)).allSatisfy(item ->
+                assertThat(item.getStatus().name()).isEqualTo("PURCHASE_CONFIRMED"));
+        assertThat(historyCount(overdue, FulfillmentEventType.PURCHASE_CONFIRMED)).isEqualTo(1);
+        assertThat(reload(recent).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+        assertThat(reload(chosen).getFulfillmentStatus()).isEqualTo(FulfillmentStatus.SHIPPING);
+    }
+
+    @Test
     @DisplayName("[TR-05] 연동 off(기본) — 추적 배치 빈이 뜨지 않고 포트는 Noop 스텁이다(판정 불가 · 조회 없음)")
     void trackerDisabledByDefault() {
         assertThat(applicationContext.getBeanProvider(OrderDeliveryTrackingScheduler.class).getIfAvailable()).isNull();

@@ -174,7 +174,7 @@ public interface AdminOrderControllerDocs {
             | `shipping.deliveredSourceLabel` | 배송완료 출처 — 「자동 확인」 · 「운영자 정정」 · 「운영자 처리 · 추적 정지」 |
             | `purchaseConfirm` | 배송완료 뒤에만. 반품·교환 진행 중이면 `paused = true` · `dueAt = null` |
             | `cancel` | 취소된 하위주문만 — 유형(`cancelTypeLabel`) · 사유 · 소비자 전달 문구 |
-            | `cancelRequest` | 검토 중 취소 요청(B7). `respondDueAt`이 지나면 **자동 승인** · PG 즉시 환불. 운영자 조치는 없다 |
+            | `cancelRequest` | 검토 중 취소 요청(B7). 브랜드 응답 마감 `respondDueAt` = 요청 + 2영업일. **자동 승인은 없다**(2026-11-10) — 지나면(`respondOverdue`) 운영자가 브랜드 확인 후 승인한다 |
             | `items[]` | 항목 — `status`(PENDING · PAID · PURCHASE_CONFIRMED · CANCELLED · RETURNED) · 반품 수량 |
             | `refunds[]` | 이 하위주문의 환불 큐 전부 — 출처(`PG_AUTO` · `OPERATOR`) · 상태(`PENDING` · `EXECUTING` · `DONE` · `FAILED` · `VOID`). `refundNo`로 06c 검색 |
             | `activeClaims[]` | 진행 중 반품·교환(B8) — `claimId`로 06b 상세(`GET /v1/admin/claims/{claimId}`) |
@@ -188,6 +188,7 @@ public interface AdminOrderControllerDocs {
             | `canCorrectDeliveredAt` | B3 배송완료일 정정 | 배송완료 |
             | `canRegisterShipment` | B4 대행 송장 등록 | 상품준비중 ∧ 발송 기한 경과 ∧ 자동 알림 3회 무응답 ∧ 검토 중 취소 요청 없음 |
             | `canCancel` | B4 · B5 대행 직권 취소 | 신규 · 상품준비중 ∧ 검토 중 취소 요청 없음. **사유가 `DEFECT`가 아니면 대행 조건을 서버가 다시 본다**(미충족 409) |
+            | `canApproveCancelRequest` | 취소 요청 운영자 승인 | 신규 · 상품준비중 ∧ 검토 중 취소 요청 ∧ 브랜드 응답 마감 경과(`POST /cancel-requests/{id}/approve`) |
             | `canEnqueueRefund` | B5 운영자 사유 환불 편입 | 배송중 · 배송완료 · 구매확정(반송 중 제외) ∧ `payment.operatorRefundableAmount` > 0(결제가 없는 주문은 상한 없음) |
             | `canOpenDefectClaim` | B6 하자 반품 대신 열기 | 구매확정(또는 배송완료) ∧ 배송완료 3개월 안 |
             | `canMarkLost` · `canMarkDelivered` | 추적 정지 종결 — 분실 / 배송완료 | 배송중 ∧ 추적 정지 ∧ 마지막 추적(없으면 발송) + 28일 경과 |
@@ -407,6 +408,41 @@ public interface AdminOrderControllerDocs {
                             @ExampleObject(name = "위해성 · 상품 하자(조건 없음)", value = REQ_CANCEL_DEFECT)
                     }))
             AdminOrderDto.CancelCommand request);
+
+    @Operation(summary = "취소 요청 운영자 승인(브랜드 응답 마감 경과)", description = """
+            브랜드가 응답 마감(요청 + 2영업일)까지 승인 · 거부하지 않은 취소 요청을 **운영자가 브랜드에 확인한 뒤** 승인합니다.
+            자동 승인은 없습니다(대표 결정 2026-11-10). 마감이 지난 요청은 예외 관리 처리 지연 「취소 요청 미응답」에 올라옵니다.
+
+            **권한:** ADMIN
+
+            **조건** — 상세 `actions.canApproveCancelRequest`: 검토 중 ∧ 응답 마감 경과 ∧ 하위주문이 신규 · 상품준비중.
+
+            - `brandConfirmNote` — 브랜드에 확인한 내용(필수 · 최대 500자). 이력에 남습니다
+            - 결과는 브랜드 승인과 같습니다 — 요청 항목 취소 · 재고 원복 · **PG 즉시 자동 환불**(전 항목이면 배송비 포함)
+            - 소비자에게 「취소 요청이 승인되었어요」, 브랜드에게 「운영팀이 승인」 알림이 갑니다
+            """)
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "승인 후 주문 상세",
+                    content = @Content(schema = @Schema(implementation = AdminOrderDto.DetailResponse.class))),
+            @ApiResponse(responseCode = "400", description = "브랜드 확인 내용 누락 (`INVALID_INPUT`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_NOT_BLANK))),
+            @ApiResponse(responseCode = "401", description = "인증 실패", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "403", description = "관리자 권한 없음", content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "없는 취소 요청 (`ORDER_GROUP_NOT_FOUND`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = @ExampleObject(value = ERR_ORDER_GROUP_NOT_FOUND))),
+            @ApiResponse(responseCode = "409", description = "응답 마감 전(`CANCEL_REQUEST_NOT_OVERDUE`) · 이미 처리됨(`CANCEL_REQUEST_ALREADY_DECIDED`) · 발송됨(`ORDER_STATE_CHANGED`)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
+                            @ExampleObject(name = "응답 마감 전", value = ERR_CANCEL_REQUEST_NOT_OVERDUE),
+                            @ExampleObject(name = "상태 변경", value = ERR_ORDER_STATE_CHANGED)
+                    }))
+    })
+    ResponseEntity<AdminOrderDto.DetailResponse> approveCancelRequest(
+            @Parameter(hidden = true) UserPrincipal principal,
+            @Parameter(description = "취소 요청 ID(상세 `cancelRequest.cancelRequestId`)", example = "77", required = true) Long cancelRequestId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(required = true, description = "브랜드 확인 내용",
+                    content = @Content(schema = @Schema(implementation = AdminOrderDto.CancelRequestApproveCommand.class),
+                            examples = @ExampleObject(value = REQ_CANCEL_REQUEST_APPROVE)))
+            AdminOrderDto.CancelRequestApproveCommand request);
 
     @Operation(summary = "B5 운영자 사유 환불 편입", description = """
             발송 이후 하위주문의 운영자 사유 환불을 **편입만** 합니다. 돈은 환불 관리(06c)의 재확인 다이얼로그(`POST /v1/admin/refunds/{id}/execute`)에서만 나갑니다.

@@ -16,7 +16,9 @@ import showroomz.domain.performance.type.PerformanceTone;
 public enum CreatorPerformanceStatus {
     COLLECTING("집계 중", PerformanceTone.NEUTRAL),
     ADJUSTING("조정 협의", PerformanceTone.WARNING),
-    SETTLED("정산 완료", PerformanceTone.SUCCESS);
+    SETTLED("정산 완료", PerformanceTone.SUCCESS),
+    /** 분배 실패 — 「정산 완료」로 보이지 않는다(2026-11-10). */
+    PAYOUT_FAILED("지급 실패", PerformanceTone.DANGER);
 
     private final String label;
     private final PerformanceTone tone;
@@ -26,6 +28,7 @@ public enum CreatorPerformanceStatus {
             case AGGREGATING, REVIEWING, PAYOUT_SCHEDULED -> COLLECTING;
             case ADJUSTING -> ADJUSTING;
             case PAID -> SETTLED;
+            case PAYOUT_FAILED -> PAYOUT_FAILED;
         };
     }
 }

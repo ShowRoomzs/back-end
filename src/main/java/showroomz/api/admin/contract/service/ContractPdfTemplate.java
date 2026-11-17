@@ -60,7 +60,7 @@ public class ContractPdfTemplate {
         put(values, "플랫폼수수료율", 2);
         put(values, "PG수수료_문구", "[자문대기-PG] 결제대행사가 정한 요율");
         put(values, "원천징수_문구", business ? "을이 사업자이므로 세금계산서 발행 후 공제 없이 지급한다."
-                : "[자문대기-세무] 을이 사업자가 아니므로 소득세법에 따라 3.3%를 공제한 후 지급한다.");
+                : "을이 사업자가 아니므로 소득세법에 따라 3.3%를 공제한 후 지급한다.");
         put(values, "관할법원", "갑의 주소지를 관할하는 법원");
         Context context = new Context(Locale.KOREAN);
         context.setVariable("values", values);
@@ -82,15 +82,13 @@ public class ContractPdfTemplate {
     /**
      * 제5조 상품 행 + 옵션 하위 행(계약서 생성규격 v0.2 §4-4). 상품 행의 최소 물량은 옵션 합계이고,
      * 옵션이 1개뿐인 상품도 하위 행을 생략하지 않는다 — 어느 옵션에 물량을 약속했는지가 계약 내용이다.
-     * 옵션 행에는 옵션 판매가(공구가 + 옵션가)와 그 기준의 개당 리워드를 찍는다 — 정산이 주문 단가 × 리워드율로 계산한다.
+     * 계약서 양식 v0.3(2026-11-10) — 정가 · 공구가 · 리워드율 · 개당 리워드는 상품 행에만, 옵션 행에는 옵션명과 옵션별 최소 물량만 찍는다.
      */
     private Map<String, Object> item(ContractItem i) {
         Long itemUnitReward = RewardCalculator.calcUnitReward(i.getGroupBuyPrice(), i.getRewardRate());
         List<Map<String, String>> options = i.getOptions().stream()
                 .map(option -> Map.of(
                         "옵션명", optionName(option),
-                        "옵션판매가", number(option.salePrice() != null ? option.salePrice() : i.getGroupBuyPrice()),
-                        "옵션개당리워드", number(option.unitReward() != null ? option.unitReward() : itemUnitReward),
                         "옵션최소물량", number(option.getMinQuantity())))
                 .toList();
         return Map.of("상품명", text(i.getProductName()), "정가", number(i.getRegularPrice()),

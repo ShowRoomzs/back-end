@@ -30,8 +30,8 @@ public final class SettlementPartyDto {
         }
     }
 
-    @Schema(name = "SettlementStatusCounts", description = "상태 칩 숫자 — 분배 실패는 지급 완료에 접힌다")
-    public record StatusCounts(long REVIEWING, long ADJUSTING, long PAYOUT_SCHEDULED, long PAID) {
+    @Schema(name = "SettlementStatusCounts", description = "상태 칩 숫자 — 분배 실패는 따로 센다(2026-11-10 · 지급 완료에 접지 않는다)")
+    public record StatusCounts(long REVIEWING, long ADJUSTING, long PAYOUT_SCHEDULED, long PAID, long PAYOUT_FAILED) {
     }
 
     @Schema(name = "SettlementAdjustmentBlock",

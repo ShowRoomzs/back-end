@@ -445,11 +445,21 @@ public class Contract extends BaseTimeEntity {
     }
 
     public void expire(LocalDateTime now) {
+        expire(now, ContractActorType.ADMIN);
+    }
+
+    /** 서명 기한 경과 불성립(2026-11-10) — 시스템이 닫으면 {@code SYSTEM}. */
+    public void expire(LocalDateTime now, ContractActorType actorType) {
         status = ContractStatus.EXPIRED;
         closedAt = now;
-        closeActorType = ContractActorType.ADMIN;
+        closeActorType = actorType;
         closeReasonCode = null;
         closeReasonMemo = null;
+    }
+
+    /** 서명 기한이 지났는가 — 정지 보류 중에는 기한이 멈춰 있어 지나지 않은 것으로 본다(8-4). */
+    public boolean isSignatureDeadlinePassed(LocalDateTime now) {
+        return !isHeldBySanction() && signatureDeadlineAt != null && signatureDeadlineAt.isBefore(now);
     }
 
     /**

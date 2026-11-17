@@ -14,6 +14,7 @@ import showroomz.domain.contract.type.ContractDocumentType;
 import showroomz.domain.contract.type.ContractEventType;
 import showroomz.domain.contract.type.ContractStatus;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +33,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @DisplayName("1021 P1 — 계약 성립 · 공구 생성 · 해지 · 취소 동의 · 초안 승인 기록")
 class Design1021P1ContractIntegrationTest extends AdminThreadTestSupport {
+
+    @org.springframework.beans.factory.annotation.Autowired
+    private showroomz.domain.contract.service.ContractDraftReviewService draftReviewService;
+    @org.springframework.beans.factory.annotation.Autowired
+    private showroomz.domain.contract.repository.ContractDraftSubmissionRepository draftSubmissionRepository;
 
     // ------------------------------------------------------------------ 1-3 성립 시점
 
@@ -200,6 +206,55 @@ class Design1021P1ContractIntegrationTest extends AdminThreadTestSupport {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.draftApprovals", hasSize(0)));
     }
 
+    @Test
+    @DisplayName("B-13 사전 검수 — 인플루언서 초안 제출(= 수령) · 회신 기한 수령 + 3영업일 · 수정 요청 회신 · 승인 회신 · 무회신이면 승인 간주 기록")
+    void draftDeemedApproval() throws Exception {
+        Contract noReview = seed(ContractStatus.CONCLUSION_PENDING);
+        creatorPost(noReview, "/draft-submissions", Map.of("title", "릴스 1차 초안")).andExpect(status().isConflict());
+
+        Contract c = seed(ContractStatus.CONCLUSION_PENDING);
+        jdbc.update("UPDATE contract SET brand_pre_review = TRUE WHERE contract_id = ?", c.getId());
+        com.fasterxml.jackson.databind.JsonNode submitted = json(creatorPost(c, "/draft-submissions",
+                Map.of("title", "릴스 1차 초안")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.draftSubmissions", hasSize(1)))
+                .andExpect(jsonPath("$.draftSubmissions[0].status").value("PENDING")));
+        long first = submitted.at("/draftSubmissions/0/submissionId").asLong();
+        assertThat(submitted.at("/draftSubmissions/0/reviewDueAt").asText()).isNotBlank();
+
+        // 수정 요청 회신 — 기한 안 회신이라 승인 간주되지 않는다.
+        sellerPost(c, "/draft-submissions/" + first + "/revision-request", Map.of("note", "제품 사용 장면을 넣어 주세요"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.draftSubmissions[0].status").value("REVISION_REQUESTED"))
+                .andExpect(jsonPath("$.draftSubmissions[0].decisionNote").value("제품 사용 장면을 넣어 주세요"));
+        sellerPost(c, "/draft-submissions/" + first + "/revision-request", Map.of("note", "다시"))
+                .andExpect(status().isConflict());
+        assertThat(draftReviewService.deemApproveIfDue(first, now.plusDays(30))).isFalse();
+
+        // 두 번째 제출 — 승인 회신(초안 승인 기록과 이어진다).
+        long second = json(creatorPost(c, "/draft-submissions", Map.of("title", "릴스 2차 초안")).andExpect(status().isOk()))
+                .at("/draftSubmissions/1/submissionId").asLong();
+        sellerPost(c, "/draft-approvals", Map.of("title", "릴스 2차 초안", "submissionId", second))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.draftSubmissions[1].status").value("APPROVED"))
+                .andExpect(jsonPath("$.draftSubmissions[1].approvalId").isNumber());
+
+        // 세 번째 제출 — 무회신 → 기한 전에는 그대로 · 지나면 승인 간주(초안 승인 기록 · 출처 「승인 간주」).
+        long third = json(creatorPost(c, "/draft-submissions", Map.of("title", "릴스 3차 초안")).andExpect(status().isOk()))
+                .at("/draftSubmissions/2/submissionId").asLong();
+        LocalDateTime due = draftSubmissionRepository.findById(third).orElseThrow().getReviewDueAt();
+        assertThat(draftReviewService.findIdsDueForDeemedApproval(due.minusMinutes(1), 100)).doesNotContain(third);
+        assertThat(draftReviewService.deemApproveIfDue(third, due.minusMinutes(1))).isFalse();
+        assertThat(draftReviewService.findIdsDueForDeemedApproval(due.plusMinutes(1), 100)).contains(third);
+        assertThat(draftReviewService.deemApproveIfDue(third, due.plusMinutes(1))).isTrue();
+        assertThat(draftReviewService.deemApproveIfDue(third, due.plusMinutes(2))).isFalse();
+        sellerGet(c).andExpect(jsonPath("$.draftSubmissions[2].status").value("DEEMED_APPROVED"))
+                .andExpect(jsonPath("$.draftApprovals", hasSize(2)))
+                .andExpect(jsonPath("$.draftApprovals[1].title").value("릴스 3차 초안"))
+                .andExpect(jsonPath("$.draftApprovals[1].sourceLabel").value("초안 수령 후 3영업일 무회신 · 승인 간주"));
+        creatorGet(CREATOR_CONTRACTS + "/" + c.getId())
+                .andExpect(jsonPath("$.draftSubmissions[2].status").value("DEEMED_APPROVED"));
+    }
+
     // ------------------------------------------------------------------
 
     private Contract pendingWithDocuments() {
@@ -230,6 +285,12 @@ class Design1021P1ContractIntegrationTest extends AdminThreadTestSupport {
     private ResultActions sellerPost(Contract c, String path, Object body) throws Exception {
         return mockMvc.perform(post(SELLER_CONTRACTS + "/" + c.getId() + path)
                 .header(HttpHeaders.AUTHORIZATION, brandToken).contentType(MediaType.APPLICATION_JSON)
+                .content(toJson(body)));
+    }
+
+    private ResultActions creatorPost(Contract c, String path, Object body) throws Exception {
+        return mockMvc.perform(post(CREATOR_CONTRACTS + "/" + c.getId() + path)
+                .header(HttpHeaders.AUTHORIZATION, creatorToken).contentType(MediaType.APPLICATION_JSON)
                 .content(toJson(body)));
     }
 

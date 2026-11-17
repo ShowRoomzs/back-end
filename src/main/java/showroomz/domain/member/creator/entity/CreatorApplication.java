@@ -22,6 +22,9 @@ public class CreatorApplication extends BaseTimeEntity {
 
     public static final int REAPPLY_COOLDOWN_DAYS = 14;
 
+    /** 반려 정보 보관 기간 — 반려 처리 + N일 뒤 배치가 파기한다(확정 정책 · 2026-11-10). */
+    public static final int REJECTION_RETENTION_DAYS = 14;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "CREATOR_APPLICATION_ID")
@@ -85,6 +88,14 @@ public class CreatorApplication extends BaseTimeEntity {
     @Column(name = "NOTICE_MAIL_FAILED_AT")
     private LocalDateTime noticeMailFailedAt;
 
+    /** 반려 정보 파기 예정 — 반려 처리 + 14일(2026-11-10 · 즉시 파기에서 바뀌었다). */
+    @Column(name = "personal_data_purge_due_at")
+    private LocalDateTime personalDataPurgeDueAt;
+
+    /** 반려 정보 파기 시각 — 비어 있으면 보관 중이다. */
+    @Column(name = "personal_data_purged_at")
+    private LocalDateTime personalDataPurgedAt;
+
     public static CreatorApplication createApplication(
             Users user,
             SnsType snsType,
@@ -130,17 +141,24 @@ public class CreatorApplication extends BaseTimeEntity {
         this.rejectReason = rejectReason;
         this.processedAt = LocalDateTime.now();
         this.processorEmail = processorEmail;
+        // 즉시 파기하지 않는다 — 14일 보관 뒤 배치가 파기한다(확정 정책 · 2026-11-10).
+        this.personalDataPurgeDueAt = this.processedAt.plusDays(REJECTION_RETENTION_DAYS);
     }
 
     /**
-     * 반려 후 개인정보 파기: 실명·생년월일·팔로워 수·업무용 이메일 삭제, 연락처는 일방향 해시만 보존
+     * 반려 정보 파기(보관 기간 경과 · 배치): 실명·생년월일·팔로워 수·업무용 이메일 삭제, 연락처는 일방향 해시만 보존
      */
-    public void purgePersonalData(String phoneNumberHash) {
+    public void purgePersonalData(String phoneNumberHash, LocalDateTime now) {
         this.realName = null;
         this.birthday = null;
         this.followerCount = null;
         this.businessEmail = null;
         this.phoneNumber = phoneNumberHash;
+        this.personalDataPurgedAt = now;
+    }
+
+    public boolean isPersonalDataPurged() {
+        return personalDataPurgedAt != null;
     }
 
     /** 반려 처리일 기준 재신청 가능 일시 (처리일 없으면 신청일 기준) */

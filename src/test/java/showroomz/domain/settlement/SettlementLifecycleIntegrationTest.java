@@ -100,19 +100,19 @@ class SettlementLifecycleIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("ST-05 보류 — 사업자 인플루언서 · 주민번호 없는 비사업자는 인플루언서 행만 BLOCKED · 브랜드 · 플랫폼은 예정")
-    void blockedCreatorPayouts() {
+    @DisplayName("ST-05 주민번호 없는 비사업자 — 지급을 막지 않는다(1021 기-12 · 영수증만 등록 뒤로) · 인플루언서 · 브랜드 행 모두 예정 · 풀 보류가 없다")
+    void individualWithoutResidentNumberIsNotBlocked() {
         Settlement individual = generated();
         confirmService.confirm(individual.getId(), SettlementConfirmReason.AUTO, individual.autoConfirmAt());
-        assertThat(payout(individual.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
-        assertThat(payout(individual.getId(), SettlementPayee.CREATOR).getDueDate()).isNull();
+        Settlement confirmed = settlement(individual.getId());
+        assertThat(payout(individual.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+        assertThat(payout(individual.getId(), SettlementPayee.CREATOR).getDueDate()).isEqualTo(confirmed.getPayoutDueDate());
         assertThat(payout(individual.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
 
-        // 주민번호를 등록하면 지급 배치 앞단의 재판정이 푼다 — 예정일은 max(지급 예정일, 오늘).
+        // 보류가 없으니 주민번호를 등록해도 지급 배치 앞단의 재판정이 풀 행이 없다.
         registerCreatorResidentNumber();
-        assertThat(payoutService.releaseBlocked(LocalDate.of(2026, 10, 14))).isEqualTo(1);
+        assertThat(payoutService.releaseBlocked(LocalDate.of(2026, 10, 14))).isZero();
         assertThat(payout(individual.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
-        assertThat(payout(individual.getId(), SettlementPayee.CREATOR).getDueDate()).isEqualTo(LocalDate.of(2026, 10, 14));
     }
 
     @Test

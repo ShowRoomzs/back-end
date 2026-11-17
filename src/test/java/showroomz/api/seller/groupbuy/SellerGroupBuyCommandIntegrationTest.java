@@ -75,7 +75,8 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
                 .andExpect(jsonPath("$.post.status").value("SCHEDULED"))
                 .andExpect(jsonPath("$.history[*].eventType").value(contains("READY", "STOCK_CONFIRMED", "CREATED")))
                 .andExpect(jsonPath("$.history[0].actorType").value("SELLER"))
-                .andExpect(jsonPath("$.permissions.canRequestSuspension").value(true));
+                // 오픈 전 중단 요청은 계약 해지 요청이 됐다(1021 기-05) — 준비완료에서는 열리지 않는다.
+                .andExpect(jsonPath("$.permissions.canRequestSuspension").value(false));
 
         assertThat(productStatus(cream)).isEqualTo(ProductGroupBuyStatus.READY);
     }
@@ -183,28 +184,32 @@ class SellerGroupBuyCommandIntegrationTest extends GroupBuyTestSupport {
     }
 
     @Test
-    @DisplayName("중단 요청 — 준비완료에서도 받는다(C4) · 준비중은 409 · 기타 사유는 메모 필수")
-    void suspensionRequestFromReady() throws Exception {
-        GroupBuy ready = seedIn(GroupBuyStatus.READY);
-        action(ready.getId(), "suspension-request", Map.of("reasonCode", "ETC")).andExpect(status().isBadRequest())
+    @DisplayName("중단 요청 — 진행중만(1021 기-05 · 오픈 전은 계약 해지 요청) · 준비중 · 준비완료는 409 · 기타 사유는 메모 필수")
+    void suspensionRequestOnlyInProgress() throws Exception {
+        GroupBuy inProgress = seedIn(GroupBuyStatus.IN_PROGRESS);
+        action(inProgress.getId(), "suspension-request", Map.of("reasonCode", "ETC")).andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_REASON_MEMO_REQUIRED"));
-        action(ready.getId(), "suspension-request", Map.of("reasonCode", "ETC", "memo", "   "))
+        action(inProgress.getId(), "suspension-request", Map.of("reasonCode", "ETC", "memo", "   "))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_REASON_MEMO_REQUIRED"));
+        // 재고 소진은 중단 사유가 아니다 — enum에 없다.
+        action(inProgress.getId(), "suspension-request", Map.of("reasonCode", "STOCK_OUT")).andExpect(status().isBadRequest());
 
-        action(ready.getId(), "suspension-request", Map.of("reasonCode", "PRICE_TERMS_ERROR"))
+        action(inProgress.getId(), "suspension-request", Map.of("reasonCode", "PRICE_TERMS_ERROR"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.groupBuy.status").value("READY"))
+                .andExpect(jsonPath("$.groupBuy.status").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.activeRequest.type").value("SUSPEND"))
-                .andExpect(jsonPath("$.activeRequest.statusAtRequest").value("READY"))
+                .andExpect(jsonPath("$.activeRequest.statusAtRequest").value("IN_PROGRESS"))
                 .andExpect(jsonPath("$.history[:1].eventType").value(contains("SUSPENSION_REQUESTED")));
 
+        GroupBuy ready = seedIn(GroupBuyStatus.READY);
+        action(ready.getId(), "suspension-request", Map.of("reasonCode", "QUALITY_ISSUE"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
         GroupBuy preparing = seedPreparing();
         action(preparing.getId(), "suspension-request", Map.of("reasonCode", "QUALITY_ISSUE"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("GROUP_BUY_ACTION_NOT_ALLOWED"));
-        // 재고 소진은 중단 사유가 아니다 — enum에 없다.
-        action(ready.getId(), "suspension-request", Map.of("reasonCode", "STOCK_OUT")).andExpect(status().isBadRequest());
     }
 
     @Test

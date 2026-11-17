@@ -94,6 +94,28 @@ class OnboardingFreeShippingCheckoutIntegrationTest extends OrderPaymentTestSupp
                 .andExpect(jsonPath("$.deliveryPolicy.freeShippingThreshold").value(50_000));
     }
 
+    @Test
+    @DisplayName("수정요청 C 화장품 개봉 청약철회 제한 — 기본 적용 · 기본 문구 · 브랜드 문구가 있으면 그 문구 · 상품이 제한하지 않으면 문구 없음")
+    void withdrawalRestrictionNotice() throws Exception {
+        String productDetail = "/v1/common/products/" + creamVariant.getProduct().getProductId();
+        mockMvc.perform(get(productDetail).param("groupBuyId", String.valueOf(groupBuy.getId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.delivery.openedWithdrawalRestricted").value(true))
+                .andExpect(jsonPath("$.delivery.withdrawalRestrictionNotice")
+                        .value(showroomz.domain.product.type.WithdrawalRestrictionPolicy.DEFAULT_NOTICE));
+
+        jdbc.update("UPDATE market SET withdrawal_restriction_notice = ? WHERE market_id = ?",
+                "개봉한 화장품은 반품이 어려워요", brand.marketId());
+        mockMvc.perform(get(productDetail).param("groupBuyId", String.valueOf(groupBuy.getId())))
+                .andExpect(jsonPath("$.delivery.withdrawalRestrictionNotice").value("개봉한 화장품은 반품이 어려워요"));
+
+        jdbc.update("UPDATE product SET opened_withdrawal_restricted = FALSE WHERE product_id = ?",
+                creamVariant.getProduct().getProductId());
+        mockMvc.perform(get(productDetail).param("groupBuyId", String.valueOf(groupBuy.getId())))
+                .andExpect(jsonPath("$.delivery.openedWithdrawalRestricted").value(false))
+                .andExpect(jsonPath("$.delivery.withdrawalRestrictionNotice").doesNotExist());
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private void onboardWithoutFreeShippingThreshold() throws Exception {

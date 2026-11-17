@@ -203,7 +203,7 @@ class OrderOverdueNoticeSchedulerIntegrationTest extends ClaimTestSupport {
     // ------------------------------------------------------------------ 검수 기한 경과
 
     @Test
-    @DisplayName("[NB-05 · NB-08] 검수 대기 — 영업일마다 1 → 2 → 3 · 같은 날 재실행 증가 없음 · 3회면 06b 무응답 환불 · 06d 대행 가능 · 입고 전 · 판정 뒤는 대상 아님")
+    @DisplayName("[NB-05 · NB-08] 검수 대기 — 영업일마다 1 → 2 → 3 · 같은 날 재실행 증가 없음 · 3회면 06b 무응답 환불 · 06d 대행 가능 · 도착(입고 전)도 대상(2026-11-10 기한이 돌려받은 날부터) · 판정 뒤는 대상 아님")
     void inspectNotices() throws Exception {
         List<LocalDate> days = pastBusinessDays(4);
         Long claimId = received(returnClaim(deliveredGroup(creamVariant, 1)));
@@ -231,8 +231,8 @@ class OrderOverdueNoticeSchedulerIntegrationTest extends ClaimTestSupport {
         }
         assertThat(applicationEvents.stream(OrderOverdueNoticeEvent.class))
                 .allSatisfy(event -> assertThat(event.kind()).isEqualTo(OrderOverdueNoticeEvent.Kind.INSPECT_OVERDUE))
-                .extracting(OrderOverdueNoticeEvent::targetId).containsOnly(claimId);
-        assertThat(claimRow(arrived)).containsEntry("status", "ARRIVED").containsEntry("inspect_notice_count", 0);
+                .extracting(OrderOverdueNoticeEvent::targetId).containsOnly(claimId, arrived);
+        assertThat(claimRow(arrived)).containsEntry("status", "ARRIVED").containsEntry("inspect_notice_count", 3);
         assertThat(claimRow(judged)).containsEntry("inspect_notice_count", 0);
 
         // 판정하면 다음 회차부터 대상이 아니다 — 쌓인 횟수는 되돌리지 않는다.
@@ -384,7 +384,7 @@ class OrderOverdueNoticeSchedulerIntegrationTest extends ClaimTestSupport {
         Map<String, Object> collection = collectionRow(collectionIdOf(claimId));
         int moved = transactionTemplate.execute(tx -> claimRepository.markArrived(collectionIdOf(claimId),
                 DeliveryCarrier.valueOf((String) collection.get("carrier")), (String) collection.get("tracking_number"),
-                LocalDateTime.now()));
+                null, LocalDateTime.now()));
         assertThat(moved).isEqualTo(1);
         return claimId;
     }

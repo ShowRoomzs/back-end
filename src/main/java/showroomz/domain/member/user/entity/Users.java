@@ -109,6 +109,10 @@ public class Users {
     @Column(name = "MARKETING_AGREE_CHANGED_AT")
     private LocalDateTime marketingAgreeChangedAt;
 
+    /** 마케팅 수신 동의 2년 재확인 통지(정보통신망법 시행령 제62조의3) — 마지막 통지 시각. 동의 · 통지 중 늦은 날부터 다시 2년을 센다. */
+    @Column(name = "marketing_consent_noticed_at")
+    private LocalDateTime marketingConsentNoticedAt;
+
     /** C11 알림 목록에 마지막으로 들어간 시각 — 이후 생성된 알림 수가 종 배지다(1017 설계서 1-0 ⑤). */
     @Column(name = "notification_badge_seen_at")
     private LocalDateTime notificationBadgeSeenAt;
@@ -229,6 +233,17 @@ public class Users {
         this.marketingAgree = agree;
         this.marketingAgreeChangedAt = LocalDateTime.now();
         return true;
+    }
+
+    /** 2년 재확인 통지를 보냈다 — 다음 통지는 이 시각부터 2년 뒤다. */
+    public void markMarketingConsentNoticed(LocalDateTime now) {
+        this.marketingConsentNoticedAt = now;
+    }
+
+    /** 다음 재확인 통지 기준일 — 동의(변경) · 가입 · 마지막 통지 중 가장 늦은 시각. */
+    public LocalDateTime marketingConsentBaseAt() {
+        LocalDateTime base = marketingAgreeChangedAt != null ? marketingAgreeChangedAt : createdAt;
+        return marketingConsentNoticedAt != null && marketingConsentNoticedAt.isAfter(base) ? marketingConsentNoticedAt : base;
     }
 
     /**

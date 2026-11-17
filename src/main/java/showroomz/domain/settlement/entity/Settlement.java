@@ -148,6 +148,10 @@ public class Settlement {
     @Column(name = "reward_vat_amount", nullable = false)
     private long rewardVatAmount;
 
+    /** 리워드 = 부가세 포함(2026-11-10) — 생성 때 스냅샷. true 면 {@code reward_vat_amount}(브랜드 별도 부담)는 0 이다. */
+    @Column(name = "reward_vat_inclusive", nullable = false)
+    private boolean rewardVatInclusive;
+
     @Column(name = "reship_fee_amount", nullable = false)
     private long reshipFeeAmount;
 
@@ -240,6 +244,7 @@ public class Settlement {
         this.pgFeeRate = amounts.rates().pgFeeRate();
         this.platformFeeRate = amounts.rates().platformFeeRate();
         this.rewardVatRate = amounts.rates().rewardVatRate();
+        this.rewardVatInclusive = amounts.rates().rewardVatInclusive();
         this.withholdingIncomeRate = amounts.rates().withholdingIncomeRate();
         this.withholdingLocalRate = amounts.rates().withholdingLocalRate();
         this.pgFeeAmount = amounts.pgFeeAmount();
@@ -279,7 +284,7 @@ public class Settlement {
     /** 이 정산의 요율 스냅샷 — 재계산 · 클로백 역산이 생성 때 요율을 쓴다. */
     public showroomz.domain.settlement.service.SettlementRates ratesSnapshot() {
         return new showroomz.domain.settlement.service.SettlementRates(pgFeeRate, platformFeeRate, rewardVatRate,
-                withholdingIncomeRate, withholdingLocalRate);
+                withholdingIncomeRate, withholdingLocalRate, rewardVatInclusive);
     }
 
     /** 분해 줄 건수(1021 설계서 6-1) — 「무료배송 · 소비자 귀책 2건」 · 「귀책 변경 1건」. */

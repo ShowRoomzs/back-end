@@ -46,7 +46,7 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("P1 목록 — 정렬 2종 · 분배 실패는 PAID 로 접힘 · PAYOUT_FAILED 필터 400 · 키워드 · 일정 열 · 남의 브랜드 404")
+    @DisplayName("P1 목록 — 정렬 2종 · 분배 실패는 그대로 PAYOUT_FAILED(2026-11-10) · 필터도 따로 · 키워드 · 일정 열 · 남의 브랜드 404")
     void list() throws Exception {
         Settlement mine = reviewing();
         // 하루 전에 생긴 더 큰 정산 — 생성일순과 수취액순이 갈린다.
@@ -60,14 +60,15 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.content[0].feeAmount").value(mine.getPgFeeAmount() + mine.getPlatformFeeAmount()))
                 .andExpect(jsonPath("$.content[0].influencer.showroomName").value("글로우_지민"))
                 .andExpect(jsonPath("$.content[1].settlementId").value(failed.getId()))
-                .andExpect(jsonPath("$.content[1].status").value("PAID"))
-                .andExpect(jsonPath("$.content[1].statusLabel").value("지급 완료"));
+                .andExpect(jsonPath("$.content[1].status").value("PAYOUT_FAILED"))
+                .andExpect(jsonPath("$.content[1].statusLabel").value("분배 실패"));
         sellerGet(SETTLEMENTS + "?sort=PAYOUT_DESC")
                 .andExpect(jsonPath("$.content[0].settlementId").value(failed.getId()));
         sellerGet(SETTLEMENTS + "?status=PAID")
+                .andExpect(jsonPath("$.content.length()").value(0));
+        sellerGet(SETTLEMENTS + "?status=PAYOUT_FAILED")
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.content[0].settlementId").value(failed.getId()));
-        sellerGet(SETTLEMENTS + "?status=PAYOUT_FAILED").andExpect(status().isBadRequest());
         sellerGet(SETTLEMENTS + "?keyword=두 번째")
                 .andExpect(jsonPath("$.content.length()").value(1));
 
@@ -89,7 +90,8 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.reviewingCount").value(1))
                 .andExpect(jsonPath("$.attentionCount").value(1))
                 .andExpect(jsonPath("$.statusCounts.REVIEWING").value(1))
-                .andExpect(jsonPath("$.statusCounts.PAID").value(1))
+                .andExpect(jsonPath("$.statusCounts.PAID").value(0))
+                .andExpect(jsonPath("$.statusCounts.PAYOUT_FAILED").value(1))
                 .andExpect(jsonPath("$.reviewingDueAt").exists());
 
         jdbc.update("UPDATE settlement SET status = 'ADJUSTING' WHERE settlement_id = ?", mine.getId());
@@ -159,7 +161,7 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("P7 브랜드 몫만 FAILED — 목록 라벨 PAID · 상세 브랜드 행 FAILED 「지급 확인 중」 · 인플루언서 행 지급 완료")
+    @DisplayName("P7 브랜드 몫만 FAILED — 목록 · 상세 PAYOUT_FAILED 「분배 실패」 · 브랜드 행 FAILED 「지급 실패 · 재지급 예정」 · 인플루언서 행 지급 완료")
     void brandPayoutFailed() throws Exception {
         registerSellerAccount();
         registerCreatorAccount();
@@ -169,12 +171,12 @@ class SellerSettlementIntegrationTest extends SettlementTestSupport {
         Settlement failed = pay(s, s.getPayoutDueDate());
         assertThat(failed.getStatus()).isEqualTo(SettlementStatus.PAYOUT_FAILED);
 
-        sellerGet(SETTLEMENTS).andExpect(jsonPath("$.content[0].status").value("PAID"))
+        sellerGet(SETTLEMENTS).andExpect(jsonPath("$.content[0].status").value("PAYOUT_FAILED"))
                 .andExpect(jsonPath("$.content[0].schedule.kind").value("NONE"));
         sellerGet(SETTLEMENTS + "/" + s.getId())
-                .andExpect(jsonPath("$.status").value("PAID"))
+                .andExpect(jsonPath("$.status").value("PAYOUT_FAILED"))
                 .andExpect(jsonPath("$.payouts[0].status").value("FAILED"))
-                .andExpect(jsonPath("$.payouts[0].statusLabel").value("지급 확인 중"))
+                .andExpect(jsonPath("$.payouts[0].statusLabel").value("지급 실패 · 재지급 예정"))
                 .andExpect(jsonPath("$.payouts[1].status").value("PAID"))
                 .andExpect(jsonPath("$.payment.pgReference").doesNotExist())
                 .andExpect(jsonPath("$.payment.accountMasked").value("******456789"));

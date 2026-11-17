@@ -185,6 +185,15 @@ public class SellerContractController implements SellerContractControllerDocs {
     }
 
     @Override
+    @PostMapping("/{contractId}/draft-submissions/{submissionId}/revision-request")
+    public ResponseEntity<ContractDetailResponse> requestDraftRevision(@PathVariable Long contractId,
+            @PathVariable Long submissionId,
+            @Valid @RequestBody showroomz.api.seller.contract.dto.ContractDraftRevisionRequest request) {
+        return ResponseEntity.ok(sellerContractCommandService.requestDraftRevision(getCurrentSellerEmail(), contractId,
+                submissionId, request));
+    }
+
+    @Override
     @DeleteMapping("/{contractId}/draft-approvals/{approvalId}")
     public ResponseEntity<ContractDetailResponse> deleteDraftApproval(@PathVariable Long contractId,
             @PathVariable Long approvalId) {

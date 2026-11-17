@@ -27,6 +27,8 @@ public enum NotificationType {
     CLAIM_REFUND_TRANSFERRED("반품·교환", false),
     REFUND_COMPLETED("주문", false),
     INQUIRY_ANSWERED("문의", false),
+    /** 1:1 문의 처리 경과 통지 — 접수 + 3영업일 미답변(소비자 불만 · 분쟁 처리 기한 · 수정요청 C). */
+    INQUIRY_IN_PROGRESS("문의", false),
     FOLLOW_GROUP_BUY_OPENED("쇼룸", true),
     FOLLOW_POST_PUBLISHED("쇼룸", true),
     GROUP_BUY_ENDING_D1("쇼룸", true),
@@ -35,6 +37,8 @@ public enum NotificationType {
     USER_ACCOUNT_SUSPENDED("계정", false),
     USER_ACCOUNT_RELEASED("계정", false),
     MARKETING_CONSENT_CHANGED("계정", false),
+    /** 마케팅 수신 동의 2년 재확인 통지(정보통신망법 시행령 제62조의3 · 수정요청 C). */
+    MARKETING_CONSENT_RECONFIRM("계정", false),
     TERMS_CHANGED("서비스", false),
 
     // ── 파트너센터 · 쇼룸 스튜디오(16 알림 표 · 14 H1a) ─────────────────────────
@@ -57,6 +61,12 @@ public enum NotificationType {
     CONTRACT_RESEND_HANDLED("계약", false),
     CONTRACT_SIGN_DEADLINE_D1("계약", false),
     CONTRACT_FIXED_FEE_PAID("계약", false),
+    /** 사전 검수 초안 도착 — 브랜드는 3영업일 안에 회신해야 한다(B-13). */
+    CONTRACT_DRAFT_SUBMITTED("계약", false),
+    /** 사전 검수 수정 요청 — 인플루언서에게(B-13). */
+    CONTRACT_DRAFT_REVISION_REQUESTED("계약", false),
+    /** 사전 검수 승인 간주 — 양측(B-13). */
+    CONTRACT_DRAFT_DEEMED_APPROVED("계약", false),
     /** 양측 서명 완료 · 계약 성립(1021 기-05). */
     CONTRACT_ESTABLISHED("계약", false),
     /** 상대가 해지를 요청했다(1021 설계서 1-4) — 의견은 운영팀 채널. */
@@ -89,7 +99,12 @@ public enum NotificationType {
     CLAIM_OPENED_BY_ADMIN("판매", false),
     /** 추적 정지 소비자 선택(1021 기-15) — 「소비자가 재발송/환불을 선택했어요」. */
     ORDER_STALL_CHOICE_MADE("판매", false),
+    /** 폐지(2026-11-10 자동 승인 없음) — 이미 쌓인 알림 행 때문에 남긴다. */
     CANCEL_AUTO_APPROVED("판매", false),
+    /** 응답 마감이 지난 취소 요청을 운영팀이 브랜드 확인 후 승인했다(2026-11-10). */
+    CANCEL_APPROVED_BY_ADMIN("판매", false),
+    /** 반품 검수 기한(돌려받은 날 + 2영업일) 경과로 시스템이 승인했다 — 환불이 진행된다(2026-11-10). */
+    CLAIM_INSPECTION_AUTO_APPROVED("판매", false),
     RETURN_DETECTED("판매", false),
     TRACKING_STALLED("판매", false),
 

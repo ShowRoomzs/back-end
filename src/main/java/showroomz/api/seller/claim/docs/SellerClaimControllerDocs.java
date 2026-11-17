@@ -76,7 +76,7 @@ public interface SellerClaimControllerDocs {
                     **행의 값**
                     - 라벨 · 버튼 가능 여부(`actions`) · 기한 초과(`overdue`) · 보관 기한(`storage`)은 서버가 계산해 내린다 — FE 가 매핑하지 않는다
                     - `statusTone` 은 전부 `NEUTRAL` 이다 — 단계는 진행 순서일 뿐 경고가 아니다. 경고는 `overdue` 로만 표시한다
-                    - `overdue` — ① 회수 대기 방치(신청 + 2영업일 경과 · 소비자 미발송) ② 검수 기한 경과(입고 확인 + 2영업일 · 브랜드 귀책).
+                    - `overdue` — ① 회수 대기 방치(신청 + 2영업일 경과 · 소비자 미발송) ② 검수 기한 경과(반품을 돌려받은 날 + 2영업일 · 브랜드 귀책 · 반품은 기한이 지나면 자동 승인).
                       `elapsedDays`(「경과」 열 · 단계 진입부터의 달력일)와 섞지 않는다
                     - `shipLabel` 은 재발송 대기 · 재발송 중 · 거절 보류 단계에서 **실제로 보낼(보관 중인) 물건**이다 —
                       교환 재발송은 새 옵션, 거절은 원래 옵션. 그 밖의 단계는 `null`
@@ -188,7 +188,7 @@ public interface SellerClaimControllerDocs {
                       엑셀(`POST /reshipments/export`)에만 나간다
                     - `reasonDetail` — 소비자가 적은 상세 내용(브랜드 부담 사유는 필수) · `consumerAttachments` — 소비자 첨부 사진 URL
                     - `reshipFeeCharged`(교환만) — 고객 귀책 교환이라 요청 때 재발송 배송비를 결제했으면 `true`. 반품은 `null`. 구 이름 `exchangeFeeCharged` 는 한 릴리스 동안 같은 값으로 남는다(1021 기-18)
-                    - `inspection` — 검수 판정(통과 · 사유 번복 · 반려) · 자동 입고 · 운임 정산 행(브랜드 정산 「± 운임 정산」과 같은 행) · 교환 사유 번복 결제 금액. `actions.canOverturn` 은 입고 확인 뒤 착불(브랜드 귀책) 신청 건
+                    - `inspection` — 검수 판정(통과 · 사유 번복 · 반려) · 자동 입고(2026-11-10 폐지 전 건) · 운임 정산 행(브랜드 정산 「± 운임 정산」과 같은 행) · 교환 사유 번복 결제 금액. `actions.canOverturn` 은 입고 확인 뒤 착불(브랜드 귀책) 신청 건
                     - `refund`(반품만) — 환불 예정액은 **요청(박스) 단위**다. `itemAmount`(이 항목의 상품 금액)와
                       `requestDeduction`(요청의 배송비 차감 — 요청당 한 번) · `requestExpectedAmount`(요청 예정액 —
                       판정이 다 끝났으면 확정액)를 따로 내린다. 묶음의 항목마다 같은 차감을 반복해 그리지 않는다.
@@ -233,8 +233,8 @@ public interface SellerClaimControllerDocs {
     @Operation(
             summary = "입고 확인 (다건)",
             description = """
-                    회수된 상품이 도착했음을 확인한다(`ARRIVED` → `RECEIVED` 검수 대기). **검수 기한(입고 확인 + 2영업일)이
-                    이 순간 발급된다** — 지나면 `overdue` 로 잡힌다(브랜드 귀책).
+                    회수된 상품이 도착했음을 확인한다(`ARRIVED` → `RECEIVED` 검수 대기). **검수 기한(반품을 돌려받은 날 + 2영업일)은 추적상 도착 때 이미 발급돼 있다**(추적상 도착이 없으면
+                    이 순간 입고 확인 시각부터 발급). 지나면 `overdue` 로 잡히고, **반품은 기한 안에 판정이 없으면 자동 승인 → PG 즉시 환불**된다(2026-11-10).
 
                     **권한:** SELLER · **버튼 노출:** `actions.canConfirmReceipt`
 

@@ -87,9 +87,9 @@ public class OrderNotificationService {
             case CANCEL_REQUEST_APPROVED -> {
                 toUser(userId, NotificationType.CANCEL_REQUEST_APPROVED, "취소 요청이 승인되었어요 · 환불이 진행돼요",
                         "승인", deliveryGroupId, image, null);
-                if (actorType == FulfillmentActorType.SYSTEM) {
-                    toSeller(marketId, NotificationType.CANCEL_AUTO_APPROVED, NotificationActorType.SYSTEM,
-                            "주문 " + code + " 취소 요청이 응답 기한 경과로 자동 승인되었습니다", deliveryGroupId);
+                if (actorType == FulfillmentActorType.ADMIN) {
+                    toSeller(marketId, NotificationType.CANCEL_APPROVED_BY_ADMIN, NotificationActorType.OPERATOR,
+                            "주문 " + code + " 취소 요청을 응답 기한 경과로 운영팀이 승인했습니다", deliveryGroupId);
                 }
             }
             case CANCEL_REQUEST_REJECTED -> toUser(userId, NotificationType.CANCEL_REQUEST_REJECTED,
@@ -141,7 +141,7 @@ public class OrderNotificationService {
     @EventListener
     public void onClaim(ClaimHistoryRecordedEvent event) {
         switch (event.eventType()) {
-            case REQUESTED, INSPECTION_PASSED, INSPECTION_REJECTED, REFUND_EXECUTED -> {
+            case REQUESTED, INSPECTION_PASSED, INSPECTION_AUTO_APPROVED, INSPECTION_REJECTED, REFUND_EXECUTED -> {
             }
             default -> {
                 return;
@@ -174,6 +174,14 @@ public class OrderNotificationService {
                             kind + "할 " + product + "의 회수 송장을 등록해 주세요", product, image, collectionId,
                             "CLAIM_INVOICE:" + collectionId, "회수 송장 등록 필요", due));
                 }
+            }
+            case INSPECTION_AUTO_APPROVED -> {
+                publisher.publish(claimCommand(claim, NotificationType.CLAIM_INSPECTION_PASSED,
+                        kind + " 검수가 끝나 " + product + " 환불이 진행돼요", product, image, collectionId,
+                        "CLAIM_PASSED:" + claim.getId(), null, null));
+                toSeller(claim.getMarketId(), NotificationType.CLAIM_INSPECTION_AUTO_APPROVED, NotificationActorType.SYSTEM,
+                        product + " " + kind + " 검수 기한이 지나 자동 승인되었습니다 · 환불이 진행됩니다", claim.getId(),
+                        NotificationTargetType.CLAIM);
             }
             case INSPECTION_PASSED -> publisher.publish(claimCommand(claim, NotificationType.CLAIM_INSPECTION_PASSED,
                     claim.getType() == ClaimType.RETURN ? kind + " 검수가 끝나 " + product + " 환불이 진행돼요"

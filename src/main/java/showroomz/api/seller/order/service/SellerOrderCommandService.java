@@ -436,14 +436,14 @@ public class SellerOrderCommandService {
     }
 
     /**
-     * 승인(E6) — 요청 항목만 취소 · 남은 항목 발송 · 환불은 PG 즉시 자동 · 단건만(일괄 없음 · §34-8). 응답 기한(1영업일)이 지나면
-     * 시스템이 같은 메서드로 자동 승인한다({@code OrderCancelRequestService}).
+     * 승인(E6) — 요청 항목만 취소 · 남은 항목 발송 · 환불은 PG 즉시 자동 · 단건만(일괄 없음 · §34-8). 응답 기한(2영업일)이 지나면
+     * 운영자가 브랜드 확인 후 같은 경로로 승인한다({@code OrderCancelRequestService#approveByOperator}) — 자동 승인은 없다.
      */
     @Transactional
     public SellerOrderDetailResponse approveCancelRequest(String sellerEmail, Long cancelRequestId) {
         SellerScope scope = accessGuard.resolve(sellerEmail);
         loadOwnedRequest(cancelRequestId, scope);
-        Long groupId = cancelRequestService.approve(cancelRequestId, scope.sellerId(), false, LocalDateTime.now());
+        Long groupId = cancelRequestService.approve(cancelRequestId, scope.sellerId(), LocalDateTime.now());
         return queryService.getOrder(sellerEmail, groupId);
     }
 

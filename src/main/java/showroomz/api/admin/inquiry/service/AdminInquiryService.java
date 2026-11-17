@@ -42,6 +42,7 @@ public class AdminInquiryService {
 
     private static final String UNKNOWN_OPERATOR = "운영자";
 
+    private final showroomz.domain.inquiry.service.InquiryHandlingDeadlineService deadlineService;
     private final OneToOneInquiryRepository inquiryRepository;
     /** 답변 기한 — 시안(어드민 00 · 21) 24시간. 홈 「기한 초과」와 같은 값이다(1017 설계서 6-0 ⑤). */
     private final AdminProperties adminProperties;
@@ -103,6 +104,8 @@ public class AdminInquiryService {
                 .typeName(inquiry.typeName())
                 .status(inquiry.getStatus())
                 .slaExceeded(isSlaExceeded(inquiry, now))
+                .resultDueAt(inquiry.isSanctionAppeal() ? null : deadlineService.resultDueAt(inquiry))
+                .progressNoticedAt(inquiry.getProgressNoticedAt())
                 .userId(user.getId())
                 .userName(writerName(user))
                 .orderId(inquiry.getOrderId())
@@ -160,6 +163,7 @@ public class AdminInquiryService {
                 .answeredAt(inquiry.getAnsweredAt())
                 .elapsedText(elapsedText(inquiry, now))
                 .slaExceeded(isSlaExceeded(inquiry, now))
+                .resultDueAt(inquiry.isSanctionAppeal() ? null : deadlineService.resultDueAt(inquiry))
                 .status(inquiry.getStatus())
                 .sanctionAppeal(inquiry.isSanctionAppeal())
                 .build();

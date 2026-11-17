@@ -49,15 +49,16 @@ public final class AdjustmentPermissionPolicy {
     }
 
     /**
-     * [요청 철회](1021 기-14) 까지 — 협의 중 ∧ 기한 전 ∧ 뷰어 = 처음 요청한 쪽 ∧ 최신 제안이 뷰어의 것이고 응답 대기(상대가 반대 · 수정 제안을
-     * 낸 뒤면 철회가 아니라 협의다).
+     * [요청 철회](1021 기-14) 까지 — 협의 중 ∧ 기한 전 ∧ 뷰어 = 처음 요청한 쪽이면 <b>언제든</b>(대표 결정 2026-11-10). 「최신 제안이 내 것이고
+     * 응답 대기」 조건은 지웠다 — 상대가 반대 · 수정 제안을 낸 뒤에도 철회할 수 있다. 상대의 동의와 겹치면 먼저 반영된 쪽만 남는다(잠금 +
+     * 협의 중 조건부 UPDATE · {@code SettlementAdjustmentService#withdraw}).
      */
     public static Permissions permissions(AdjustmentStatus status, LocalDateTime deadlineAt, ProposalStatus latestStatus,
                                           SettlementParty latestProposer, SettlementParty requester,
                                           SettlementParty viewer, LocalDateTime now) {
         Permissions base = permissions(status, deadlineAt, latestStatus, latestProposer, viewer, now);
         boolean canWithdraw = viewer != null && status == AdjustmentStatus.OPEN && !now.isAfter(deadlineAt)
-                && viewer == requester && viewer == latestProposer && latestStatus == ProposalStatus.PENDING;
+                && viewer == requester;
         return new Permissions(base.canAccept(), base.canReject(), base.canCounter(), base.canSend(), canWithdraw);
     }
 

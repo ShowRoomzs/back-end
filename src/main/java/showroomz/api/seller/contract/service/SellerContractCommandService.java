@@ -73,6 +73,7 @@ import java.util.stream.Collectors;
 @Transactional
 public class SellerContractCommandService {
 
+    private final showroomz.domain.contract.service.ContractDraftReviewService draftReviewService;
     private final ContractAccessGuard accessGuard;
     private final BrandSanctionGuard brandSanctionGuard;
     private final showroomz.domain.member.brand.service.BrandWithdrawalGuard brandWithdrawalGuard;
@@ -393,11 +394,26 @@ public class SellerContractCommandService {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, "승인 일시는 지금 이전이어야 합니다.");
         }
         String note = request.note() == null || request.note().isBlank() ? null : request.note().trim();
-        draftApprovalRepository.save(showroomz.domain.contract.entity.ContractDraftApproval.of(contract.getId(),
+        showroomz.domain.contract.entity.ContractDraftApproval approval = draftApprovalRepository.save(
+                showroomz.domain.contract.entity.ContractDraftApproval.of(contract.getId(),
                 market.getId(), request.title().trim(), approvedAt, request.threadMessageId(), note, now));
+        // 초안 제출에 대한 회신이면 그 제출을 「승인」으로 닫는다(B-13) — 승인 간주 배치와 겹치면 먼저 반영된 쪽만 남는다.
+        if (request.submissionId() != null) {
+            draftReviewService.approve(contract, request.submissionId(), approval.getId(), now);
+            contract = accessGuard.loadOwned(contractId, market);   // 조건부 UPDATE 가 영속성 컨텍스트를 비웠다
+        }
         historyRecorder.recordBySeller(contract, ContractEventType.DRAFT_APPROVAL_RECORDED, request.title().trim(), now);
         draftApprovalRepository.flush();
         return detailAssembler.assemble(contract);
+    }
+
+    /** 사전 검수 수정 요청 회신(B-13 · 계약서 제8조) — 회신 기한 안이면 승인 간주되지 않는다. */
+    public ContractDetailResponse requestDraftRevision(String sellerEmail, Long contractId, Long submissionId,
+                                                       showroomz.api.seller.contract.dto.ContractDraftRevisionRequest request) {
+        Market market = accessGuard.resolveMarket(sellerEmail);
+        Contract contract = accessGuard.loadOwned(contractId, market);
+        draftReviewService.requestRevision(contract, submissionId, market.getId(), request.note(), LocalDateTime.now());
+        return detailAssembler.assemble(accessGuard.loadOwned(contractId, market));
     }
 
     /** 초안 승인 기록 삭제(잘못 적은 기록) — 행은 남긴다. */

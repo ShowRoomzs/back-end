@@ -32,7 +32,7 @@ public class BusinessDayCalculator {
 
     /**
      * 「기산 + N영업일」 기한이 지났을 수 있는 기산 시각의 경계 — 기산 시각이 이 값보다 앞인 건만 후보다. 주말 기산은 하루 일찍 걸릴 수
-     * 있어 최종 판정은 {@link #dueAt}으로 한 번 더 한다. 자동 입고 대상 조회(1021 기-17)가 쓴다.
+     * 있어 최종 판정은 {@link #dueAt}으로 한 번 더 한다. 후보를 넓게 집는 조회가 쓴다.
      */
     public LocalDateTime dueElapsedCandidateBefore(LocalDateTime now, int businessDays) {
         return KstDates.startOfDay(businessCalendar.latestStartToFinishBefore(KstDates.today(now), businessDays).plusDays(1));

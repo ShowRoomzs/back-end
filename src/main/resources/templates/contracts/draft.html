@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>SHOWROOMZ 공동구매 계약서 양식 v0.1</title>
+<title>SHOWROOMZ 공동구매 계약서 양식 v0.3</title>
 <style>
   * { box-sizing: border-box; }
   html { background: #6b6d72; }
@@ -336,9 +336,9 @@ h2, h3 { break-after:avoid; }
 <tr class="opt" th:each="option : ${item['옵션']}">
 <td class="l optname">└ 옵션 <span class="v" th:text="${option['옵션명']}"></span></td>
 <td class="blank"></td>
-<td class="r"><span class="v" th:text="${option['옵션판매가']}"></span>원</td>
 <td class="blank"></td>
-<td class="r"><span class="v" th:text="${option['옵션개당리워드']}"></span>원</td>
+<td class="blank"></td>
+<td class="blank"></td>
 <td class="r"><span class="v" th:text="${option['옵션최소물량']}"></span>개</td>
 </tr>
 </th:block>
@@ -349,14 +349,15 @@ h2, h3 { break-after:avoid; }
 <li>최소 물량은 갑이 <b>상품의 옵션별로</b> 확보를 약속하는 수량이며, 상품별 최소 물량은 그 옵션별 최소 물량의 합계로 한다.
         옵션별 최소 물량은 해당 옵션 외의 옵션으로 대체하여 충족할 수 없다. 갑의 사유로 어느 옵션의 최소 물량이 확보되지 아니하여
         주문이 이행되지 못한 경우, 그에 따른 소비자 대응과 손해는 갑이 부담한다.</li>
-<li>공동구매가와 리워드율은 상품 단위로 정하며, 같은 상품의 모든 옵션에 동일하게 적용한다.</li>
+<li>정가, 공동구매가 및 리워드율은 <b>상품 단위로</b> 정하며, 같은 상품의 모든 옵션에 동일하게 적용한다. 최소 물량은 <b>옵션 단위로</b> 정한다.</li>
 <li>상품, 옵션, 공동구매가, 리워드율 및 옵션별 최소 물량은 <b>본 계약의 성립 후 변경할 수 없다.</b>
         변경이 필요한 경우 양 당사자의 합의로 본 계약을 해지하고 새로 체결한다.</li>
 </ol>
 <h2 class="art">제6조 (리워드 및 정산) <span class="arttag">협의 · 표준 혼합</span></h2>
 <ol class="cl">
 <li>을은 본 계약에 따른 공동구매를 통해 발생한 판매에 대하여 제5조에 정한 상품별 리워드율을 적용한 금액을
-        리워드로 지급받는다. 리워드는 <b>상품별 공동구매가에 해당 상품의 리워드율을 곱한 금액</b>으로 산정한다.</li>
+        리워드로 지급받는다. 리워드는 <b>상품별 공동구매가에 해당 상품의 리워드율을 곱한 금액</b>으로 산정한다.
+        리워드는 <b>부가가치세를 포함한 금액</b>이다.</li>
 <li>리워드는 플랫폼의 정산 절차에 따라 지급되며, 정산 기준은 다음과 같다.
       <table style="margin-top:2mm">
 <tbody>

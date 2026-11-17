@@ -24,12 +24,13 @@ class CreatorPerformanceRulesTest {
     private static final LocalDate END = LocalDate.of(2026, 8, 31);
 
     @Test
-    @DisplayName("공통 5종 → 스튜디오 3종 — 돈이 들어오기 전은 전부 집계 중 · 톤은 중립 · 경고 · 성공뿐")
+    @DisplayName("공통 6종 → 스튜디오 4종 — 돈이 들어오기 전은 전부 집계 중 · 분배 실패는 따로(2026-11-10 · 금액은 확정)")
     void foldsStatus() {
         assertThat(Arrays.stream(PerformanceStatus.values()).map(CreatorPerformanceStatus::of))
                 .containsExactly(CreatorPerformanceStatus.COLLECTING, CreatorPerformanceStatus.COLLECTING,
                         CreatorPerformanceStatus.ADJUSTING, CreatorPerformanceStatus.COLLECTING,
-                        CreatorPerformanceStatus.SETTLED);
+                        CreatorPerformanceStatus.SETTLED, CreatorPerformanceStatus.PAYOUT_FAILED);
+        assertThat(RewardStage.of(CreatorPerformanceStatus.PAYOUT_FAILED)).isEqualTo(RewardStage.CONFIRMED);
         assertThat(CreatorPerformanceStatus.COLLECTING.getTone()).isEqualTo(PerformanceTone.NEUTRAL);
         assertThat(CreatorPerformanceStatus.ADJUSTING.getTone()).isEqualTo(PerformanceTone.WARNING);
         assertThat(RewardStage.of(CreatorPerformanceStatus.COLLECTING)).isEqualTo(RewardStage.AFTER_SETTLEMENT);

@@ -130,14 +130,19 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     int moveByCollection(@Param("collectionId") Long collectionId, @Param("from") ClaimStatus from,
                          @Param("to") ClaimStatus to, @Param("now") LocalDateTime now);
 
-    /** #3 COLLECTING → ARRIVED — 추적상 브랜드 도착. 폴링 당시 송장이 그대로일 때만(그사이 정정됐으면 0행). */
+    /**
+     * #3 COLLECTING → ARRIVED — 추적상 브랜드 도착. 폴링 당시 송장이 그대로일 때만(그사이 정정됐으면 0행). 검수 기한이 여기서
+     * 발급된다 — 반품을 돌려받은 날 + N영업일(2026-11-10).
+     */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("UPDATE OrderClaim c SET c.status = showroomz.domain.order.type.ClaimStatus.ARRIVED, c.stageEnteredAt = :now "
+    @Query("UPDATE OrderClaim c SET c.status = showroomz.domain.order.type.ClaimStatus.ARRIVED, c.stageEnteredAt = :now, "
+            + "c.inspectDueAt = :inspectDueAt "
             + "WHERE c.collection.id = :collectionId AND c.status = showroomz.domain.order.type.ClaimStatus.COLLECTING "
             + "AND EXISTS (SELECT k FROM OrderClaimCollection k WHERE k.id = :collectionId "
             + "    AND k.carrier = :carrier AND k.trackingNumber = :trackingNumber)")
     int markArrived(@Param("collectionId") Long collectionId, @Param("carrier") DeliveryCarrier carrier,
-                    @Param("trackingNumber") String trackingNumber, @Param("now") LocalDateTime now);
+                    @Param("trackingNumber") String trackingNumber, @Param("inspectDueAt") LocalDateTime inspectDueAt,
+                    @Param("now") LocalDateTime now);
 
     /** #14 REQUESTED → COMPLETED(CANCELLED · INVOICE_EXPIRED) — 회수 송장 등록 기한 경과. 묶음 전체. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
@@ -192,12 +197,14 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     @Query("UPDATE OrderClaim c SET c.status = " + COMPLETED + ", "
             + "c.result = showroomz.domain.order.type.ClaimResult.REFUNDED, c.refundedAmount = :amount, "
             + "c.completedAt = :now, c.stageEnteredAt = :now "
-            + "WHERE c.id = :id AND c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED")
+            + "WHERE c.id = :id AND c.status IN (showroomz.domain.order.type.ClaimStatus.ARRIVED, "
+            + "    showroomz.domain.order.type.ClaimStatus.RECEIVED)")
     int closeUnansweredByOperator(@Param("id") Long id, @Param("amount") int amount, @Param("now") LocalDateTime now);
 
-    /** 어드민 예외 관리 — 검수 기한이 지난 입고 건(06d 처리 지연). */
+    /** 어드민 예외 관리 — 검수 기한이 지난 도착 · 입고 건(06d 처리 지연). 반품은 자동 승인되므로 사실상 교환이 남는다. */
     @Query("SELECT c FROM OrderClaim c JOIN FETCH c.deliveryGroup g JOIN FETCH g.order WHERE "
-            + "c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED AND c.inspectDueAt < :now "
+            + "c.status IN (showroomz.domain.order.type.ClaimStatus.ARRIVED, showroomz.domain.order.type.ClaimStatus.RECEIVED) "
+            + "AND c.inspectDueAt < :now "
             + "ORDER BY c.inspectDueAt ASC")
     List<OrderClaim> findInspectOverdue(@Param("now") LocalDateTime now, Pageable limit);
 
@@ -260,8 +267,9 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
                          @Param("faultToSeller") boolean faultToSeller,
                          @Param("sellerId") Long sellerId, @Param("now") LocalDateTime now);
 
-    /** 검수 기한 경과 자동 알림 대상 — 입고 확인 뒤 검수 기한이 지났고 오늘 아직 알리지 않음(1009 기획 수정본 8-4). */
-    @Query("SELECT c.id FROM OrderClaim c WHERE c.status = showroomz.domain.order.type.ClaimStatus.RECEIVED "
+    /** 검수 기한 경과 자동 알림 대상 — 도착 · 입고 뒤 검수 기한이 지났고 오늘 아직 알리지 않음(1009 기획 수정본 8-4). */
+    @Query("SELECT c.id FROM OrderClaim c WHERE c.status IN (showroomz.domain.order.type.ClaimStatus.ARRIVED, "
+            + "    showroomz.domain.order.type.ClaimStatus.RECEIVED) "
             + "AND c.inspectDueAt IS NOT NULL AND c.inspectDueAt < :now "
             + "AND (c.lastInspectNoticeAt IS NULL OR c.lastInspectNoticeAt < :todayStart) ORDER BY c.id ASC")
     List<Long> findInspectOverdueToNotify(@Param("now") LocalDateTime now,
@@ -281,11 +289,15 @@ public interface OrderClaimRepository extends JpaRepository<OrderClaim, Long>, O
     int shrinkForPartialReject(@Param("id") Long id, @Param("marketId") Long marketId,
                                @Param("quantity") int quantity);
 
-    /** 자동 입고 대상(1021 기-17) — 추적상 도착했는데 입고 확인이 없는 클레임. 도착 시각이 기준보다 이른 것. */
-    @Query("SELECT c.id FROM OrderClaim c WHERE c.status = showroomz.domain.order.type.ClaimStatus.ARRIVED "
-            + "AND c.collection.arrivedAt IS NOT NULL AND c.collection.arrivedAt < :arrivedBefore ORDER BY c.id ASC")
-    List<Long> findIdsToAutoReceive(@Param("arrivedBefore") java.time.LocalDateTime arrivedBefore,
-                                    org.springframework.data.domain.Pageable pageable);
+    /**
+     * 반품 검수 자동 승인 대상(2026-11-10) — 도착 · 입고 상태에서 검수 기한이 지난 반품. 자동 입고(1021 기-17)는 폐지됐다 —
+     * 검수 기한은 돌려받은 날부터 세고, 기한 안에 판정이 없으면 승인한다.
+     */
+    @Query("SELECT c.id FROM OrderClaim c WHERE c.type = showroomz.domain.order.type.ClaimType.RETURN "
+            + "AND c.status IN (showroomz.domain.order.type.ClaimStatus.ARRIVED, showroomz.domain.order.type.ClaimStatus.RECEIVED) "
+            + "AND c.inspectDueAt IS NOT NULL AND c.inspectDueAt < :now ORDER BY c.inspectDueAt ASC, c.id ASC")
+    List<Long> findReturnIdsToAutoApprove(@Param("now") java.time.LocalDateTime now,
+                                          org.springframework.data.domain.Pageable pageable);
 
     /** 사유 번복(1021 기-17) — 같은 요청의 클레임 사본 부담 주체를 소비자로 맞춘다. */
     @Modifying(flushAutomatically = true, clearAutomatically = true)

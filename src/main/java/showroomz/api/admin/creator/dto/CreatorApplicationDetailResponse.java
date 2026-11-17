@@ -75,18 +75,24 @@ public class CreatorApplicationDetailResponse {
             + "null 기록 없음(이 기능 이전 반려 · 업무 이메일 없음 · 발송 중)", nullable = true)
     private Boolean noticeSent;
 
+    @Schema(description = "반려 정보 파기 예정 — 반려 처리 + 14일(2026-11-10 · 그때까지 원래 값을 보관한다). 반려 전이면 null", nullable = true)
+    private java.time.LocalDateTime personalDataPurgeDueAt;
+
+    @Schema(description = "반려 정보 파기 시각 — 파기 뒤에는 실명 · 생년월일 · 연락처 · 마케팅 동의가 null 이고 연락처 해시만 남는다", nullable = true)
+    private java.time.LocalDateTime personalDataPurgedAt;
+
     // ── 본인 인증 (회원가입 시 PASS 인증값) ──
 
-    @Schema(description = "실명 (회원가입 시 본인인증 결과, 반려 시 null/파기)", example = "홍길동")
+    @Schema(description = "실명 (회원가입 시 본인인증 결과, 반려 정보 파기 뒤 null — 반려 + 14일)", example = "홍길동")
     private String name;
 
-    @Schema(description = "생년월일 (회원가입 시 본인인증 결과, 반려 시 null/파기, YYYY-MM-DD)", example = "1990-01-01")
+    @Schema(description = "생년월일 (회원가입 시 본인인증 결과, 반려 정보 파기 뒤 null, YYYY-MM-DD)", example = "1990-01-01")
     private String birthday;
 
-    @Schema(description = "연락처 (회원가입 시 본인인증 결과, 반려 시 null/파기)", example = "010-1234-5678")
+    @Schema(description = "연락처 (회원가입 시 본인인증 결과, 반려 정보 파기 뒤 null)", example = "010-1234-5678")
     private String phoneNumber;
 
-    @Schema(description = "연락처 일방향 해시 (반려 시에만)", example = "a3f9c210...")
+    @Schema(description = "연락처 일방향 해시 (반려 정보 파기 뒤에만)", example = "a3f9c210...")
     private String phoneNumberHash;
 
     @Schema(description = "인증 수단 코드 (현재 PASS만 예정)", example = "PASS")

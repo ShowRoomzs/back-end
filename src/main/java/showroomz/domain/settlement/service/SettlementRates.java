@@ -10,7 +10,16 @@ import java.math.BigDecimal;
  * @param rewardVatRate         리워드 부가세율 10%
  * @param withholdingIncomeRate 원천징수 소득세율 3%
  * @param withholdingLocalRate  원천징수 지방소득세율 0.3%
+ * @param rewardVatInclusive    리워드 = 부가세 포함(2026-11-10) — 브랜드 별도 부가세 없음 · 사업자 부가세는 리워드 안에서 나뉜다.
+ *                              false 는 그 전 정산(리워드 + 부가세 10% 를 브랜드가 따로 부담)
  */
 public record SettlementRates(BigDecimal pgFeeRate, BigDecimal platformFeeRate, BigDecimal rewardVatRate,
-                              BigDecimal withholdingIncomeRate, BigDecimal withholdingLocalRate) {
+                              BigDecimal withholdingIncomeRate, BigDecimal withholdingLocalRate,
+                              boolean rewardVatInclusive) {
+
+    /** 부가세 포함 규칙 이전 정산(별도 부담) — 기존 행 · 단위 테스트용. */
+    public SettlementRates(BigDecimal pgFeeRate, BigDecimal platformFeeRate, BigDecimal rewardVatRate,
+                           BigDecimal withholdingIncomeRate, BigDecimal withholdingLocalRate) {
+        this(pgFeeRate, platformFeeRate, rewardVatRate, withholdingIncomeRate, withholdingLocalRate, false);
+    }
 }

@@ -36,6 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("1021 P0 — 사업자 정보 · 검색어 필수 · 거부 사유 · 반려 통지 · 서명 기한 제안 · 고정 지급비 정의")
 class Design1021P0IntegrationTest extends SettlementTestSupport {
 
+    @Autowired private showroomz.domain.member.creator.service.CreatorRejectionPurgeService rejectionPurgeService;
     @Autowired private CreatorApplicationRepository applications;
     @Autowired private CreatorApplicationService applicationService;
 
@@ -98,11 +99,30 @@ class Design1021P0IntegrationTest extends SettlementTestSupport {
         verify(mailService, never()).sendCreatorRejectionEmail(anyString(), anyString(), org.mockito.ArgumentMatchers.any(),
                 anyString(), anyString());
 
+        // 반려 정보는 즉시 파기하지 않는다 — 반려 + 14일 보관 뒤 배치가 파기한다(B-8 · 2026-11-10).
         CreatorApplication saved = applications.findById(applicationId).orElseThrow();
-        assertThat(saved.getBusinessEmail()).isNull();
+        assertThat(saved.getBusinessEmail()).isEqualTo("notice-biz@showroomz.test");
+        assertThat(saved.getPersonalDataPurgedAt()).isNull();
+        assertThat(saved.getPersonalDataPurgeDueAt()).isEqualTo(saved.getProcessedAt().plusDays(14));
         assertThat(saved.getRejectReasonDetail()).isEqualTo("팔로워 급증 구간 다수 — 내부 기록");
         assertThat(applicationService.getMyRejectedApplication(applicant.getId()).getRejectReason())
                 .isEqualTo("채널 운영 기준 미충족");
+        adminGet(base).andExpect(jsonPath("$.name").isNotEmpty())
+                .andExpect(jsonPath("$.phoneNumberHash").doesNotExist());
+
+        // 보관 기간 전에는 파기하지 않고, 지나면 실명 · 업무 이메일을 지우고 연락처는 해시만 남긴다.
+        LocalDateTime due = saved.getPersonalDataPurgeDueAt();
+        assertThat(rejectionPurgeService.findIdsToPurge(due.minusMinutes(1), 100)).doesNotContain(applicationId);
+        assertThat(rejectionPurgeService.purge(applicationId, due.minusMinutes(1))).isFalse();
+        assertThat(rejectionPurgeService.findIdsToPurge(due.plusMinutes(1), 100)).contains(applicationId);
+        assertThat(rejectionPurgeService.purge(applicationId, due.plusMinutes(1))).isTrue();
+        assertThat(rejectionPurgeService.purge(applicationId, due.plusMinutes(2))).isFalse();
+        CreatorApplication purged = applications.findById(applicationId).orElseThrow();
+        assertThat(purged.getBusinessEmail()).isNull();
+        assertThat(purged.getRealName()).isNull();
+        assertThat(purged.getPersonalDataPurgedAt()).isEqualTo(due.plusMinutes(1));
+        adminGet(base).andExpect(jsonPath("$.name").doesNotExist())
+                .andExpect(jsonPath("$.phoneNumberHash").isNotEmpty());
     }
 
     @Test

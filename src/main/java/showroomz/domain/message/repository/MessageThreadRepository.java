@@ -27,6 +27,18 @@ public interface MessageThreadRepository extends JpaRepository<MessageThread, Lo
      */
     Optional<MessageThread> findByConnectionAndKind(Connection connection, ThreadKind kind);
 
+    /**
+     * 보존 기간 경과 파기 대상 — 연결 스레드 ∧ 연결이 해제(탈퇴 포함)된 지 1년 경과 ∧ 아직 파기 전. 다시 연결된 쌍은 상태가 CONNECTED 라
+     * 빠진다.
+     */
+    @org.springframework.data.jpa.repository.Query("SELECT t.id FROM MessageThread t JOIN t.connection c "
+            + "WHERE t.kind = showroomz.domain.message.type.ThreadKind.CONNECTION AND t.purgedAt IS NULL "
+            + "AND c.status = showroomz.domain.connection.type.ConnectionStatus.DISCONNECTED "
+            + "AND c.disconnectedAt IS NOT NULL AND c.disconnectedAt <= :disconnectedBefore ORDER BY t.id ASC")
+    java.util.List<Long> findIdsToPurge(
+            @org.springframework.data.repository.query.Param("disconnectedBefore") java.time.LocalDateTime disconnectedBefore,
+            org.springframework.data.domain.Pageable pageable);
+
     /** 공구 미이행 3자 스레드 — 공구당 1개다(30-1 1-4). */
     Optional<MessageThread> findFirstByKindAndSubjectIdOrderByIdAsc(ThreadKind kind, Long subjectId);
 

@@ -33,8 +33,8 @@ public interface CreatorSettlementControllerDocs {
                     **권한:** CREATOR
 
                     **파라미터**
-                    - `status` — `REVIEWING` · `ADJUSTING` · `PAYOUT_SCHEDULED` · `PAID` 복수 · 생략 시 전부. `PAID` 를 고르면 분배 실패 건도 함께.
-                      **`PAYOUT_FAILED` 는 받지 않습니다**(400)
+                    - `status` — `REVIEWING` · `ADJUSTING` · `PAYOUT_SCHEDULED` · `PAID` · `PAYOUT_FAILED` 복수 · 생략 시 전부.
+                      분배 실패(`PAYOUT_FAILED` 「분배 실패」)는 지급 완료로 접지 않습니다(2026-11-10)
                     - `keyword` — 공구명 · 브랜드명 부분 일치
                     - `sort` — `CREATED_DESC`(정산 생성일 최신순 · 기본) · `PAYOUT_DESC`(실지급액 높은순)
                     - `page`(1부터) · `size`(기본 20 · 1~100)
@@ -50,9 +50,8 @@ public interface CreatorSettlementControllerDocs {
             @ApiResponse(responseCode = "200", description = "정산 목록과 페이지 정보",
                     content = @Content(schema = @Schema(implementation = PageResponse.class),
                             examples = @ExampleObject(summary = "size=3 — 정산 확인 중 · 지급 예정 · 지급 완료", value = LIST))),
-            @ApiResponse(responseCode = "400", description = "PAYOUT_FAILED 필터 · size 1~100 밖 · 없는 enum 값 (`INVALID_INPUT`)",
+            @ApiResponse(responseCode = "400", description = "size 1~100 밖 · 없는 enum 값 (`INVALID_INPUT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
-                            @ExampleObject(name = "PAYOUT_FAILED", value = ERR_PAYOUT_FAILED_FILTER),
                             @ExampleObject(name = "페이지 크기", value = ERR_PAGE_SIZE),
                             @ExampleObject(name = "enum", value = ERR_INVALID_INPUT)
                     })),
@@ -123,7 +122,7 @@ public interface CreatorSettlementControllerDocs {
                     - `shownAfterConfirm = true`(확정 전) — 금액만 보이고 상태는 「확인 기간 후 지급」(`WAITING`) · 「보류 중」(`HELD` — 조정 협의)
                     - 확정 후 — 「10.12 지급 예정」 · 「10.07 지급 완료」 · 0원 행은 「—」
                     - 내 행 보류(`BLOCKED`) — 세금계산서 확인 전이면 카드 상태(「발행 필요」 · 「확인 중」 · 「반려 · 재제출 필요」), 그 밖의 사유면 사유 라벨(`hold.label` — 「지급 정지 · 계정 이용 정지」 · 「정산 계좌 확인 중」)
-                    - 내 행 실패만 「지급 확인 중」(`FAILED`) · 브랜드 행 실패는 「지급 예정」으로 접힌다
+                    - 분배 실패는 누구 행이든 「지급 실패 · 재지급 예정」(`FAILED`)으로 보인다 — 정산 상태도 `PAYOUT_FAILED`(2026-11-10)
 
                     **세금계산서 카드 `taxInvoice.cardStatus`** — `PENDING_INPUT`(발행 필요) · `SUBMITTED`(확인 중) · `REJECTED`(반려 — `rejectReasonLabel` 표시) ·
                     `VERIFIED`(확인 완료). `supplier` 는 공급받는자(SHOWROOMZ — 설정값) · 공급가 = 차감 후 리워드 · 부가세.

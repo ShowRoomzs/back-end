@@ -12,8 +12,10 @@ import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionKind;
 import showroomz.api.admin.transaction.dto.AdminOrderExceptionDto.ExceptionTab;
 import showroomz.api.admin.transaction.service.AdminOrderExceptionAssembler.Row;
+import showroomz.domain.order.entity.OrderCancelRequest;
 import showroomz.domain.order.entity.OrderClaim;
 import showroomz.domain.order.entity.OrderDeliveryGroup;
+import showroomz.domain.order.repository.OrderCancelRequestRepository;
 import showroomz.domain.order.repository.OrderClaimRepository;
 import showroomz.domain.order.repository.OrderDeliveryGroupRepository;
 import showroomz.domain.order.service.BusinessDayCalculator;
@@ -40,7 +42,7 @@ import java.util.Optional;
 /**
  * 어드민 예외 관리(06d · 40 설계서) — 처리 지연(당사자 기한 경과)과 배송 예외(택배 · 추적 이상)의 모니터. <b>쓰기가 없다</b> — [열기]로
  * 06a · 06b 상세에 가서 근거를 읽고 조치한다. 독촉 버튼도 없다 — 기한 경과 알림은 시스템 자동이고 횟수만 보여 준다. 취소 요청 미응답은
- * 1영업일 자동 승인이라 처리 지연에 오지 않는다.
+ * 자동 승인이 없어져(2026-11-10) 응답 마감(요청 + 2영업일)이 지나면 처리 지연에 온다 — 운영자가 브랜드 확인 후 06a 에서 승인한다.
  *
  * <p>유형 7종이 두 엔티티 · 다섯 조회에서 나오고 재발송 지연은 영업일 판정이라 SQL 로 못 간다 — <b>메모리 합집합</b> 뒤 필터 · 검색 ·
  * 정렬 · 페이지를 여기서 한다(40 설계서 0-3). 유형별 조회 상한({@code order.exception.fetch-limit})에 닿으면 경고 로그를 남긴다.
@@ -55,6 +57,7 @@ public class AdminOrderExceptionService {
 
     private final OrderDeliveryGroupRepository deliveryGroupRepository;
     private final OrderClaimRepository claimRepository;
+    private final OrderCancelRequestRepository cancelRequestRepository;
     private final BusinessDayCalculator businessDayCalculator;
     private final ActOnBehalfPolicy actOnBehalfPolicy;
     private final AdminOrderExceptionAssembler assembler;
@@ -149,6 +152,13 @@ public class AdminOrderExceptionService {
         for (OrderDeliveryGroup group : shipOverdue) {
             rows.add(new Row(ExceptionKind.SHIP_OVERDUE, group, null, group.getShipDueAt(), group.getShipDueAt(),
                     actOnBehalfPolicy.canActOnBehalf(group, now)));
+        }
+        List<OrderCancelRequest> cancelOverdue = cancelRequestRepository.findOverdueForAdmin(now, cap);
+        warnIfCapped(ExceptionKind.CANCEL_REQUEST_OVERDUE, cancelOverdue.size());
+        for (OrderCancelRequest request : cancelOverdue) {
+            // 자동 승인이 없다(2026-11-10) — 마감이 지나면 곧바로 운영자 승인 대상이다(알림 횟수 조건 없음).
+            rows.add(new Row(ExceptionKind.CANCEL_REQUEST_OVERDUE, request.getDeliveryGroup(), null,
+                    request.getRespondDueAt(), request.getRespondDueAt(), true));
         }
         List<OrderClaim> inspectOverdue = claimRepository.findInspectOverdue(now, cap);
         warnIfCapped(ExceptionKind.INSPECT_OVERDUE, inspectOverdue.size());

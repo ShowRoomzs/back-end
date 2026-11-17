@@ -685,11 +685,10 @@ public class OrderClaimService {
         OrderProperties.Claim config = orderProperties.getClaim();
         Set<ClaimStatus> from = config.isReceiveBeforeArrival()
                 ? EnumSet.of(ClaimStatus.ARRIVED, ClaimStatus.COLLECTING) : EnumSet.of(ClaimStatus.ARRIVED);
-        // 기산점 — 시안은 입고 확인, 약관 제20조①은 「입고된 날」(추적상 도착)이다. 설정으로 뺀다(§35-9 A-5).
+        // 기산점 — 반품을 돌려받은 날(회수 배송완료 · 대표 결정 2026-11-10). 추적상 도착이 없으면(추적 꺼짐) 입고 확인 시각이다.
         LocalDateTime arrivedAt = claim.getCollection().getArrivedAt();
-        LocalDateTime basis = "ARRIVED".equalsIgnoreCase(config.getInspectDueBasis()) && arrivedAt != null
-                ? arrivedAt : now;
-        LocalDateTime inspectDueAt = businessDayCalculator.dueAt(basis, config.getInspectDueBusinessDays());
+        LocalDateTime inspectDueAt = businessDayCalculator.dueAt(arrivedAt != null ? arrivedAt : now,
+                config.getInspectDueBusinessDays());
         if (claimRepository.markReceived(claimId, marketId, from, sellerId, inspectDueAt, now) != 1) {
             return false;
         }
@@ -697,40 +696,43 @@ public class OrderClaimService {
         return true;
     }
 
-    /** 자동 입고 후보(1021 기-17) — 추적상 도착 후 N영업일이 지났을 수 있는 클레임. 최종 판정은 {@link #autoReceive}가 한다. */
+    /** 반품 검수 자동 승인 후보(2026-11-10) — 도착 · 입고 상태로 검수 기한이 지난 반품. 최종 판정은 {@link #autoApproveReturn}. */
     @Transactional(readOnly = true)
-    public List<Long> findIdsToAutoReceive(LocalDateTime now, int limit) {
-        LocalDateTime arrivedBefore = businessDayCalculator.dueElapsedCandidateBefore(now,
-                orderProperties.getClaim().getAutoReceiveBusinessDays());
-        return claimRepository.findIdsToAutoReceive(arrivedBefore, PageRequest.of(0, limit));
+    public List<Long> findReturnIdsToAutoApprove(LocalDateTime now, int limit) {
+        return claimRepository.findReturnIdsToAutoApprove(now, PageRequest.of(0, limit));
     }
 
     /**
-     * 자동 입고(1021 기-17 【잠정】) — 브랜드가 입고 확인을 하지 않아도 시스템이 입고 처리한다. 검수 기한은 입고 확인과 같은 규칙(입고 + 2영업일)
-     * 으로 생긴다. 이미 입고됐거나 상태가 바뀌었으면 false.
+     * 반품 검수 자동 승인(대표 결정 2026-11-10) — 반품을 돌려받은 날 + N영업일(기본 2) 안에 브랜드가 판정하지 않으면 시스템이 승인한다.
+     * 입고 확인 전(추적상 도착)이면 입고도 같이 처리한다. 승인 경로는 브랜드 검수 통과와 같고(귀책 변경 없음 · 신청 당시 부담 그대로),
+     * 판정이 끝나면 환불 큐가 서고 PG 가 즉시 자동 환불한다(승인 후 1영업일 안). 그사이 판정됐거나 기한 전이면 false.
      */
     @Transactional
-    public boolean autoReceive(Long claimId, LocalDateTime now) {
+    public boolean autoApproveReturn(Long claimId, LocalDateTime now) {
+        OrderClaim found = claimRepository.findById(claimId).orElse(null);
+        if (found == null || found.getType() != ClaimType.RETURN) {
+            return false;
+        }
+        Long collectionId = found.getCollection().getId();
+        collectionRepository.findForUpdate(collectionId).orElse(null);
         OrderClaim claim = claimRepository.findById(claimId).orElse(null);
-        if (claim == null || claim.getStatus() != ClaimStatus.ARRIVED) {
+        if (claim == null || (claim.getStatus() != ClaimStatus.ARRIVED && claim.getStatus() != ClaimStatus.RECEIVED)
+                || claim.getInspectDueAt() == null || !claim.getInspectDueAt().isBefore(now)) {
             return false;
         }
-        OrderProperties.Claim config = orderProperties.getClaim();
-        LocalDateTime arrivedAt = claim.getCollection().getArrivedAt();
-        if (arrivedAt == null || !now.isAfter(businessDayCalculator.dueAt(arrivedAt, config.getAutoReceiveBusinessDays()))) {
-            return false;
+        Long marketId = claim.getMarketId();
+        if (claim.getStatus() == ClaimStatus.ARRIVED) {
+            if (claimRepository.markReceived(claimId, marketId, EnumSet.of(ClaimStatus.ARRIVED), null,
+                    claim.getInspectDueAt(), now) != 1) {
+                return false;
+            }
+            claim = claimRepository.findById(claimId).orElseThrow();
         }
-        Long collectionId = claim.getCollection().getId();
-        // 검수 기한 기산점은 입고 확인과 같은 설정을 따른다 — 시스템이 입고했어도 브랜드의 검수 기한은 그대로 2영업일이다.
-        LocalDateTime basis = "ARRIVED".equalsIgnoreCase(config.getInspectDueBasis()) ? arrivedAt : now;
-        LocalDateTime inspectDueAt = businessDayCalculator.dueAt(basis, config.getInspectDueBusinessDays());
-        if (claimRepository.markReceived(claimId, claim.getMarketId(), EnumSet.of(ClaimStatus.ARRIVED), null,
-                inspectDueAt, now) != 1) {
-            return false;
-        }
-        collectionRepository.findById(collectionId).ifPresent(OrderClaimCollection::markAutoReceived);
-        appendHistory(claimId, ClaimEventType.AUTO_RECEIVED, FulfillmentActorType.SYSTEM, null,
-                "택배 도착 후 " + config.getAutoReceiveBusinessDays() + "영업일 경과 · 자동 입고", now);
+        passInternal(claim, marketId, null, ClaimEventType.INSPECTION_AUTO_APPROVED, FulfillmentActorType.SYSTEM,
+                "검수 기한(돌려받은 날 + " + orderProperties.getClaim().getInspectDueBusinessDays() + "영업일) 경과 · 자동 승인",
+                now);
+        collectionRepository.findById(collectionId).ifPresent(c -> c.recordInspectionResult(ClaimInspectionResult.PASSED));
+        finalizeCollection(collectionId, now);
         return true;
     }
 
@@ -767,7 +769,7 @@ public class OrderClaimService {
                         "브랜드 귀책 인정 · 선불 운임 · 최초 배송비 환급", now);
             }
         }
-        passInternal(claim, marketId, sellerId, now);
+        passInternal(claim, marketId, sellerId, ClaimEventType.INSPECTION_PASSED, FulfillmentActorType.SELLER, null, now);
         collectionRepository.findById(collectionId).ifPresent(c -> c.recordInspectionResult(ClaimInspectionResult.PASSED));
         finalizeCollection(collectionId, now);
     }
@@ -839,7 +841,7 @@ public class OrderClaimService {
                 FreightAdjustmentDirection.CHARGE_CONSUMER, collectFreight, 0, 0, FreightSettledVia.REFUND_DEDUCTION, now));
         appendHistory(claimId, ClaimEventType.REASON_OVERTURNED, FulfillmentActorType.SELLER, sellerId,
                 String.format("사유 번복 · 착불 운임 %,d원 환불액에서 차감", collectFreight), now);
-        passInternal(claim, marketId, sellerId, now);
+        passInternal(claim, marketId, sellerId, ClaimEventType.INSPECTION_PASSED, FulfillmentActorType.SELLER, null, now);
         finalizeCollection(collectionId, now);
     }
 
@@ -943,7 +945,8 @@ public class OrderClaimService {
                 .mapToInt(OrderClaimFreightAdjustment::getCollectFreight).sum();
     }
 
-    private void passInternal(OrderClaim claim, Long marketId, Long sellerId, LocalDateTime now) {
+    private void passInternal(OrderClaim claim, Long marketId, Long sellerId, ClaimEventType eventType,
+                              FulfillmentActorType actorType, String detail, LocalDateTime now) {
         Long claimId = claim.getId();
         ClaimType type = claim.getType();
         Long orderProductId = claim.getOrderProduct().getId();
@@ -959,7 +962,7 @@ public class OrderClaimService {
             }
             orderProductRepository.markReturnedIfFull(orderProductId);
         }
-        appendHistory(claimId, ClaimEventType.INSPECTION_PASSED, FulfillmentActorType.SELLER, sellerId, null, now);
+        appendHistory(claimId, eventType, actorType, sellerId, detail, now);
     }
 
     /**
@@ -1043,7 +1046,8 @@ public class OrderClaimService {
             if (claimRepository.shrinkForPartialReject(claimId, marketId, quantity - requested) != 1) {
                 throw new BusinessException(ErrorCode.CLAIM_STATE_CHANGED);
             }
-            passInternal(claimRepository.findById(claimId).orElseThrow(), marketId, sellerId, now);
+            passInternal(claimRepository.findById(claimId).orElseThrow(), marketId, sellerId,
+                    ClaimEventType.INSPECTION_PASSED, FulfillmentActorType.SELLER, null, now);
         }
         OrderClaim target = claimRepository.findById(rejectTargetId).orElseThrow();
         Long exchangeVariantId = target.getExchangeVariantId();
@@ -1313,7 +1317,10 @@ public class OrderClaimService {
         collectionRepository.markArrived(collectionId, carrier, trackingNumber, snapshot.deliveredAt());
         List<Long> collectingIds = claimRepository.findByCollectionId(collectionId).stream()
                 .filter(claim -> claim.getStatus() == ClaimStatus.COLLECTING).map(OrderClaim::getId).toList();
-        if (claimRepository.markArrived(collectionId, carrier, trackingNumber, now) > 0) {
+        // 검수 기한 — 반품을 돌려받은 날(추적상 배송완료) + N영업일(2026-11-10). 자동 입고는 없다.
+        LocalDateTime inspectDueAt = businessDayCalculator.dueAt(snapshot.deliveredAt(),
+                orderProperties.getClaim().getInspectDueBusinessDays());
+        if (claimRepository.markArrived(collectionId, carrier, trackingNumber, inspectDueAt, now) > 0) {
             for (Long claimId : collectingIds) {
                 appendHistory(claimId, ClaimEventType.ARRIVED, FulfillmentActorType.TRACKER, null, null, now);
             }
@@ -1426,9 +1433,13 @@ public class OrderClaimService {
                 && RESHIP_TARGET.contains(claim.getStatus());
     }
 
-    /** 검수 무응답 운영자 환불을 열 수 있는가 — 입고 · 검수 대기 ∧ 기한 경과 ∧ 자동 알림이 대행 조건 횟수에 닿았다. */
+    /**
+     * 검수 무응답 운영자 환불을 열 수 있는가 — 도착 · 입고(검수 대기) ∧ 기한 경과 ∧ 자동 알림이 대행 조건 횟수에 닿았다. 반품은 기한이
+     * 지나면 자동 승인되므로(2026-11-10) 사실상 교환에 쓰인다.
+     */
     public boolean isInspectionUnanswered(OrderClaim claim, LocalDateTime now) {
-        return claim.getStatus() == ClaimStatus.RECEIVED && claim.getInspectDueAt() != null
+        return (claim.getStatus() == ClaimStatus.RECEIVED || claim.getStatus() == ClaimStatus.ARRIVED)
+                && claim.getInspectDueAt() != null
                 && claim.getInspectDueAt().isBefore(now)
                 && claim.getInspectNoticeCount() >= orderProperties.getActOnBehalfNoticeThreshold();
     }

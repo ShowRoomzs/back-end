@@ -180,8 +180,10 @@ public interface AdminTermsControllerDocs {
                     + "**버전 번호(`versionNumber`):** 숫자와 점만 받습니다. 접두 `v`는 화면에서 필드 밖에 고정된 표기라 "
                     + "값에 포함하지 않습니다 — `v3.2`·`V3.2`·`3.2`가 섞여 들어오는 것을 막습니다. "
                     + "서버에서 **중복·역행 번호를 검증**합니다.\n\n"
-                    + "**시행일:** 오늘 이후만 가능하며, 기존 버전의 시행일보다 뒤여야 합니다 — "
+                    + "**시행일:** 기존 버전의 시행일보다 뒤여야 합니다 — "
                     + "같은 날 두 버전이 시행되면 어느 쪽이 시행중인지 정할 수 없습니다.\n\n"
+                    + "**고지 기간(2026-11-10):** 고지일 = 등록일(KST). 시행일은 **등록일 + 7일 이후**, "
+                    + "`unfavorableChange = true`(이용자에게 불리한 변경)면 **등록일 + 30일 이후**여야 합니다(필수 값).\n\n"
                     + "**등록 후 상태는 `시행 예정`**입니다. 시행일 00:00에 서버 배치가 새 버전을 `시행중`으로 올리고 "
                     + "기존 시행 버전을 `과거 버전`으로 내립니다 — 기존 버전은 **삭제되지 않고 계속 보관**됩니다.\n\n"
                     + "**구버전 문서에는 등록할 수 없습니다.**\n\n"
@@ -191,7 +193,7 @@ public interface AdminTermsControllerDocs {
             @ApiResponse(responseCode = "201", description = "등록 성공 - Location 헤더에 생성된 버전 경로 반환"),
             @ApiResponse(
                     responseCode = "400",
-                    description = "입력값 오류 (버전 번호 형식·중복·역행, 시행일 제한, 구버전 문서)",
+                    description = "입력값 오류 (버전 번호 형식·중복·역행, 시행일 제한, 고지 기간 미달, 불리한 변경 여부 누락, 구버전 문서)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ErrorResponse.class),
@@ -232,6 +234,13 @@ public interface AdminTermsControllerDocs {
                                                     + "}"
                                     ),
                                     @ExampleObject(
+                                            name = "고지 기간 미달",
+                                            value = "{\n"
+                                                    + "  \"code\": \"INVALID_INPUT\",\n"
+                                                    + "  \"message\": \"이용자에게 불리한 변경은 시행 30일 전까지 고지해야 합니다. 시행일은 2026-12-15 이후로 선택해 주세요.\"\n"
+                                                    + "}"
+                                    ),
+                                    @ExampleObject(
                                             name = "구버전 문서",
                                             value = "{\n"
                                                     + "  \"code\": \"INVALID_INPUT\",\n"
@@ -258,6 +267,7 @@ public interface AdminTermsControllerDocs {
                             value = "{\n"
                                     + "  \"versionNumber\": \"3.2\",\n"
                                     + "  \"effectiveDate\": \"2026-09-01\",\n"
+                                    + "  \"unfavorableChange\": false,\n"
                                     + "  \"content\": \"제1조(목적) 본 약관은 SHOWROOMZ(이하 \\\"회사\\\")가 제공하는 서비스의 이용 조건 및 절차를 규정함을 목적으로 합니다.\"\n"
                                     + "}"
                     )

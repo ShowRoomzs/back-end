@@ -125,7 +125,7 @@ class Design1021P6SettlementIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("기-14 요청 철회 — 요청자 · 응답 전만 · 원래 금액 확정(WITHDRAWN) · 상대가 반대한 뒤면 409")
+    @DisplayName("기-14 요청 철회 — 요청자만 · 원래 금액 확정(WITHDRAWN) · 상대가 반대한 뒤에도 협의 중 · 기한 전이면 철회(2026-11-10)")
     void withdrawAdjustment() throws Exception {
         Settlement s = seedSettlement("가을 크림 공구", 1_000_000, SettlementStatus.REVIEWING);
         JsonNode requested = json(sellerPost("/v1/seller/settlements/" + s.getId() + "/adjustment",
@@ -149,7 +149,7 @@ class Design1021P6SettlementIntegrationTest extends SettlementTestSupport {
         assertThat(settlementEvents(s.getId())).contains(SettlementEventType.ADJUSTMENT_WITHDRAWN,
                 SettlementEventType.CONFIRMED_BY_WITHDRAWAL);
 
-        // 상대가 반대한 뒤에는 철회가 아니라 협의다.
+        // 상대가 반대한 뒤에도 철회할 수 있다(대표 결정 2026-11-10 — 「내 최신 제안이 응답 대기」 조건 삭제).
         Settlement other = seedSettlement("겨울 세럼 공구", 1_000_000, SettlementStatus.REVIEWING);
         JsonNode second = json(sellerPost("/v1/seller/settlements/" + other.getId() + "/adjustment",
                 Map.of("rewardAmount", 80_000, "reason", "샘플 미도착")).andExpect(status().isCreated()));
@@ -159,9 +159,19 @@ class Design1021P6SettlementIntegrationTest extends SettlementTestSupport {
                 .andExpect(jsonPath("$.permissions.canWithdraw").value(true));
         creatorPost("/v1/creator/settlement-adjustments/" + secondId + "/proposals/" + proposalId + "/reject")
                 .andExpect(status().isOk());
-        sellerPost("/v1/seller/settlement-adjustments/" + secondId + "/withdraw", Map.of())
+        sellerGet("/v1/seller/threads/" + second.get("threadId").asLong() + "/adjustment")
+                .andExpect(jsonPath("$.permissions.canWithdraw").value(true));
+        creatorPost("/v1/creator/settlement-adjustments/" + secondId + "/withdraw")
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SETTLEMENT_ADJUSTMENT_WITHDRAW_NOT_ALLOWED"));
+        sellerPost("/v1/seller/settlement-adjustments/" + secondId + "/withdraw", Map.of())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("WITHDRAWN"));
+        assertThat(settlement(other.getId()).getRewardAmount()).isEqualTo(settlement(other.getId()).getOriginalRewardAmount());
+        // 철회가 반영된 뒤 상대의 동의는 조건부 반영에서 진다 — 한쪽만 남는다.
+        creatorPost("/v1/creator/settlement-adjustments/" + secondId + "/proposals/" + proposalId + "/accept")
+                .andExpect(status().isConflict());
+        assertThat(adjustmentRepository.findById(secondId).orElseThrow().getStatus()).isEqualTo(AdjustmentStatus.WITHDRAWN);
     }
 
     // ------------------------------------------------------------------ helpers

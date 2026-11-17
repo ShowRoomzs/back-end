@@ -29,6 +29,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("[통합] 어드민 계약 서명·재발송·만료 (B3·C3·C5)")
 class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private showroomz.domain.contract.service.ContractSignatureExpiryService expiryService;
+
     /** 시안 B3 「여름 수분 세럼 공구」 — 08.13 16:40 발송 · 기한 08.21 23:55 · 아직 아무도 서명 전. */
     private Contract signing() {
         return seed(ContractStatus.SIGNING, s -> s.title("여름 수분 세럼 공구")
@@ -190,7 +193,7 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
     }
 
     @Test
-    @DisplayName("B3 입력 검증: 미래 서명 · 발송 전 서명은 400 · 두 서명 간 순서와 기한 초과 서명은 막지 않는다")
+    @DisplayName("B3 입력 검증: 미래 서명 · 발송 전 서명은 400 · 두 서명 간 순서는 막지 않는다 · 기한 경과 후 서명 입력은 409(2026-11-10)")
     void validatesSignatureTimes() throws Exception {
         Contract c = signing();
         LocalDateTime sentAt = c.getSignatureRequestedAt();
@@ -204,9 +207,17 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
         // 서명에 순서가 없다 — 인플루언서가 먼저 서명해도 된다.
         signatures(c, sentAt.plusHours(3), sentAt.plusHours(1), c.getVersion()).andExpect(status().isOk());
 
-        // 기한이 지난 뒤 들어온 서명도 사실대로 옮겨 적을 수 있다.
+        // 기한 경과 = 불성립(2026-11-10) — 기한이 지난 서명 진행 중 계약은 입력을 받지 않는다(기한 전 서명 시각이어도).
         Contract late = seed(ContractStatus.SIGNING, s -> s.sentAt(now.minusDays(9)).deadlineAt(now.minusDays(2)));
-        signatures(late, now.minusDays(1), null, late.getVersion()).andExpect(status().isOk());
+        signatures(late, now.minusDays(1), null, late.getVersion()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONTRACT_SIGNATURE_DEADLINE_PASSED"));
+        signatures(late, now.minusDays(3), null, late.getVersion()).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CONTRACT_SIGNATURE_DEADLINE_PASSED"));
+        assertThat(reload(late).getBrandSignedAt()).isNull();
+
+        // 기한 전이어도 기한보다 늦은 서명 시각은 성립 근거가 아니다.
+        Contract open = seed(ContractStatus.SIGNING, s -> s.sentAt(now.minusDays(9)).deadlineAt(now.minusHours(1).plusDays(1)));
+        signatures(open, null, now.minusMinutes(5), open.getVersion()).andExpect(status().isOk());
     }
 
     @Test
@@ -325,8 +336,8 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
     }
 
     @Test
-    @DisplayName("C5: 기한이 지나도 시스템이 닫지 않는다 — 만료 확인 큐에 뜨고 경과일을 보여 준다")
-    void overdueContractWaitsForOperator() throws Exception {
+    @DisplayName("C5: 기한이 지났는데 아직 배치가 돌지 않았으면 만료 확인 큐에 뜨고 경과일을 보여 준다 · 배치가 불성립(EXPIRED · SYSTEM)으로 닫는다")
+    void overdueContractExpiredBySystem() throws Exception {
         Contract c = seed(ContractStatus.SIGNING, s -> s.title("수분 크림 겨울 공구").sentAt(now.minusDays(27))
                 .deadlineAt(now.minusDays(23).minusMinutes(5)).brandSignedAt(now.minusDays(25)).asOf(now.minusDays(24)));
 
@@ -335,6 +346,19 @@ class AdminContractSigningIntegrationTest extends AdminContractTestSupport {
                 .andExpect(jsonPath("$.signature.deadlinePassedDays").value(23))
                 .andExpect(jsonPath("$.signature.creatorSignedAt").doesNotExist());
         summary().andExpect(jsonPath("$.queues.EXPIRY").value(1));
+
+        // 서명 기한 경과 불성립 배치(2026-11-10) — 정지 보류가 아니면 시스템이 만료로 닫는다.
+        assertThat(expiryService.findIdsToExpire(now, 100)).contains(c.getId());
+        assertThat(expiryService.expireIfOverdue(c.getId(), now)).isTrue();
+        assertThat(expiryService.expireIfOverdue(c.getId(), now)).isFalse();
+        Contract expired = reload(c);
+        assertThat(expired.getStatus()).isEqualTo(ContractStatus.EXPIRED);
+        assertThat(expired.getCloseActorType()).isEqualTo(ContractActorType.SYSTEM);
+        summary().andExpect(jsonPath("$.queues.EXPIRY").value(0));
+
+        Contract future = seed(ContractStatus.SIGNING, s -> s.deadlineAt(now.plusHours(1)));
+        assertThat(expiryService.expireIfOverdue(future.getId(), now)).isFalse();
+        assertThat(reload(future).getStatus()).isEqualTo(ContractStatus.SIGNING);
     }
 
     @Test

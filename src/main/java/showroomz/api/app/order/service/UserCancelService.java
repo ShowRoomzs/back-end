@@ -39,8 +39,8 @@ import java.util.Objects;
 @RequiredArgsConstructor
 public class UserCancelService {
 
-    static final String NOTICE_AUTO_APPROVE = "브랜드가 1영업일(주말·공휴일 제외) 안에 확인하지 않으면 자동으로 취소돼요. "
-            + "확인 전까지는 요청을 철회할 수 있어요";
+    static final String NOTICE_RESPOND_DUE = "브랜드가 2영업일(주말·공휴일 제외) 안에 확인하지 않으면 운영팀이 브랜드에 확인한 뒤 "
+            + "취소해 드려요. 확인 전까지는 요청을 철회할 수 있어요";
     static final String NOTICE_SHIPMENT_HOLD = "취소 요청이 처리될 때까지 이 주문의 상품은 발송되지 않아요";
     static final String NOTICE_REJECTED = "브랜드가 취소 요청을 거부해 상품이 발송돼요. 받은 뒤 반품을 신청할 수 있어요";
 
@@ -108,7 +108,7 @@ public class UserCancelService {
         };
         List<String> notices = new ArrayList<>();
         if (phase == UserCancelDto.Phase.REVIEWING) {
-            notices.add(NOTICE_AUTO_APPROVE);
+            notices.add(NOTICE_RESPOND_DUE);
             notices.add(NOTICE_SHIPMENT_HOLD);
         } else if (phase == UserCancelDto.Phase.REJECTED) {
             notices.add(NOTICE_REJECTED);
@@ -134,6 +134,7 @@ public class UserCancelService {
                 })
                 .withdrawable(phase == UserCancelDto.Phase.REVIEWING)
                 .autoApproved(request.isAutoApproved())
+                .operatorApproved(request.isOperatorApproved())
                 .notices(notices)
                 .requestedAt(request.getRequestedAt())
                 .respondDueAt(phase == UserCancelDto.Phase.REVIEWING ? request.getRespondDueAt() : null)

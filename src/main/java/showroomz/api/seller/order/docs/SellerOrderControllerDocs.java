@@ -714,8 +714,8 @@ public interface SellerOrderControllerDocs {
                     `ETC`(기타 — `detail` 필수). **환불은 일어나지 않는다.** 전 항목 배송이 진행되고 소비자는 수령 후 반품으로만 돌릴 수
                     있다(단순 변심 반품이면 반송 배송비는 소비자 부담 · 기-18).
 
-                    **응답 기한 1영업일**(주말·공휴일 제외) — 요청 + 1영업일의 끝까지 승인·거부하지 않으면 **자동 승인**되고 PG 가 즉시
-                    환불한다. 목록 · 상세의 `cancelRequest.respondDueAt` 가 그 시각이다.
+                    **응답 기한 2영업일**(주말·공휴일 제외) — 목록 · 상세의 `cancelRequest.respondDueAt` 가 그 시각이다. **자동 승인은 없다**
+                    (2026-11-10) — 기한이 지나면 운영팀이 브랜드에 확인한 뒤 취소(승인)한다. 그 전까지는 브랜드가 계속 승인 · 거부할 수 있다.
 
                     **권한:** SELLER · **버튼 노출:** `actions.canDecideCancelRequest`
 

@@ -48,6 +48,21 @@ public class CreatorContractCommandService {
     private final ContractHistoryRecorder historyRecorder;
     private final ContractNotifier contractNotifier;
     private final CreatorSanctionGuard sanctionGuard;
+    private final showroomz.domain.contract.service.ContractDraftReviewService draftReviewService;
+
+    /**
+     * 사전 검수 초안 제출(수정요청 B-13 · 계약서 제8조) — 위 「두 가지」에 더한 세 번째 쓰기다. 제출 시각이 브랜드의 수령 시각이고, 브랜드가
+     * 3영업일 안에 회신하지 않으면 시스템이 승인 간주를 기록한다. 사전 검수 계약 ∧ 계약 성립 이후만.
+     */
+    public CreatorContractDetailResponse submitDraft(String creatorEmail, Long contractId,
+                                                     showroomz.api.creator.contract.dto.CreatorContractDraftSubmitRequest request) {
+        Creator creator = reader.resolveCreator(creatorEmail);
+        Contract contract = reader.requireReceived(creator.getId(), contractId);
+        draftReviewService.submit(contract, creator.getId(), request.title(), request.threadMessageId(), request.note(),
+                LocalDateTime.now());
+        return detailAssembler.assemble(contractRepository.findById(contract.getId()).orElseThrow(),
+                new CreatorContractDetailResponse.Navigation(null, null));
+    }
 
     /**
      * 거절(S5) — {@code SIGNING} → {@code DECLINED} · {@code close_actor_type = CREATOR}.

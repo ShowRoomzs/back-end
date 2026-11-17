@@ -31,10 +31,11 @@ public interface AdminOrderExceptionControllerDocs {
             | `kind` | 대상 | 기한(`dueBasisLabel`) | 자동 알림 | 대행 가능이면 |
             |---|---|---|---|---|
             | `SHIP_OVERDUE` 발송 기한 경과 | 주문 | 공구 마감 + N영업일(**주문 시점 값**) | 있음 | 06a 대행 송장 · 직권 취소 |
-            | `INSPECT_OVERDUE` 검수 지연 | 클레임 | 입고 + 2영업일 | 있음 | 06b 검수 무응답 환불(검수는 대신하지 않는다) |
+            | `CANCEL_REQUEST_OVERDUE` 취소 요청 미응답 | 주문 | 취소 요청 + 2영업일 | **없음** — 마감이 지나면 곧바로 대행 가능 | 06a 브랜드 확인 후 취소 요청 승인 |
+            | `INSPECT_OVERDUE` 검수 지연 | 클레임 | 돌려받은 날(회수 배송완료) + 2영업일 | 있음 | 06b 검수 무응답 환불(검수는 대신하지 않는다). **반품은 기한 경과 시 자동 승인**이라 교환만 남는다(2026-11-10) |
             | `RESHIP_DELAYED` 재발송 지연 | 클레임 | 검수 통과 · 재발송비 결제 + 2영업일 | **없음**(`noticeCount = null`) | — |
 
-            - 취소 요청 미응답은 1영업일 자동 승인이라 오지 않습니다
+            - 취소 요청 미응답 — 자동 승인이 없어졌습니다(2026-11-10). 브랜드 응답 마감이 지나면 올라오고, 운영자가 브랜드에 확인한 뒤 06a 에서 승인합니다
             - 준비 시작(신규 → 상품준비중)으로는 빠지지 않습니다 — 브랜드의 「응답」은 송장 등록 · 직권 취소뿐입니다
             - `actOnBehalfAvailable` — 자동 알림 N회(기본 3) 무응답 = 대행 가능 **조건**(상태가 아니다). 06a 상세 `actions.canRegisterShipment`와 같은 판정
             - `nextStepLabel` — 「자동 알림 대기 · 2회차 10.12」 · 「자동 알림 3회 무응답 · 대행 가능」 · 「브랜드가 재발송 송장을 등록해야 합니다」
@@ -81,7 +82,7 @@ public interface AdminOrderExceptionControllerDocs {
     })
     ResponseEntity<AdminOrderExceptionDto.ExceptionPage> getExceptions(
             @Parameter(description = "탭 — DELAY(처리 지연 · 기본) · DELIVERY(배송 예외)", example = "DELAY") AdminOrderExceptionDto.ExceptionTab tab,
-            @Parameter(description = "유형 — DELAY: SHIP_OVERDUE · INSPECT_OVERDUE · RESHIP_DELAYED / "
+            @Parameter(description = "유형 — DELAY: SHIP_OVERDUE · CANCEL_REQUEST_OVERDUE · INSPECT_OVERDUE · RESHIP_DELAYED / "
                     + "DELIVERY: PICKUP_UNCONFIRMED · TRACKING_STALLED · RETURNING · COLLECTION_UNSCANNED. 탭에 없는 유형이면 400",
                     example = "SHIP_OVERDUE") AdminOrderExceptionDto.ExceptionKind kind,
             @Parameter(description = "주문번호 · 하위주문번호 · 브랜드명 부분 일치, 또는 접수번호(CLM-3021) 정확 일치", example = "CLM-3021") String keyword,
@@ -95,7 +96,7 @@ public interface AdminOrderExceptionControllerDocs {
             | 필드 | 쓰는 곳 |
             |---|---|
             | `tabCounts` | 탭 숫자(`DELAY` · `DELIVERY`). **`tabCounts.DELAY`가 06a 툴바 「처리 지연 N건」**이다(06a 응답에 합치지 않는다) |
-            | `kindCounts` | 유형 셀렉트 건수 — 7종 전부(0건 포함) |
+            | `kindCounts` | 유형 셀렉트 건수 — 8종 전부(0건 포함) |
             | `actOnBehalfCount` | 툴바 「대행 가능 N건」 — 처리 지연 중 대행 조건 충족 |
             | `badge` · `badgeScope` | 사이드바 배지와 그 범위 — `ALL`(처리 지연 + 배송 예외) · `DELAY`(처리 지연만). 범위는 서버 설정값(`order.exception.badge-scope`) |
             | `asOf` | 서버 기준 시각 |

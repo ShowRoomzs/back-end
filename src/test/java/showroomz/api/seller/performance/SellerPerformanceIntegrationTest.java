@@ -272,12 +272,14 @@ class SellerPerformanceIntegrationTest extends SettlementTestSupport {
         jdbc.update("UPDATE settlement SET status = 'PAYOUT_FAILED' WHERE settlement_id = ?", s.getId());
         sellerGet(PERF + "/summary")
                 .andExpect(jsonPath("$.population.count").value(1))
-                .andExpect(jsonPath("$.statusCounts.PAID").value(1))
+                .andExpect(jsonPath("$.statusCounts.PAYOUT_FAILED").value(1))
+                .andExpect(jsonPath("$.statusCounts.PAID").value(0))
                 .andExpect(jsonPath("$.confirmedSales.value").value(s.getConfirmedSalesAmount()))
                 .andExpect(jsonPath("$.avgConfirmRate.value").value(100.0))
                 .andExpect(jsonPath("$.avgRoas.value").value(
                         Math.round(s.getConfirmedSalesAmount() * 100.0 / (FIXED_FEE + s.getRewardAmount()))));
-        sellerGet(PERF + "/group-buys?status=PAID").andExpect(jsonPath("$.content.length()").value(1));
+        sellerGet(PERF + "/group-buys?status=PAYOUT_FAILED").andExpect(jsonPath("$.content.length()").value(1));
+        sellerGet(PERF + "/group-buys?status=PAID").andExpect(jsonPath("$.content.length()").value(0));
         sellerGet(PERF + "/group-buys?status=AGGREGATING").andExpect(jsonPath("$.content.length()").value(0));
     }
 

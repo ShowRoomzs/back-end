@@ -146,7 +146,7 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
 
             sellerGet(SELLER_ORDERS + "?tab=CANCELLED")
                     .andExpect(jsonPath("$.content[0].deliveryGroupId").value(group.getId()))
-                    .andExpect(jsonPath("$.content[0].cancelTypeLabel").value("브랜드 직권 취소"))
+                    .andExpect(jsonPath("$.content[0].cancelTypeLabel").value("직권 취소"))
                     .andExpect(jsonPath("$.content[0].items[*].itemStatusLabel", contains("취소")));
             orderDetail(group.getId())
                     .andExpect(jsonPath("$.timeline.cancelReasonLabel").value("품절"))
@@ -553,7 +553,7 @@ class SellerOrderCancelIntegrationTest extends SellerOrderTestSupport {
             assertThat(stockOf(creamVariant)).isEqualTo(creamBefore + 1);
             assertThat(stockOf(serumVariant)).isEqualTo(serumBefore + 1);
             sellerGet(SELLER_ORDERS + "?tab=CANCELLED")
-                    .andExpect(jsonPath("$.content[0].cancelTypeLabel").value("브랜드 직권 취소"));
+                    .andExpect(jsonPath("$.content[0].cancelTypeLabel").value("직권 취소"));
         }
 
         @Test

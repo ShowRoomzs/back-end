@@ -244,7 +244,7 @@ public class SettlementGenerationService {
     private SettlementRates rates() {
         return new SettlementRates(properties.getPgFeeRate(), properties.getPlatformFeeRate(),
                 properties.getRewardVatRate(), properties.getWithholdingIncomeRate(),
-                properties.getWithholdingLocalRate());
+                properties.getWithholdingLocalRate(), properties.isRewardVatInclusive());
     }
 
     // ------------------------------------------------------------------ 입력 수집(2-2 · 2-3)

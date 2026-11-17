@@ -29,6 +29,17 @@ public interface CreatorApplicationRepository extends JpaRepository<CreatorAppli
 
     boolean existsByUser_IdAndStatus(Long userId, CreatorApplicationStatus status);
 
+    /** 반려 정보 파기 대상(B-8 · 2026-11-10) — 반려 ∧ 보관 기간(14일) 경과 ∧ 아직 파기 전. */
+    @Query("SELECT a.id FROM CreatorApplication a WHERE a.status = showroomz.domain.member.creator.type.CreatorApplicationStatus.REJECTED "
+            + "AND a.personalDataPurgedAt IS NULL AND a.personalDataPurgeDueAt IS NOT NULL AND a.personalDataPurgeDueAt <= :now "
+            + "ORDER BY a.personalDataPurgeDueAt ASC, a.id ASC")
+    List<Long> findIdsToPurgeRejected(@Param("now") java.time.LocalDateTime now,
+                                      org.springframework.data.domain.Pageable pageable);
+
+    /** 이 신청 뒤에 같은 회원이 낸 신청이 있는가 — 있으면 회원의 약관 동의는 새 신청의 것이라 파기하지 않는다. */
+    @Query("SELECT COUNT(a) > 0 FROM CreatorApplication a WHERE a.user.id = :userId AND a.id > :applicationId")
+    boolean existsNewerApplication(@Param("userId") Long userId, @Param("applicationId") Long applicationId);
+
     Optional<CreatorApplication> findTopByUser_IdOrderByCreatedAtDesc(Long userId);
 
     /** 그 소비자 계정의 입점 신청 전부(오래된 순) — 처리 이력의 가입 신청 · 입점 승인 파생 행. */

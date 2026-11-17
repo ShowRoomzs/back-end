@@ -61,6 +61,10 @@ public class ProductDto {
         @Schema(description = "상품정보제공고시")
         private ProductNoticeRequest productNotice;
 
+        @Schema(description = "개봉 · 사용 시 청약철회 제한 표시(수정요청 C · 전자상거래법 제17조②) — 등록 때 생략하면 적용(true), "
+                + "수정 때 생략하면 그대로. 문구는 기본정보의 브랜드 안내 문구(없으면 기본 문구)", example = "true", nullable = true)
+        private Boolean openedWithdrawalRestricted;
+
         @Min(value = 0, message = "재고 수량은 0 이상이어야 합니다.")
         @Schema(
                 description = "재고 수량. 옵션(optionGroups/variants) 없이 단일 재고만 등록할 때 사용. " +
@@ -232,6 +236,10 @@ public class ProductDto {
         @Valid
         @Schema(description = "상품정보제공고시")
         private ProductNoticeRequest productNotice;
+
+        @Schema(description = "개봉 · 사용 시 청약철회 제한 표시(수정요청 C · 전자상거래법 제17조②) — 등록 때 생략하면 적용(true), "
+                + "수정 때 생략하면 그대로. 문구는 기본정보의 브랜드 안내 문구(없으면 기본 문구)", example = "true", nullable = true)
+        private Boolean openedWithdrawalRestricted;
 
         @Valid
         @Schema(description = "옵션 그룹 목록")

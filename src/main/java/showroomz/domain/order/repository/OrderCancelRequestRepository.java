@@ -48,18 +48,23 @@ public interface OrderCancelRequestRepository extends JpaRepository<OrderCancelR
      */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderCancelRequest r SET r.status = showroomz.domain.order.type.CancelRequestStatus.APPROVED, "
-            + "r.decidedAt = :now, r.decidedBy = :sellerId, r.autoApproved = :auto "
+            + "r.decidedAt = :now, r.decidedBy = :deciderId, r.operatorApproved = :operator, r.operatorNote = :note "
             + "WHERE r.id = :id AND r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
             + "AND EXISTS (SELECT g FROM OrderDeliveryGroup g WHERE g.id = r.deliveryGroup.id "
             + "    AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
             + "        showroomz.domain.order.type.FulfillmentStatus.PREPARING))")
-    int approve(@Param("id") Long id, @Param("sellerId") Long sellerId, @Param("auto") boolean auto,
-                @Param("now") LocalDateTime now);
+    int approve(@Param("id") Long id, @Param("deciderId") Long deciderId, @Param("operator") boolean operator,
+                @Param("note") String note, @Param("now") LocalDateTime now);
 
-    /** 자동 승인 대상 — 응답 기한이 지난 검토 중 요청(1009 기획 수정본 3-2). */
-    @Query("SELECT r.id FROM OrderCancelRequest r WHERE r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
+    /**
+     * 응답 기한이 지난 검토 중 요청 — 어드민 예외 관리 처리 지연 「취소 요청 미응답」(2026-11-10 자동 승인 폐지). 하위주문 · 주문을
+     * 같이 읽는다(행 조립이 브랜드명 · 주문번호를 쓴다).
+     */
+    @Query("SELECT r FROM OrderCancelRequest r JOIN FETCH r.deliveryGroup g JOIN FETCH g.order "
+            + "WHERE r.status = showroomz.domain.order.type.CancelRequestStatus.PENDING "
             + "AND r.respondDueAt < :now ORDER BY r.respondDueAt ASC, r.id ASC")
-    List<Long> findOverdueIds(@Param("now") LocalDateTime now, org.springframework.data.domain.Pageable pageable);
+    List<OrderCancelRequest> findOverdueForAdmin(@Param("now") LocalDateTime now,
+                                                 org.springframework.data.domain.Pageable pageable);
 
     /** 하위주문당 검토 중 1건 — DB 생성 컬럼 UNIQUE 의 앞단 검사(H2 · 정확한 오류 코드). */
     @Query("SELECT COUNT(r) > 0 FROM OrderCancelRequest r WHERE r.deliveryGroup.id = :deliveryGroupId "

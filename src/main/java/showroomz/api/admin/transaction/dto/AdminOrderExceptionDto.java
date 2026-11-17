@@ -25,6 +25,8 @@ public final class AdminOrderExceptionDto {
 
     public enum ExceptionKind {
         SHIP_OVERDUE("발송 기한 경과", ExceptionTab.DELAY),
+        /** 브랜드가 취소 요청에 응답 마감(요청 + 2영업일)까지 답하지 않았다 — 운영자가 브랜드 확인 후 승인(2026-11-10). */
+        CANCEL_REQUEST_OVERDUE("취소 요청 미응답", ExceptionTab.DELAY),
         INSPECT_OVERDUE("검수 지연", ExceptionTab.DELAY),
         RESHIP_DELAYED("재발송 지연", ExceptionTab.DELAY),
         PICKUP_UNCONFIRMED("집화 확인 필요", ExceptionTab.DELIVERY),
@@ -115,7 +117,7 @@ public final class AdminOrderExceptionDto {
             LocalDateTime asOf,
             @Schema(description = "탭 숫자 — 필터 · 검색과 무관한 전체. DELAY 가 06a 툴바 「처리 지연 N건」", example = "{\"DELAY\": 3, \"DELIVERY\": 4}")
             Map<String, Long> tabCounts,
-            @Schema(description = "유형 셀렉트 건수 — 7종 전부(0건 포함)") Map<String, Long> kindCounts,
+            @Schema(description = "유형 셀렉트 건수 — 8종 전부(0건 포함)") Map<String, Long> kindCounts,
             @Schema(description = "툴바 「대행 가능 N건」 — 처리 지연 중 대행 조건 충족", example = "1") long actOnBehalfCount,
             @Schema(description = "사이드바 배지", example = "7") long badge,
             @Schema(description = "배지 범위 — ALL(처리 지연 + 배송 예외) · DELAY(처리 지연만)", example = "ALL") String badgeScope

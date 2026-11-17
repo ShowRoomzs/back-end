@@ -956,7 +956,7 @@ final class AdminTransactionDocsExamples {
                     "tab": "DELAY", "kind": "INSPECT_OVERDUE", "kindLabel": "검수 지연",
                     "targetNumber": "CLM-3021", "subOrderNumber": "20260925-000204-01",
                     "orderId": 4931, "deliveryGroupId": 1002, "claimId": 3021, "marketId": 17, "brandName": "데일리랩",
-                    "dueAt": "2026-10-06T23:59:59", "dueBasisLabel": "입고 + 2영업일",
+                    "dueAt": "2026-10-06T23:59:59", "dueBasisLabel": "돌려받은 날 + 2영업일",
                     "basisAt": "2026-10-06T23:59:59", "basisLabel": null,
                     "elapsedHours": 83, "elapsedBusinessDays": 3, "elapsedLabel": "3영업일", "overdue": true,
                     "noticeCount": 3, "lastNoticeAt": "2026-10-09T15:00:00", "nextNoticeAt": null,
@@ -1028,7 +1028,7 @@ final class AdminTransactionDocsExamples {
               "asOf": "2026-10-10T11:00:00",
               "tabCounts": {"DELAY": 3, "DELIVERY": 4},
               "kindCounts": {
-                "SHIP_OVERDUE": 2, "INSPECT_OVERDUE": 1, "RESHIP_DELAYED": 0,
+                "SHIP_OVERDUE": 2, "CANCEL_REQUEST_OVERDUE": 0, "INSPECT_OVERDUE": 1, "RESHIP_DELAYED": 0,
                 "PICKUP_UNCONFIRMED": 1, "TRACKING_STALLED": 1, "RETURNING": 2, "COLLECTION_UNSCANNED": 0
               },
               "actOnBehalfCount": 2,
@@ -1145,6 +1145,14 @@ final class AdminTransactionDocsExamples {
 
     static final String ERR_CANCEL_REQUEST_PENDING_EXISTS = """
             {"code": "CANCEL_REQUEST_PENDING_EXISTS", "message": "검토 중인 취소 요청이 있습니다. 요청을 먼저 처리해 주세요."}
+            """;
+
+    static final String ERR_CANCEL_REQUEST_NOT_OVERDUE = """
+            {"code": "CANCEL_REQUEST_NOT_OVERDUE", "message": "브랜드 응답 기한이 지나지 않은 취소 요청입니다. 기한이 지난 뒤 운영자가 취소할 수 있습니다."}
+            """;
+
+    static final String REQ_CANCEL_REQUEST_APPROVE = """
+            {"brandConfirmNote": "11.12 브랜드 담당자 통화 — 미발송 확인, 취소 동의"}
             """;
 
     static final String ERR_REFUND_AMOUNT_EXCEEDED = """

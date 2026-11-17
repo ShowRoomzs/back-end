@@ -28,7 +28,6 @@ import showroomz.global.dto.PagingRequest;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
 import showroomz.global.service.MailService;
-import showroomz.global.utils.BusinessRegistrationNumberHasher;
 import showroomz.domain.settlement.service.AfterCommit;
 import showroomz.global.utils.KstDates;
 
@@ -162,7 +161,8 @@ public class CreatorApplicationService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.APPLICATION_NOT_FOUND));
 
         Users user = application.getUser();
-        boolean rejected = application.getStatus() == CreatorApplicationStatus.REJECTED;
+        // 반려 정보는 14일 보관 뒤 파기된다(B-8 · 2026-11-10) — 파기 전에는 원래 값을 보인다.
+        boolean rejected = application.getStatus() == CreatorApplicationStatus.REJECTED && application.isPersonalDataPurged();
 
         return CreatorApplicationDetailResponse.builder()
                 .applicationId(application.getId())
@@ -173,6 +173,8 @@ public class CreatorApplicationService {
                 .rejectReasonType(application.getRejectReasonType())
                 .rejectReasonDetail(application.getRejectReasonDetail())
                 .noticeSent(application.noticeSent())
+                .personalDataPurgeDueAt(application.getPersonalDataPurgeDueAt())
+                .personalDataPurgedAt(application.getPersonalDataPurgedAt())
                 .name(rejected ? null : application.getRealName())
                 .birthday(rejected ? null : application.getBirthday())
                 .phoneNumber(rejected ? null : application.getPhoneNumber())
@@ -294,7 +296,7 @@ public class CreatorApplicationService {
                 processorEmail
         );
 
-        // 통지(1021 기-36) — 정형 사유만 · 상세는 내부 기록. 업무 이메일은 아래에서 파기되므로 먼저 잡아 두고 커밋 뒤 보낸다.
+        // 통지(1021 기-36) — 정형 사유만 · 상세는 내부 기록. 커밋 뒤 보낸다.
         String noticeEmail = application.getBusinessEmail();
         CreatorRejectionNotice notice = CreatorRejectionNotice.of(request.getRejectReasonType(),
                 KstDates.toKstDate(application.getProcessedAt()));
@@ -308,10 +310,7 @@ public class CreatorApplicationService {
             });
         }
 
-        Users user = application.getUser();
-        String phoneHash = BusinessRegistrationNumberHasher.hash(application.getPhoneNumber());
-        user.purgeAgreementsOnCreatorRejection();
-        application.purgePersonalData(phoneHash);
+        // 개인정보 · 약관 동의는 즉시 파기하지 않는다 — 14일 보관 뒤 CreatorRejectionPurgeScheduler 가 파기한다(B-8 · 2026-11-10).
 
         applicationHistoryRepository.save(CreatorApplicationHistory.builder()
                 .application(application)

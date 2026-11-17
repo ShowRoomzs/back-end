@@ -85,8 +85,26 @@ public record ContractDetailResponse(
         TerminationRequest terminationRequest,
 
         @Schema(description = "초안 승인 기록(1021 기-30) — 브랜드 사전 검수 · 기록 전용. 없으면 빈 배열")
-        List<DraftApproval> draftApprovals
+        List<DraftApproval> draftApprovals,
+
+        @Schema(description = "사전 검수 초안 제출(B-13 · 계약서 제8조) — 수령 + 3영업일 안에 승인 · 수정 요청. 무회신이면 승인 간주. 없으면 빈 배열")
+        List<DraftSubmission> draftSubmissions
 ) {
+
+    @Schema(description = "사전 검수 초안 제출 1건")
+    public record DraftSubmission(
+            Long submissionId,
+            @Schema(example = "릴스 1차 초안") String title,
+            @Schema(description = "제출 = 브랜드 수령 시각") LocalDateTime submittedAt,
+            @Schema(description = "회신 기한 — 수령 + 3영업일의 끝. 지나면 승인 간주") LocalDateTime reviewDueAt,
+            @Schema(description = "PENDING · APPROVED · REVISION_REQUESTED · DEEMED_APPROVED", example = "PENDING") String status,
+            @Schema(example = "회신 대기") String statusLabel,
+            @Schema(nullable = true) Long threadMessageId,
+            @Schema(nullable = true) String note,
+            @Schema(nullable = true) LocalDateTime decidedAt,
+            @Schema(description = "수정 요청 내용", nullable = true) String decisionNote,
+            @Schema(description = "승인 · 승인 간주로 남은 초안 승인 기록", nullable = true) Long approvalId) {
+    }
 
     @Schema(description = "해지 요청")
     public record TerminationRequest(

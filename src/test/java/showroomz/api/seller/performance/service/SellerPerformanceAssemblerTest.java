@@ -147,14 +147,15 @@ class SellerPerformanceAssemblerTest {
     // ------------------------------------------------------------------ FS 상태 파생
 
     @Test
-    @DisplayName("FS-02 상태 파생 — 정산 없음 = 집계 중 · 분배 실패는 지급 완료로 접는다 · 톤은 정보 · 위험색 없음")
+    @DisplayName("FS-02 상태 파생 — 정산 없음 = 집계 중 · 분배 실패는 그대로(2026-11-10 · 위험색) · 나머지 톤은 정보 · 위험색 없음")
     void statusDerivation() {
         assertThat(PerformanceStatus.of(null)).isEqualTo(PerformanceStatus.AGGREGATING);
         assertThat(PerformanceStatus.of(SettlementStatus.REVIEWING)).isEqualTo(PerformanceStatus.REVIEWING);
         assertThat(PerformanceStatus.of(SettlementStatus.ADJUSTING)).isEqualTo(PerformanceStatus.ADJUSTING);
         assertThat(PerformanceStatus.of(SettlementStatus.PAYOUT_SCHEDULED)).isEqualTo(PerformanceStatus.PAYOUT_SCHEDULED);
         assertThat(PerformanceStatus.of(SettlementStatus.PAID)).isEqualTo(PerformanceStatus.PAID);
-        assertThat(PerformanceStatus.of(SettlementStatus.PAYOUT_FAILED)).isEqualTo(PerformanceStatus.PAID);
+        assertThat(PerformanceStatus.of(SettlementStatus.PAYOUT_FAILED)).isEqualTo(PerformanceStatus.PAYOUT_FAILED);
+        assertThat(PerformanceStatus.PAYOUT_FAILED.getTone()).isEqualTo(PerformanceTone.DANGER);
 
         assertThat(PerformanceStatus.AGGREGATING.getTone()).isEqualTo(PerformanceTone.NEUTRAL);
         assertThat(PerformanceStatus.REVIEWING.getTone()).isEqualTo(PerformanceTone.NEUTRAL);
@@ -162,8 +163,8 @@ class SellerPerformanceAssemblerTest {
         assertThat(PerformanceStatus.PAYOUT_SCHEDULED.getTone()).isEqualTo(PerformanceTone.NEUTRAL);
         assertThat(PerformanceStatus.PAID.getTone()).isEqualTo(PerformanceTone.SUCCESS);
 
-        assertThat(PerformanceStatus.PAID.settlementStatuses())
-                .containsExactlyInAnyOrder(SettlementStatus.PAID, SettlementStatus.PAYOUT_FAILED);
+        assertThat(PerformanceStatus.PAID.settlementStatuses()).containsExactly(SettlementStatus.PAID);
+        assertThat(PerformanceStatus.PAYOUT_FAILED.settlementStatuses()).containsExactly(SettlementStatus.PAYOUT_FAILED);
         assertThat(PerformanceStatus.AGGREGATING.settlementStatuses()).isEmpty();
     }
 

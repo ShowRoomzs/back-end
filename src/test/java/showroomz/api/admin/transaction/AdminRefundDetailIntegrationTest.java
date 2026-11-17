@@ -104,7 +104,7 @@ class AdminRefundDetailIntegrationTest extends ClaimTestSupport {
     }
 
     @Test
-    @DisplayName("[OC-L07] 취소 요청 — 브랜드 승인은 「취소 요청 승인」 · 응답 기한 경과는 「취소 요청 자동 승인」 · 참조 CRQ-{요청 id}")
+    @DisplayName("[OC-L07] 취소 요청 — 브랜드 승인은 「취소 요청 승인」 · 응답 기한 경과 운영자 승인은 「취소 요청 운영자 승인」 · 참조 CRQ-{요청 id}")
     void cancelRequestLabels() throws Exception {
         OrderDeliveryGroup manual = prepared(paidGroup(creamVariant, 1));
         long manualRequest = cancelRequest(manual);
@@ -113,17 +113,17 @@ class AdminRefundDetailIntegrationTest extends ClaimTestSupport {
         OrderDeliveryGroup auto = prepared(paidGroup(creamVariant, 1));
         long autoRequest = cancelRequest(auto);
         OrderCancelRequest request = cancelRequestRepository.findById(autoRequest).orElseThrow();
-        assertThat(cancelRequestService.autoApproveIfOverdue(autoRequest, request.getRespondDueAt().plusMinutes(1))).isTrue();
+        cancelRequestService.approveByOperator(autoRequest, 1L, "브랜드 확인", request.getRespondDueAt().plusMinutes(1));
 
         List<JsonNode> rows = rows("?tab=DONE&route=CANCEL");
         assertThat(rowOfGroup(rows, manual).get("sourceLabel").asText()).isEqualTo("취소 요청 승인");
         assertThat(rowOfGroup(rows, manual).get("sourceRef").asText()).isEqualTo("CRQ-" + manualRequest);
-        assertThat(rowOfGroup(rows, auto).get("sourceLabel").asText()).isEqualTo("취소 요청 자동 승인");
+        assertThat(rowOfGroup(rows, auto).get("sourceLabel").asText()).isEqualTo("취소 요청 운영자 승인");
         assertThat(rowOfGroup(rows, auto).get("sourceRef").asText()).isEqualTo("CRQ-" + autoRequest);
         long taskId = rowOfGroup(rows, auto).get("refundTaskId").asLong();
         JsonNode detail = json(adminGet(ADMIN_REFUNDS + "/" + taskId).andExpect(status().isOk()));
         assertThat(detail.at("/source/cancelRequestId").asLong()).isEqualTo(autoRequest);
-        assertThat(detail.at("/source/label").asText()).isEqualTo("취소 요청 자동 승인");
+        assertThat(detail.at("/source/label").asText()).isEqualTo("취소 요청 운영자 승인");
     }
 
     // ------------------------------------------------------------------ 결제 열 · 취소 대상

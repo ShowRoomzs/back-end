@@ -190,7 +190,10 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
         assertThat(g.at("/shipping/prepareStartedAt").isNull()).isFalse();
         assertThat(g.at("/shipping/shippedAt").isNull()).isFalse();
         assertThat(g.at("/shipping/shipOverdue").asBoolean()).isFalse();
-        assertThat(g.get("purchaseConfirm").isNull()).isTrue();
+        // 배송완료 미확인 — 송장 등록 + 28일 자동 구매확정 예정(2026-11-10).
+        assertThat(g.at("/purchaseConfirm/basis").asText()).isEqualTo("SHIPPED");
+        assertThat(at(g.at("/purchaseConfirm/dueAt").asText()))
+                .isEqualTo(at(g.at("/shipping/shippedAt").asText()).plusDays(28));
         assertThat(g.get("cancel").isNull()).isTrue();
         assertThat(g.get("cancelRequest").isNull()).isTrue();
         assertThat(g.get("refunds")).isEmpty();
@@ -286,8 +289,8 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
     }
 
     @Test
-    @DisplayName("[OA-D07] B7 취소 요청 — 요청 블록(사유 · 마감 · 항목) · 송장 · 취소 잠금 · 취소 탭 → 자동 승인 뒤 취소 블록 · PG 환불 · 이력 「자동 승인」")
-    void cancelRequestThenAutoApproved() throws Exception {
+    @DisplayName("[OA-D07] B7 취소 요청 — 요청 블록(사유 · 마감 · 항목) · 송장 · 취소 잠금 · 취소 탭 → 마감 전 승인 불가 · 마감 뒤 운영자 승인 → 취소 블록 · PG 환불 · 이력 「운영자 승인」")
+    void cancelRequestThenApprovedByOperator() throws Exception {
         OrderDeliveryGroup group = preparingGroup();
         overdue(group, 3);
         OrderProduct item = itemsOf(group).get(0);
@@ -307,8 +310,19 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
         assertThat(rowOf(group).get("groups").get(0).get("cancelRequested").asBoolean()).isTrue();
         assertThat(orderIds(adminGet(ADMIN_ORDERS + "?tab=CANCEL"))).contains(orderOf(group));
 
-        OrderCancelRequest request = cancelRequestRepository.findById(requestId).orElseThrow();
-        assertThat(cancelRequestService.autoApproveIfOverdue(requestId, request.getRespondDueAt().plusMinutes(1))).isTrue();
+        assertThat(g.at("/cancelRequest/respondOverdue").asBoolean()).isFalse();
+        String approveUrl = ADMIN_ORDERS + "/cancel-requests/" + requestId + "/approve";
+        adminPost(approveUrl, Map.of("brandConfirmNote", "브랜드 확인")).andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("CANCEL_REQUEST_NOT_OVERDUE"));
+
+        // 응답 마감 경과 — 자동 승인은 없다. 처리 지연 「취소 요청 미응답」 · 승인 버튼이 열린다.
+        jdbc.update("UPDATE order_cancel_request SET respond_due_at = ? WHERE cancel_request_id = ?",
+                LocalDateTime.now().minusMinutes(1), requestId);
+        JsonNode overdue = detailOf(group).get("groups").get(0);
+        assertThat(overdue.at("/cancelRequest/respondOverdue").asBoolean()).isTrue();
+        assertActions(overdue, Map.of("canApproveCancelRequest", true));
+        adminPost(approveUrl, Map.of("brandConfirmNote", " ")).andExpect(status().isBadRequest());
+        adminPost(approveUrl, Map.of("brandConfirmNote", "11.12 브랜드 통화 — 미발송 확인")).andExpect(status().isOk());
 
         JsonNode approved = detailOf(group).get("groups").get(0);
         assertThat(approved.get("status").asText()).isEqualTo("CANCELLED");
@@ -318,7 +332,7 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
         assertThat(approved.at("/refunds/0/status").asText()).isEqualTo("DONE");
         JsonNode approvedEvent = StreamSupport.stream(approved.get("history").spliterator(), false)
                 .filter(h -> h.get("eventType").asText().equals("CANCEL_REQUEST_APPROVED")).findFirst().orElseThrow();
-        assertThat(approvedEvent.get("detail").asText()).contains("자동 승인");
+        assertThat(approvedEvent.get("detail").asText()).contains("운영자 승인").contains("11.12 브랜드 통화 — 미발송 확인");
         assertActions(approved, Map.of());
     }
 
@@ -415,7 +429,7 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
     // ------------------------------------------------------------------ 도우미
 
     private static final List<String> ACTION_KEYS = List.of("canCorrectDeliveredAt", "canRegisterShipment", "canCancel",
-            "canEnqueueRefund", "canOpenDefectClaim", "canMarkLost", "canMarkDelivered");
+            "canEnqueueRefund", "canOpenDefectClaim", "canMarkLost", "canMarkDelivered", "canApproveCancelRequest");
 
     /** 레일 버튼 7개 — 주어진 것만 참이고 나머지는 전부 거짓이다(숨김). */
     private static void assertActions(JsonNode group, Map<String, Boolean> expectedTrue) {
@@ -474,6 +488,11 @@ class AdminOrderDetailIntegrationTest extends OrderFlowTestSupport {
 
     private ResultActions adminGet(String url) throws Exception {
         return mockMvc.perform(get(url).header(HttpHeaders.AUTHORIZATION, admin));
+    }
+
+    private ResultActions adminPost(String url, Object body) throws Exception {
+        return mockMvc.perform(post(url).header(HttpHeaders.AUTHORIZATION, admin)
+                .contentType(MediaType.APPLICATION_JSON).content(toJson(body)));
     }
 
     private ResultActions consumerPost(String url, Object body) throws Exception {

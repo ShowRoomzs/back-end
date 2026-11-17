@@ -348,4 +348,26 @@ public interface CreatorContractControllerDocs {
     })
     ResponseEntity<CreatorContractResendRequestResponse> requestResend(
             @Parameter(description = "계약 ID", example = "128") @PathVariable Long contractId);
+
+    @Operation(summary = "사전 검수 콘텐츠 초안 제출(B-13)", description = """
+            브랜드 사전 검수가 있는 계약에서 콘텐츠 초안을 제출합니다(계약서 제8조). **제출 시각이 브랜드의 수령 시각**이고,
+            브랜드가 3영업일 안에 승인 · 수정 요청으로 회신하지 않으면 시스템이 **승인 간주**를 기록합니다(`draftApprovals[]`).
+
+            - 사전 검수 계약 ∧ 계약 성립(양측 서명 완료) 이후만 — 아니면 409 `CONTRACT_STATUS_CONFLICT`
+            - 초안 본문은 연결·소통 스레드에 올리고, 그 메시지 ID 를 `threadMessageId` 로 넣을 수 있습니다
+            - 응답 `draftSubmissions[]` — 회신 기한(`reviewDueAt`) · 상태(회신 대기 · 승인 · 수정 요청 · 승인 간주)
+            """)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "제출 — 상세(draftSubmissions)",
+                    content = @Content(schema = @Schema(implementation = CreatorContractDetailResponse.class))),
+            @ApiResponse(responseCode = "400", description = "제목 누락 · 길이 초과(INVALID_INPUT)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "받은 계약이 아님(CONTRACT_NOT_FOUND)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "사전 검수 없음 · 계약 성립 전(CONTRACT_STATUS_CONFLICT)",
+                    content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    ResponseEntity<CreatorContractDetailResponse> submitDraft(
+            @Parameter(description = "계약 ID", example = "128") Long contractId,
+            @Valid @RequestBody showroomz.api.creator.contract.dto.CreatorContractDraftSubmitRequest request);
 }

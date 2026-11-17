@@ -110,7 +110,7 @@ class OrderFulfillmentTypesTest {
     void cancelLabels() {
         assertThat(OrderCancelType.CONSUMER.getLabel()).isEqualTo("소비자 취소 · 준비 시작 전");
         assertThat(OrderCancelType.REQUEST_APPROVED.getLabel()).isEqualTo("취소 요청 승인 · 브랜드 승인");
-        assertThat(OrderCancelType.SELLER_DIRECT.getLabel()).isEqualTo("브랜드 직권 취소");
+        assertThat(OrderCancelType.SELLER_DIRECT.getLabel()).isEqualTo("직권 취소");   // 1021 기-16 — 브랜드 · 운영자 대행 라벨 통일
         assertThat(Arrays.stream(CancelRequestReason.values()).map(CancelRequestReason::getLabel))
                 .containsExactly("단순 변심", "주문 실수", "다른 결제 수단으로 변경", "기타");
         assertThat(Arrays.stream(SellerCancelReason.values()).map(SellerCancelReason::getLabel))

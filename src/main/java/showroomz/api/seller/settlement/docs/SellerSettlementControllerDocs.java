@@ -32,8 +32,8 @@ public interface SellerSettlementControllerDocs {
                     **권한:** SELLER
 
                     **파라미터**
-                    - `status` — `REVIEWING` · `ADJUSTING` · `PAYOUT_SCHEDULED` · `PAID` 복수(`?status=REVIEWING&status=ADJUSTING`) · 생략 시 전부.
-                      `PAID` 를 고르면 분배 실패 건도 함께 나옵니다. **`PAYOUT_FAILED` 는 받지 않습니다**(400).
+                    - `status` — `REVIEWING` · `ADJUSTING` · `PAYOUT_SCHEDULED` · `PAID` · `PAYOUT_FAILED` 복수(`?status=REVIEWING&status=ADJUSTING`) · 생략 시 전부.
+                      분배 실패(`PAYOUT_FAILED` 「분배 실패」)는 지급 완료로 접지 않습니다(2026-11-10).
                     - `keyword` — 공구명 · 인플루언서 쇼룸명 부분 일치
                     - `sort` — `CREATED_DESC`(정산 생성일 최신순 · 기본) · `PAYOUT_DESC`(브랜드 수취액 높은순)
                     - `page`(1부터) · `size`(기본 20 · 1~100)
@@ -53,9 +53,8 @@ public interface SellerSettlementControllerDocs {
             @ApiResponse(responseCode = "200", description = "정산 목록과 페이지 정보",
                     content = @Content(schema = @Schema(implementation = PageResponse.class),
                             examples = @ExampleObject(summary = "size=3 — 조정 협의 · 지급 예정 · 브랜드 몫만 지급 완료", value = LIST))),
-            @ApiResponse(responseCode = "400", description = "PAYOUT_FAILED 필터 · size 1~100 밖 · 없는 enum 값 (`INVALID_INPUT`)",
+            @ApiResponse(responseCode = "400", description = "size 1~100 밖 · 없는 enum 값 (`INVALID_INPUT`)",
                     content = @Content(schema = @Schema(implementation = ErrorResponse.class), examples = {
-                            @ExampleObject(name = "PAYOUT_FAILED", value = ERR_PAYOUT_FAILED_FILTER),
                             @ExampleObject(name = "페이지 크기", value = ERR_PAGE_SIZE),
                             @ExampleObject(name = "enum", value = ERR_INVALID_INPUT)
                     })),
@@ -124,7 +123,7 @@ public interface SellerSettlementControllerDocs {
                     | `actions` | 아래 |
 
                     **분배 행 상태(`payouts[].status` · `statusLabel`)**
-                    - 브랜드 행 실패만 `FAILED`(「지급 확인 중」). 남의 행 실패는 `SCHEDULED`(「지급 예정」)로 접힌다
+                    - 분배 실패는 누구 행이든 `FAILED`(「지급 실패 · 재지급 예정」)로 보인다 — 정산 상태도 `PAYOUT_FAILED`(2026-11-10)
                     - 지급 처리 중(`REQUESTED`)도 「지급 예정」으로 보인다
                     - 인플루언서 행 보류(`BLOCKED`) — 사업자는 「발행 확인 후 지급」, 비사업자는 「지급 예정」
 

@@ -82,15 +82,23 @@ public class OrderCancelRequest {
     private CancelRejectReason rejectReasonCode;
 
     /**
-     * 응답 기한 = 요청 + 1영업일의 끝(1009 기획 수정본 3-2 · 거래 관리 결정 8 · 15). 지나면 자동 승인되고 PG 가 즉시 환불한다.
-     * 요청 시점 스냅샷 — 공휴일 설정이 바뀌어도 움직이지 않는다.
+     * 응답 기한 = 요청 + N영업일의 끝(기본 2 · 대표 결정 2026-11-10). 지나도 자동 승인하지 않는다 — 어드민 예외 관리 처리 지연에
+     * 올라오고 운영자가 브랜드 확인 후 승인한다. 요청 시점 스냅샷 — 공휴일 설정이 바뀌어도 움직이지 않는다.
      */
     @Column(name = "respond_due_at", nullable = false)
     private LocalDateTime respondDueAt;
 
-    /** 응답 기한 경과로 시스템이 승인했다 — 결정자(decided_by)는 null. */
+    /** 응답 기한 경과로 시스템이 승인했다 — 결정자(decided_by)는 null. 자동 승인 폐지(2026-11-10) 전 행의 기록이다. */
     @Column(name = "auto_approved", nullable = false)
     private boolean autoApproved;
+
+    /** 응답 기한이 지나 운영자가 브랜드 확인 뒤 승인했다 — 결정자(decided_by)는 운영자 id. */
+    @Column(name = "operator_approved", nullable = false)
+    private boolean operatorApproved;
+
+    /** 운영자 승인 시 브랜드 확인 내용. */
+    @Column(name = "operator_note", length = 500)
+    private String operatorNote;
 
     @OneToMany(mappedBy = "cancelRequest", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderCancelRequestItem> items = new ArrayList<>();

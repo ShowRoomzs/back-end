@@ -133,9 +133,9 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         approve(c, new ApproveRequest(true, true, true, now.minusHours(1), now.plusDays(2)), 409);
     }
 
-    @Test void signaturesAreReversibleVersionedAndAllowLateSigning() throws Exception {
+    @Test void signaturesAreReversibleVersionedAndBlockLateSigning() throws Exception {
         Contract c = contract(ContractStatus.SIGNING);
-        inTransaction(() -> { contracts.findById(c.getId()).orElseThrow().approveReview(now.minusDays(3), now.minusDays(1), now); return null; });
+        inTransaction(() -> { contracts.findById(c.getId()).orElseThrow().approveReview(now.minusDays(3), now.plusDays(1), now); return null; });
         long version = contracts.findById(c.getId()).orElseThrow().getVersion();
         signature(c, new SignatureRequest(now.minusHours(1), now.minusHours(2), version), 200);
         assertThat(contracts.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(ContractStatus.CONCLUSION_PENDING);
@@ -145,6 +145,13 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         assertThat(contracts.findById(c.getId()).orElseThrow().getStatus()).isEqualTo(ContractStatus.SIGNING);
         assertThat(histories.findByContractIdOrderByOccurredAtAscIdAsc(c.getId()).getLast().getDetail()).contains("변경 없음");
         signature(c, new SignatureRequest(now.plusDays(1), null, version + 3), 400);
+
+        // 서명 기한 경과 = 불성립(2026-11-10) — 기한이 지난 서명 진행 중 계약은 서명을 받지 않는다.
+        Contract late = contract(ContractStatus.SIGNING);
+        inTransaction(() -> { contracts.findById(late.getId()).orElseThrow().approveReview(now.minusDays(3), now.minusDays(1), now); return null; });
+        signature(late, new SignatureRequest(now.minusHours(1), now.minusHours(2),
+                contracts.findById(late.getId()).orElseThrow().getVersion()), 409);
+        assertThat(contracts.findById(late.getId()).orElseThrow().getStatus()).isEqualTo(ContractStatus.SIGNING);
     }
 
     @Test void conclusionRequiresBothDocumentsAndPermanentlyLocks() throws Exception {
@@ -171,7 +178,8 @@ class AdminContractIntegrationTest extends IntegrationTestSupport {
         expire(c, true, 409);
         inTransaction(() -> { contracts.findById(c.getId()).orElseThrow().approveReview(now.minusDays(3), now.minusDays(1), now); return null; });
         expire(c, false, 400);
-        signature(c, new SignatureRequest(now.minusHours(1), null, contracts.findById(c.getId()).orElseThrow().getVersion()), 200);
+        // 기한이 지난 뒤에는 서명을 받지 않는다(2026-11-10) — 운영자 만료는 배치보다 먼저 와도 된다.
+        signature(c, new SignatureRequest(now.minusHours(1), null, contracts.findById(c.getId()).orElseThrow().getVersion()), 409);
         expire(c, true, 200);
         Contract expired = contracts.findById(c.getId()).orElseThrow();
         assertThat(expired.getCloseActorType()).isEqualTo(ContractActorType.ADMIN);

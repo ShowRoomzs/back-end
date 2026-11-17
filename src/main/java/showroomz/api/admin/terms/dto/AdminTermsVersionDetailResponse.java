@@ -75,4 +75,10 @@ public class AdminTermsVersionDetailResponse {
 
     @Schema(description = "다음 › (더 최신 버전) ID — 없으면 비어 있다", example = "12")
     private Long nextVersionId;
+
+    @io.swagger.v3.oas.annotations.media.Schema(description = "이용자에게 불리한 변경 — 30일 전 고지 대상(2026-11-10 이전 등록 버전은 false)")
+    private boolean unfavorableChange;
+
+    @io.swagger.v3.oas.annotations.media.Schema(description = "고지일(등록일 · KST) — 2026-11-10 이전 등록 버전은 null", nullable = true)
+    private LocalDate noticedOn;
 }

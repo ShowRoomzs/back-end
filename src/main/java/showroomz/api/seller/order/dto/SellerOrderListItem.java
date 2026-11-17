@@ -77,7 +77,7 @@ public record SellerOrderListItem(
             @Schema(description = "소비자 상세 사유 — 미입력이면 null", example = "색상을 잘못 골랐어요", nullable = true) String reasonDetail,
             @Schema(description = "요청 시각", example = "2026-10-02T08:30:00Z") LocalDateTime requestedAt,
             @Schema(description = "경과 — 요청 후 경과 시간(시간 단위 내림)", example = "5") long elapsedHours,
-            @Schema(description = "응답 기한 열 — 요청 + 1영업일의 끝. 지나면 자동 승인되고 PG 가 즉시 환불한다. 남은 시간은 FE 가 계산한다",
+            @Schema(description = "응답 기한 열 — 요청 + 2영업일의 끝. 자동 승인은 없다 — 지나면 운영팀이 브랜드 확인 후 취소한다. 남은 시간은 FE 가 계산한다",
                     example = "2026-10-05T14:59:59Z") LocalDateTime respondDueAt,
             @Schema(description = "「3건 중 1건 요청 · 남은 2건 발송 대기」", example = "2건 중 1건 요청 · 남은 1건 발송 대기") String summary
     ) {

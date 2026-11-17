@@ -117,8 +117,8 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
                  @Param("shipDueAt") LocalDateTime shipDueAt);
 
     /**
-     * 발송 기한 경과 자동 알림 대상 — 기한이 지났고 아직 발송 전 · 검토 중 취소 요청 없음(요청은 1영업일 자동 승인이라 대상이
-     * 아니다) · 오늘 아직 알리지 않음(1009 기획 수정본 8-4).
+     * 발송 기한 경과 자동 알림 대상 — 기한이 지났고 아직 발송 전 · 검토 중 취소 요청 없음(요청 건은 처리 지연
+     * 「취소 요청 미응답」이 따로 본다) · 오늘 아직 알리지 않음(1009 기획 수정본 8-4).
      */
     @Query("SELECT g.id FROM OrderDeliveryGroup g WHERE g.shipDueAt IS NOT NULL AND g.shipDueAt < :now "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
@@ -144,7 +144,7 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
     int correctDeliveredAt(@Param("id") Long id, @Param("deliveredAt") LocalDateTime deliveredAt,
                            @Param("adminId") Long adminId);
 
-    /** 어드민 예외 관리 — 발송 기한 경과(06d 처리 지연). 검토 중 취소 요청 건은 1영업일 자동 승인이라 뺀다. */
+    /** 어드민 예외 관리 — 발송 기한 경과(06d 처리 지연). 검토 중 취소 요청 건은 「취소 요청 미응답」이 따로 보므로 뺀다. */
     @Query("SELECT g FROM OrderDeliveryGroup g JOIN FETCH g.order WHERE g.shipDueAt IS NOT NULL AND g.shipDueAt < :now "
             + "AND g.fulfillmentStatus IN (showroomz.domain.order.type.FulfillmentStatus.NEW, "
             + "    showroomz.domain.order.type.FulfillmentStatus.PREPARING) "
@@ -420,6 +420,22 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
                         @Param("threshold") LocalDateTime threshold);
 
     /**
+     * #6' SHIPPING → CONFIRMED — <b>배송완료 미확인</b> 자동 구매확정(대표 결정 2026-11-10). 송장 등록(발송 확정 {@code shipped_at})
+     * + N일(기본 28)이 지나도 배송완료가 확인되지 않은 배송중 하위주문이다. 소비자가 추적 정지 선택(재발송 · 환불)을 했거나 보류
+     * 클레임이 있으면 확정하지 않는다. {@code delivered_at} 은 채우지 않는다 — 배송완료는 사실로 확인되지 않았다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE OrderDeliveryGroup g SET g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.CONFIRMED, "
+            + "g.confirmedAt = :now "
+            + "WHERE g.id = :id AND g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
+            + "AND g.deliveredAt IS NULL AND g.shippedAt IS NOT NULL AND g.shippedAt <= :shippedBefore "
+            + "AND g.stallChoice IS NULL "
+            + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
+            + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL)")
+    int confirmUndelivered(@Param("id") Long id, @Param("now") LocalDateTime now,
+                           @Param("shippedBefore") LocalDateTime shippedBefore);
+
+    /**
      * 교환 재발송 도착 — 구매확정 N일을 그 시각부터 다시 센다(35 설계서 3-4 · §35-7). 최초 배송완료 시각은 덮지 않는다.
      * 같은 하위주문에 교환이 여럿이면 가장 늦은 도착이 기준이다.
      */
@@ -471,6 +487,16 @@ public interface OrderDeliveryGroupRepository extends JpaRepository<OrderDeliver
             + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL) "
             + "ORDER BY COALESCE(g.confirmRestartAt, g.deliveredAt) ASC, g.id ASC")
     List<Long> findIdsToConfirm(@Param("threshold") LocalDateTime threshold, Pageable pageable);
+
+    /** 배송완료 미확인 자동 구매확정 대상 — {@link #confirmUndelivered}와 같은 조건. */
+    @Query("SELECT g.id FROM OrderDeliveryGroup g "
+            + "WHERE g.fulfillmentStatus = showroomz.domain.order.type.FulfillmentStatus.SHIPPING "
+            + "AND g.deliveredAt IS NULL AND g.shippedAt IS NOT NULL AND g.shippedAt <= :shippedBefore "
+            + "AND g.stallChoice IS NULL "
+            + "AND NOT EXISTS (SELECT c FROM OrderClaim c WHERE c.deliveryGroup = g "
+            + "    AND c.status <> showroomz.domain.order.type.ClaimStatus.COMPLETED AND c.rejectedAt IS NULL) "
+            + "ORDER BY g.shippedAt ASC, g.id ASC")
+    List<Long> findIdsToConfirmUndelivered(@Param("shippedBefore") LocalDateTime shippedBefore, Pageable pageable);
 
     // ------------------------------------------------------------------ 카운트(요약 바 · 탭)
 

@@ -46,7 +46,7 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("C-01 목록 — 남의 정산 404 · PAYOUT_FAILED → PAID · 「상품별」 리워드율 · 사업자 내 행 보류면 payoutDate = null")
+    @DisplayName("C-01 목록 — 남의 정산 404 · PAYOUT_FAILED 그대로(2026-11-10) · 「상품별」 리워드율 · 사업자 내 행 보류면 payoutDate = null")
     void list() throws Exception {
         makeCreatorBusiness();
         registerSellerAccount();
@@ -58,7 +58,8 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(page.at("/content")).hasSize(2);
         JsonNode seeded = page.at("/content/1");
         assertThat(seeded.at("/settlementId").asLong()).isEqualTo(failed.getId());
-        assertThat(seeded.at("/status").asText()).isEqualTo("PAID");
+        assertThat(seeded.at("/status").asText()).isEqualTo("PAYOUT_FAILED");
+        assertThat(seeded.at("/statusLabel").asText()).isEqualTo("분배 실패");
         JsonNode real = page.at("/content/0");
         assertThat(real.at("/rewardRateLabel").asText()).isEqualTo("상품별");
         assertThat(real.at("/brandName").asText()).isEqualTo("글로우랩");
@@ -66,7 +67,7 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         assertThat(real.at("/creatorVatAmount").asLong()).isEqualTo(mine.getCreatorVatAmount());
 
         creatorGet(SETTLEMENTS + "?keyword=글로우랩").andExpect(jsonPath("$.content.length()").value(2));
-        creatorGet(SETTLEMENTS + "?status=PAYOUT_FAILED").andExpect(status().isBadRequest());
+        creatorGet(SETTLEMENTS + "?status=PAYOUT_FAILED").andExpect(jsonPath("$.content.length()").value(1));
         String other = otherCreatorToken();
         mockMvc.perform(get(SETTLEMENTS + "/" + mine.getId()).header("Authorization", other))
                 .andExpect(status().isNotFound()).andExpect(jsonPath("$.code").value("SETTLEMENT_NOT_FOUND"));
@@ -122,7 +123,7 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("C-08(지급) 인플루언서 몫만 FAILED — 정산 라벨 PAID · 내 행 「지급 확인 중」 · payoutDate = null · 브랜드 행 지급 완료")
+    @DisplayName("C-08(지급) 인플루언서 몫만 FAILED — 정산 라벨 분배 실패 · 내 행 「지급 실패 · 재지급 예정」 · payoutDate = null · 브랜드 행 지급 완료")
     void creatorPayoutFailed() throws Exception {
         registerSellerAccount();
         registerCreatorAccount();
@@ -131,12 +132,12 @@ class CreatorSettlementIntegrationTest extends SettlementTestSupport {
         payoutGateway.failFor(SettlementPayee.CREATOR, "BANK_REJECTED", "예금주 불일치");
         pay(s, s.getPayoutDueDate());
 
-        creatorGet(SETTLEMENTS).andExpect(jsonPath("$.content[0].status").value("PAID"))
+        creatorGet(SETTLEMENTS).andExpect(jsonPath("$.content[0].status").value("PAYOUT_FAILED"))
                 .andExpect(jsonPath("$.content[0].payoutDate").doesNotExist());
         JsonNode detail = json(creatorGet(SETTLEMENTS + "/" + s.getId()));
-        assertThat(detail.at("/settlement/status").asText()).isEqualTo("PAID");
+        assertThat(detail.at("/settlement/status").asText()).isEqualTo("PAYOUT_FAILED");
         assertThat(detail.at("/payouts/rows/0/status").asText()).isEqualTo("FAILED");
-        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("지급 확인 중");
+        assertThat(detail.at("/payouts/rows/0/statusLabel").asText()).isEqualTo("지급 실패 · 재지급 예정");
         assertThat(detail.at("/payouts/rows/1/status").asText()).isEqualTo("PAID");
         assertThat(detail.at("/payouts/rows/1/statusLabel").asText()).endsWith("지급 완료");
         assertThat(detail.at("/payment/accountNumberMasked").asText()).isEqualTo("******789012");

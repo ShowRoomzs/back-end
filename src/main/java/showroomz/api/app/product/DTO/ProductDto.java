@@ -278,6 +278,13 @@ public class ProductDto {
         @Schema(description = "단순 변심 교환의 재발송 배송비(편도) — 기본 배송비와 같은 값(제주 · 도서산간이면 권역 추가비가 더해진다 · 1021 기-18). 교환을 요청할 때 결제한다. "
                 + "불량·오배송은 0원. 반송 택배비는 별도", example = "3000")
         private Integer exchangeFee;
+
+        @Schema(description = "개봉 · 사용 시 청약철회 제한 상품인가(수정요청 C · 전자상거래법 제17조②)", example = "true")
+        private boolean openedWithdrawalRestricted;
+
+        @Schema(description = "청약철회 제한 안내 — 제한 상품이면 브랜드 문구(없으면 기본 문구) · 아니면 null", nullable = true,
+                example = "화장품은 포장을 개봉하거나 사용하면 상품 가치가 현저히 줄어 단순 변심 반품(청약철회)이 제한돼요. 상품 하자 · 오배송은 개봉했어도 반품할 수 있어요.")
+        private String withdrawalRestrictionNotice;
     }
 
     @Getter

@@ -70,7 +70,7 @@ class OrderNotificationIntegrationTest extends SettlementTestSupport {
                 .satisfies(n -> assertThat(n.getTargetId()).isEqualTo(approvedGroup.getId()));
         assertThat(userRows(NotificationType.CANCEL_REQUEST_REJECTED)).singleElement()
                 .satisfies(n -> assertThat(n.getTargetId()).isEqualTo(rejectedGroup.getId()));
-        assertThat(sellerRows()).extracting(Notification::getType).doesNotContain(NotificationType.CANCEL_AUTO_APPROVED);
+        assertThat(sellerRows()).extracting(Notification::getType).doesNotContain(NotificationType.CANCEL_APPROVED_BY_ADMIN);
     }
 
     @Test

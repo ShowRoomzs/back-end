@@ -91,7 +91,8 @@ public class CreatorContractDetailAssembler {
                 SanctionHoldView.forCreator(contract),
                 SanctionHoldView.deadlinePaused(contract),
                 terminationRequested(contract),
-                partnerAssembler.draftApprovals(contract));
+                partnerAssembler.draftApprovals(contract),
+                partnerAssembler.draftSubmissions(contract));
     }
 
     /** 브랜드 해지 요청이 처리 대기 중이면(1021 설계서 1-4) — 동의 · 의견은 운영팀 채널 답글로 받는다. */
@@ -280,17 +281,19 @@ public class CreatorContractDetailAssembler {
 
     /**
      * 「정산 방식」 블록의 예상 실수령 미리보기(1009 기획 수정본 9절 · 스튜디오 08 rev.4) — 리워드 100,000원 예시로 계산식만 보여 준다.
-     * 이 계약의 실제 금액이 아니다(판매가 끝나야 정해진다). 비사업자 = 3.3% 원천징수(원 단위 절사) 후 입금, 사업자 = 공급가 + 부가세 10%.
+     * 이 계약의 실제 금액이 아니다(판매가 끝나야 정해진다). 비사업자 = 3.3% 원천징수(원 단위 절사) 후 입금, 사업자 = 리워드 그대로
+     * (리워드 = 부가세 포함 · 공급가 = 리워드 ÷ 1.1 · 2026-11-10).
      */
     private static CreatorContractDetailResponse.NetPreview netPreview(WithholdingType type) {
         if (type == null) {
             return null;
         }
         if (type == WithholdingType.TAX_INVOICE) {
-            long vat = PREVIEW_GROSS / 10;
-            return new CreatorContractDetailResponse.NetPreview(PREVIEW_GROSS, PREVIEW_GROSS + vat,
-                    String.format("%,d원 + 부가세 10%%(%,d원) = %,d원 · 세금계산서는 SHOWROOMZ 앞으로", PREVIEW_GROSS, vat,
-                            PREVIEW_GROSS + vat));
+            long vat = showroomz.domain.settlement.service.SettlementCalculator.includedVat(PREVIEW_GROSS,
+                    new java.math.BigDecimal("0.10"));
+            return new CreatorContractDetailResponse.NetPreview(PREVIEW_GROSS, PREVIEW_GROSS,
+                    String.format("%,d원(부가세 %,d원 포함 · 공급가 %,d원) · 세금계산서는 SHOWROOMZ 앞으로", PREVIEW_GROSS, vat,
+                            PREVIEW_GROSS - vat));
         }
         long tax = PREVIEW_GROSS * 33 / 1000;
         return new CreatorContractDetailResponse.NetPreview(PREVIEW_GROSS, PREVIEW_GROSS - tax,

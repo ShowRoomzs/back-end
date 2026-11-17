@@ -124,6 +124,10 @@ public class OrderDto {
 
         @Schema(description = "주문서 응답의 summary.totalAmount — 서버 계산과 다르면 409 ORDER_AMOUNT_CHANGED", example = "27900")
         private Long expectedTotalAmount;
+
+        @Schema(description = "[필수 동의] 브랜드(판매자)에 대한 개인정보 제3자 제공 — true 가 아니면 400 ORDER_THIRD_PARTY_CONSENT_REQUIRED. "
+                + "동의 시각 · 제공받는 자(브랜드명)가 주문에 이력으로 남는다(수정요청 C)", example = "true")
+        private Boolean thirdPartyProvisionAgreed;
     }
 
     @Getter

@@ -155,7 +155,7 @@ public class ProductService {
                         ? product.getGroupBuyStatus().name()
                         : ProductGroupBuyStatus.NOT_CONNECTED.name())
                 .status(buildStockStatus(product, variantEntities))
-                .delivery(buildDeliveryInfo(market))
+                .delivery(withWithdrawalRestriction(buildDeliveryInfo(market), product, market))
                 .description(product.getDescription())
                 .productNotice(productNotice)
                 .optionGroups(optionGroups)
@@ -481,6 +481,18 @@ public class ProductService {
      * 계산되므로 주문 전에 보는 값도 같은 설정을 가리켜야 한다. 마켓의 {@code return_fee} · {@code exchange_fee}는
      * 더 읽지 않는다.
      */
+    /** 청약철회 제한 표시(수정요청 C) — 상품별 적용 여부 + 브랜드 문구(없으면 기본 문구). */
+    private ProductDto.DeliveryInfo withWithdrawalRestriction(ProductDto.DeliveryInfo delivery, Product product, Market market) {
+        if (delivery == null) {
+            return null;
+        }
+        boolean restricted = product.isOpenedWithdrawalRestricted();
+        delivery.setOpenedWithdrawalRestricted(restricted);
+        delivery.setWithdrawalRestrictionNotice(showroomz.domain.product.type.WithdrawalRestrictionPolicy.noticeOf(
+                restricted, market == null ? null : market.getWithdrawalRestrictionNotice()));
+        return delivery;
+    }
+
     private ProductDto.DeliveryInfo buildDeliveryInfo(Market market) {
         if (market == null) {
             return null;

@@ -119,6 +119,9 @@ public class AdminTermsService {
         List<TermsVersion> versions = termsVersionRepository.findAllByDocumentId(documentId);
         validateVersionNumber(documentId, versionNumber, versions);
         validateEffectiveDateOrder(request.getEffectiveDate(), versions);
+        boolean unfavorable = Boolean.TRUE.equals(request.getUnfavorableChange());
+        LocalDate noticedOn = LocalDate.now(KST);
+        validateNoticePeriod(request.getEffectiveDate(), noticedOn, unfavorable);
 
         TermsVersion version = termsVersionRepository.save(TermsVersion.builder()
                 .document(document)
@@ -126,6 +129,8 @@ public class AdminTermsService {
                 .effectiveDate(request.getEffectiveDate())
                 .content(request.getContent())
                 .registeredBy(operatorId)
+                .unfavorableChange(unfavorable)
+                .noticedOn(noticedOn)
                 .build());
 
         // 소비자 대상 문서의 개정이면 전 소비자 알림함에 공지한다(C11 · 1017 설계서 1-3) — 첫 버전은 개정이 아니다.
@@ -240,6 +245,8 @@ public class AdminTermsService {
                 .replacedAt(next == null ? null : next.getEffectiveDate())
                 .previousVersionId(previous == null ? null : previous.getId())
                 .nextVersionId(next == null ? null : next.getId())
+                .unfavorableChange(version.isUnfavorableChange())
+                .noticedOn(version.getNoticedOn())
                 .build();
     }
 
@@ -344,6 +351,20 @@ public class AdminTermsService {
         if (!effectiveDate.isAfter(LocalDate.now(KST))) {
             throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE,
                     "시행일은 오늘 이후 날짜만 선택할 수 있습니다.");
+        }
+    }
+
+    /** 개정 고지 기간 — 시행 7일 전, 이용자에게 불리한 변경은 30일 전(확정 정책 · 2026-11-10). 고지일은 등록일(KST)이다. */
+    static final int NOTICE_DAYS = 7;
+    static final int UNFAVORABLE_NOTICE_DAYS = 30;
+
+    private void validateNoticePeriod(LocalDate effectiveDate, LocalDate noticedOn, boolean unfavorable) {
+        int days = unfavorable ? UNFAVORABLE_NOTICE_DAYS : NOTICE_DAYS;
+        LocalDate earliest = noticedOn.plusDays(days);
+        if (effectiveDate.isBefore(earliest)) {
+            throw new BusinessException(ErrorCode.INVALID_INPUT_VALUE, String.format(
+                    "%s 시행 %d일 전까지 고지해야 합니다. 시행일은 %s 이후로 선택해 주세요.",
+                    unfavorable ? "이용자에게 불리한 변경은" : "약관 개정은", days, earliest));
         }
     }
 

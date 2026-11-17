@@ -167,7 +167,7 @@ class Design1021SettlementDetailIntegrationTest extends SettlementTestSupport {
     }
 
     @Test
-    @DisplayName("요청자가 다른 금액을 다시 낸 뒤(상대가 반대한 다음)에도 내 최신 제안이 응답 대기면 철회할 수 있다")
+    @DisplayName("요청자가 다른 금액을 다시 낸 뒤(상대가 반대한 다음)에도 철회할 수 있다")
     void requesterMayWithdrawOwnLatestPendingProposal() throws Exception {
         Settlement s = seedSettlement("겨울 앰플 공구", 1_000_000, SettlementStatus.REVIEWING);
         JsonNode requested = json(sellerPost("/v1/seller/settlements/" + s.getId() + "/adjustment",

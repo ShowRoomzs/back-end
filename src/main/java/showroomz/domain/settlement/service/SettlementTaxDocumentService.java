@@ -79,8 +79,14 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
                 TaxDocumentType.BRAND_TAX_INVOICE).isEmpty()) {
             Seller seller = settlement.getMarket().getSeller();
             LocalDate dueDate = brandInvoiceDueDate(KstDates.toKstDate(confirmedAt));
+            // 리워드 = 부가세 포함(2026-11-10)이면 리워드 안에서 공급가 · 부가세를 나눈다. 그 전 정산은 리워드 + 별도 부가세.
+            long brandVat = settlement.isRewardVatInclusive()
+                    ? SettlementCalculator.includedVat(settlement.getRewardAmount(), settlement.getRewardVatRate())
+                    : settlement.getRewardVatAmount();
+            long brandSupply = settlement.isRewardVatInclusive() ? settlement.getRewardAmount() - brandVat
+                    : settlement.getRewardAmount();
             documentRepository.save(SettlementTaxDocument.create(settlementId, TaxDocumentType.BRAND_TAX_INVOICE,
-                    TaxDocumentStatus.PENDING_ISSUE, settlement.getRewardAmount(), settlement.getRewardVatAmount(),
+                    TaxDocumentStatus.PENDING_ISSUE, brandSupply, brandVat,
                     seller == null || seller.getCompanyName() == null ? settlement.getMarket().getMarketName()
                             : seller.getCompanyName(),
                     seller == null ? null : seller.getBusinessRegistrationNumber(),
@@ -91,8 +97,12 @@ public class SettlementTaxDocumentService implements SettlementTaxDocumentHook {
                 && documentRepository.findBySettlementIdAndTypeAndClawbackIdIsNull(settlementId,
                 TaxDocumentType.CREATOR_TAX_INVOICE).isEmpty()) {
             Creator creator = settlement.getCreator();
+            // 부가세 포함 정산은 공급가 = 리워드(차감 후) − 부가세(리워드 안의 부가세분).
+            long creatorSupply = settlement.isRewardVatInclusive()
+                    ? settlement.getRewardAfterClawback() - settlement.getCreatorVatAmount()
+                    : settlement.getRewardAfterClawback();
             documentRepository.save(SettlementTaxDocument.create(settlementId, TaxDocumentType.CREATOR_TAX_INVOICE,
-                    TaxDocumentStatus.PENDING_INPUT, settlement.getRewardAfterClawback(),
+                    TaxDocumentStatus.PENDING_INPUT, creatorSupply,
                     settlement.getCreatorVatAmount(), creator.getRealName() == null ? creator.getShowroomName()
                             : creator.getRealName(), creator.getBusinessRegistrationNumber(),
                     creator.getBusinessEmail(), null, confirmedAt));

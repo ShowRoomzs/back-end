@@ -79,6 +79,10 @@ public class Product {
     @Column(name = "hide_detail", length = 500)
     private String hideDetail;
 
+    /** 개봉 · 사용 시 청약철회 제한 표시(수정요청 C · 전자상거래법 제17조②) — 기본 적용. 문구는 브랜드 설정 또는 기본 문구. */
+    @Column(name = "opened_withdrawal_restricted", nullable = false)
+    private boolean openedWithdrawalRestricted = true;
+
     @Column(name = "product_notice", columnDefinition = "json")
     private String productNotice;
 

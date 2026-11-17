@@ -7,5 +7,7 @@ package showroomz.domain.performance.type;
 public enum PerformanceTone {
     NEUTRAL,
     WARNING,
-    SUCCESS
+    SUCCESS,
+    /** 분배 실패(2026-11-10). */
+    DANGER
 }
