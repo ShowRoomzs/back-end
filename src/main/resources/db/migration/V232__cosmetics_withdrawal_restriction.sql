@@ -5,5 +5,5 @@
 ALTER TABLE product
     ADD COLUMN opened_withdrawal_restricted BIT(1) NOT NULL DEFAULT b'1' COMMENT '개봉 · 사용 시 청약철회 제한 표시 — 기본 적용' AFTER hide_detail;
 
-ALTER TABLE MARKET
+ALTER TABLE market
     ADD COLUMN withdrawal_restriction_notice VARCHAR(500) NULL COMMENT '청약철회 제한 안내 문구(브랜드) — 비우면 기본 문구' AFTER brand_site_url;
