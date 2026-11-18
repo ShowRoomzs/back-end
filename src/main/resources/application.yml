@@ -69,7 +69,7 @@ social-login:
   kakao:
     rest-api-key: ${KAKAO_REST_API_KEY:}
     client-secret: ${KAKAO_CLIENT_SECRET:}
-    allowed-redirect-uris: ${KAKAO_ALLOWED_REDIRECT_URIS:https://showroomz.co.kr/auth/kakao/callback,http://localhost:8081/auth/kakao/callback,https://front-end-web-seven.vercel.app/auth/kakao/callback}
+    allowed-redirect-uris: ${KAKAO_ALLOWED_REDIRECT_URIS:https://showroomz.co.kr/auth/kakao/callback,http://localhost:8081/auth/kakao/callback,https://front-end-web-seven.vercel.app/auth/kakao/callback,https://m.showroomz.co.kr/auth/kakao/callback}
   google:
     client-ids: ${GOOGLE_CLIENT_IDS:}   # 안드로이드 · iOS · 웹(+ 스튜디오) 클라이언트 ID, 쉼표 구분
   apple:
