@@ -224,6 +224,16 @@ public class UserOrderItemAssembler {
                 .build();
     }
 
+    /**
+     * 표시 상태만 — 행 전체가 필요 없는 집계(마이 주문 현황)가 C10 과 같은 규칙으로 세게 한다.
+     * {@link #toRow}의 {@code status}와 항상 같다. 항목의 배송 그룹은 fetch 돼 있어야 한다.
+     */
+    public UserOrderItemStatus statusOf(OrderProduct product, Context context) {
+        return deriveStatus(product, product.getDeliveryGroup(),
+                context.pendingRequestIdByProduct().containsKey(product.getId()),
+                context.claims().displayedOpenClaim(product.getId()));
+    }
+
     /** 상세 상단 안내(3-3) — 순서는 기한이 있는 쪽 먼저. */
     public List<UserOrderDto.Notice> notices(List<UserOrderDto.ItemRow> rows) {
         List<UserOrderDto.Notice> notices = new ArrayList<>();

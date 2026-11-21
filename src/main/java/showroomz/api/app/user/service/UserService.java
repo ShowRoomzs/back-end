@@ -63,6 +63,7 @@ public class UserService {
     private final WishlistRepository wishlistRepository;
     private final CartRepository cartRepository;
     private final OrderProductRepository orderProductRepository;
+    private final showroomz.api.app.order.service.UserOrderStatsReader orderStatsReader;
     private final DeviceTokenService deviceTokenService;
     private final SuspendedWithdrawalPolicy suspendedWithdrawal;
     private final showroomz.domain.member.user.repository.IdentityVerificationRepository identityVerificationRepository;
@@ -117,7 +118,8 @@ public class UserService {
                 followingCount, // 실제 팔로잉 수
                 3L,             // couponCount (더미 값: 3장)
                 5000L,          // point (더미 값: 5000포인트)
-                12L             // reviewCount (더미 값: 12개)
+                12L,            // reviewCount (더미 값: 12개)
+                orderStatsReader.read(user.getId())
         );
     }
 

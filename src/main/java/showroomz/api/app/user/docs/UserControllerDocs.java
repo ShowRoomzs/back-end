@@ -32,7 +32,10 @@ public interface UserControllerDocs {
             description = "프로필 카드에 표시될 현재 로그인한 사용자의 정보(닉네임, 이메일, 프로필 이미지 등)를 조회합니다.\n\n" +
                     "**참고사항**\n" +
                     "- 프로필 사진이 없는 경우 `profileImageUrl`은 `null`로 반환됩니다.\n" +
-                    "- `followingCount`: 내가 팔로우한 쇼룸 수\n\n" +
+                    "- `followingCount`: 내가 팔로우한 쇼룸 수\n" +
+                    "- `orderStats`: 마이 「주문 현황」 4단계(결제완료 · 상품준비중 · 배송중 · 배송완료)별 **주문 수**. " +
+                    "한 주문의 항목이 여러 단계에 걸치면 각 단계에 한 번씩 센다. 항목 상태는 주문 내역(C10)과 같은 규칙이라 " +
+                    "취소 요청 중 · 반품/교환 진행 중 항목은 어디에도 들지 않는다. 기간 제한 없음\n\n" +
                     "**권한:** USER\n" +
                     "**요청 헤더:** Authorization: Bearer {accessToken}"
     )
@@ -63,7 +66,8 @@ public interface UserControllerDocs {
                                                     "  \"followingCount\": 0,\n" +
                                                     "  \"couponCount\": 3,\n" +
                                                     "  \"point\": 5000,\n" +
-                                                    "  \"reviewCount\": 12\n" +
+                                                    "  \"reviewCount\": 12,\n" +
+                                                    "  \"orderStats\": { \"paid\": 2, \"preparing\": 0, \"shipping\": 1, \"delivered\": 3 }\n" +
                                                     "}"
                                     ),
                                     @ExampleObject(
@@ -85,7 +89,8 @@ public interface UserControllerDocs {
                                                     "  \"followingCount\": 0,\n" +
                                                     "  \"couponCount\": 3,\n" +
                                                     "  \"point\": 5000,\n" +
-                                                    "  \"reviewCount\": 12\n" +
+                                                    "  \"reviewCount\": 12,\n" +
+                                                    "  \"orderStats\": { \"paid\": 2, \"preparing\": 0, \"shipping\": 1, \"delivered\": 3 }\n" +
                                                     "}"
                                     )
                             }
@@ -267,7 +272,8 @@ public interface UserControllerDocs {
                                                     "  \"followingCount\": 0,\n" +
                                                     "  \"couponCount\": 3,\n" +
                                                     "  \"point\": 5000,\n" +
-                                                    "  \"reviewCount\": 12\n" +
+                                                    "  \"reviewCount\": 12,\n" +
+                                                    "  \"orderStats\": { \"paid\": 2, \"preparing\": 0, \"shipping\": 1, \"delivered\": 3 }\n" +
                                                     "}"
                                     )
                             }

@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import showroomz.api.app.auth.entity.ProviderType;
 import showroomz.api.app.auth.entity.RoleType;
+import showroomz.api.app.order.dto.UserOrderStats;
 
 import java.time.LocalDateTime;
 
@@ -52,5 +53,8 @@ public class UserProfileResponse {
     private Long point;
     @Schema(description = "작성한 리뷰 수 — 더미 값(현재 항상 12)", example = "12")
     private Long reviewCount;
+
+    @Schema(description = "마이 「주문 현황」 4단계 — 단계별 주문 수(기간 제한 없음)")
+    private UserOrderStats orderStats;
 }
 
