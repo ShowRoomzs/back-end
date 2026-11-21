@@ -95,14 +95,6 @@ public class Order extends BaseTimeEntity {
     @Column(name = "idempotency_key", length = 64)
     private String idempotencyKey;
 
-    /** 결제 화면 「브랜드 개인정보 제3자 제공」 동의 시각(수정요청 C) — 이력. */
-    @Column(name = "third_party_consent_at")
-    private LocalDateTime thirdPartyConsentAt;
-
-    /** 제공받는 자 — 주문 당시 브랜드명(쉼표 구분). */
-    @Column(name = "third_party_recipients", length = 500)
-    private String thirdPartyRecipients;
-
     /** 생성 + 결제 대기 시간. 만료 스케줄러의 기준(4-4). */
     @Column(name = "expires_at")
     private LocalDateTime expiresAt;
@@ -214,12 +206,5 @@ public class Order extends BaseTimeEntity {
 
     public record AddressSnapshot(String recipientName, String recipientPhone, String zipCode, String address,
                                   String detailAddress) {
-    }
-
-    /** 결제 화면 제3자 제공 동의 이력(수정요청 C) — 동의 시각 · 제공받는 자(브랜드명). */
-    public void recordThirdPartyConsent(LocalDateTime agreedAt, java.util.Collection<String> recipients) {
-        this.thirdPartyConsentAt = agreedAt;
-        String joined = String.join(", ", recipients);
-        this.thirdPartyRecipients = joined.length() > 500 ? joined.substring(0, 500) : joined;
     }
 }

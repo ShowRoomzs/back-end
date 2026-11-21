@@ -395,7 +395,6 @@ public enum ErrorCode {
     ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND", "주문을 찾을 수 없습니다."),
     ORDER_ITEMS_EMPTY(HttpStatus.BAD_REQUEST, "ORDER_ITEMS_EMPTY", "주문할 상품이 없습니다."),
     ORDER_ADDRESS_REQUIRED(HttpStatus.BAD_REQUEST, "ORDER_ADDRESS_REQUIRED", "배송지를 선택해 주세요."),
-    ORDER_THIRD_PARTY_CONSENT_REQUIRED(HttpStatus.BAD_REQUEST, "ORDER_THIRD_PARTY_CONSENT_REQUIRED", "브랜드에 대한 개인정보 제3자 제공에 동의해 주세요."),
     ORDER_AMOUNT_CHANGED(HttpStatus.CONFLICT, "ORDER_AMOUNT_CHANGED", "상품 가격 또는 배송비가 변경되었습니다. 주문서를 다시 확인해 주세요."),
     ORDER_ALREADY_CLOSED(HttpStatus.CONFLICT, "ORDER_ALREADY_CLOSED", "이미 만료되었거나 취소된 주문입니다."),
     ORDER_NOT_CANCELLABLE(HttpStatus.CONFLICT, "ORDER_NOT_CANCELLABLE", "지금 상태에서는 주문을 취소할 수 없습니다."),

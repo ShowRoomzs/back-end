@@ -90,8 +90,6 @@ import java.lang.annotation.Target;
                 "message.retention-purge-scheduler-enabled=false",
                 "member.marketing-reconfirm-scheduler-enabled=false",
                 "admin.inquiry-deadline-scheduler-enabled=false",
-                // 결제 화면 제3자 제공 필수 동의(수정요청 C) — 기존 주문 시나리오는 이 필드 없이 짜여 있다. 필수 판정은 CheckoutThirdPartyConsentIntegrationTest 가 켜고 본다.
-                "order.third-party-consent-required=false",
                 // 리워드 부가세 — 기존 정산 시나리오(1021 시안 숫자)는 별도 부담 산식으로 짜여 있다. 부가세 포함 산식(2026-11-10 · 운영 기본값)은
                 // SettlementVatInclusiveIntegrationTest · SettlementCalculatorTest 가 설정을 켜고 따로 본다.
                 "settlement.reward-vat-inclusive=false",

@@ -39,12 +39,6 @@ public class OrderProperties {
     /** 운영 지표 10분 주기(4-8). */
     private boolean healthCheckEnabled = true;
 
-    /**
-     * 결제 화면 「브랜드 개인정보 제3자 제공」 필수 동의(수정요청 C) — true 면 동의 없는 주문 생성을 400 으로 막는다. 앱 배포 전 짧게
-     * 끌 수 있게 설정으로 둔다. 동의가 오면 설정과 무관하게 주문에 동의 시각 · 제공받는 자를 남긴다.
-     */
-    private boolean thirdPartyConsentRequired = true;
-
     /** 포트원 customer 블록에 이메일을 실을지 — 개인정보 제3자 제공 범위(9-1 ②) 법무 결과에 따라 끈다. */
     private boolean customerEmailEnabled = true;
 

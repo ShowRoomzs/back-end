@@ -181,7 +181,6 @@ order:
   reconciliation-enabled: true                      # 일일 대사 05:00 KST
   health-check-enabled: true                        # 운영 지표 10분 주기
   customer-email-enabled: true                      # 포트원 customer 블록에 이메일 포함 여부(9-1 ②)
-  third-party-consent-required: true                # 결제 화면 브랜드 개인정보 제3자 제공 필수 동의(수정요청 C) — 동의 없는 주문 생성 400
   purchase-confirm-undelivered-days: 28             # 배송완료 미확인 자동 구매확정 — 송장 등록 + N일(2026-11-10 대표 결정)
   purchase-confirm-days: 7                          # 구매확정 — 배송완료 + N일 자동(약관 제19조①)
   purchase-confirm-scheduler-enabled: true          # 구매확정 배치(매시)

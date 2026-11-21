@@ -154,10 +154,6 @@ public class CheckoutService {
     public CreatedOrder createOrderTx(Long userId, OrderDto.CreateOrderRequest request, LocalDateTime now) {
         Users user = requireUser(userId);
         UserSanctionGuard.requireNotSuspended(user, UserBlockedAction.PURCHASE);
-        boolean thirdPartyAgreed = Boolean.TRUE.equals(request.getThirdPartyProvisionAgreed());
-        if (orderProperties.isThirdPartyConsentRequired() && !thirdPartyAgreed) {
-            throw new BusinessException(ErrorCode.ORDER_THIRD_PARTY_CONSENT_REQUIRED);
-        }
         PaymentChoice choice = requirePaymentChoice(request.getPayment());
         Prepared prepared = prepare(user, request.getCartItemIds(), request.getDirect(), now);
         DeliveryAddress address = resolveAddress(user, request.getDeliveryAddressId(), true);
@@ -180,11 +176,6 @@ public class CheckoutService {
                 Order.orderNameOf(productNames),
                 request.getIdempotencyKey(),
                 now.plusMinutes(orderProperties.getPaymentTimeoutMinutes()));
-        if (thirdPartyAgreed) {
-            // 제공받는 자 = 이 주문의 브랜드들(수정요청 C) — 주문 당시 이름으로 남긴다.
-            order.recordThirdPartyConsent(now, prepared.lines().stream()
-                    .map(line -> line.variant().getProduct().getMarket().getMarketName()).distinct().toList());
-        }
         // 멱등키 유니크 위반을 트랜잭션 안에서 즉시 드러낸다(선행 수정 계획서 C2) — 커밋 시점에 터지면 잡을 수 없다.
         orderRepository.saveAndFlush(order);
 
