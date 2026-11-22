@@ -201,6 +201,20 @@ public class SettlementPayoutService {
      * 지급」 약속) ② 수렴(확정 합계 ≠ 현재 합계인 묶음을 다시 올린다 · D-1 ④) ③ 잔액 재검사(아직 모자라면 큰 묶음부터 남기고 정리 · D-9).
      * 마감이 없는 모드(시뮬레이터 · 토스)는 하지 않는다.
      */
+    /**
+     * 마감 전 수렴(업로드 창 안 10분마다) — 확정 합계 ≠ 현재 합계(보류 뒤 재전송 실패 · 결과 모름 · 일시 오류)인 묶음만 다시 올린다. 맞는 묶음은 PG 를
+     * 부르지 않는다. 14:00 틱 하나만 믿으면 14시 이후 보류의 재전송이 실패했을 때 마감까지 고칠 기회가 없다(그대로 마감되면 빠진 행이 이전 합계로
+     * 나간다). 선점 · 잔액 재검사는 하지 않는다(14:00 틱의 일). 업로드 창 밖 · 마감 없는 모드는 아무것도 하지 않는다.
+     *
+     * @return 전송을 시도한 묶음 수
+     */
+    public int convergeBeforeCutoff(LocalDateTime now) {
+        if (!groupPlanner.enabled() || !groupPlanner.hasCutoff() || !groupPlanner.isUploadWindow(now)) {
+            return 0;
+        }
+        return groupService.converge(now);
+    }
+
     public void cutoffTick(LocalDateTime now, int limit) {
         if (!groupPlanner.enabled() || !groupPlanner.hasCutoff()) {
             return;

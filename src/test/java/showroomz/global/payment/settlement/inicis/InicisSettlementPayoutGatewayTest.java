@@ -213,6 +213,27 @@ class InicisSettlementPayoutGatewayTest {
     }
 
     @Test
+    @DisplayName("한 키에 결과가 여럿 — 성공 · 실패가 섞이면 성공 합계만 PAID(묶음 전체를 FAILED 로 닫지 않는다 · 재분배 이중 지급 방지) · 전부 실패일 때만 FAILED")
+    void mixedResultsCountOnlyWhatWasSent() {
+        server.expect(requestTo(startsWith(BASE + "/payresult"))).andRespond(withSuccess("""
+                {"code":"SC01","msg":"정상","data":[
+                  {"idMall":"b12","dtPay":"20261116","amtSupply":30000,"remitDtPay":"20261116","clPay":"01"},
+                  {"idMall":"b12","dtPay":"20261116","amtSupply":20000,"remitDtPay":"20261116","clPay":"12"},
+                  {"idMall":"c7","dtPay":"20261116","amtSupply":5000,"remitDtPay":"20261116","clPay":"12"},
+                  {"idMall":"c7","dtPay":"20261116","amtSupply":4000,"remitDtPay":"20261116","clPay":"13"}
+                ]}""", MediaType.APPLICATION_JSON));
+
+        List<GroupResult> results = gateway.lookupGroups(List.of(
+                new GroupLookup(1L, SettlementPayee.BRAND, "b12", MONDAY, "NEXT_DAY", 50_000L),
+                new GroupLookup(2L, SettlementPayee.CREATOR, "c7", MONDAY, "NEXT_DAY", 9_000L)));
+
+        assertThat(results).extracting(GroupResult::groupId, GroupResult::outcome, GroupResult::failCode, GroupResult::pgAmount)
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1L, Outcome.PAID, null, 30_000L),
+                        org.assertj.core.groups.Tuple.tuple(2L, Outcome.FAILED, "INICIS_12", 9_000L));
+        server.verify();
+    }
+
+    @Test
     @DisplayName("송금 결과 SC02(조회 데이터 없음) — 오류가 아니라 빈 결과 · 묶음은 그대로 OPEN")
     void lookupEmpty() {
         server.expect(requestTo(startsWith(BASE + "/payresult")))

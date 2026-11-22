@@ -12,6 +12,7 @@ import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.port.SettlementPartnerGateway.PartnerProfile;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.GroupCommand;
 import showroomz.domain.settlement.service.PayoutHoldTransitions;
+import showroomz.domain.settlement.service.SettlementPayoutGroupService;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementEventType;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class SettlementInicisSeamScenarioIntegrationTest extends SettlementTestSupport {
 
     @Autowired PayoutHoldTransitions holdTransitions;
+    @Autowired SettlementPayoutGroupService groupService;
     @Autowired SettlementProperties settlementProperties;
 
     @BeforeEach
@@ -359,6 +361,91 @@ class SettlementInicisSeamScenarioIntegrationTest extends SettlementTestSupport 
         assertThat(brandGroup.get("result_code")).isEqualTo("ACCOUNT_MISMATCH");
         assertThat(group(creatorRow.getPayoutGroupId()).get("result_code")).isNull();
         assertThat(settlementEvents(s.getId())).contains(SettlementEventType.PAYOUT_CHECK_REQUIRED);
+    }
+
+    // ================================================================== 정합(직렬화 · 마감 뒤 전송 · 10분 수렴)
+
+    @Test
+    @DisplayName("같은 수취자 전송은 한 번에 하나 — 첫 전송이 PG 호출 중이면 둘째 전송은 기다렸다가 준비한다(이미 맞으면 부르지 않는다) · PG 호출 1회 · 확정 합계 = 행 합계")
+    void concurrentSubmitsAreSerialized() throws Exception {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutGateway.unresponsive();
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);   // 결과 모름 — 묶음은 다시 올려야 한다
+        payoutGateway.responsive();
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+        Long groupId = brandRow.getPayoutGroupId();
+        int before = payoutGateway.groupCalls().size();
+
+        java.util.concurrent.CountDownLatch entered = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        payoutGateway.holdNextSubmit(entered, release);
+        java.util.concurrent.ExecutorService pool = java.util.concurrent.Executors.newFixedThreadPool(2);
+        try {
+            var first = pool.submit(() -> groupService.submit(groupId, x.atTime(11, 0)));
+            assertThat(entered.await(10, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            var second = pool.submit(() -> groupService.submit(groupId, x.atTime(11, 0)));
+            Thread.sleep(500);
+            // 첫 전송이 PG 호출 안에 붙들려 있는 동안 둘째 전송은 PG 에 닿지 않는다.
+            assertThat(payoutGateway.groupCalls()).hasSize(before);
+            release.countDown();
+            assertThat(first.get(15, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(SettlementPayoutGroupService.SubmitOutcome.SENT);
+            assertThat(second.get(15, java.util.concurrent.TimeUnit.SECONDS)).isEqualTo(SettlementPayoutGroupService.SubmitOutcome.IN_SYNC);
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
+        assertThat(payoutGateway.groupCalls()).hasSize(before + 1);
+        Map<String, Object> group = group(groupId);
+        assertThat(((Number) group.get("confirmed_amount")).longValue()).isEqualTo(brandRow.getAmount());
+        assertThat(group.get("result_code")).isNull();
+    }
+
+    @Test
+    @DisplayName("수정 마감이 지난 묶음은 보내지 않는다 — 결과 모름 묶음도 15:01 전송은 SKIPPED · PG 호출 없음 · 결과 모름 유지(송금 결과가 가른다)")
+    void noSubmitAfterCutoff() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutGateway.unresponsive();
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+        payoutGateway.responsive();
+        Long groupId = payout(s.getId(), SettlementPayee.BRAND).getPayoutGroupId();
+        int before = payoutGateway.groupCalls().size();
+
+        assertThat(groupService.submit(groupId, x.atTime(15, 1))).isEqualTo(SettlementPayoutGroupService.SubmitOutcome.SKIPPED);
+        assertThat(payoutGateway.groupCalls()).hasSize(before);
+        assertThat(group(groupId).get("status")).isEqualTo("OPEN");
+        assertThat(group(groupId).get("result_code")).isEqualTo("OUTCOME_UNKNOWN");
+    }
+
+    @Test
+    @DisplayName("마감 전 수렴(10분마다) — 어긋난 묶음(결과 모름)만 11:05 에 다시 올려 확정 · 맞는 묶음은 부르지 않는다 · 마감 뒤(15:05) · 비영업일은 아무것도 하지 않는다")
+    void convergeEveryTenMinutesBeforeCutoff() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutGateway.unresponsive();
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+        payoutGateway.responsive();
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+
+        assertThat(payoutService.convergeBeforeCutoff(x.atTime(15, 5))).isZero();
+        LocalDate holiday = x.plusDays(1);
+        while (businessCalendar.isBusinessDay(holiday)) {
+            holiday = holiday.plusDays(1);
+        }
+        assertThat(payoutService.convergeBeforeCutoff(holiday.atTime(11, 5))).isZero();
+
+        assertThat(payoutService.convergeBeforeCutoff(x.atTime(11, 5))).isEqualTo(2);   // 브랜드 · 인플루언서 묶음
+        assertThat(((Number) group(brandRow.getPayoutGroupId()).get("confirmed_amount")).longValue()).isEqualTo(brandRow.getAmount());
+        int calls = payoutGateway.groupCalls().size();
+        assertThat(payoutService.convergeBeforeCutoff(x.atTime(11, 15))).isZero();
+        assertThat(payoutGateway.groupCalls()).hasSize(calls);
     }
 
     // ================================================================== IN-6 · IN-7

@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  * 정산 지급 마감 전 틱(60_KG이니시스_지급대행_전환_계획서.md D-2′) — 영업일 {@code settlement.payout-cutoff-hour}시(기본 14시 · 이니시스 익일지급
  * 수정 마감 15시 전). ① 10:00 뒤 보류가 풀린 행 · 대기 중인 재분배 행을 지시(「해제 다음 영업일 지급」 약속) ② 확정 합계 ≠ 현재 합계인 묶음을 다시
  * 올리는 수렴(즉시 전송은 최적화이고 정합의 보증은 이 틱이다 · D-1 ④) ③ 잔액 재검사(아직 모자라면 큰 묶음부터 남기고 정리 · D-9).
- * 마감이 없는 모드(시뮬레이터 · 토스)는 서비스가 바로 돌아간다. 비영업일에는 건너뛴다.
+ * 마감이 없는 모드(시뮬레이터 · 토스)는 서비스가 바로 돌아간다. 비영업일에는 건너뛴다. 업로드 창 안에서는 10분마다 수렴만 따로 돈다({@link #converge}).
  */
 @Slf4j
 @Component
@@ -40,5 +40,21 @@ public class SettlementPayoutCutoffScheduler {
             return;
         }
         payoutService.cutoffTick(now, MAX_PER_RUN);
+    }
+
+    /**
+     * 마감 전 수렴(xx:05 부터 10분마다 · 정각 배치 · 틱과 겹치지 않게) — 어긋난 묶음만 다시 올린다. 업로드 창(영업일 마감 전) 밖에서는 서비스가 바로
+     * 돌아간다. 마지막 회차(14:55)가 마감을 넘기면 전송 직전 판정이 보내지 않는다.
+     */
+    @Scheduled(cron = "0 5/10 * * * *", zone = "Asia/Seoul")
+    public void converge() {
+        try {
+            int tried = payoutService.convergeBeforeCutoff(LocalDateTime.now());
+            if (tried > 0) {
+                log.info("정산 지급 마감 전 수렴 — 전송 {}건", tried);
+            }
+        } catch (RuntimeException e) {
+            log.error("정산 지급 마감 전 수렴 실패", e);
+        }
     }
 }

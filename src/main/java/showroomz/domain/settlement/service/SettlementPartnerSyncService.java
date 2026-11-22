@@ -530,7 +530,6 @@ public class SettlementPartnerSyncService {
                 .anyMatch(g -> !g.getAccountHash().equals(accountHash));
     }
 
-    /** 회원 정보의 은행 이름을 코드로 — 못 찾으면 코드 null(구현이 {@code UNSUPPORTED_BANK}). 계좌가 비어도 그대로(구현이 {@code ACCOUNT_MISSING}). */
     /**
      * 송금 결과의 계좌(은행 코드 · 계좌번호 끝 4자리)가 행의 계좌 스냅샷과 다른가 — 다르면 운영자용 설명(끝 4자리만), 같거나 비교할 수 없으면 null.
      * 묶음 행은 계좌가 하나다(D-1 ⑤) — 스냅샷이 있는 첫 행과 비교한다. 호출자 트랜잭션 안(은행 이름 → 코드 조회).
@@ -556,6 +555,7 @@ public class SettlementPartnerSyncService {
         return "은행 %s → %s · 계좌 끝자리 %s → %s".formatted(snapshot.bankCode(), remitted.bankCode(), ourTail, remitted.accountTail());
     }
 
+    /** 회원 정보의 은행 이름을 코드로 — 못 찾으면 코드 null(구현이 {@code UNSUPPORTED_BANK}). 계좌가 비어도 그대로(구현이 {@code ACCOUNT_MISSING}). */
     private Account account(String bankName, String accountNumber, String holder) {
         String code = blank(bankName) ? null
                 : bankRepository.findByName(bankName.trim()).map(Bank::getCode).orElse(null);

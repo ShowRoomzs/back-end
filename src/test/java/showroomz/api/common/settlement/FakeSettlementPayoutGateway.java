@@ -58,6 +58,8 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
     private final List<List<GroupLookup>> groupLookups = new ArrayList<>();
     /** 이니시스 흉내 — PG 에 올라가 있는 합계 {@code idMall|dtPay → total}(같은 키로 다시 올리면 덮어쓴다 · DEL 이면 사라진다). */
     private final Map<String, Long> uploaded = new LinkedHashMap<>();
+    private java.util.concurrent.CountDownLatch holdEntered;
+    private java.util.concurrent.CountDownLatch holdRelease;
     private Mode mode = Mode.SIMULATED;
     private boolean unresponsive;
     private boolean lookupUnresponsive;
@@ -108,8 +110,38 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
 
     // ------------------------------------------------------------------ 묶음 지급
 
+    /**
+     * 다음 묶음 전송 1회를 PG 호출 안에서 붙든다 — {@code entered} 를 내리고 {@code release} 가 내려갈 때까지 기다린다(가짜의 모니터 밖에서 —
+     * 다른 스레드의 전송이 이 가짜에 닿는지 볼 수 있게). 같은 수취자 전송 직렬화 시험용.
+     */
+    public synchronized void holdNextSubmit(java.util.concurrent.CountDownLatch entered,
+                                            java.util.concurrent.CountDownLatch release) {
+        this.holdEntered = entered;
+        this.holdRelease = release;
+    }
+
     @Override
-    public synchronized GroupSubmitResult submitGroup(GroupCommand command) {
+    public GroupSubmitResult submitGroup(GroupCommand command) {
+        java.util.concurrent.CountDownLatch entered;
+        java.util.concurrent.CountDownLatch release;
+        synchronized (this) {
+            entered = holdEntered;
+            release = holdRelease;
+            holdEntered = null;
+            holdRelease = null;
+        }
+        if (entered != null) {
+            entered.countDown();
+            try {
+                release.await(10, java.util.concurrent.TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return submitGroupNow(command);
+    }
+
+    private synchronized GroupSubmitResult submitGroupNow(GroupCommand command) {
         groupCalls.add(command);
         if (unresponsive) {
             throw new IllegalStateException("FAKE PG 지급대행 응답 없음(타임아웃)");
@@ -370,6 +402,8 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
         remitAmounts.clear();
         retryCodes.clear();
         remitAccounts.clear();
+        holdEntered = null;
+        holdRelease = null;
         calls.clear();
         lookups.clear();
         groupCalls.clear();

@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * 지급 묶음의 <b>유일한 진입점</b>(60_KG이니시스_지급대행_전환_계획서.md D-1 · 6절) — 배치 · 마감 전 틱 · 재분배 · 보류가 전부 이것을 부른다.
@@ -60,6 +62,11 @@ public class SettlementPayoutGroupService {
     /** 송금 결과의 계좌(은행 · 끝 4자리)가 행의 계좌 스냅샷과 다르다 — 지급 완료 묶음에 남는 확인 표시. */
     static final String ACCOUNT_MISMATCH = "ACCOUNT_MISMATCH";
     private static final int POLL_BATCH = 500;
+    /** 같은 수취자 전송 직렬화 — 줄무늬 잠금 수 · 대기 상한(PG 호출 1회 · 서브몰 계좌 정렬 1회 타임아웃의 합보다 길게). */
+    private static final int PAYEE_LOCK_STRIPES = 64;
+    private static final long PAYEE_LOCK_WAIT_SECONDS = 30;
+    private final ReentrantLock[] payeeLocks = java.util.stream.IntStream.range(0, PAYEE_LOCK_STRIPES)
+            .mapToObj(i -> new ReentrantLock()).toArray(ReentrantLock[]::new);
     /** 수렴 · 마감 경과 판정이 보는 지급일 범위(오늘 기준 앞뒤 일수). */
     private static final int SCAN_DAYS = 45;
 
@@ -134,8 +141,44 @@ public class SettlementPayoutGroupService {
         }
     }
 
-    /** 묶음의 현재 합계로 올린다(합계 0 이면 삭제). 확정 합계와 같으면 부르지 않는다. */
+    /**
+     * 묶음의 현재 합계로 올린다(합계 0 이면 삭제). 확정 합계와 같으면 부르지 않는다.
+     *
+     * <p><b>같은 수취자의 전송은 한 번에 하나</b> — 준비(잠금 · 합계) → PG 호출(잠금 없음) → 반영 사이에 같은 묶음의 다른 전송(배치 · 보류 뒤 재전송 ·
+     * 재분배)이 끼면 PG 에 늦게 도착한 쪽이 이기는데 우리 확정 합계는 늦게 반영한 쪽을 따라 둘이 어긋난다. 같은 수취자의 다른 묶음은 서브몰 계좌
+     * 정렬(D-1 ⑤ · 미송금 판정)이 서로를 못 본다. 그래서 수취자 단위로 직렬화한다 — 배포가 단일 인스턴스라 JVM 잠금이다(스케줄러와 같은 전제).
+     * 호출자는 DB 트랜잭션 밖이다(커밋 뒤 · 스케줄러) — DB 잠금을 쥔 채 이 잠금을 기다리는 경로가 없어 교착이 없다. 그래도 기다림은 상한이 있다.
+     */
     public SubmitOutcome submit(Long groupId, LocalDateTime now) {
+        SettlementPayoutGroup head = readTransaction.execute(tx -> groupRepository.findById(groupId).orElse(null));
+        if (head == null || !head.getStatus().isOpen()) {
+            return SubmitOutcome.SKIPPED;
+        }
+        ReentrantLock lock = payeeLock(head.getPayee(), head.getPayeeRefId());
+        boolean locked;
+        try {
+            locked = lock.tryLock(PAYEE_LOCK_WAIT_SECONDS, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return SubmitOutcome.UNKNOWN;
+        }
+        if (!locked) {
+            // 보낸 것이 없다 — 확정 합계 ≠ 현재 합계로 남아 다음 수렴이 다시 올린다.
+            log.warn("지급 묶음 — 같은 수취자 전송 대기 초과 · 다음 수렴으로 - groupId: {}", groupId);
+            return SubmitOutcome.UNKNOWN;
+        }
+        try {
+            return submitLocked(groupId, now);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    private ReentrantLock payeeLock(SettlementPayee payee, Long payeeRefId) {
+        return payeeLocks[Math.floorMod(Objects.hash(payee, payeeRefId), payeeLocks.length)];
+    }
+
+    private SubmitOutcome submitLocked(Long groupId, LocalDateTime now) {
         Prepared prepared = writeTransaction.execute(tx -> prepare(groupId, now));
         if (prepared == null) {
             return SubmitOutcome.SKIPPED;
@@ -193,6 +236,13 @@ public class SettlementPayoutGroupService {
             groupRepository.saveAndFlush(group);
             failRows(rows, PayoutBlockReason.PARTNER_NOT_READY.name(), "PG 서브몰 미연결 — 확정 때 등록되지 않았다", false, now);
             return Prepared.done(SubmitOutcome.FAILED);
+        }
+        if (planner.hasCutoff() && !planner.isEditable(group.getPayDate(), now)) {
+            // 수정 마감이 지났다(보류 뒤 재전송 · 마감 직전 선점이 마감을 넘겼다) — 보내지 않는다. 마감 뒤 요청을 이니시스가 어떻게 다루는지(거절 ·
+            // 다음 날 적용) 모른다. 받은 적 없는 행은 마감 경과 정리가 다음 지급일로 옮기고, PG 합계 ≠ 행 합계면 사람을 부른다(settleMissed).
+            log.warn("지급 묶음 — 수정 마감 경과 · 전송하지 않음 - groupId: {}, payDate: {}, confirmed: {}, rows: {}", groupId,
+                    group.getPayDate(), group.getConfirmedAmount(), total);
+            return Prepared.done(SubmitOutcome.SKIPPED);
         }
         group.intend(total, now);
         groupRepository.save(group);

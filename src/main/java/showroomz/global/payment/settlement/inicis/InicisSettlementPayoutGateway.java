@@ -190,21 +190,31 @@ public class InicisSettlementPayoutGateway implements SettlementPayoutGateway {
             log.warn("이니시스 송금 결과가 한 키에 여럿 - idMall: {}, dtPay: {}, count: {}", lookup.partnerExternalId(),
                     lookup.payDate(), found.size());
         }
-        long amount = found.stream().mapToLong(r -> parseAmount(r.amtSupply())).sum();
-        PayResult failed = found.stream().filter(r -> !InicisPayoutsDtos.CL_PAY_SUCCESS.equals(trim(r.clPay())))
-                .findFirst().orElse(null);
-        LocalDate remittedOn = found.stream().map(r -> parseDate(r.remitDtPay())).filter(java.util.Objects::nonNull)
-                .findFirst().orElse(lookup.payDate());
-        if (failed != null) {
+        // 한 키에 결과가 여럿이면(같은 키 재등록이 덮어쓰기가 아니다 · Q3) 「실제로 나간 돈」만 지급으로 본다 — 하나라도 실패라고 묶음 전체를 FAILED 로
+        // 닫으면 성공한 몫까지 재분배가 한 번 더 보낸다. 전부 실패일 때만 FAILED. 성공 합계가 확정 합계와 다르면 도메인이 닫지 않고 사람을 부른다.
+        List<PayResult> succeeded = found.stream().filter(r -> InicisPayoutsDtos.CL_PAY_SUCCESS.equals(trim(r.clPay()))).toList();
+        if (succeeded.isEmpty()) {
+            PayResult failed = found.get(0);
             String code = InicisPayoutFailureClassifier.payResultFailCode(trim(failed.clPay()));
-            return new GroupResult(lookup.groupId(), Outcome.FAILED, remittedOn, code, "이니시스 송금 실패 clPay=" + trim(failed.clPay()),
-                    amount);
+            long amount = found.stream().mapToLong(r -> parseAmount(r.amtSupply())).sum();
+            return new GroupResult(lookup.groupId(), Outcome.FAILED, remittedOn(found, lookup), code,
+                    "이니시스 송금 실패 clPay=" + trim(failed.clPay()), amount);
         }
-        // 실제로 보낸 계좌 — 한 키에 여럿이면 계좌가 갈리지 않을 때만 싣는다(갈리면 대조하지 않고 위 경고 · 금액 대조가 사람을 부른다).
-        List<RemittedAccount> accounts = found.stream().map(r -> RemittedAccount.of(r.cdBank(), r.noAcct()))
+        if (succeeded.size() < found.size()) {
+            log.warn("이니시스 송금 결과 성공 · 실패 섞임 — 성공 합계만 지급으로 본다 - idMall: {}, dtPay: {}, ok: {}/{}",
+                    lookup.partnerExternalId(), lookup.payDate(), succeeded.size(), found.size());
+        }
+        long amount = succeeded.stream().mapToLong(r -> parseAmount(r.amtSupply())).sum();
+        // 실제로 보낸 계좌 — 성공 결과의 계좌가 하나일 때만 싣는다(갈리면 대조하지 않는다 · 금액 대조가 사람을 부른다).
+        List<RemittedAccount> accounts = succeeded.stream().map(r -> RemittedAccount.of(r.cdBank(), r.noAcct()))
                 .filter(java.util.Objects::nonNull).distinct().toList();
         RemittedAccount remittedTo = accounts.size() == 1 ? accounts.get(0) : null;
-        return new GroupResult(lookup.groupId(), Outcome.PAID, remittedOn, null, null, amount, remittedTo);
+        return new GroupResult(lookup.groupId(), Outcome.PAID, remittedOn(succeeded, lookup), null, null, amount, remittedTo);
+    }
+
+    private static LocalDate remittedOn(List<PayResult> rows, GroupLookup lookup) {
+        return rows.stream().map(r -> parseDate(r.remitDtPay())).filter(java.util.Objects::nonNull).findFirst()
+                .orElse(lookup.payDate());
     }
 
     /** 스테이징 — 송금 결과를 볼 수 없다. {@code assume-paid} 면 지급일이 된 묶음을 확정 합계 그대로 PAID 로(D-10). */
