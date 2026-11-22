@@ -56,6 +56,19 @@ public interface OrderProductRepository extends JpaRepository<OrderProduct, Long
             + "LEFT JOIN FETCH op.review WHERE op.order.id IN :orderIds ORDER BY op.id ASC")
     List<OrderProduct> findByOrderIdsWithGroup(@Param("orderIds") Collection<Long> orderIds);
 
+    /**
+     * 소비자 앱 마이 「주문 현황」 — 결제된 주문의 살아 있는 항목(PAID) 중 하위주문 이행이 {@code fulfillmentStatuses} 인 것. 기간 제한은 없다.
+     * 그룹 없는 옛 행(백필 전)은 뺀다 — 이행이 진행되지 않아 기간 없이 세면 「결제완료」에 영원히 남는다.
+     * 리뷰를 함께 올리는 이유는 {@link #findByOrderIdsWithGroup}과 같다.
+     */
+    @Query("SELECT op FROM OrderProduct op JOIN op.order o JOIN FETCH op.deliveryGroup g LEFT JOIN FETCH op.review "
+            + "WHERE o.user.id = :userId AND o.paidAt IS NOT NULL "
+            + "AND op.status = showroomz.domain.order.type.OrderProductStatus.PAID "
+            + "AND g.fulfillmentStatus IN :fulfillmentStatuses")
+    List<OrderProduct> findInProgressByUserWithGroup(
+            @Param("userId") Long userId,
+            @Param("fulfillmentStatuses") Collection<showroomz.domain.order.type.FulfillmentStatus> fulfillmentStatuses);
+
     /** 주문 상품 전체의 상태를 한 번에 — 주문 전이의 부수 효과(4-1). */
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query("UPDATE OrderProduct op SET op.status = :to WHERE op.order.id = :orderId AND op.status IN :from")
