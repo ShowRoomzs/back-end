@@ -1,6 +1,8 @@
 # CLAUDE.md
 
-Showroomz 백엔드 (Spring Boot / Gradle / Java).
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+Showroomz 백엔드 — Spring Boot 3.5 / Java 21 / Gradle / JPA + QueryDSL / MySQL 8 / Flyway.
 
 ## 응답 언어
 
@@ -15,6 +17,48 @@ Showroomz 백엔드 (Spring Boot / Gradle / Java).
   ./gradlew test --tests '*AdminBrandSanctionIntegrationTest' --tests 'showroomz.api.admin.brand.*'
   ```
 - 관련 테스트가 없거나 문서·어노테이션만 바꿨으면 컴파일만 확인한다: `./gradlew compileJava compileTestJava -q`
+
+### 테스트 태스크 · 태그
+
+| 태스크 | 대상 | 비고 |
+|---|---|---|
+| `test` | `contract-pdf` 태그를 뺀 전부 | 위 규칙대로 `--tests` 로 좁혀서 쓴다 |
+| `integrationTest` | `@Tag("integration")` | |
+| `dbMigrationTest` | `@Tag("db-migration")` = `showroomz.DB.ShowroomzApplicationTests` | **실 MySQL**(`.env` 의 `DB_URL`)에 Flyway + Hibernate `validate`. 배포 파이프라인은 이것만 돌린다 |
+| `contractPdfTest` | `@Tag("contract-pdf")` | 실제 Chromium 으로 계약서 PDF 렌더. 먼저 `./gradlew installContractChromium` |
+
+### 통합 테스트 구조 (`src/test/java/showroomz/support`)
+
+- `@IntegrationTest` / `IntegrationTestSupport` 를 상속한다. **H2(MySQL 모드) + `ddl-auto=create-drop` + Flyway 꺼짐** — 마이그레이션 SQL 은 MySQL 전용이라 H2 에서 돌지 않는다. 그래서 DB 제약(유니크 · 생성 컬럼)이 아니라 서비스 로직으로 검증한다.
+- datasource · 외부 연동 값은 `application-test.yml` 이 아니라 `@IntegrationTest` 의 `properties` 에 둔다(환경변수보다 우선해야 CI 에서 MySQL 로 새지 않는다).
+- `open-in-view=false` 로 운영보다 엄격하다 — 지연 로딩이 컨트롤러까지 끌려가면 여기서 터진다.
+- `@MockitoBean` 은 `IntegrationTestSupport` 한 곳에만 둔다. 테스트 클래스마다 선언하면 Spring 컨텍스트 캐시가 갈라져 스위트가 느려지고 힙이 바닥난다.
+- 픽스처 · 단계 헬퍼: `BrandFixture`, `OrderFixture`, `ChangeRequestSteps`, `DatabaseCleaner`.
+
+## 빌드 · 실행
+
+```
+./gradlew clean build -x test     # 배포와 같은 빌드
+./gradlew bootRun                 # 로컬 실행 (기본 프로파일 local)
+```
+
+- 설정은 `application.yml` 이 루트의 `.env` 를 `optional:file:.env[.properties]` 로 읽는다. 프로파일은 `SPRING_PROFILES_ACTIVE`(기본 `local`), 운영은 `prod`.
+- 배포: `main` 푸시 → `.github/workflows/deploy.yml`(Flyway 무결성 검사 → `dbMigrationTest` → 빌드 → ECR → CodeDeploy → EC2 `docker-compose.yml`).
+
+## Flyway 마이그레이션
+
+- `src/main/resources/db/migration/V{n}__설명.sql`. 새 번호는 기존 최대값 + 1 (`ls ... | sort -V | tail -1` 로 확인 — 파일명 정렬은 `V9` 가 `V99` 뒤에 온다).
+- **기존 마이그레이션 파일은 수정 · 삭제 금지.** CI 가 추가(`A`) 외의 변경을 막는다.
+- 운영 JPA 는 `validate` 다. 엔티티를 바꾸면 같은 커밋에 마이그레이션을 넣는다(H2 통합 테스트는 `create-drop` 이라 누락을 못 잡는다).
+
+## 공통 구조
+
+- **인증 · 권한**: JWT(`api.app.auth.token.AuthTokenProvider` + `TokenAuthenticationFilter`). URL 접두사 ↔ 권한 매핑은 `global/config/SecurityConfig` 한 곳에 있다 — `/v1/admin/**`=ADMIN, `/v1/seller/**`=SELLER·CREATOR, `/v1/creator/**`=CREATOR, `/v1/user/**`=USER·CREATOR(패키지 `api.app` ↔ 경로 `/v1/user`). 새 경로는 여기 규칙에 맞춰 넣는다.
+- **예외**: `throw new BusinessException(ErrorCode.XXX)` → `GlobalExceptionHandler`. 새 오류는 `global/error/exception/ErrorCode` 에 추가한다.
+- **시간**: Jackson 은 UTC ISO-8601(`2026-01-19T12:54:03Z`)로 직렬화한다.
+- **스케줄러**: `global/scheduler/*` 는 각각 `@ConditionalOnProperty(...-enabled)` 로 켜고 끈다. **새 스케줄러를 만들면 `@IntegrationTest` 의 `properties`(또는 `application-test.yml`)에 끄는 플래그를 추가**하고, 테스트는 서비스를 직접 부른다.
+- **외부 연동**: 포트원(결제 · 본인인증, 테스트는 `portone.enabled=false` → Fake 게이트웨이), 토스 지급대행(테스트는 `settlement.payout.mode=SIMULATED`), S3, FCM, 메일, 스마트택배, Playwright(계약서 PDF).
+- **설계 문서**: 코드 주석의 "44 설계서 3-1", "1021 기-17" 같은 참조는 `dev/` 의 번호 붙은 문서(완료분은 `dev/완료`)를 가리킨다. 동작의 근거를 찾을 때 먼저 본다.
 
 ## 패키지 구조
 
