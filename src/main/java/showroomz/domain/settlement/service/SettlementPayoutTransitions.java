@@ -23,6 +23,7 @@ import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutResult;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
+import showroomz.domain.settlement.type.AmlThresholdAction;
 import showroomz.domain.settlement.type.PayoutBlockReason;
 import showroomz.domain.settlement.type.PayoutStatus;
 import showroomz.domain.settlement.type.SettlementActorType;
@@ -40,8 +41,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -74,6 +77,7 @@ public class SettlementPayoutTransitions {
     private final SettlementPartnerGateway partnerGateway;
     private final SettlementProperties properties;
     private final BusinessCalendar businessCalendar;
+    private final PayoutGroupPlanner groupPlanner;
 
     /** 지급 계좌 — 스냅샷의 원천(회원 정보 · 브랜드는 확정 시점 · 그 밖은 지시 시점). 플랫폼은 내부 계정이다. */
     public record Account(String bankName, String accountNumber, String holder) {
@@ -104,9 +108,8 @@ public class SettlementPayoutTransitions {
         Long marketId = settlement.getMarketId();
         Long creatorId = settlement.getCreatorId();
         // PG 셀러 연결(토스 설계서 5-2) — 이 환경의 연결만. 상태가 한도 있는 승인(PARTIALLY_APPROVED)이면 주당 한도를 먼저 센다(5-2 ①).
-        String brandSellerId = seller == null || !partnerGateway.env().equals(seller.getPgPartnerEnv()) ? null : seller.getPgPartnerId();
-        String creatorSellerId = creatorEntity == null || !partnerGateway.env().equals(creatorEntity.getPgPartnerEnv()) ? null
-                : creatorEntity.getPgPartnerId();
+        String brandSellerId = linkedPartnerId(seller);
+        String creatorSellerId = linkedPartnerId(creatorEntity);
         String brandRawStatus = seller == null ? null : seller.getPgPartnerStatus();
         String creatorRawStatus = creatorEntity == null ? null : creatorEntity.getPgPartnerStatus();
         boolean brandHeld = blockPolicy.isBrandBlocked(settlement);
@@ -185,6 +188,159 @@ public class SettlementPayoutTransitions {
             }
         }
         return new PayoutCommand(settlementId, settlementNumber, lines, now);
+    }
+
+    /** 묶음 지시 선점 결과 — 이번에 붙인 묶음(전송 대상)과 REQUESTED 로 올린 수취자 행 수. */
+    public record GroupClaim(Long settlementId, List<Long> groupIds, int requested) {
+    }
+
+    /**
+     * 묶음 지급 경로의 지시 선점(60 이니시스 전환 계획서 D-1 · D-2) — 지급일 {@code payDate} 가 되는 SCHEDULED 행(예정일 ≤ payDate)을 REQUESTED 로
+     * 올리고 같은 트랜잭션에서 묶음에 붙인다(REQUESTED 행은 언제나 묶음이 있다). 정지 · 계좌 · 0원 규칙은 {@link #claim} 과 같다. 플랫폼 몫은 묶지 않고
+     * 바로 지급 완료(내부 계정 · 4-1). AML(D-6): 저장된 AML 상태가 막으면 {@code KYC_REQUIRED} 보류, 7일 누적 기준은 {@code ALERT} 면 지시하고
+     * 안내만 · {@code BLOCK} 이면 보류.
+     *
+     * @return 지급할 정산이 아니면 null
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public GroupClaim claimForGroups(Long settlementId, LocalDate payDate, LocalDateTime now) {
+        Settlement settlement = settlementRepository.findForUpdate(settlementId).orElse(null);
+        if (settlement == null || (settlement.getStatus() != SettlementStatus.PAYOUT_SCHEDULED
+                && settlement.getStatus() != SettlementStatus.PAYOUT_FAILED)) {
+            return null;
+        }
+        // 회원 정보는 행 UPDATE(영속성 컨텍스트 비움) 전에 읽는다.
+        Seller seller = settlement.getMarket().getSeller();
+        Creator creatorEntity = settlement.getCreator();
+        Account brand = accountOf(seller);
+        Account creator = accountOf(creatorEntity);
+        String settlementNumber = settlement.getSettlementNumber();
+        Long marketId = settlement.getMarketId();
+        Long creatorId = settlement.getCreatorId();
+        String brandPartnerId = linkedPartnerId(seller);
+        String creatorPartnerId = linkedPartnerId(creatorEntity);
+        String brandRawStatus = seller == null ? null : seller.getPgPartnerStatus();
+        String creatorRawStatus = creatorEntity == null ? null : creatorEntity.getPgPartnerStatus();
+        String brandAml = seller == null ? null : seller.getPgAmlStatus();
+        String creatorAml = creatorEntity == null ? null : creatorEntity.getPgAmlStatus();
+        boolean brandHeld = blockPolicy.isBrandBlocked(settlement);
+        boolean creatorHeld = blockPolicy.isCreatorSuspended(creatorId);
+        AmlThresholdAction amlAction = partnerGateway.amlThresholdAction();
+
+        Set<Long> groupIds = new LinkedHashSet<>();
+        int requested = 0;
+        for (SettlementPayout payout : payoutRepository.findBySettlementId(settlementId)) {
+            if (payout.getStatus() != PayoutStatus.SCHEDULED || payout.getDueDate() == null
+                    || payout.getDueDate().isAfter(payDate)) {
+                continue;
+            }
+            SettlementPayee payee = payout.getPayee();
+            if (payout.getAmount() <= 0) {
+                payoutRepository.updateStatusWhere(payout.getId(), EnumSet.of(PayoutStatus.SCHEDULED),
+                        PayoutStatus.NOT_APPLICABLE, payout.getDueDate());
+                continue;
+            }
+            if (payee == SettlementPayee.BRAND && brandHeld) {
+                holdTransitions.holdRow(payout, PayoutBlockReason.BRAND_SUSPENDED, now);
+                continue;
+            }
+            if (payee == SettlementPayee.CREATOR && creatorHeld) {
+                holdTransitions.holdRow(payout, PayoutBlockReason.CREATOR_SUSPENDED, now);
+                continue;
+            }
+            Account account = payout.hasAccountSnapshot()
+                    ? new Account(payout.getBankName(), cipher.decrypt(payout.getAccountNumberEnc()), payout.getAccountHolder())
+                    : switch (payee) {
+                        case BRAND -> brand;
+                        case CREATOR -> creator;
+                        case PLATFORM -> new Account(PLATFORM_ACCOUNT, null, PLATFORM_ACCOUNT);
+                    };
+            if (payee != SettlementPayee.PLATFORM && account.isMissing()) {
+                if (payoutRepository.markFailed(payout.getId(), null, FAIL_ACCOUNT_MISSING, "등록 계좌 없음", now) == 1) {
+                    historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_FAILED,
+                            payee.getLabel() + " · 등록 계좌 없음", now);
+                    notifier.payoutFailed(settlementId, payee);
+                }
+                continue;
+            }
+            boolean amlNotice = false;
+            if (payee != SettlementPayee.PLATFORM) {
+                String rawStatus = payee == SettlementPayee.BRAND ? brandRawStatus : creatorRawStatus;
+                String rawAml = payee == SettlementPayee.BRAND ? brandAml : creatorAml;
+                // 토스 PARTIALLY_APPROVED 주당 한도(토스 설계서 5-2 ①) — 토스 · 그 Fake 만 true.
+                boolean limited = rawStatus != null && partnerGateway.isLimited(rawStatus);
+                if (partnerGateway.isAmlBlocking(rawAml)) {
+                    blockForKyc(settlementId, payout, "고객확인(AML) 이행 필요 — 이행 완료 후 지급", "AML 이행 필요", now);
+                    continue;
+                }
+                if ((limited || amlAction != AmlThresholdAction.NONE)
+                        && exceedsWeeklyLimit(payee, marketId, creatorId, payout.getAmount(), now)) {
+                    if (limited || amlAction == AmlThresholdAction.BLOCK) {
+                        blockForKyc(settlementId, payout, "주당 한도 초과 예상 — KYC 완료 후 지급", "주당 한도 초과 예상", now);
+                        continue;
+                    }
+                    amlNotice = true;   // ALERT — 지시는 한다(우리가 막으면 고객확인이 시작되지 않을 수 있다 · D-6 ①).
+                }
+            }
+            if (payoutRepository.markRequested(payout.getId(), account.bankName(), cipher.encrypt(account.accountNumber()),
+                    account.holder(), now) != 1) {
+                continue;
+            }
+            historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_REQUESTED,
+                    "%s · %,d원 지급 지시".formatted(payee.getLabel(), payout.getAmount()), now);
+            if (payee == SettlementPayee.PLATFORM) {
+                // 플랫폼 몫은 PG 에 가지 않는다(내부 계정) — 묶지 않고 바로 지급 완료(4-1).
+                String reference = "PLATFORM-" + settlementNumber;
+                if (payoutRepository.markPaid(payout.getId(), reference, now) == 1) {
+                    historyRecorder.record(settlementId, SettlementEventType.PAYOUT_PAID, SettlementActorType.PG, null,
+                            "%s · %,d원 · %s".formatted(payee.getLabel(), payout.getAmount(), reference), now);
+                    notifier.settlementPaid(settlementId, payee);
+                }
+                continue;
+            }
+            Long payeeRefId = payee == SettlementPayee.BRAND ? marketId : creatorId;
+            String partnerId = payee == SettlementPayee.BRAND ? brandPartnerId : creatorPartnerId;
+            String bankCode = bankRepository.findByName(account.bankName().trim()).map(Bank::getCode).orElse(null);
+            String accountHash = SettlementPartnerIds.accountHash(bankCode, digits(account.accountNumber()), account.holder());
+            Long groupId = groupPlanner.attach(payout.getId(), payee, payeeRefId, partnerId, accountHash, payDate, now);
+            if (groupId != null) {
+                groupIds.add(groupId);
+                requested++;
+            }
+            if (amlNotice) {
+                notifier.payoutAmlThresholdNotice(settlementId, payee);
+            }
+        }
+        derive(settlementId, now);
+        return new GroupClaim(settlementId, List.copyOf(groupIds), requested);
+    }
+
+    private void blockForKyc(Long settlementId, SettlementPayout payout, String reason, String historyNote, LocalDateTime now) {
+        String code = PayoutBlockReason.KYC_REQUIRED.name();
+        if (payoutRepository.blockForPartner(payout.getId(), code, reason) == 1) {
+            historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
+                    payout.getPayee().getLabel() + " · " + PayoutBlockReason.KYC_REQUIRED.getLabel() + " · " + historyNote, now);
+            notifier.payoutCheckRequired(settlementId, payout.getPayee(), code);
+            notifier.partnerVerificationRequired(settlementId, payout.getPayee(), code);
+        }
+    }
+
+    /** 이 환경 · 이 PG 의 연결만(60 이니시스 전환 계획서 D-12 · 토스 설계서 3-1) — 아니면 null(연결 없음). */
+    private String linkedPartnerId(Seller seller) {
+        return seller == null || !linked(seller.getPgPartnerEnv(), seller.getPgPartnerProvider()) ? null : seller.getPgPartnerId();
+    }
+
+    private String linkedPartnerId(Creator creator) {
+        return creator == null || !linked(creator.getPgPartnerEnv(), creator.getPgPartnerProvider()) ? null
+                : creator.getPgPartnerId();
+    }
+
+    private boolean linked(String env, String provider) {
+        return partnerGateway.env().equals(env) && partnerGateway.provider().equals(provider);
+    }
+
+    private static String digits(String value) {
+        return value == null ? null : value.replaceAll("[^0-9]", "");
     }
 
     /** 최근 7일(지시 시각 기준) REQUESTED · PAID 합 + 이 행 ≥ 한도. */

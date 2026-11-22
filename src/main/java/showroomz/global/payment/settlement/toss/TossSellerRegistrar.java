@@ -56,6 +56,11 @@ public class TossSellerRegistrar implements SettlementPartnerGateway {
     }
 
     @Override
+    public String provider() {
+        return "TOSS";
+    }
+
+    @Override
     public PartnerStatus statusOf(String rawStatus) {
         return TossPayoutFailureClassifier.partnerStatusOf(rawStatus);
     }

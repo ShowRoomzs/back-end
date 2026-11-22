@@ -74,8 +74,9 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
 
         payoutService.distribute(s.getId(), PAYOUT_DUE, PAYOUT_DUE.atTime(10, 0));
 
-        assertThat(payoutGateway.calls()).singleElement()
-                .satisfies(call -> assertThat(call.lines()).hasSize(3));
+        // 묶음 지급 — 수취자 2묶음을 올렸다(플랫폼 몫은 묶지 않는다).
+        assertThat(payoutGateway.groupCalls()).extracting(c -> c.payee())
+                .containsExactlyInAnyOrder(SettlementPayee.BRAND, SettlementPayee.CREATOR);
         // 수취자 2행은 결과 모름(REQUESTED) · 플랫폼 몫은 PG 에 가지 않으므로 즉시 PAID(토스 설계서 — 결과 조회가 닫을 수 없는 행을 남기지 않는다).
         assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.REQUESTED);
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.REQUESTED);
@@ -101,7 +102,7 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         scheduler.run(PAYOUT_DUE.atTime(15, 0));
         scheduler.run(PAYOUT_DUE.plusDays(1).atTime(10, 0));
 
-        assertThat(payoutGateway.calls()).isEmpty();
+        assertThat(payoutGateway.groupCalls()).isEmpty();
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus)
                 .containsExactlyInAnyOrder(PayoutStatus.REQUESTED, PayoutStatus.REQUESTED, PayoutStatus.PAID);
         assertThat(settlementEvents(s.getId())).filteredOn(SettlementEventType.PAYOUT_REQUESTED::equals).hasSize(3);
@@ -118,13 +119,13 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         List<SettlementEventType> eventsBefore = settlementEvents(s.getId());
 
         new SettlementPayoutResultScheduler(settlementProperties, payoutService).run(PAYOUT_DUE.atTime(14, 0));
-        assertThat(payoutGateway.lookups()).isEmpty();
+        assertThat(payoutGateway.groupLookups()).isEmpty();
         SettlementProperties pgMode = new SettlementProperties();
         pgMode.getPayout().setMode(SettlementProperties.PayoutMode.PG);
         new SettlementPayoutResultScheduler(pgMode, payoutService).run(PAYOUT_DUE.atTime(14, 0));
-        assertThat(payoutGateway.lookups()).hasSize(1);
+        assertThat(payoutGateway.groupLookups()).hasSize(1);   // 지급일 ≤ 오늘인 묶음을 한 번에 묻는다(60 전환 계획서 D-8)
 
-        assertThat(payoutGateway.calls()).isEmpty();
+        assertThat(payoutGateway.groupCalls()).isEmpty();
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus)
                 .containsExactlyInAnyOrder(PayoutStatus.REQUESTED, PayoutStatus.REQUESTED, PayoutStatus.PAID);
         assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.PAYOUT_SCHEDULED);
@@ -147,7 +148,7 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         scheduler.run(PAYOUT_DUE.atTime(10, 30));
         payoutService.distribute(s.getId(), PAYOUT_DUE, PAYOUT_DUE.atTime(11, 0));
 
-        assertThat(payoutGateway.calls()).hasSize(1);
+        assertThat(payoutGateway.groupCalls()).hasSize(2);   // 브랜드 · 인플루언서 묶음 각 1회 — 재실행이 다시 올리지 않는다
         assertThat(settlementEvents(s.getId())).filteredOn(SettlementEventType.PAYOUT_PAID::equals).hasSize(3);
         assertThat(settlement(s.getId()).getPaidAt()).isEqualTo(paid.getPaidAt());
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getPaidAt).containsOnly(PAYOUT_DUE.atTime(10, 0));
@@ -168,7 +169,7 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         // 배치가 아닌 직접 호출도 예정일 전 행은 건너뛴다(선점 가드).
         payoutService.distribute(s.getId(), LocalDate.of(2026, 10, 8), LocalDate.of(2026, 10, 8).atTime(11, 0));
 
-        assertThat(payoutGateway.calls()).isEmpty();
+        assertThat(payoutGateway.groupCalls()).isEmpty();
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.SCHEDULED);
 
         assertThat(payoutService.findSettlementIdsDue(PAYOUT_DUE, 200)).contains(s.getId());
@@ -189,7 +190,7 @@ class SettlementPayoutSafetyIntegrationTest extends SettlementTestSupport {
         new SettlementPayoutScheduler(payoutService, businessCalendar).run(PAYOUT_DUE.plusDays(7).atTime(10, 0));
         payoutService.distribute(s.getId(), PAYOUT_DUE.plusDays(7), PAYOUT_DUE.plusDays(7).atTime(11, 0));
 
-        assertThat(payoutGateway.calls()).isEmpty();
+        assertThat(payoutGateway.groupCalls()).isEmpty();
         assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.ADJUSTING);
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.HELD);
     }

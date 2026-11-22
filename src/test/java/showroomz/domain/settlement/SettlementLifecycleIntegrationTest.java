@@ -174,9 +174,10 @@ class SettlementLifecycleIntegrationTest extends SettlementTestSupport {
         payoutService.distribute(s.getId(), PAYOUT_DUE, payAt);
         // 인플루언서 계좌가 없다 — 게이트웨이를 부르지 않고 분배 실패로.
         assertThat(payout(s.getId(), SettlementPayee.CREATOR).getFailCode()).isEqualTo("ACCOUNT_MISSING");
-        assertThat(payoutGateway.calls()).singleElement()
-                .satisfies(call -> assertThat(call.lines()).extracting(line -> line.payee())
-                        .containsExactly(SettlementPayee.BRAND, SettlementPayee.PLATFORM));
+        // 묶음 지급 — 브랜드 묶음 1건만 올라간다(플랫폼 몫은 묶지 않고 바로 지급 완료 · 60 이니시스 전환 계획서 4-1).
+        assertThat(payoutGateway.groupCalls()).singleElement()
+                .satisfies(call -> assertThat(call.payee()).isEqualTo(SettlementPayee.BRAND));
+        assertThat(payout(s.getId(), SettlementPayee.PLATFORM).getStatus()).isEqualTo(PayoutStatus.PAID);
         assertThat(settlement(s.getId()).getStatus()).isEqualTo(SettlementStatus.PAYOUT_FAILED);
 
         // 계좌를 등록하고 실패 행을 다시 예정으로 돌리면(재분배는 단계 6 의 어드민 API) 다음 지급에서 끝난다.

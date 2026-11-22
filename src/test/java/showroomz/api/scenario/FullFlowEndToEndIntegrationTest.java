@@ -44,6 +44,7 @@ import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.port.SettlementPayoutGateway.GroupCommand;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
@@ -463,11 +464,14 @@ class FullFlowEndToEndIntegrationTest extends AdminContractTestSupport {
                 .isEqualTo(SettlementStatus.PAID);
         assertThat(payoutRepository.findBySettlementId(settlementId))
                 .extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.PAID);
-        assertThat(payoutGateway.calls()).singleElement().satisfies(call -> assertThat(call.lines())
-                .extracting(PayoutLine::payee, PayoutLine::amount)
+        // 묶음 지급(60 이니시스 전환 계획서 D-1) — 수취자마다 묶음 1건 · 플랫폼 몫은 묶지 않고 도메인이 바로 지급 완료.
+        assertThat(payoutGateway.groupCalls())
+                .extracting(GroupCommand::payee, GroupCommand::total)
                 .containsExactlyInAnyOrder(tuple(SettlementPayee.BRAND, BRAND_PAYOUT),
-                        tuple(SettlementPayee.CREATOR, CREATOR_PAYOUT),
-                        tuple(SettlementPayee.PLATFORM, PLATFORM_SHARE)));
+                        tuple(SettlementPayee.CREATOR, CREATOR_PAYOUT));
+        assertThat(payoutRepository.findBySettlementId(settlementId))
+                .filteredOn(p -> p.getPayee() == SettlementPayee.PLATFORM)
+                .extracting(SettlementPayout::getAmount).containsExactly(PLATFORM_SHARE);
         assertThat(groupBuyRepository.findById(groupBuyId).orElseThrow().getStatus()).isEqualTo(GroupBuyStatus.SETTLED);
         adminSend(get(ADMIN_GROUP_BUYS + "/" + groupBuyId), null)
                 .andExpect(jsonPath("$.afterEnd.settlement.stage").value("TRANSFERRED"));

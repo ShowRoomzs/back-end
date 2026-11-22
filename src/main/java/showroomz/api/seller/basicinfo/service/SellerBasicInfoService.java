@@ -24,6 +24,7 @@ import showroomz.domain.order.service.FreeShippingPolicy;
 import showroomz.domain.order.service.ShipDuePolicy;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
+import showroomz.global.utils.PersonalDataCipher;
 import showroomz.global.service.MailService;
 import showroomz.global.utils.SettlementAccountMasker;
 import showroomz.global.utils.KstDates;
@@ -52,6 +53,7 @@ public class SellerBasicInfoService {
     private final BrandSanctionReader brandSanctionReader;
     private final SellerWithdrawalService withdrawalService;
     private final BrandWithdrawalGuard withdrawalGuard;
+    private final PersonalDataCipher personalDataCipher;
 
     public SellerBasicInfoDto.BusinessInfoResponse getBusinessInfo(String sellerEmail) {
         Market market = getMyMarket(sellerEmail);
@@ -78,6 +80,7 @@ public class SellerBasicInfoService {
                 .mailOrderRegNumber(seller.getMailOrderRegNumber())
                 .taxEmail(seller.getTaxEmail())
                 .brandSiteUrl(market.getBrandSiteUrl())
+                .representativeBirthdateRegistered(seller.getRepresentativeBirthdateEnc() != null)
                 .reviewDocuments(buildReviewDocuments(seller))
                 .changeRequest(brandChangeRequestService.getBanner(sellerEmail, ChangeRequestType.BUSINESS_INFO))
                 .build();
@@ -89,6 +92,30 @@ public class SellerBasicInfoService {
         Seller seller = market.getSeller();
         seller.setTaxEmail(request.getTaxEmail());
         market.setBrandSiteUrl(normalizeBlank(request.getBrandSiteUrl()));
+        String birthdate = normalizeBirthdate(request.getRepresentativeBirthdate());
+        if (birthdate != null) {
+            // PG 지급대행 서브몰 필수값(60 이니시스 전환 계획서 D-4) — 계좌 · 주민번호와 같이 암호화해 둔다. 「정산 정보 미입력」 보류는
+            // 지급 배치 앞단이 서브몰을 다시 등록하며 푼다.
+            seller.updateRepresentativeBirthdateEnc(personalDataCipher.encrypt(birthdate));
+        }
+    }
+
+    /** 대표자 생년월일 → {@code yyyyMMdd}. 비었으면 null(기존 값 유지) · 실제 날짜가 아니거나 미래면 400. */
+    private static String normalizeBirthdate(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        String digits = value.replaceAll("[^0-9]", "");
+        try {
+            java.time.LocalDate date = java.time.LocalDate.parse(digits,
+                    java.time.format.DateTimeFormatter.ofPattern("uuuuMMdd").withResolverStyle(java.time.format.ResolverStyle.STRICT));
+            if (date.isAfter(java.time.LocalDate.now()) || date.getYear() < 1900) {
+                throw new BusinessException(ErrorCode.INVALID_BIRTHDAY_FORMAT);
+            }
+            return digits;
+        } catch (java.time.format.DateTimeParseException e) {
+            throw new BusinessException(ErrorCode.INVALID_BIRTHDAY_FORMAT);
+        }
     }
 
     /** §A-0 — 빈 값은 빈 문자열이 아니라 null로 저장한다(미입력 시 소비자 앱 버튼 비노출 판정과 일치). */

@@ -69,10 +69,13 @@ public interface SellerBasicInfoControllerDocs {
     @Operation(
             summary = "사업자 정보 직접 수정",
             description = """
-                    3분류 중 ①직접 수정 항목만 다룬다 — tax 확인용 이메일 · 브랜드 사이트 링크. 운영자 승인 없이 즉시 저장된다.
+                    3분류 중 ①직접 수정 항목만 다룬다 — tax 확인용 이메일 · 브랜드 사이트 링크 · 대표자 생년월일. 운영자 승인 없이 즉시 저장된다.
 
                     - `taxEmail` **필수** · 이메일 형식.
                     - `brandSiteUrl` 선택 — `http://` · `https://` 로 시작해야 한다. **비우면(빈 문자열 포함) null 로 저장**되고 소비자 앱의 [브랜드 사이트] 버튼이 사라진다.
+                    - `representativeBirthdate` 선택 — `yyyy-MM-dd` · `yyyyMMdd`. 보내지 않거나 비우면 기존 값 유지(지울 수 없다). PG 지급대행 서브몰
+                      등록 필수값이라 비어 있으면 정산 지급이 「정산 정보 미입력」으로 보류된다 — 입력하면 다음 지급 배치가 다시 등록하고 보류를 푼다.
+                      조회 응답은 값 대신 `representativeBirthdateRegistered` 만 내린다.
                     - 대표자명 · 상호 · 주소 등 ② 항목은 이 API 로 바꿀 수 없다 — `POST /v1/seller/change-requests`.
 
                     **권한:** SELLER
@@ -99,6 +102,9 @@ public interface SellerBasicInfoControllerDocs {
                                             """),
                                     @ExampleObject(name = "링크 형식", value = """
                                             { "code": "INVALID_INPUT", "message": "올바른 주소 형식이 아닙니다. (예: https://example.com)" }
+                                            """),
+                                    @ExampleObject(name = "생년월일 형식", value = """
+                                            { "code": "INVALID_INPUT", "message": "생년월일 형식이 올바르지 않습니다." }
                                             """)
                             }))
     })

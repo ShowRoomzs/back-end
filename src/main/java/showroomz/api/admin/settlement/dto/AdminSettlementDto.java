@@ -289,7 +289,14 @@ public final class AdminSettlementDto {
             @Schema(nullable = true) String failCode,
             @Schema(nullable = true) String failReason,
             @Schema(nullable = true) String pgReference,
-            @Schema(description = "재분배 횟수") int attempt) {
+            @Schema(description = "재분배 횟수") int attempt,
+            @Schema(description = "지시한 PG — TOSS · INICIS(시뮬레이터는 null · 60 이니시스 전환 계획서 D-12)", nullable = true, example = "INICIS")
+            String pgProvider,
+            @Schema(description = "PG 지급일 — 「{날짜} 지급 예정」(이니시스는 예정일 전 영업일에 지시하고 이 날 송금)", nullable = true)
+            LocalDate pgPayoutDate,
+            @Schema(description = "같은 지급 묶음으로 나간 정산 수(이 정산 포함) — 이니시스는 수취자 · 지급일마다 합계 1건으로 보낸다. 묶음 실패는 이 정산들을 "
+                    + "함께 실패시킨다(60 이니시스 전환 계획서 6절). 묶음이 없으면 null", nullable = true, example = "2")
+            Integer groupSettlementCount) {
     }
 
     @Schema(name = "AdminSettlementPayoutCheck",

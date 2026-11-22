@@ -51,6 +51,9 @@ public class SellerBasicInfoDto {
         private String taxEmail;
         @Schema(description = "브랜드 사이트 링크 — ①직접 수정 · 없으면 null", example = "https://cocobrown.example", nullable = true)
         private String brandSiteUrl;
+        @Schema(description = "대표자 생년월일 입력 여부 — ①직접 수정. 값은 내리지 않는다(개인정보 · 암호화 저장). false 면 정산 지급이 "
+                + "「정산 정보 미입력」으로 보류될 수 있다(PG 지급대행 서브몰 필수값 · 60 이니시스 전환 계획서 D-4)", example = "true")
+        private boolean representativeBirthdateRegistered;
         @Schema(description = "입점 심사 첨부 서류(있는 것만)")
         private List<ReviewDocumentItem> reviewDocuments;
         @Schema(description = "사업자 정보 변경 요청 배너 — 검토 대기 또는 확인 전 처리 결과 1건 · 없으면 null", nullable = true)
@@ -100,6 +103,15 @@ public class SellerBasicInfoDto {
         @Pattern(regexp = "^$|^https?://.+$", message = "올바른 주소 형식이 아닙니다. (예: https://example.com)")
         @Schema(description = "브랜드 사이트 링크. 선택 입력 — 미입력 시 소비자 앱에 버튼이 노출되지 않는다.", example = "https://ohh-cosmetic.com")
         private String brandSiteUrl;
+
+        @Pattern(regexp = "^$|^\\d{4}-?\\d{2}-?\\d{2}$", message = "생년월일 형식이 올바르지 않습니다. (예: 1985-03-14)")
+        @Schema(description = "대표자 생년월일 — 선택. 보내지 않거나 비우면 기존 값 유지. PG 지급대행 서브몰 등록 필수값이라 정산 지급 전에 채워야 한다"
+                + "(60 이니시스 전환 계획서 D-4). `yyyy-MM-dd` 또는 `yyyyMMdd`", example = "1985-03-14", nullable = true)
+        private String representativeBirthdate;
+
+        public UpdateBusinessInfoRequest(String taxEmail, String brandSiteUrl) {
+            this(taxEmail, brandSiteUrl, null);
+        }
     }
 
     @Getter

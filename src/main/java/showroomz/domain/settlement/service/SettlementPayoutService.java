@@ -28,13 +28,22 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * 지급 배치의 서비스(44 어드민 설계서 3-3) — 트랜잭션 밖에서 게이트웨이를 부르고 짧은 트랜잭션들({@link SettlementPayoutTransitions})로
- * 상태를 옮긴다. PG 모드에서는 지시가 REQUESTED 로 남고 웹훅 · {@link #pollResults} 가 닫는다(토스 설계서 5절).
+ * 상태를 옮긴다.
+ *
+ * <ul>
+ *   <li><b>묶음 지급</b>(시뮬레이터 · 이니시스 · 60_KG이니시스_지급대행_전환_계획서.md D-1 · D-2 · 6절) — 지시 = 영업일 X 10:00, 대상 = 지급일이
+ *   X + 리드 영업일(D)이 되는 행. 선점이 행을 묶음에 붙이고 {@link SettlementPayoutGroupService} 가 합계를 올린다. 영업일 14:00 마감 전 틱
+ *   ({@link #cutoffTick})이 늦게 풀린 행 지시 · 수렴 · 잔액 재검사를 한다. 결과는 폴링이 1차다.</li>
+ *   <li><b>정산별 지급</b>(토스 · 삭제 전까지) — 지시가 REQUESTED 로 남고 웹훅 · {@link #pollResults} 가 닫는다(토스 설계서 5절).</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -53,6 +62,8 @@ public class SettlementPayoutService {
     private final BusinessCalendar businessCalendar;
     private final SettlementNotifier notifier;
     private final CreatorAccountVerificationService accountVerification;
+    private final PayoutGroupPlanner groupPlanner;
+    private final SettlementPayoutGroupService groupService;
 
     @Transactional(readOnly = true)
     public List<Long> findSettlementIdsDue(LocalDate today, int limit) {
@@ -66,6 +77,9 @@ public class SettlementPayoutService {
      * @return 지시한 정산 수
      */
     public int distributeDue(LocalDate today, LocalDateTime now, int limit) {
+        if (groupPlanner.enabled()) {
+            return distributeDueInGroups(now, limit, true);
+        }
         List<Long> due = findSettlementIdsDue(today, limit);
         if (due.isEmpty()) {
             return 0;
@@ -139,8 +153,87 @@ public class SettlementPayoutService {
         return totals;
     }
 
-    /** 정산 1건의 예정일 도래 행 지급. 게이트웨이 예외(결과 모름)는 REQUESTED 로 둔다 — 웹훅 · 폴링이 닫는다. */
+    /**
+     * 묶음 지급 배치(D-2) — 마감이 지난 묶음을 먼저 정리하고, 지급일 D(= 가장 이른 지급일)가 되는 정산을 선점해 묶음에 붙인 뒤 이번에 붙은 묶음을
+     * 올린다. 마감 뒤 · 비영업일이면 아무것도 하지 않는다(다음 틱 · 배치). 잔액은 알림만(10:00 · D-9).
+     *
+     * @return 선점한 정산 수
+     */
+    private int distributeDueInGroups(LocalDateTime now, int limit, boolean warnBalance) {
+        if (groupPlanner.hasCutoff()) {
+            groupService.settleMissedCutoffs(now);
+            if (!groupPlanner.isUploadWindow(now)) {
+                return 0;
+            }
+        }
+        LocalDate payDate = groupPlanner.earliestPayDate(now);
+        List<Long> due = findSettlementIdsDue(payDate, limit);
+        if (due.isEmpty()) {
+            return 0;
+        }
+        if (warnBalance) {
+            groupService.warnIfShort(payDate, now);
+        }
+        try {
+            partnerSync.refreshAmlForSettlements(due);
+        } catch (RuntimeException e) {
+            log.error("AML 상태 재조회 실패 — 저장값으로 판정한다", e);
+        }
+        Set<Long> groupIds = new LinkedHashSet<>();
+        int claimed = 0;
+        for (Long settlementId : due) {
+            try {
+                SettlementPayoutTransitions.GroupClaim claim = transitions.claimForGroups(settlementId, payDate, now);
+                if (claim != null) {
+                    groupIds.addAll(claim.groupIds());
+                    claimed++;
+                }
+            } catch (Exception e) {
+                log.error("정산 지급 선점 실패 - settlementId: {}", settlementId, e);
+            }
+        }
+        groupService.submitAll(groupIds, now);
+        return claimed;
+    }
+
+    /**
+     * 마감 전 틱(영업일 {@code settlement.payout-cutoff-hour}시 · D-2′) — ① 10:00 뒤 보류가 풀린 행 · 대기 중인 재분배 행 지시(「해제 다음 영업일
+     * 지급」 약속) ② 수렴(확정 합계 ≠ 현재 합계인 묶음을 다시 올린다 · D-1 ④) ③ 잔액 재검사(아직 모자라면 큰 묶음부터 남기고 정리 · D-9).
+     * 마감이 없는 모드(시뮬레이터 · 토스)는 하지 않는다.
+     */
+    public void cutoffTick(LocalDateTime now, int limit) {
+        if (!groupPlanner.enabled() || !groupPlanner.hasCutoff()) {
+            return;
+        }
+        int claimed = distributeDueInGroups(now, limit, false);
+        if (claimed > 0) {
+            log.info("정산 지급 마감 전 틱 — 늦게 풀린 행 지시 {}건", claimed);
+        }
+        int converged = groupService.converge(now);
+        if (converged > 0) {
+            log.info("정산 지급 마감 전 틱 — 수렴 전송 {}건", converged);
+        }
+        if (gateway.trimOnShortfall() && groupPlanner.isUploadWindow(now)) {
+            groupService.trimToBalance(groupPlanner.earliestPayDate(now), now);
+        }
+    }
+
+    /**
+     * 정산 1건의 예정일 도래 행 지급(재분배 즉시 지시 · 테스트). 묶음 경로는 영업일 마감 전에만 즉시 묶음에 넣어 올리고, 그 밖에는
+     * {@code SCHEDULED} 로 둔다(다음 틱 · 배치가 집는다 · D-2′). 정산별 경로의 게이트웨이 예외(결과 모름)는 REQUESTED 로 둔다 — 웹훅 · 폴링이 닫는다.
+     */
     public void distribute(Long settlementId, LocalDate today, LocalDateTime now) {
+        if (groupPlanner.enabled()) {
+            if (!groupPlanner.isUploadWindow(now)) {
+                return;
+            }
+            SettlementPayoutTransitions.GroupClaim claim = transitions.claimForGroups(settlementId,
+                    groupPlanner.earliestPayDate(now), now);
+            if (claim != null) {
+                groupService.submitAll(claim.groupIds(), now);
+            }
+            return;
+        }
         PayoutCommand command = transitions.claim(settlementId, today, now);
         if (command == null) {
             return;
@@ -163,6 +256,15 @@ public class SettlementPayoutService {
         int released = 0;
         for (SettlementPayout payout : findPartnerBlocked()) {
             try {
+                if (PayoutBlockReason.KYC_REQUIRED.name().equals(payout.getFailCode()) && partnerSync.isAmlAware()) {
+                    // 고객확인(AML) 보류는 AML 상태가 「이행 완료 · 유효」일 때만 푼다 — 등록 성공으로 풀면 다음 지시에서 다시 보류돼 매일 해제 ·
+                    // 보류 · 알림이 반복된다(60 전환 계획서 D-6 ②).
+                    if (partnerSync.isAmlClear(payout.getSettlementId(), payout.getPayee())
+                            && transitions.releasePartnerBlocked(payout.getSettlementId(), payout.getId(), payout.getPayee(), today)) {
+                        released++;
+                    }
+                    continue;
+                }
                 PartnerResult result = partnerSync.ensure(payout.getSettlementId(), payout.getPayee());
                 if (result.isApproved()) {
                     if (transitions.releasePartnerBlocked(payout.getSettlementId(), payout.getId(), payout.getPayee(), today)) {
@@ -202,8 +304,15 @@ public class SettlementPayoutService {
 
     // ------------------------------------------------------------------ 결과 조회(토스 설계서 5-4 · 백스톱)
 
-    /** REQUESTED 행의 결과를 PG 에 조회해 닫는다 — 정산 단위로 묶어 게이트웨이 1회. PG 처리 지연은 하루 1회(지급 시각 틱)만 알린다. */
+    /**
+     * REQUESTED 행의 결과를 PG 에 조회해 닫는다. 묶음 경로는 지급일 ≤ 오늘인 묶음을 날짜 단위로(D-8), 정산별 경로는 정산 단위로 묶어 게이트웨이
+     * 1회. PG 처리 지연은 하루 1회(지급 시각 틱)만 알린다.
+     */
     public void pollResults(LocalDateTime now) {
+        if (groupPlanner.enabled()) {
+            groupService.pollResults(now);
+            return;
+        }
         List<SettlementPayout> requested = findRequested();
         if (requested.isEmpty()) {
             return;
@@ -251,8 +360,22 @@ public class SettlementPayoutService {
         return payoutRepository.findRequested(PageRequest.of(0, POLL_BATCH));
     }
 
-    /** 지시 끝(토스 설계서 5-3) — 오늘 올린 건수 · 합계를 PG 와 대조해 운영자에게 요약을 보낸다. 사람이 할 일은 없고 어긋날 때만 본다. */
+    /**
+     * 지시 끝(토스 설계서 5-3) — 오늘 올린 건수 · 합계를 운영자에게 요약한다. 묶음 경로는 우리 묶음만 센다 — 이니시스는 업로드된 미송금 데이터를 조회하는
+     * API 가 없어 PG 대조는 송금 다음 날 결과 폴링으로 한다(D-8).
+     */
     public void reconcileRequested(LocalDate today) {
+        if (groupPlanner.enabled()) {
+            if (!gateway.isExternal()) {
+                return;
+            }
+            LocalDate payDate = groupPlanner.earliestPayDate(KstDates.at(today, java.time.LocalTime.of(properties.getPayoutHour(), 0)));
+            long[] summary = groupService.openSummary(payDate);
+            if (summary[0] > 0) {
+                notifier.payoutRequestedSummary(payDate, (int) summary[0], summary[1], null, null);
+            }
+            return;
+        }
         Object[] counts = countRequested(today);
         int ourCount = ((Number) counts[0]).intValue();
         if (ourCount == 0) {

@@ -139,7 +139,7 @@ class SettlementScenarioIntegrationTest extends SettlementTestSupport {
         Settlement paid = settlement(s.getId());
         assertThat(paid.getStatus()).isEqualTo(SettlementStatus.PAID);
         assertThat(payoutsOf(s.getId())).extracting(SettlementPayout::getStatus).containsOnly(PayoutStatus.PAID);
-        assertThat(payoutGateway.calls()).hasSize(1);
+        assertThat(payoutGateway.groupCalls()).hasSize(2);   // 묶음 지급 — 브랜드 · 인플루언서 묶음 각 1건
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.SETTLED);
         adminGet("/v1/admin/group-buys/" + groupBuy.getId())
                 .andExpect(jsonPath("$.afterEnd.settlement.stage").value("TRANSFERRED"));
@@ -400,7 +400,7 @@ class SettlementScenarioIntegrationTest extends SettlementTestSupport {
         });
         assertThat(retriedBy).containsExactly("ADMIN:김운영");
         assertThat(reload(groupBuy.getId()).getStatus()).isEqualTo(GroupBuyStatus.SETTLED);
-        assertThat(payoutGateway.calls()).hasSize(2);
+        assertThat(payoutGateway.groupCalls()).hasSize(3);   // 첫 지급 2묶음(인플루언서 실패) + 재분배 1묶음
         Surfaces recovered = surfaces(settlement(s.getId()));
         recovered.assertSameNumbers(settlement(s.getId()));
         assertThat(recovered.studio().at("/payouts/rows/0/status").asText()).isEqualTo("PAID");

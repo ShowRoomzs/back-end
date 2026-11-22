@@ -122,13 +122,41 @@ public class Seller {
     @Column(name = "PG_PARTNER_ACCOUNT_HASH", length = 64)
     private String pgPartnerAccountHash;
 
-    public void linkPgPartner(String externalId, String ref, String env, String status, String accountHash, LocalDateTime at) {
+    /** 연결의 PG — {@code TOSS | INICIS}. 현재 어댑터와 다르면 연결 없음으로 본다(60 이니시스 전환 계획서 D-12). */
+    @Column(name = "PG_PARTNER_PROVIDER", length = 16)
+    private String pgPartnerProvider;
+
+    /** 이니시스 {@code amlstatus} 원시값 — 지급 가능({@link #pgPartnerStatus})과 별개 축(D-6). 지시 선점은 이 저장값만 읽는다. */
+    @Column(name = "PG_AML_STATUS", length = 16)
+    private String pgAmlStatus;
+
+    @Column(name = "PG_AML_CHECKED_AT")
+    private LocalDateTime pgAmlCheckedAt;
+
+    /** 대표자 생년월일 {@code yyyyMMdd} 의 {@code PersonalDataCipher} 암호문 — 이니시스 서브몰 {@code bthDt}(필수 · D-4). 계좌 · 주민번호와 같은 취급. */
+    @Column(name = "REPRESENTATIVE_BIRTHDATE_ENC", length = 255)
+    private String representativeBirthdateEnc;
+
+    public void linkPgPartner(String externalId, String ref, String env, String provider, String status, String accountHash,
+                              LocalDateTime at) {
         this.pgPartnerId = externalId;
         this.pgPartnerRef = ref;
         this.pgPartnerEnv = env;
+        this.pgPartnerProvider = provider;
         this.pgPartnerStatus = status;
         this.pgPartnerAccountHash = accountHash;
         this.pgPartnerSyncedAt = at;
+    }
+
+    /** AML 상태 재조회 결과(배치 앞단 · D-6). */
+    public void updatePgAmlStatus(String status, LocalDateTime at) {
+        this.pgAmlStatus = status;
+        this.pgAmlCheckedAt = at;
+    }
+
+    /** 대표자 생년월일(암호문) 입력 · 변경 — 비우면 null. */
+    public void updateRepresentativeBirthdateEnc(String encrypted) {
+        this.representativeBirthdateEnc = encrypted;
     }
 
     /** 웹훅({@code seller.changed}) — 상태만. */
@@ -228,6 +256,7 @@ public class Seller {
         this.businessType = null;
         this.representativeName = null;
         this.representativeContact = null;
+        this.representativeBirthdateEnc = null;
         this.companyName = null;
         this.businessRegistrationNumber = hashedBusinessRegistrationNumber;
         this.businessCondition = null;
@@ -260,6 +289,7 @@ public class Seller {
         this.businessType = null;
         this.representativeName = null;
         this.representativeContact = null;
+        this.representativeBirthdateEnc = null;
         this.companyName = null;
         this.businessRegistrationNumber = hashedBusinessRegistrationNumber;
         this.businessCondition = null;

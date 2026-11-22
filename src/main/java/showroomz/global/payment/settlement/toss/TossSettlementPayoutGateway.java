@@ -57,6 +57,11 @@ public class TossSettlementPayoutGateway implements SettlementPayoutGateway {
         this.objectMapper = objectMapper;
     }
 
+    @Override
+    public String provider() {
+        return PROVIDER_TOSS;
+    }
+
     // ------------------------------------------------------------------ 잔액(5-1 ①)
 
     @Override

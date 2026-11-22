@@ -169,6 +169,26 @@ toss:
     test:
       corporate-override-brn: ${TOSS_PAYOUTS_TEST_BRN:}   # PG_TEST 전용 — 비법인 수취자 대체 등록용 법인 사업자번호 · PG 에서 값이 있으면 기동 실패
 
+# InicisPayoutsProperties.java — KG이니시스 지급대행(신버전 AML) · 60_KG이니시스_지급대행_전환_계획서.md 7절. settlement.payout.provider=INICIS 일 때만 쓴다
+inicis:
+  payouts:
+    base-url: ${INICIS_PAYOUTS_BASE_URL:https://apiwi.inicis.com}   # PG_TEST 는 계약담당자가 준 스테이징 URL(운영 호스트면 기동 실패)
+    merchant-id: ${INICIS_PAYOUTS_MID:}                # 지급대행 MID(10자 · 결제 MID 와 다를 수 있음 · Q1)
+    api-key: ${INICIS_PAYOUTS_API_KEY:}                # X-API-KEY — 로그 금지
+    connect-timeout-millis: 3000
+    read-timeout-millis: 10000
+    sub-mall-ref-prefix-test: "t"                      # PG_TEST 의 idMall 접두(D-3) — 운영은 접두 없음
+    dt-pay-basis: PAYMENT_DATE                         # PAYMENT_DATE | UPLOAD_DATE — Q2 답에 따라(D-2)
+    upload-cutoff: "15:00"                             # 익일지급 수정 · 재업로드 마감
+    same-day-enabled: false                            # 당일지급(clService=2) — 별도 계약 뒤에만
+    same-day-cutoff: "13:00"
+    aml-precheck: ALERT                                # ALERT(안내만) | BLOCK(선보류) — Q8 답 전까지 ALERT(D-6)
+    trim-on-shortfall: true                            # 14:00 잔액 부족이면 묶음 정리(D-9)
+    startup-check: true                                # 기동 시 paycheck 1회(PG 만 · 스테이징은 조회 불가)
+    holder-verified-by-upsert: ${INICIS_PAYOUTS_HOLDER_VERIFIED:false}   # Q7 — upsert 가 예금주를 대조함이 확정돼야 PG 기동(D-5 · 런칭 차단)
+    test:
+      assume-paid: ${INICIS_PAYOUTS_TEST_ASSUME_PAID:false}   # PG_TEST 전용(D-10) · PG 에서 true 면 기동 실패
+
 # OrderProperties.java 관련 설정 — 주문·결제 운영값(결제 계획서 4-4 · 4-8 · 6-2)
 order:
   payment-timeout-minutes: ${ORDER_PAYMENT_TIMEOUT_MINUTES:30}
@@ -246,6 +266,7 @@ settlement:
     recalculate-statuses: REVIEWING                 # 지급 전 환불 — 이 상태면 클로백 대신 재계산 · 확인 기간 재시작(1021 기-13 【잠정】)
   payout-business-days: 3                           # 지급 예정일 — 확정일 + N영업일
   payout-hour: 10                                   # 지급 배치 — 영업일 N시(KST)
+  payout-cutoff-hour: 14                            # 마감 전 틱 — 영업일 N시(KST) · 이니시스 수정 마감(15시) 전 수렴 · 잔액 재검사(60 D-2′)
   payout-retry-limit: 3                             # 재분배 상한(M3)
   pg-fee-rate: 0.03                                 # PG 수수료 [자문대기-PG]
   platform-fee-rate: 0.00                           # 플랫폼 수수료 — 베타 0
@@ -260,13 +281,15 @@ settlement:
   generation-scheduler-enabled: true                # 정산 생성 배치(10분)
   auto-confirm-scheduler-enabled: true              # 자동 확정 배치(10분)
   payout-scheduler-enabled: true                    # 지급 배치(영업일 payout-hour 시)
-  payout-result-scheduler-enabled: true             # 지급 결과 폴링(30분 · PG 모드만 · 웹훅의 백스톱)
+  payout-result-scheduler-enabled: true             # 지급 결과 폴링(30분 · PG 모드만 · 이니시스는 폴링이 1차 · 토스는 웹훅의 백스톱)
+  payout-cutoff-scheduler-enabled: true             # 마감 전 틱(영업일 payout-cutoff-hour 시 · 묶음 지급 + 마감 있는 PG 만)
   receipt-retry-scheduler-enabled: true             # 원천징수영수증 재생성(매시 40분)
   clawback-scheduler-enabled: true                  # 차감 미회수 판정(매일 01:00)
   payout:
-    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG_TEST(토스 테스트 키 · 개발 서버) | PG(토스 운영 키) — 런칭 게이트 켠 운영은 PG 만
-    result-stale-business-days: 1                   # 지시 뒤 N영업일 지나도 REQUESTED 가 닫히지 않으면 「PG 처리 지연」 알림
-    weekly-limit-amount: 10000000                   # PARTIALLY_APPROVED 셀러 주당 한도(토스 정책) — 우리가 먼저 센다
+    mode: ${SETTLEMENT_PAYOUT_MODE:SIMULATED}       # SIMULATED(즉시 지급 완료 · 개발용) | PG_TEST(PG 테스트 · 개발 서버) | PG(PG 운영) — 런칭 게이트 켠 운영은 PG 만
+    provider: ${SETTLEMENT_PAYOUT_PROVIDER:TOSS}    # 전환 기간만 — TOSS | INICIS(60 D-14). 토스 삭제 단계에서 속성 제거
+    result-stale-business-days: 1                   # 결과가 N영업일 지나도 없으면 「PG 처리 지연」 — 토스: 지시 기준 · 이니시스: 지급일 기준(D-8)
+    weekly-limit-amount: 10000000                   # 7일 누적 기준 — 토스: PARTIALLY_APPROVED 주당 한도 선보류 · 이니시스: AML 고객확인 안내(D-6)
   platform:                                         # 세금계산서 공급받는자 · 원천징수영수증 발행자 — company.* 를 따른다(1021 기-35). 런칭 게이트 켜진 prod 에서 더미면 기동 실패
     business-name: ${SETTLEMENT_PLATFORM_BUSINESS_NAME:${company.name}}
     representative: ${SETTLEMENT_PLATFORM_REPRESENTATIVE:${company.representative}}

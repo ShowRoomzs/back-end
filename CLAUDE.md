@@ -57,7 +57,7 @@ Showroomz 백엔드 — Spring Boot 3.5 / Java 21 / Gradle / JPA + QueryDSL / My
 - **예외**: `throw new BusinessException(ErrorCode.XXX)` → `GlobalExceptionHandler`. 새 오류는 `global/error/exception/ErrorCode` 에 추가한다.
 - **시간**: Jackson 은 UTC ISO-8601(`2026-01-19T12:54:03Z`)로 직렬화한다.
 - **스케줄러**: `global/scheduler/*` 는 각각 `@ConditionalOnProperty(...-enabled)` 로 켜고 끈다. **새 스케줄러를 만들면 `@IntegrationTest` 의 `properties`(또는 `application-test.yml`)에 끄는 플래그를 추가**하고, 테스트는 서비스를 직접 부른다.
-- **외부 연동**: 포트원(결제 · 본인인증, 테스트는 `portone.enabled=false` → Fake 게이트웨이), 토스 지급대행(테스트는 `settlement.payout.mode=SIMULATED`), S3, FCM, 메일, 스마트택배, Playwright(계약서 PDF).
+- **외부 연동**: 포트원(결제 · 본인인증, 테스트는 `portone.enabled=false` → Fake 게이트웨이), 정산 지급대행 — 토스 → KG이니시스 전환 중(`settlement.payout.provider` TOSS|INICIS · 기본 TOSS · `dev/60_KG이니시스_지급대행_전환_계획서.md`). 시뮬레이터 · 이니시스는 수취자 · 지급일 **지급 묶음** 경로(`SettlementPayoutGroupService`), 토스는 정산별 경로. 테스트는 `settlement.payout.mode=SIMULATED` + `FakeSettlementPayoutGateway`(기본 묶음 · `inicisMode()` · `tossMode()`), S3, FCM, 메일, 스마트택배, Playwright(계약서 PDF).
 - **설계 문서**: 코드 주석의 "44 설계서 3-1", "1021 기-17" 같은 참조는 `dev/` 의 번호 붙은 문서(완료분은 `dev/완료`)를 가리킨다. 동작의 근거를 찾을 때 먼저 본다.
 
 ## 패키지 구조

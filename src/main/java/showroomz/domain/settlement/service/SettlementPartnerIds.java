@@ -9,8 +9,9 @@ import java.util.HexFormat;
 import java.util.UUID;
 
 /**
- * PG 셀러 · 지급 참조 식별자 규칙(44_토스페이먼츠_지급대행_연동_BE_설계서.md 3-4) — 우리가 정하므로 재시도 · 중복 호출이 멱등하다.
- * 접두는 모드가 정한다(테스트 {@code t-} · 운영 빈 문자열). 길이 제약(토스)을 넘으면 번호 체계 버그라 즉시 터뜨린다.
+ * PG 셀러 · 지급 참조 식별자 규칙(44_토스페이먼츠_지급대행_연동_BE_설계서.md 3-4 · 60_KG이니시스_지급대행_전환_계획서.md D-3) — 우리가
+ * 정하므로 재시도 · 중복 호출이 멱등하다. 접두는 모드가 정한다(테스트 토스 {@code t-} · 이니시스 {@code t} · 운영 빈 문자열). 길이 제약을 넘으면
+ * 번호 체계 버그라 즉시 터뜨린다. 어느 규칙을 쓰는지는 {@code SettlementPartnerGateway#partnerRef} 가 정한다.
  */
 public final class SettlementPartnerIds {
 
@@ -19,6 +20,8 @@ public final class SettlementPartnerIds {
     static final int PARTNER_REF_MAX = 20;
     /** 토스 {@code refPayoutId} ≤50자. */
     static final int PAYOUT_REF_MAX = 50;
+    /** 이니시스 {@code idMall} — 등록 명세 60자 · 조회 명세 10자 중 좁은 쪽(D-3 · Q10). */
+    public static final int SUB_MALL_ID_MAX = 10;
 
     private SettlementPartnerIds() {
     }
@@ -34,6 +37,22 @@ public final class SettlementPartnerIds {
             throw new IllegalStateException("refSellerId 길이 위반(7~20) — " + ref);
         }
         return ref;
+    }
+
+    /**
+     * 이니시스 서브몰 id — {@code {prefix}b{marketId}} · {@code {prefix}c{creatorId}}(운영 접두 없음 · {@code PG_TEST} 는 {@code t}). PG 발급 id 가
+     * 없으므로 {@code pg_partner_id = pg_partner_ref = idMall} 이다(D-3).
+     */
+    public static String subMallId(String prefix, SettlementPayee payee, Long refId) {
+        String id = switch (payee) {
+            case BRAND -> prefix + "b" + refId;
+            case CREATOR -> prefix + "c" + refId;
+            case PLATFORM -> throw new IllegalArgumentException("플랫폼 몫은 PG 서브몰로 등록하지 않는다");
+        };
+        if (id.length() > SUB_MALL_ID_MAX) {
+            throw new IllegalStateException("idMall 길이 위반(≤" + SUB_MALL_ID_MAX + ") — " + id);
+        }
+        return id;
     }
 
     /** {@code {prefix}{settlementNumber}-{payee}-{attempt}} — 같은 행 재지시는 같은 ref, 재분배(attempt + 1)는 새 ref. */

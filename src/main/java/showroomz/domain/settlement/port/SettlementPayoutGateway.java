@@ -4,17 +4,118 @@ import showroomz.domain.settlement.type.SettlementPayee;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * 지급 포트(44 어드민 설계서 0-5 · 3-3). {@code SIMULATED} 는 즉시 PAID, 토스({@code PG_TEST · PG})는 지급을 요청하고 REQUESTED 로 둔 뒤
- * 웹훅({@link #fromWebhook}) · 폴링({@link #lookup}) 이 닫는다(44_토스페이먼츠_지급대행_연동_BE_설계서.md 5절).
+ * 지급 포트(44 어드민 설계서 0-5 · 3-3). 두 경로가 있다.
+ *
+ * <ul>
+ *   <li><b>묶음 지급</b>({@link #groupsByPayee()} = true · {@code SIMULATED} · 이니시스) — 같은 수취자 · 지급일의 행을 도메인이 묶어
+ *   합계 1건으로 올린다({@link #submitGroup} · 60_KG이니시스_지급대행_전환_계획서.md D-1). 합계 · 잠금 · 기록은 도메인
+ *   {@code SettlementPayoutGroupService} 한 곳이 하고, 어댑터는 상태가 없다. 결과는 {@link #lookupGroups}(폴링 1차 · D-8).</li>
+ *   <li><b>정산별 지급</b>(토스 · 삭제 전까지) — 수취자 행 1개 = 지급 요청 1건({@link #distribute}). 웹훅({@link #fromWebhook}) ·
+ *   폴링({@link #lookup}) 이 닫는다(44_토스페이먼츠_지급대행_연동_BE_설계서.md 5절).</li>
+ * </ul>
  */
 public interface SettlementPayoutGateway {
 
-    /** 수취자별 지급 지시. 즉시 결과가 없는 PG 는 REQUESTED 로 두고 결과 경로가 닫는다. */
-    PayoutResult distribute(PayoutCommand command);
+    String PROVIDER_SIMULATED = "SIMULATED";
+    String PROVIDER_TOSS = "TOSS";
+    String PROVIDER_INICIS = "INICIS";
+
+    /** 어느 PG 인가 — {@code SIMULATED | TOSS | INICIS}. 지급 묶음 · 수취자 행의 {@code pg_provider} 에 남는다(D-12). */
+    default String provider() {
+        return PROVIDER_SIMULATED;
+    }
+
+    /** 바깥 PG 로 돈을 보내는가 — 시뮬레이터만 false. 수취자 행의 {@code pg_provider} 는 이때만 적는다. */
+    default boolean isExternal() {
+        return !PROVIDER_SIMULATED.equals(provider());
+    }
+
+    // ------------------------------------------------------------------ 묶음 지급(60 전환 계획서 4-1)
+
+    /** 묶음 지급을 쓰는가 — {@code SIMULATED} · 이니시스 true, 토스 false(삭제 전까지 정산별 경로). */
+    default boolean groupsByPayee() {
+        return false;
+    }
+
+    /** 예정일보다 며칠(영업일) 먼저 지시하는가(D-2) — 이니시스 1 · 그 밖 0(예정일 당일 지급). */
+    default int leadBusinessDays() {
+        return 0;
+    }
+
+    /**
+     * 묶음 수정 · 재업로드 마감 시각(KST · 업로드일 기준) — 이니시스 익일지급 15:00. empty 면 묶음이 올리는 즉시 확정된다({@code SIMULATED}) —
+     * 마감 전 틱의 수렴 · 빼기(D-1 ④ · D-7)가 없다.
+     */
+    default Optional<LocalTime> uploadCutoff() {
+        return Optional.empty();
+    }
+
+    /** 묶음의 차수 — 이니시스 {@code NEXT_DAY}(clService 0) · 시뮬레이터 {@code IMMEDIATE}. */
+    default String scheduleType() {
+        return "IMMEDIATE";
+    }
+
+    /** 14:00 재검사에도 잔액이 모자라면 큰 묶음부터 남기고 나머지를 지우는가(D-9). */
+    default boolean trimOnShortfall() {
+        return true;
+    }
+
+    /**
+     * 묶음의 현재 합계로 올린다 — {@code total > 0} 이면 등록(덮어쓰기) · 0 이면 삭제. 합계는 도메인이 계산한다(어댑터는 상태가 없다 ·
+     * 「새로 붙은 행만」 보면 덮어쓰기로 앞의 금액을 지운다). <b>예외 = 결과 모름</b> — 도메인은 확정 합계를 바꾸지 않고 마감 전 틱이 다시 올린다.
+     */
+    default GroupSubmitResult submitGroup(GroupCommand command) {
+        throw new UnsupportedOperationException(provider() + " 는 묶음 지급을 쓰지 않는다");
+    }
+
+    /** 지급일이 지난 묶음의 송금 결과 — 돌려주지 않은 묶음은 그대로 OPEN 이다. 예외 = 조회 실패(다음 폴링이 다시). */
+    default List<GroupResult> lookupGroups(List<GroupLookup> lookups) {
+        return List.of();
+    }
+
+    /**
+     * @param partnerExternalId PG 서브몰 id(이니시스 {@code idMall}) — 시뮬레이터는 null
+     * @param total             묶음에 속한 REQUESTED 행 전부의 합 — 0 이면 삭제
+     */
+    record GroupCommand(Long groupId, SettlementPayee payee, Long payeeRefId, String partnerExternalId, LocalDate payDate,
+                        String scheduleType, long total) {
+    }
+
+    /**
+     * @param outcome   {@code REQUESTED}(접수) · {@code PAID}(시뮬레이터 · 즉시 완료) · {@code FAILED}(확정 거절) · {@code DEFERRED}(잔액 부족)
+     * @param requestId PG 추적 id(이니시스 {@code X-Request-ID}) — 묶음에 남겨 문의 때 쓴다
+     */
+    record GroupSubmitResult(Outcome outcome, String failCode, String failReason, String requestId) {
+
+        public static GroupSubmitResult requested(String requestId) {
+            return new GroupSubmitResult(Outcome.REQUESTED, null, null, requestId);
+        }
+    }
+
+    /** @param confirmedAmount PG 가 받은 마지막 합계 — 송금 결과 대조 기준 */
+    record GroupLookup(Long groupId, SettlementPayee payee, String partnerExternalId, LocalDate payDate, String scheduleType,
+                       long confirmedAmount) {
+    }
+
+    /**
+     * @param outcome    {@code PAID} · {@code FAILED} · {@code REQUESTED}(아직)
+     * @param remittedOn 송금일(이니시스 {@code remitDtPay}) — 원천징수영수증의 지급일
+     * @param pgAmount   PG 가 보낸 금액 — 확정 합계와 다르면 도메인이 닫지 않고 사람을 부른다
+     */
+    record GroupResult(Long groupId, Outcome outcome, LocalDate remittedOn, String failCode, String failReason, long pgAmount) {
+    }
+
+    // ------------------------------------------------------------------ 정산별 지급(토스 · 삭제 전까지)
+
+    /** 수취자별 지급 지시(정산별 경로). 즉시 결과가 없는 PG 는 REQUESTED 로 두고 결과 경로가 닫는다. 묶음 지급 어댑터는 구현하지 않는다. */
+    default PayoutResult distribute(PayoutCommand command) {
+        throw new UnsupportedOperationException(provider() + " 는 정산별 지급을 쓰지 않는다 — 묶음 지급(submitGroup)");
+    }
 
     /** REQUESTED 행의 결과 — PG 가 비동기인 모드만 구현한다. 돌려주지 않은 행은 그대로 REQUESTED 다. */
     default List<LineResult> lookup(List<PayoutLookup> lookups) {

@@ -125,6 +125,17 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "PG_PARTNER_ACCOUNT_HASH", length = 64)
     private String pgPartnerAccountHash;
 
+    /** 연결의 PG — {@code TOSS | INICIS}(60 이니시스 전환 계획서 D-12). */
+    @Column(name = "PG_PARTNER_PROVIDER", length = 16)
+    private String pgPartnerProvider;
+
+    /** 이니시스 {@code amlstatus} 원시값(D-6). */
+    @Column(name = "PG_AML_STATUS", length = 16)
+    private String pgAmlStatus;
+
+    @Column(name = "PG_AML_CHECKED_AT")
+    private LocalDateTime pgAmlCheckedAt;
+
     /**
      * 인플루언서 회원 상태(53 설계서 0-1) — 소비자 계정의 {@code Users.status}와 다른 축이다. 전이는 서비스의 조건부 UPDATE
      * ({@code CreatorRepository.transitionStatus})가 집행하고, 정지 사유 · 처리자는 {@code creator_sanction} 행이 든다.
@@ -144,13 +155,21 @@ public class Creator extends BaseTimeEntity {
     @Column(name = "PRIVACY_PURGED_AT")
     private LocalDateTime privacyPurgedAt;
 
-    public void linkPgPartner(String externalId, String ref, String env, String status, String accountHash, LocalDateTime at) {
+    public void linkPgPartner(String externalId, String ref, String env, String provider, String status, String accountHash,
+                              LocalDateTime at) {
         this.pgPartnerId = externalId;
         this.pgPartnerRef = ref;
         this.pgPartnerEnv = env;
+        this.pgPartnerProvider = provider;
         this.pgPartnerStatus = status;
         this.pgPartnerAccountHash = accountHash;
         this.pgPartnerSyncedAt = at;
+    }
+
+    /** AML 상태 재조회 결과(배치 앞단 · D-6). */
+    public void updatePgAmlStatus(String status, LocalDateTime at) {
+        this.pgAmlStatus = status;
+        this.pgAmlCheckedAt = at;
     }
 
     /** 웹훅({@code seller.changed}) — 상태만. */

@@ -54,7 +54,8 @@ public class AdminSettlementCommandService {
 
     /**
      * M3 재분배 — FAILED 행을 오늘 예정으로 되돌리고(횟수 + 1 · 계좌 재스냅샷) 정산을 지급 예정으로 재파생한다. 지시는 커밋 뒤 바로
-     * 보낸다(배치를 기다리지 않는다). 결과가 다시 실패면 정산은 분배 실패로 돌아간다.
+     * 보낸다(배치를 기다리지 않는다). 결과가 다시 실패면 정산은 분배 실패로 돌아간다. 묶음 지급(이니시스)은 영업일 수정 마감 전이면 바로 다음
+     * 지급일 묶음에 넣어 올리고, 마감 뒤 · 비영업일이면 {@code SCHEDULED} 로만 둔다 — 다음 마감 전 틱 · 배치가 집는다(60 전환 계획서 D-2′).
      */
     @Transactional
     public void redistribute(Long settlementId, Long payoutId, AdminPayoutAccountSource source, Long operatorId) {

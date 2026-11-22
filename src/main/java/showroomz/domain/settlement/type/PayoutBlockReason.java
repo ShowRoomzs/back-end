@@ -7,8 +7,9 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * 지급 보류 사유(44 어드민 설계서 5-4 · 44 토스 설계서 4-3 · 5-5). 앞 둘은 인플루언서 몫만 막고({@code PayoutBlockPolicy}), PG 셀러
- * 사유는 수취자 행의 {@code fail_code} 로 남아 지급 배치 앞단 · {@code seller.changed} 웹훅이 다시 판정한다.
+ * 지급 보류 사유(44 어드민 설계서 5-4 · 44 토스 설계서 4-3 · 5-5 · 60 이니시스 전환 계획서 D-4 · D-6). 앞 둘은 인플루언서 몫만 막고
+ * ({@code PayoutBlockPolicy}), PG 셀러 · 서브몰 사유는 수취자 행의 {@code fail_code} 로 남아 지급 배치 앞단(· 토스 {@code seller.changed}
+ * 웹훅)이 다시 판정한다.
  */
 @Getter
 @RequiredArgsConstructor
@@ -21,22 +22,30 @@ public enum PayoutBlockReason {
     RESIDENT_NUMBER_MISSING("주민등록번호 미등록", "주민등록번호 등록 후 지급"),
 
     // ---- PG 셀러 등록(44 토스 설계서 4-3 · 5-5) — 수취자 행의 fail_code 로 남고 지급 배치 앞단이 다시 등록 · 상태 조회를 시도한다.
-    /** PG 셀러 미등록 · 프로필 불완전 · id 복구 실패 · PG 호출 실패. */
+    /** PG 셀러 미등록 · id 복구 실패 · PG 호출 실패. */
     PARTNER_NOT_READY("PG 셀러 등록 대기", "PG 셀러 등록 후 지급"),
+    /**
+     * PG 등록 필수값이 비었다 — 생년월일(브랜드는 대표자) · 휴대폰 · 이메일 · 대표자명(이니시스 서브몰 · 60 전환 계획서 D-4). 수취자가 채워야 풀린다 —
+     * 배치 앞단이 다시 등록을 시도한다.
+     */
+    PARTNER_PROFILE_INCOMPLETE("정산 정보 미입력", "정산 정보 입력 후 지급"),
     /** 등록 계좌의 예금주가 회원 정보와 다르다(토스 {@code INVALID_ACCOUNT_INFO · NOT_SELLER_ACCOUNT}). */
     ACCOUNT_HOLDER_MISMATCH("예금주 불일치", "계좌 변경 후 지급"),
     /** 사업자번호 무효 · 휴 · 폐업(토스 {@code INVALID_BUSINESS_NUMBER}). */
     COMPANY_NOT_IN_BUSINESS("사업자 휴·폐업", "사업자 정보 확인 후 지급"),
     /** 등록 계좌 없음 — 지시 전에 알았다. */
     ACCOUNT_MISSING("등록 계좌 없음", "계좌 등록 후 지급"),
-    /** 계좌번호 >14자 · 예금주 >50자 — PG 가 받지 않는 형식(사전 검사). */
+    /** PG 가 받지 않는 형식(사전 검사) — 토스 계좌번호 >14자 · 이니시스 계좌번호 >20자 · 예금주 >50자 · 예금주 허용 문자 밖. 임의 치환하지 않는다. */
     ACCOUNT_INVALID("계좌 형식 오류", "계좌 변경 후 지급"),
     /** PG 미지원 은행(HSBC 054). */
     UNSUPPORTED_BANK("미지원 은행", "계좌 변경 후 지급"),
-    /** 셀러 {@code APPROVAL_REQUIRED} — 수취자 본인이 토스 본인인증 문자를 끝내야 한다(0-8). 재분배 대상이 아니다. */
-    IDENTITY_VERIFICATION_REQUIRED("본인인증 대기", "토스 본인인증 후 지급"),
-    /** 셀러 {@code KYC_REQUIRED} 또는 주당 한도 초과 예상 — KYC 통과 뒤 자동 해제. 재분배 대상이 아니다. */
-    KYC_REQUIRED("KYC 심사 대기", "KYC 완료 후 지급"),
+    /** 토스 셀러 {@code APPROVAL_REQUIRED} — 지난 행 표시용. 이니시스는 승인 단계가 없어 더 이상 만들지 않는다. 재분배 대상이 아니다. */
+    IDENTITY_VERIFICATION_REQUIRED("본인인증 대기", "본인인증 후 지급"),
+    /**
+     * 고객확인(AML · KYC) — 이니시스 {@code amlstatus} 가 「이행 필요 · 만료」라고 말할 때(60 전환 계획서 D-6) · 토스 {@code KYC_REQUIRED} · 주당 한도
+     * 선보류. 해제는 AML 상태가 「이행 완료 · 유효」일 때만. 재분배 대상이 아니다.
+     */
+    KYC_REQUIRED("KYC 심사 대기", "고객확인(AML) 완료 후 지급"),
     /** 지급대행 계약 없음 · 이용료 미납 · 계정 이용 정지 — 운영자. */
     PAYOUT_CONTRACT_BLOCKED("PG 지급대행 이용 불가", "PG 계약 확인 후 지급"),
 
@@ -51,14 +60,14 @@ public enum PayoutBlockReason {
     CREATOR_ACCOUNT_UNVERIFIED("정산 계좌 확인 중", "계좌 확인 후 지급");
 
     /** PG 셀러 사유 — 지급 배치 앞단이 다시 등록 · 상태 조회를 시도하는 코드. */
-    public static final Set<String> PARTNER_CODES = Set.of(PARTNER_NOT_READY.name(),
+    public static final Set<String> PARTNER_CODES = Set.of(PARTNER_NOT_READY.name(), PARTNER_PROFILE_INCOMPLETE.name(),
             ACCOUNT_HOLDER_MISMATCH.name(), COMPANY_NOT_IN_BUSINESS.name(), ACCOUNT_MISSING.name(), ACCOUNT_INVALID.name(),
             UNSUPPORTED_BANK.name(), IDENTITY_VERIFICATION_REQUIRED.name(), KYC_REQUIRED.name(),
             PAYOUT_CONTRACT_BLOCKED.name());
 
     /** 수취자 본인이 풀어야 하는 사유 — 운영자 알림 대신 수취자 알림(4-3). 재분배(M3) 대상이 아니다. */
     public static final Set<String> PAYEE_ACTION_CODES = Set.of(IDENTITY_VERIFICATION_REQUIRED.name(),
-            KYC_REQUIRED.name());
+            KYC_REQUIRED.name(), PARTNER_PROFILE_INCOMPLETE.name());
 
     public static Optional<PayoutBlockReason> fromCode(String code) {
         if (code == null) {

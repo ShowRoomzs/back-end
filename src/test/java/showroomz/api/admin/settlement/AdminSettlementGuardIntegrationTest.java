@@ -98,7 +98,7 @@ class AdminSettlementGuardIntegrationTest extends SettlementTestSupport {
         Long creatorPayoutId = payout(failed.getId(), SettlementPayee.CREATOR).getId();
         Settlement reviewing = seedSettlement("다른 공구", 1_000_000, SettlementStatus.REVIEWING);
         Long otherPayoutId = payout(reviewing.getId(), SettlementPayee.CREATOR).getId();
-        int gatewayCalls = payoutGateway.calls().size();
+        int gatewayCalls = payoutGateway.groupCalls().size();
 
         // 경로의 정산과 행이 맞지 않으면 존재를 알리지 않는다.
         redistribute(failed.getId(), otherPayoutId, "PREVIOUS").andExpect(status().isNotFound())
@@ -121,7 +121,7 @@ class AdminSettlementGuardIntegrationTest extends SettlementTestSupport {
         assertThat(settlement(reviewing.getId()).getStatus()).isEqualTo(SettlementStatus.REVIEWING);
         assertThat(payout(reviewing.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.WAITING);
         assertThat(settlementEvents(failed.getId())).doesNotContain(SettlementEventType.PAYOUT_RETRIED);
-        assertThat(payoutGateway.calls()).hasSize(gatewayCalls);
+        assertThat(payoutGateway.groupCalls()).hasSize(gatewayCalls);
         adminGet(SETTLEMENTS + "/" + failed.getId()).andExpect(status().isOk())
                 .andExpect(jsonPath("$.actions.canRedistribute").value(true))
                 .andExpect(jsonPath("$.rail.failedPayout.attempt").value(0));

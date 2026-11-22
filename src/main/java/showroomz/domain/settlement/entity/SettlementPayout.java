@@ -79,21 +79,33 @@ public class SettlementPayout {
     @Column(name = "attempt", nullable = false)
     private int attempt;
 
-    /** PG 지급 참조 id({@code refPayoutId} · 우리 발급 · 지시 때) — 결과 조회 · 멱등 키의 원본. 시뮬레이터는 비운다. */
+    /**
+     * PG 지급 참조 — 토스: {@code refPayoutId}(우리 발급 · 지시 때 · 결과 조회 · 멱등 키의 원본). 묶음 지급(이니시스 · 시뮬레이터): 묶음 키 표시값
+     * {@code {idMall}:{dtPay}:{차수}}(시뮬레이터 {@code G{묶음 id}}) — <b>PG 가 이 행이 든 합계를 받았을 때</b> 적는다(합류 거절 때 새로 붙은 행을
+     * 가르는 표시 · 60 이니시스 전환 계획서 5절).
+     */
     @Column(name = "pg_transfer_id", length = 64)
     private String pgTransferId;
 
-    /** PG 지급 id(토스 발급 · 요청 응답 즉시) — {@code pg_reference} 와 같은 값. */
+    /** PG 지급 id(토스 발급 · 요청 응답 즉시) — {@code pg_reference} 와 같은 값. 이니시스는 지급 id 가 없어 NULL. */
     @Column(name = "pg_payout_id", length = 64)
     private String pgPayoutId;
 
-    /** {@code EXPRESS | SCHEDULED}(토스 · 44 토스 설계서 0-4). */
+    /** 토스 {@code EXPRESS | SCHEDULED}(44 토스 설계서 0-4) · 이니시스 {@code NEXT_DAY | SAME_DAY} · 시뮬레이터 {@code IMMEDIATE}. */
     @Column(name = "pg_schedule_type", length = 10)
     private String pgScheduleType;
 
-    /** PG 지급일 — SCHEDULED 면 수취자 화면 「{날짜} 지급 예정」. */
+    /** PG 지급일(이니시스 {@code dtPay}) — 수취자 화면 「{날짜} 지급 예정」. */
     @Column(name = "pg_payout_date")
     private LocalDate pgPayoutDate;
+
+    /** 지시한 PG — {@code TOSS | INICIS}. 시뮬레이터는 NULL(60 이니시스 전환 계획서 D-12). */
+    @Column(name = "pg_provider", length = 16)
+    private String pgProvider;
+
+    /** 속한 지급 묶음({@code settlement_payout_group.id}) — 묶음 지급 경로만 · 묶음에서 빠지면 NULL(D-1 · D-7). */
+    @Column(name = "payout_group_id")
+    private Long payoutGroupId;
 
     /** 생성(2-7) — 금액은 2-4 값 · 확정 전 WAITING. */
     public static SettlementPayout waiting(Long settlementId, SettlementPayee payee, long amount) {

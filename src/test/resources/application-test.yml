@@ -7,6 +7,7 @@ settlement:
   auto-confirm-scheduler-enabled: false
   payout-scheduler-enabled: false
   payout-result-scheduler-enabled: false
+  payout-cutoff-scheduler-enabled: false
   receipt-retry-scheduler-enabled: false
   clawback-scheduler-enabled: false
   payout:

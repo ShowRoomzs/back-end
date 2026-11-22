@@ -2,11 +2,14 @@ package showroomz.domain.settlement.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
+import showroomz.domain.settlement.entity.SettlementPayoutGroup;
+import showroomz.domain.settlement.repository.SettlementPayoutGroupRepository;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.type.PayoutBlockReason;
@@ -16,6 +19,8 @@ import showroomz.global.utils.BusinessCalendar;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * 회원 사유 지급 보류의 <b>전이 한 곳</b>(§51-3 · 52 설계서 6절 · 53 설계서 4-3 · 50 설계서 6-6 · 정합 계획서 R2) — 브랜드 정지 · 인플루언서
@@ -23,8 +28,9 @@ import java.time.LocalDateTime;
  * 표현한다. 어드민 07b · 파트너 13 · 스튜디오 정산은 수취자 행의 상태 · 사유 라벨을 이미 내린다(표시만).
  *
  * <ul>
- *   <li><b>보류</b>({@link #hold}) — 그 회원 몫의 예정(SCHEDULED) 행 → BLOCKED(사유). 확정 전 행은 확정이 판정하고, 지시가 나간 행(REQUESTED)은
- *   돌이킬 수 없어 건드리지 않는다. 확정 · 지급 지시 앞단은 행 하나씩({@link #holdRow}) 같은 전이를 쓴다.</li>
+ *   <li><b>보류</b>({@link #hold}) — 그 회원 몫의 예정(SCHEDULED) 행 → BLOCKED(사유). 확정 전 행은 확정이 판정한다. 지시가 나간 행(REQUESTED)은
+ *   묶음 지급의 <b>수정 마감 전</b>이면 묶음에서 빼고 남은 합계를 커밋 뒤 다시 올린다(60 이니시스 전환 계획서 D-7). 마감이 지났거나 정산별
+ *   경로면 돌이킬 수 없어 건드리지 않는다(지급 뒤 차감). 확정 · 지급 지시 앞단은 행 하나씩({@link #holdRow}) 같은 전이를 쓴다.</li>
  *   <li><b>해제</b>({@link #release}) — 그 사유로 보류된 행을 {@link PayoutBlockPolicy}로 <b>다시 판정</b>한다. 남은 사유가 없으면 예정으로
  *   올리고, 남으면(세금계산서 확인 전 · 다른 정지 등) 이 사유 코드만 지우고 보류를 유지한다. 인플루언서 몫은 확정 때 정책 보류로 사유 없이
  *   BLOCKED 가 된 행도 함께 본다 — 기존 배치가 풀지 않는 사업자 건을 여기서 푼다.</li>
@@ -50,8 +56,12 @@ public class PayoutHoldTransitions {
     private final SettlementHistoryRecorder historyRecorder;
     private final PayoutBlockPolicy blockPolicy;
     private final BusinessCalendar businessCalendar;
+    private final PayoutGroupPlanner groupPlanner;
+    private final SettlementPayoutGroupRepository groupRepository;
+    /** 순환 의존(묶음 서비스 → 지급 전이 → 이 클래스)을 끊으려고 늦게 꺼낸다. */
+    private final ObjectProvider<SettlementPayoutGroupService> groupService;
 
-    /** 그 회원 몫의 예정 행을 전부 보류한다. @return 옮긴 행 수 */
+    /** 그 회원 몫의 예정 행을 전부 보류한다 — 마감 전 묶음의 지시 행도 뺀다(D-7). @return 옮긴 행 수 */
     @Transactional(propagation = Propagation.MANDATORY)
     public int hold(SettlementPayee payee, Long refId, PayoutBlockReason reason, LocalDateTime now) {
         int held = 0;
@@ -60,8 +70,37 @@ public class PayoutHoldTransitions {
                 held++;
             }
         }
+        held += pullFromOpenGroups(payee, refId, reason, now);
         log.info("지급 보류 - payee: {}, refId: {}, reason: {}, rows: {}", payee, refId, reason, held);
         return held;
+    }
+
+    /**
+     * 마감 전 빼기(D-7) — 지시 뒤 수정 마감 전에 보류가 생기면 그 행을 묶음에서 빼 BLOCKED 로 두고, 남은 합계를 커밋 뒤 다시 올린다(남은 행이 없으면
+     * 삭제). 즉시 1회 시도하고 실패하면 마감 전 틱이 수렴시킨다. 마감이 지난 묶음은 빼지 않는다 — 지급 뒤 차감(클로백) 경로로 간다.
+     */
+    private int pullFromOpenGroups(SettlementPayee payee, Long refId, PayoutBlockReason reason, LocalDateTime now) {
+        if (!groupPlanner.enabled() || !groupPlanner.hasCutoff()) {
+            return 0;
+        }
+        Set<Long> touched = new TreeSet<>();
+        int pulled = 0;
+        for (SettlementPayout payout : payoutRepository.findRequestedInGroupFor(payee, refId)) {
+            SettlementPayoutGroup group = groupRepository.findById(payout.getPayoutGroupId()).orElse(null);
+            if (group == null || !group.getStatus().isOpen() || !groupPlanner.isEditable(group.getPayDate(), now)) {
+                continue;
+            }
+            if (payoutRepository.detachAndHold(payout.getId(), reason.name(), reason.getLabel()) == 1) {
+                historyRecorder.recordBySystem(payout.getSettlementId(), SettlementEventType.PAYOUT_BLOCKED,
+                        payee.getLabel() + " 몫 · " + reason.getLabel() + " · 마감 전 지급 묶음에서 제외", now);
+                touched.add(group.getId());
+                pulled++;
+            }
+        }
+        if (!touched.isEmpty()) {
+            AfterCommit.run(() -> groupService.getObject().submitAll(touched, LocalDateTime.now()));
+        }
+        return pulled;
     }
 
     /** 예정 행 하나를 보류한다 — 확정 · 지급 지시 앞단이 쓴다. 이미 예정이 아니면(경합) false. */

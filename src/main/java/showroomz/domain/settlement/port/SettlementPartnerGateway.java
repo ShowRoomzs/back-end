@@ -1,19 +1,64 @@
 package showroomz.domain.settlement.port;
 
+import showroomz.domain.settlement.service.SettlementPartnerIds;
+import showroomz.domain.settlement.type.AmlThresholdAction;
 import showroomz.domain.settlement.type.SettlementPayee;
 
+import java.util.Optional;
+
 /**
- * 수취자를 PG 지급 시스템의 「셀러」(돈 받을 사람)로 등록 · 갱신하는 포트(44_토스페이먼츠_지급대행_연동_BE_설계서.md 4절).
- * 토스 구현은 {@code TossSellerRegistrar}, {@code SIMULATED} 는 항상 승인하는 Noop 이다.
+ * 수취자를 PG 지급 시스템의 「셀러 · 서브몰」(돈 받을 사람)로 등록 · 갱신하는 포트(44_토스페이먼츠_지급대행_연동_BE_설계서.md 4절 ·
+ * 60_KG이니시스_지급대행_전환_계획서.md 4-2). 토스 구현은 {@code TossSellerRegistrar}, 이니시스는 {@code InicisSubMallRegistrar},
+ * {@code SIMULATED} 는 항상 승인하는 Noop 이다.
  *
- * <p>PG 가 발급한 식별자({@link PartnerProfile#externalId})는 호출자가 보관하고 되돌려 준다 — 토스는 id 를 발급하고 우리 참조
- * ({@link PartnerProfile#partnerRef}) 로는 조회할 수 없다(0-5). 생성 · 갱신 · 「이미 있음」의 판단은 구현이 한다(멱등 · 0-6).
+ * <p>PG 식별자({@link PartnerProfile#externalId})는 호출자가 보관하고 되돌려 준다 — 토스는 id 를 발급하고 우리 참조로는 조회할 수 없다(0-5).
+ * 이니시스는 id 를 우리가 정한다({@code idMall} = 참조 id · D-3). 생성 · 갱신 · 「이미 있음」의 판단은 구현이 한다(멱등 · 0-6).
  */
 public interface SettlementPartnerGateway {
 
-    /** 참조 id 접두 — 테스트 모드는 운영과 섞이지 않게 {@code t-}(3-4). */
+    String PROVIDER_NONE = "NONE";
+
+    /** 참조 id 접두 — 테스트 모드는 운영과 섞이지 않게(토스 {@code t-} · 이니시스 {@code t}). */
     default String partnerRefPrefix() {
         return "";
+    }
+
+    /** 수취자의 PG 참조 id — 규칙은 PG 마다 다르다(토스 {@code brand-{id}} 7~20자 · 이니시스 {@code b{id}} 10자 이하 · D-3). */
+    default String partnerRef(SettlementPayee payee, Long refId) {
+        return SettlementPartnerIds.partnerRef(partnerRefPrefix(), payee, refId);
+    }
+
+    /**
+     * 연결의 PG — {@code TOSS | INICIS}(시뮬레이터 {@code NONE}). 회원 정보의 {@code pg_partner_provider} 와 다르면 연결 없음으로 본다 — 토스 연결
+     * 이력이 이니시스에서 「연결됨」으로 읽히지 않게(D-12).
+     */
+    default String provider() {
+        return PROVIDER_NONE;
+    }
+
+    /**
+     * 서브몰의 AML(고객확인) 상태 — 이니시스 {@code amlstatus}(D-6). 보류 · 해제는 이것만 본다(등록 성공으로 풀지 않는다). 모르는 모드 · 조회가
+     * 막힌 환경(이니시스 스테이징)은 empty. 예외 = 조회 실패(저장값을 그대로 쓴다).
+     */
+    default Optional<AmlState> amlStatus(String externalId) {
+        return Optional.empty();
+    }
+
+    /** 저장된 AML 원시 상태가 지급을 막는가(이행 필요 · 만료) — 지시 선점은 저장값만 읽는다(D-6 ③). */
+    default boolean isAmlBlocking(String rawAmlStatus) {
+        return false;
+    }
+
+    /** 7일 누적이 고객확인 기준을 넘을 때 지시 앞단이 할 일(D-6) — 이니시스 {@code aml-precheck}. */
+    default AmlThresholdAction amlThresholdAction() {
+        return AmlThresholdAction.NONE;
+    }
+
+    /**
+     * @param raw      PG 원시 상태 문자열({@code pg_aml_status} 에 그대로 저장 · 16자 이내)
+     * @param blocking 지급을 막아야 하는가(이행 필요 · 만료)
+     */
+    record AmlState(String raw, boolean blocking) {
     }
 
     /** 바깥 시스템에 실제로 등록하는가 — {@code SIMULATED}(Noop)는 false 라 회원 정보에 셀러 연결을 남기지 않는다. */
@@ -47,7 +92,8 @@ public interface SettlementPartnerGateway {
      * @param partnerRef 3-4 규칙으로 호출자가 정한 참조 id({@code refSellerId})
      * @param externalId PG 가 발급한 셀러 id — 우리 DB 에 연결 기록이 있으면 그 값 · 없으면 null
      * @param business   사업자(브랜드 · 사업자 인플루언서)면 값, 비사업자면 null
-     * @param birthdate  비사업자 인플루언서의 생년월일 {@code yyyy-MM-dd} — 토스는 받지 않는다(SIMULATED · Fake 호환용)
+     * @param birthdate  생년월일 — 인플루언서 본인 · 브랜드는 대표자({@code yyyy-MM-dd} 또는 {@code yyyyMMdd}). 이니시스 {@code bthDt} 필수(D-4) ·
+     *                   토스는 받지 않는다
      * @param existing   우리 DB 에 이 환경의 연결이 있는가
      */
     record PartnerProfile(SettlementPayee payee, Long refId, String partnerRef, String externalId, String name,

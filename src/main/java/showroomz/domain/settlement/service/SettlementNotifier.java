@@ -107,9 +107,36 @@ public class SettlementNotifier {
         stub("ADMIN", "PAYOUT_BLOCKED:" + payee.name() + ":" + reasonCode, settlementId);
     }
 
-    /** 수취자 본인이 풀어야 하는 보류(본인인증 · KYC) — 수취자에게 「토스페이먼츠 본인인증 문자를 확인해 주세요」(4-3 · L-2′). */
+    /**
+     * 수취자 본인이 풀어야 하는 보류 — 정산 정보 미입력(생년월일 · 휴대폰 · 이메일 등) · 고객확인(AML) · (토스) 본인인증. 수취자에게 「정산 정보를 입력해
+     * 주세요」 · 「고객확인(AML)을 진행해 주세요」(60 이니시스 전환 계획서 D-4 · D-6 · L-6 — 문구는 Q8 답 뒤 확정).
+     */
     public void partnerVerificationRequired(Long settlementId, SettlementPayee payee, String reasonCode) {
         stub(payee.name(), "PARTNER_VERIFICATION_REQUIRED:" + reasonCode, settlementId);
+    }
+
+    /** 7일 누적이 고객확인 기준을 넘었다 — 지시는 했다. 수취자 · 운영자에게 「고객확인(AML) 대상이 될 수 있음」(60 전환 계획서 D-6 ①). */
+    public void payoutAmlThresholdNotice(Long settlementId, SettlementPayee payee) {
+        stub(payee.name(), "PAYOUT_AML_THRESHOLD_NOTICE", settlementId);
+        stub("ADMIN", "PAYOUT_AML_THRESHOLD_NOTICE:" + payee.name(), settlementId);
+    }
+
+    /** 10:00 잔액 부족 — 전부 지시했다. 「{재검사 시각} 재검사 전 입금 · 입금 마감 지급일 전일 18시」(D-9). */
+    public void payoutBalanceShortfall(LocalDate payDate, long available, long required, java.time.LocalTime recheckAt) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_BALANCE_SHORTFALL payDate={} available={} required={} shortfall={} "
+                + "recheckAt={} depositDeadline=지급일 전일 18:00", payDate, available, required, required - available, recheckAt);
+    }
+
+    /** 송금 결과 금액 ≠ 우리가 올린 확정 합계 — 묶음을 닫지 않았다. 상점관리자 확인(D-8). */
+    public void payoutAmountMismatch(Long groupId, LocalDate payDate, long confirmed, long pgAmount) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_AMOUNT_MISMATCH groupId={} payDate={} confirmed={} pg={}",
+                groupId, payDate, confirmed, pgAmount);
+    }
+
+    /** 마감이 지났는데 PG 에 올라간 합계 ≠ 묶음 행 합계 — 빠진 행이 이전 합계로 나갈 수 있다. 사람 확인(D-7 · D-1 ④). */
+    public void payoutGroupOutOfSync(Long groupId, LocalDate payDate, long confirmed, long current) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_GROUP_OUT_OF_SYNC groupId={} payDate={} confirmed={} current={}",
+                groupId, payDate, confirmed, current);
     }
 
     /** 지시 끝 — 「D 일자 지급 N건 · 합계」 · PG 대사 결과 포함(5-3). 사람이 할 일은 없고 어긋날 때만 본다. */

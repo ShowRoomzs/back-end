@@ -182,7 +182,7 @@ class SettlementSeamScenarioIntegrationTest extends SettlementTestSupport {
         approveAccountChange("004", "9876543210", "글로우랩 주식회사");
         Settlement scheduled = confirm(reviewing);
         assertThat(pay(scheduled, scheduled.getPayoutDueDate()).getStatus()).isEqualTo(SettlementStatus.PAID);
-        assertThat(lastBrandLine()).extracting(PayoutLine::bankName, PayoutLine::accountNumber, PayoutLine::holder)
+        assertThat(brandLine(scheduled.getId())).extracting(PayoutLine::bankName, PayoutLine::accountNumber, PayoutLine::holder)
                 .containsExactly("KB국민은행", "9876543210", "글로우랩 주식회사");
 
         approveAccountChange("088", "110555666777", "글로우랩");
@@ -205,7 +205,7 @@ class SettlementSeamScenarioIntegrationTest extends SettlementTestSupport {
 
         approveAccountChange("004", "9876543210", "글로우랩 주식회사");
         pay(scheduled, scheduled.getPayoutDueDate());
-        assertThat(lastBrandLine()).extracting(PayoutLine::bankName, PayoutLine::accountNumber, PayoutLine::holder)
+        assertThat(brandLine(scheduled.getId())).extracting(PayoutLine::bankName, PayoutLine::accountNumber, PayoutLine::holder)
                 .containsExactly("신한은행", "110123456789", "글로우랩");
 
         openNextGroupBuy(creator);
@@ -213,7 +213,7 @@ class SettlementSeamScenarioIntegrationTest extends SettlementTestSupport {
         endGroupBuy();
         Settlement next = confirm(generate(LocalDateTime.now().withNano(0)));
         pay(next, next.getPayoutDueDate());
-        assertThat(lastBrandLine()).extracting(PayoutLine::bankName, PayoutLine::accountNumber)
+        assertThat(brandLine(next.getId())).extracting(PayoutLine::bankName, PayoutLine::accountNumber)
                 .containsExactly("KB국민은행", "9876543210");
     }
 
@@ -353,10 +353,14 @@ class SettlementSeamScenarioIntegrationTest extends SettlementTestSupport {
         return statuses;
     }
 
-    private PayoutLine lastBrandLine() {
-        List<PayoutCommand> calls = payoutGateway.calls();
-        return calls.get(calls.size() - 1).lines().stream()
-                .filter(line -> line.payee() == SettlementPayee.BRAND)
-                .findFirst().orElseThrow();
+    /**
+     * 그 정산의 브랜드 몫이 지시된 계좌 — 묶음 지급은 계좌를 지급 명령에 싣지 않고(서브몰 등록 계좌로 나간다) 행의 계좌 스냅샷이 묶음 계좌다
+     * (60 이니시스 전환 계획서 D-1 ⑤).
+     */
+    private PayoutLine brandLine(Long settlementId) {
+        var row = payout(settlementId, SettlementPayee.BRAND);
+        assertThat(payoutGateway.groupCalls(SettlementPayee.BRAND)).isNotEmpty();
+        return new PayoutLine(row.getId(), SettlementPayee.BRAND, row.getAmount(), row.getBankName(),
+                personalDataCipher.decrypt(row.getAccountNumberEnc()), row.getAccountHolder());
     }
 }

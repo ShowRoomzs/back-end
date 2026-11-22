@@ -189,8 +189,7 @@ class AdminBrandIntegrationTest extends SettlementTestSupport {
         LocalDate due = payout(s.getId(), SettlementPayee.BRAND).getDueDate();
         pay(s, due);
         assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.BLOCKED);
-        assertThat(payoutGateway.calls().stream().flatMap(c -> c.lines().stream())
-                .noneMatch(line -> line.payee() == SettlementPayee.BRAND)).isTrue();
+        assertThat(payoutGateway.groupCalls(SettlementPayee.BRAND)).isEmpty();
     }
 
     @Test

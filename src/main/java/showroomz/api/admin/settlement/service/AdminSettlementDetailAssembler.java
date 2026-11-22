@@ -69,6 +69,7 @@ public class AdminSettlementDetailAssembler {
     private final showroomz.domain.order.repository.OrderClaimChargeRepository chargeRepository;
     private final showroomz.domain.order.repository.OrderClaimFreightAdjustmentRepository freightRepository;
     private final showroomz.global.config.properties.CompanyProperties company;
+    private final showroomz.domain.settlement.repository.SettlementPayoutRepository payoutRepository;
 
     public AdminSettlementDto.Detail detail(Settlement s) {
         boolean confirmed = s.getStatus().isConfirmed();
@@ -248,7 +249,8 @@ public class AdminSettlementDetailAssembler {
         return new AdminSettlementDto.Payout(p.getId(), p.getPayee(), p.getPayee().getLabel(), payeeName(s, p.getPayee()),
                 p.getAmount(), bankName, accountNumber, holder, source, p.getStatus(), p.getStatus().getLabel(),
                 p.getStatus().getTone(), p.getDueDate(), p.getRequestedAt(), p.getPaidAt(), p.getFailedAt(),
-                p.getFailCode(), p.getFailReason(), p.getPgReference(), p.getAttempt());
+                p.getFailCode(), p.getFailReason(), p.getPgReference(), p.getAttempt(), p.getPgProvider(), p.getPgPayoutDate(),
+                p.getPayoutGroupId() == null ? null : (int) payoutRepository.countSettlementsInGroup(p.getPayoutGroupId()));
     }
 
     private static AdminSettlementDto.FixedFee fixedFee(Contract contract) {

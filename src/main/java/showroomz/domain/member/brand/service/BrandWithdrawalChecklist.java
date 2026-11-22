@@ -235,7 +235,9 @@ public class BrandWithdrawalChecklist {
         } else if (ACCOUNT_CODES.contains(code)) {
             group = BrandWithdrawalBreakdownGroup.MY_ACTION;
             target = BrandWithdrawalTarget.SETTLEMENT_ACCOUNT;
-        } else if (PayoutBlockReason.COMPANY_NOT_IN_BUSINESS.name().equals(code)) {
+        } else if (PayoutBlockReason.COMPANY_NOT_IN_BUSINESS.name().equals(code)
+                || PayoutBlockReason.PARTNER_PROFILE_INCOMPLETE.name().equals(code)) {
+            // 정산 정보 미입력(대표자 생년월일 등 · 60 이니시스 전환 계획서 D-4) — 사업자 정보 화면에서 채운다.
             group = BrandWithdrawalBreakdownGroup.MY_ACTION;
             target = BrandWithdrawalTarget.BUSINESS_INFO;
         } else if (PayoutBlockReason.PAYEE_ACTION_CODES.contains(code)) {

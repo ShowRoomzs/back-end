@@ -306,6 +306,85 @@ public interface SettlementPayoutRepository extends JpaRepository<SettlementPayo
             + "    showroomz.domain.settlement.type.PayoutStatus.PAID, showroomz.domain.settlement.type.PayoutStatus.FAILED)")
     List<Object[]> countByPgPayoutDate(@Param("payoutDate") LocalDate payoutDate);
 
+    // ------------------------------------------------------------------ 지급 묶음(60 이니시스 전환 계획서 D-1)
+
+    /** 묶음의 행 — id 순. */
+    @Query("SELECT p FROM SettlementPayout p WHERE p.payoutGroupId = :groupId ORDER BY p.id ASC")
+    List<SettlementPayout> findByPayoutGroupId(@Param("groupId") Long groupId);
+
+    /** 같은 묶음으로 나간 정산 수 — 어드민 07b 「같은 묶음으로 나간 정산 n건」(60 이니시스 전환 계획서 6절). */
+    @Query("SELECT COUNT(DISTINCT p.settlementId) FROM SettlementPayout p WHERE p.payoutGroupId = :groupId")
+    long countSettlementsInGroup(@Param("groupId") Long groupId);
+
+    /** 묶음의 합계 — 묶음에 속한 REQUESTED 행 전부(이미 올린 행 포함 · D-1 ①). */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM SettlementPayout p WHERE p.payoutGroupId = :groupId "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    long sumRequestedInGroup(@Param("groupId") Long groupId);
+
+    /**
+     * 지시 선점 직후 묶음에 붙인다(같은 트랜잭션) — 지급일 · 차수 · PG 를 적고 PG 참조는 비운다(재분배 행의 지난 묶음 표시를 지운다 · PG 가
+     * 이 행이 든 합계를 받으면 {@link #markConfirmedInGroup} 이 적는다).
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.payoutGroupId = :groupId, p.pgProvider = :pgProvider, p.pgPayoutDate = :payDate, "
+            + "p.pgScheduleType = :scheduleType, p.pgTransferId = NULL, p.pgPayoutId = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int attachToGroup(@Param("payoutId") Long payoutId, @Param("groupId") Long groupId, @Param("pgProvider") String pgProvider,
+                      @Param("payDate") LocalDate payDate, @Param("scheduleType") String scheduleType);
+
+    /**
+     * PG 가 묶음 합계를 받았다 — 그 합계에 든 행(전송 때 센 행 id) 중 아직 표시가 없는 REQUESTED 행에 묶음 키를 적는다(합류 거절 · 마감 경과 때
+     * 「PG 에 올라가지 않은 행」을 가르는 표시 · 5절). 전송 뒤 붙은 행은 다음 전송이 적는다.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.pgTransferId = :transferKey, p.pgReference = :transferKey "
+            + "WHERE p.id IN :payoutIds AND p.payoutGroupId = :groupId "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED AND p.pgTransferId IS NULL")
+    int markConfirmedInGroup(@Param("groupId") Long groupId, @Param("payoutIds") Collection<Long> payoutIds,
+                             @Param("transferKey") String transferKey);
+
+    /** 묶음에서 빼 다음 지급일 예정으로(잔액 부족 · 마감 놓침 · 합류 잔액 거절) — attempt 불변(D-9). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED, "
+            + "p.dueDate = :dueDate, p.requestedAt = NULL, p.payoutGroupId = NULL, p.pgProvider = NULL, p.pgTransferId = NULL, "
+            + "p.pgPayoutId = NULL, p.pgReference = NULL, p.pgScheduleType = NULL, p.pgPayoutDate = NULL, "
+            + "p.failCode = NULL, p.failReason = NULL "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int detachAndDefer(@Param("payoutId") Long payoutId, @Param("dueDate") LocalDate dueDate);
+
+    /** 합류가 확정 거절됐다 — 새로 붙은 행만 묶음에서 빼 분배 실패로(앞서 올라간 행은 PG 에 이전 합계로 살아 있다 · 5절). */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.FAILED, "
+            + "p.payoutGroupId = NULL, p.failedAt = :failedAt, p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int detachAndFail(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                      @Param("failReason") String failReason, @Param("failedAt") LocalDateTime failedAt);
+
+    /**
+     * 마감 전 보류 · 제재(D-7) — 지시한 행을 묶음에서 빼 BLOCKED(사유)로. <b>영속성 컨텍스트를 비우지 않는다</b> — 정지 트랜잭션이 붙들고 있는
+     * 마켓 · 정지 행이 준영속으로 떨어지지 않게({@link #holdScheduled} 와 같은 이유). 남은 합계는 커밋 뒤 다시 올린다.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("UPDATE SettlementPayout p SET p.status = showroomz.domain.settlement.type.PayoutStatus.BLOCKED, "
+            + "p.dueDate = NULL, p.requestedAt = NULL, p.payoutGroupId = NULL, p.pgProvider = NULL, p.pgTransferId = NULL, "
+            + "p.pgPayoutId = NULL, p.pgReference = NULL, p.pgScheduleType = NULL, p.pgPayoutDate = NULL, "
+            + "p.failCode = :failCode, p.failReason = :failReason "
+            + "WHERE p.id = :payoutId AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED")
+    int detachAndHold(@Param("payoutId") Long payoutId, @Param("failCode") String failCode,
+                      @Param("failReason") String failReason);
+
+    /** 한 회원 몫의 지시된(REQUESTED) 묶음 행 — 마감 전 보류 · 제재가 묶음에서 뺀다(D-7). */
+    @Query("SELECT p FROM SettlementPayout p, Settlement s WHERE p.settlementId = s.id "
+            + "AND p.payee = :payee AND ((p.payee = showroomz.domain.settlement.type.SettlementPayee.BRAND AND s.market.id = :refId) OR (p.payee = showroomz.domain.settlement.type.SettlementPayee.CREATOR AND s.creator.id = :refId)) "
+            + "AND p.status = showroomz.domain.settlement.type.PayoutStatus.REQUESTED AND p.payoutGroupId IS NOT NULL ORDER BY p.id ASC")
+    List<SettlementPayout> findRequestedInGroupFor(@Param("payee") SettlementPayee payee, @Param("refId") Long refId);
+
+    /** 지급일 범위의 지급 예정(SCHEDULED) 합계(플랫폼 제외) — 10:00 잔액 선검사(D-9). */
+    @Query("SELECT COALESCE(SUM(p.amount), 0) FROM SettlementPayout p "
+            + "WHERE p.status = showroomz.domain.settlement.type.PayoutStatus.SCHEDULED AND p.dueDate <= :target "
+            + "AND p.payee <> showroomz.domain.settlement.type.SettlementPayee.PLATFORM")
+    long sumScheduledDue(@Param("target") LocalDate target);
+
     /**
      * 재분배(7-5 M3) — FAILED → SCHEDULED(오늘) · 횟수 + 1 · 계좌 재스냅샷(현재 회원 정보면 새 값 · 이전 계좌면 그대로).
      * 금액은 손대지 않는다.

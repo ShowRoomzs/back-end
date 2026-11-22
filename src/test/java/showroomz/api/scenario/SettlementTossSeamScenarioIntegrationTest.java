@@ -1,5 +1,6 @@
 package showroomz.api.scenario;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,12 @@ class SettlementTossSeamScenarioIntegrationTest extends SettlementTestSupport {
     private static final String WEBHOOK = "/v1/webhooks/toss/payouts";
 
     @Autowired TossPayoutsProperties tossProperties;
+
+    /** 토스는 정산별 경로다(묶음 지급은 시뮬레이터 · 이니시스 · 60 이니시스 전환 계획서 D-1) — 삭제 전까지 이 시나리오로 지킨다. */
+    @BeforeEach
+    void tossPayoutPath() {
+        payoutGateway.tossMode();
+    }
 
     // ================================================================== TP-1 · TP-2
 
@@ -227,6 +234,7 @@ class SettlementTossSeamScenarioIntegrationTest extends SettlementTestSupport {
         assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.REQUESTED);
 
         payoutGateway.reset();
+        payoutGateway.tossMode();
         payoutGateway.completeFor(SettlementPayee.BRAND);
         payoutGateway.completeFor(SettlementPayee.CREATOR);
         payoutService.pollResults(LocalDateTime.now().withHour(14));
@@ -297,6 +305,7 @@ class SettlementTossSeamScenarioIntegrationTest extends SettlementTestSupport {
 
         // 동기 거절 — 지시가 DEFERRED 로 돌아오면 되돌려 다음 영업일로.
         payoutGateway.reset();
+        payoutGateway.tossMode();
         payoutGateway.deferFor(SettlementPayee.CREATOR);
         payoutGateway.requestedFor(SettlementPayee.BRAND);
         Settlement s2 = scheduledSettlementOnOtherGroupBuy();
@@ -373,6 +382,7 @@ class SettlementTossSeamScenarioIntegrationTest extends SettlementTestSupport {
         jdbc.update("UPDATE settlement_payout SET requested_at = ? WHERE settlement_id = ? AND payee IN ('BRAND', 'CREATOR')",
                 Timestamp.valueOf(LocalDateTime.now().minusDays(5)), s.getId());
         payoutGateway.reset();
+        payoutGateway.tossMode();
         payoutService.pollResults(LocalDate.now().atTime(14, 0));
         assertThat(settlementEvents(s.getId())).doesNotContain(SettlementEventType.PAYOUT_CHECK_REQUIRED);
         payoutService.pollResults(LocalDate.now().atTime(10, 5));

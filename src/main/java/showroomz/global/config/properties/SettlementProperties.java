@@ -22,6 +22,11 @@ public class SettlementProperties {
     private int payoutBusinessDays = 3;
     /** 지급 배치 시각(영업일 · KST 시). 크론은 {@code ${settlement.payout-hour}}로 읽는다. */
     private int payoutHour = 10;
+    /**
+     * 마감 전 틱 시각(영업일 · KST 시 · 60 이니시스 전환 계획서 D-2′) — 늦게 풀린 행 지시 · 수렴 · 잔액 재검사. 이니시스 익일지급 수정 마감(15시) 전이어야
+     * 한다. 크론은 {@code ${settlement.payout-cutoff-hour}}로 읽는다.
+     */
+    private int payoutCutoffHour = 14;
     /** 재분배 상한 — M3 「2회 더 실패 시 수동 이체」(임의 · 13절 B-9). */
     private int payoutRetryLimit = 3;
 
@@ -57,6 +62,7 @@ public class SettlementProperties {
     private boolean autoConfirmSchedulerEnabled = true;
     private boolean payoutSchedulerEnabled = true;
     private boolean payoutResultSchedulerEnabled = true;
+    private boolean payoutCutoffSchedulerEnabled = true;
     private boolean receiptRetrySchedulerEnabled = true;
     private boolean clawbackSchedulerEnabled = true;
 
@@ -68,9 +74,12 @@ public class SettlementProperties {
     public enum PayoutMode {
         /** 즉시 PAID · 참조번호 SIM- — 개발 · QA · 통합 테스트. 런칭 게이트 켜진 운영 프로필에서는 기동 실패. */
         SIMULATED,
-        /** 토스 지급대행 **테스트 키**(test_sk_ · 참조 id 접두 t-) — 개발 서버. 런칭 게이트 켜진 운영 프로필에서는 기동 실패. */
+        /**
+         * PG 테스트 환경 — 토스: 테스트 키(test_sk_ · 참조 id 접두 t-) · 이니시스: 계약담당자가 준 스테이징(base URL · MID · 키 별도 · idMall 접두 t).
+         * 개발 서버. 런칭 게이트 켜진 운영 프로필에서는 기동 실패.
+         */
         PG_TEST,
-        /** 토스 지급대행 운영(live_sk_) — 44_토스페이먼츠_지급대행_연동_BE_설계서.md. */
+        /** PG 운영 — 토스(live_sk_ · 44 토스 설계서) / 이니시스(apiwi.inicis.com · 60 이니시스 전환 계획서). */
         PG;
 
         /** 바깥 PG 를 부르는가 — 결과 폴링 · 잔액 선검사 · 셀러 연결 기록은 이 모드들만. */
@@ -83,13 +92,29 @@ public class SettlementProperties {
         }
     }
 
+    /**
+     * 지급 PG(60 이니시스 전환 계획서 D-14) — 전환 기간에만 둔다. 기본 {@code TOSS} — 토스 키로 {@code PG_TEST} 를 돌던 서버가 이 배포로 기동이
+     * 깨지지 않게. 이니시스가 스테이징을 통과하면 토스 어댑터와 함께 이 속성을 지운다(이니시스 고정).
+     */
+    public enum PayoutProvider {
+        TOSS,
+        INICIS
+    }
+
     @Getter
     @Setter
     public static class Payout {
         private PayoutMode mode = PayoutMode.SIMULATED;
-        /** 지시 뒤 N영업일이 지나도 REQUESTED 가 닫히지 않으면 「PG 처리 지연」 알림(토스 설계서 5-4). */
+        /** {@code PG_TEST · PG} 의 PG — 전환 기간만(D-14). {@code SIMULATED} 는 보지 않는다. */
+        private PayoutProvider provider = PayoutProvider.TOSS;
+        /**
+         * 처리 지연 알림 — 정산별 경로(토스): 지시 뒤 N영업일 · 묶음 경로(이니시스): <b>지급일</b> 뒤 N영업일이 지나도 결과가 없으면 「PG 처리 지연」
+         * (토스 설계서 5-4 · 이니시스 D-8 — 지시가 하루 당겨져 지시 기준이면 결과 전에 매일 거짓 알림이 난다).
+         */
         private int resultStaleBusinessDays = 1;
-        /** PARTIALLY_APPROVED 셀러의 주당 지급 한도(토스 정책 · 1천만 원) — 넘기면 셀러가 KYC_REQUIRED 로 넘어가므로 우리가 먼저 센다(5-2 ①). */
+        /**
+         * 7일 누적 기준(1천만 원) — 토스: PARTIALLY_APPROVED 셀러의 주당 한도 선보류(5-2 ①) · 이니시스: AML 고객확인 기준 안내(D-6 · aml-precheck).
+         */
         private long weeklyLimitAmount = 10_000_000L;
     }
 
