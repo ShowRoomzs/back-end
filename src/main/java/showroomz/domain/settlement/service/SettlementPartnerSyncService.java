@@ -46,12 +46,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 수취자 ↔ PG 셀러 동기화(44_토스페이먼츠_지급대행_연동_BE_설계서.md 4절). 확정 뒤(AfterCommit)에 두 수취자의 셀러를 보장하고,
- * 승인되지 않으면 확정은 그대로 둔 채 그 수취자 행만 {@code BLOCKED(사유)} 로 둔다 — 지급일에 등록 실패가 터지지 않게. 지급 배치 앞단과
- * {@code seller.changed} 웹훅이 다시 판정한다.
+ * 수취자 ↔ PG 서브몰 동기화(60_KG이니시스_지급대행_전환_계획서.md 4-2 · D-3 · D-4). 확정 뒤(AfterCommit)에 두 수취자의 서브몰을 보장하고,
+ * 등록되지 않으면 확정은 그대로 둔 채 그 수취자 행만 {@code BLOCKED(사유)} 로 둔다 — 지급일에 등록 실패가 터지지 않게. 지급 배치 앞단이 다시
+ * 판정한다.
  *
- * <p>외부 호출은 트랜잭션 밖에서 하고, 읽기 · 쓰기는 각각 짧은 트랜잭션이다 — PG 지연 · 실패가 확정을 되돌리면 안 된다(0-11).
- * PG 가 발급한 셀러 id 는 회원 정보에 반드시 남긴다(0-5) — 참조 id 로는 조회할 수 없다.
+ * <p>외부 호출은 트랜잭션 밖에서 하고, 읽기 · 쓰기는 각각 짧은 트랜잭션이다 — PG 지연 · 실패가 확정을 되돌리면 안 된다. 연결(서브몰 id)은 회원
+ * 정보에 남긴다.
  *
  * <p>이니시스(60_KG이니시스_지급대행_전환_계획서.md) — 연결은 PG 구분({@code pg_partner_provider})까지 같아야 「연결됨」이다(D-12). 서브몰 계좌는
  * 하나이고 송금 시점 계좌로 나갈 수 있어 <b>다른 계좌의 미송금 묶음이 있는 동안 계좌 변경(UPD)을 보내지 않는다</b>(D-1 ⑤) — 묶음을 올리기 전에
@@ -230,55 +230,6 @@ public class SettlementPartnerSyncService {
     public record CreatorAccountCheck(PartnerResult result, String bankName, String accountNumber) {
     }
 
-    // ------------------------------------------------------------------ 웹훅 seller.changed(4-3)
-
-    /**
-     * 셀러 상태 변경 — 회원 정보의 원시 상태를 갱신하고, 지급 가능이 됐으면 셀러 사유 보류 행을 <b>즉시</b> 예정으로 · 대기(KYC) 가 됐으면
-     * 예정 행을 보류로. 우리 셀러가 아니면 false.
-     */
-    public boolean onPartnerStatusChanged(String externalId, String rawStatus, LocalDateTime now) {
-        if (externalId == null || rawStatus == null) {
-            return false;
-        }
-        Linked linked = writeTransaction.execute(tx -> {
-            Seller seller = sellerRepository.findByPgPartnerId(externalId).orElse(null);
-            if (seller != null) {
-                seller.updatePgPartnerStatus(rawStatus, now);
-                Long marketId = marketRepository.findBySeller(seller).map(Market::getId).orElse(null);
-                return new Linked(SettlementPayee.BRAND, marketId);
-            }
-            Creator creator = creatorRepository.findByPgPartnerId(externalId).orElse(null);
-            if (creator != null) {
-                creator.updatePgPartnerStatus(rawStatus, now);
-                return new Linked(SettlementPayee.CREATOR, creator.getId());
-            }
-            return null;
-        });
-        if (linked == null || linked.refId() == null) {
-            return linked != null;
-        }
-        PartnerStatus status = gateway.statusOf(rawStatus);
-        LocalDate today = KstDates.today(now);
-        if (status == PartnerStatus.APPROVED) {
-            List<SettlementPayout> blocked = readTransaction.execute(tx ->
-                    payoutRepository.findBlockedFor(linked.payee(), linked.refId(), PayoutBlockReason.PARTNER_CODES));
-            for (SettlementPayout payout : blocked) {
-                if (transitions.releasePartnerBlocked(payout.getSettlementId(), payout.getId(), payout.getPayee(), today)) {
-                    log.info("PG 셀러 승인 — 보류 해제 - payoutId: {}", payout.getId());
-                }
-            }
-        } else if (status == PartnerStatus.PENDING) {
-            String code = gateway.blockCodeOf(rawStatus);
-            List<SettlementPayout> scheduled = readTransaction.execute(tx ->
-                    payoutRepository.findScheduledFor(linked.payee(), linked.refId()));
-            for (SettlementPayout payout : scheduled) {
-                transitions.blockScheduled(payout.getSettlementId(), payout.getId(), payout.getPayee(), code,
-                        "PG 셀러 상태 " + rawStatus, now);
-            }
-        }
-        return true;
-    }
-
     private record Linked(SettlementPayee payee, Long refId) {
     }
 
@@ -350,7 +301,7 @@ public class SettlementPartnerSyncService {
 
     // ------------------------------------------------------------------ AML(60 전환 계획서 D-6)
 
-    /** AML 상태로 보류 · 해제하는 PG 인가 — 이니시스. 토스는 셀러 상태({@code KYC_REQUIRED})로 푼다. */
+    /** AML 상태로 보류 · 해제하는 PG 인가 — 이니시스(시뮬레이터는 아니다). */
     public boolean isAmlAware() {
         return gateway.amlThresholdAction() != AmlThresholdAction.NONE;
     }
@@ -458,8 +409,7 @@ public class SettlementPartnerSyncService {
         Contact contact = new Contact(firstNonBlank(seller.getRepresentativeName(), market.getMarketName()), phone, email);
         String brn = digits(seller.getBusinessRegistrationNumber());
         Business business = new Business(firstNonBlank(seller.getCompanyName(), market.getMarketName()), brn,
-                seller.getRepresentativeName(), seller.getBusinessAddress(), seller.getBusinessCondition(),
-                SettlementPartnerIds.isCorporate(brn, seller.getBusinessType()));
+                seller.getRepresentativeName(), seller.getBusinessAddress(), seller.getBusinessCondition());
         String ref = gateway.partnerRef(SettlementPayee.BRAND, market.getId());
         boolean existing = linked(seller.getPgPartnerId(), seller.getPgPartnerRef(), seller.getPgPartnerEnv(),
                 seller.getPgPartnerProvider(), ref);
@@ -492,7 +442,7 @@ public class SettlementPartnerSyncService {
         if (creator.getBusinessType() == CreatorBusinessType.BUSINESS) {
             String brn = digits(creator.getBusinessRegistrationNumber());
             business = new Business(firstNonBlank(creator.getShowroomName(), creator.getRealName()), brn,
-                    creator.getRealName(), null, null, SettlementPartnerIds.isCorporate(brn, null));
+                    creator.getRealName(), null, null);
         }
         String ref = gateway.partnerRef(SettlementPayee.CREATOR, creator.getId());
         boolean existing = linked(creator.getPgPartnerId(), creator.getPgPartnerRef(), creator.getPgPartnerEnv(),
@@ -523,7 +473,7 @@ public class SettlementPartnerSyncService {
      * (D-1 ⑤ · Q3). 묶음 지급을 쓰지 않거나 바깥 PG 가 아니면 false.
      */
     private boolean unsentGroupWithOtherAccount(SettlementPayee payee, Long refId, String accountHash) {
-        if (!payoutGateway.groupsByPayee() || !payoutGateway.isExternal()) {
+        if (!payoutGateway.isExternal()) {
             return false;
         }
         return groupRepository.findOpenForPayee(payoutGateway.provider(), payee, refId).stream()

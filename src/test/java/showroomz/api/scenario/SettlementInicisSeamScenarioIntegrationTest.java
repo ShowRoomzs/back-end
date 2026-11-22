@@ -577,6 +577,63 @@ class SettlementInicisSeamScenarioIntegrationTest extends SettlementTestSupport 
         assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
     }
 
+    @Test
+    @DisplayName("토스 시절 KYC 보류 행(토스 연결뿐) — 배치 앞단이 이니시스 서브몰부터 등록하고 AML 상태가 유효면 해제 · 연결이 없어 영영 갇히지 않는다")
+    void legacyTossKycRowReleasedAfterSubMallRegistered() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+        // 토스 시절 상태 — 연결은 토스뿐 · 브랜드 행은 토스 KYC(주당 한도)로 보류.
+        jdbc.update("UPDATE seller SET pg_partner_id = ?, pg_partner_ref = ?, pg_partner_env = 'TEST', pg_partner_provider = 'TOSS', "
+                + "pg_partner_status = 'APPROVED', pg_partner_account_hash = NULL WHERE seller_id = ?", "TOSS-SELLER-1", "brand-" + brand.marketId(),
+                brand.seller().getId());
+        jdbc.update("UPDATE settlement_payout SET status = 'BLOCKED', due_date = NULL, fail_code = 'KYC_REQUIRED', "
+                + "fail_reason = '주당 한도 초과 예상 — KYC 완료 후 지급' WHERE payout_id = ?", brandRow.getId());
+        partnerGateway.amlFor(SettlementPayee.BRAND, FakeSettlementPartnerGateway.AML_VALID);
+        int ensureCalls = partnerGateway.calls(SettlementPayee.BRAND).size();
+
+        assertThat(payoutService.releaseBlocked(LocalDate.now())).isEqualTo(1);
+
+        assertThat(partnerGateway.calls(SettlementPayee.BRAND)).hasSize(ensureCalls + 1);   // 이니시스 서브몰 INS
+        assertThat(partnerGateway.calls(SettlementPayee.BRAND).get(ensureCalls).existing()).isFalse();
+        assertThat(jdbc.queryForObject("SELECT pg_partner_provider FROM seller WHERE seller_id = ?", String.class,
+                brand.seller().getId())).isEqualTo("INICIS");
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.SCHEDULED);
+    }
+
+    @Test
+    @DisplayName("토스 시절 KYC 보류 행 · 서브몰 등록 불가(대표자 생년월일 없음) → 사유를 PARTNER_PROFILE_INCOMPLETE 로 바꿔 수취자가 할 일이 보인다 · 해제하지 않는다")
+    void legacyTossKycRowShowsWhatIsMissing() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+        jdbc.update("UPDATE seller SET pg_partner_provider = 'TOSS', representative_birthdate_enc = NULL WHERE seller_id = ?",
+                brand.seller().getId());
+        jdbc.update("UPDATE settlement_payout SET status = 'BLOCKED', due_date = NULL, fail_code = 'KYC_REQUIRED' WHERE payout_id = ?",
+                brandRow.getId());
+
+        assertThat(payoutService.releaseBlocked(LocalDate.now())).isZero();
+
+        SettlementPayout still = payout(s.getId(), SettlementPayee.BRAND);
+        assertThat(still.getStatus()).isEqualTo(PayoutStatus.BLOCKED);
+        assertThat(still.getFailCode()).isEqualTo(PayoutBlockReason.PARTNER_PROFILE_INCOMPLETE.name());
+    }
+
+    @Test
+    @DisplayName("묶음 없는 지급 요청 행(예전 토스 지시 · 결과 미수신) — 하루 1회 세어 운영자를 부른다 · 묶음 경로의 행은 세지 않는다")
+    void orphanRequestedRowsAreCounted() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+        assertThat(payoutService.warnOrphanRequested()).isZero();   // 묶음에 붙은 REQUESTED 는 세지 않는다
+
+        SettlementPayout creatorRow = payout(s.getId(), SettlementPayee.CREATOR);
+        jdbc.update("UPDATE settlement_payout SET payout_group_id = NULL, pg_provider = 'TOSS' WHERE payout_id = ?", creatorRow.getId());
+        assertThat(payoutService.warnOrphanRequested()).isEqualTo(1);
+    }
+
     // ================================================================== IN-10 · IN-11
 
     @Test

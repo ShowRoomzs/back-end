@@ -41,11 +41,6 @@ public class PayoutGroupPlanner {
     private final SettlementPayoutGateway gateway;
     private final BusinessCalendar businessCalendar;
 
-    /** 묶음 지급 경로인가(시뮬레이터 · 이니시스). */
-    public boolean enabled() {
-        return gateway.groupsByPayee();
-    }
-
     /** 지금 지시하면 가장 이른 지급일(D-2). */
     public LocalDate earliestPayDate(LocalDateTime now) {
         LocalDateTime kst = KstDates.toKst(now);

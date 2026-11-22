@@ -40,7 +40,7 @@ import java.util.Set;
 @Service
 public class CreatorAccountVerificationService {
 
-    /** 계좌 문제로 본 실패 — 토스 어댑터의 분류 코드({@code BANK_REJECTED} 포함). */
+    /** 계좌 문제로 본 실패 — 서브몰 등록이 계좌 때문에 거절된 사유(예전 {@code BANK_REJECTED} 포함). */
     static final Set<String> ACCOUNT_FAIL_CODES = Set.of(PayoutBlockReason.ACCOUNT_HOLDER_MISMATCH.name(),
             PayoutBlockReason.ACCOUNT_INVALID.name(), PayoutBlockReason.UNSUPPORTED_BANK.name(),
             PayoutBlockReason.ACCOUNT_MISSING.name(), "BANK_REJECTED");

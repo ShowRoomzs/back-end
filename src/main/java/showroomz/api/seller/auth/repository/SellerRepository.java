@@ -14,8 +14,6 @@ import java.util.Optional;
 public interface SellerRepository extends JpaRepository<Seller, Long> {
     Optional<Seller> findByEmail(String email);
 
-    /** PG 지급대행 셀러 id 로 — 웹훅 {@code seller.changed}(44 토스 설계서 4-3). */
-    Optional<Seller> findByPgPartnerId(String pgPartnerId);
     boolean existsByEmail(String email);
     
     /**

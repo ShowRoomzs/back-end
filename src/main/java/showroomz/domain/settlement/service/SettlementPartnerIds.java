@@ -6,20 +6,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
-import java.util.UUID;
 
 /**
- * PG 셀러 · 지급 참조 식별자 규칙(44_토스페이먼츠_지급대행_연동_BE_설계서.md 3-4 · 60_KG이니시스_지급대행_전환_계획서.md D-3) — 우리가
- * 정하므로 재시도 · 중복 호출이 멱등하다. 접두는 모드가 정한다(테스트 토스 {@code t-} · 이니시스 {@code t} · 운영 빈 문자열). 길이 제약을 넘으면
- * 번호 체계 버그라 즉시 터뜨린다. 어느 규칙을 쓰는지는 {@code SettlementPartnerGateway#partnerRef} 가 정한다.
+ * PG 서브몰 식별자 · 계좌 지문 규칙(60_KG이니시스_지급대행_전환_계획서.md D-3) — 우리가 정하므로 재시도 · 중복 호출이 멱등하다. 접두는 모드가
+ * 정한다(이니시스 테스트 {@code t} · 운영 빈 문자열). 길이 제약을 넘으면 번호 체계 버그라 즉시 터뜨린다. 어느 규칙을 쓰는지는
+ * {@code SettlementPartnerGateway#partnerRef} 가 정한다(이니시스 {@link #subMallId} · 시뮬레이터 기본 {@link #partnerRef}).
  */
 public final class SettlementPartnerIds {
 
-    /** 토스 {@code refSellerId} 7 ~ 20자. */
+    /** 시뮬레이터 기본 참조 id 7 ~ 20자(예전 토스 {@code refSellerId} 규칙을 그대로 둔다 — 시뮬레이터는 PG 에 등록하지 않는다). */
     static final int PARTNER_REF_MIN = 7;
     static final int PARTNER_REF_MAX = 20;
-    /** 토스 {@code refPayoutId} ≤50자. */
-    static final int PAYOUT_REF_MAX = 50;
     /** 이니시스 {@code idMall} — 등록 명세 60자 · 조회 명세 10자 중 좁은 쪽(D-3 · Q10). */
     public static final int SUB_MALL_ID_MAX = 10;
 
@@ -55,20 +52,6 @@ public final class SettlementPartnerIds {
         return id;
     }
 
-    /** {@code {prefix}{settlementNumber}-{payee}-{attempt}} — 같은 행 재지시는 같은 ref, 재분배(attempt + 1)는 새 ref. */
-    public static String payoutRef(String prefix, String settlementNumber, SettlementPayee payee, int attempt) {
-        String ref = prefix + settlementNumber + "-" + payee.name() + "-" + attempt;
-        if (ref.length() > PAYOUT_REF_MAX) {
-            throw new IllegalStateException("refPayoutId 길이 위반(≤50) — " + ref);
-        }
-        return ref;
-    }
-
-    /** {@code Idempotency-Key} — 참조 id 에서 결정적으로(0-6). 같은 행 재시도는 같은 키 · 재분배는 새 키. */
-    public static String idempotencyKey(String ref) {
-        return UUID.nameUUIDFromBytes(ref.getBytes(StandardCharsets.UTF_8)).toString();
-    }
-
     /** 계좌 지문 — PG 에 보낸 계좌의 변경 감지(평문 보존 없이). */
     public static String accountHash(String bankCode, String accountNumber, String holder) {
         try {
@@ -78,21 +61,6 @@ public final class SettlementPartnerIds {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    /**
-     * 법인 판정(설계서 4-1 · D-14) — 사업자등록번호 가운데 2자리(4 ~ 5번째) 81 ~ 88 이면 법인(국세청 체계). 유형 문자열에 「법인」이 있으면
-     * 그대로 법인. 틀리면 PG 가 {@code INVALID_BUSINESS_NUMBER} 로 거절하고 어댑터가 반대 유형으로 1회 재시도한다.
-     */
-    public static boolean isCorporate(String registrationNumberDigits, String businessTypeText) {
-        if (businessTypeText != null && businessTypeText.contains("법인")) {
-            return true;
-        }
-        if (registrationNumberDigits == null || registrationNumberDigits.length() != 10) {
-            return false;
-        }
-        int middle = Integer.parseInt(registrationNumberDigits.substring(3, 5));
-        return middle >= 81 && middle <= 88;
     }
 
     private static String nullToEmpty(String value) {

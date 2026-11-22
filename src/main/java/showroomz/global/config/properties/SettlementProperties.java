@@ -92,24 +92,13 @@ public class SettlementProperties {
         }
     }
 
-    /**
-     * 지급 PG(60 이니시스 전환 계획서 D-14) — 전환 기간에만 둔다. 기본 {@code TOSS} — 토스 키로 {@code PG_TEST} 를 돌던 서버가 이 배포로 기동이
-     * 깨지지 않게. 이니시스가 스테이징을 통과하면 토스 어댑터와 함께 이 속성을 지운다(이니시스 고정).
-     */
-    public enum PayoutProvider {
-        TOSS,
-        INICIS
-    }
-
     @Getter
     @Setter
     public static class Payout {
         private PayoutMode mode = PayoutMode.SIMULATED;
-        /** {@code PG_TEST · PG} 의 PG — 전환 기간만(D-14). {@code SIMULATED} 는 보지 않는다. */
-        private PayoutProvider provider = PayoutProvider.TOSS;
         /**
-         * 처리 지연 알림 — 정산별 경로(토스): 지시 뒤 N영업일 · 묶음 경로(이니시스): <b>지급일</b> 뒤 N영업일이 지나도 결과가 없으면 「PG 처리 지연」
-         * (토스 설계서 5-4 · 이니시스 D-8 — 지시가 하루 당겨져 지시 기준이면 결과 전에 매일 거짓 알림이 난다).
+         * 처리 지연 알림 — <b>지급일</b> 뒤 N영업일이 지나도 결과가 없으면 「PG 처리 지연」(D-8 — 지시가 하루 당겨져 지시 기준이면 결과 전에 매일
+         * 거짓 알림이 난다).
          */
         private int resultStaleBusinessDays = 1;
         /**

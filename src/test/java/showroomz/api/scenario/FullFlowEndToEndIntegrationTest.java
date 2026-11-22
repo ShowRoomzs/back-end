@@ -45,7 +45,6 @@ import showroomz.domain.product.type.ProductGroupBuyStatus;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.GroupCommand;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.service.SettlementConfirmService;

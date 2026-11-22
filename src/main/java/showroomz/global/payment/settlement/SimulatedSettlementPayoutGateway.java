@@ -16,25 +16,9 @@ public class SimulatedSettlementPayoutGateway implements SettlementPayoutGateway
     static final String REFERENCE_PREFIX = "SIM";
 
     @Override
-    public boolean groupsByPayee() {
-        return true;
-    }
-
-    @Override
     public GroupSubmitResult submitGroup(GroupCommand command) {
         log.info("[settlement-payout:simulated] groupId={} payee={} refId={} payDate={} total={}", command.groupId(),
                 command.payee(), command.payeeRefId(), command.payDate(), command.total());
         return new GroupSubmitResult(Outcome.PAID, null, null, REFERENCE_PREFIX);
-    }
-
-    /** 정산별 경로(토스 시절 호출자 호환) — 묶음 경로에서는 부르지 않는다. */
-    @Override
-    public PayoutResult distribute(PayoutCommand command) {
-        log.info("[settlement-payout:simulated] settlementId={} number={} lines={}", command.settlementId(),
-                command.settlementNumber(), command.lines().size());
-        return new PayoutResult(command.lines().stream()
-                .map(line -> new LineResult(line.payoutId(), Outcome.PAID,
-                        "SIM-%s-%s".formatted(command.settlementNumber(), line.payee().name()), null, null))
-                .toList());
     }
 }

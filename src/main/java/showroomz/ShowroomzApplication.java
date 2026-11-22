@@ -16,7 +16,6 @@ import showroomz.global.config.properties.ContractProperties;
 import showroomz.global.config.properties.CorsProperties;
 import showroomz.global.config.properties.DeliveryTrackerProperties;
 import showroomz.global.config.properties.InicisPayoutsProperties;
-import showroomz.global.config.properties.TossPayoutsProperties;
 import showroomz.global.config.properties.FcmProperties;
 import showroomz.global.config.properties.GroupBuyProperties;
 import showroomz.global.config.properties.OrderProperties;
@@ -35,7 +34,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 @EnableAsync
 @EnableConfigurationProperties({ AppProperties.class, CorsProperties.class, S3Properties.class, PostProperties.class,
 		FcmProperties.class, GroupBuyProperties.class, OrderProperties.class, PortOneProperties.class,
-		DeliveryTrackerProperties.class, SettlementProperties.class, TossPayoutsProperties.class, InicisPayoutsProperties.class,
+		DeliveryTrackerProperties.class, SettlementProperties.class, InicisPayoutsProperties.class,
 		MemberProperties.class,
 		AdminProperties.class, NotificationProperties.class, CompanyProperties.class, ContractProperties.class,
 		SocialLoginProperties.class })

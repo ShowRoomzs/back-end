@@ -89,7 +89,6 @@ class InicisSubMallRegistrarTest {
         assertThat(result.externalId()).isEqualTo("b12");
         assertThat(result.rawStatus()).isEqualTo(InicisSubMallRegistrar.STATUS_REGISTERED);
         assertThat(registrar.statusOf(result.rawStatus())).isEqualTo(PartnerStatus.APPROVED);
-        assertThat(registrar.isLimited(result.rawStatus())).isFalse();
         server.verify();
     }
 
@@ -186,13 +185,13 @@ class InicisSubMallRegistrarTest {
 
         PartnerProfile base = brand("19850314");
         PartnerProfile longBoss = new PartnerProfile(base.payee(), base.refId(), base.partnerRef(), base.externalId(), base.name(),
-                base.contact(), base.account(), new Business("(주)코코브라운", "123-45-67890", "나".repeat(11), "서울", "도소매", true),
+                base.contact(), base.account(), new Business("(주)코코브라운", "123-45-67890", "나".repeat(11), "서울", "도소매"),
                 base.birthdate(), base.existing());
         assertThat(registrar.precheck(longBoss).failCode()).isEqualTo(PayoutBlockReason.PARTNER_PROFILE_INCOMPLETE.name());
 
         String company20 = "다".repeat(20);
         PartnerProfile longCompany = new PartnerProfile(base.payee(), base.refId(), base.partnerRef(), base.externalId(), base.name(),
-                base.contact(), base.account(), new Business(company20, "123-45-67890", "김대표", "서울", "도소매", true),
+                base.contact(), base.account(), new Business(company20, "123-45-67890", "김대표", "서울", "도소매"),
                 base.birthdate(), base.existing());
         assertThat(registrar.precheck(longCompany)).isNull();
         String sent = registrar.request(longCompany, InicisPayoutsDtos.DML_INSERT).nmComp();
@@ -263,7 +262,7 @@ class InicisSubMallRegistrarTest {
         return new PartnerProfile(SettlementPayee.BRAND, 12L, "b12", null, "코코브라운",
                 new Contact("김대표", "010-1234-5678", "tax@coco.example"),
                 new Account("088", "신한은행", "110-123-456789", "(주)코코브라운"),
-                new Business("(주)코코브라운", "123-45-67890", "김대표", "서울", "도소매", true), birthdate, false);
+                new Business("(주)코코브라운", "123-45-67890", "김대표", "서울", "도소매"), birthdate, false);
     }
 
     private static PartnerProfile creator(String birthdate, boolean existing) {

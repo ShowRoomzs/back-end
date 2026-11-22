@@ -68,14 +68,12 @@ class InicisSettlementPayoutGatewayTest {
     }
 
     @Test
-    @DisplayName("묶음 경로 상수 — 리드 1영업일 · 마감 15:00 · NEXT_DAY · 정산별 경로는 쓰지 않는다")
+    @DisplayName("묶음 경로 상수 — 리드 1영업일 · 마감 15:00 · NEXT_DAY · INICIS")
     void shape() {
-        assertThat(gateway.groupsByPayee()).isTrue();
         assertThat(gateway.leadBusinessDays()).isEqualTo(1);
         assertThat(gateway.uploadCutoff()).contains(LocalTime.of(15, 0));
         assertThat(gateway.scheduleType()).isEqualTo("NEXT_DAY");
         assertThat(gateway.provider()).isEqualTo("INICIS");
-        assertThatThrownBy(() -> gateway.distribute(null)).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test

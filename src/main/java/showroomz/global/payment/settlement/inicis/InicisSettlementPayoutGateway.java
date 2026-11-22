@@ -60,11 +60,6 @@ public class InicisSettlementPayoutGateway implements SettlementPayoutGateway {
     }
 
     @Override
-    public boolean groupsByPayee() {
-        return true;
-    }
-
-    @Override
     public int leadBusinessDays() {
         return 1;
     }

@@ -80,7 +80,7 @@ public class PayoutHoldTransitions {
      * 삭제). 즉시 1회 시도하고 실패하면 마감 전 틱이 수렴시킨다. 마감이 지난 묶음은 빼지 않는다 — 지급 뒤 차감(클로백) 경로로 간다.
      */
     private int pullFromOpenGroups(SettlementPayee payee, Long refId, PayoutBlockReason reason, LocalDateTime now) {
-        if (!groupPlanner.enabled() || !groupPlanner.hasCutoff()) {
+        if (!groupPlanner.hasCutoff()) {
             return 0;
         }
         Set<Long> touched = new TreeSet<>();

@@ -18,11 +18,6 @@ settlement:
   clawback:
     recalculate-statuses: ""
 
-# 토스 지급대행 웹훅 서명 검증용 고정 보안 키(64 hex) — 모드는 SIMULATED 라 토스 호출은 없다(44 토스 설계서 8-1).
-toss:
-  payouts:
-    security-key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
-
 # 반품 검수 자동 승인 배치(2026-11-10)는 끄고 서비스를 직접 부른다 — 과거 도착 시각으로 만든 픽스처가 테스트 중간에 승인되지 않게.
 order:
   claim:

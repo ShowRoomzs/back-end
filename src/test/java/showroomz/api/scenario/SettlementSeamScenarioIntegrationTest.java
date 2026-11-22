@@ -17,8 +17,6 @@ import showroomz.domain.product.entity.Product;
 import showroomz.domain.product.entity.ProductVariant;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementItem;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutCommand;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
 import showroomz.domain.settlement.type.SettlementItemStatus;
 import showroomz.domain.settlement.type.SettlementPayee;
 import showroomz.domain.settlement.type.SettlementStatus;
@@ -360,7 +358,10 @@ class SettlementSeamScenarioIntegrationTest extends SettlementTestSupport {
     private PayoutLine brandLine(Long settlementId) {
         var row = payout(settlementId, SettlementPayee.BRAND);
         assertThat(payoutGateway.groupCalls(SettlementPayee.BRAND)).isNotEmpty();
-        return new PayoutLine(row.getId(), SettlementPayee.BRAND, row.getAmount(), row.getBankName(),
-                personalDataCipher.decrypt(row.getAccountNumberEnc()), row.getAccountHolder());
+        return new PayoutLine(row.getBankName(), personalDataCipher.decrypt(row.getAccountNumberEnc()), row.getAccountHolder());
+    }
+
+    /** 지시된 계좌(행의 계좌 스냅샷). */
+    private record PayoutLine(String bankName, String accountNumber, String holder) {
     }
 }

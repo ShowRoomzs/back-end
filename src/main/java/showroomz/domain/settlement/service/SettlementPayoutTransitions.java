@@ -16,11 +16,6 @@ import showroomz.domain.member.seller.entity.Seller;
 import showroomz.domain.settlement.entity.Settlement;
 import showroomz.domain.settlement.entity.SettlementPayout;
 import showroomz.domain.settlement.port.SettlementPartnerGateway;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.LineResult;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.Outcome;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutCommand;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutLine;
-import showroomz.domain.settlement.port.SettlementPayoutGateway.PayoutResult;
 import showroomz.domain.settlement.repository.SettlementPayoutRepository;
 import showroomz.domain.settlement.repository.SettlementRepository;
 import showroomz.domain.settlement.type.AmlThresholdAction;
@@ -33,20 +28,14 @@ import showroomz.domain.settlement.type.SettlementStatus;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.error.exception.BusinessException;
 import showroomz.global.error.exception.ErrorCode;
-import showroomz.global.utils.BusinessCalendar;
 import showroomz.global.utils.PersonalDataCipher;
-import showroomz.global.utils.KstDates;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 지급의 짧은 트랜잭션들(44 어드민 설계서 3-3) — PG 호출은 여기 없다. {@code SettlementPayoutService}가 트랜잭션 밖에서
@@ -66,7 +55,6 @@ public class SettlementPayoutTransitions {
     private final SettlementRepository settlementRepository;
     private final SettlementPayoutRepository payoutRepository;
     private final SettlementHistoryRecorder historyRecorder;
-    private final SettlementTaxDocumentHook taxDocumentHook;
     private final SettlementNotifier notifier;
     private final PersonalDataCipher cipher;
     private final GroupBuyRepository groupBuyRepository;
@@ -76,7 +64,6 @@ public class SettlementPayoutTransitions {
     private final BankRepository bankRepository;
     private final SettlementPartnerGateway partnerGateway;
     private final SettlementProperties properties;
-    private final BusinessCalendar businessCalendar;
     private final PayoutGroupPlanner groupPlanner;
 
     /** 지급 계좌 — 스냅샷의 원천(회원 정보 · 브랜드는 확정 시점 · 그 밖은 지시 시점). 플랫폼은 내부 계정이다. */
@@ -86,117 +73,14 @@ public class SettlementPayoutTransitions {
         }
     }
 
-    /**
-     * 지시 선점 — 예정일이 된 SCHEDULED 행에 계좌를 스냅샷하고 REQUESTED 로 올린다. 계좌가 없으면 게이트웨이를 부르지 않고
-     * {@code FAILED(ACCOUNT_MISSING)} — 운영자 재분배로 간다(13절 A-5). 0원 행은 지시하지 않는다(가드).
-     *
-     * @return 게이트웨이에 보낼 지시 — 지급할 정산이 아니면 null
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public PayoutCommand claim(Long settlementId, LocalDate today, LocalDateTime now) {
-        Settlement settlement = settlementRepository.findForUpdate(settlementId).orElse(null);
-        if (settlement == null || (settlement.getStatus() != SettlementStatus.PAYOUT_SCHEDULED
-                && settlement.getStatus() != SettlementStatus.PAYOUT_FAILED)) {
-            return null;
-        }
-        // 회원 정보는 행 UPDATE(영속성 컨텍스트 비움) 전에 읽는다.
-        Seller seller = settlement.getMarket().getSeller();
-        Creator creatorEntity = settlement.getCreator();
-        Account brand = accountOf(seller);
-        Account creator = accountOf(creatorEntity);
-        String settlementNumber = settlement.getSettlementNumber();
-        Long marketId = settlement.getMarketId();
-        Long creatorId = settlement.getCreatorId();
-        // PG 셀러 연결(토스 설계서 5-2) — 이 환경의 연결만. 상태가 한도 있는 승인(PARTIALLY_APPROVED)이면 주당 한도를 먼저 센다(5-2 ①).
-        String brandSellerId = linkedPartnerId(seller);
-        String creatorSellerId = linkedPartnerId(creatorEntity);
-        String brandRawStatus = seller == null ? null : seller.getPgPartnerStatus();
-        String creatorRawStatus = creatorEntity == null ? null : creatorEntity.getPgPartnerStatus();
-        boolean brandHeld = blockPolicy.isBrandBlocked(settlement);
-        boolean creatorHeld = blockPolicy.isCreatorSuspended(creatorId);
-
-        List<PayoutLine> lines = new ArrayList<>();
-        for (SettlementPayout payout : payoutRepository.findBySettlementId(settlementId)) {
-            if (payout.getStatus() != PayoutStatus.SCHEDULED || payout.getDueDate() == null
-                    || payout.getDueDate().isAfter(today)) {
-                continue;
-            }
-            if (payout.getAmount() <= 0) {
-                payoutRepository.updateStatusWhere(payout.getId(), EnumSet.of(PayoutStatus.SCHEDULED),
-                        PayoutStatus.NOT_APPLICABLE, payout.getDueDate());
-                continue;
-            }
-            // 계정 정지 · 지급 정지(52 설계서 6-3) — 정지 직후 배치 · 확정과의 경합 틈새를 이 재판정이 닫는다. 해제가 다시 예정으로 올린다.
-            if (payout.getPayee() == SettlementPayee.BRAND && brandHeld) {
-                holdTransitions.holdRow(payout, PayoutBlockReason.BRAND_SUSPENDED, now);
-                continue;
-            }
-            // 인플루언서 정지 · 정산 정보 불일치(53 설계서 4-3) — 세금계산서 확인 · 주민번호 등록으로 예정에 올라온 행도 여기서 막는다.
-            if (payout.getPayee() == SettlementPayee.CREATOR && creatorHeld) {
-                holdTransitions.holdRow(payout, PayoutBlockReason.CREATOR_SUSPENDED, now);
-                continue;
-            }
-            // 재분배(M3)가 고른 계좌(현재 회원 정보 · 지난 지시 그대로)가 스냅샷으로 남아 있으면 그것으로 지시한다.
-            Account account = payout.hasAccountSnapshot()
-                    ? new Account(payout.getBankName(), cipher.decrypt(payout.getAccountNumberEnc()),
-                    payout.getAccountHolder())
-                    : switch (payout.getPayee()) {
-                        case BRAND -> brand;
-                        case CREATOR -> creator;
-                        case PLATFORM -> new Account(PLATFORM_ACCOUNT, null, PLATFORM_ACCOUNT);
-                    };
-            if (payout.getPayee() != SettlementPayee.PLATFORM && account.isMissing()) {
-                if (payoutRepository.markFailed(payout.getId(), null, FAIL_ACCOUNT_MISSING, "등록 계좌 없음", now) == 1) {
-                    historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_FAILED,
-                            payout.getPayee().getLabel() + " · 등록 계좌 없음", now);
-                    notifier.payoutFailed(settlementId, payout.getPayee());
-                }
-                continue;
-            }
-            // 주당 한도(토스 설계서 5-2 ①) — 넘기면 PG 가 요청을 취소하고 셀러를 KYC_REQUIRED 로 넘겨 다른 회차까지 막힌다. 먼저 보류한다.
-            String rawStatus = payout.getPayee() == SettlementPayee.BRAND ? brandRawStatus
-                    : payout.getPayee() == SettlementPayee.CREATOR ? creatorRawStatus : null;
-            if (rawStatus != null && partnerGateway.isLimited(rawStatus)
-                    && exceedsWeeklyLimit(payout.getPayee(), marketId, creatorId, payout.getAmount(), now)) {
-                String code = PayoutBlockReason.KYC_REQUIRED.name();
-                if (payoutRepository.blockForPartner(payout.getId(), code, "주당 한도 초과 예상 — KYC 완료 후 지급") == 1) {
-                    historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED,
-                            payout.getPayee().getLabel() + " · " + PayoutBlockReason.KYC_REQUIRED.getLabel() + " · 주당 한도 초과 예상", now);
-                    notifier.payoutCheckRequired(settlementId, payout.getPayee(), code);
-                    notifier.partnerVerificationRequired(settlementId, payout.getPayee(), code);
-                }
-                continue;
-            }
-            if (payoutRepository.markRequested(payout.getId(), account.bankName(), cipher.encrypt(account.accountNumber()),
-                    account.holder(), now) == 1) {
-                Long payeeRefId = switch (payout.getPayee()) {
-                    case BRAND -> marketId;
-                    case CREATOR -> creatorId;
-                    case PLATFORM -> null;
-                };
-                String bankCode = account.bankName() == null ? null
-                        : bankRepository.findByName(account.bankName().trim()).map(Bank::getCode).orElse(null);
-                String partnerExternalId = switch (payout.getPayee()) {
-                    case BRAND -> brandSellerId;
-                    case CREATOR -> creatorSellerId;
-                    case PLATFORM -> null;
-                };
-                lines.add(new PayoutLine(payout.getId(), payout.getPayee(), payout.getAmount(), account.bankName(),
-                        account.accountNumber(), account.holder(), payeeRefId, payout.getAttempt(), bankCode, partnerExternalId));
-                historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_REQUESTED,
-                        "%s · %,d원 지급 지시".formatted(payout.getPayee().getLabel(), payout.getAmount()), now);
-            }
-        }
-        return new PayoutCommand(settlementId, settlementNumber, lines, now);
-    }
-
     /** 묶음 지시 선점 결과 — 이번에 붙인 묶음(전송 대상)과 REQUESTED 로 올린 수취자 행 수. */
     public record GroupClaim(Long settlementId, List<Long> groupIds, int requested) {
     }
 
     /**
      * 묶음 지급 경로의 지시 선점(60 이니시스 전환 계획서 D-1 · D-2) — 지급일 {@code payDate} 가 되는 SCHEDULED 행(예정일 ≤ payDate)을 REQUESTED 로
-     * 올리고 같은 트랜잭션에서 묶음에 붙인다(REQUESTED 행은 언제나 묶음이 있다). 정지 · 계좌 · 0원 규칙은 {@link #claim} 과 같다. 플랫폼 몫은 묶지 않고
+     * 올리고 같은 트랜잭션에서 묶음에 붙인다(REQUESTED 행은 언제나 묶음이 있다). 정지 · 0원 행은 지시하지 않고, 계좌가 없으면 게이트웨이를 부르지 않고
+     * {@code FAILED(ACCOUNT_MISSING)} — 운영자 재분배로 간다(13절 A-5). 플랫폼 몫은 묶지 않고
      * 바로 지급 완료(내부 계정 · 4-1). AML(D-6): 저장된 AML 상태가 막으면 {@code KYC_REQUIRED} 보류, 7일 누적 기준은 {@code ALERT} 면 지시하고
      * 안내만 · {@code BLOCK} 이면 보류.
      *
@@ -219,8 +103,6 @@ public class SettlementPayoutTransitions {
         Long creatorId = settlement.getCreatorId();
         String brandPartnerId = linkedPartnerId(seller);
         String creatorPartnerId = linkedPartnerId(creatorEntity);
-        String brandRawStatus = seller == null ? null : seller.getPgPartnerStatus();
-        String creatorRawStatus = creatorEntity == null ? null : creatorEntity.getPgPartnerStatus();
         String brandAml = seller == null ? null : seller.getPgAmlStatus();
         String creatorAml = creatorEntity == null ? null : creatorEntity.getPgAmlStatus();
         boolean brandHeld = blockPolicy.isBrandBlocked(settlement);
@@ -265,18 +147,16 @@ public class SettlementPayoutTransitions {
             }
             boolean amlNotice = false;
             if (payee != SettlementPayee.PLATFORM) {
-                String rawStatus = payee == SettlementPayee.BRAND ? brandRawStatus : creatorRawStatus;
                 String rawAml = payee == SettlementPayee.BRAND ? brandAml : creatorAml;
-                // 토스 PARTIALLY_APPROVED 주당 한도(토스 설계서 5-2 ①) — 토스 · 그 Fake 만 true.
-                boolean limited = rawStatus != null && partnerGateway.isLimited(rawStatus);
                 if (partnerGateway.isAmlBlocking(rawAml)) {
                     blockForKyc(settlementId, payout, "고객확인(AML) 이행 필요 — 이행 완료 후 지급", "AML 이행 필요", now);
                     continue;
                 }
-                if ((limited || amlAction != AmlThresholdAction.NONE)
+                if (amlAction != AmlThresholdAction.NONE
                         && exceedsWeeklyLimit(payee, marketId, creatorId, payout.getAmount(), now)) {
-                    if (limited || amlAction == AmlThresholdAction.BLOCK) {
-                        blockForKyc(settlementId, payout, "주당 한도 초과 예상 — KYC 완료 후 지급", "주당 한도 초과 예상", now);
+                    if (amlAction == AmlThresholdAction.BLOCK) {
+                        blockForKyc(settlementId, payout, "7일 누적 고객확인(AML) 기준 초과 예상 — 이행 완료 후 지급",
+                                "7일 누적 고객확인 기준 초과 예상", now);
                         continue;
                     }
                     amlNotice = true;   // ALERT — 지시는 한다(우리가 막으면 고객확인이 시작되지 않을 수 있다 · D-6 ①).
@@ -354,116 +234,8 @@ public class SettlementPayoutTransitions {
         return recent + amount >= properties.getPayout().getWeeklyLimitAmount();
     }
 
-    /** 게이트웨이 결과 반영 — 행마다 조건부 UPDATE · 이력(PG) · 정산 상태 재파생. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void applyResults(Long settlementId, PayoutCommand command, PayoutResult result, LocalDateTime now) {
-        Map<Long, PayoutLine> sent = command.lines().stream()
-                .collect(Collectors.toMap(PayoutLine::payoutId, Function.identity()));
-        applyLines(settlementId, sent, result.lines(), now, false);
-    }
-
     /**
-     * 결과 조회 · 웹훅(토스 설계서 5-4) 반영 — REQUESTED 행을 PG 가 알려 준 대로 닫는다. 돌려주지 않은 행은 그대로다.
-     * REQUESTED 로 남기되 사유(failCode — 지급액 불일치 등)가 붙은 것은 사람을 부른다(이력 1회 · 사유가 바뀔 때만).
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void applyLookupResults(Long settlementId, List<LineResult> results, LocalDateTime now) {
-        Map<Long, SettlementPayout> rows = payoutRepository.findBySettlementId(settlementId).stream()
-                .filter(p -> p.getStatus() == PayoutStatus.REQUESTED)
-                .collect(Collectors.toMap(SettlementPayout::getId, Function.identity()));
-        Map<Long, PayoutLine> lines = new java.util.HashMap<>();
-        Map<Long, String> previousCodes = new java.util.HashMap<>();
-        for (SettlementPayout row : rows.values()) {
-            lines.put(row.getId(), new PayoutLine(row.getId(), row.getPayee(), row.getAmount(), null, null, null, null,
-                    row.getAttempt()));
-            previousCodes.put(row.getId(), row.getFailCode());
-        }
-        for (LineResult line : results) {
-            PayoutLine request = lines.get(line.payoutId());
-            if (request == null || line.outcome() != Outcome.REQUESTED || line.failCode() == null
-                    || line.failCode().equals(previousCodes.get(line.payoutId()))) {
-                continue;
-            }
-            historyRecorder.record(settlementId, SettlementEventType.PAYOUT_CHECK_REQUIRED, SettlementActorType.PG, null,
-                    "%s · %s · %s".formatted(request.payee().getLabel(), line.failCode(),
-                            line.failReason() == null ? "" : line.failReason()), now);
-            notifier.payoutCheckRequired(settlementId, request.payee(), line.failCode());
-        }
-        applyLines(settlementId, lines, results, now, true);
-    }
-
-    private void applyLines(Long settlementId, Map<Long, PayoutLine> sent, List<LineResult> results, LocalDateTime now,
-                            boolean fromLookup) {
-        boolean creatorPaid = false;
-        for (LineResult line : results) {
-            PayoutLine request = sent.get(line.payoutId());
-            if (request == null) {
-                continue;
-            }
-            switch (line.outcome()) {
-                case PAID -> {
-                    int updated = fromLookup
-                            ? payoutRepository.markPaidByPg(line.payoutId(), line.pgReference(), now)
-                            : payoutRepository.markPaid(line.payoutId(), line.pgReference(), now);
-                    if (updated == 1) {
-                        historyRecorder.record(settlementId, SettlementEventType.PAYOUT_PAID, SettlementActorType.PG,
-                                null, "%s · %,d원 · %s".formatted(request.payee().getLabel(), request.amount(),
-                                        line.pgReference()), now);
-                        notifier.settlementPaid(settlementId, request.payee());
-                        creatorPaid |= request.payee() == SettlementPayee.CREATOR;
-                    }
-                }
-                case FAILED -> {
-                    if (!fromLookup && line.failCode() != null && PayoutBlockReason.PAYEE_ACTION_CODES.contains(line.failCode())) {
-                        // 본인인증 · KYC 필요(토스 설계서 5-2 ④) — 분배 실패가 아니라 보류. 수취자가 풀면 다시 예정으로. attempt 불변.
-                        if (payoutRepository.blockRequested(line.payoutId(), line.failCode(), line.failReason()) == 1) {
-                            historyRecorder.record(settlementId, SettlementEventType.PAYOUT_BLOCKED, SettlementActorType.PG, null,
-                                    "%s · %s".formatted(request.payee().getLabel(), PayoutBlockReason.fromCode(line.failCode())
-                                            .map(PayoutBlockReason::getLabel).orElse(line.failCode())), now);
-                            notifier.partnerVerificationRequired(settlementId, request.payee(), line.failCode());
-                        }
-                        continue;
-                    }
-                    if (payoutRepository.markFailed(line.payoutId(), line.pgReference(), line.failCode(),
-                            line.failReason(), now) == 1) {
-                        historyRecorder.record(settlementId, SettlementEventType.PAYOUT_FAILED, SettlementActorType.PG,
-                                null, "%s · %s".formatted(request.payee().getLabel(),
-                                        line.failReason() == null ? "분배 실패" : line.failReason()), now);
-                        notifier.payoutFailed(settlementId, request.payee());
-                    }
-                }
-                case REQUESTED -> {
-                    if (line.pgReference() != null) {
-                        // 지급 요청이 받아들여졌다(토스 설계서 5-2) — 참조 id · PG 지급 id(= 참조번호) · 유형 · 지급일.
-                        payoutRepository.recordRequest(line.payoutId(), line.pgTransferId(), line.pgReference(),
-                                line.scheduleType(), line.payoutDate());
-                    } else if (line.pgTransferId() != null || line.failCode() != null) {
-                        payoutRepository.recordTransfer(line.payoutId(), line.pgTransferId(), line.failCode(),
-                                line.failReason());
-                    }
-                }
-                case DEFERRED -> {
-                    // 잔액 부족(토스 설계서 5-1 ①) · 요청 전 통신 실패 — 지시를 되돌려 다음 영업일로. attempt 를 소모하지 않는다.
-                    LocalDate next = businessCalendar.addBusinessDays(KstDates.today(now), 1);
-                    if (payoutRepository.deferRequested(line.payoutId(), next) == 1) {
-                        String why = line.failReason() == null || line.failCode() == null || "INSUFFICIENT_BALANCE".equals(line.failCode())
-                                ? "잔액 부족" : line.failReason();
-                        historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_DEFERRED,
-                                "%s · %s · %s 로 연기".formatted(request.payee().getLabel(), why, next), now);
-                        notifier.payoutCheckRequired(settlementId, request.payee(),
-                                line.failCode() == null ? "INSUFFICIENT_BALANCE" : line.failCode());
-                    }
-                }
-            }
-        }
-        if (creatorPaid) {
-            taxDocumentHook.onCreatorPaid(settlementId, now);
-        }
-        derive(settlementId, now);
-    }
-
-    /**
-     * 셀러 사유 보류 해제(토스 설계서 4-3) — 셀러가 지급 가능이 됐을 때. 인플루언서 행에 다른 보류 사유(주민등록번호 · 세금계산서)가
+     * PG 서브몰 사유 보류 해제 — 서브몰 등록 · 고객확인이 지급 가능이 됐을 때. 인플루언서 행에 다른 보류 사유(주민등록번호 · 세금계산서)가
      * 남아 있으면 사유만 지우고 BLOCKED 로 둔다(기존 재판정이 푼다).
      *
      * @return 지급 예정으로 옮겼으면 true
@@ -489,44 +261,12 @@ public class SettlementPayoutTransitions {
         payoutRepository.updateBlockReason(payoutId, failCode, failReason);
     }
 
-    /** PG 처리 지연(토스 설계서 5-4) — 지시 뒤 N영업일이 지나도 REQUESTED 가 닫히지 않는다. 이력 · 운영자 알림. */
+    /** PG 처리 지연(D-8) — 지급일 뒤 N영업일이 지나도 REQUESTED 가 닫히지 않는다. 이력 · 운영자 알림. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void markStale(Long settlementId, SettlementPayee payee, LocalDateTime now) {
         historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_CHECK_REQUIRED,
                 payee.getLabel() + " · PG 처리 지연 — 지급 결과가 아직 없습니다", now);
         notifier.payoutStale(settlementId);
-    }
-
-    /**
-     * 잔액 부족 연기(토스 설계서 5-1 ①) — 오늘 예정 행(플랫폼 제외)을 다음 영업일로 미룬다. 지시 전이라 attempt · 계좌 스냅샷은 그대로.
-     *
-     * @return 미룬 행 수
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public int deferForBalance(Long settlementId, LocalDate today, LocalDate nextBusinessDay, LocalDateTime now) {
-        int deferred = 0;
-        for (SettlementPayout payout : payoutRepository.findScheduledDue(settlementId, today)) {
-            if (payoutRepository.updateStatusWhere(payout.getId(), EnumSet.of(PayoutStatus.SCHEDULED), PayoutStatus.SCHEDULED,
-                    nextBusinessDay) == 1) {
-                deferred++;
-            }
-        }
-        if (deferred > 0) {
-            historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_DEFERRED,
-                    "잔액 부족 · %d행 · %s 로 연기".formatted(deferred, nextBusinessDay), now);
-        }
-        return deferred;
-    }
-
-    /** 셀러가 대기(KYC 등)로 바뀌었다(토스 설계서 4-3) — 예정 행을 보류로. 수취자 알림. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void blockScheduled(Long settlementId, Long payoutId, SettlementPayee payee, String code, String reason,
-                               LocalDateTime now) {
-        if (payoutRepository.blockForPartner(payoutId, code, reason) == 1) {
-            historyRecorder.recordBySystem(settlementId, SettlementEventType.PAYOUT_BLOCKED, "%s · %s · %s".formatted(
-                    payee.getLabel(), PayoutBlockReason.fromCode(code).map(PayoutBlockReason::getLabel).orElse(code), reason), now);
-            notifier.partnerVerificationRequired(settlementId, payee, code);
-        }
     }
 
     /**

@@ -17,12 +17,12 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * 테스트용 셀러 · 서브몰 포트(토스 설계서 8-1 · 60 이니시스 전환 계획서 9-2) — 수취자별 실패 사유 · 대기 상태를 심고, 호출된 프로필을 기록한다.
+ * 테스트용 서브몰 포트(60 이니시스 전환 계획서 9-2) — 수취자별 실패 사유 · 대기 상태를 심고, 호출된 프로필을 기록한다.
  * 컨텍스트 공용 빈이라 테스트마다 {@link #reset()}한다.
  *
  * <ul>
- *   <li><b>토스 흉내(기본)</b> — 즉시 승인(토스 {@code PARTIALLY_APPROVED} · 발급 id {@code FAKE-SELLER-{ref}}). 상태 문자열은 토스 것을 그대로 쓴다 —
- *   {@code SettlementPartnerSyncService} 가 저장하는 원시값과 웹훅 {@code seller.changed} 가 같은 낱말이어야 통합 테스트가 운영과 같은 경로를 탄다.</li>
+ *   <li><b>기본</b> — 즉시 승인(원시 상태 {@code APPROVED} · 연결 id {@code FAKE-SELLER-{ref}} · PG 구분 {@code FAKE}). 연결 · 보류 · 해제의 공통
+ *   경로({@code SettlementPartnerSyncService})를 시뮬레이터 모드 정산 테스트에서도 타게 하려고 바깥 PG 처럼 연결을 남긴다.</li>
  *   <li><b>이니시스 흉내</b>({@link #inicisMode()}) — PG 구분 {@code INICIS} · {@code idMall = t b{id} / t c{id}}(id = 참조) · 원시 상태 {@code REGISTERED} ·
  *   필수값 검사는 실제 어댑터의 사전 검사({@link InicisSubMallRegistrar#precheck})를 그대로 쓴다 · AML 상태는 {@link #amlFor} 로 심는다.</li>
  * </ul>
@@ -32,7 +32,6 @@ import java.util.Optional;
 public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
 
     public static final String APPROVAL_REQUIRED = "APPROVAL_REQUIRED";
-    public static final String PARTIALLY_APPROVED = "PARTIALLY_APPROVED";
     public static final String KYC_REQUIRED = "KYC_REQUIRED";
     public static final String APPROVED = "APPROVED";
     public static final String REGISTERED = InicisSubMallRegistrar.STATUS_REGISTERED;
@@ -62,7 +61,7 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
 
     @Override
     public synchronized String provider() {
-        return inicis ? "INICIS" : "TOSS";
+        return inicis ? "INICIS" : "FAKE";
     }
 
     @Override
@@ -102,7 +101,7 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
             return script.hasExternalId() || script.status() == PartnerStatus.FAILED ? script
                     : new PartnerResult(script.status(), externalIdOf(profile), script.rawStatus(), script.failCode(), script.failReason());
         }
-        return PartnerResult.approved(externalIdOf(profile), PARTIALLY_APPROVED);
+        return PartnerResult.approved(externalIdOf(profile), APPROVED);
     }
 
     @Override
@@ -111,7 +110,7 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
             return PartnerStatus.FAILED;
         }
         return switch (rawStatus) {
-            case APPROVED, PARTIALLY_APPROVED, REGISTERED -> PartnerStatus.APPROVED;
+            case APPROVED, REGISTERED -> PartnerStatus.APPROVED;
             case APPROVAL_REQUIRED, KYC_REQUIRED -> PartnerStatus.PENDING;
             default -> PartnerStatus.REJECTED;
         };
@@ -121,11 +120,6 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
     public String blockCodeOf(String rawStatus) {
         return KYC_REQUIRED.equals(rawStatus) ? PayoutBlockReason.KYC_REQUIRED.name()
                 : PayoutBlockReason.IDENTITY_VERIFICATION_REQUIRED.name();
-    }
-
-    @Override
-    public synchronized boolean isLimited(String rawStatus) {
-        return !inicis && PARTIALLY_APPROVED.equals(rawStatus);
     }
 
     @Override
@@ -166,13 +160,13 @@ public class FakeSettlementPartnerGateway implements SettlementPartnerGateway {
         scripted.put(payee, PartnerResult.failed(code, reason));
     }
 
-    /** 등록은 됐지만 대기 — 토스 {@code APPROVAL_REQUIRED}(본인인증) 또는 {@code KYC_REQUIRED}. id 는 발급된다. */
+    /** 등록은 됐지만 대기 — {@code APPROVAL_REQUIRED}(본인인증) 또는 {@code KYC_REQUIRED}. id 는 발급된다(공통 대기 경로 시험용). */
     public synchronized void pendingFor(SettlementPayee payee, String rawStatus) {
         scripted.put(payee, PartnerResult.pending(null, rawStatus, blockCodeOf(rawStatus),
-                KYC_REQUIRED.equals(rawStatus) ? "토스 KYC 심사 대기" : "토스 본인인증 대기"));
+                KYC_REQUIRED.equals(rawStatus) ? "PG KYC 심사 대기" : "PG 본인인증 대기"));
     }
 
-    /** 승인 상태를 정해 돌려준다({@code PARTIALLY_APPROVED} 기본 · {@code APPROVED} 는 한도 없음). */
+    /** 승인 상태를 정해 돌려준다. */
     public synchronized void approveFor(SettlementPayee payee, String rawStatus) {
         scripted.put(payee, PartnerResult.approved(null, rawStatus));
     }

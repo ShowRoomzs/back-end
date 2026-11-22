@@ -9,8 +9,6 @@ import showroomz.global.config.SettlementPayoutGatewayConfig;
 import showroomz.global.config.properties.InicisPayoutsProperties;
 import showroomz.global.config.properties.SettlementProperties;
 import showroomz.global.config.properties.SettlementProperties.PayoutMode;
-import showroomz.global.config.properties.SettlementProperties.PayoutProvider;
-import showroomz.global.config.properties.TossPayoutsProperties;
 import showroomz.global.payment.settlement.NoopSettlementPartnerGateway;
 import showroomz.global.payment.settlement.SimulatedSettlementPayoutGateway;
 
@@ -19,13 +17,11 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 지급 모드 기동 검증(44 어드민 설계서 0-5 · 토스 설계서 6-4) — 설정이 틀렸으면 컨텍스트가 뜨지 않는다. 토스 호출은 하지 않는다
+ * 지급 모드 기동 검증(44 어드민 설계서 0-5 · 60 이니시스 전환 계획서 7절) — 설정이 틀렸으면 컨텍스트가 뜨지 않는다. PG 호출은 하지 않는다
  * (설정 검증이 네트워크 앞에서 끝난다).
  */
-@DisplayName("정산 지급 모드 — SIMULATED · PG_TEST · PG 기동 검증 · 런칭 게이트 · 토스 키 · 이니시스 호스트 · MID")
+@DisplayName("정산 지급 모드 — SIMULATED · PG_TEST · PG 기동 검증 · 런칭 게이트 · 이니시스 호스트 · MID")
 class SettlementPayoutGatewayConfigTest {
-
-    private static final String KEY_HEX = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     private final SettlementPayoutGatewayConfig config = new SettlementPayoutGatewayConfig();
 
@@ -35,23 +31,16 @@ class SettlementPayoutGatewayConfigTest {
         MockEnvironment local = new MockEnvironment().withProperty("spring.profiles.active", "local");
 
         SettlementPayoutGateway gateway = config.settlementPayoutGateway(properties(PayoutMode.SIMULATED), local, null,
-                new TossPayoutsProperties(), null, new InicisPayoutsProperties(), null, null);
+                new InicisPayoutsProperties(), null);
         SettlementPartnerGateway partners = config.settlementPartnerGateway(properties(PayoutMode.SIMULATED), null,
-                new TossPayoutsProperties(), null, new InicisPayoutsProperties());
+                new InicisPayoutsProperties());
 
         assertThat(gateway).isInstanceOf(SimulatedSettlementPayoutGateway.class);
         assertThat(partners).isInstanceOf(NoopSettlementPartnerGateway.class);
         assertThat(partners.partnerRefPrefix()).isEmpty();
         assertThat(partners.isExternal()).isFalse();
-        assertThat(gateway.groupsByPayee()).isTrue();   // 시뮬레이터도 묶음 경로(60 전환 계획서 D-1 ⑥)
         assertThat(gateway.leadBusinessDays()).isZero();
         assertThat(gateway.uploadCutoff()).isEmpty();
-    }
-
-    @Test
-    @DisplayName("provider 기본값 TOSS — 토스 키로 PG_TEST 를 돌던 서버가 전환 배포로 기동이 깨지지 않는다(60 전환 계획서 D-14)")
-    void providerDefaultsToToss() {
-        assertThat(new SettlementProperties().getPayout().getProvider()).isEqualTo(PayoutProvider.TOSS);
     }
 
     @Test
@@ -101,7 +90,6 @@ class SettlementPayoutGatewayConfigTest {
     @DisplayName("운영 프로필(prod) + 런칭 게이트 켜짐 + 이니시스 PG_TEST → 기동 실패")
     void inicisPgTestInProdWithGateFails() {
         SettlementProperties gated = gated(PayoutMode.PG_TEST);
-        gated.getPayout().setProvider(PayoutProvider.INICIS);
         assertThatThrownBy(() -> config.inicisPayoutsClient(gated, inicis("https://stg-apiwi.inicis.com", false), prod(), null, null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("운영 프로필");
@@ -111,7 +99,7 @@ class SettlementPayoutGatewayConfigTest {
     @DisplayName("운영 프로필(prod) + 런칭 게이트 켜짐 + SIMULATED → 기동 실패")
     void simulatedInProdWithGateFails() {
         assertThatThrownBy(() -> config.settlementPayoutGateway(gated(PayoutMode.SIMULATED), prod(), null,
-                new TossPayoutsProperties(), null, new InicisPayoutsProperties(), null, null))
+                new InicisPayoutsProperties(), null))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("운영 프로필");
     }
@@ -120,57 +108,9 @@ class SettlementPayoutGatewayConfigTest {
     @DisplayName("운영 프로필(prod) + 런칭 게이트 꺼짐(개발 단계 prod) + SIMULATED → 시뮬레이터로 뜬다(경고 로그만)")
     void simulatedInProdWithoutGateStarts() {
         SettlementPayoutGateway gateway = config.settlementPayoutGateway(properties(PayoutMode.SIMULATED), prod(), null,
-                new TossPayoutsProperties(), null, new InicisPayoutsProperties(), null, null);
+                new InicisPayoutsProperties(), null);
 
         assertThat(gateway).isInstanceOf(SimulatedSettlementPayoutGateway.class);
-    }
-
-    @Test
-    @DisplayName("PG_TEST 는 test_sk_ 키만 · PG 는 live_sk_ 키만 — 접두가 다르면 기동 실패")
-    void keyPrefixMustMatchMode() {
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, toss("live_sk_abc", KEY_HEX)))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("test_sk_");
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG, toss("test_sk_abc", KEY_HEX)))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("live_sk_");
-        assertThatCode(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, toss("test_sk_abc", KEY_HEX)))
-                .doesNotThrowAnyException();
-        assertThatCode(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG, toss("live_sk_abc", KEY_HEX)))
-                .doesNotThrowAnyException();
-    }
-
-    @Test
-    @DisplayName("시크릿 키 비어 있음 · 보안 키가 64 hex 아님 · 적요 7자 초과 → 기동 실패(네트워크 전)")
-    void credentialsValidated() {
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, toss("", KEY_HEX)))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("secret-key");
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, toss("test_sk_abc", "abc")))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("security-key");
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, toss("test_sk_abc", "zz" + KEY_HEX.substring(2))))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("hex");
-        TossPayoutsProperties longDescription = toss("test_sk_abc", KEY_HEX);
-        longDescription.setTransactionDescription("쇼룸즈정산입금입니다");
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, longDescription))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("transaction-description");
-    }
-
-    @Test
-    @DisplayName("PG + 테스트 대체 사업자번호가 차 있음 → 기동 실패(가짜 법인으로 운영 등록 방지) · PG_TEST 는 허용")
-    void corporateOverrideOnlyInTest() {
-        TossPayoutsProperties live = toss("live_sk_abc", KEY_HEX);
-        live.getTest().setCorporateOverrideBrn("1234567890");
-        assertThatThrownBy(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG, live))
-                .isInstanceOf(IllegalStateException.class).hasMessageContaining("corporate-override-brn");
-        TossPayoutsProperties test = toss("test_sk_abc", KEY_HEX);
-        test.getTest().setCorporateOverrideBrn("1234567890");
-        assertThatCode(() -> SettlementPayoutGatewayConfig.validateToss(PayoutMode.PG_TEST, test)).doesNotThrowAnyException();
-    }
-
-    @Test
-    @DisplayName("운영 프로필(prod) + 런칭 게이트 켜짐 + PG_TEST → 기동 실패(테스트 키로 운영 지급을 흉내 내지 않는다)")
-    void pgTestInProdWithGateFails() {
-        assertThatThrownBy(() -> config.tossPayoutsClient(gated(PayoutMode.PG_TEST), toss("test_sk_abc", KEY_HEX), prod(), null, null))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("운영 프로필");
     }
 
     private static MockEnvironment prod() {
@@ -198,13 +138,6 @@ class SettlementPayoutGatewayConfigTest {
         properties.setMerchantId("INIpayTest");
         properties.setApiKey("test-api-key");
         properties.setHolderVerifiedByUpsert(holderVerified);
-        return properties;
-    }
-
-    private static TossPayoutsProperties toss(String secretKey, String securityKey) {
-        TossPayoutsProperties properties = new TossPayoutsProperties();
-        properties.setSecretKey(secretKey);
-        properties.setSecurityKey(securityKey);
         return properties;
     }
 }

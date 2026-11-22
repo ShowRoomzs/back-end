@@ -30,8 +30,8 @@ class PayoutGroupPlannerTest {
     private final PayoutGroupPlanner inicis = new PayoutGroupPlanner(null, null, new InicisLike(), calendar);
     private final PayoutGroupPlanner simulated = new PayoutGroupPlanner(null, null, new SettlementPayoutGateway() {
         @Override
-        public boolean groupsByPayee() {
-            return true;
+        public GroupSubmitResult submitGroup(GroupCommand command) {
+            throw new UnsupportedOperationException();
         }
     }, calendar);
 
@@ -76,8 +76,8 @@ class PayoutGroupPlannerTest {
     /** 이니시스와 같은 날짜 규칙 — 리드 1 · 마감 15:00. */
     private static final class InicisLike implements SettlementPayoutGateway {
         @Override
-        public boolean groupsByPayee() {
-            return true;
+        public GroupSubmitResult submitGroup(GroupCommand command) {
+            throw new UnsupportedOperationException();
         }
 
         @Override

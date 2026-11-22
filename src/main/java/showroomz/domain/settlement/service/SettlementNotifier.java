@@ -100,15 +100,15 @@ public class SettlementNotifier {
         stub("ADMIN", "PAYOUT_FAILED:" + payee.name(), settlementId);
     }
 
-    // ------------------------------------------------------------------ PG 지급대행(44 토스 설계서 4-3 · 5-1 · 5-3 · 5-4)
+    // ------------------------------------------------------------------ PG 지급대행(60 이니시스 전환 계획서 D-6 · D-8 · D-9)
 
-    /** 셀러 등록 실패로 수취자 행 보류 — 운영자. */
+    /** 서브몰 등록 실패로 수취자 행 보류 — 운영자. */
     public void payoutBlocked(Long settlementId, SettlementPayee payee, String reasonCode) {
         stub("ADMIN", "PAYOUT_BLOCKED:" + payee.name() + ":" + reasonCode, settlementId);
     }
 
     /**
-     * 수취자 본인이 풀어야 하는 보류 — 정산 정보 미입력(생년월일 · 휴대폰 · 이메일 등) · 고객확인(AML) · (토스) 본인인증. 수취자에게 「정산 정보를 입력해
+     * 수취자 본인이 풀어야 하는 보류 — 정산 정보 미입력(생년월일 · 휴대폰 · 이메일 등) · 고객확인(AML). 수취자에게 「정산 정보를 입력해
      * 주세요」 · 「고객확인(AML)을 진행해 주세요」(60 이니시스 전환 계획서 D-4 · D-6 · L-6 — 문구는 Q8 답 뒤 확정).
      */
     public void partnerVerificationRequired(Long settlementId, SettlementPayee payee, String reasonCode) {
@@ -131,6 +131,11 @@ public class SettlementNotifier {
     public void payoutAmountMismatch(Long groupId, LocalDate payDate, long confirmed, long pgAmount) {
         log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_AMOUNT_MISMATCH groupId={} payDate={} confirmed={} pg={}",
                 groupId, payDate, confirmed, pgAmount);
+    }
+
+    /** 묶음 없는 지급 요청 행 — 예전 토스 지시의 결과 미수신. 닫는 경로가 없어 토스 대사 후 수동 정리(60 전환 계획서 14-8). */
+    public void payoutOrphanRequested(long count) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_ORPHAN_REQUESTED count={}", count);
     }
 
     /** PG 가 실제로 보낸 계좌(은행 · 끝 4자리)가 지급 당시 계좌 스냅샷과 다르다 — 지급은 닫았다. 수취자 입금 확인 · 이니시스 문의(Q3). */
