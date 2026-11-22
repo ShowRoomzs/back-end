@@ -50,6 +50,8 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
     private final Set<SettlementPayee> deferred = EnumSet.noneOf(SettlementPayee.class);
     private final Map<SettlementPayee, LineResult> lookupScripts = new EnumMap<>(SettlementPayee.class);
     private final Map<SettlementPayee, Long> remitAmounts = new EnumMap<>(SettlementPayee.class);
+    private final Map<SettlementPayee, String> retryCodes = new EnumMap<>(SettlementPayee.class);
+    private final Map<SettlementPayee, RemittedAccount> remitAccounts = new EnumMap<>(SettlementPayee.class);
     private final List<PayoutCommand> calls = new ArrayList<>();
     private final List<List<PayoutLookup>> lookups = new ArrayList<>();
     private final List<GroupCommand> groupCalls = new ArrayList<>();
@@ -116,6 +118,10 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
         if (script != null && command.total() > 0) {
             return new GroupSubmitResult(Outcome.FAILED, script.failCode(), script.failReason(), null);
         }
+        String retryCode = retryCodes.get(command.payee());
+        if (retryCode != null) {
+            return new GroupSubmitResult(Outcome.RETRY, retryCode, retryCode + " · FAKE 일시 오류", null);
+        }
         if (deferred.contains(command.payee()) && command.total() > 0) {
             return new GroupSubmitResult(Outcome.DEFERRED, "INSUFFICIENT_BALANCE", "잔액 부족", null);
         }
@@ -147,7 +153,7 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
             long amount = remitAmounts.containsKey(lookup.payee()) ? remitAmounts.get(lookup.payee())
                     : onPg != null ? onPg : lookup.confirmedAmount();
             results.add(new GroupResult(lookup.groupId(), script.outcome(), lookup.payDate(), script.failCode(),
-                    script.failReason(), amount));
+                    script.failReason(), amount, remitAccounts.get(lookup.payee())));
         }
         return results;
     }
@@ -297,6 +303,20 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
         remitAmounts.put(payee, amount);
     }
 
+    /** 이 수취자의 묶음 전송이 PG 일시 오류(접수 안 됨 · RETRY)로 돌아온다 — 다음 {@link #reset()} · {@link #recoverFor} 전까지 계속. */
+    public synchronized void retryFor(SettlementPayee payee, String pgCode) {
+        retryCodes.put(payee, pgCode);
+    }
+
+    public synchronized void recoverFor(SettlementPayee payee) {
+        retryCodes.remove(payee);
+    }
+
+    /** 이니시스 흉내 — 송금 결과에 실린 계좌(은행 코드 · 계좌번호). 계좌 스냅샷과 다르게 해 송금 계좌 불일치를 만든다. */
+    public synchronized void remitAccountFor(SettlementPayee payee, String bankCode, String accountNumber) {
+        remitAccounts.put(payee, RemittedAccount.of(bankCode, accountNumber));
+    }
+
     /** 다음 결과 조회에서 이 수취자 행(묶음)이 분배 실패로 닫힌다. */
     public synchronized void failLookupFor(SettlementPayee payee, String code, String reason) {
         lookupScripts.put(payee, new LineResult(null, Outcome.FAILED, null, code, reason));
@@ -348,6 +368,8 @@ public class FakeSettlementPayoutGateway implements SettlementPayoutGateway {
         deferred.clear();
         lookupScripts.clear();
         remitAmounts.clear();
+        retryCodes.clear();
+        remitAccounts.clear();
         calls.clear();
         lookups.clear();
         groupCalls.clear();

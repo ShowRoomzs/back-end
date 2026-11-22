@@ -133,6 +133,12 @@ public class SettlementNotifier {
                 groupId, payDate, confirmed, pgAmount);
     }
 
+    /** PG 가 실제로 보낸 계좌(은행 · 끝 4자리)가 지급 당시 계좌 스냅샷과 다르다 — 지급은 닫았다. 수취자 입금 확인 · 이니시스 문의(Q3). */
+    public void payoutAccountMismatch(Long groupId, LocalDate payDate, String detail) {
+        log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_ACCOUNT_MISMATCH groupId={} payDate={} detail={}",
+                groupId, payDate, detail);
+    }
+
     /** 마감이 지났는데 PG 에 올라간 합계 ≠ 묶음 행 합계 — 빠진 행이 이전 합계로 나갈 수 있다. 사람 확인(D-7 · D-1 ④). */
     public void payoutGroupOutOfSync(Long groupId, LocalDate payDate, long confirmed, long current) {
         log.info("[settlement-notify:stub] to=ADMIN event=PAYOUT_GROUP_OUT_OF_SYNC groupId={} payDate={} confirmed={} current={}",

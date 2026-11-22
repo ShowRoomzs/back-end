@@ -531,6 +531,31 @@ public class SettlementPartnerSyncService {
     }
 
     /** 회원 정보의 은행 이름을 코드로 — 못 찾으면 코드 null(구현이 {@code UNSUPPORTED_BANK}). 계좌가 비어도 그대로(구현이 {@code ACCOUNT_MISSING}). */
+    /**
+     * 송금 결과의 계좌(은행 코드 · 계좌번호 끝 4자리)가 행의 계좌 스냅샷과 다른가 — 다르면 운영자용 설명(끝 4자리만), 같거나 비교할 수 없으면 null.
+     * 묶음 행은 계좌가 하나다(D-1 ⑤) — 스냅샷이 있는 첫 행과 비교한다. 호출자 트랜잭션 안(은행 이름 → 코드 조회).
+     */
+    public String remittedAccountMismatch(List<SettlementPayout> rows, SettlementPayoutGateway.RemittedAccount remitted) {
+        if (remitted == null || rows == null) {
+            return null;
+        }
+        SettlementPayout sample = rows.stream().filter(SettlementPayout::hasAccountSnapshot).findFirst().orElse(null);
+        if (sample == null) {
+            return null;
+        }
+        Account snapshot = account(sample.getBankName(), cipher.decrypt(sample.getAccountNumberEnc()), sample.getAccountHolder());
+        int tailLength = SettlementPayoutGateway.RemittedAccount.TAIL;
+        String number = snapshot.accountNumber();
+        String ourTail = number == null || number.length() < tailLength ? null : number.substring(number.length() - tailLength);
+        boolean bankDiffers = remitted.bankCode() != null && snapshot.bankCode() != null
+                && !remitted.bankCode().equals(snapshot.bankCode());
+        boolean tailDiffers = remitted.accountTail() != null && ourTail != null && !remitted.accountTail().equals(ourTail);
+        if (!bankDiffers && !tailDiffers) {
+            return null;
+        }
+        return "은행 %s → %s · 계좌 끝자리 %s → %s".formatted(snapshot.bankCode(), remitted.bankCode(), ourTail, remitted.accountTail());
+    }
+
     private Account account(String bankName, String accountNumber, String holder) {
         String code = blank(bankName) ? null
                 : bankRepository.findByName(bankName.trim()).map(Bank::getCode).orElse(null);

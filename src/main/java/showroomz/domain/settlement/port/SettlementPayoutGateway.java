@@ -24,6 +24,8 @@ public interface SettlementPayoutGateway {
     String PROVIDER_SIMULATED = "SIMULATED";
     String PROVIDER_TOSS = "TOSS";
     String PROVIDER_INICIS = "INICIS";
+    /** 접수(REQUESTED)됐지만 PG 가 고객확인(AML) 대상이라고 알렸다 — {@link GroupSubmitResult#failCode} 에 실린다(이니시스 SB05 · D-6). */
+    String NOTICE_AML_REQUIRED = "AML_REQUIRED";
 
     /** 어느 PG 인가 — {@code SIMULATED | TOSS | INICIS}. 지급 묶음 · 수취자 행의 {@code pg_provider} 에 남는다(D-12). */
     default String provider() {
@@ -87,7 +89,8 @@ public interface SettlementPayoutGateway {
     }
 
     /**
-     * @param outcome   {@code REQUESTED}(접수) · {@code PAID}(시뮬레이터 · 즉시 완료) · {@code FAILED}(확정 거절) · {@code DEFERRED}(잔액 부족)
+     * @param outcome   {@code REQUESTED}(접수) · {@code PAID}(시뮬레이터 · 즉시 완료) · {@code FAILED}(확정 거절) · {@code DEFERRED}(잔액 부족) ·
+     *                  {@code RETRY}(일시 오류 · 접수 안 됨 — 다음 틱이 다시)
      * @param requestId PG 추적 id(이니시스 {@code X-Request-ID}) — 묶음에 남겨 문의 때 쓴다
      */
     record GroupSubmitResult(Outcome outcome, String failCode, String failReason, String requestId) {
@@ -106,8 +109,33 @@ public interface SettlementPayoutGateway {
      * @param outcome    {@code PAID} · {@code FAILED} · {@code REQUESTED}(아직)
      * @param remittedOn 송금일(이니시스 {@code remitDtPay}) — 원천징수영수증의 지급일
      * @param pgAmount   PG 가 보낸 금액 — 확정 합계와 다르면 도메인이 닫지 않고 사람을 부른다
+     * @param remittedTo PG 가 실제로 보낸 계좌(은행 코드 · 계좌번호 끝 4자리) — 모르면 null. 묶음 행의 계좌 스냅샷과 다르면 지급은 닫되 사람을 부른다
      */
-    record GroupResult(Long groupId, Outcome outcome, LocalDate remittedOn, String failCode, String failReason, long pgAmount) {
+    record GroupResult(Long groupId, Outcome outcome, LocalDate remittedOn, String failCode, String failReason, long pgAmount,
+                       RemittedAccount remittedTo) {
+
+        public GroupResult(Long groupId, Outcome outcome, LocalDate remittedOn, String failCode, String failReason, long pgAmount) {
+            this(groupId, outcome, remittedOn, failCode, failReason, pgAmount, null);
+        }
+    }
+
+    /**
+     * 송금 결과에 실린 계좌 — 평문 계좌번호는 들고 다니지 않는다(끝 4자리만). 이니시스 {@code payresult} 의 {@code cdBank} · {@code noAcct}.
+     *
+     * @param bankCode    은행 코드(3자리) · 모르면 null
+     * @param accountTail 계좌번호 숫자 끝 4자리 · 모르면 null
+     */
+    record RemittedAccount(String bankCode, String accountTail) {
+
+        public static final int TAIL = 4;
+
+        /** 은행 코드 · 계좌번호(마스킹 문자가 섞여도 숫자만 본다)에서 — 둘 다 없으면 null. */
+        public static RemittedAccount of(String bankCode, String accountNumber) {
+            String code = bankCode == null || bankCode.isBlank() ? null : bankCode.trim();
+            String digits = accountNumber == null ? "" : accountNumber.replaceAll("[^0-9]", "");
+            String tail = digits.length() < TAIL ? null : digits.substring(digits.length() - TAIL);
+            return code == null && tail == null ? null : new RemittedAccount(code, tail);
+        }
     }
 
     // ------------------------------------------------------------------ 정산별 지급(토스 · 삭제 전까지)
@@ -201,6 +229,10 @@ public interface SettlementPayoutGateway {
     record Reconciliation(int count, long amount) {
     }
 
-    /** {@code DEFERRED} — 잔액 부족 · 지시를 되돌려 다음 영업일로(5-1 ①). attempt 를 소모하지 않는다. */
-    enum Outcome { PAID, REQUESTED, FAILED, DEFERRED }
+    /**
+     * {@code DEFERRED} — 잔액 부족 · 지시를 되돌려 다음 영업일로(5-1 ①). attempt 를 소모하지 않는다.
+     * {@code RETRY} — 묶음 경로 전용. PG 가 이번 요청을 처리하지 못했다고 답했다(서버 일시 오류 · 요청 id 중복 등 — 접수되지 않은 것은 확실하다).
+     * 행을 그대로 두고 마감 전 틱이 같은 합계로 다시 올린다. 마감이 지나면 받은 적 없는 행은 다음 지급일로 넘어간다(attempt 불변 · 운영자 재분배 불필요).
+     */
+    enum Outcome { PAID, REQUESTED, FAILED, DEFERRED, RETRY }
 }

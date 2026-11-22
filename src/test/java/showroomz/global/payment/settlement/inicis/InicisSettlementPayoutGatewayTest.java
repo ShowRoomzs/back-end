@@ -12,6 +12,7 @@ import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.test.web.client.ExpectedCount;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import showroomz.domain.settlement.port.SettlementPayoutGateway;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.GroupCommand;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.GroupLookup;
 import showroomz.domain.settlement.port.SettlementPayoutGateway.GroupResult;
@@ -105,7 +106,7 @@ class InicisSettlementPayoutGatewayTest {
     }
 
     @Test
-    @DisplayName("합계 0 → DEL · dt-pay-basis UPLOAD_DATE 면 dtPay 만 전 영업일(월요일 지급 → 금요일)")
+    @DisplayName("합계 0 → DEL(성공 SB03) · dt-pay-basis UPLOAD_DATE 면 dtPay 만 전 영업일(월요일 지급 → 금요일)")
     void deleteAndUploadDateBasis() throws Exception {
         properties.setDtPayBasis(InicisPayoutsProperties.DtPayBasis.UPLOAD_DATE);
         server.expect(requestTo(BASE + "/payreq")).andExpect(request -> {
@@ -114,28 +115,32 @@ class InicisSettlementPayoutGatewayTest {
                     assertThat(body.path("amtSupply").asText()).isEqualTo("0");
                     assertThat(body.path("dtPay").asText()).isEqualTo("20261113");
                 })
-                .andRespond(withSuccess("{\"code\":\"SB01\",\"msg\":\"정상\"}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"code\":\"SB03\",\"msg\":\"지급요청 데이터 삭제 성공 하였습니다.\"}", MediaType.APPLICATION_JSON));
 
         assertThat(gateway.submitGroup(command(0)).outcome()).isEqualTo(Outcome.REQUESTED);
         server.verify();
     }
 
     @Test
-    @DisplayName("거절 — 잔액 낱말 → DEFERRED(INSUFFICIENT_BALANCE) · 그 밖 → FAILED(REJECTED_BY_PG · 원문 보존) · 5xx → 예외(결과 모름)")
+    @DisplayName("SB05(고객확인 대상 · 등록 성공) → REQUESTED + AML 안내 · EM17(서브몰 정보) → FAILED(PARTNER_NOT_READY) · EM14(지급일 오류) → FAILED(REJECTED_BY_PG · 원문 보존) · 5xx → 예외(결과 모름)")
     void rejectionsAndUnknownOutcome() {
+        server.expect(requestTo(BASE + "/payreq")).andRespond(withSuccess(
+                "{\"code\":\"SB05\",\"msg\":\"고객확인이행 대상입니다. 지급요청 데이터 등록은 성공하였습니다.\"}", MediaType.APPLICATION_JSON));
         server.expect(requestTo(BASE + "/payreq"))
-                .andRespond(withSuccess("{\"code\":\"EB20\",\"msg\":\"지급 가능 잔액 부족\"}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"code\":\"EM17\",\"msg\":\"서브몰 정보 유효성 검사\"}", MediaType.APPLICATION_JSON));
         server.expect(requestTo(BASE + "/payreq"))
-                .andRespond(withSuccess("{\"code\":\"EB99\",\"msg\":\"처리 불가\"}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("{\"code\":\"EM14\",\"msg\":\"지급일 오류 발생\"}", MediaType.APPLICATION_JSON));
         server.expect(requestTo(BASE + "/payreq")).andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
-        GroupSubmitResult deferred = gateway.submitGroup(command(1_000));
-        assertThat(deferred.outcome()).isEqualTo(Outcome.DEFERRED);
-        assertThat(deferred.failCode()).isEqualTo("INSUFFICIENT_BALANCE");
+        GroupSubmitResult aml = gateway.submitGroup(command(1_000));
+        assertThat(aml.outcome()).isEqualTo(Outcome.REQUESTED);
+        assertThat(aml.failCode()).isEqualTo("AML_REQUIRED");
+        assertThat(aml.requestId()).isNotBlank();
+        assertThat(gateway.submitGroup(command(1_000)).failCode()).isEqualTo("PARTNER_NOT_READY");
         GroupSubmitResult failed = gateway.submitGroup(command(1_000));
         assertThat(failed.outcome()).isEqualTo(Outcome.FAILED);
         assertThat(failed.failCode()).isEqualTo("REJECTED_BY_PG");
-        assertThat(failed.failReason()).contains("EB99");
+        assertThat(failed.failReason()).contains("EM14");
         assertThatThrownBy(() -> gateway.submitGroup(command(1_000))).isInstanceOf(PaymentGatewayException.class);
         server.verify();
     }
@@ -149,8 +154,8 @@ class InicisSettlementPayoutGatewayTest {
                 .andExpect(queryParam("clService", "0")).andExpect(queryParam("svcType", "REQ"))
                 .andRespond(withSuccess("""
                         {"code":"SC01","msg":"정상","data":[
-                          {"idMall":"b12","dtPay":"20261116","amtSupply":"35180","remitDtPay":"20261116","clPay":"01"},
-                          {"idMall":"c7","dtPay":"20261116","amtSupply":"9000","remitDtPay":"20261116","clPay":"12"}
+                          {"idMall":"b12","dtPay":"20261116","amtSupply":35180,"remitDtPay":"20261116","clPay":"01"},
+                          {"idMall":"c7","dtPay":"20261116","amtSupply":9000,"remitDtPay":"20261116","clPay":"12"}
                         ]}""", MediaType.APPLICATION_JSON));
 
         List<GroupResult> results = gateway.lookupGroups(List.of(
@@ -163,6 +168,66 @@ class InicisSettlementPayoutGatewayTest {
                         org.assertj.core.groups.Tuple.tuple(2L, Outcome.FAILED, "INICIS_12", 9_000L));
         assertThat(results.get(0).remittedOn()).isEqualTo(MONDAY);
         server.verify();
+    }
+
+    @Test
+    @DisplayName("일시 오류 — EM18(지급 등록 실패) · EH06(요청 id 중복) → RETRY(원문 코드 · 실패로 돌리지 않는다) · DEL 의 EM08(삭제 실패)도 RETRY")
+    void transientErrorsRetry() {
+        server.expect(requestTo(BASE + "/payreq"))
+                .andRespond(withSuccess("{\"code\":\"EM18\",\"msg\":\"지급요청 데이터 등록 실패 하였습니다.\"}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(BASE + "/payreq"))
+                .andRespond(withSuccess("{\"code\":\"EH06\",\"msg\":\"X-Request-ID는 중복 접수 불가능 합니다.\"}", MediaType.APPLICATION_JSON));
+        server.expect(requestTo(BASE + "/payreq"))
+                .andRespond(withSuccess("{\"code\":\"EM08\",\"msg\":\"지급요청 데이터 삭제 실패 하였습니다.\"}", MediaType.APPLICATION_JSON));
+
+        GroupSubmitResult insert = gateway.submitGroup(command(1_000));
+        assertThat(insert.outcome()).isEqualTo(Outcome.RETRY);
+        assertThat(insert.failCode()).isEqualTo("EM18");
+        assertThat(gateway.submitGroup(command(1_000)).outcome()).isEqualTo(Outcome.RETRY);
+        GroupSubmitResult delete = gateway.submitGroup(command(0));
+        assertThat(delete.outcome()).isEqualTo(Outcome.RETRY);
+        assertThat(delete.failCode()).isEqualTo("EM08");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("송금 결과의 계좌 — cdBank · noAcct 끝 4자리를 싣는다(마스킹 문자는 건너뛴다) · 한 키에 계좌가 갈리면 싣지 않는다 · 계좌가 없으면 null")
+    void lookupCarriesRemittedAccount() {
+        server.expect(requestTo(startsWith(BASE + "/payresult"))).andRespond(withSuccess("""
+                {"code":"SC01","msg":"정상","data":[
+                  {"idMall":"b12","dtPay":"20261116","amtSupply":30000,"remitDtPay":"20261116","clPay":"01","cdBank":"088","noAcct":"110****6789"},
+                  {"idMall":"c7","dtPay":"20261116","amtSupply":5000,"remitDtPay":"20261116","clPay":"01","cdBank":"004","noAcct":"1234"},
+                  {"idMall":"c7","dtPay":"20261116","amtSupply":4000,"remitDtPay":"20261116","clPay":"01","cdBank":"004","noAcct":"9999"},
+                  {"idMall":"b99","dtPay":"20261116","amtSupply":1000,"remitDtPay":"20261116","clPay":"01"}
+                ]}""", MediaType.APPLICATION_JSON));
+
+        List<GroupResult> results = gateway.lookupGroups(List.of(
+                new GroupLookup(1L, SettlementPayee.BRAND, "b12", MONDAY, "NEXT_DAY", 30_000L),
+                new GroupLookup(2L, SettlementPayee.CREATOR, "c7", MONDAY, "NEXT_DAY", 9_000L),
+                new GroupLookup(3L, SettlementPayee.BRAND, "b99", MONDAY, "NEXT_DAY", 1_000L)));
+
+        assertThat(results.get(0).remittedTo()).isEqualTo(new SettlementPayoutGateway.RemittedAccount("088", "6789"));
+        assertThat(results.get(1).remittedTo()).isNull();
+        assertThat(results.get(2).remittedTo()).isNull();
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("송금 결과 SC02(조회 데이터 없음) — 오류가 아니라 빈 결과 · 묶음은 그대로 OPEN")
+    void lookupEmpty() {
+        server.expect(requestTo(startsWith(BASE + "/payresult")))
+                .andRespond(withSuccess("{\"code\":\"SC02\",\"msg\":\"송금결과 내역 조회 데이터가 없습니다.\"}", MediaType.APPLICATION_JSON));
+
+        assertThat(gateway.lookupGroups(List.of(new GroupLookup(1L, SettlementPayee.BRAND, "b12", MONDAY, "NEXT_DAY", 1_000L))))
+                .isEmpty();
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("X-Request-ID — 호출마다 다른 값 · 매뉴얼 샘플 꼴(UUID-yyyyMMddHHmmssS · 54자 안팎)")
+    void requestIdShape() {
+        String id = InicisPayoutsClient.requestId();
+        assertThat(id).matches("^[0-9a-f-]{36}-\\d{15,17}$").isNotEqualTo(InicisPayoutsClient.requestId());
     }
 
     @Test

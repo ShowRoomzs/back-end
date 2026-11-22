@@ -236,6 +236,131 @@ class SettlementInicisSeamScenarioIntegrationTest extends SettlementTestSupport 
         assertThat(payoutGateway.groupCalls()).hasSize(calls);
     }
 
+    @Test
+    @DisplayName("결과 모름 뒤 재전송이 확정 거절 — 앞선 전송이 PG 에 있을 수 있어 행을 실패로 돌리지 않는다(이중 지급 방지) · 묶음 OPEN · OUTCOME_UNKNOWN 유지 · 마감 뒤에도 그대로 · 송금 결과가 닫는다")
+    void rejectionAfterUnknownKeepsRows() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutGateway.unresponsive();
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+        payoutGateway.responsive();
+
+        payoutGateway.failFor(SettlementPayee.BRAND, "REJECTED_BY_PG", "EM13 · 익일 지급 오류");
+        payoutService.cutoffTick(x.atTime(14, 0), 200);
+
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+        assertThat(brandRow.getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(brandRow.getPayoutGroupId()).isNotNull();
+        Map<String, Object> group = group(brandRow.getPayoutGroupId());
+        assertThat(group.get("status")).isEqualTo("OPEN");
+        assertThat(group.get("result_code")).isEqualTo("OUTCOME_UNKNOWN");
+        assertThat(settlement(s.getId()).getStatus()).isNotEqualTo(SettlementStatus.PAYOUT_FAILED);
+
+        payoutService.distributeDue(d, d.atTime(10, 0), 200);
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(group(brandRow.getPayoutGroupId()).get("status")).isEqualTo("OPEN");
+
+        // 앞선 전송이 실제로 올라가 있었다 — 송금 결과가 닫는다(행을 실패로 돌렸다면 재분배가 한 번 더 보냈을 것이다).
+        payoutGateway.completeFor(SettlementPayee.BRAND);
+        payoutGateway.completeFor(SettlementPayee.CREATOR);
+        payoutService.pollResults(d.atTime(17, 0));
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.PAID);
+        assertThat(group(brandRow.getPayoutGroupId()).get("status")).isEqualTo("PAID");
+    }
+
+    // ================================================================== PG 일시 오류(RETRY)
+
+    @Test
+    @DisplayName("PG 일시 오류(EM18) — 행 REQUESTED · 실패로 돌리지 않음 · 묶음 RETRY_EM18 · 확정 합계 없음 → 14:00 수렴이 다시 올려 접수 · 표시 지움")
+    void transientErrorRetriedAtCutoffTick() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutGateway.retryFor(SettlementPayee.BRAND, "EM18");
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+        assertThat(brandRow.getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(brandRow.getPgTransferId()).isNull();
+        Map<String, Object> retried = group(brandRow.getPayoutGroupId());
+        assertThat(retried.get("status")).isEqualTo("OPEN");
+        assertThat(retried.get("result_code")).isEqualTo("RETRY_EM18");
+        assertThat(retried.get("confirmed_amount")).isNull();
+        assertThat(settlement(s.getId()).getStatus()).isNotEqualTo(SettlementStatus.PAYOUT_FAILED);
+        assertThat(settlementEvents(s.getId())).doesNotContain(SettlementEventType.PAYOUT_FAILED);
+
+        payoutGateway.recoverFor(SettlementPayee.BRAND);
+        payoutService.cutoffTick(x.atTime(14, 0), 200);
+
+        Map<String, Object> accepted = group(brandRow.getPayoutGroupId());
+        assertThat(((Number) accepted.get("confirmed_amount")).longValue()).isEqualTo(brandRow.getAmount());
+        assertThat(accepted.get("result_code")).isNull();
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getPgTransferId()).isNotNull();
+        assertThat(payoutGateway.uploaded()).containsEntry("tb" + brand.marketId() + "|" + d, brandRow.getAmount());
+    }
+
+    @Test
+    @DisplayName("일시 오류가 마감까지 이어짐 — 다음 배치의 마감 경과 정리가 행을 다음 지급일로 넘기고 같은 배치가 새 묶음으로 다시 지시(attempt 불변 · 재분배 불필요) · 앞 묶음 DELETED")
+    void transientErrorPastCutoffMovesToNextPayDate() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutGateway.retryFor(SettlementPayee.BRAND, "EM18");
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+        payoutService.cutoffTick(x.atTime(14, 0), 200);
+        SettlementPayout stuck = payout(s.getId(), SettlementPayee.BRAND);
+        Long firstGroupId = stuck.getPayoutGroupId();
+        assertThat(stuck.getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(group(firstGroupId).get("result_code")).isEqualTo("RETRY_EM18");
+
+        payoutGateway.recoverFor(SettlementPayee.BRAND);
+        payoutService.distributeDue(d, d.atTime(10, 0), 200);
+
+        LocalDate nextPayDate = businessCalendar.addBusinessDays(d, 1);
+        SettlementPayout moved = payout(s.getId(), SettlementPayee.BRAND);
+        assertThat(moved.getStatus()).isEqualTo(PayoutStatus.REQUESTED);
+        assertThat(moved.getPgPayoutDate()).isEqualTo(nextPayDate);
+        assertThat(moved.getPayoutGroupId()).isNotEqualTo(firstGroupId);
+        assertThat(moved.getAttempt()).isEqualTo(stuck.getAttempt());
+        assertThat(group(firstGroupId).get("status")).isEqualTo("DELETED");
+        assertThat(payoutGateway.uploaded()).containsEntry("tb" + brand.marketId() + "|" + nextPayDate, moved.getAmount());
+        assertThat(settlementEvents(s.getId())).contains(SettlementEventType.PAYOUT_DEFERRED)
+                .doesNotContain(SettlementEventType.PAYOUT_FAILED);
+    }
+
+    // ================================================================== 송금 계좌 대조
+
+    @Test
+    @DisplayName("송금 결과의 계좌가 지급 당시 계좌와 다름 — 지급은 닫는다(PAID) · 묶음에 ACCOUNT_MISMATCH · 정산 이력에 확인 요청 / 같은 계좌면 표시 없음")
+    void remittedAccountMismatchFlagged() {
+        readyForInicis();
+        Settlement s = scheduledSettlement();
+        LocalDate d = s.getPayoutDueDate();
+        LocalDate x = businessCalendar.previousBusinessDay(d);
+        payoutService.distributeDue(x, x.atTime(10, 0), 200);
+        SettlementPayout brandRow = payout(s.getId(), SettlementPayee.BRAND);
+        SettlementPayout creatorRow = payout(s.getId(), SettlementPayee.CREATOR);
+
+        payoutGateway.completeFor(SettlementPayee.BRAND);
+        payoutGateway.completeFor(SettlementPayee.CREATOR);
+        payoutGateway.remitAccountFor(SettlementPayee.BRAND, "088", "110-999-990000");   // 등록 계좌 110123456789 와 다르다
+        payoutGateway.remitAccountFor(SettlementPayee.CREATOR, "004", "123456789012");   // 같다
+        assertThat(settlementEvents(s.getId())).doesNotContain(SettlementEventType.PAYOUT_CHECK_REQUIRED);
+        payoutService.pollResults(d.atTime(17, 0));
+
+        assertThat(payout(s.getId(), SettlementPayee.BRAND).getStatus()).isEqualTo(PayoutStatus.PAID);
+        assertThat(payout(s.getId(), SettlementPayee.CREATOR).getStatus()).isEqualTo(PayoutStatus.PAID);
+        Map<String, Object> brandGroup = group(brandRow.getPayoutGroupId());
+        assertThat(brandGroup.get("status")).isEqualTo("PAID");
+        assertThat(brandGroup.get("result_code")).isEqualTo("ACCOUNT_MISMATCH");
+        assertThat(group(creatorRow.getPayoutGroupId()).get("result_code")).isNull();
+        assertThat(settlementEvents(s.getId())).contains(SettlementEventType.PAYOUT_CHECK_REQUIRED);
+    }
+
     // ================================================================== IN-6 · IN-7
 
     @Test

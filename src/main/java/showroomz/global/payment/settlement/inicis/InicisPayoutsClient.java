@@ -37,7 +37,7 @@ import java.util.function.Function;
  * <b>요청 · 응답 본문은 로그에 싣지 않는다</b> — ENC 가 Base64 뿐이면 계좌 · 생년월일이 평문과 같다. 로그는 {@code idMall} · 날짜 · 금액 ·
  * 코드 · {@code X-Request-ID} 만.
  *
- * <p>GET 3종의 파라미터는 쿼리스트링으로 보낸다(매뉴얼 미기재 · 가정 · Q4).
+ * <p>GET 3종의 파라미터는 쿼리스트링으로 보낸다(매뉴얼은 GET 에 {@code Content-Type: application/json} 만 적고 위치를 적지 않는다 · 가정 · Q4).
  */
 @Slf4j
 public class InicisPayoutsClient {
@@ -74,34 +74,39 @@ public class InicisPayoutsClient {
         return merchantId;
     }
 
-    /** 호출 결과와 그 호출의 {@code X-Request-ID}. */
-    public record Reply<T>(T body, String requestId) {
+    /** 호출 결과 · 그 호출의 {@code X-Request-ID} · 성공 코드(같은 API 도 성공 코드가 여럿이다 — 등록 SA01 / 수정 SA02 · 등록 SB01 / 삭제 SB03 /
+     * 고객확인 대상 SB05 · 결과 없음 SC02 · AML 미대상 SM02). */
+    public record Reply<T>(T body, String requestId, String code) {
     }
 
     // ------------------------------------------------------------------ 서브몰(1-4)
 
     public Reply<Void> upsert(SubMallRequest request) {
         Reply<JsonNode> reply = call(HttpMethod.POST, "/upsert", request, null,
-                InicisPayoutFailureClassifier.SUCCESS_UPSERT, "서브몰 등록");
-        log.info("이니시스 서브몰 {} 접수 - idMall: {}, requestId: {}", request.svcDmlCd(), request.idMall(), reply.requestId());
-        return new Reply<>(null, reply.requestId());
+                InicisPayoutFailureClassifier.SUCCESS_UPSERT_CODES, "서브몰 등록");
+        log.info("이니시스 서브몰 {} 접수 - idMall: {}, code: {}, requestId: {}", request.svcDmlCd(), request.idMall(),
+                reply.code(), reply.requestId());
+        return new Reply<>(null, reply.requestId(), reply.code());
     }
 
+    /** AML 상태 — {@code SM02}(AML 미대상 판매자)면 본문 null · 코드로 가른다. */
     public Reply<AmlStatus> amlStatus(String idMall) {
         Reply<JsonNode> reply = call(HttpMethod.GET, "/amlstatus", null,
                 params("idMerchant", merchantId, "idMall", idMall, "svcType", InicisPayoutsDtos.SVC_REQUEST),
-                InicisPayoutFailureClassifier.SUCCESS_AMLSTATUS, "AML 상태 조회");
-        return new Reply<>(convert(first(reply.body()), AmlStatus.class, "AML 상태 조회"), reply.requestId());
+                InicisPayoutFailureClassifier.SUCCESS_AMLSTATUS_CODES, "AML 상태 조회");
+        AmlStatus status = InicisPayoutFailureClassifier.AML_NOT_TARGET.equals(reply.code()) ? null
+                : convert(first(reply.body()), AmlStatus.class, "AML 상태 조회");
+        return new Reply<>(status, reply.requestId(), reply.code());
     }
 
     // ------------------------------------------------------------------ 지급(1-3 · 1-5)
 
     public Reply<Void> payRequest(PayRequest request) {
         Reply<JsonNode> reply = call(HttpMethod.POST, "/payreq", request, null,
-                InicisPayoutFailureClassifier.SUCCESS_PAYREQ, "지급 요청");
-        log.info("이니시스 지급 {} 접수 - idMall: {}, dtPay: {}, amount: {}, requestId: {}", request.svcDmlCd(),
-                request.idMall(), request.dtPay(), request.amtSupply(), reply.requestId());
-        return new Reply<>(null, reply.requestId());
+                InicisPayoutFailureClassifier.SUCCESS_PAYREQ_CODES, "지급 요청");
+        log.info("이니시스 지급 {} 접수 - idMall: {}, dtPay: {}, amount: {}, code: {}, requestId: {}", request.svcDmlCd(),
+                request.idMall(), request.dtPay(), request.amtSupply(), reply.code(), reply.requestId());
+        return new Reply<>(null, reply.requestId(), reply.code());
     }
 
     /** 지급일 범위의 송금 결과(서브몰 전체 · 익일지급 · 지급). */
@@ -109,17 +114,18 @@ public class InicisPayoutsClient {
         Reply<JsonNode> reply = call(HttpMethod.GET, "/payresult", null,
                 params("idMerchant", merchantId, "startDtPay", from.format(DATE), "endDtPay", to.format(DATE),
                         "clService", clService, "svcType", InicisPayoutsDtos.SVC_REQUEST),
-                InicisPayoutFailureClassifier.SUCCESS_PAYRESULT, "송금 결과 조회");
+                InicisPayoutFailureClassifier.SUCCESS_PAYRESULT_CODES, "송금 결과 조회");
         JsonNode data = reply.body();
         List<PayResult> results;
-        if (data == null || data.isNull() || data.isMissingNode()) {
+        if (data == null || data.isNull() || data.isMissingNode()
+                || InicisPayoutFailureClassifier.PAYRESULT_EMPTY.equals(reply.code())) {
             results = List.of();
         } else if (data.isArray()) {
             results = convert(data, new TypeReference<List<PayResult>>() {}, "송금 결과 조회");
         } else {
             results = List.of(convert(data, PayResult.class, "송금 결과 조회"));
         }
-        return new Reply<>(results, reply.requestId());
+        return new Reply<>(results, reply.requestId(), reply.code());
     }
 
     // ------------------------------------------------------------------ 자금(1-6)
@@ -127,8 +133,8 @@ public class InicisPayoutsClient {
     public Reply<PayCheck> payCheck(LocalDate from, LocalDate to) {
         Reply<JsonNode> reply = call(HttpMethod.GET, "/paycheck", null,
                 params("idMerchant", merchantId, "startDtPay", from.format(DATE), "endDtPay", to.format(DATE)),
-                InicisPayoutFailureClassifier.SUCCESS_PAYCHECK, "잔액 대사");
-        return new Reply<>(convert(first(reply.body()), PayCheck.class, "잔액 대사"), reply.requestId());
+                InicisPayoutFailureClassifier.SUCCESS_PAYCHECK_CODES, "잔액 대사");
+        return new Reply<>(convert(first(reply.body()), PayCheck.class, "잔액 대사"), reply.requestId(), reply.code());
     }
 
     // ------------------------------------------------------------------ 호출 · 해석
@@ -138,9 +144,9 @@ public class InicisPayoutsClient {
      * @throws PaymentGatewayRejectedException {@code code} 가 성공 코드가 아니다(결과 확정)
      * @throws PaymentGatewayException         결과 모름
      */
-    private Reply<JsonNode> call(HttpMethod method, String path, Object body, Map<String, String> query, String successCode,
-                                 String action) {
-        String requestId = UUID.randomUUID().toString();
+    private Reply<JsonNode> call(HttpMethod method, String path, Object body, Map<String, String> query,
+                                 java.util.Set<String> successCodes, String action) {
+        String requestId = requestId();
         Function<UriBuilder, java.net.URI> uri = builder -> {
             UriBuilder b = builder.path(BASE_PATH + path);
             if (query != null) {
@@ -159,6 +165,7 @@ public class InicisPayoutsClient {
             }
             spec = spec.contentType(new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8)).body(json);
         }
+        String[] codeHolder = new String[1];
         try {
             JsonNode data = spec.exchange((request, response) -> {
                 int status = response.getStatusCode().value();
@@ -178,18 +185,28 @@ public class InicisPayoutsClient {
                     throw new PaymentGatewayException("이니시스 " + action + " 응답 해석 불가 — HTTP " + status
                             + " · requestId " + requestId);
                 }
-                if (!successCode.equals(code)) {
+                if (!successCodes.contains(code)) {
                     log.warn("이니시스 {} 거절 - code: {}, msg: {}, requestId: {}", action, code, message, requestId);
                     throw new PaymentGatewayRejectedException(status, code,
                             "이니시스 " + action + (message == null ? "" : " - " + message) + " · requestId " + requestId);
                 }
                 JsonNode dataNode = root.get("data");
+                codeHolder[0] = code;
                 return dataNode == null || dataNode.isNull() ? null : dataNode;
             });
-            return new Reply<>(data, requestId);
+            return new Reply<>(data, requestId, codeHolder[0]);
         } catch (ResourceAccessException e) {
             throw new PaymentGatewayException("이니시스 " + action + " 통신 실패 — " + e.getMessage() + " · requestId " + requestId, e);
         }
+    }
+
+    /**
+     * {@code X-Request-ID} — 호출마다 중복되지 않는 값(매뉴얼 유의사항 · 하드코딩 금지). 매뉴얼 샘플과 같은 꼴
+     * {@code UUID-yyyyMMddHHmmssS}(KST · 54자).
+     */
+    static String requestId() {
+        return UUID.randomUUID() + "-" + java.time.LocalDateTime.now(showroomz.global.utils.KstDates.KST)
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMddHHmmssS"));
     }
 
     /** 쿼리 파라미터 — 적은 순서대로(로그 · 테스트가 읽기 쉽게). */

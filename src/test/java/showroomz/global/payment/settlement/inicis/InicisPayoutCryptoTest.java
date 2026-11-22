@@ -38,6 +38,12 @@ class InicisPayoutCryptoTest {
         assertThat(hash).isEqualTo(expected).hasSize(InicisPayoutCrypto.USER_HASH_LENGTH).matches("^[0-9a-f]{64}$");
         assertThat(InicisPayoutCrypto.userHash(kstToday.plusDays(1), "INIpayTest", "110123456789", "api-key"))
                 .isNotEqualTo(hash);
+        // 매뉴얼 「hashData 개요」(popup_108)의 예시값 그대로 — 알고리즘 · 순서 · 인코딩이 이니시스와 같다.
+        assertThat(InicisPayoutCrypto.userHash(LocalDate.of(2025, 6, 5), "merchantID", "1234567890",
+                "AB1234567891234ABCD123456789ABCD123456789ABCD123456789AB12345678"))
+                .isEqualTo("57f87ec092d95559621027306fa591edf04723e8f8c4ce484cdcd6c3df19d9b7");
+        // 매뉴얼 Base64 예시(popup_109) — "KG이니시스" → S0fsnbTri4jsi5zsiqQ=
+        assertThat(InicisPayoutCrypto.enc("KG이니시스")).isEqualTo("S0fsnbTri4jsi5zsiqQ=");
         // 순서가 다르면 다른 값 — 대상 문자열을 섞지 않는다.
         assertThat(InicisPayoutCrypto.userHash(kstToday, "110123456789", "INIpayTest", "api-key")).isNotEqualTo(hash);
     }

@@ -2,6 +2,7 @@ package showroomz.global.payment.settlement.inicis;
 
 import lombok.extern.slf4j.Slf4j;
 import showroomz.domain.settlement.port.SettlementPayoutGateway;
+import showroomz.domain.settlement.port.SettlementPayoutGateway.RemittedAccount;
 import showroomz.global.config.properties.InicisPayoutsProperties;
 import showroomz.global.payment.portone.PaymentGatewayRejectedException;
 import showroomz.global.payment.settlement.inicis.InicisPayoutsDtos.PayCheck;
@@ -111,13 +112,24 @@ public class InicisSettlementPayoutGateway implements SettlementPayoutGateway {
                 String.valueOf(Math.max(command.total(), 0)), InicisPayoutsDtos.CL_SERVICE_NEXT_DAY,
                 delete ? InicisPayoutsDtos.DML_DELETE : InicisPayoutsDtos.DML_INSERT, InicisPayoutsDtos.SVC_REQUEST);
         try {
-            return GroupSubmitResult.requested(client.payRequest(request).requestId());
+            InicisPayoutsClient.Reply<Void> reply = client.payRequest(request);
+            if (InicisPayoutFailureClassifier.PAYREQ_AML_REQUIRED.equals(reply.code())) {
+                // SB05 — 접수는 됐다. 고객확인 대상이라 안내한다(D-6 · 정산 제한 여부는 송금 결과가 가른다).
+                return new GroupSubmitResult(Outcome.REQUESTED, NOTICE_AML_REQUIRED, "고객확인이행 대상(SB05)", reply.requestId());
+            }
+            return GroupSubmitResult.requested(reply.requestId());
         } catch (PaymentGatewayRejectedException e) {
-            if (!delete && InicisPayoutFailureClassifier.isInsufficientBalance(e.getType(), e.getMessage())) {
+            if (InicisPayoutFailureClassifier.isTransient(e.getType())) {
+                // 이니시스 서버 일시 오류(EM18 · EM08 등) · 요청 id 중복 — 접수 안 됨. 행을 그대로 두고 마감 전 틱이 다시 올린다.
+                log.warn("이니시스 지급 요청 일시 오류 — 다음 틱 재전송 - groupId: {}, idMall: {}, code: {}", command.groupId(),
+                        command.partnerExternalId(), e.getType());
+                return new GroupSubmitResult(Outcome.RETRY, e.getType(), e.getType() + " · " + e.getMessage(), null);
+            }
+            if (!delete && InicisPayoutFailureClassifier.isInsufficientBalance(e.getType())) {
                 return new GroupSubmitResult(Outcome.DEFERRED, InicisPayoutFailureClassifier.INSUFFICIENT_BALANCE,
                         e.getMessage(), null);
             }
-            String code = InicisPayoutFailureClassifier.payRequestFailCode(e.getType(), e.getMessage());
+            String code = InicisPayoutFailureClassifier.payRequestFailCode(e.getType());
             log.error("이니시스 지급 요청 거절 - groupId: {}, idMall: {}, code: {}", command.groupId(),
                     command.partnerExternalId(), e.getType());
             return new GroupSubmitResult(Outcome.FAILED, code, e.getType() + " · " + e.getMessage(), null);
@@ -188,7 +200,11 @@ public class InicisSettlementPayoutGateway implements SettlementPayoutGateway {
             return new GroupResult(lookup.groupId(), Outcome.FAILED, remittedOn, code, "이니시스 송금 실패 clPay=" + trim(failed.clPay()),
                     amount);
         }
-        return new GroupResult(lookup.groupId(), Outcome.PAID, remittedOn, null, null, amount);
+        // 실제로 보낸 계좌 — 한 키에 여럿이면 계좌가 갈리지 않을 때만 싣는다(갈리면 대조하지 않고 위 경고 · 금액 대조가 사람을 부른다).
+        List<RemittedAccount> accounts = found.stream().map(r -> RemittedAccount.of(r.cdBank(), r.noAcct()))
+                .filter(java.util.Objects::nonNull).distinct().toList();
+        RemittedAccount remittedTo = accounts.size() == 1 ? accounts.get(0) : null;
+        return new GroupResult(lookup.groupId(), Outcome.PAID, remittedOn, null, null, amount, remittedTo);
     }
 
     /** 스테이징 — 송금 결과를 볼 수 없다. {@code assume-paid} 면 지급일이 된 묶음을 확정 합계 그대로 PAID 로(D-10). */

@@ -57,6 +57,8 @@ public class SettlementPayoutGroupService {
     static final String AMOUNT_MISMATCH = "AMOUNT_MISMATCH";
     static final String OUT_OF_SYNC = "OUT_OF_SYNC";
     static final String CUTOFF_MISSED = "CUTOFF_MISSED";
+    /** 송금 결과의 계좌(은행 · 끝 4자리)가 행의 계좌 스냅샷과 다르다 — 지급 완료 묶음에 남는 확인 표시. */
+    static final String ACCOUNT_MISMATCH = "ACCOUNT_MISMATCH";
     private static final int POLL_BATCH = 500;
     /** 수렴 · 마감 경과 판정이 보는 지급일 범위(오늘 기준 앞뒤 일수). */
     private static final int SCAN_DAYS = 45;
@@ -114,7 +116,9 @@ public class SettlementPayoutGroupService {
         UNKNOWN,
         PAID,
         FAILED,
-        DEFERRED
+        DEFERRED,
+        /** PG 일시 오류(접수 안 됨) — 행 그대로 · 마감 전 틱이 다시 · 마감이 지나면 다음 지급일로. */
+        RETRY
     }
 
     // ================================================================== 전송(D-1 ① ② ③)
@@ -207,6 +211,17 @@ public class SettlementPayoutGroupService {
                 .filter(p -> p.getStatus() == PayoutStatus.REQUESTED && groupId.equals(p.getPayoutGroupId()))
                 .sorted(Comparator.comparing(SettlementPayout::getId)).toList();
         boolean firstUpload = !group.isUploaded();
+        if (OUTCOME_UNKNOWN.equals(group.getResultCode()) && result.outcome() != Outcome.REQUESTED
+                && result.outcome() != Outcome.PAID) {
+            // 앞선 전송의 결과를 모른다 — PG 에 그 합계가 올라가 있을 수 있다. 이번 요청의 거절은 앞선 요청이 없었다는 뜻이 아니다.
+            // 여기서 행을 실패 · 연기로 돌리면 PG 가 앞선 합계로 송금하고 운영자 재분배가 한 번 더 보낸다(이중 지급). 결과 모름을 유지하고
+            // 마감 전 틱이 다시 올린다 — 접수되면 그 합계로 확정, 끝내 안 되면 송금 결과(폴링)가 가르고 없으면 처리 지연 알림이 사람을 부른다.
+            group.recordAttempt(result.requestId(), OUTCOME_UNKNOWN, now);
+            groupRepository.saveAndFlush(group);
+            log.warn("지급 묶음 — 앞선 전송 결과 모름 · 이번 거절({} {})로 행을 닫지 않는다 - groupId: {}, total: {}", result.outcome(),
+                    result.failCode(), groupId, total);
+            return SubmitOutcome.UNKNOWN;
+        }
         switch (result.outcome()) {
             case REQUESTED -> {
                 group.confirm(total, result.requestId(), now);
@@ -217,6 +232,12 @@ public class SettlementPayoutGroupService {
                 }
                 log.info("지급 묶음 접수 - groupId: {}, payDate: {}, total: {}, rows: {}", groupId, group.getPayDate(), total,
                         sent.size());
+                if (SettlementPayoutGateway.NOTICE_AML_REQUIRED.equals(result.failCode())) {
+                    // 접수는 됐지만 고객확인 대상 — 수취자 · 운영자에게 안내(D-6 · 이니시스 SB05). 보류는 AML 상태 조회가 정한다.
+                    SettlementPayee payee = group.getPayee();
+                    sent.stream().map(SettlementPayout::getSettlementId).distinct().sorted()
+                            .forEach(id -> notifier.payoutAmlThresholdNotice(id, payee));
+                }
                 return total == 0 ? SubmitOutcome.SKIPPED : SubmitOutcome.SENT;
             }
             case PAID -> {
@@ -256,8 +277,22 @@ public class SettlementPayoutGroupService {
                 }
                 return SubmitOutcome.DEFERRED;
             }
+            case RETRY -> {
+                // PG 일시 오류 — 접수 안 됨이 확실하다. 확정 합계 · 행 그대로(실패로 돌리지 않는다 · attempt 불변). 마감 전 틱의 수렴이 같은 합계로
+                // 다시 올리고, 마감이 지나면 받은 적 없는 행은 마감 경과 정리가 다음 지급일로 넘긴다.
+                group.recordAttempt(result.requestId(), retryCode(result.failCode()), now);
+                groupRepository.saveAndFlush(group);
+                log.warn("지급 묶음 PG 일시 오류 — 다음 틱 재전송 - groupId: {}, code: {}, total: {}", groupId, result.failCode(), total);
+                return SubmitOutcome.RETRY;
+            }
         }
         return SubmitOutcome.SKIPPED;
+    }
+
+    /** 일시 오류 표시값 — {@code RETRY_{PG 코드}}(결과 코드 칸 32자 안). */
+    static String retryCode(String pgCode) {
+        String code = "RETRY_" + (pgCode == null || pgCode.isBlank() ? "UNKNOWN" : pgCode.trim());
+        return code.length() > 32 ? code.substring(0, 32) : code;
     }
 
     // ================================================================== 수렴 · 마감 경과(D-1 ④ · D-2′)
@@ -431,8 +466,9 @@ public class SettlementPayoutGroupService {
         if (due == null || due.isEmpty()) {
             return;
         }
+        // 결과 모름 묶음은 합계 0(삭제 시도)이어도 묻는다 — 앞선 전송이 PG 에 올라가 송금됐을 수 있다(금액 불일치로 사람을 부른다).
         List<GroupLookup> lookups = due.stream()
-                .filter(g -> g.getConfirmedAmount() != null || g.getIntendedAmount() > 0)
+                .filter(g -> g.getConfirmedAmount() != null || g.getIntendedAmount() > 0 || OUTCOME_UNKNOWN.equals(g.getResultCode()))
                 .map(g -> new GroupLookup(g.getId(), g.getPayee(), g.getPgPartnerId(), g.getPayDate(), g.getScheduleType(),
                         expected(g)))
                 .toList();
@@ -518,8 +554,21 @@ public class SettlementPayoutGroupService {
             return false;
         }
         LocalDate remittedOn = result.remittedOn() == null ? KstDates.today(now) : result.remittedOn();
+        // PG 가 실제로 보낸 계좌가 행의 계좌 스냅샷과 다른가 — 돈은 이미 나갔으니 지급은 닫되 사람을 부른다(Q3 — 송금 시점 계좌 · 이니시스 화면에서 바뀐 계좌).
+        String accountMismatch = partnerSync.remittedAccountMismatch(toPay, result.remittedTo());
         group.markPaid(remittedOn, now);
+        if (accountMismatch != null) {
+            group.flag(ACCOUNT_MISMATCH, now);
+        }
         groupRepository.saveAndFlush(group);
+        if (accountMismatch != null) {
+            log.warn("지급 묶음 송금 계좌 ≠ 행 계좌 스냅샷 — 지급은 닫고 확인 요청 - groupId: {}, {}", group.getId(), accountMismatch);
+            notifier.payoutAccountMismatch(group.getId(), group.getPayDate(), accountMismatch);
+            SettlementPayee payee = group.getPayee();
+            toPay.stream().map(SettlementPayout::getSettlementId).distinct().sorted().forEach(id ->
+                    historyRecorder.recordBySystem(id, SettlementEventType.PAYOUT_CHECK_REQUIRED,
+                            payee.getLabel() + " · PG 송금 계좌가 지급 당시 등록 계좌와 다릅니다 — 운영자 확인", now));
+        }
         LocalDateTime paidAt = remittedOn.equals(KstDates.today(now)) ? now : KstDates.at(remittedOn, LocalTime.NOON);
         String key = group.transferKey();
         payRows(toPay, row -> row.getPgReference() == null ? key : row.getPgReference(), paidAt, now);
